@@ -22,7 +22,6 @@ import static io.zeebe.broker.incident.IncidentAssert.assertIncidentRecordValue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.IncidentRecordValue;
@@ -31,6 +30,8 @@ import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.record.value.incident.ErrorType;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;

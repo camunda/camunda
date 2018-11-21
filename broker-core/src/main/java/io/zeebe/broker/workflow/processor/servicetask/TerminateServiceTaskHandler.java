@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.workflow.processor.servicetask;
 
-import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.incident.processor.IncidentState;
 import io.zeebe.broker.job.JobState;
 import io.zeebe.broker.logstreams.state.ZeebeState;
@@ -25,6 +24,7 @@ import io.zeebe.broker.workflow.model.element.ExecutableServiceTask;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.activity.TerminateActivityHandler;
 import io.zeebe.broker.workflow.state.ElementInstance;
+import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.intent.JobIntent;
 

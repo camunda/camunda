@@ -20,7 +20,6 @@ package io.zeebe.broker.util;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 
 import io.zeebe.broker.exporter.stream.ExporterRecord;
-import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.state.StateStorageFactory;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
@@ -51,6 +50,7 @@ import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;

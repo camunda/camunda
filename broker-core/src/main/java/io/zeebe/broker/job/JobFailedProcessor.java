@@ -19,12 +19,12 @@ package io.zeebe.broker.job;
 
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
-import io.zeebe.broker.incident.data.ErrorType;
-import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.protocol.impl.record.value.incident.ErrorType;
+import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobHeaders;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.intent.IncidentIntent;

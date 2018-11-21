@@ -20,11 +20,11 @@ package io.zeebe.broker.incident;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.incident.processor.IncidentState;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.intent.IncidentIntent;
 import java.util.List;
 import java.util.stream.Collectors;

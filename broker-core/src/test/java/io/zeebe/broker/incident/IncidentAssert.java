@@ -17,11 +17,11 @@
  */
 package io.zeebe.broker.incident;
 
-import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.exporter.record.Assertions;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.IncidentRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.impl.record.value.incident.ErrorType;
 
 public class IncidentAssert {
 

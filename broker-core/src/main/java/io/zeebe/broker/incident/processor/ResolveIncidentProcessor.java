@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.incident.processor;
 
-import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.job.JobState;
 import io.zeebe.broker.logstreams.processor.SideEffectProducer;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
@@ -29,6 +28,7 @@ import io.zeebe.broker.workflow.processor.BpmnStepProcessor;
 import io.zeebe.broker.workflow.processor.SideEffectQueue;
 import io.zeebe.broker.workflow.state.IndexedRecord;
 import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.intent.IncidentIntent;
 import java.util.function.Consumer;

@@ -18,7 +18,6 @@
 package io.zeebe.broker.transport.clientapi;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
-import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.Dispatcher;
@@ -34,6 +33,7 @@ import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;

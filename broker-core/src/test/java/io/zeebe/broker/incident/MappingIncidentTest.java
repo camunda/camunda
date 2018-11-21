@@ -30,7 +30,6 @@ import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.UnstableTest;
-import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.record.Assertions;
 import io.zeebe.exporter.record.Record;
@@ -40,6 +39,7 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
 import io.zeebe.msgpack.spec.MsgPackHelper;
+import io.zeebe.protocol.impl.record.value.incident.ErrorType;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;

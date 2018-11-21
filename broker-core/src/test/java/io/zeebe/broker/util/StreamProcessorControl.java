@@ -17,13 +17,13 @@
  */
 package io.zeebe.broker.util;
 
-import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;

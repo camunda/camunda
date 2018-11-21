@@ -20,7 +20,6 @@ package io.zeebe.broker.workflow.processor;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
-import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
@@ -35,6 +34,7 @@ import io.zeebe.broker.workflow.state.WorkflowInstanceSubscription;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResult;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResults;
+import io.zeebe.protocol.impl.record.value.incident.ErrorType;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.time.Duration;

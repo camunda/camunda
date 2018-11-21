@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.incident.processor;
 
-import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.job.JobState;
 import io.zeebe.broker.job.JobState.State;
 import io.zeebe.broker.logstreams.processor.CommandProcessor;
@@ -26,6 +25,7 @@ import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.workflow.state.ElementInstanceState;
 import io.zeebe.broker.workflow.state.IndexedRecord;
 import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.intent.IncidentIntent;
 
 public final class CreateIncidentProcessor implements CommandProcessor<IncidentRecord> {

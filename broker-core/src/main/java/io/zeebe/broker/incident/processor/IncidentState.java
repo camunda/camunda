@@ -19,11 +19,11 @@ package io.zeebe.broker.incident.processor;
 
 import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
 
-import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.workflow.state.PersistenceHelper;
 import io.zeebe.logstreams.rocksdb.ZbRocksDb;
 import io.zeebe.logstreams.state.StateController;
 import io.zeebe.logstreams.state.StateLifecycleListener;
+import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import java.util.List;
 import java.util.function.ObjLongConsumer;
 import java.util.stream.Collectors;

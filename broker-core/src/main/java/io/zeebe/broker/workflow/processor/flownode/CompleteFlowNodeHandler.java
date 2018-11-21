@@ -17,11 +17,11 @@
  */
 package io.zeebe.broker.workflow.processor.flownode;
 
-import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.msgpack.mapping.MappingException;
+import io.zeebe.protocol.impl.record.value.incident.ErrorType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class CompleteFlowNodeHandler<T extends ExecutableFlowNode> implements BpmnStepHandler<T> {

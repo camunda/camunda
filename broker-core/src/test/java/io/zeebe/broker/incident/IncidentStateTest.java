@@ -20,10 +20,10 @@ package io.zeebe.broker.incident;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.incident.data.ErrorType;
-import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.incident.processor.IncidentState;
 import io.zeebe.broker.logstreams.state.ZeebeState;
+import io.zeebe.protocol.impl.record.value.incident.ErrorType;
+import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
