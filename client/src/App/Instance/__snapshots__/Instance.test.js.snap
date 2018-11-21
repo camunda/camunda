@@ -19,6 +19,13 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
                 "state": "COMPLETED",
               },
               Object {
+                "activityId": "bar",
+                "endDate": "2018-07-16T09:30:56.276Z",
+                "id": "bar",
+                "startDate": "2018-07-16T09:30:56.276Z",
+                "state": "COMPLETED",
+              },
+              Object {
                 "activityId": "taskA",
                 "endDate": null,
                 "id": "4294983744",
@@ -81,6 +88,13 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
                 "state": "COMPLETED",
               },
               Object {
+                "activityId": "bar",
+                "endDate": "2018-07-16T09:30:56.276Z",
+                "id": "bar",
+                "startDate": "2018-07-16T09:30:56.276Z",
+                "state": "COMPLETED",
+              },
+              Object {
                 "activityId": "taskA",
                 "endDate": null,
                 "id": "4294983744",
@@ -112,6 +126,7 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
         selectableFlowNodes={
           Array [
             "foo",
+            "bar",
             "taskA",
           ]
         }
@@ -144,6 +159,13 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
                 "activityId": "foo",
                 "endDate": "2018-07-16T09:30:56.276Z",
                 "id": "foo",
+                "startDate": "2018-07-16T09:30:56.276Z",
+                "state": "COMPLETED",
+              },
+              Object {
+                "activityId": "bar",
+                "endDate": "2018-07-16T09:30:56.276Z",
+                "id": "bar",
                 "startDate": "2018-07-16T09:30:56.276Z",
                 "state": "COMPLETED",
               },

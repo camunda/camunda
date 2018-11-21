@@ -48,6 +48,13 @@ const INSTANCE = {
       state: ACTIVITY_STATE.COMPLETED
     },
     {
+      activityId: 'bar',
+      endDate: '2018-07-16T09:30:56.276Z',
+      id: 'bar',
+      startDate: '2018-07-16T09:30:56.276Z',
+      state: ACTIVITY_STATE.COMPLETED
+    },
+    {
       activityId: 'taskA',
       endDate: null,
       id: '4294983744',
@@ -234,6 +241,7 @@ describe('Instance', () => {
       expect(DiagramPanelNode.prop('instance')).toEqual(INSTANCE);
       expect(DiagramPanelNode.prop('selectableFlowNodes')).toEqual([
         'foo',
+        'bar',
         'taskA'
       ]);
       expect(DiagramPanelNode.prop('selectedFlowNode')).toBe('foo');

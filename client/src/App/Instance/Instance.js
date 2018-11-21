@@ -110,9 +110,10 @@ export default class Instance extends Component {
     }
 
     // Get extra information for the diagram
-    const selectableFlowNodes = (this.state.instance || {}).activities.map(
-      ({activityId}) => activityId
+    const selectableFlowNodes = Object.values(this.state.activitiesDetails).map(
+      activity => activity.activityId
     );
+
     const flowNodeStateOverlays = getFlowNodeStateOverlays(
       this.state.activitiesDetails
     );
