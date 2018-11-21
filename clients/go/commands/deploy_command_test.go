@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestDeployCommand(t *testing.T) {
+func TestDeployCommand_AddResourceFile(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -51,6 +51,43 @@ func TestDeployCommand(t *testing.T) {
 		AddResourceFile(demoName).
 		AddResourceFile(anotherName).
 		AddResourceFile(yamlName).
+		Send()
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
+func TestDeployCommand_AddResource(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	demoName := "../../java/src/test/resources/workflows/demo-process.bpmn"
+	demoBytes := readBytes(t, demoName)
+
+	request := &pb.DeployWorkflowRequest{
+		Workflows: []*pb.WorkflowRequestObject{
+			{
+				Name:       demoName,
+				Type:       pb.WorkflowRequestObject_BPMN,
+				Definition: demoBytes,
+			},
+		},
+	}
+	stub := &pb.DeployWorkflowResponse{}
+
+	client.EXPECT().DeployWorkflow(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewDeployCommand(client, utils.DefaultTestTimeout)
+
+	response, err := command.
+		AddResource(demoBytes, demoName, pb.WorkflowRequestObject_BPMN).
 		Send()
 
 	if err != nil {
