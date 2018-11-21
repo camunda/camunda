@@ -30,6 +30,7 @@ public class TerminateFlowNodeHandler<T extends ExecutableFlowElement>
     implements BpmnStepHandler<T> {
 
   protected final IncidentState incidentState;
+  private BpmnStepContext<T> context;
 
   public TerminateFlowNodeHandler(IncidentState incidentState) {
     this.incidentState = incidentState;
@@ -37,11 +38,14 @@ public class TerminateFlowNodeHandler<T extends ExecutableFlowElement>
 
   @Override
   public void handle(BpmnStepContext<T> context) {
+    this.context = context;
     final EventOutput output = context.getOutput();
     final ElementInstance elementInstance = context.getElementInstance();
     terminate(context);
 
-    resolveExistingIncident(context);
+    final long elementInstanceKey = elementInstance.getKey();
+    incidentState.forExistingWorkflowIncident(elementInstanceKey, this::resolveExistingIncident);
+
     if (elementInstance.isInterrupted()) {
       context
           .getCatchEventOutput()
@@ -61,23 +65,7 @@ public class TerminateFlowNodeHandler<T extends ExecutableFlowElement>
    */
   protected void terminate(BpmnStepContext<T> context) {}
 
-  public void resolveExistingIncident(BpmnStepContext<T> context) {
-    ElementInstance elementInstance = context.getElementInstance();
-    if (elementInstance == null) {
-      // only elements with multi state/lifecycle are represented in the zeebe state
-      // and have an corresponding element instance
-      elementInstance = context.getFlowScopeInstance();
-    }
-
-    final long elementInstanceKey = elementInstance.getKey();
-
-    final long workflowIncidentKey =
-        incidentState.getWorkflowInstanceIncidentKey(elementInstanceKey);
-
-    final boolean hasIncident = workflowIncidentKey != IncidentState.MISSING_INCIDENT;
-    if (hasIncident) {
-      final IncidentRecord incidentRecord = incidentState.getIncidentRecord(workflowIncidentKey);
-      context.getOutput().appendResolvedIncidentEvent(workflowIncidentKey, incidentRecord);
-    }
+  private void resolveExistingIncident(IncidentRecord incidentRecord, long incidentKey) {
+    context.getOutput().appendResolvedIncidentEvent(incidentKey, incidentRecord);
   }
 }

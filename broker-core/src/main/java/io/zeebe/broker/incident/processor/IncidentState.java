@@ -25,6 +25,7 @@ import io.zeebe.logstreams.rocksdb.ZbRocksDb;
 import io.zeebe.logstreams.state.StateController;
 import io.zeebe.logstreams.state.StateLifecycleListener;
 import java.util.List;
+import java.util.function.ObjLongConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.agrona.ExpandableArrayBuffer;
@@ -164,5 +165,16 @@ public class IncidentState implements StateLifecycleListener {
 
   public boolean isJobIncident(IncidentRecord record) {
     return record.getJobKey() > 0;
+  }
+
+  public void forExistingWorkflowIncident(
+      long elementInstanceKey, ObjLongConsumer<IncidentRecord> resolver) {
+    final long workflowIncidentKey = getWorkflowInstanceIncidentKey(elementInstanceKey);
+
+    final boolean hasIncident = workflowIncidentKey != IncidentState.MISSING_INCIDENT;
+    if (hasIncident) {
+      final IncidentRecord incidentRecord = getIncidentRecord(workflowIncidentKey);
+      resolver.accept(incidentRecord, workflowIncidentKey);
+    }
   }
 }
