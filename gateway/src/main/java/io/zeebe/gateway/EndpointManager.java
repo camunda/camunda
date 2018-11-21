@@ -44,6 +44,8 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.ListWorkflowsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ListWorkflowsResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
@@ -197,6 +199,16 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
         topology ->
             activateJobsHandler.activateJobs(
                 topology.getPartitionsCount(), request, responseObserver));
+  }
+
+  @Override
+  public void resolveIncident(
+      ResolveIncidentRequest request, StreamObserver<ResolveIncidentResponse> responseObserver) {
+    sendRequest(
+        request,
+        RequestMapper::toResolveIncidentRequest,
+        ResponseMapper::toResolveIncidentResponse,
+        responseObserver);
   }
 
   private <GrpcRequestT, BrokerResponseT, GrpcResponseT> void sendRequest(
