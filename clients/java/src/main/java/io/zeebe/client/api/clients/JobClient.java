@@ -58,14 +58,10 @@ public interface JobClient {
    *  .send();
    * </pre>
    *
-   * The job is specified by the given event. The event must be the latest event of the job to
-   * ensure that the command is based on the latest state of the job. If it's not the latest one
-   * then the command is rejected.
-   *
    * <p>If the job is linked to a workflow instance then this command will complete the related
    * activity and continue the flow.
    *
-   * @param event the latest job event
+   * @param jobKey the key which identifies the job
    * @return a builder for the command
    */
   CompleteJobCommandStep1 newCompleteCommand(long jobKey);
@@ -85,7 +81,7 @@ public interface JobClient {
    * <p>If the given retries are greater than zero then this job will be picked up again by a job
    * subscription. Otherwise, an incident is created for this job.
    *
-   * @param jobKey the key of the job
+   * @param jobKey the key which identifies the job
    * @return a builder for the command
    */
   FailJobCommandStep1 newFailCommand(long jobKey);

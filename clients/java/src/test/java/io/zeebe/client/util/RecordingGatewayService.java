@@ -44,6 +44,8 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
@@ -89,6 +91,8 @@ public class RecordingGatewayService extends GatewayImplBase {
     addRequestHandler(ListWorkflowsRequest.class, r -> ListWorkflowsResponse.getDefaultInstance());
     addRequestHandler(GetWorkflowRequest.class, r -> GetWorkflowResponse.getDefaultInstance());
     addRequestHandler(ActivateJobsRequest.class, r -> ActivateJobsResponse.getDefaultInstance());
+    addRequestHandler(
+        ResolveIncidentRequest.class, r -> ResolveIncidentResponse.getDefaultInstance());
   }
 
   @Override
@@ -167,6 +171,12 @@ public class RecordingGatewayService extends GatewayImplBase {
   @Override
   public void activateJobs(
       ActivateJobsRequest request, StreamObserver<ActivateJobsResponse> responseObserver) {
+    handle(request, responseObserver);
+  }
+
+  @Override
+  public void resolveIncident(
+      ResolveIncidentRequest request, StreamObserver<ResolveIncidentResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
