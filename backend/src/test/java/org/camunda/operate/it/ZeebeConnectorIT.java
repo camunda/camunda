@@ -75,7 +75,7 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
     //when 1
     //no Zeebe broker is running
 
-    //then 2
+    //then 1
     //application context must be successfully started
     MockHttpServletRequestBuilder request = get(HealthCheckRestService.HEALTH_CHECK_URL);
     mockMvc.perform(request)
@@ -106,6 +106,32 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
 
     //then 2
     //data import is working
+    zeebeESImporter.processNextEntitiesBatch();
+
+  }
+
+  @Test
+  public void testRecoverAfterZeebeRestart() throws Exception {
+    //when 1
+    //Zeebe is started
+    brokerRule = new OperateZeebeBrokerRule(EmbeddedBrokerRule.DEFAULT_CONFIG_FILE);
+    clientRule = new ZeebeClientRule(brokerRule);
+    brokerRule.before();
+    clientRule.before();
+
+    //then 1
+    //data import is working
+    zeebeESImporter.processNextEntitiesBatch();
+
+    //when 2
+    //Zeebe is restarted
+    brokerRule.after();
+    clientRule.after();
+    brokerRule.before();
+    clientRule.before();
+
+    //then 2
+    //data import is still working
     zeebeESImporter.processNextEntitiesBatch();
 
   }
