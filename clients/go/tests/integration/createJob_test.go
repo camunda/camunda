@@ -5,7 +5,7 @@ import (
 	"fmt"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/zeebe-io/zeebe/clients/go"
+	"github.com/zeebe-io/zeebe/clients/go/zbc"
 	"github.com/zeebe-io/zeebe/clients/go/commands"
 )
 

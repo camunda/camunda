@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
 
-	"github.com/zeebe-io/zeebe/clients/go"
+	"github.com/zeebe-io/zeebe/clients/go/zbc"
 )
 
 var _ = Describe("should send TopologyRequest to Gateway and receive TopologyResponse", func() {
