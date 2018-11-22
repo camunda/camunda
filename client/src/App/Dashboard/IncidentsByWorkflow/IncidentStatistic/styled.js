@@ -17,9 +17,7 @@ export const Wrapper = themed(styled(withStrippedProps(['perUnit'])('div'))`
 
   font-family: IBMPlexSans;
   font-size: 14px;
-  font-weight: ${({perUnit}) => {
-    return perUnit ? '400' : '600';
-  }};
+  font-weight: ${({perUnit}) => (perUnit ? '400' : '600')};
   line-height: 1.71;
 `);
 
