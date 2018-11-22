@@ -114,7 +114,7 @@ import:
   elasticsearchJobExecutorThreadCount: 2
   #Adjust the queue size of the import jobs that store data to elasticsearch.
   #A too large value might cause memory problems.
-  elasticsearchJobExecutorQueueSize: 100
+  elasticsearchJobExecutorQueueSize: 50
   handler:
     backoff:
       # Interval which is used for the backoff time calculation.
