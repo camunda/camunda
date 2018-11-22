@@ -15,7 +15,7 @@ exports[`EmptyIncidents should display a warning message 1`] = `
 <Themed(styled.div)>
   <Styled(ReactComponent) />
   <Themed(styled.span)
-    type="success"
+    type="warning"
   >
     someLabel
   </Themed(styled.span)>

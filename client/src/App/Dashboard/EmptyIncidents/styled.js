@@ -19,9 +19,8 @@ export const EmptyIncidents = themed(styled.div`
 `);
 
 export const Label = themed(styled.span`
-  color: ${({type}) => {
-    return type === 'success' ? Colors.allIsWell : Colors.incidentsAndErrors;
-  }};
+  color: ${({type}) =>
+    type === 'success' ? Colors.allIsWell : Colors.incidentsAndErrors};
   opacity: 0.9;
   font-family: IBMPlexSans;
   font-size: 16px;

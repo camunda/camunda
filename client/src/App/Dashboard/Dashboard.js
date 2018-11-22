@@ -60,7 +60,9 @@ class Dashboard extends Component {
   };
 
   renderEmptyList = () => {
-    if (this.state.incidents.byWorkflow.error) {
+    const {error, data} = this.state.incidents.byWorkflow;
+
+    if (error) {
       return (
         <EmptyIncidents
           type="warning"
@@ -69,7 +71,7 @@ class Dashboard extends Component {
       );
     }
 
-    if (this.state.incidents.byWorkflow.data.length === 0) {
+    if (data.length === 0) {
       return (
         <EmptyIncidents
           type="success"
@@ -107,7 +109,7 @@ class Dashboard extends Component {
             <Styled.TileContent>
               {this.state.isDataLoaded && this.renderEmptyList()}
               {this.state.isDataLoaded &&
-                Boolean(this.state.incidents.byWorkflow.data.length) && (
+                !!this.state.incidents.byWorkflow.data.length && (
                   <IncidentsByWorkflow
                     incidents={this.state.incidents.byWorkflow.data}
                   />
