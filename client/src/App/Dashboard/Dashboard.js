@@ -1,6 +1,6 @@
 import React, {Component, Fragment} from 'react';
 
-import TransparentHeading from 'modules/components/TransparentHeading';
+import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 
 import Header from '../Header';
 import MetricPanel from './MetricPanel';
@@ -87,13 +87,13 @@ class Dashboard extends Component {
 
     return (
       <Fragment>
-        <TransparentHeading>Camunda Operate Dashboard</TransparentHeading>
         <Header
           active="dashboard"
           runningInstancesCount={running}
           incidentsCount={incidents}
         />
         <Styled.Dashboard>
+          <VisuallyHiddenH1>Camunda Operate Dashboard</VisuallyHiddenH1>
           <MetricPanel>
             {tiles.map(tile => (
               <MetricTile

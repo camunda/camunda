@@ -2,7 +2,7 @@ import React, {Component, Fragment} from 'react';
 import PropTypes from 'prop-types';
 
 import SplitPane from 'modules/components/SplitPane';
-import TransparentHeading from 'modules/components/TransparentHeading';
+import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 import * as api from 'modules/api/instances';
 import {PAGE_TITLE} from 'modules/constants';
 import {getWorkflowName} from 'modules/utils/instance';
@@ -120,11 +120,11 @@ export default class Instance extends Component {
 
     return (
       <Fragment>
-        <TransparentHeading>
-          {`Camunda Operate Instance ${this.state.instance.id}`}
-        </TransparentHeading>
         <Header detail={<InstanceDetail instance={this.state.instance} />} />
         <Styled.Instance>
+          <VisuallyHiddenH1>
+            {`Camunda Operate Instance ${this.state.instance.id}`}
+          </VisuallyHiddenH1>
           <SplitPane titles={{top: 'Workflow', bottom: 'Instance Details'}}>
             <DiagramPanel
               instance={this.state.instance}
