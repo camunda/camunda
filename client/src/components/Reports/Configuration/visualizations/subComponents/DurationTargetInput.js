@@ -4,14 +4,14 @@ import {ControlGroup, LabeledInput, ErrorMessage, Select} from 'components';
 
 import './DurationTargetInput.scss';
 
-import {isValidNumber} from './service';
-import {formatters} from 'services';
+import {formatters, numberParser} from 'services';
 
+const {isNonNegativeNumber} = numberParser;
 const {convertDurationToSingleNumber} = formatters;
 
 export default function DurationTargetInput({baseline, target, disabled, onChange}) {
-  const baselineInvalid = !isValidNumber(baseline.value);
-  const targetInvalid = !isValidNumber(target.value);
+  const baselineInvalid = !isNonNegativeNumber(baseline.value);
+  const targetInvalid = !isNonNegativeNumber(target.value);
 
   const tooLow =
     !baselineInvalid &&

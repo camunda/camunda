@@ -23,3 +23,21 @@ it('should check for positive number', () => {
   expect(numberParser.isPositiveNumber('123.123')).toBe(true);
   expect(numberParser.isPositiveNumber('-123')).toBe(false);
 });
+
+describe('isNonNegativeNumber', () => {
+  it('should return false if the passed string contains letters', () => {
+    expect(numberParser.isNonNegativeNumber('123h')).toBe(false);
+  });
+
+  it('should return false if the passed string is negative number', () => {
+    expect(numberParser.isNonNegativeNumber('-1')).toBe(false);
+  });
+
+  it('should return true if a possitve string number is passed', () => {
+    expect(numberParser.isNonNegativeNumber('1')).toBe(true);
+  });
+
+  it('should return true if a number is passed', () => {
+    expect(numberParser.isNonNegativeNumber(1)).toBe(true);
+  });
+});

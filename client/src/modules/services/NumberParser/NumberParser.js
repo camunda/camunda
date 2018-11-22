@@ -11,3 +11,12 @@ export function isIntegerNumber(value) {
 export function isFloatNumber(value) {
   return /^[+-]?\d+\.?\d*$/.test(value);
 }
+
+export function isNonNegativeNumber(value) {
+  if (typeof value === 'number') {
+    return +value >= 0;
+  }
+  if (typeof value === 'string') {
+    return value.trim() && !isNaN(value.trim()) && +value >= 0;
+  }
+}

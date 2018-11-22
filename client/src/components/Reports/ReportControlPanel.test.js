@@ -9,7 +9,10 @@ import {loadVariables} from './service';
 const flushPromises = () => new Promise(resolve => setImmediate(resolve));
 
 jest.mock('services', () => {
+  const rest = jest.requireActual('services');
+
   return {
+    ...rest,
     reportConfig: {
       getLabelFor: () => 'foo',
       view: {foo: {data: 'foo', label: 'viewfoo'}},

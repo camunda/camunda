@@ -2,13 +2,14 @@ import React from 'react';
 
 import {ControlGroup, LabeledInput, ErrorMessage} from 'components';
 
-import {isValidNumber} from './service';
-
 import './CountTargetInput.scss';
 
+import {numberParser} from 'services';
+const {isNonNegativeNumber} = numberParser;
+
 export default function CountTargetInput({baseline, target, disabled, onChange}) {
-  const baselineInvalid = !isValidNumber(baseline);
-  const targetInvalid = !isValidNumber(target);
+  const baselineInvalid = !isNonNegativeNumber(baseline);
+  const targetInvalid = !isNonNegativeNumber(target);
 
   const tooLow = !baselineInvalid && !targetInvalid && parseFloat(target) <= parseFloat(baseline);
 
