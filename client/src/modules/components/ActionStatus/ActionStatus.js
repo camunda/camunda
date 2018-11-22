@@ -8,7 +8,11 @@ import StatusItems from './StatusItems';
 import * as Styled from './styled';
 
 const isOperationScheduled = operationState => {
-  const scheduledState = [OPERATION_STATE.SCHEDULED, OPERATION_STATE.LOCKED];
+  const scheduledState = [
+    OPERATION_STATE.SCHEDULED,
+    OPERATION_STATE.LOCKED,
+    OPERATION_STATE.SENT
+  ];
   return scheduledState.includes(operationState);
 };
 
