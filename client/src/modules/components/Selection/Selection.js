@@ -15,7 +15,6 @@ import * as Styled from './styled.js';
 
 export default class Selection extends React.Component {
   static propTypes = {
-    isNew: PropTypes.bool.isRequired,
     isOpen: PropTypes.bool.isRequired,
     selectionId: PropTypes.number.isRequired,
     instances: PropTypes.object.isRequired,
@@ -82,7 +81,7 @@ export default class Selection extends React.Component {
 
   renderActions = () => (
     <Styled.Actions>
-      <Styled.DropdownWrapper onClick={this.stopClickPropagation}>
+      <Styled.DropdownWrapper onClick={evt => evt && evt.stopPropagation()}>
         <Dropdown
           aria-label="Batch Operations"
           label={<Styled.BatchIcon />}
@@ -181,13 +180,12 @@ export default class Selection extends React.Component {
     const idString = `selection-${this.props.selectionId}`;
 
     return (
-      <Styled.Dl role="presentation" isNew={this.props.isNew}>
+      <Styled.Dl role="presentation">
         {this.renderHeader(idString)}
         {this.props.isOpen && (
           <Styled.Dd
             role="region"
             id={idString}
-            isOpen={this.props.isOpen}
             aria-labelledby={`${idString}-toggle`}
           >
             {this.renderBody(idString)}
