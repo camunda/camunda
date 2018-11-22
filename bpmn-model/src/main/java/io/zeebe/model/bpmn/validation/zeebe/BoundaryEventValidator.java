@@ -15,19 +15,24 @@
  */
 package io.zeebe.model.bpmn.validation.zeebe;
 
+import io.zeebe.model.bpmn.impl.instance.MessageEventDefinitionImpl;
+import io.zeebe.model.bpmn.impl.instance.TimerEventDefinitionImpl;
 import io.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.zeebe.model.bpmn.instance.EventDefinition;
-import io.zeebe.model.bpmn.instance.MessageEventDefinition;
-import io.zeebe.model.bpmn.instance.TimerEventDefinition;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
 public class BoundaryEventValidator implements ModelElementValidator<BoundaryEvent> {
-  private static final List<Class<? extends EventDefinition>> SUPPORTED_EVENTS =
-      Arrays.asList(TimerEventDefinition.class, MessageEventDefinition.class);
+  private static final Map<Class<? extends EventDefinition>, SupportLevel> SUPPORTED_EVENTS =
+      new HashMap<>();
+
+  static {
+    SUPPORTED_EVENTS.put(TimerEventDefinitionImpl.class, SupportLevel.All);
+    SUPPORTED_EVENTS.put(MessageEventDefinitionImpl.class, SupportLevel.Interrupting);
+  }
 
   @Override
   public Class<BoundaryEvent> getElementType() {
@@ -48,10 +53,6 @@ public class BoundaryEventValidator implements ModelElementValidator<BoundaryEve
       validationResultCollector.addError(0, "Must have at least one outgoing sequence flow");
     }
 
-    if (!element.cancelActivity()) {
-      validationResultCollector.addError(0, "Non-interrupting boundary events are not supported");
-    }
-
     validateEventDefinition(element, validationResultCollector);
   }
 
@@ -64,10 +65,39 @@ public class BoundaryEventValidator implements ModelElementValidator<BoundaryEve
     } else {
       final EventDefinition eventDefinition = eventDefinitions.iterator().next();
       final Class<? extends EventDefinition> type = eventDefinition.getClass();
+      final SupportLevel supportLevel = SUPPORTED_EVENTS.getOrDefault(type, SupportLevel.None);
 
-      if (SUPPORTED_EVENTS.stream().noneMatch(c -> c.isAssignableFrom(type))) {
-        validationResultCollector.addError(0, "Event definition must be one of: timer, message");
-      }
+      validateSupportLevel(element, validationResultCollector, supportLevel);
     }
+  }
+
+  private void validateSupportLevel(
+      BoundaryEvent element,
+      ValidationResultCollector validationResultCollector,
+      SupportLevel supportLevel) {
+    switch (supportLevel) {
+      case None:
+        validationResultCollector.addError(0, "Boundary events must be one of: timer, message");
+        break;
+      case Interrupting:
+        if (!element.cancelActivity()) {
+          validationResultCollector.addError(
+              0, "Non-interrupting events of this type are not supported");
+        }
+        break;
+      case NonInterrupting:
+        if (element.cancelActivity()) {
+          validationResultCollector.addError(
+              0, "Interrupting events of this type are not supported");
+        }
+        break;
+    }
+  }
+
+  public enum SupportLevel {
+    None,
+    Interrupting,
+    NonInterrupting,
+    All,
   }
 }

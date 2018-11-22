@@ -27,7 +27,6 @@ public class ZeebeDesignTimeValidators {
     VALIDATORS = new ArrayList<>();
     VALIDATORS.add(new ActivityValidator());
     VALIDATORS.add(new BoundaryEventValidator());
-    VALIDATORS.add(new CatchEventValidator());
     VALIDATORS.add(new DefinitionsValidator());
     VALIDATORS.add(new EndEventValidator());
     VALIDATORS.add(new EventDefinitionValidator());
@@ -36,6 +35,7 @@ public class ZeebeDesignTimeValidators {
     VALIDATORS.add(new FlowElementValidator());
     VALIDATORS.add(new FlowNodeValidator());
     VALIDATORS.add(new IntermediateCatchEventValidator());
+    VALIDATORS.add(new MessageEventDefinitionValidator());
     VALIDATORS.add(new MessageValidator());
     VALIDATORS.add(new ProcessValidator());
     VALIDATORS.add(new SequenceFlowValidator());
@@ -43,6 +43,7 @@ public class ZeebeDesignTimeValidators {
     VALIDATORS.add(new ReceiveTaskValidator());
     VALIDATORS.add(new StartEventValidator());
     VALIDATORS.add(new SubProcessValidator());
+    VALIDATORS.add(new TimerEventDefinitionValidator());
     VALIDATORS.add(new ZeebeTaskDefinitionValidator());
     VALIDATORS.add(new ZeebeIoMappingValidator());
     VALIDATORS.add(new ZeebeSubscriptionValidator());

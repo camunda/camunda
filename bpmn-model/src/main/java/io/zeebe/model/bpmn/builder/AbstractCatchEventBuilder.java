@@ -83,6 +83,12 @@ public abstract class AbstractCatchEventBuilder<
     return myself;
   }
 
+  public MessageEventDefinitionBuilder messageEventDefinition() {
+    final MessageEventDefinition eventDefinition = createEmptyMessageEventDefinition();
+    element.getEventDefinitions().add(eventDefinition);
+    return new MessageEventDefinitionBuilder(modelInstance, eventDefinition);
+  }
+
   /**
    * Sets an event definition for the given signal name. If already a signal with this name exists
    * it will be used, otherwise a new signal is created.

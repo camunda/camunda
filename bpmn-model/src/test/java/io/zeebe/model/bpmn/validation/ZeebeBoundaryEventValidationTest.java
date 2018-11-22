@@ -39,7 +39,7 @@ public class ZeebeBoundaryEventValidationTest extends AbstractZeebeValidationTes
             .done(),
         Arrays.asList(
             expect(SignalEventDefinition.class, "Event definition of this type is not supported"),
-            expect("boundary", "Event definition must be one of: timer, message"))
+            expect("boundary", "Boundary events must be one of: timer, message"))
       },
       {
         Bpmn.createExecutableProcess("process")
@@ -96,12 +96,25 @@ public class ZeebeBoundaryEventValidationTest extends AbstractZeebeValidationTes
             .serviceTask("task", b -> b.zeebeTaskType("type"))
             .boundaryEvent("boundary")
             .cancelActivity(false)
-            .timerWithDuration("PT1S")
+            .message(m -> m.name("message").zeebeCorrelationKey("$.key"))
             .endEvent()
             .moveToActivity("task")
             .endEvent()
             .done(),
-        singletonList(expect("boundary", "Non-interrupting boundary events are not supported"))
+        singletonList(expect("boundary", "Non-interrupting events of this type are not supported"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task", b -> b.zeebeTaskType("type"))
+            .boundaryEvent("boundary")
+            .cancelActivity(false)
+            .message(m -> m.name("message").zeebeCorrelationKey("$.key"))
+            .endEvent()
+            .moveToActivity("task")
+            .endEvent()
+            .done(),
+        singletonList(expect("boundary", "Non-interrupting events of this type are not supported"))
       }
     };
   }
