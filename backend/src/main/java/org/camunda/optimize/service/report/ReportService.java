@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
 import org.camunda.optimize.service.alert.AlertService;
+import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
@@ -62,6 +63,9 @@ public class ReportService {
   private DashboardService dashboardService;
 
   @Autowired
+  private CollectionService collectionService;
+
+  @Autowired
   private SessionService sessionService;
 
   public ConflictResponseDto getReportDeleteConflictingItemsWithAuthorizationCheck(String userId, String reportId) {
@@ -90,11 +94,12 @@ public class ReportService {
       alertService.deleteAlertsForReport(reportId);
       sharingService.deleteShareForReport(reportId);
       reportWriter.removeSingleReportFromCombinedReports(reportId);
-      dashboardService.removeReportFromDashboards(reportId);
       reportWriter.deleteSingleReport(reportId);
     } else if (COMBINED_REPORT_TYPE.equals(reportDefinition.getReportType())) {
       reportWriter.deleteCombinedReport(reportId);
     }
+    dashboardService.removeReportFromDashboards(reportId);
+    collectionService.removeReportFromCollection(reportId);
   }
 
   private Set<ConflictedItemDto> getConflictedItemsForDeleteReport(ReportDefinitionDto reportDefinition) {

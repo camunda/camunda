@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
+import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
@@ -295,8 +296,22 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildCreateCollectionRequest() {
+    this.requestType = POST;
+    this.body = Entity.json("");
+    this.path = "collection";
+    return this;
+  }
+
   public OptimizeRequestExecutor buildUpdateDashboardRequest(String id, DashboardDefinitionDto entity) {
     this.path = "dashboard/" + id;
+    this.requestType = PUT;
+    this.body = getBody(entity);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildUpdateCollectionRequest(String id, SimpleCollectionDefinitionDto entity) {
+    this.path = "collection/" + id;
     this.requestType = PUT;
     this.body = getBody(entity);
     return this;
@@ -308,14 +323,32 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetCollectionRequest(String id) {
+    this.path = "collection/" + id;
+    this.requestType = GET;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildGetAllDashboardsRequest() {
     this.path = "dashboard/";
     this.requestType = GET;
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetAllCollectionsRequest() {
+    this.path = "collection/";
+    this.requestType = GET;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildDeleteDashboardRequest(String id) {
     this.path = "dashboard/" + id;
+    this.requestType = DELETE;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildDeleteCollectionRequest(String id) {
+    this.path = "collection/" + id;
     this.requestType = DELETE;
     return this;
   }

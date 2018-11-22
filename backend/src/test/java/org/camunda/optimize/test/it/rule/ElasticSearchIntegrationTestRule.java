@@ -348,6 +348,10 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     return properties.getProperty("camunda.optimize.es.dashboard.type");
   }
 
+  public String getCollectionType() {
+    return properties.getProperty("camunda.optimize.es.collection.type");
+  }
+
   public String getProcessInstanceType() {
     return properties.getProperty("camunda.optimize.es.process.instance.type");
   }
