@@ -18,6 +18,7 @@
 package io.zeebe.broker.incident;
 
 import static io.zeebe.broker.incident.IncidentAssert.assertIncidentRecordValue;
+import static io.zeebe.exporter.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -207,7 +208,7 @@ public class JobFailIncidentTest {
         incidentEvent);
 
     // and the job is published again
-    final Record republishedEvent =
+    final Record<JobRecordValue> republishedEvent =
         testClient
             .receiveJobs()
             .skipUntil(job -> job.getMetadata().getIntent() == JobIntent.RETRIES_UPDATED)
@@ -217,6 +218,7 @@ public class JobFailIncidentTest {
     assertThat(republishedEvent.getPosition()).isNotEqualTo(jobEvent.getPosition());
     assertThat(republishedEvent.getTimestamp().toEpochMilli())
         .isGreaterThanOrEqualTo(jobEvent.getTimestamp().toEpochMilli());
+    assertThat(republishedEvent.getValue()).hasRetries(1);
 
     // and the job lifecycle is correct
     final List<Record> jobEvents = testClient.receiveJobs().limit(8).collect(Collectors.toList());
