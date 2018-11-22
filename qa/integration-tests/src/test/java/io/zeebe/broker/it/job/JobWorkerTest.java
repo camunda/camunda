@@ -243,6 +243,28 @@ public class JobWorkerTest {
   }
 
   @Test
+  public void shouldFailJobWithErrorMessage() {
+    // given
+    createJobOfType("foo");
+
+    final RecordingJobHandler jobHandler =
+        new RecordingJobHandler(
+            (c, j) -> c.newFailCommand(j.getKey()).retries(0).errorMessage("this failed").send());
+
+    // when
+    jobClient.newWorker().jobType("foo").handler(jobHandler).name("myWorker").open();
+
+    // then
+    waitUntil(() -> jobHandler.getHandledJobs().size() == 1);
+    final Record<JobRecordValue> record = jobRecords(JobIntent.FAILED).getFirst();
+    assertThat(record.getValue())
+        .hasType("foo")
+        .hasWorker("myWorker")
+        .hasRetries(0)
+        .hasErrorMessage("this failed");
+  }
+
+  @Test
   public void shouldMarkJobAsFailedAndRetryIfHandlerThrowsException() {
     // given
     final JobEvent job = createJobOfType("foo");

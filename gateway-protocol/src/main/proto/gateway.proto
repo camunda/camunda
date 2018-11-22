@@ -95,6 +95,7 @@ message UpdateJobRetriesResponse {
 message FailJobRequest {
   int64 jobKey = 1;
   int32 retries = 2;
+  string errorMessage = 3;
 }
 
 message FailJobResponse {

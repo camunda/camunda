@@ -87,6 +87,36 @@ public class FailJobTest {
   }
 
   @Test
+  public void shouldFailWithMessage() {
+    // given
+    client.createJob(JOB_TYPE);
+    apiRule.activateJobs(JOB_TYPE).await();
+    final Record<JobRecordValue> jobEvent = client.receiveFirstJobEvent(ACTIVATED);
+    final int retries = 23;
+
+    // when
+    final ExecuteCommandResponse response =
+        client.failJobWithMessage(jobEvent.getKey(), retries, "failed job");
+
+    // then
+    final JobRecordValue jobEventValue = jobEvent.getValue();
+    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.getIntent()).isEqualTo(FAILED);
+    assertThat(response.getValue())
+        .contains(
+            entry("worker", jobEventValue.getWorker()),
+            entry("type", jobEventValue.getType()),
+            entry("retries", (long) retries),
+            entry("deadline", jobEventValue.getDeadline().toEpochMilli()),
+            entry("errorMessage", "failed job"));
+
+    final Record<JobRecordValue> loggedEvent = RecordingExporter.jobRecords(FAILED).getFirst();
+
+    assertThat(loggedEvent.getValue().getType()).isEqualTo(JOB_TYPE);
+    assertThat(loggedEvent.getValue().getErrorMessage()).isEqualTo("failed job");
+  }
+
+  @Test
   public void shouldFailJobAndRetry() {
     // given
     client.createJob(JOB_TYPE);

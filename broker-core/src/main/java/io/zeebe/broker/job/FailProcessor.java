@@ -39,7 +39,9 @@ public class FailProcessor implements CommandProcessor<JobRecord> {
     if (state.isInState(key, State.ACTIVATED)) {
       final JobRecord failedJob = state.getJob(key);
       failedJob.setRetries(command.getValue().getRetries());
+      failedJob.setErrorMessage(command.getValue().getErrorMessage());
       state.fail(key, failedJob);
+
       commandControl.accept(JobIntent.FAILED, failedJob);
     } else {
       commandControl.reject(RejectionType.NOT_APPLICABLE, "Job is not currently activated");

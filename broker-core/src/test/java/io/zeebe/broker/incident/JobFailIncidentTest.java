@@ -110,6 +110,64 @@ public class JobFailIncidentTest {
   }
 
   @Test
+  public void shouldCreateIncidentWithJobErrorMessage() {
+    // given
+    testClient.deploy(WORKFLOW_INPUT_MAPPING);
+
+    final long workflowInstanceKey = testClient.createWorkflowInstance("process", PAYLOAD);
+
+    // when
+    createIncidentWithJobWitMessage("failed job");
+
+    // then
+    final Record activityEvent =
+        testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+    final Record failedEvent = testClient.receiveFirstJobEvent(JobIntent.FAILED);
+
+    final Record incidentCommand = testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
+    final Record incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
+
+    assertThat(incidentCommand.getSourceRecordPosition()).isEqualTo(failedEvent.getPosition());
+
+    assertThat(incidentEvent.getKey()).isGreaterThan(0);
+    assertIncidentRecordValue(
+        ErrorType.JOB_NO_RETRIES.name(),
+        "failed job",
+        workflowInstanceKey,
+        "failingTask",
+        activityEvent.getKey(),
+        failedEvent.getKey(),
+        incidentEvent);
+  }
+
+  @Test
+  public void shouldIncidentContainLastFailedJobErrorMessage() {
+    // given
+    testClient.deploy(WORKFLOW_INPUT_MAPPING);
+
+    final long workflowInstanceKey = testClient.createWorkflowInstance("process", PAYLOAD);
+
+    // when
+    failJobWithMessage(1, "first message");
+    failJobWithMessage(0, "second message");
+
+    // then
+    final Record activityEvent =
+        testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+    final Record failedEvent = testClient.receiveFirstJobEvent(JobIntent.FAILED);
+
+    final Record incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
+    assertIncidentRecordValue(
+        ErrorType.JOB_NO_RETRIES.name(),
+        "second message",
+        workflowInstanceKey,
+        "failingTask",
+        activityEvent.getKey(),
+        failedEvent.getKey(),
+        incidentEvent);
+  }
+
+  @Test
   public void shouldResolveIncidentIfJobRetriesIncreased() {
     // given
     testClient.deploy(WORKFLOW_INPUT_MAPPING);
@@ -231,6 +289,28 @@ public class JobFailIncidentTest {
 
     final Record jobEvent = testClient.receiveFirstJobEvent(JobIntent.ACTIVATED);
     final ExecuteCommandResponse response = testClient.failJob(jobEvent.getKey(), 0);
+
+    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.getIntent()).isEqualTo(JobIntent.FAILED);
+  }
+
+  private void failJobWithMessage(int retries, String errorMessage) {
+    apiRule.activateJobs("test").await();
+
+    final Record jobEvent = testClient.receiveFirstJobEvent(JobIntent.ACTIVATED);
+    final ExecuteCommandResponse response =
+        testClient.failJobWithMessage(jobEvent.getKey(), retries, errorMessage);
+
+    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.getIntent()).isEqualTo(JobIntent.FAILED);
+  }
+
+  private void createIncidentWithJobWitMessage(String errorMessage) {
+    apiRule.activateJobs("test").await();
+
+    final Record jobEvent = testClient.receiveFirstJobEvent(JobIntent.ACTIVATED);
+    final ExecuteCommandResponse response =
+        testClient.createJobIncidentWithJobErrorMessage(jobEvent.getKey(), errorMessage);
 
     assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
     assertThat(response.getIntent()).isEqualTo(JobIntent.FAILED);

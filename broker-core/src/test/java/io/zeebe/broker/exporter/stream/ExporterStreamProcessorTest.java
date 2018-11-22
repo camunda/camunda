@@ -449,7 +449,8 @@ public class ExporterStreamProcessorTest {
             .setType(wrapString(type))
             .setPayload(PAYLOAD_MSGPACK)
             .setRetries(retries)
-            .setDeadline(deadline);
+            .setDeadline(deadline)
+            .setErrorMessage("failed message");
     record
         .getHeaders()
         .setBpmnProcessId(wrapString(bpmnProcessId))
@@ -476,7 +477,8 @@ public class ExporterStreamProcessorTest {
                 workflowKey,
                 workflowDefinitionVersion),
             CUSTOM_HEADERS,
-            retries);
+            retries,
+            "failed message");
 
     // then
     assertRecordExported(JobIntent.CREATED, record, recordValue);
@@ -630,6 +632,7 @@ public class ExporterStreamProcessorTest {
         .setType(wrapString(type))
         .setPayload(PAYLOAD_MSGPACK)
         .setRetries(3)
+        .setErrorMessage("failed message")
         .setDeadline(1000L);
 
     jobRecord
@@ -656,7 +659,8 @@ public class ExporterStreamProcessorTest {
                 workflowKey,
                 workflowDefinitionVersion),
             Collections.EMPTY_MAP,
-            3);
+            3,
+            "failed message");
 
     final JobBatchRecordValueImpl recordValue =
         new JobBatchRecordValueImpl(

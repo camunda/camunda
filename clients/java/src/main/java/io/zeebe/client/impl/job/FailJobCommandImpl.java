@@ -18,6 +18,7 @@ package io.zeebe.client.impl.job;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.commands.FailJobCommandStep1;
 import io.zeebe.client.api.commands.FailJobCommandStep1.FailJobCommandStep2;
+import io.zeebe.client.api.commands.FinalCommandStep;
 import io.zeebe.client.impl.ZeebeClientFutureImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
@@ -38,6 +39,12 @@ public class FailJobCommandImpl implements FailJobCommandStep1, FailJobCommandSt
   @Override
   public FailJobCommandStep2 retries(int retries) {
     builder.setRetries(retries);
+    return this;
+  }
+
+  @Override
+  public FinalCommandStep errorMessage(String errorMsg) {
+    builder.setErrorMessage(errorMsg);
     return this;
   }
 
