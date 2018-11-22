@@ -15,15 +15,27 @@ it('should unify the keys of all result object by filling empty ones with null',
 });
 
 it('should return correctly formatted body rows', () => {
-  expect(getBodyRows([{a: 1, b: 2}, {a: '', b: 1}], ['a', 'b'], v => v, false, [100, 100])).toEqual(
-    [['a', 1, ''], ['b', 2, 1]]
-  );
+  expect(
+    getBodyRows([{a: 1, b: 2}, {a: '', b: 1}], ['a', 'b'], v => v, false, [100, 100], true)
+  ).toEqual([['a', 1, ''], ['b', 2, 1]]);
+});
+
+it('should hide absolute values when sepcified from body rows', () => {
+  expect(
+    getBodyRows([{a: 1, b: 2}, {a: '', b: 1}], ['a', 'b'], v => v, false, [100, 100], false)
+  ).toEqual([['a'], ['b']]);
 });
 
 it('should return correct table label structure', () => {
   expect(
-    getFormattedLabels([['key', 'value'], ['key', 'value']], ['Report A', 'Report B'], false)
+    getFormattedLabels([['key', 'value'], ['key', 'value']], ['Report A', 'Report B'], false, true)
   ).toEqual([{label: 'Report A', columns: ['value']}, {label: 'Report B', columns: ['value']}]);
+});
+
+it('should hide absolute values when specified from labels', () => {
+  expect(
+    getFormattedLabels([['key', 'value'], ['key', 'value']], ['Report A', 'Report B'], false, false)
+  ).toEqual([{columns: [], label: 'Report A'}, {columns: [], label: 'Report B'}]);
 });
 
 it('should calculate the correct position for the target value line', () => {

@@ -190,9 +190,9 @@ export default class ReportView extends React.Component {
               configuration: data.configuration,
               isDate: false,
               type: 'bar',
-              targetValue: {},
               property: data.view.property,
-              stacked: true
+              stacked: true,
+              targetValue: data.configuration.targetValue
             }
           };
         } else {

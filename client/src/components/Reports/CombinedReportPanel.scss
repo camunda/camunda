@@ -1,11 +1,14 @@
 .CombinedReportPanel {
   width: 30%;
   margin-bottom: 24px;
-  text-align: right;
-  overflow: auto;
   display: flex;
   flex-direction: column;
   position: relative;
+
+  .Configuration {
+    align-self: flex-end;
+    list-style: none;
+  }
 
   .TargetValueComparison {
     display: block;

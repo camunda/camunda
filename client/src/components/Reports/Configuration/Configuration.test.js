@@ -25,13 +25,21 @@ jest.mock('./visualizations', () => {
 });
 
 it('should be disabled if no type is set', () => {
-  const node = shallow(<Configuration />);
+  const node = shallow(<Configuration report={{}} />);
+
+  expect(node.find('Popover')).toBeDisabled();
+});
+
+it('should be disabled if combined report is empty', () => {
+  const node = shallow(
+    <Configuration type="combined" report={{reportType: 'combined', data: {reportIds: null}}} />
+  );
 
   expect(node.find('Popover')).toBeDisabled();
 });
 
 it('should contain the Component from the visualizations based on the type', () => {
-  const node = shallow(<Configuration type="typeA" onChange={() => {}} />);
+  const node = shallow(<Configuration report={{}} type="typeA" onChange={() => {}} />);
 
   expect(node.find(typeA)).toBePresent();
 
@@ -43,7 +51,9 @@ it('should contain the Component from the visualizations based on the type', () 
 
 it('should reset to defaults based on the defaults provided by the visualization', () => {
   const spy = jest.fn();
-  const node = shallow(<Configuration type="typeA" onChange={spy} configuration={{}} />);
+  const node = shallow(
+    <Configuration report={{}} type="typeA" onChange={spy} configuration={{}} />
+  );
 
   node.find(Button).simulate('click');
 
@@ -52,7 +62,9 @@ it('should reset to defaults based on the defaults provided by the visualization
 
 it('should call a potential component defaults method to determine defaults', () => {
   const spy = jest.fn();
-  const node = shallow(<Configuration type="typeC" onChange={spy} configuration={{}} />);
+  const node = shallow(
+    <Configuration report={{}} type="typeC" onChange={spy} configuration={{}} />
+  );
 
   node.find(Button).simulate('click');
 
@@ -62,7 +74,9 @@ it('should call a potential component defaults method to determine defaults', ()
 
 it('should call the onUpdate method of the component and propagate changes', () => {
   const spy = jest.fn();
-  const node = shallow(<Configuration type="typeA" onChange={spy} configuration={{}} />);
+  const node = shallow(
+    <Configuration report={{}} type="typeA" onChange={spy} configuration={{}} />
+  );
 
   node.setProps({report: 'some new report'});
 

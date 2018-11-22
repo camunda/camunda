@@ -10,13 +10,21 @@ export function getRelativeValue(data, total) {
   return Math.round(data / total * 1000) / 10 + '%';
 }
 
-export function getFormattedLabels(reportsLabels, reportsNames, isFrequency) {
+export function getFormattedLabels(
+  reportsLabels,
+  reportsNames,
+  displayRelativeValue,
+  displayAbsoluteValue
+) {
   return reportsLabels.reduce(
     (prev, reportLabels, i) => [
       ...prev,
       {
         label: reportsNames[i],
-        columns: [...reportLabels.slice(1), ...(isFrequency ? ['Relative Frequency'] : [])]
+        columns: [
+          ...(displayAbsoluteValue ? reportLabels.slice(1) : []),
+          ...(displayRelativeValue ? ['Relative Frequency'] : [])
+        ]
       }
     ],
     []
@@ -39,12 +47,19 @@ export function uniteResults(results, allKeys) {
   return unitedResults;
 }
 
-export function getBodyRows(unitedResults, allKeys, formatter, isFrequency, processInstanceCount) {
+export function getBodyRows(
+  unitedResults,
+  allKeys,
+  formatter,
+  displayRelativeValue,
+  processInstanceCount,
+  displayAbsoluteValue
+) {
   const rows = allKeys.map(key => {
     const row = [key];
     unitedResults.forEach((result, i) => {
-      row.push(formatter(result[key] || ''));
-      if (isFrequency) row.push(getRelativeValue(result[key], processInstanceCount[i]));
+      if (displayAbsoluteValue) row.push(formatter(result[key] || ''));
+      if (displayRelativeValue) row.push(getRelativeValue(result[key], processInstanceCount[i]));
     });
     return row;
   });

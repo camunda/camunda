@@ -67,14 +67,21 @@ export default withErrorHandling(
         reportsNames,
         processInstanceCount,
         formatter = v => v,
-        property
+        property,
+        configuration: {hideAbsoluteValue, hideRelativeValue}
       } = this.props;
 
-      const isFrequency = property === 'frequency';
+      const displayRelativeValue = property === 'frequency' && !hideRelativeValue;
+      const displayAbsoluteValue = !hideAbsoluteValue;
 
       const keysLabel = labels[0][0];
 
-      const formattedLabels = getFormattedLabels(labels, reportsNames, isFrequency);
+      const formattedLabels = getFormattedLabels(
+        labels,
+        reportsNames,
+        displayRelativeValue,
+        displayAbsoluteValue
+      );
 
       // get all unique keys of results of multiple reports
       let allKeys = Object.keys(Object.assign({}, ...data));
@@ -87,8 +94,9 @@ export default withErrorHandling(
         unitedResults,
         allKeys,
         formatter,
-        isFrequency,
-        processInstanceCount
+        displayRelativeValue,
+        processInstanceCount,
+        displayAbsoluteValue
       );
 
       return {

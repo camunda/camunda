@@ -4,7 +4,7 @@ import {shallow} from 'enzyme';
 import WrappedTable from './Table';
 import {processRawData} from 'services';
 
-import {getCamundaEndpoints, getRelativeValue} from './service';
+import {getCamundaEndpoints, getRelativeValue, getFormattedLabels, getBodyRows} from './service';
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -244,4 +244,39 @@ it('should not include a column if it is hidden in the configuration', () => {
   );
 
   expect(node.find('Table').prop('body')).toEqual([['a', '12.3%'], ['b', '12.3%'], ['c', '12.3%']]);
+});
+
+it('should not include a column in a combined report if it is hidden in the configuration', async () => {
+  const dataProps = {
+    data: [
+      {
+        a: 1,
+        b: 2,
+        c: 3
+      },
+      {
+        a: 1,
+        b: 2,
+        c: 3
+      }
+    ],
+    labels: [['key', 'value'], ['key', 'value']],
+    reportType: 'combined',
+    property: 'frequency',
+    configuration: {hideRelativeValue: true},
+    processInstanceCount: [100, 100],
+    reportsNames: ['Report A', 'Report B']
+  };
+
+  getFormattedLabels.mockReturnValue([
+    {label: 'Report A', columns: ['value']},
+    {label: 'Report B', columns: ['value']}
+  ]);
+  getBodyRows.mockReturnValue([['a', 1, 1], ['b', 2, 2], ['c', 3, 3]]);
+
+  const node = await shallow(<Table {...props} {...dataProps} />);
+  expect(node.instance().processCombinedData()).toEqual({
+    head: ['key', {label: 'Report A', columns: ['value']}, {label: 'Report B', columns: ['value']}],
+    body: [['a', 1, 1], ['b', 2, 2], ['c', 3, 3]]
+  });
 });

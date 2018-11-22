@@ -49,9 +49,13 @@ export default class Configuration extends React.Component {
 
   render() {
     const Component = visualizations[this.props.type];
+    const report = this.props.report;
+    const isEmptyCombined =
+      report.reportType === 'combined' && (!report.data.reportIds || !report.data.reportIds.length);
+
     return (
       <li className="Configuration">
-        <Popover title={<Icon type="settings" />} disabled={!this.props.type}>
+        <Popover title={<Icon type="settings" />} disabled={!this.props.type || isEmptyCombined}>
           <div className="content">
             {Component && (
               <Component

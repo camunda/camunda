@@ -156,10 +156,3 @@ describe('isCompatible', () => {
     expect(node.instance().isCompatible(reportSameOperation)).toBeFalsy();
   });
 });
-
-it('should enable target value option when combined report is barchart or linechart', async () => {
-  const node = await shallow(<CombinedReportPanel reportResult={reportsList[1]} />);
-  await node.update();
-
-  expect(node.find('TargetValueComparison')).toBePresent();
-});

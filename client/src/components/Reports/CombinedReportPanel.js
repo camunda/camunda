@@ -1,7 +1,7 @@
 import React from 'react';
 import {loadEntity} from 'services';
 import {TypeaheadMultipleSelection} from 'components';
-import {TargetValueComparison} from './targetValue';
+import {Configuration} from './Configuration';
 
 import './CombinedReportPanel.scss';
 
@@ -111,23 +111,20 @@ export default class CombinedReportPanel extends React.Component {
     searchQuery ? name.toLowerCase().includes(searchQuery.toLowerCase()) : true;
 
   render() {
-    const {reports, selectedReports, searchQuery, referenceReport} = this.state;
+    const {reports, selectedReports, searchQuery} = this.state;
     const selectedReportsList = selectedReports;
     const combinableReportList = reports.filter(
       report => this.search(searchQuery, report.name) && this.isCompatible(report)
     );
 
-    const isChart = referenceReport && ['bar', 'line'].includes(referenceReport.visualization);
-
     return (
       <div className="CombinedReportPanel">
-        {isChart && (
-          <TargetValueComparison
-            reportResult={this.props.reportResult}
-            configuration={this.props.configuration}
-            onChange={this.props.updateReport}
-          />
-        )}
+        <Configuration
+          type="combined"
+          report={this.props.reportResult}
+          configuration={this.props.configuration}
+          onChange={this.props.updateReport}
+        />
         <TypeaheadMultipleSelection
           availableValues={combinableReportList}
           selectedValues={selectedReportsList}

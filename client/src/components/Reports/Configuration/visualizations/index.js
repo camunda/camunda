@@ -4,3 +4,4 @@ export {default as bar} from './ChartConfig';
 export {default as line} from './ChartConfig';
 export {default as pie} from './ChartConfig';
 export {default as number} from './NumberConfig';
+export {default as combined} from './CombinedReportConfig';

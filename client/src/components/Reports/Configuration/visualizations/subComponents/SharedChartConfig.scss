@@ -1,6 +1,4 @@
-.fieldsetsContainer fieldset {
-  border: 1px solid #ddd;
-  border-radius: 8px;
+.SharedChartConfig fieldset {
   margin: 5px 0;
 
   &.goalLine[disabled] .ChartTargetInput,

@@ -2,22 +2,6 @@
 
 exports[`it should display correct configuration for barchart 1`] = `
 <Fragment>
-  <ShowInstanceCount
-    configuration={
-      Object {
-        "color": "#1991c8",
-        "hideAbsoluteValue": false,
-        "hideRelativeValue": false,
-        "pointMarkers": true,
-        "showInstanceCount": false,
-        "targetValue": Object {
-          "active": false,
-        },
-        "xLabel": "",
-        "yLabel": "",
-      }
-    }
-  />
   <SharedChartConfig
     configuration={
       Object {
@@ -26,20 +10,28 @@ exports[`it should display correct configuration for barchart 1`] = `
         "hideRelativeValue": false,
         "pointMarkers": true,
         "showInstanceCount": false,
-        "targetValue": Object {
-          "active": false,
-        },
+        "targetValue": null,
         "xLabel": "",
         "yLabel": "",
       }
     }
+    hideTooltipOptions={false}
     report={
       Object {
         "data": Object {
-          "view": Object {
-            "property": "frequency",
+          "reportIds": Array [
+            "test1",
+          ],
+        },
+        "result": Object {
+          "test1": Object {
+            "data": Object {
+              "view": Object {
+                "property": "frequency",
+              },
+              "visualization": "bar",
+            },
           },
-          "visualization": "bar",
         },
       }
     }
@@ -49,22 +41,6 @@ exports[`it should display correct configuration for barchart 1`] = `
 
 exports[`it should display correct configuration for linechart 1`] = `
 <Fragment>
-  <ShowInstanceCount
-    configuration={
-      Object {
-        "color": "#1991c8",
-        "hideAbsoluteValue": false,
-        "hideRelativeValue": false,
-        "pointMarkers": true,
-        "showInstanceCount": false,
-        "targetValue": Object {
-          "active": false,
-        },
-        "xLabel": "",
-        "yLabel": "",
-      }
-    }
-  />
   <PointMarkersConfig
     configuration={
       Object {
@@ -73,9 +49,7 @@ exports[`it should display correct configuration for linechart 1`] = `
         "hideRelativeValue": false,
         "pointMarkers": true,
         "showInstanceCount": false,
-        "targetValue": Object {
-          "active": false,
-        },
+        "targetValue": null,
         "xLabel": "",
         "yLabel": "",
       }
@@ -89,20 +63,28 @@ exports[`it should display correct configuration for linechart 1`] = `
         "hideRelativeValue": false,
         "pointMarkers": true,
         "showInstanceCount": false,
-        "targetValue": Object {
-          "active": false,
-        },
+        "targetValue": null,
         "xLabel": "",
         "yLabel": "",
       }
     }
+    hideTooltipOptions={false}
     report={
       Object {
         "data": Object {
-          "view": Object {
-            "property": "frequency",
+          "reportIds": Array [
+            "test1",
+          ],
+        },
+        "result": Object {
+          "test1": Object {
+            "data": Object {
+              "view": Object {
+                "property": "frequency",
+              },
+              "visualization": "line",
+            },
           },
-          "visualization": "line",
         },
       }
     }
@@ -110,9 +92,9 @@ exports[`it should display correct configuration for linechart 1`] = `
 </Fragment>
 `;
 
-exports[`it should display correct configuration for piechart 1`] = `
+exports[`it should display correct configuration for number report 1`] = `
 <Fragment>
-  <ShowInstanceCount
+  <SharedChartConfig
     configuration={
       Object {
         "color": "#1991c8",
@@ -120,37 +102,50 @@ exports[`it should display correct configuration for piechart 1`] = `
         "hideRelativeValue": false,
         "pointMarkers": true,
         "showInstanceCount": false,
-        "targetValue": Object {
-          "active": false,
+        "targetValue": null,
+        "xLabel": "",
+        "yLabel": "",
+      }
+    }
+    hideTooltipOptions={true}
+    report={
+      Object {
+        "data": Object {
+          "reportIds": Array [
+            "test1",
+          ],
         },
+        "result": Object {
+          "test1": Object {
+            "data": Object {
+              "view": Object {
+                "property": "frequency",
+              },
+              "visualization": "number",
+            },
+          },
+        },
+      }
+    }
+  />
+</Fragment>
+`;
+
+exports[`it should display correct configuration for table report 1`] = `
+<Fragment>
+  <RelativeAbsoluteSelection
+    configuration={
+      Object {
+        "color": "#1991c8",
+        "hideAbsoluteValue": false,
+        "hideRelativeValue": false,
+        "pointMarkers": true,
+        "showInstanceCount": false,
+        "targetValue": null,
         "xLabel": "",
         "yLabel": "",
       }
     }
   />
-  <fieldset
-    className="tooltipOptions"
-  >
-    <legend>
-      Tooltips options
-    </legend>
-    <RelativeAbsoluteSelection
-      configuration={
-        Object {
-          "color": "#1991c8",
-          "hideAbsoluteValue": false,
-          "hideRelativeValue": false,
-          "pointMarkers": true,
-          "showInstanceCount": false,
-          "targetValue": Object {
-            "active": false,
-          },
-          "xLabel": "",
-          "yLabel": "",
-        }
-      }
-      relativeDisabled={false}
-    />
-  </fieldset>
 </Fragment>
 `;
