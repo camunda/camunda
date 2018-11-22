@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedReportCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
@@ -11,6 +12,7 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
@@ -31,6 +33,7 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.service.es.schema.type.CollectionType.DATA;
 import static org.camunda.optimize.service.es.schema.type.CollectionType.NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
@@ -182,4 +185,23 @@ public class CollectionReader {
     );
   }
 
+  public List<SimpleCollectionDefinitionDto> findFirstCollectionsForReport(String reportId) {
+    logger.debug("Fetching collections using report with id {}", reportId);
+
+    final QueryBuilder getCombinedReportsBySimpleReportIdQuery = QueryBuilders.boolQuery()
+      .filter(QueryBuilders.nestedQuery(
+        DATA,
+        QueryBuilders.termQuery("data.entities", reportId),
+        ScoreMode.None
+      ));
+
+    SearchResponse searchResponse = esclient
+      .prepareSearch(getOptimizeIndexAliasForType(COLLECTION_TYPE))
+      .setTypes(COLLECTION_TYPE)
+      .setQuery(getCombinedReportsBySimpleReportIdQuery)
+      .setSize(LIST_FETCH_LIMIT)
+      .get();
+
+    return ElasticsearchHelper.mapHits(searchResponse.getHits(), SimpleCollectionDefinitionDto.class, objectMapper);
+  }
 }

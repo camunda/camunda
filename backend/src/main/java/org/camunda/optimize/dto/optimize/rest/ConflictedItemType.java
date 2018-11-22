@@ -9,5 +9,7 @@ public enum ConflictedItemType {
   COMBINED_REPORT,
   @JsonProperty("dashboard")
   DASHBOARD,
+  @JsonProperty("collection")
+  COLLECTION,
   ;
 }

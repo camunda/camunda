@@ -3,6 +3,7 @@ package org.camunda.optimize.service.report;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
@@ -116,6 +117,9 @@ public class ReportService {
         );
         conflictedItems.addAll(
           mapDashboardsToConflictingItems(dashboardService.findFirstDashboardsForReport(reportId))
+        );
+        conflictedItems.addAll(
+          mapCollectionsToConflictingItems(collectionService.findFirstCollectionsForReport(reportId))
         );
         break;
       case COMBINED_REPORT_TYPE:
@@ -285,10 +289,18 @@ public class ReportService {
     return reportEvaluator.evaluateCombinedReport(userId, reportDefinition);
   }
 
+  private Set<ConflictedItemDto> mapCollectionsToConflictingItems(List<SimpleCollectionDefinitionDto> collections) {
+    return collections.stream()
+      .map(collection -> new ConflictedItemDto(
+        collection.getId(), ConflictedItemType.COLLECTION, collection.getName()
+      ))
+      .collect(Collectors.toSet());
+  }
+
   private Set<ConflictedItemDto> mapDashboardsToConflictingItems(List<DashboardDefinitionDto> dashboardDtos) {
     return dashboardDtos.stream()
-      .map(alertDefinitionDto -> new ConflictedItemDto(
-        alertDefinitionDto.getId(), ConflictedItemType.DASHBOARD, alertDefinitionDto.getName()
+      .map(dashboardDefinitionDto -> new ConflictedItemDto(
+        dashboardDefinitionDto.getId(), ConflictedItemType.DASHBOARD, dashboardDefinitionDto.getName()
       ))
       .collect(Collectors.toSet());
   }

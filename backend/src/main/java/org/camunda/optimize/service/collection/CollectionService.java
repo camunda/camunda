@@ -4,6 +4,7 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedReportCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.service.es.reader.CollectionReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -57,5 +58,9 @@ public class CollectionService {
 
   public void deleteCollection(String collectionId) {
     collectionWriter.deleteCollection(collectionId);
+  }
+
+  public List<SimpleCollectionDefinitionDto> findFirstCollectionsForReport(String reportId) {
+    return collectionReader.findFirstCollectionsForReport(reportId);
   }
 }
