@@ -24,6 +24,11 @@ describe('ActionStatus', () => {
       node = shallow(<ActionStatus operationState={OPERATION_STATE.LOCKED} />);
       //then
       expect(node.find(Styled.ActionSpinner)).toExist();
+
+      // when
+      node = shallow(<ActionStatus operationState={OPERATION_STATE.SENT} />);
+      //then
+      expect(node.find(Styled.ActionSpinner)).toExist();
     });
   });
 
