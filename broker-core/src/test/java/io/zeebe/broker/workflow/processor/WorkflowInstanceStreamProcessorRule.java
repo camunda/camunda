@@ -94,7 +94,8 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
     when(mockSubscriptionCommandSender.correlateMessageSubscription(
             anyInt(), anyLong(), anyLong(), any()))
         .thenReturn(true);
-    when(mockSubscriptionCommandSender.closeMessageSubscription(anyInt(), anyLong(), anyLong()))
+    when(mockSubscriptionCommandSender.closeMessageSubscription(
+            anyInt(), anyLong(), anyLong(), any(DirectBuffer.class)))
         .thenReturn(true);
 
     streamProcessor =

@@ -18,6 +18,7 @@
 package io.zeebe.broker.subscription.command;
 
 import static io.zeebe.broker.subscription.CloseMessageSubscriptionDecoder.elementInstanceKeyNullValue;
+import static io.zeebe.broker.subscription.CloseMessageSubscriptionDecoder.messageNameHeaderLength;
 import static io.zeebe.broker.subscription.CloseMessageSubscriptionDecoder.subscriptionPartitionIdNullValue;
 import static io.zeebe.broker.subscription.CloseMessageSubscriptionDecoder.workflowInstanceKeyNullValue;
 
@@ -26,6 +27,7 @@ import io.zeebe.broker.subscription.CloseMessageSubscriptionEncoder;
 import io.zeebe.broker.util.SbeBufferWriterReader;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class CloseMessageSubscriptionCommand
     extends SbeBufferWriterReader<
@@ -33,6 +35,8 @@ public class CloseMessageSubscriptionCommand
 
   private final CloseMessageSubscriptionEncoder encoder = new CloseMessageSubscriptionEncoder();
   private final CloseMessageSubscriptionDecoder decoder = new CloseMessageSubscriptionDecoder();
+
+  private final DirectBuffer messageName = new UnsafeBuffer(0, 0);
 
   private int subscriptionPartitionId;
   private long workflowInstanceKey;
@@ -55,7 +59,8 @@ public class CloseMessageSubscriptionCommand
     encoder
         .subscriptionPartitionId(subscriptionPartitionId)
         .workflowInstanceKey(workflowInstanceKey)
-        .elementInstanceKey(elementInstanceKey);
+        .elementInstanceKey(elementInstanceKey)
+        .putMessageName(messageName, 0, messageName.capacity());
   }
 
   @Override
@@ -65,6 +70,7 @@ public class CloseMessageSubscriptionCommand
     subscriptionPartitionId = decoder.subscriptionPartitionId();
     workflowInstanceKey = decoder.workflowInstanceKey();
     elementInstanceKey = decoder.elementInstanceKey();
+    decoder.wrapMessageName(messageName);
   }
 
   @Override
@@ -72,6 +78,12 @@ public class CloseMessageSubscriptionCommand
     subscriptionPartitionId = subscriptionPartitionIdNullValue();
     workflowInstanceKey = workflowInstanceKeyNullValue();
     elementInstanceKey = elementInstanceKeyNullValue();
+    messageName.wrap(0, 0);
+  }
+
+  @Override
+  public int getLength() {
+    return super.getLength() + messageNameHeaderLength() + messageName.capacity();
   }
 
   public int getSubscriptionPartitionId() {
@@ -96,5 +108,13 @@ public class CloseMessageSubscriptionCommand
 
   public void setElementInstanceKey(long elementInstanceKey) {
     this.elementInstanceKey = elementInstanceKey;
+  }
+
+  public DirectBuffer getMessageName() {
+    return messageName;
+  }
+
+  public void setMessageName(DirectBuffer messageName) {
+    this.messageName.wrap(messageName);
   }
 }

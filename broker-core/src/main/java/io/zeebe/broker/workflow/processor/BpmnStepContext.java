@@ -19,7 +19,6 @@ package io.zeebe.broker.workflow.processor;
 
 import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.incident.data.IncidentRecord;
-import io.zeebe.broker.logstreams.processor.SideEffectProducer;
 import io.zeebe.broker.logstreams.processor.TypedCommandWriter;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
@@ -29,11 +28,11 @@ import io.zeebe.msgpack.mapping.MsgPackMergeTool;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import java.util.function.Consumer;
 
 public class BpmnStepContext<T extends ExecutableFlowElement> {
 
   private final IncidentRecord incidentCommand = new IncidentRecord();
+  private final SideEffectQueue sideEffect = new SideEffectQueue();
   private final EventOutput eventOutput;
   private final MsgPackMergeTool mergeTool;
   private final CatchEventOutput catchEventOutput;
@@ -41,7 +40,6 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
   private TypedRecord<WorkflowInstanceRecord> record;
   private ExecutableFlowElement element;
   private TypedCommandWriter commandWriter;
-  private Consumer<SideEffectProducer> sideEffect;
 
   private ElementInstance flowScopeInstance;
   private ElementInstance elementInstance;
@@ -118,11 +116,7 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
     this.elementInstance = elementInstance;
   }
 
-  public void setSideEffect(final Consumer<SideEffectProducer> sideEffect) {
-    this.sideEffect = sideEffect;
-  }
-
-  public Consumer<SideEffectProducer> getSideEffect() {
+  public SideEffectQueue getSideEffect() {
     return sideEffect;
   }
 

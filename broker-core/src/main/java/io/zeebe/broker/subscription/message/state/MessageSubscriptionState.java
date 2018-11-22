@@ -19,11 +19,14 @@ package io.zeebe.broker.subscription.message.state;
 
 import static io.zeebe.broker.workflow.state.PersistenceHelper.EXISTENCE;
 import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
+import static io.zeebe.util.buffer.BufferUtil.readIntoBuffer;
+import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
 
 import io.zeebe.logstreams.rocksdb.ZbRocksDb;
 import io.zeebe.logstreams.rocksdb.ZbWriteBatch;
 import io.zeebe.logstreams.state.StateController;
 import io.zeebe.logstreams.state.StateLifecycleListener;
+import io.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
 import java.util.List;
 import org.agrona.DirectBuffer;
@@ -31,6 +34,7 @@ import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.rocksdb.ColumnFamilyHandle;
+import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.WriteOptions;
 
@@ -52,13 +56,16 @@ public class MessageSubscriptionState implements StateLifecycleListener {
   };
 
   private ZbRocksDb db;
+  // (elementInstanceKey, messageName) => MessageSubscription
   private ColumnFamilyHandle subscriptionColumnFamily;
+  // (sentTime, elementInstanceKey, messageName) => \0
   private ColumnFamilyHandle sentTimeColumnFamily;
+  // (messageName, correlationKey, elementInstanceKey) => \0
   private ColumnFamilyHandle messageNameAndCorrelationKeyColumnFamily;
 
   private final ExpandableArrayBuffer keyBuffer = new ExpandableArrayBuffer();
   private final ExpandableArrayBuffer valueBuffer = new ExpandableArrayBuffer();
-  private final UnsafeBuffer iterateKeyBuffer = new UnsafeBuffer(0, 0);
+  private final UnsafeBuffer bufferView = new UnsafeBuffer(0, 0);
 
   private final MessageSubscription subscription = new MessageSubscription();
 
@@ -78,19 +85,19 @@ public class MessageSubscriptionState implements StateLifecycleListener {
   }
 
   public void put(final MessageSubscription subscription) {
-
     try (final WriteOptions options = new WriteOptions();
         final ZbWriteBatch batch = new ZbWriteBatch()) {
-
+      int keyLength = writeSubscriptionKey(keyBuffer, 0, subscription);
       subscription.write(valueBuffer, 0);
 
       batch.put(
           subscriptionColumnFamily,
-          subscription.getElementInstanceKey(),
+          keyBuffer.byteArray(),
+          keyLength,
           valueBuffer.byteArray(),
           subscription.getLength());
 
-      final int keyLength = writeMessageNameAndCorrelationKey(keyBuffer, subscription);
+      keyLength = writeMessageNameAndCorrelationKey(keyBuffer, subscription);
       batch.put(
           messageNameAndCorrelationKeyColumnFamily,
           keyBuffer.byteArray(),
@@ -125,34 +132,68 @@ public class MessageSubscriptionState implements StateLifecycleListener {
   }
 
   private int writeSentTimeKey(MutableDirectBuffer buffer, final MessageSubscription subscription) {
+    final int expectedLength = Long.BYTES + getSubscriptionKeyLength(subscription.getMessageName());
     int offset = 0;
 
     buffer.putLong(offset, subscription.getCommandSentTime(), STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
-    buffer.putLong(offset, subscription.getElementInstanceKey(), STATE_BYTE_ORDER);
-    offset += Long.BYTES;
+    offset = writeSubscriptionKey(buffer, offset, subscription);
+    assert offset == expectedLength : "End offset differs from expected length";
 
-    assert (2 * Long.BYTES) == offset
-        : "Offset problem: offset is not equal to expected key length";
     return offset;
   }
 
-  private boolean readSubscription(long key, MessageSubscription subscription) {
-    final int readBytes = db.get(subscriptionColumnFamily, key, valueBuffer);
-    if (readBytes > 0) {
+  private int writeSubscriptionKey(
+      MutableDirectBuffer buffer, int offset, final MessageSubscription subscription) {
+    return writeSubscriptionKey(
+        buffer, offset, subscription.getElementInstanceKey(), subscription.getMessageName());
+  }
+
+  private int writeSubscriptionKey(
+      MutableDirectBuffer buffer, int offset, long elementInstanceKey, DirectBuffer messageName) {
+    final int startOffset = offset;
+    final int expectedLength = getSubscriptionKeyLength(messageName);
+
+    buffer.putLong(offset, elementInstanceKey, STATE_BYTE_ORDER);
+    offset += Long.BYTES;
+
+    offset = writeIntoBuffer(buffer, offset, messageName);
+    assert (offset - startOffset) == expectedLength : "End offset differs from expected length";
+
+    return offset;
+  }
+
+  private void wrapSubscriptionKey(
+      DirectBuffer source, int offset, final MessageSubscription subscription) {
+    subscription.setElementInstanceKey(source.getLong(offset, STATE_BYTE_ORDER));
+    offset += Long.BYTES;
+
+    readIntoBuffer(source, offset, subscription.getMessageName());
+  }
+
+  private int getSubscriptionKeyLength(DirectBuffer messageName) {
+    return Long.BYTES + Integer.BYTES + messageName.capacity();
+  }
+
+  private boolean readSubscription(
+      long elementInstanceKey, DirectBuffer messageName, MessageSubscription subscription) {
+    final int keyLength = writeSubscriptionKey(keyBuffer, 0, elementInstanceKey, messageName);
+    bufferView.wrap(keyBuffer, 0, keyLength);
+
+    final int readBytes = db.get(subscriptionColumnFamily, bufferView, valueBuffer);
+    if (readBytes != RocksDB.NOT_FOUND) {
       subscription.wrap(valueBuffer, 0, readBytes);
       return true;
-    } else {
-      return false;
     }
+
+    return false;
   }
 
   public void visitSubscriptions(
       final DirectBuffer messageName,
       final DirectBuffer correlationKey,
       MessageSubscriptionVisitor visitor) {
-
     int offset = 0;
     final int prefixLength = messageName.capacity() + correlationKey.capacity();
     final MutableDirectBuffer prefixBuffer = new UnsafeBuffer(new byte[prefixLength]);
@@ -166,16 +207,15 @@ public class MessageSubscriptionState implements StateLifecycleListener {
         messageNameAndCorrelationKeyColumnFamily,
         prefixBuffer,
         (entry, control) -> {
-          iterateKeyBuffer.wrap(entry.getKey());
+          final DirectBuffer keyBuffer = entry.getKey();
+          final long elementInstanceKey = keyBuffer.getLong(prefixLength, STATE_BYTE_ORDER);
 
-          final long subscriptionKey = iterateKeyBuffer.getLong(prefixLength, STATE_BYTE_ORDER);
-
-          final boolean found = readSubscription(subscriptionKey, subscription);
+          final boolean found = readSubscription(elementInstanceKey, messageName, subscription);
           if (!found) {
             throw new IllegalStateException(
                 String.format(
                     "Expected to find subscription with key %d, but no subscription found",
-                    subscriptionKey));
+                    elementInstanceKey));
           }
 
           final boolean visited = visitor.visit(subscription);
@@ -187,17 +227,13 @@ public class MessageSubscriptionState implements StateLifecycleListener {
 
   public void updateToCorrelatingState(
       final MessageSubscription subscription, DirectBuffer messagePayload, long sentTime) {
-
     subscription.setMessagePayload(messagePayload);
-
     updateSentTime(subscription, sentTime);
   }
 
   public void updateSentTime(final MessageSubscription subscription, long sentTime) {
-
     try (final WriteOptions options = new WriteOptions();
         final ZbWriteBatch batch = new ZbWriteBatch()) {
-
       int keyLength;
 
       if (subscription.getCommandSentTime() > 0) {
@@ -206,11 +242,12 @@ public class MessageSubscriptionState implements StateLifecycleListener {
       }
 
       subscription.setCommandSentTime(sentTime);
-
+      keyLength = writeSubscriptionKey(keyBuffer, 0, subscription);
       subscription.write(valueBuffer, 0);
       batch.put(
           subscriptionColumnFamily,
-          subscription.getElementInstanceKey(),
+          keyBuffer.byteArray(),
+          keyLength,
           valueBuffer.byteArray(),
           subscription.getLength());
 
@@ -225,24 +262,27 @@ public class MessageSubscriptionState implements StateLifecycleListener {
   }
 
   public void visitSubscriptionBefore(final long deadline, MessageSubscriptionVisitor visitor) {
-
     db.forEach(
         sentTimeColumnFamily,
         (entry, control) -> {
-          iterateKeyBuffer.wrap(entry.getKey());
-
-          final long sentTime = iterateKeyBuffer.getLong(0, STATE_BYTE_ORDER);
+          final DirectBuffer keyBuffer = entry.getKey();
+          final long sentTime = keyBuffer.getLong(0, STATE_BYTE_ORDER);
 
           boolean visited = false;
           if (sentTime < deadline) {
-            final long subscriptionKey = iterateKeyBuffer.getLong(Long.BYTES, STATE_BYTE_ORDER);
+            wrapSubscriptionKey(keyBuffer, Long.BYTES, subscription);
+            final boolean found =
+                readSubscription(
+                    subscription.getElementInstanceKey(),
+                    subscription.getMessageName(),
+                    subscription);
 
-            final boolean found = readSubscription(subscriptionKey, subscription);
             if (!found) {
               throw new IllegalStateException(
                   String.format(
-                      "Expected to find subscription with key %d, but no subscription found",
-                      subscriptionKey));
+                      "No subscription found matching %d - %s",
+                      subscription.getElementInstanceKey(),
+                      BufferUtil.bufferAsString(subscription.getMessageName())));
             }
 
             visited = visitor.visit(subscription);
@@ -254,12 +294,14 @@ public class MessageSubscriptionState implements StateLifecycleListener {
         });
   }
 
-  public boolean existSubscriptionForElementInstance(final long elementInstanceKey) {
-    return db.exists(subscriptionColumnFamily, elementInstanceKey);
+  public boolean existSubscriptionForElementInstance(
+      long elementInstanceKey, DirectBuffer messageName) {
+    final int keyLength = writeSubscriptionKey(keyBuffer, 0, elementInstanceKey, messageName);
+    return db.exists(subscriptionColumnFamily, keyBuffer.byteArray(), 0, keyLength);
   }
 
-  public boolean remove(final long elementInstanceKey) {
-    final boolean found = readSubscription(elementInstanceKey, subscription);
+  public boolean remove(long elementInstanceKey, DirectBuffer messageName) {
+    final boolean found = readSubscription(elementInstanceKey, messageName, subscription);
     if (found) {
       remove(subscription);
     }
@@ -269,10 +311,10 @@ public class MessageSubscriptionState implements StateLifecycleListener {
   private void remove(final MessageSubscription subscription) {
     try (final WriteOptions options = new WriteOptions();
         final ZbWriteBatch batch = new ZbWriteBatch()) {
+      int keyLength = writeSubscriptionKey(keyBuffer, 0, subscription);
+      batch.delete(subscriptionColumnFamily, keyBuffer.byteArray(), keyLength);
 
-      batch.delete(subscriptionColumnFamily, subscription.getElementInstanceKey());
-
-      int keyLength = writeMessageNameAndCorrelationKey(keyBuffer, subscription);
+      keyLength = writeMessageNameAndCorrelationKey(keyBuffer, subscription);
       batch.delete(messageNameAndCorrelationKeyColumnFamily, keyBuffer.byteArray(), keyLength);
 
       if (subscription.getCommandSentTime() > 0) {

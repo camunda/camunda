@@ -46,7 +46,8 @@ public class OpenWorkflowInstanceSubscriptionProcessor
     final WorkflowInstanceSubscriptionRecord subscriptionRecord = record.getValue();
 
     final WorkflowInstanceSubscription subscription =
-        subscriptionState.getSubscription(subscriptionRecord.getElementInstanceKey());
+        subscriptionState.getSubscription(
+            subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageName());
     if (subscription != null && subscription.isOpening()) {
 
       subscriptionState.updateToOpenedState(

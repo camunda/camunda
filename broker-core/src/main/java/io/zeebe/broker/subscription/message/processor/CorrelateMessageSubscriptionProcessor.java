@@ -46,7 +46,9 @@ public class CorrelateMessageSubscriptionProcessor
 
     final MessageSubscriptionRecord subscriptionRecord = record.getValue();
 
-    final boolean removed = subscriptionState.remove(subscriptionRecord.getElementInstanceKey());
+    final boolean removed =
+        subscriptionState.remove(
+            subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageName());
 
     if (removed) {
       streamWriter.appendFollowUpEvent(

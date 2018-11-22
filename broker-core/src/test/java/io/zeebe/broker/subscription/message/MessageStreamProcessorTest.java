@@ -40,6 +40,7 @@ import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -67,7 +68,8 @@ public class MessageStreamProcessorTest {
             anyLong(), anyLong(), any(), any()))
         .thenReturn(true);
 
-    when(mockSubscriptionCommandSender.closeWorkflowInstanceSubscription(anyLong(), anyLong()))
+    when(mockSubscriptionCommandSender.closeWorkflowInstanceSubscription(
+            anyLong(), anyLong(), any(DirectBuffer.class)))
         .thenReturn(true);
 
     streamProcessor =
@@ -225,9 +227,13 @@ public class MessageStreamProcessorTest {
     assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
         .isEqualTo("subscription is already closed");
 
+    // cannot verify messageName buffer since it is a view around another buffer which is changed
+    // by the time we perform the verification.
     verify(mockSubscriptionCommandSender, timeout(5_000).times(2))
         .closeWorkflowInstanceSubscription(
-            subscription.getWorkflowInstanceKey(), subscription.getElementInstanceKey());
+            eq(subscription.getWorkflowInstanceKey()),
+            eq(subscription.getElementInstanceKey()),
+            any(DirectBuffer.class));
   }
 
   private MessageSubscriptionRecord messageSubscription() {

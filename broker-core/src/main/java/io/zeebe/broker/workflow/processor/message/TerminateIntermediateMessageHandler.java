@@ -31,6 +31,6 @@ public class TerminateIntermediateMessageHandler
 
   @Override
   protected void terminate(BpmnStepContext<ExecutableIntermediateCatchElement> context) {
-    context.getCatchEventOutput().unsubscribeFromMessageEvent(context);
+    context.getCatchEventOutput().unsubscribeFromMessageEvents(context);
   }
 }

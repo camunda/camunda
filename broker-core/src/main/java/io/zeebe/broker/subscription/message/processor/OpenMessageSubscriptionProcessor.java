@@ -67,7 +67,7 @@ public class OpenMessageSubscriptionProcessor
     subscriptionRecord = record.getValue();
 
     if (subscriptionState.existSubscriptionForElementInstance(
-        subscriptionRecord.getElementInstanceKey())) {
+        subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageName())) {
       sideEffect.accept(this::sendAcknowledgeCommand);
 
       streamWriter.appendRejection(

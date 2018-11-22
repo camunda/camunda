@@ -48,12 +48,29 @@ public class MessageSubscriptionStateTest {
   }
 
   @Test
-  public void shouldNotExist() {
+  public void shouldNotExistWithDifferentElementKey() {
     // given
-    state.put(subscriptionWithElementInstanceKey(1));
+    final MessageSubscription subscription = subscriptionWithElementInstanceKey(1);
+    state.put(subscription);
 
     // when
-    final boolean exist = state.existSubscriptionForElementInstance(2);
+    final boolean exist =
+        state.existSubscriptionForElementInstance(2, subscription.getMessageName());
+
+    // then
+    assertThat(exist).isFalse();
+  }
+
+  @Test
+  public void shouldNotExistWithDifferentMessageName() {
+    // given
+    final MessageSubscription subscription = subscriptionWithElementInstanceKey(1);
+    state.put(subscription);
+
+    // when
+    final boolean exist =
+        state.existSubscriptionForElementInstance(
+            subscription.getElementInstanceKey(), wrapString("\0"));
 
     // then
     assertThat(exist).isFalse();
@@ -62,10 +79,13 @@ public class MessageSubscriptionStateTest {
   @Test
   public void shouldExistSubscription() {
     // given
-    state.put(subscriptionWithElementInstanceKey(1));
+    final MessageSubscription subscription = subscriptionWithElementInstanceKey(1);
+    state.put(subscription);
 
     // when
-    final boolean exist = state.existSubscriptionForElementInstance(1);
+    final boolean exist =
+        state.existSubscriptionForElementInstance(
+            subscription.getElementInstanceKey(), subscription.getMessageName());
 
     // then
     assertThat(exist).isTrue();
@@ -269,7 +289,7 @@ public class MessageSubscriptionStateTest {
     state.updateSentTime(subscription, 1_000);
 
     // when
-    state.remove(1L);
+    state.remove(1L, subscription.getMessageName());
 
     // then
     final List<Long> keys = new ArrayList<>();
@@ -286,20 +306,23 @@ public class MessageSubscriptionStateTest {
     assertThat(keys).isEmpty();
 
     // and
-    assertThat(state.existSubscriptionForElementInstance(1L)).isFalse();
+    assertThat(state.existSubscriptionForElementInstance(1L, subscription.getMessageName()))
+        .isFalse();
   }
 
   @Test
   public void shouldNotFailOnRemoveSubscriptionTwice() {
     // given
-    state.put(subscriptionWithElementInstanceKey(1L));
+    final MessageSubscription subscription = subscriptionWithElementInstanceKey(1L);
+    state.put(subscription);
 
     // when
-    state.remove(1L);
-    state.remove(1L);
+    state.remove(1L, subscription.getMessageName());
+    state.remove(1L, subscription.getMessageName());
 
     // then
-    assertThat(state.existSubscriptionForElementInstance(1L)).isFalse();
+    assertThat(state.existSubscriptionForElementInstance(1L, subscription.getMessageName()))
+        .isFalse();
   }
 
   @Test
@@ -309,7 +332,7 @@ public class MessageSubscriptionStateTest {
     state.put(subscription("messageName", "correlationKey", 2L));
 
     // when
-    state.remove(2L);
+    state.remove(2L, wrapString("messageName"));
 
     // then
     final List<Long> keys = new ArrayList<>();

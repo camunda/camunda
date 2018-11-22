@@ -90,7 +90,9 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
 
     context.setRecord(record);
     context.setStreamWriter(streamWriter);
-    context.setSideEffect(sideEffect);
+
+    context.getSideEffect().clear();
+    sideEffect.accept(context.getSideEffect());
 
     final long workflowKey = record.getValue().getWorkflowKey();
     final DeployedWorkflow deployedWorkflow = workflowState.getWorkflowByKey(workflowKey);
