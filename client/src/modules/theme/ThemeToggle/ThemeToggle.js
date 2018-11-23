@@ -20,7 +20,11 @@ export default function ThemeToggle() {
     <ThemeConsumer>
       {({toggleTheme}) => (
         <React.Fragment>
-          <Toggle onClick={toggleTheme} />
+          <Toggle
+            onClick={toggleTheme}
+            title="toggle theme"
+            aria-label="toggle theme"
+          />
         </React.Fragment>
       )}
     </ThemeConsumer>

@@ -1,7 +1,9 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`Header should contain links to dashboard and instances page 1`] = `
-<Themed(styled.header)>
+<Themed(styled.header)
+  role="banner"
+>
   <styled.ul
     role="navigation"
   >

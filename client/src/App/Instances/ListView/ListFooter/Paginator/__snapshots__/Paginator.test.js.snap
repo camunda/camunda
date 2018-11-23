@@ -3,56 +3,72 @@
 exports[`should not show ellipsis when first page is just barely out of range 1`] = `
 <styled.div>
   <Themed(styled.button)
+    aria-label="first page"
     disabled={false}
     onClick={[Function]}
+    title="first page"
     withIcon={true}
   >
     <ReactComponent />
   </Themed(styled.button)>
   <Themed(styled.button)
+    aria-label="previous page"
     disabled={false}
     onClick={[Function]}
+    title="previous page"
     withIcon={true}
   >
     <ReactComponent />
   </Themed(styled.button)>
   <Themed(styled.button)
+    aria-label="first page"
     onClick={[Function]}
+    title="first page"
   >
     1
   </Themed(styled.button)>
   <Themed(styled.button)
     active={false}
+    aria-label="page 2"
     key="2"
     onClick={[Function]}
+    title="page 2"
   >
     2
   </Themed(styled.button)>
   <Themed(styled.button)
     active={false}
+    aria-label="page 3"
     key="3"
     onClick={[Function]}
+    title="page 3"
   >
     3
   </Themed(styled.button)>
   <Themed(styled.button)
     active={true}
+    aria-label="page 4"
     key="4"
     onClick={[Function]}
+    title="page 4"
   >
     4
   </Themed(styled.button)>
   <Themed(styled.button)
     active={false}
+    aria-label="page 5"
     key="5"
     onClick={[Function]}
+    title="page 5"
   >
     5
   </Themed(styled.button)>
   <Themed(styled.button)
     active={false}
+    aria-label="page 6"
     key="6"
     onClick={[Function]}
+    title="page 6"
   >
     6
   </Themed(styled.button)>
@@ -60,20 +76,26 @@ exports[`should not show ellipsis when first page is just barely out of range 1`
     …
   </styled.div>
   <Themed(styled.button)
+    aria-label="page 10"
     onClick={[Function]}
+    title="page 10"
   >
     10
   </Themed(styled.button)>
   <Themed(styled.button)
+    aria-label="next page"
     disabled={false}
     onClick={[Function]}
+    title="next page"
     withIcon={true}
   >
     <ReactComponent />
   </Themed(styled.button)>
   <Themed(styled.button)
+    aria-label="last page"
     disabled={false}
     onClick={[Function]}
+    title="last page"
     withIcon={true}
   >
     <ReactComponent />
@@ -84,21 +106,27 @@ exports[`should not show ellipsis when first page is just barely out of range 1`
 exports[`should show ellipsis on both sides in the middle 1`] = `
 <styled.div>
   <Themed(styled.button)
+    aria-label="first page"
     disabled={false}
     onClick={[Function]}
+    title="first page"
     withIcon={true}
   >
     <ReactComponent />
   </Themed(styled.button)>
   <Themed(styled.button)
+    aria-label="previous page"
     disabled={false}
     onClick={[Function]}
+    title="previous page"
     withIcon={true}
   >
     <ReactComponent />
   </Themed(styled.button)>
   <Themed(styled.button)
+    aria-label="first page"
     onClick={[Function]}
+    title="first page"
   >
     1
   </Themed(styled.button)>
@@ -107,36 +135,46 @@ exports[`should show ellipsis on both sides in the middle 1`] = `
   </styled.div>
   <Themed(styled.button)
     active={false}
+    aria-label="page 9"
     key="9"
     onClick={[Function]}
+    title="page 9"
   >
     9
   </Themed(styled.button)>
   <Themed(styled.button)
     active={false}
+    aria-label="page 10"
     key="10"
     onClick={[Function]}
+    title="page 10"
   >
     10
   </Themed(styled.button)>
   <Themed(styled.button)
     active={true}
+    aria-label="page 11"
     key="11"
     onClick={[Function]}
+    title="page 11"
   >
     11
   </Themed(styled.button)>
   <Themed(styled.button)
     active={false}
+    aria-label="page 12"
     key="12"
     onClick={[Function]}
+    title="page 12"
   >
     12
   </Themed(styled.button)>
   <Themed(styled.button)
     active={false}
+    aria-label="page 13"
     key="13"
     onClick={[Function]}
+    title="page 13"
   >
     13
   </Themed(styled.button)>
@@ -144,20 +182,26 @@ exports[`should show ellipsis on both sides in the middle 1`] = `
     …
   </styled.div>
   <Themed(styled.button)
+    aria-label="page 20"
     onClick={[Function]}
+    title="page 20"
   >
     20
   </Themed(styled.button)>
   <Themed(styled.button)
+    aria-label="next page"
     disabled={false}
     onClick={[Function]}
+    title="next page"
     withIcon={true}
   >
     <ReactComponent />
   </Themed(styled.button)>
   <Themed(styled.button)
+    aria-label="last page"
     disabled={false}
     onClick={[Function]}
+    title="last page"
     withIcon={true}
   >
     <ReactComponent />
@@ -168,51 +212,65 @@ exports[`should show ellipsis on both sides in the middle 1`] = `
 exports[`should show the first five pages when on first page 1`] = `
 <styled.div>
   <Themed(styled.button)
+    aria-label="first page"
     disabled={true}
     onClick={[Function]}
+    title="first page"
     withIcon={true}
   >
     <ReactComponent />
   </Themed(styled.button)>
   <Themed(styled.button)
+    aria-label="previous page"
     disabled={true}
     onClick={[Function]}
+    title="previous page"
     withIcon={true}
   >
     <ReactComponent />
   </Themed(styled.button)>
   <Themed(styled.button)
     active={true}
+    aria-label="page 1"
     key="1"
     onClick={[Function]}
+    title="page 1"
   >
     1
   </Themed(styled.button)>
   <Themed(styled.button)
     active={false}
+    aria-label="page 2"
     key="2"
     onClick={[Function]}
+    title="page 2"
   >
     2
   </Themed(styled.button)>
   <Themed(styled.button)
     active={false}
+    aria-label="page 3"
     key="3"
     onClick={[Function]}
+    title="page 3"
   >
     3
   </Themed(styled.button)>
   <Themed(styled.button)
     active={false}
+    aria-label="page 4"
     key="4"
     onClick={[Function]}
+    title="page 4"
   >
     4
   </Themed(styled.button)>
   <Themed(styled.button)
     active={false}
+    aria-label="page 5"
     key="5"
     onClick={[Function]}
+    title="page 5"
   >
     5
   </Themed(styled.button)>
@@ -220,20 +278,26 @@ exports[`should show the first five pages when on first page 1`] = `
     …
   </styled.div>
   <Themed(styled.button)
+    aria-label="page 15"
     onClick={[Function]}
+    title="page 15"
   >
     15
   </Themed(styled.button)>
   <Themed(styled.button)
+    aria-label="next page"
     disabled={false}
     onClick={[Function]}
+    title="next page"
     withIcon={true}
   >
     <ReactComponent />
   </Themed(styled.button)>
   <Themed(styled.button)
+    aria-label="last page"
     disabled={false}
     onClick={[Function]}
+    title="last page"
     withIcon={true}
   >
     <ReactComponent />
@@ -244,21 +308,27 @@ exports[`should show the first five pages when on first page 1`] = `
 exports[`should show the last five pages when on last page 1`] = `
 <styled.div>
   <Themed(styled.button)
+    aria-label="first page"
     disabled={false}
     onClick={[Function]}
+    title="first page"
     withIcon={true}
   >
     <ReactComponent />
   </Themed(styled.button)>
   <Themed(styled.button)
+    aria-label="previous page"
     disabled={false}
     onClick={[Function]}
+    title="previous page"
     withIcon={true}
   >
     <ReactComponent />
   </Themed(styled.button)>
   <Themed(styled.button)
+    aria-label="first page"
     onClick={[Function]}
+    title="first page"
   >
     1
   </Themed(styled.button)>
@@ -267,49 +337,63 @@ exports[`should show the last five pages when on last page 1`] = `
   </styled.div>
   <Themed(styled.button)
     active={false}
+    aria-label="page 7"
     key="7"
     onClick={[Function]}
+    title="page 7"
   >
     7
   </Themed(styled.button)>
   <Themed(styled.button)
     active={false}
+    aria-label="page 8"
     key="8"
     onClick={[Function]}
+    title="page 8"
   >
     8
   </Themed(styled.button)>
   <Themed(styled.button)
     active={false}
+    aria-label="page 9"
     key="9"
     onClick={[Function]}
+    title="page 9"
   >
     9
   </Themed(styled.button)>
   <Themed(styled.button)
     active={true}
+    aria-label="page 10"
     key="10"
     onClick={[Function]}
+    title="page 10"
   >
     10
   </Themed(styled.button)>
   <Themed(styled.button)
     active={false}
+    aria-label="page 11"
     key="11"
     onClick={[Function]}
+    title="page 11"
   >
     11
   </Themed(styled.button)>
   <Themed(styled.button)
+    aria-label="next page"
     disabled={false}
     onClick={[Function]}
+    title="next page"
     withIcon={true}
   >
     <ReactComponent />
   </Themed(styled.button)>
   <Themed(styled.button)
+    aria-label="last page"
     disabled={false}
     onClick={[Function]}
+    title="last page"
     withIcon={true}
   >
     <ReactComponent />

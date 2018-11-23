@@ -2,7 +2,7 @@ import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 import {HEADER_HEIGHT} from './../Header/styled';
 
-export const Dashboard = styled.div`
+export const Dashboard = styled.main`
   padding: 0 20px 38px;
   display: flex;
   flex-direction: column;

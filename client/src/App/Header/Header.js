@@ -130,7 +130,7 @@ class Header extends React.Component {
     return this.state.forceRedirect ? (
       <Redirect to="/login" />
     ) : (
-      <Styled.Header>
+      <Styled.Header role="banner">
         <Styled.Menu role="navigation">
           <li>
             <Styled.Dashboard

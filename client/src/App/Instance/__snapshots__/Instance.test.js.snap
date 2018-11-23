@@ -52,7 +52,7 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
       />
     }
   />
-  <styled.div>
+  <styled.main>
     <VisuallyHiddenH1>
       Camunda Operate Instance 4294980768
     </VisuallyHiddenH1>
@@ -200,6 +200,6 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
         selectedActivityInstanceId="4294983744"
       />
     </SplitPane>
-  </styled.div>
+  </styled.main>
 </Fragment>
 `;
