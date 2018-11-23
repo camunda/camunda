@@ -131,12 +131,12 @@ public class WorkflowInstanceRecordTransformer implements AbstractRecordTransfor
 
   private OperateZeebeEntity convertSequenceFlowTakenEvent(Record record) {
     SequenceFlowEntity sequenceFlow = new SequenceFlowEntity();
-    sequenceFlow.setId(IdUtil.createId(record.getKey(), record.getMetadata().getPartitionId()));
+    sequenceFlow.setId(IdUtil.getId(record));
     sequenceFlow.setKey(record.getKey());
     sequenceFlow.setPartitionId(record.getMetadata().getPartitionId());
     WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
     sequenceFlow.setActivityId(recordValue.getElementId());
-    sequenceFlow.setWorkflowInstanceId(IdUtil.createId(recordValue.getWorkflowInstanceKey(), record.getMetadata().getPartitionId()));
+    sequenceFlow.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
     return sequenceFlow;
   }
 
@@ -154,7 +154,7 @@ public class WorkflowInstanceRecordTransformer implements AbstractRecordTransfor
 
       eventEntity.setPayload(recordValue.getPayload());
       eventEntity.setWorkflowId(String.valueOf(recordValue.getWorkflowKey()));
-      eventEntity.setWorkflowInstanceId(IdUtil.createId(recordValue.getWorkflowInstanceKey(), record.getMetadata().getPartitionId()));
+      eventEntity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
       eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
 
       if (recordValue.getElementId() != null) {
@@ -162,7 +162,7 @@ public class WorkflowInstanceRecordTransformer implements AbstractRecordTransfor
       }
 
       if (record.getKey() != recordValue.getWorkflowInstanceKey()) {
-        eventEntity.setActivityInstanceId(IdUtil.createId(record.getKey(), record.getMetadata().getPartitionId()));
+        eventEntity.setActivityInstanceId(IdUtil.getId(record));
       }
 
       return eventEntity;
@@ -176,11 +176,11 @@ public class WorkflowInstanceRecordTransformer implements AbstractRecordTransfor
     WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
 
     ActivityInstanceEntity activityInstanceEntity = new ActivityInstanceEntity();
-    activityInstanceEntity.setId(IdUtil.createId(record.getKey(), record.getMetadata().getPartitionId()));
+    activityInstanceEntity.setId(IdUtil.getId(record));
     activityInstanceEntity.setKey(record.getKey());
     activityInstanceEntity.setPartitionId(record.getMetadata().getPartitionId());
     activityInstanceEntity.setActivityId(recordValue.getElementId());
-    activityInstanceEntity.setWorkflowInstanceId(IdUtil.createId(recordValue.getWorkflowInstanceKey(), record.getMetadata().getPartitionId()));
+    activityInstanceEntity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
     final String intentStr = record.getMetadata().getIntent().name();
     if (AI_FINISH_STATES.contains(intentStr)) {
       activityInstanceEntity.setEndDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
@@ -217,7 +217,7 @@ public class WorkflowInstanceRecordTransformer implements AbstractRecordTransfor
     WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
 
     WorkflowInstanceEntity entity = new WorkflowInstanceEntity();
-    entity.setId(IdUtil.createId(recordValue.getWorkflowInstanceKey(), record.getMetadata().getPartitionId()));
+    entity.setId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
     entity.setKey(recordValue.getWorkflowInstanceKey());
     entity.setPartitionId(record.getMetadata().getPartitionId());
     entity.setWorkflowId(String.valueOf(recordValue.getWorkflowKey()));

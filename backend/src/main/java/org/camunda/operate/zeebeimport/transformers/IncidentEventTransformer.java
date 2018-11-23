@@ -61,20 +61,20 @@ public class IncidentEventTransformer implements AbstractRecordTransformer {
 
       IncidentRecordValueImpl recordValue = (IncidentRecordValueImpl)record.getValue();
 
-      incidentEntity.setId(IdUtil.createId(record.getKey(), record.getMetadata().getPartitionId()));
+      incidentEntity.setId(IdUtil.getId(record));
       incidentEntity.setKey(record.getKey());
       incidentEntity.setPartitionId(record.getMetadata().getPartitionId());
       incidentEntity.setErrorType(recordValue.getErrorType());
       incidentEntity.setErrorMessage(recordValue.getErrorMessage());
       incidentEntity.setActivityId(recordValue.getElementId());
       if (recordValue.getElementInstanceKey() != 0) {
-        incidentEntity.setActivityInstanceId(IdUtil.createId(recordValue.getElementInstanceKey(), record.getMetadata().getPartitionId()));
+        incidentEntity.setActivityInstanceId(IdUtil.getId(recordValue.getElementInstanceKey(), record));
       }
       if (recordValue.getJobKey() != 0) {
         incidentEntity.setJobId(recordValue.getJobKey());
       }
       if (recordValue.getWorkflowInstanceKey() != 0) {
-        incidentEntity.setWorkflowInstanceId(IdUtil.createId(recordValue.getWorkflowInstanceKey(), record.getMetadata().getPartitionId()));
+        incidentEntity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
       }
 
       org.camunda.operate.entities.IncidentState incidentState = fromZeebeIncidentIntent(intentStr);
@@ -95,19 +95,19 @@ public class IncidentEventTransformer implements AbstractRecordTransformer {
     IncidentRecordValueImpl recordValue = (IncidentRecordValueImpl)record.getValue();
 
     if (recordValue.getWorkflowInstanceKey() != 0) {
-      eventEntity.setWorkflowInstanceId(IdUtil.createId(recordValue.getWorkflowInstanceKey(), record.getMetadata().getPartitionId()));
+      eventEntity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
     }
     eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
     eventEntity.setActivityId(recordValue.getElementId());
     if (recordValue.getElementInstanceKey() != 0) {
-      eventEntity.setActivityInstanceId(IdUtil.createId(recordValue.getElementInstanceKey(), record.getMetadata().getPartitionId()));
+      eventEntity.setActivityInstanceId(IdUtil.getId(recordValue.getElementInstanceKey(), record));
     }
 
     EventMetadataEntity eventMetadata = new EventMetadataEntity();
     eventMetadata.setIncidentErrorMessage(recordValue.getErrorMessage());
     eventMetadata.setIncidentErrorType(recordValue.getErrorType());
     if (recordValue.getJobKey() != 0) {
-      eventMetadata.setJobId(String.valueOf(recordValue.getJobKey()));
+      eventMetadata.setJobId(IdUtil.getId(recordValue.getJobKey(), record));
     }
     eventEntity.setMetadata(eventMetadata);
 

@@ -154,12 +154,12 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     super.startWorkflowInstances(version);
     final int instancesCount = random.nextInt(50) + 50;
     for (int i = 0; i < instancesCount; i++) {
-      String instanceId = ZeebeTestUtil.startWorkflowInstance(client, "demoProcess", "{\"a\": \"b\"}");
-      workflowInstanceKeys.add(IdUtil.extractKey(instanceId));
+      long instanceKey = ZeebeTestUtil.startWorkflowInstance(client, "demoProcess", "{\"a\": \"b\"}");
+      workflowInstanceKeys.add(instanceKey);
       if (version < 2) {
-        instanceId = ZeebeTestUtil.startWorkflowInstance(client, "complexProcess",
+        instanceKey = ZeebeTestUtil.startWorkflowInstance(client, "complexProcess",
           "{\"clientId\": \"" + random.nextInt(10) + "\"\n}");
-        workflowInstanceKeys.add(IdUtil.extractKey(instanceId));
+        workflowInstanceKeys.add(instanceKey);
       }
     }
   }

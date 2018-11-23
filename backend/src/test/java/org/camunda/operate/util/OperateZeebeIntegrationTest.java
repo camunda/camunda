@@ -120,9 +120,9 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     this.jobWorker = jobWorker;
   }
 
-  public Long failTaskWithNoRetriesLeft(String taskName, String workflowInstanceId) {
+  public Long failTaskWithNoRetriesLeft(String taskName, long workflowInstanceKey) {
     Long jobKey = ZeebeTestUtil.failTask(getClient(), taskName, getWorkerName(), 3);
-    elasticsearchTestRule.processAllEventsAndWait(incidentIsActiveCheck, workflowInstanceId);
+    elasticsearchTestRule.processAllEventsAndWait(incidentIsActiveCheck, workflowInstanceKey);
     return jobKey;
   }
 
@@ -138,14 +138,14 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     return workflowId;
   }
 
-  protected void cancelWorkflowInstance(String workflowInstanceId) {
-    ZeebeTestUtil.cancelWorkflowInstance(getClient(), workflowInstanceId);
-    elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCanceledCheck, workflowInstanceId);
+  protected void cancelWorkflowInstance(long workflowInstanceKey) {
+    ZeebeTestUtil.cancelWorkflowInstance(getClient(), workflowInstanceKey);
+    elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCanceledCheck, workflowInstanceKey);
   }
 
-  protected void completeTask(String workflowInstanceId, String activityId, String payload) {
+  protected void completeTask(long workflowInstanceKey, String activityId, String payload) {
     JobWorker jobWorker = ZeebeTestUtil.completeTask(getClient(), activityId, getWorkerName(), payload);
-    elasticsearchTestRule.processAllEventsAndWait(activityIsCompletedCheck, workflowInstanceId, activityId);
+    elasticsearchTestRule.processAllEventsAndWait(activityIsCompletedCheck, workflowInstanceKey, activityId);
     jobWorker.close();
   }
 }

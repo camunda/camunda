@@ -12,20 +12,10 @@
  */
 package org.camunda.operate.util;
 
-import io.zeebe.exporter.record.Record;
+public abstract class IdTestUtil {
 
-public abstract class IdUtil {
-
-  public static String getId(long key, Record record) {
+  public static String getId(long key) {
     return String.valueOf(key);
-  }
-
-  public static String getId(Record record) {
-    return String.valueOf(record.getKey());
-  }
-
-  public static long getKey(String id) {
-    return Long.valueOf(id);
   }
 
 }

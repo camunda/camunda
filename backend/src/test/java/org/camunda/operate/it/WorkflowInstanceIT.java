@@ -16,6 +16,7 @@ import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.types.WorkflowInstanceType;
 import org.camunda.operate.rest.dto.EventQueryDto;
+import org.camunda.operate.util.IdTestUtil;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.zeebeimport.cache.WorkflowCache;
@@ -75,15 +76,17 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
 
     //when
-    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceId, "taskA");
+    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskA");
 
     //then
+    final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
     final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
     assertThat(workflowInstanceEntity.getWorkflowId()).isEqualTo(workflowId);
     assertThat(workflowInstanceEntity.getWorkflowName()).isEqualTo("Demo process");
     assertThat(workflowInstanceEntity.getWorkflowVersion()).isEqualTo(1);
     assertThat(workflowInstanceEntity.getId()).isEqualTo(workflowInstanceId);
+    assertThat(workflowInstanceEntity.getKey()).isEqualTo(workflowInstanceKey);
     assertThat(workflowInstanceEntity.getState()).isEqualTo(WorkflowInstanceState.ACTIVE);
     assertThat(workflowInstanceEntity.getEndDate()).isNull();
     assertThat(workflowInstanceEntity.getStartDate()).isAfterOrEqualTo(testStartTime);
@@ -108,15 +111,15 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     deployWorkflow(workflow, "demoProcess_v_1.bpmn");
 
     //when
-    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, null);
-    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceId, "task1");
+    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, null);
+    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceKey, "task1");
 
-    completeTask(workflowInstanceId, "task1", null);
+    completeTask(workflowInstanceKey, "task1", null);
 
-    elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCompletedCheck, workflowInstanceId);
+    elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCompletedCheck, workflowInstanceKey);
 
     //then
-    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
+    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
     assertThat(workflowInstanceEntity.getState()).isEqualTo(WorkflowInstanceState.COMPLETED);
 
     //assert activity completed
@@ -141,16 +144,16 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
       .done();
     deployWorkflow(workflow, processId + ".bpmn");
 
-    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, null);
-    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceId, "task1");
+    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, null);
+    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceKey, "task1");
 
-    completeTask(workflowInstanceId, "task1", null);
+    completeTask(workflowInstanceKey, "task1", null);
 
-    completeTask(workflowInstanceId, "task2", null);
+    completeTask(workflowInstanceKey, "task2", null);
 
-    elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCompletedCheck, workflowInstanceId);
+    elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCompletedCheck, workflowInstanceKey);
 
-    WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
+    WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
     assertThat(workflowInstanceEntity.getSequenceFlows()).hasSize(3)
       .extracting(WorkflowInstanceType.ACTIVITY_ID).containsOnly("sf1", "sf2", "sf3");
 
@@ -172,22 +175,23 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     deployWorkflow(workflow, processId + ".bpmn");
 
     //when workflow instance is started
-    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\", \"nullVar\": null}");
-    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceId, "task1");
+    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\", \"nullVar\": null}");
+    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceKey, "task1");
 
     //then
+    final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
     WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
     assertVariable(workflowInstanceEntity, "a","b");
 
     //when activity with input mapping is activated
-    completeTask(workflowInstanceId, "task1", null);
+    completeTask(workflowInstanceKey, "task1", null);
 
     //then
     workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
     assertVariable(workflowInstanceEntity, "foo","b");
 
     //when activity with output mapping is completed
-    completeTask(workflowInstanceId, "task2", null);
+    completeTask(workflowInstanceKey, "task2", null);
 
     //then
     workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
@@ -199,7 +203,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
 //    ZeebeUtil.updatePayload(zeebeClient, activityInstanceKey, workflowInstanceId, "{\"newVar\": 555 }", processId, workflowId);
 
     //when task is completed with new payload and workflow instance is finished
-    completeTask(workflowInstanceId, "task3", "{\"task3Completed\": true}");
+    completeTask(workflowInstanceKey, "task3", "{\"task3Completed\": true}");
 
     //then
     workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
@@ -223,11 +227,11 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
 
     //when
-    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, payload);
-    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceId, "taskA");
+    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, payload);
+    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskA");
 
     //then
-    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
+    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
 
     assertThat(workflowInstanceEntity.countVariables()).isEqualTo(23);
 
@@ -283,12 +287,13 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
 
     String processId = "demoProcess";
     final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
-    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //create an incident
-    failTaskWithNoRetriesLeft(activityId, workflowInstanceId);
+    failTaskWithNoRetriesLeft(activityId, workflowInstanceKey);
 
     //when update retries
+    final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
     final WorkflowInstanceEntity workflowInstance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
     assertThat(workflowInstance.getIncidents().size()).isEqualTo(1);
     ZeebeTestUtil.resolveIncident(zeebeClient, workflowInstance.getIncidents().get(0).getJobId());
@@ -312,14 +317,14 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
 
     String processId = "demoProcess";
     final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
-    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //when
     //create an incident
-    failTaskWithNoRetriesLeft(activityId, workflowInstanceId);
+    failTaskWithNoRetriesLeft(activityId, workflowInstanceKey);
 
     //then
-    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
+    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
     assertThat(workflowInstanceEntity.getIncidents().size()).isEqualTo(1);
     IncidentEntity incidentEntity = workflowInstanceEntity.getIncidents().get(0);
     assertThat(incidentEntity.getActivityId()).isEqualTo(activityId);
@@ -356,11 +361,11 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     deployWorkflow(workflow, resourceName);
 
     //when
-    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");      //wrong payload provokes incident
-    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceId, "task1");
+    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");      //wrong payload provokes incident
+    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceKey, "task1");
 
     //then incident created, activity in INCIDENT state
-    WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
+    WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
     assertThat(workflowInstanceEntity.getIncidents().size()).isEqualTo(1);
     IncidentEntity incidentEntity = workflowInstanceEntity.getIncidents().get(0);
     assertThat(incidentEntity.getActivityId()).isEqualTo(activityId);
@@ -400,14 +405,15 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
 
     String processId = "demoProcess";
     final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
-    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //when
-    cancelWorkflowInstance(workflowInstanceId);
+    cancelWorkflowInstance(workflowInstanceKey);
 
     //then
-    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
-    assertThat(workflowInstanceEntity.getId()).isEqualTo(workflowInstanceId);
+    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
+    assertThat(workflowInstanceEntity.getId()).isEqualTo(IdTestUtil.getId(workflowInstanceKey));
+    assertThat(workflowInstanceEntity.getKey()).isEqualTo(workflowInstanceKey);
     assertThat(workflowInstanceEntity.getState()).isEqualTo(WorkflowInstanceState.CANCELED);
     assertThat(workflowInstanceEntity.getEndDate()).isNotNull();
     assertThat(workflowInstanceEntity.getEndDate()).isAfterOrEqualTo(testStartTime);

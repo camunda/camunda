@@ -51,7 +51,7 @@ public class JobEventTransformer implements AbstractRecordTransformer {
 
     final long workflowInstanceKey = headers.getWorkflowInstanceKey();
     if (workflowInstanceKey != 0) {
-      eventEntity.setWorkflowInstanceId(IdUtil.createId(workflowInstanceKey, record.getMetadata().getPartitionId()));
+      eventEntity.setWorkflowInstanceId(IdUtil.getId(workflowInstanceKey, record));
     }
 
     eventEntity.setBpmnProcessId(headers.getBpmnProcessId());
@@ -60,7 +60,7 @@ public class JobEventTransformer implements AbstractRecordTransformer {
 
     final long activityInstanceKey = headers.getElementInstanceKey();
     if (activityInstanceKey != 0) {
-      eventEntity.setActivityInstanceId(IdUtil.createId(activityInstanceKey, record.getMetadata().getPartitionId()));
+      eventEntity.setActivityInstanceId(IdUtil.getId(activityInstanceKey, record));
     }
 
     eventEntity.setPayload(recordValue.getPayload());

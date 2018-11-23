@@ -25,7 +25,6 @@ import org.camunda.operate.es.types.WorkflowType;
 import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ElasticsearchUtil;
-import org.camunda.operate.util.IdUtil;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.client.transport.TransportClient;
@@ -84,6 +83,7 @@ public class ElasticsearchRequestCreatorsHolder {
           updateFields.put(WorkflowInstanceType.END_DATE, entity.getEndDate());
         }
         updateFields.put(WorkflowInstanceType.WORKFLOW_ID, entity.getWorkflowId());
+        updateFields.put(WorkflowInstanceType.KEY, entity.getKey());
         updateFields.put(WorkflowInstanceType.BPMN_PROCESS_ID, entity.getBpmnProcessId());
         updateFields.put(WorkflowInstanceType.WORKFLOW_NAME, entity.getWorkflowName());
         updateFields.put(WorkflowInstanceType.WORKFLOW_VERSION, entity.getWorkflowVersion());
@@ -200,7 +200,6 @@ public class ElasticsearchRequestCreatorsHolder {
     WorkflowInstanceEntity workflowInstanceEntity = new WorkflowInstanceEntity();
     workflowInstanceEntity.setId(incident.getWorkflowInstanceId());
     workflowInstanceEntity.setPartitionId(incident.getPartitionId());
-    workflowInstanceEntity.setKey(IdUtil.extractKey(incident.getWorkflowInstanceId()));
     workflowInstanceEntity.getIncidents().add(incident);
     return workflowInstanceEntity;
   }

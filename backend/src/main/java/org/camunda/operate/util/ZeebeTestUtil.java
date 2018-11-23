@@ -68,7 +68,7 @@ public abstract class ZeebeTestUtil {
    * @param payload
    * @return workflow instance id
    */
-  public static String startWorkflowInstance(ZeebeClient client, String bpmnProcessId, String payload) {
+  public static long startWorkflowInstance(ZeebeClient client, String bpmnProcessId, String payload) {
     final CreateWorkflowInstanceCommandStep1.CreateWorkflowInstanceCommandStep3 createWorkflowInstanceCommandStep3 = client.workflowClient()
       .newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
     if (payload != null) {
@@ -92,12 +92,10 @@ public abstract class ZeebeTestUtil {
           .send().join();
       logger.debug("Workflow instance created for workflow [{}]", bpmnProcessId);
     }
-    return IdUtil.createId(workflowInstanceEvent.getWorkflowInstanceKey(), Protocol.decodePartitionId(workflowInstanceEvent.getWorkflowInstanceKey()));
+    return workflowInstanceEvent.getWorkflowInstanceKey();
   }
 
-  public static void cancelWorkflowInstance(ZeebeClient client, String workflowInstanceId) {
-
-    long workflowInstanceKey = IdUtil.extractKey(workflowInstanceId);
+  public static void cancelWorkflowInstance(ZeebeClient client, long workflowInstanceKey) {
     client.workflowClient().newCancelInstanceCommand(workflowInstanceKey).send().join();
 
   }

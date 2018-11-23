@@ -61,9 +61,9 @@ public class ElasticsearchChecks {
   public Predicate<Object[]> getActivityIsActiveCheck() {
     return objects -> {
       assertThat(objects).hasSize(2);
-      assertThat(objects[0]).isInstanceOf(String.class);
+      assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(String.class);
-      String workflowInstanceId = (String)objects[0];
+      String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
       String activityId = (String)objects[1];
       try {
         final WorkflowInstanceEntity instance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
@@ -84,9 +84,9 @@ public class ElasticsearchChecks {
   public Predicate<Object[]> getActivityIsCompletedCheck() {
     return objects -> {
       assertThat(objects).hasSize(2);
-      assertThat(objects[0]).isInstanceOf(String.class);
+      assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(String.class);
-      String workflowInstanceId = (String)objects[0];
+      String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
       String activityId = (String)objects[1];
       try {
         final WorkflowInstanceEntity instance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
@@ -107,9 +107,9 @@ public class ElasticsearchChecks {
   public Predicate<Object[]> getActivityIsTerminatedCheck() {
     return objects -> {
       assertThat(objects).hasSize(2);
-      assertThat(objects[0]).isInstanceOf(String.class);
+      assertThat(objects[0]).isInstanceOf(Long.class);
       assertThat(objects[1]).isInstanceOf(String.class);
-      String workflowInstanceId = (String)objects[0];
+      String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
       String activityId = (String)objects[1];
       try {
         final WorkflowInstanceEntity instance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
@@ -130,8 +130,8 @@ public class ElasticsearchChecks {
   public Predicate<Object[]> getIncidentIsActiveCheck() {
     return objects -> {
       assertThat(objects).hasSize(1);
-      assertThat(objects[0]).isInstanceOf(String.class);
-      String workflowInstanceId = (String)objects[0];
+      assertThat(objects[0]).isInstanceOf(Long.class);
+      String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
       try {
         final WorkflowInstanceEntity instance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
         if (instance.getIncidents().size() == 0) {
@@ -149,8 +149,8 @@ public class ElasticsearchChecks {
   public Predicate<Object[]> getWorkflowInstanceIsCanceledCheck() {
     return objects -> {
       assertThat(objects).hasSize(1);
-      assertThat(objects[0]).isInstanceOf(String.class);
-      String workflowInstanceId = (String)objects[0];
+      assertThat(objects[0]).isInstanceOf(Long.class);
+      String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
       try {
         final WorkflowInstanceEntity instance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
         return instance.getState().equals(WorkflowInstanceState.CANCELED);
@@ -164,8 +164,8 @@ public class ElasticsearchChecks {
   public Predicate<Object[]> getWorkflowInstanceIsCompletedCheck() {
     return objects -> {
       assertThat(objects).hasSize(1);
-      assertThat(objects[0]).isInstanceOf(String.class);
-      String workflowInstanceId = (String)objects[0];
+      assertThat(objects[0]).isInstanceOf(Long.class);
+      String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
       try {
         final WorkflowInstanceEntity instance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
         return instance.getState().equals(WorkflowInstanceState.COMPLETED);

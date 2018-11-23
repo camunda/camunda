@@ -13,7 +13,6 @@
 package org.camunda.operate.data.usertest;
 
 import javax.annotation.PreDestroy;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -25,7 +24,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.camunda.operate.data.AbstractDataGenerator;
 import org.camunda.operate.data.util.NameGenerator;
-import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.zeebe.payload.PayloadUtil;
 import org.slf4j.Logger;
@@ -90,136 +88,136 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   }
 
   private void createSpecialDataV1() {
-    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(startLoanProcess()));
+    doNotTouchWorkflowInstanceKeys.add(startLoanProcess());
 
-    final String instanceId2 = startLoanProcess();
-    completeTask(instanceId2, "reviewLoanRequest", null);
-    failTask(instanceId2, "checkSchufa");
-    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId2));
+    final long instanceKey2 = startLoanProcess();
+    completeTask(instanceKey2, "reviewLoanRequest", null);
+    failTask(instanceKey2, "checkSchufa");
+    doNotTouchWorkflowInstanceKeys.add(instanceKey2);
 
-    final String instanceId3 = startLoanProcess();
-    completeTask(instanceId3, "reviewLoanRequest", null);
-    completeTask(instanceId3, "checkSchufa", null);
-    ZeebeTestUtil.cancelWorkflowInstance(client, instanceId3);
-    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId3));
+    final long instanceKey3 = startLoanProcess();
+    completeTask(instanceKey3, "reviewLoanRequest", null);
+    completeTask(instanceKey3, "checkSchufa", null);
+    ZeebeTestUtil.cancelWorkflowInstance(client, instanceKey3);
+    doNotTouchWorkflowInstanceKeys.add(instanceKey3);
 
-    final String instanceId4 = startLoanProcess();
-    completeTask(instanceId4, "reviewLoanRequest", null);
-    completeTask(instanceId4, "checkSchufa", null);
-    completeTask(instanceId4, "sendTheLoanDecision", null);
-    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId4));
+    final long instanceKey4 = startLoanProcess();
+    completeTask(instanceKey4, "reviewLoanRequest", null);
+    completeTask(instanceKey4, "checkSchufa", null);
+    completeTask(instanceKey4, "sendTheLoanDecision", null);
+    doNotTouchWorkflowInstanceKeys.add(instanceKey4);
 
-    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(startOrderProcess()));
+    doNotTouchWorkflowInstanceKeys.add(startOrderProcess());
 
-    final String instanceId5 = startOrderProcess();
-    completeTask(instanceId5, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
-    failTask(instanceId5, "shipArticles");
-    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId5));
+    final long instanceKey5 = startOrderProcess();
+    completeTask(instanceKey5, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
+    failTask(instanceKey5, "shipArticles");
+    doNotTouchWorkflowInstanceKeys.add(instanceKey5);
 
-    final String instanceId6 = startOrderProcess();
-    completeTask(instanceId6, "checkPayment", "{\"paid\":false,\"paidAmount\":0.0}");
-    ZeebeTestUtil.cancelWorkflowInstance(client, instanceId6);
-    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId6));
+    final long instanceKey6 = startOrderProcess();
+    completeTask(instanceKey6, "checkPayment", "{\"paid\":false,\"paidAmount\":0.0}");
+    ZeebeTestUtil.cancelWorkflowInstance(client, instanceKey6);
+    doNotTouchWorkflowInstanceKeys.add(instanceKey6);
 
-    final String instanceId7 = startOrderProcess();
-    completeTask(instanceId7, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
-    completeTask(instanceId7, "shipArticles", "{\"orderStatus\":\"SHIPPED\"}");
-    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId7));
+    final long instanceKey7 = startOrderProcess();
+    completeTask(instanceKey7, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
+    completeTask(instanceKey7, "shipArticles", "{\"orderStatus\":\"SHIPPED\"}");
+    doNotTouchWorkflowInstanceKeys.add(instanceKey7);
 
-    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(startFlightRegistrationProcess()));
+    doNotTouchWorkflowInstanceKeys.add(startFlightRegistrationProcess());
 
-    final String instanceId8 = startFlightRegistrationProcess();
-    completeTask(instanceId8, "registerPassenger", null);
-    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId8));
+    final long instanceKey8 = startFlightRegistrationProcess();
+    completeTask(instanceKey8, "registerPassenger", null);
+    doNotTouchWorkflowInstanceKeys.add(instanceKey8);
 
-    final String instanceId9 = startFlightRegistrationProcess();
-    completeTask(instanceId9, "registerPassenger", null);
-    failTask(instanceId9, "registerCabinBag");
-    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId9));
+    final long instanceKey9 = startFlightRegistrationProcess();
+    completeTask(instanceKey9, "registerPassenger", null);
+    failTask(instanceKey9, "registerCabinBag");
+    doNotTouchWorkflowInstanceKeys.add(instanceKey9);
 
-    final String instanceId10 = startFlightRegistrationProcess();
-    completeTask(instanceId10, "registerPassenger", null);
-    completeTask(instanceId10, "registerCabinBag", "{\"luggage\":true}");
-    ZeebeTestUtil.cancelWorkflowInstance(client, instanceId10);
-    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId10));
+    final long instanceKey10 = startFlightRegistrationProcess();
+    completeTask(instanceKey10, "registerPassenger", null);
+    completeTask(instanceKey10, "registerCabinBag", "{\"luggage\":true}");
+    ZeebeTestUtil.cancelWorkflowInstance(client, instanceKey10);
+    doNotTouchWorkflowInstanceKeys.add(instanceKey10);
 
-    final String instanceId11 = startFlightRegistrationProcess();
-    completeTask(instanceId11, "registerPassenger", null);
-    completeTask(instanceId11, "registerCabinBag", "{\"luggage\":false}");
-    completeTask(instanceId11, "printOutBoardingPass", null);
-    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId11));
+    final long instanceKey11 = startFlightRegistrationProcess();
+    completeTask(instanceKey11, "registerPassenger", null);
+    completeTask(instanceKey11, "registerCabinBag", "{\"luggage\":false}");
+    completeTask(instanceKey11, "printOutBoardingPass", null);
+    doNotTouchWorkflowInstanceKeys.add(instanceKey11);
 
   }
 
   private void createSpecialDataV2() {
-    final String instanceId4 = startOrderProcess();
-    completeTask(instanceId4, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
-    completeTask(instanceId4, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
-    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId4));
+    final long instanceKey4 = startOrderProcess();
+    completeTask(instanceKey4, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
+    completeTask(instanceKey4, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
+    doNotTouchWorkflowInstanceKeys.add(instanceKey4);
 
-    final String instanceId5 = startOrderProcess();
-    completeTask(instanceId5, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
-    failTask(instanceId5, "checkItems");
-    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId5));
+    final long instanceKey5 = startOrderProcess();
+    completeTask(instanceKey5, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
+    failTask(instanceKey5, "checkItems");
+    doNotTouchWorkflowInstanceKeys.add(instanceKey5);
 
-    final String instanceId3 = startOrderProcess();
-    completeTask(instanceId3, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
-    completeTask(instanceId3, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
-    failTask(instanceId3, "shipArticles");
-    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId3));
+    final long instanceKey3 = startOrderProcess();
+    completeTask(instanceKey3, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
+    completeTask(instanceKey3, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
+    failTask(instanceKey3, "shipArticles");
+    doNotTouchWorkflowInstanceKeys.add(instanceKey3);
 
-    final String instanceId2 = startOrderProcess();
-    completeTask(instanceId2, "checkPayment", "{\"paid\":true,\"paidAmount\":400.0,\"orderStatus\": \"PAID\"}");
-    completeTask(instanceId2, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
-    failTask(instanceId2, "shipArticles");
-    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId2));
+    final long instanceKey2 = startOrderProcess();
+    completeTask(instanceKey2, "checkPayment", "{\"paid\":true,\"paidAmount\":400.0,\"orderStatus\": \"PAID\"}");
+    completeTask(instanceKey2, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
+    failTask(instanceKey2, "shipArticles");
+    doNotTouchWorkflowInstanceKeys.add(instanceKey2);
 
-    final String instanceId1 = startOrderProcess();
-    completeTask(instanceId1, "checkPayment", "{\"paid\":true,\"paidAmount\":400.0,\"orderStatus\": \"PAID\"}");
-    completeTask(instanceId1, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
-    failTask(instanceId1, "shipArticles");
-    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId1));
+    final long instanceKey1 = startOrderProcess();
+    completeTask(instanceKey1, "checkPayment", "{\"paid\":true,\"paidAmount\":400.0,\"orderStatus\": \"PAID\"}");
+    completeTask(instanceKey1, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
+    failTask(instanceKey1, "shipArticles");
+    doNotTouchWorkflowInstanceKeys.add(instanceKey1);
 
-    final String instanceId7 = startOrderProcess();
-    completeTask(instanceId7, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
-    completeTask(instanceId7, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
-    completeTask(instanceId7, "shipArticles", "{\"orderStatus\":\"SHIPPED\"}");
-    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId7));
+    final long instanceKey7 = startOrderProcess();
+    completeTask(instanceKey7, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
+    completeTask(instanceKey7, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
+    completeTask(instanceKey7, "shipArticles", "{\"orderStatus\":\"SHIPPED\"}");
+    doNotTouchWorkflowInstanceKeys.add(instanceKey7);
 
-    final String instanceId6 = startOrderProcess();
-    completeTask(instanceId6, "checkPayment", "{\"paid\":false,\"paidAmount\":0.0}");
-    ZeebeTestUtil.cancelWorkflowInstance(client, instanceId6);
-    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId6));
+    final long instanceKey6 = startOrderProcess();
+    completeTask(instanceKey6, "checkPayment", "{\"paid\":false,\"paidAmount\":0.0}");
+    ZeebeTestUtil.cancelWorkflowInstance(client, instanceKey6);
+    doNotTouchWorkflowInstanceKeys.add(instanceKey6);
 
-    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(startFlightRegistrationProcess()));
+    doNotTouchWorkflowInstanceKeys.add(startFlightRegistrationProcess());
 
-    final String instanceId8 = startFlightRegistrationProcess();
-    completeTask(instanceId8, "registerPassenger", null);
-    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId8));
+    final long instanceKey8 = startFlightRegistrationProcess();
+    completeTask(instanceKey8, "registerPassenger", null);
+    doNotTouchWorkflowInstanceKeys.add(instanceKey8);
 
-    final String instanceId9 = startFlightRegistrationProcess();
-    completeTask(instanceId9, "registerPassenger", null);
-    failTask(instanceId9, "registerCabinBag");
-    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId9));
+    final long instanceKey9 = startFlightRegistrationProcess();
+    completeTask(instanceKey9, "registerPassenger", null);
+    failTask(instanceKey9, "registerCabinBag");
+    doNotTouchWorkflowInstanceKeys.add(instanceKey9);
 
-    final String instanceId10 = startFlightRegistrationProcess();
-    completeTask(instanceId10, "registerPassenger", null);
-    completeTask(instanceId10, "registerCabinBag", "{\"luggage\":true}");
-    ZeebeTestUtil.cancelWorkflowInstance(client, instanceId10);
-    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId10));
+    final long instanceKey10 = startFlightRegistrationProcess();
+    completeTask(instanceKey10, "registerPassenger", null);
+    completeTask(instanceKey10, "registerCabinBag", "{\"luggage\":true}");
+    ZeebeTestUtil.cancelWorkflowInstance(client, instanceKey10);
+    doNotTouchWorkflowInstanceKeys.add(instanceKey10);
 
-    final String instanceId11 = startFlightRegistrationProcess();
-    completeTask(instanceId11, "registerPassenger", null);
-    completeTask(instanceId11, "registerCabinBag", "{\"luggage\":true}");
-    completeTask(instanceId11, "determineLuggageWeight", "{\"luggageWeight\":21}");
-    completeTask(instanceId11, "registerLuggage", null);
-    completeTask(instanceId11, "printOutBoardingPass", null);
-    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId11));
+    final long instanceKey11 = startFlightRegistrationProcess();
+    completeTask(instanceKey11, "registerPassenger", null);
+    completeTask(instanceKey11, "registerCabinBag", "{\"luggage\":true}");
+    completeTask(instanceKey11, "determineLuggageWeight", "{\"luggageWeight\":21}");
+    completeTask(instanceKey11, "registerLuggage", null);
+    completeTask(instanceKey11, "printOutBoardingPass", null);
+    doNotTouchWorkflowInstanceKeys.add(instanceKey11);
 
   }
 
-  public void completeTask(String workflowInstanceId, String jobType, String payload) {
-    final CompleteJobHandler completeJobHandler = new CompleteJobHandler(payload, workflowInstanceId);
+  public void completeTask(long workflowInstanceKey, String jobType, String payload) {
+    final CompleteJobHandler completeJobHandler = new CompleteJobHandler(payload, workflowInstanceKey);
     JobWorker jobWorker = client.jobClient().newWorker()
       .jobType(jobType)
       .handler(completeJobHandler)
@@ -237,13 +235,13 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       }
     }
     if (attempts == 10) {
-      logger.debug("Could not complete the task {} for workflow instance id {}", jobType, workflowInstanceId);
+      logger.debug("Could not complete the task {} for workflow instance id {}", jobType, workflowInstanceKey);
     }
     jobWorker.close();
   }
 
-  public void failTask(String workflowInstanceId, String jobType) {
-    final FailJobHandler failJobHandler = new FailJobHandler(workflowInstanceId);
+  public void failTask(long workflowInstanceKey, String jobType) {
+    final FailJobHandler failJobHandler = new FailJobHandler(workflowInstanceKey);
     JobWorker jobWorker = client.jobClient().newWorker()
       .jobType(jobType)
       .handler(failJobHandler)
@@ -261,7 +259,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       }
     }
     if (attempts == 10) {
-      logger.debug("Could not fail the task {} for workflow instance id {}", jobType, workflowInstanceId);
+      logger.debug("Could not fail the task {} for workflow instance id {}", jobType, workflowInstanceKey);
     }
     jobWorker.close();
   }
@@ -562,26 +560,17 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     final int instancesCount = random.nextInt(50) + 50;
     for (int i = 0; i < instancesCount; i++) {
       if (version < 2) {
-
-        String instanceId = startLoanProcess();
-
-        workflowInstanceKeys.add(IdUtil.extractKey(instanceId));
+        workflowInstanceKeys.add(startLoanProcess());
       }
       if (version < 3) {
-
-        String instanceId = startOrderProcess();
-
-        workflowInstanceKeys.add(IdUtil.extractKey(instanceId));
-
-        instanceId = startFlightRegistrationProcess();
-
-        workflowInstanceKeys.add(IdUtil.extractKey(instanceId));
+        workflowInstanceKeys.add(startOrderProcess());
+        workflowInstanceKeys.add(startFlightRegistrationProcess());
       }
 
     }
   }
 
-  private String startFlightRegistrationProcess() {
+  private long startFlightRegistrationProcess() {
     return ZeebeTestUtil.startWorkflowInstance(client, "flightRegistration",
       "{\n"
         + "  \"firstName\": \"" + NameGenerator.getRandomFirstName() + "\",\n"
@@ -591,10 +580,10 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         + "}");
   }
 
-  private String startOrderProcess() {
+  private long startOrderProcess() {
     float price1 = Math.round(random.nextFloat() * 100000) / 100;
     float price2 = Math.round(random.nextFloat() * 10000) / 100;
-    String instanceId = ZeebeTestUtil.startWorkflowInstance(client, "orderProcess", "{\n"
+    return ZeebeTestUtil.startWorkflowInstance(client, "orderProcess", "{\n"
       + "  \"clientNo\": \"CNT-1211132-02\",\n"
       + "  \"orderNo\": \"CMD0001-01\",\n"
       + "  \"items\": [\n"
@@ -616,11 +605,10 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       + "  \"paidAmount\": 0,\n"
       + "  \"orderStatus\": \"NEW\"\n"
       + "}");
-    return instanceId;
   }
 
-  private String startLoanProcess() {
-    String instanceId = ZeebeTestUtil.startWorkflowInstance(client, "loanProcess",
+  private long startLoanProcess() {
+    return ZeebeTestUtil.startWorkflowInstance(client, "loanProcess",
       "{\"requestId\": \"RDG123000001\",\n"
         + "  \"amount\": " + (random.nextInt(10000) + 20000) + ",\n"
         + "  \"applier\": {\n"
@@ -642,7 +630,6 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         + "  ],\n"
         + "  \"otherInfo\": null\n"
         + "}");
-    return instanceId;
   }
 
   protected void deployVersion2() {
@@ -658,17 +645,17 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
   private static class CompleteJobHandler implements JobHandler {
     private final String payload;
-    private final String workflowInstanceId;
+    private final long workflowInstanceKey;
     private boolean taskCompleted = false;
 
-    public CompleteJobHandler(String payload, String workflowInstanceId) {
+    public CompleteJobHandler(String payload, long workflowInstanceKey) {
       this.payload = payload;
-      this.workflowInstanceId = workflowInstanceId;
+      this.workflowInstanceKey = workflowInstanceKey;
     }
 
     @Override
     public void handle(JobClient jobClient, ActivatedJob job) {
-      if (!taskCompleted && IdUtil.extractKey(workflowInstanceId) == job.getHeaders().getWorkflowInstanceKey()) {
+      if (!taskCompleted && workflowInstanceKey == job.getHeaders().getWorkflowInstanceKey()) {
         if (payload == null) {
           jobClient.newCompleteCommand(job.getKey()).payload(job.getPayload()).send().join();
         } else {
@@ -684,16 +671,16 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   }
 
   private static class FailJobHandler implements JobHandler {
-    private final String workflowInstanceId;
+    private final long workflowInstanceKey;
     private boolean taskFailed = false;
 
-    public FailJobHandler(String workflowInstanceId) {
-      this.workflowInstanceId = workflowInstanceId;
+    public FailJobHandler(long workflowInstanceKey) {
+      this.workflowInstanceKey = workflowInstanceKey;
     }
 
     @Override
     public void handle(JobClient jobClient, ActivatedJob job) {
-      if (!taskFailed && IdUtil.extractKey(workflowInstanceId) == job.getHeaders().getWorkflowInstanceKey()) {
+      if (!taskFailed && workflowInstanceKey == job.getHeaders().getWorkflowInstanceKey()) {
         jobClient.newFailCommand(job.getKey()).retries(0).send().join();
         taskFailed = true;
       }

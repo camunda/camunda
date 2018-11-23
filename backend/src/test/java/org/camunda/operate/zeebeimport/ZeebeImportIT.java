@@ -10,6 +10,7 @@ import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.types.WorkflowInstanceType;
+import org.camunda.operate.util.IdTestUtil;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.zeebeimport.cache.WorkflowCache;
@@ -61,7 +62,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     // having
     String processId = "demoProcess";
     final String workflowId = ZeebeTestUtil.deployWorkflow(zeebeClient, "demoProcess_v_1.bpmn");
-    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //when
@@ -70,7 +71,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.processAllEvents(2, ZeebeESImporter.ImportValueType.DEPLOYMENT);
 
     //then
-    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
+    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
     assertThat(workflowInstanceEntity.getWorkflowId()).isEqualTo(workflowId);
     assertThat(workflowInstanceEntity.getWorkflowName()).isEqualTo("Demo process");
     assertThat(workflowInstanceEntity.getWorkflowVersion()).isEqualTo(1);
@@ -82,7 +83,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     String activityId = "taskA";
     String processId = "demoProcess";
     final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
-    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     //create an incident
     ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
@@ -93,11 +94,12 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.processAllEvents(8, ZeebeESImporter.ImportValueType.WORKFLOW_INSTANCE);
 
     //then
-    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
+    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
     assertThat(workflowInstanceEntity.getWorkflowId()).isEqualTo(workflowId);
     assertThat(workflowInstanceEntity.getWorkflowName()).isEqualTo("Demo process");
     assertThat(workflowInstanceEntity.getWorkflowVersion()).isEqualTo(1);
-    assertThat(workflowInstanceEntity.getId()).isEqualTo(workflowInstanceId);
+    assertThat(workflowInstanceEntity.getId()).isEqualTo(IdTestUtil.getId(workflowInstanceKey));
+    assertThat(workflowInstanceEntity.getKey()).isEqualTo(workflowInstanceKey);
     assertThat(workflowInstanceEntity.getState()).isEqualTo(WorkflowInstanceState.ACTIVE);
     assertThat(workflowInstanceEntity.getEndDate()).isNull();
     assertThat(workflowInstanceEntity.getStartDate()).isAfterOrEqualTo(testStartTime);
@@ -131,7 +133,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
         .endEvent()
       .done();
     final String workflowId = deployWorkflow(modelInstance, "demoProcess_v_1.bpmn");
-    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //create an incident
     final Long jobKey = ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3);
@@ -145,7 +147,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.processAllEvents(2, ZeebeESImporter.ImportValueType.INCIDENT);
 
     //then
-    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
+    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
     assertThat(workflowInstanceEntity.getIncidents().size()).isEqualTo(1);
     IncidentEntity incidentEntity = workflowInstanceEntity.getIncidents().get(0);
     assertThat(incidentEntity.getState()).isEqualTo(IncidentState.DELETED);
@@ -169,7 +171,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
         .endEvent()
         .done();
     final String workflowId = deployWorkflow(modelInstance, "demoProcess_v_1.bpmn");
-    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //create an incident
     final Long jobKey = ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3);
@@ -177,13 +179,13 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     //when update retries
     ZeebeTestUtil.resolveIncident(zeebeClient, jobKey);
 
-    ZeebeTestUtil.cancelWorkflowInstance(getClient(), workflowInstanceId);
+    ZeebeTestUtil.cancelWorkflowInstance(getClient(), workflowInstanceKey);
 
     elasticsearchTestRule.processAllEvents(20, ZeebeESImporter.ImportValueType.WORKFLOW_INSTANCE);
     elasticsearchTestRule.processAllEvents(2, ZeebeESImporter.ImportValueType.INCIDENT);
 
     //then
-    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
+    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
     assertThat(workflowInstanceEntity.getIncidents().size()).isEqualTo(1);
     IncidentEntity incidentEntity = workflowInstanceEntity.getIncidents().get(0);
     assertThat(incidentEntity.getState()).isEqualTo(IncidentState.DELETED);
