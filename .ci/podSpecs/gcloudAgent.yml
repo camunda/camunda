@@ -1,0 +1,22 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    agent: optimize-ci-build
+spec:
+  nodeSelector:
+    cloud.google.com/gke-nodepool: services
+  containers:
+  - name: gcloud
+    image: google/cloud-sdk:slim
+    imagePullPolicy: Always
+    command: ["cat"]
+    tty: true
+    resources:
+      limits:
+        cpu: 1
+        memory: 512Mi
+      requests:
+        cpu: 200m
+        memory: 128Mi
