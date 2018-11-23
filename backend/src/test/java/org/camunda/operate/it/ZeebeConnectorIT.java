@@ -96,7 +96,6 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
     clientRule.before();
 
     String workerName = TestUtil.createRandomString(10);
-    operateProperties.getZeebe().setWorker(workerName);
     operateProperties.getZeebeElasticsearch().setPrefix(brokerRule.getPrefix());
     try {
       FieldSetter.setField(zeebeESImporter, ZeebeESImporter.class.getDeclaredField("zeebeClient"), clientRule.getClient());

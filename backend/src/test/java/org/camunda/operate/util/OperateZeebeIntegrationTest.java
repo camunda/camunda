@@ -71,7 +71,6 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
 
   protected void before() {
     workerName = TestUtil.createRandomString(10);
-    operateProperties.getZeebe().setWorker(workerName);
     operateProperties.getZeebeElasticsearch().setPrefix(brokerRule.getPrefix());
     try {
       FieldSetter.setField(zeebeESImporter, ZeebeESImporter.class.getDeclaredField("zeebeClient"), getClient());

@@ -1,18 +1,31 @@
+# Operate configuration file
+
 camunda.bpm.operate:
+  # ELS instance to store Operate data
   elasticsearch:
+    # Cluster name
     clusterName: elasticsearch
+    # Host
     host: localhost
+    # Transport port
     port: 9300
-    dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
+  # Zeebe instance
   zeebe:
+    # Broker contact point
     brokerContactPoint: localhost:26500
-    worker: operate
+  # ELS instance to export Zeebe data to
   zeebeElasticsearch:
+    # Cluster name
     clusterName: elasticsearch
+    # Host
     host: localhost
+    # Transport port
     port: 9300
-    prefix: operate
+    # Index prefix, configured in Zeebe Elasticsearch exporter
+    prefix: zeebe-record
 logging:
   level:
     ROOT: INFO
     org.camunda.operate: DEBUG
+#Spring Boot Actuator endpoints to be exposed
+management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus

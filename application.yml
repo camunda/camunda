@@ -4,10 +4,8 @@ camunda.bpm.operate:
     clusterName: docker-cluster
     host: localhost
     port: 9300
-    dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
   zeebe:
     brokerContactPoint: localhost:26500
-    worker: operate
   zeebeElasticsearch:
     clusterName: docker-cluster
     host: localhost
@@ -26,10 +24,8 @@ camunda.bpm.operate:
     clusterName: docker-cluster
     host: elasticsearch
     port: 9300
-    dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
   zeebe:
     brokerContactPoint: zeebe:26500
-    worker: operate
   zeebeElasticsearch:
     clusterName: docker-cluster
     host: elasticsearch

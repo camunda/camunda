@@ -37,4 +37,12 @@
     </fileSet>
   </fileSets>
 
+  <files>
+    <file>
+      <source>README.txt</source>
+      <filtered>true</filtered>
+      <outputDirectory></outputDirectory>
+    </file>
+  </files>
+
 </assembly>
