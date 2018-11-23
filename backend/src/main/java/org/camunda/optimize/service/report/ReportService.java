@@ -1,6 +1,5 @@
 package org.camunda.optimize.service.report;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
@@ -142,7 +141,7 @@ public class ReportService {
   public void updateReportWithAuthorizationCheck(String reportId,
                                                  ReportDefinitionDto updatedReport,
                                                  String userId,
-                                                 boolean force) throws OptimizeException, JsonProcessingException {
+                                                 boolean force) throws OptimizeException {
     ValidationHelper.validateDefinitionData(updatedReport.getData());
     ReportDefinitionDto currentReportVersion = getReportWithAuthorizationCheck(reportId, userId);
     ReportDefinitionUpdateDto reportUpdate = convertToReportUpdate(reportId, updatedReport, userId);

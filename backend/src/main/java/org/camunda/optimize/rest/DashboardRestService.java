@@ -1,6 +1,5 @@
 package org.camunda.optimize.rest;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.rest.providers.Secured;
@@ -63,7 +62,7 @@ public class DashboardRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public void updateDashboard(@Context ContainerRequestContext requestContext,
                               @PathParam("id") String dashboardId,
-                              DashboardDefinitionDto updatedDashboard) throws OptimizeException, JsonProcessingException {
+                              DashboardDefinitionDto updatedDashboard) {
     updatedDashboard.setId(dashboardId);
     String userId = getRequestUser(requestContext);
     dashboardService.updateDashboard(updatedDashboard, userId);
@@ -101,6 +100,7 @@ public class DashboardRestService {
    */
   @DELETE
   @Path("/{id}")
+  @Produces(MediaType.APPLICATION_JSON)
   public void deleteDashboard(@PathParam("id") String dashboardId) {
     dashboardService.deleteDashboard(dashboardId);
   }

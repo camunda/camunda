@@ -96,27 +96,6 @@ public class CollectionHandlingIT {
   }
 
   @Test
-  public void cantDeleteEverythingElseCollection() {
-    // when
-    Response response = deleteCollection(EVERYTHING_ELSE_COLLECTION_ID);
-
-    // then
-    assertThat(response.getStatus(), is(500));
-  }
-
-  @Test
-  public void cantUpdateEverythingElseCollection() {
-    // when
-    Response response = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildUpdateCollectionRequest(EVERYTHING_ELSE_COLLECTION_ID, new SimpleCollectionDefinitionDto())
-      .execute();
-
-    // given
-    assertThat(response.getStatus(), is(500));
-  }
-
-  @Test
   public void updateCollection() {
     // given
     String id = createNewCollection();

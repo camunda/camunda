@@ -31,10 +31,10 @@ public class CollectionRestServiceIT {
   public void createNewCollectionWithoutAuthentication() {
     // when
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .withoutAuthentication()
-            .buildCreateCollectionRequest()
-            .execute();
+      .getRequestExecutor()
+      .withoutAuthentication()
+      .buildCreateCollectionRequest()
+      .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
@@ -44,9 +44,9 @@ public class CollectionRestServiceIT {
   public void createNewCollection() {
     // when
     IdDto idDto = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateCollectionRequest()
-            .execute(IdDto.class, 200);
+      .getRequestExecutor()
+      .buildCreateCollectionRequest()
+      .execute(IdDto.class, 200);
 
     // then the status code is okay
     assertThat(idDto, is(notNullValue()));
@@ -56,13 +56,25 @@ public class CollectionRestServiceIT {
   public void updateCollectionWithoutAuthentication() {
     // when
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .withoutAuthentication()
-            .buildUpdateCollectionRequest("1", null)
-            .execute();
+      .getRequestExecutor()
+      .withoutAuthentication()
+      .buildUpdateCollectionRequest("1", null)
+      .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
+  }
+
+  @Test
+  public void updateNonExistingCollection() {
+    // when
+    Response response = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildUpdateCollectionRequest("NonExistingId", new SimpleCollectionDefinitionDto())
+      .execute();
+
+    // given
+    assertThat(response.getStatus(), is(404));
   }
 
   @Test
@@ -72,9 +84,9 @@ public class CollectionRestServiceIT {
 
     // when
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildUpdateCollectionRequest(id, new SimpleCollectionDefinitionDto())
-            .execute();
+      .getRequestExecutor()
+      .buildUpdateCollectionRequest(id, new SimpleCollectionDefinitionDto())
+      .execute();
 
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
@@ -84,10 +96,10 @@ public class CollectionRestServiceIT {
   public void getAllCollectionsWithoutAuthentication() {
     // when
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .withoutAuthentication()
-            .buildGetAllCollectionsRequest()
-            .execute();
+      .getRequestExecutor()
+      .withoutAuthentication()
+      .buildGetAllCollectionsRequest()
+      .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
@@ -103,14 +115,15 @@ public class CollectionRestServiceIT {
     assertThat(collections.get(0).getId(), is(EVERYTHING_ELSE_COLLECTION_ID));
     assertThat(collections.get(0).getName(), is(EVERYTHING_ELSE_COLLECTION_NAME));
   }
+
   @Test
   public void getCollectionWithoutAuthentication() {
     // when
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .withoutAuthentication()
-            .buildGetCollectionRequest("asdf")
-            .execute();
+      .getRequestExecutor()
+      .withoutAuthentication()
+      .buildGetCollectionRequest("asdf")
+      .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
@@ -123,9 +136,9 @@ public class CollectionRestServiceIT {
 
     // when
     SimpleCollectionDefinitionDto collection = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildGetCollectionRequest(id)
-            .execute(SimpleCollectionDefinitionDto.class, 200);
+      .getRequestExecutor()
+      .buildGetCollectionRequest(id)
+      .execute(SimpleCollectionDefinitionDto.class, 200);
 
     // then
     assertThat(collection, is(notNullValue()));
@@ -136,9 +149,9 @@ public class CollectionRestServiceIT {
   public void getCollectionForNonExistingIdThrowsError() {
     // when
     String response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildGetCollectionRequest("fooid")
-            .execute(String.class, 404);
+      .getRequestExecutor()
+      .buildGetCollectionRequest("fooid")
+      .execute(String.class, 404);
 
     // then the status code is okay
     assertThat(response.contains("Collection does not exist!"), is(true));
@@ -148,10 +161,10 @@ public class CollectionRestServiceIT {
   public void deleteCollectionWithoutAuthentication() {
     // when
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .withoutAuthentication()
-            .buildDeleteCollectionRequest("1124")
-            .execute();
+      .getRequestExecutor()
+      .withoutAuthentication()
+      .buildDeleteCollectionRequest("1124")
+      .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
@@ -164,9 +177,9 @@ public class CollectionRestServiceIT {
 
     // when
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildDeleteCollectionRequest(id)
-            .execute();
+      .getRequestExecutor()
+      .buildDeleteCollectionRequest(id)
+      .execute();
 
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
@@ -174,18 +187,30 @@ public class CollectionRestServiceIT {
     assertThat(getAllResolvedCollections().size(), is(1));
   }
 
+  @Test
+  public void deleteNonExitingCollection() {
+    // when
+    Response response = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildDeleteCollectionRequest("NonExistingId")
+      .execute();
+
+    // then
+    assertThat(response.getStatus(), is(404));
+  }
+
   private String addEmptyCollectionToOptimize() {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateCollectionRequest()
-            .execute(IdDto.class, 200)
-            .getId();
+      .getRequestExecutor()
+      .buildCreateCollectionRequest()
+      .execute(IdDto.class, 200)
+      .getId();
   }
 
   private List<ResolvedReportCollectionDefinitionDto> getAllResolvedCollections() {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildGetAllCollectionsRequest()
-            .executeAndReturnList(ResolvedReportCollectionDefinitionDto.class, 200);
+      .getRequestExecutor()
+      .buildGetAllCollectionsRequest()
+      .executeAndReturnList(ResolvedReportCollectionDefinitionDto.class, 200);
   }
 }

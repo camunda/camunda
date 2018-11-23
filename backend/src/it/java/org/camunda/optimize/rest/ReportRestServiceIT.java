@@ -18,9 +18,7 @@ import org.junit.runner.RunWith;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -96,8 +94,20 @@ public class ReportRestServiceIT {
       .buildUpdateReportRequest("1", null)
       .execute();
 
-    // then the status code is not authorized
+    // then
     assertThat(response.getStatus(), is(401));
+  }
+
+  @Test
+  public void updateNonExistingReport() {
+    // when
+    Response response = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildUpdateReportRequest("nonExistingId", constructReportWithFakePD())
+      .execute();
+
+    // then the status code is not authorized
+    assertThat(response.getStatus(), is(404));
   }
 
   @Test
@@ -215,6 +225,18 @@ public class ReportRestServiceIT {
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
     assertThat(getAllReports().size(), is(0));
+  }
+
+  @Test
+  public void deleteNonExistingReport() {
+    // when
+    Response response = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildDeleteReportRequest("nonExistingId")
+      .execute();
+
+    // then
+    assertThat(response.getStatus(), is(404));
   }
 
   @Test

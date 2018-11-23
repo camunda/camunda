@@ -13,11 +13,13 @@ import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.delete.DeleteResponse;
+import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.engine.DocumentMissingException;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.UpdateByQueryAction;
@@ -29,12 +31,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.NotFoundException;
 import java.util.Collections;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CREATE_SUCCESSFUL_RESPONSE_RESULT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DELETE_SUCCESSFUL_RESPONSE_RESULT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_REPORT_TYPE;
 
@@ -70,11 +74,18 @@ public class CollectionWriter {
     collection.setName(DEFAULT_COLLECTION_NAME);
 
     try {
-      esclient
+      IndexResponse indexResponse = esclient
         .prepareIndex(getOptimizeIndexAliasForType(COLLECTION_TYPE), COLLECTION_TYPE, id)
         .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
         .setSource(objectMapper.writeValueAsString(collection), XContentType.JSON)
         .get();
+
+      if (!indexResponse.getResult().getLowercase().equals(CREATE_SUCCESSFUL_RESPONSE_RESULT)) {
+        String message = "Could not write collection to Elasticsearch. " +
+          "Maybe the connection to Elasticsearch got lost?";
+        logger.error(message);
+        throw new OptimizeRuntimeException(message);
+      }
     } catch (JsonProcessingException e) {
       String errorMessage = "Could not create collection.";
       logger.error(errorMessage, e);
@@ -115,6 +126,14 @@ public class CollectionWriter {
       );
       logger.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
+    } catch (DocumentMissingException e) {
+      String errorMessage = String.format(
+        "Was not able to update collection with id [%s] and name [%s]. Collection does not exist!",
+        id,
+        collection.getName()
+      );
+      logger.error(errorMessage, e);
+      throw new NotFoundException(errorMessage, e);
     }
   }
 
@@ -167,9 +186,11 @@ public class CollectionWriter {
     BulkByScrollResponse response = updateByQuery.get();
     if (!response.getBulkFailures().isEmpty()) {
       String errorMessage =
-        String.format("Could not remove report id [%s] from collection! Error response: %s",
-                      reportId,
-                      response.getBulkFailures());
+        String.format(
+          "Could not remove report id [%s] from collection! Error response: %s",
+          reportId,
+          response.getBulkFailures()
+        );
       logger.error(errorMessage);
       throw new OptimizeRuntimeException(errorMessage);
     }
@@ -186,9 +207,10 @@ public class CollectionWriter {
       .get();
 
     if (!deleteResponse.getResult().getLowercase().equals(DELETE_SUCCESSFUL_RESPONSE_RESULT)) {
-      String message = String.format("Could not delete collection with id [%s].", collectionId);
+      String message = String.format("Could not delete collection with id [%s]. Collection does not exist." +
+                                       "Maybe it was already deleted by someone else?", collectionId);
       logger.error(message);
-      throw new OptimizeRuntimeException(message);
+      throw new NotFoundException(message);
     }
   }
 

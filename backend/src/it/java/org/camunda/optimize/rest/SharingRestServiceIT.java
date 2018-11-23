@@ -112,6 +112,18 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   }
 
   @Test
+  public void deleteNonExistingReportShare() {
+    // when
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildDeleteReportShareRequest("nonExistingId")
+            .execute();
+
+    // then
+    assertThat(response.getStatus(), is(404));
+  }
+
+  @Test
   public void deleteDashboardShareWithoutAuthentication() {
     // when
     Response response = embeddedOptimizeRule
@@ -122,6 +134,18 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
+  }
+
+  @Test
+  public void deleteNonExistingDashboardShare() {
+    // when
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildDeleteDashboardShareRequest("nonExistingId")
+            .execute();
+
+    // then
+    assertThat(response.getStatus(), is(404));
   }
 
   @Test

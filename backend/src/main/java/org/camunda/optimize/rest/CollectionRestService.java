@@ -93,6 +93,7 @@ public class CollectionRestService {
    */
   @DELETE
   @Path("/{id}")
+  @Produces(MediaType.APPLICATION_JSON)
   public void deleteCollection(@PathParam("id") String collectionId) {
     collectionService.deleteCollection(collectionId);
   }

@@ -1,6 +1,5 @@
 package org.camunda.optimize.rest;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
@@ -80,7 +79,7 @@ public class ReportRestService {
   public void updateReport(@Context ContainerRequestContext requestContext,
                            @PathParam("id") String reportId,
                            @QueryParam("force") boolean force,
-                           ReportDefinitionDto updatedReport) throws OptimizeException, JsonProcessingException {
+                           ReportDefinitionDto updatedReport) throws OptimizeException {
     String userId = getRequestUser(requestContext);
     reportService.updateReportWithAuthorizationCheck(reportId, updatedReport, userId, force);
   }

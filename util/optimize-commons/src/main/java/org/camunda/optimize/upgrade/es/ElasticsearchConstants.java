@@ -19,4 +19,6 @@ public class ElasticsearchConstants {
   public static final String METADATA_TYPE_SCHEMA_VERSION = "schemaVersion";
 
   public static final String DELETE_SUCCESSFUL_RESPONSE_RESULT = "deleted";
+  public static final String CREATE_SUCCESSFUL_RESPONSE_RESULT = "created";
+  public static final String UPDATE_SUCCESSFUL_RESPONSE_RESULT = "updated";
 }

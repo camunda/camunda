@@ -30,7 +30,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Component
-public class SharingService  {
+public class SharingService {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired
@@ -54,16 +54,15 @@ public class SharingService  {
   public IdDto createNewReportShareIfAbsent(ReportShareDto createSharingDto, String userId) {
     validateAndCheckAuthorization(createSharingDto, userId);
     Optional<ReportShareDto> existing =
-        sharingReader.findShareForReport(createSharingDto.getReportId());
+      sharingReader.findShareForReport(createSharingDto.getReportId());
 
-    IdDto result = existing
-        .map(share -> {
-          IdDto idDto = new IdDto();
-          idDto.setId(share.getId());
-          return idDto;
-        })
-        .orElseGet(() -> createNewReportShare(createSharingDto));
-    return result;
+    return existing
+      .map(share -> {
+        IdDto idDto = new IdDto();
+        idDto.setId(share.getId());
+        return idDto;
+      })
+      .orElseGet(() -> createNewReportShare(createSharingDto));
   }
 
   private IdDto createNewReportShare(ReportShareDto createSharingDto) {
@@ -78,14 +77,14 @@ public class SharingService  {
 
     String result;
     Optional<DashboardShareDto> existing =
-        sharingReader.findShareForDashboard(createSharingDto.getDashboardId());
+      sharingReader.findShareForDashboard(createSharingDto.getDashboardId());
 
     result = existing
-        .map(DashboardShareDto::getId)
-        .orElseGet(() -> {
-          this.addReportInformation(createSharingDto);
-          return sharingWriter.saveDashboardShare(createSharingDto).getId();
-        });
+      .map(DashboardShareDto::getId)
+      .orElseGet(() -> {
+        this.addReportInformation(createSharingDto);
+        return sharingWriter.saveDashboardShare(createSharingDto).getId();
+      });
 
     IdDto id = new IdDto();
     id.setId(result);
@@ -94,11 +93,11 @@ public class SharingService  {
 
   private void addReportInformation(DashboardShareDto createSharingDto) {
     DashboardDefinitionDto dashboardDefinition =
-        dashboardService.getDashboardDefinition(createSharingDto.getDashboardId());
+      dashboardService.getDashboardDefinition(createSharingDto.getDashboardId());
     createSharingDto.setReportShares(dashboardDefinition.getReports());
   }
 
-  public void validateAndCheckAuthorization(String  dashboardId, String userId) {
+  public void validateAndCheckAuthorization(String dashboardId, String userId) {
     ValidationHelper.ensureNotEmpty("dashboardId", dashboardId);
     try {
       DashboardDefinitionDto dashboardDefinition =
@@ -112,8 +111,8 @@ public class SharingService  {
       for (ReportLocationDto reportLocationDto : dashboardDefinition.getReports()) {
         if (!authorizedReportIds.contains(reportLocationDto.getId()) && !isAnExternalResourceReport(reportLocationDto)) {
           String errorMessage = "User [" + userId + "] is not authorized to share dashboard [" +
-          dashboardDefinition.getName() + "] because he is not authorized to see contained report [" +
-          reportLocationDto.getId() + "]";
+            dashboardDefinition.getName() + "] because he is not authorized to see contained report [" +
+            reportLocationDto.getId() + "]";
           throw new ForbiddenException(errorMessage);
         }
       }
@@ -129,7 +128,7 @@ public class SharingService  {
     return reportLocationDto.getId().isEmpty();
   }
 
-  public void validateAndCheckAuthorization(ReportShareDto reportShare, String userId) {
+  private void validateAndCheckAuthorization(ReportShareDto reportShare, String userId) {
     ValidationHelper.ensureNotEmpty("reportId", reportShare.getReportId());
     try {
       reportService.getReportWithAuthorizationCheck(reportShare.getReportId(), userId);
@@ -141,46 +140,38 @@ public class SharingService  {
   }
 
   public void deleteReportShare(String shareId) {
-    Optional<ReportShareDto> base = sharingReader.findReportShare(shareId);
-    base.ifPresent((share) -> sharingWriter.deleteReportShare(shareId));
+    sharingWriter.deleteReportShare(shareId);
   }
 
   public void deleteDashboardShare(String shareId) {
-    Optional<DashboardShareDto> base = sharingReader.findDashboardShare(shareId);
-    base.ifPresent((share) -> sharingWriter.deleteDashboardShare(shareId));
+    sharingWriter.deleteDashboardShare(shareId);
   }
 
   public ReportResultDto evaluateReportShare(String shareId) {
     Optional<ReportShareDto> optionalReportShare = sharingReader.findReportShare(shareId);
 
     return optionalReportShare
-        .map(this::constructReportShare)
-        .orElseThrow(() -> new OptimizeRuntimeException("share [" + shareId + "] does not exist or is of unsupported type"));
+      .map(this::constructReportShare)
+      .orElseThrow(() -> new OptimizeRuntimeException("share [" + shareId + "] does not exist or is of unsupported " +
+                                                        "type"));
   }
 
   public ReportResultDto evaluateReportForSharedDashboard(String dashboardShareId, String reportId) {
     Optional<DashboardShareDto> sharedDashboard = sharingReader.findDashboardShare(dashboardShareId);
     ReportResultDto result;
 
-    if (sharedDashboard.isPresent()) {
-      DashboardShareDto share = sharedDashboard.get();
-      boolean hasGivenReport = share.getReportShares().stream().anyMatch(r -> r.getId().equals(reportId));
-      if (hasGivenReport) {
-        result = evaluateReport(reportId);
-      } else {
-        String reason = "Cannot evaluate report [" + reportId +
-            "] for shared dashboard id [" + dashboardShareId + "]. Given report is not contained in dashboard.";
-        logger.error(reason);
-        throw new OptimizeRuntimeException(reason);
-      }
+    DashboardShareDto share = sharedDashboard.get();
+    boolean hasGivenReport = share.getReportShares().stream().anyMatch(r -> r.getId().equals(reportId));
+    if (hasGivenReport) {
+      result = evaluateReport(reportId);
     } else {
       String reason = "Cannot evaluate report [" + reportId +
-          "] for shared dashboard id [" + dashboardShareId + "]. Dashboard does not exist.";
+        "] for shared dashboard id [" + dashboardShareId + "]. Given report is not contained in dashboard.";
       logger.error(reason);
       throw new OptimizeRuntimeException(reason);
     }
 
-   return result;
+    return result;
   }
 
   public ReportResultDto evaluateReport(String reportId) {
@@ -203,7 +194,8 @@ public class SharingService  {
 
     return sharedDashboard
       .map(this::constructDashboard)
-      .orElseThrow(() -> new OptimizeRuntimeException("dashboard share [" + shareId + "] does not exist or is of unsupported type"));
+      .orElseThrow(() -> new OptimizeRuntimeException("dashboard share [" + shareId + "] does not exist or is of " +
+                                                        "unsupported type"));
   }
 
   private Optional<DashboardDefinitionDto> constructDashboard(DashboardShareDto share) {
@@ -231,8 +223,8 @@ public class SharingService  {
         updatedDashboard.getId());
 
     dashboardShare.ifPresent(share -> {
-        share.setReportShares(updatedDashboard.getReports());
-        sharingWriter.updateDashboardShare(share);
+      share.setReportShares(updatedDashboard.getReports());
+      sharingWriter.updateDashboardShare(share);
     });
   }
 
@@ -252,7 +244,8 @@ public class SharingService  {
     }
 
     if (searchRequest != null && searchRequest.getDashboards() != null && !searchRequest.getDashboards().isEmpty()) {
-      Map<String, DashboardShareDto> shareForReports = sharingReader.findShareForDashboards(searchRequest.getDashboards());
+      Map<String, DashboardShareDto> shareForReports =
+        sharingReader.findShareForDashboards(searchRequest.getDashboards());
 
       for (String dashboardId : searchRequest.getDashboards()) {
         if (shareForReports.containsKey(dashboardId)) {

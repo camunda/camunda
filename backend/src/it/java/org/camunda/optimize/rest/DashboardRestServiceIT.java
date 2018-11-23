@@ -64,6 +64,18 @@ public class DashboardRestServiceIT {
   }
 
   @Test
+  public void updateNonExistingDashboard() {
+    // when
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildUpdateDashboardRequest("nonExistingId", new DashboardDefinitionDto())
+            .execute();
+
+    // then
+    assertThat(response.getStatus(), is(404));
+  }
+
+  @Test
   public void updateDashboard() {
     //given
     String id = addEmptyDashboardToOptimize();
@@ -177,6 +189,18 @@ public class DashboardRestServiceIT {
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
     assertThat(getAllDashboards().size(), is(0));
+  }
+
+  @Test
+  public void deleteNonExistingDashboard() {
+    // when
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildDeleteDashboardRequest("nonExistingId")
+            .execute();
+
+    // then
+    assertThat(response.getStatus(), is(404));
   }
 
   private String addEmptyDashboardToOptimize() {

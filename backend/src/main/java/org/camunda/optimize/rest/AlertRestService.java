@@ -69,6 +69,7 @@ public class AlertRestService {
 
   @DELETE
   @Path("/{id}")
+  @Produces(MediaType.APPLICATION_JSON)
   public void deleteAlert(@PathParam("id") String alertId) {
     alertService.deleteAlert(alertId);
   }

@@ -59,6 +59,7 @@ public class SharingRestService {
   @DELETE
   @Secured
   @Path("/report/{shareId}")
+  @Produces(MediaType.APPLICATION_JSON)
   public void deleteReportShare(@PathParam("shareId") String reportShareId) {
     sharingService.deleteReportShare(reportShareId);
   }
@@ -66,6 +67,7 @@ public class SharingRestService {
   @DELETE
   @Secured
   @Path("/dashboard/{shareId}")
+  @Produces(MediaType.APPLICATION_JSON)
   public void deleteDashboardShare(@PathParam("shareId") String dashboardShareId) {
     sharingService.deleteDashboardShare(dashboardShareId);
   }

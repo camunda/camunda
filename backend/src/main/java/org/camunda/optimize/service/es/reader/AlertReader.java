@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.List;
 
@@ -77,7 +78,7 @@ public class AlertReader {
       }
     } else {
       logError(alertId);
-      throw new OptimizeRuntimeException("Alert does not exist!");
+      throw new NotFoundException("Alert does not exist!");
     }
   }
 
