@@ -9,6 +9,11 @@ export const Dashboard = styled.main`
   height: calc(100vh - ${HEADER_HEIGHT}px);
 `;
 
+export const TitleWrapper = styled.div`
+  display: flex;
+  flex-grow: 1;
+`;
+
 export const Tile = themed(styled.div`
   // flex-parent
   display: flex;
@@ -31,6 +36,10 @@ export const Tile = themed(styled.div`
     dark: '0 3px 6px 0 #000000',
     light: '0 2px 3px 0 rgba(0, 0, 0, 0.1)'
   })};
+
+  &:last-child {
+    margin-right: 0;
+  }
 `);
 
 export const TileTitle = themed(styled.h2`

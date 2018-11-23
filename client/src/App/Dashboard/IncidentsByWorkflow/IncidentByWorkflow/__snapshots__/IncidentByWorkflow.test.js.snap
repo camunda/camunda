@@ -1,16 +1,14 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`IncidentStatistic should display the right data 1`] = `
+exports[`IncidentByWorkflow should display the right data 1`] = `
 <div>
   <Themed(Styled(withStrippedProps(Component)))>
     <styled.div>
       10
     </styled.div>
-    <div
-      data-test="incident-statistic-label"
-    >
+    <Themed(styled.div)>
       someLabel
-    </div>
+    </Themed(styled.div)>
     <styled.div>
       8
     </styled.div>

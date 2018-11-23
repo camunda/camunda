@@ -8,6 +8,7 @@ import Dashboard from './Dashboard';
 import MetricPanel from './MetricPanel';
 import Header from '../Header';
 import IncidentsByWorkflow from './IncidentsByWorkflow';
+import IncidentsByError from './IncidentsByError';
 import EmptyIncidents from './EmptyIncidents';
 import * as Styled from './styled';
 
@@ -22,6 +23,7 @@ const mockIncidentsByWorkflow = [
     activeInstancesCount: 122,
     workflows: [
       {
+        bpmnProcessId: 'loanProcess',
         workflowId: '3',
         version: 1,
         name: null,
@@ -32,11 +34,42 @@ const mockIncidentsByWorkflow = [
     ]
   }
 ];
-const data = {
+
+const mockIncidentsByError = [
+  {
+    errorMessage: "JSON path '$.paid' has no result.",
+    instancesWithErrorCount: 36,
+    workflows: [
+      {
+        workflowId: '6',
+        version: 2,
+        name: 'Order process',
+        bpmnProcessId: 'orderProcess',
+        errorMessage: "JSON path '$.paid' has no result.",
+        instancesWithActiveIncidentsCount: 27,
+        activeInstancesCount: null
+      },
+      {
+        workflowId: '1',
+        version: 1,
+        name: 'Order process',
+        bpmnProcessId: 'orderProcess',
+        errorMessage: "JSON path '$.paid' has no result.",
+        instancesWithActiveIncidentsCount: 9,
+        activeInstancesCount: null
+      }
+    ]
+  }
+];
+const dataByWorkflow = {
   data: mockIncidentsByWorkflow
 };
+const dataByError = {
+  data: mockIncidentsByError
+};
 api.fetchWorkflowInstancesCount = mockResolvedAsyncFn(123);
-apiIncidents.fetchIncidentsByWorkflow = mockResolvedAsyncFn(data);
+apiIncidents.fetchIncidentsByWorkflow = mockResolvedAsyncFn(dataByWorkflow);
+apiIncidents.fetchIncidentsByError = mockResolvedAsyncFn(dataByError);
 
 describe('Dashboard', () => {
   let node;
@@ -133,7 +166,9 @@ describe('Dashboard', () => {
       expect(node.find(IncidentsByWorkflow).length).toBe(0);
 
       //reset mockIncidentsByWorkflow
-      apiIncidents.fetchIncidentsByWorkflow = mockResolvedAsyncFn(data);
+      apiIncidents.fetchIncidentsByWorkflow = mockResolvedAsyncFn(
+        dataByWorkflow
+      );
     });
 
     it('should render a message when the list is empty', async () => {
@@ -156,7 +191,82 @@ describe('Dashboard', () => {
       expect(node.find(IncidentsByWorkflow).length).toBe(0);
 
       //reset mockIncidentsByWorkflow
-      apiIncidents.fetchIncidentsByWorkflow = mockResolvedAsyncFn(data);
+      apiIncidents.fetchIncidentsByWorkflow = mockResolvedAsyncFn(
+        dataByWorkflow
+      );
+    });
+  });
+  describe('Incidents by Error', () => {
+    it('should display the Incidents by Error box', () => {
+      const IncidentsByError = node.find('[data-test="incidents-byError"]');
+
+      expect(IncidentsByError.length).toBe(1);
+      expect(IncidentsByError.find(Styled.TileTitle).text()).toBe(
+        'Incidents by Error Message'
+      );
+    });
+
+    it('should fetch the incidents by workflow', async () => {
+      // when data fetched
+      await flushPromises();
+      node.update();
+
+      expect(apiIncidents.fetchIncidentsByError).toHaveBeenCalled();
+    });
+
+    it('should pass the incidents by workflow to IncidentsByWorkflow', async () => {
+      // when data fetched
+      await flushPromises();
+      node.update();
+
+      expect(node.find(IncidentsByError).props().incidents).toBe(
+        mockIncidentsByError
+      );
+    });
+
+    it('should render a message when the list is empty', async () => {
+      const emptyData = {
+        data: []
+      };
+      apiIncidents.fetchIncidentsByError = mockResolvedAsyncFn(emptyData);
+
+      // when data fetched
+      await flushPromises();
+      node.update();
+
+      expect(node.find(EmptyIncidents).length).toBe(1);
+      expect(node.find(EmptyIncidents).props().label).toBe(
+        'There are no instances with incident.'
+      );
+      expect(node.find(EmptyIncidents).props().type).toBe('success');
+
+      expect(node.find(IncidentsByError).length).toBe(0);
+
+      //reset mockIncidentsByWorkflow
+      apiIncidents.fetchIncidentsByError = mockResolvedAsyncFn(dataByError);
+    });
+
+    it('should render a message when the list is empty', async () => {
+      const errorData = {
+        data: [],
+        error: 'someError'
+      };
+      apiIncidents.fetchIncidentsByError = mockResolvedAsyncFn(errorData);
+
+      // when data fetched
+      await flushPromises();
+      node.update();
+
+      expect(node.find(EmptyIncidents).length).toBe(1);
+      expect(node.find(EmptyIncidents).props().label).toBe(
+        'Incidents by Error Message could not be fetched.'
+      );
+      expect(node.find(EmptyIncidents).props().type).toBe('warning');
+
+      expect(node.find(IncidentsByError).length).toBe(0);
+
+      //reset mockIncidentsByWorkflow
+      apiIncidents.fetchIncidentsByError = mockResolvedAsyncFn(dataByError);
     });
   });
 });

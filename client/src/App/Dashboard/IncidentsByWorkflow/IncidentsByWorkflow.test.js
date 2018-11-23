@@ -1,8 +1,8 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 import IncidentsByWorkflow from './IncidentsByWorkflow';
-import IncidentStatistic from './IncidentStatistic';
-import Collapse from './Collapse';
+import IncidentByWorkflow from './IncidentByWorkflow';
+import Collapse from '../Collapse';
 import * as Styled from './styled';
 
 const mockIncidentsByWorkflow = [
@@ -16,6 +16,7 @@ const mockIncidentsByWorkflow = [
         workflowId: '3',
         version: 1,
         name: null,
+        bpmnProcessId: 'loanProcess',
         errorMessage: null,
         instancesWithActiveIncidentsCount: 16,
         activeInstancesCount: 122
@@ -29,6 +30,7 @@ const mockIncidentsByWorkflow = [
     activeInstancesCount: 136,
     workflows: [
       {
+        bpmnProcessId: 'orderProcess',
         workflowId: '2',
         version: 1,
         name: 'Order process',
@@ -37,6 +39,7 @@ const mockIncidentsByWorkflow = [
         activeInstancesCount: 13
       },
       {
+        bpmnProcessId: 'orderProcess',
         workflowId: '5',
         version: 2,
         name: 'Order process',
@@ -65,12 +68,12 @@ describe('IncidentsByWorkflow', () => {
     expect(node.find(Styled.Li).length).toBe(mockIncidentsByWorkflow.length);
   });
 
-  it('should pass the right data to IncidentStatistic', () => {
+  it('should pass the right data to IncidentByWorkflow', () => {
     const node = shallow(
       <IncidentsByWorkflow incidents={mockIncidentsByWorkflow} />
     );
-    const nodeIncidentStatistic = node.find(IncidentStatistic).at(0);
-    const statisticsAnchor = nodeIncidentStatistic.parent();
+    const nodeIncidentByWorkflow = node.find(IncidentByWorkflow).at(0);
+    const statisticsAnchor = nodeIncidentByWorkflow.parent();
 
     expect(statisticsAnchor.props().to).toBe(
       '/instances?filter={"workflow":"loanProcess","version":"1","incidents":true}'
@@ -79,21 +82,21 @@ describe('IncidentsByWorkflow', () => {
       'View 16 Instances with Incidents in version(s) 1 of Workflow loanProcess'
     );
 
-    expect(nodeIncidentStatistic.props().label).toContain(
+    expect(nodeIncidentByWorkflow.props().label).toContain(
       mockIncidentsByWorkflow[0].workflowName ||
         mockIncidentsByWorkflow[0].bpmnProcessId
     );
-    expect(nodeIncidentStatistic.props().label).toContain(
+    expect(nodeIncidentByWorkflow.props().label).toContain(
       mockIncidentsByWorkflow[0].workflows[0].version
     );
-    expect(nodeIncidentStatistic.props().incidentsCount).toBe(
+    expect(nodeIncidentByWorkflow.props().incidentsCount).toBe(
       mockIncidentsByWorkflow[0].instancesWithActiveIncidentsCount
     );
-    expect(nodeIncidentStatistic.props().activeCount).toBe(
+    expect(nodeIncidentByWorkflow.props().activeCount).toBe(
       mockIncidentsByWorkflow[0].activeInstancesCount
     );
 
-    expect(nodeIncidentStatistic).toMatchSnapshot();
+    expect(nodeIncidentByWorkflow).toMatchSnapshot();
   });
 
   it('should render a statistics/collapsable statistics based on number of versions', () => {
@@ -102,7 +105,7 @@ describe('IncidentsByWorkflow', () => {
     );
     const firstStatistic = node.find('[data-test="incident-byWorkflow-0"]');
     const secondStatistic = node.find('[data-test="incident-byWorkflow-1"]');
-    expect(firstStatistic.find(IncidentStatistic).length).toBe(1);
+    expect(firstStatistic.find(IncidentByWorkflow).length).toBe(1);
     expect(secondStatistic.find(Collapse).length).toBe(1);
   });
 
@@ -115,7 +118,7 @@ describe('IncidentsByWorkflow', () => {
     const headerCollapseNode = collapseNode.props().header;
     const contentCollapseNode = collapseNode.props().content;
     const headerNode = shallow(headerCollapseNode);
-    const headerStatistic = headerNode.find(IncidentStatistic);
+    const headerStatistic = headerNode.find(IncidentByWorkflow);
     const contentNode = shallow(contentCollapseNode);
 
     // collapse button node
@@ -152,10 +155,10 @@ describe('IncidentsByWorkflow', () => {
     expect(contentNode.find(Styled.VersionLi).length).toBe(2);
 
     // should render two statistics
-    expect(contentNode.find(IncidentStatistic).length).toBe(2);
+    expect(contentNode.find(IncidentByWorkflow).length).toBe(2);
     // should pass the right props to a statistic
 
-    const versionStatisticNode = contentNode.find(IncidentStatistic).at(0);
+    const versionStatisticNode = contentNode.find(IncidentByWorkflow).at(0);
 
     expect(versionStatisticNode.props().label).toContain(
       `Version ${mockIncidentsByWorkflow[1].workflows[0].version}`

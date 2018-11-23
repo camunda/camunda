@@ -8,3 +8,12 @@ export const fetchIncidentsByWorkflow = async () => {
     return {error: e, data: []};
   }
 };
+
+export const fetchIncidentsByError = async () => {
+  try {
+    const response = await get('/api/incidents/byError');
+    return {data: await response.json()};
+  } catch (e) {
+    return {error: e, data: []};
+  }
+};

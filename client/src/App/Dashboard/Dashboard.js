@@ -6,9 +6,13 @@ import Header from '../Header';
 import MetricPanel from './MetricPanel';
 import MetricTile from './MetricTile';
 import IncidentsByWorkflow from './IncidentsByWorkflow';
+import IncidentsByError from './IncidentsByError';
 import EmptyIncidents from './EmptyIncidents';
 import {fetchWorkflowInstancesCount} from 'modules/api/instances';
-import {fetchIncidentsByWorkflow} from 'modules/api/incidents';
+import {
+  fetchIncidentsByWorkflow,
+  fetchIncidentsByError
+} from 'modules/api/incidents/incidents';
 import {parseFilterForRequest} from 'modules/utils/filter';
 import {
   FILTER_SELECTION,
@@ -26,7 +30,8 @@ class Dashboard extends Component {
       incidents: 0
     },
     incidents: {
-      byWorkflow: {data: [], error: null}
+      byWorkflow: {data: [], error: null},
+      byError: {date: [], error: null}
     },
     isDataLoaded: false
   };
@@ -41,7 +46,8 @@ class Dashboard extends Component {
 
   fetchIncidents = async () => {
     return {
-      byWorkflow: await fetchIncidentsByWorkflow()
+      byWorkflow: await fetchIncidentsByWorkflow(),
+      byError: await fetchIncidentsByError()
     };
   };
 
@@ -59,19 +65,17 @@ class Dashboard extends Component {
     };
   };
 
-  renderEmptyList = () => {
-    const {error, data} = this.state.incidents.byWorkflow;
+  renderEmptyList = (state, type) => {
+    const message =
+      type === 'workflow'
+        ? 'Incidents by Workflow could not be fetched.'
+        : 'Incidents by Error Message could not be fetched.';
 
-    if (error) {
-      return (
-        <EmptyIncidents
-          type="warning"
-          label="Incidents by Workflow could not be fetched."
-        />
-      );
+    if (state.error) {
+      return <EmptyIncidents type="warning" label={message} />;
     }
 
-    if (data.length === 0) {
+    if (state.data.length === 0) {
       return (
         <EmptyIncidents
           type="success"
@@ -104,18 +108,37 @@ class Dashboard extends Component {
               />
             ))}
           </MetricPanel>
-          <Styled.Tile data-test="incidents-byWorkflow">
-            <Styled.TileTitle>Incidents by Workflow</Styled.TileTitle>
-            <Styled.TileContent>
-              {this.state.isDataLoaded && this.renderEmptyList()}
-              {this.state.isDataLoaded &&
-                !!this.state.incidents.byWorkflow.data.length && (
-                  <IncidentsByWorkflow
-                    incidents={this.state.incidents.byWorkflow.data}
-                  />
-                )}
-            </Styled.TileContent>
-          </Styled.Tile>
+          <Styled.TitleWrapper>
+            <Styled.Tile data-test="incidents-byWorkflow">
+              <Styled.TileTitle>Incidents by Workflow</Styled.TileTitle>
+              <Styled.TileContent>
+                {this.state.isDataLoaded &&
+                  this.renderEmptyList(
+                    this.state.incidents.byWorkflow,
+                    'workflow'
+                  )}
+                {this.state.isDataLoaded &&
+                  Boolean(this.state.incidents.byWorkflow.data.length) && (
+                    <IncidentsByWorkflow
+                      incidents={this.state.incidents.byWorkflow.data}
+                    />
+                  )}
+              </Styled.TileContent>
+            </Styled.Tile>
+            <Styled.Tile data-test="incidents-byError">
+              <Styled.TileTitle>Incidents by Error Message</Styled.TileTitle>
+              <Styled.TileContent>
+                {this.state.isDataLoaded &&
+                  this.renderEmptyList(this.state.incidents.byError, 'error')}
+                {this.state.isDataLoaded &&
+                  Boolean(this.state.incidents.byError.data.length) && (
+                    <IncidentsByError
+                      incidents={this.state.incidents.byError.data}
+                    />
+                  )}
+              </Styled.TileContent>
+            </Styled.Tile>
+          </Styled.TitleWrapper>
         </Styled.Dashboard>
       </Fragment>
     );

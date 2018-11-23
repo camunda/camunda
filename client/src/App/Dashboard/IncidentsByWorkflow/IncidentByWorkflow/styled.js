@@ -10,14 +10,12 @@ export const Wrapper = themed(styled(withStrippedProps(['perUnit'])('div'))`
     dark: '#fff',
     light: Colors.uiLight06
   })};
-  opacity: ${themeStyle({
-    dark: 0.9,
-    light: 1
-  })};
 
   font-family: IBMPlexSans;
   font-size: 14px;
-  font-weight: ${({perUnit}) => (perUnit ? '400' : '600')};
+  font-weight: ${({perUnit}) => {
+    return perUnit ? '400' : '600';
+  }};
   line-height: 1.71;
 `);
 
@@ -35,7 +33,14 @@ export const ActiveCount = styled.div`
   opacity: 0.8;
 `;
 
-export const IncidentStatisticBar = styled.div`
+export const Label = themed(styled.div`
+  opacity: ${themeStyle({
+    dark: 0.9,
+    light: 1
+  })};
+`);
+
+export const Bar = styled.div`
   display: flex;
   height: 3px;
   align-items: stretch;

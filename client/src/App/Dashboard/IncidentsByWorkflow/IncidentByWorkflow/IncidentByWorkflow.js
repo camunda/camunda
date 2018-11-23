@@ -6,20 +6,21 @@ function IncidentStatistic(props) {
   const {label, activeCount, incidentsCount} = props;
   const incidentsBarRatio =
     (100 * incidentsCount) / (activeCount + incidentsCount);
+
   return (
     <div className={props.className}>
       <Styled.Wrapper perUnit={props.perUnit}>
         <Styled.IncidentsCount>{incidentsCount}</Styled.IncidentsCount>
-        <div data-test="incident-statistic-label">{label}</div>
+        <Styled.Label>{label}</Styled.Label>
         <Styled.ActiveCount>{activeCount}</Styled.ActiveCount>
       </Styled.Wrapper>
-      <Styled.IncidentStatisticBar>
+      <Styled.Bar>
         <Styled.IncidentsBar
           style={{
             width: `${incidentsBarRatio}%`
           }}
         />
-      </Styled.IncidentStatisticBar>
+      </Styled.Bar>
     </div>
   );
 }

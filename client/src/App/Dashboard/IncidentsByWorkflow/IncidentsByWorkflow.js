@@ -1,9 +1,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
+import Collapse from '../Collapse';
+import IncidentByWorkflow from './IncidentByWorkflow';
+
 import * as Styled from './styled';
-import Collapse from './Collapse';
-import IncidentStatistic from './IncidentStatistic';
 import {getUrl, getTitle} from './service';
 
 function getVersions(workflows = []) {
@@ -12,24 +13,41 @@ function getVersions(workflows = []) {
 
 export default class IncidentsByWorkflow extends React.Component {
   static propTypes = {
-    incidents: PropTypes.array
+    incidents: PropTypes.arrayOf(
+      PropTypes.shape({
+        activeInstancesCount: PropTypes.number.isRequired,
+        bpmnProcessId: PropTypes.string.isRequired,
+        instancesWithActiveIncidentsCount: PropTypes.number.isRequired,
+        workflowName: PropTypes.string,
+        workflows: PropTypes.arrayOf(
+          PropTypes.shape({
+            activeInstancesCount: PropTypes.number.isRequired,
+            bpmnProcessId: PropTypes.string.isRequired,
+            instancesWithActiveIncidentsCount: PropTypes.number.isRequired,
+            name: PropTypes.string,
+            version: PropTypes.number.isRequired,
+            workflowId: PropTypes.string.isRequired
+          })
+        ).isRequired
+      })
+    )
   };
 
-  renderVersionStatistics = (workflowName, bpmnProcessId, items) => {
+  renderIncidentsPerVersion = (workflowName, items) => {
     return (
       <ul>
         {items.map(item => {
           return (
             <Styled.VersionLi key={item.workflowId}>
               <Styled.IncidentLink
-                to={getUrl(bpmnProcessId, item.version)}
+                to={getUrl(item.bpmnProcessId, item.version)}
                 title={getTitle(
                   workflowName,
                   item.version,
                   item.instancesWithActiveIncidentsCount
                 )}
               >
-                <IncidentStatistic
+                <IncidentByWorkflow
                   label={`Version ${item.version}`}
                   incidentsCount={item.instancesWithActiveIncidentsCount}
                   activeCount={item.activeInstancesCount}
@@ -43,18 +61,16 @@ export default class IncidentsByWorkflow extends React.Component {
     );
   };
 
-  renderIncidentStatistic = (item, name) => {
+  renderIncidentByWorkflow = item => {
     const versions = getVersions(item.workflows);
+    const name = item.workflowName || item.bpmnProcessId;
+
     return (
       <Styled.IncidentLink
         to={getUrl(item.bpmnProcessId, versions)}
-        title={getTitle(
-          item.workflowName || item.bpmnProcessId,
-          versions,
-          item.instancesWithActiveIncidentsCount
-        )}
+        title={getTitle(name, versions, item.instancesWithActiveIncidentsCount)}
       >
-        <IncidentStatistic
+        <IncidentByWorkflow
           label={`${name} (Version ${versions})`}
           incidentsCount={item.instancesWithActiveIncidentsCount}
           activeCount={item.activeInstancesCount}
@@ -65,30 +81,26 @@ export default class IncidentsByWorkflow extends React.Component {
 
   render() {
     const {incidents} = this.props;
+
     return (
       <ul>
         {incidents.map((item, index) => {
-          const versionsCount = item.workflows.length;
+          const workflowsCount = item.workflows.length;
           const name = item.workflowName || item.bpmnProcessId;
-          const IncidentStatisticComponent = this.renderIncidentStatistic(
-            item,
-            name
+          const IncidentByWorkflowComponent = this.renderIncidentByWorkflow(
+            item
           );
           return (
             <Styled.Li
               key={item.bpmnProcessId}
               data-test={`incident-byWorkflow-${index}`}
             >
-              {versionsCount === 1 ? (
-                IncidentStatisticComponent
+              {workflowsCount === 1 ? (
+                IncidentByWorkflowComponent
               ) : (
                 <Collapse
-                  content={this.renderVersionStatistics(
-                    name,
-                    item.bpmnProcessId,
-                    item.workflows
-                  )}
-                  header={IncidentStatisticComponent}
+                  content={this.renderIncidentsPerVersion(name, item.workflows)}
+                  header={IncidentByWorkflowComponent}
                   buttonTitle={`Expand ${
                     item.instancesWithActiveIncidentsCount
                   } Instances with Incidents of Workflow ${name}`}
