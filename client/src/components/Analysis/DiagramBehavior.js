@@ -138,7 +138,7 @@ export default class DiagramBehavior extends React.Component {
 
     // create overlay node from html string
     const container = document.createElement('div');
-    const percentageValue = Math.round(value / piCount * 1000) / 10;
+    const percentageValue = Math.round(value / piCount * 1000) / 10 || 0;
 
     container.innerHTML = `<div class="DiagramBehavior__overlay" role="tooltip">
       <table class="DiagramBehavior__end-event-statistics">
