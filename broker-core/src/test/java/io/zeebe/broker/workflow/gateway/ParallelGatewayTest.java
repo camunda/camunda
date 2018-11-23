@@ -139,19 +139,17 @@ public class ParallelGatewayTest {
     testClient.createWorkflowInstance(PROCESS_ID);
 
     // then
-    final Record<WorkflowInstanceRecordValue> completedEvent =
-        testClient.receiveElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED);
     final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
         testClient
             .receiveWorkflowInstances()
-            .limit(r -> r.getPosition() == completedEvent.getPosition())
+            .limitToWorkflowInstanceCompleted()
             .collect(Collectors.toList());
 
     assertThat(workflowInstanceEvents)
         .extracting(e -> e.getValue().getElementId(), e -> e.getMetadata().getIntent())
         .containsSubsequence(
-            tuple("end", WorkflowInstanceIntent.END_EVENT_OCCURRED),
-            tuple("end", WorkflowInstanceIntent.END_EVENT_OCCURRED),
+            tuple("end", WorkflowInstanceIntent.EVENT_ACTIVATED),
+            tuple("end", WorkflowInstanceIntent.EVENT_ACTIVATED),
             tuple(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED));
   }
 
@@ -196,12 +194,10 @@ public class ParallelGatewayTest {
     testClient.createWorkflowInstance(PROCESS_ID);
 
     // then
-    final Record<WorkflowInstanceRecordValue> completedEvent =
-        testClient.receiveElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED);
     final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
         testClient
             .receiveWorkflowInstances()
-            .limit(r -> r.getPosition() == completedEvent.getPosition())
+            .limitToWorkflowInstanceCompleted()
             .collect(Collectors.toList());
 
     assertThat(workflowInstanceEvents)
@@ -209,7 +205,8 @@ public class ParallelGatewayTest {
         .containsSequence(
             tuple("fork", WorkflowInstanceIntent.GATEWAY_ACTIVATED),
             tuple("flow2", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple("end", WorkflowInstanceIntent.END_EVENT_OCCURRED),
+            tuple("end", WorkflowInstanceIntent.EVENT_ACTIVATING),
+            tuple("end", WorkflowInstanceIntent.EVENT_ACTIVATED),
             tuple(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETING));
   }
 

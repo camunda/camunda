@@ -41,7 +41,7 @@
     * [Data Flow](yaml-workflows/data-flow.md)
 * [Reference](reference/README.md)
     * [Partitions](reference/partitions.md)
-    * [Job Handling](reference/job-handling.md)
+    * [Workflow Lifecycles](reference/workflow-lifecycles.md)
     * [Message Correlation](reference/message-correlation.md)
     * [Incidents](reference/incidents.md)
     * [JSON](reference/json.md)

@@ -209,7 +209,7 @@ public class MappingIncidentTest {
 
     final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
-    final Record failureEvent =
+    final Record<WorkflowInstanceRecordValue> failureEvent =
         testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_READY);
     final Record<IncidentRecordValue> incidentEvent =
         testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);

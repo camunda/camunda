@@ -113,9 +113,7 @@ public class WorkflowInstanceAssert
   }
 
   private static boolean isFlowEvaluatingState(Intent state) {
-    return state == WorkflowInstanceIntent.START_EVENT_OCCURRED
-        || state == WorkflowInstanceIntent.END_EVENT_OCCURRED
-        || state == WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN
+    return state == WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN
         || state == WorkflowInstanceIntent.ELEMENT_COMPLETED
         || state == WorkflowInstanceIntent.ELEMENT_READY;
   }

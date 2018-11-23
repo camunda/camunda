@@ -73,7 +73,7 @@ public class MessageIncidentTest {
     final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
 
     final Record<WorkflowInstanceRecordValue> failureEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_ACTIVATED)
             .withElementId("catch")
             .getFirst();
 
@@ -98,7 +98,7 @@ public class MessageIncidentTest {
         testClient.createWorkflowInstance(PROCESS_ID, MsgPackUtil.asMsgPack("orderId", true));
 
     final Record<WorkflowInstanceRecordValue> failureEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_ACTIVATED)
             .withElementId("catch")
             .getFirst();
 
@@ -137,7 +137,7 @@ public class MessageIncidentTest {
                 WorkflowInstanceSubscriptionIntent.OPENED)
             .exists());
 
-    final Record incidentResolvedEvent =
+    final Record<IncidentRecordValue> incidentResolvedEvent =
         testClient.receiveFirstIncidentEvent(workflowInstance, RESOLVED);
     assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentCreatedRecord.getKey());
   }

@@ -15,26 +15,32 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.processor.subprocess;
+package io.zeebe.broker.workflow.processor.event;
 
-import io.zeebe.broker.workflow.model.element.ExecutableFlowElementContainer;
-import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
+import io.zeebe.broker.workflow.model.element.ExecutableCatchEventElement;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.broker.workflow.processor.flownode.IOMappingHelper;
+import io.zeebe.msgpack.mapping.MappingException;
+import io.zeebe.protocol.impl.record.value.incident.ErrorType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class TriggerStartEventHandler implements BpmnStepHandler<ExecutableFlowElementContainer> {
+public class ActivateEventHandler implements BpmnStepHandler<ExecutableCatchEventElement> {
+  private final IOMappingHelper ioMappingHelper = new IOMappingHelper();
 
   @Override
-  public void handle(BpmnStepContext<ExecutableFlowElementContainer> context) {
-    final ExecutableFlowElementContainer element = context.getElement();
-    final ExecutableFlowNode startEvent = element.getStartEvent();
+  public void handle(BpmnStepContext<ExecutableCatchEventElement> context) {
+    try {
+      ioMappingHelper.applyInputMappings(context);
 
-    final WorkflowInstanceRecord value = context.getValue();
-    value.setElementId(startEvent.getId());
-    value.setScopeInstanceKey(context.getRecord().getKey());
-
-    context.getOutput().appendNewEvent(WorkflowInstanceIntent.EVENT_TRIGGERING, value);
+      context
+          .getOutput()
+          .appendFollowUpEvent(
+              context.getRecord().getKey(),
+              WorkflowInstanceIntent.EVENT_ACTIVATED,
+              context.getValue());
+    } catch (MappingException e) {
+      context.raiseIncident(ErrorType.IO_MAPPING_ERROR, e.getMessage());
+    }
   }
 }

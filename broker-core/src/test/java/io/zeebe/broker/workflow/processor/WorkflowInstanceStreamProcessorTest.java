@@ -46,6 +46,7 @@ import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -109,6 +110,11 @@ public class WorkflowInstanceStreamProcessorTest {
     streamProcessor = streamProcessorRule.getStreamProcessor();
   }
 
+  @After
+  public void foo() {
+    envRule.printAllRecords();
+  }
+
   @Test
   public void shouldRejectCancellationInDirectSuccession() {
     // given
@@ -150,7 +156,9 @@ public class WorkflowInstanceStreamProcessorTest {
     streamProcessorRule.deploy(SERVICE_TASK_WORKFLOW);
 
     streamProcessor.blockAfterWorkflowInstanceRecord(
-        isForElement("start")); // blocks before handling sequence flow taken
+        isForElement(
+            "start",
+            WorkflowInstanceIntent.EVENT_TRIGGERED)); // blocks before handling sequence flow taken
 
     final TypedRecord<WorkflowInstanceRecord> createdEvent =
         streamProcessorRule.createWorkflowInstance(PROCESS_ID);
@@ -339,7 +347,7 @@ public class WorkflowInstanceStreamProcessorTest {
     streamProcessorRule.deploy(MESSAGE_CATCH_EVENT_WORKFLOW);
 
     streamProcessor.blockAfterWorkflowInstanceRecord(
-        isForElement("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED));
+        isForElement("catch-event", WorkflowInstanceIntent.EVENT_ACTIVATED));
 
     streamProcessorRule.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
@@ -347,7 +355,7 @@ public class WorkflowInstanceStreamProcessorTest {
 
     final TypedRecord<WorkflowInstanceRecord> catchEvent =
         streamProcessorRule.awaitElementInState(
-            "catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+            "catch-event", WorkflowInstanceIntent.EVENT_ACTIVATED);
 
     // when
     envRule.getClock().addTime(SUBSCRIPTION_CHECK_INTERVAL.plus(SUBSCRIPTION_TIMEOUT));
@@ -369,7 +377,7 @@ public class WorkflowInstanceStreamProcessorTest {
     streamProcessorRule.deploy(MESSAGE_CATCH_EVENT_WORKFLOW);
 
     streamProcessor.blockAfterWorkflowInstanceRecord(
-        isForElement("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED));
+        isForElement("catch-event", WorkflowInstanceIntent.EVENT_ACTIVATED));
 
     streamProcessorRule.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
@@ -377,7 +385,7 @@ public class WorkflowInstanceStreamProcessorTest {
 
     final TypedRecord<WorkflowInstanceRecord> catchEvent =
         streamProcessorRule.awaitElementInState(
-            "catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+            "catch-event", WorkflowInstanceIntent.EVENT_ACTIVATED);
 
     // when
     final WorkflowInstanceSubscriptionRecord subscription = subscriptionRecordForEvent(catchEvent);
@@ -406,7 +414,7 @@ public class WorkflowInstanceStreamProcessorTest {
 
     final TypedRecord<WorkflowInstanceRecord> catchEvent =
         streamProcessorRule.awaitElementInState(
-            "catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+            "catch-event", WorkflowInstanceIntent.EVENT_ACTIVATED);
 
     final WorkflowInstanceSubscriptionRecord subscription = subscriptionRecordForEvent(catchEvent);
 
@@ -450,7 +458,7 @@ public class WorkflowInstanceStreamProcessorTest {
 
     final TypedRecord<WorkflowInstanceRecord> catchEvent =
         streamProcessorRule.awaitElementInState(
-            "catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+            "catch-event", WorkflowInstanceIntent.EVENT_ACTIVATED);
 
     final WorkflowInstanceSubscriptionRecord subscription = subscriptionRecordForEvent(catchEvent);
 
@@ -491,7 +499,7 @@ public class WorkflowInstanceStreamProcessorTest {
 
     final TypedRecord<WorkflowInstanceRecord> catchEvent =
         streamProcessorRule.awaitElementInState(
-            "catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+            "catch-event", WorkflowInstanceIntent.EVENT_ACTIVATED);
 
     final WorkflowInstanceSubscriptionRecord subscription = subscriptionRecordForEvent(catchEvent);
 
@@ -523,7 +531,7 @@ public class WorkflowInstanceStreamProcessorTest {
 
     final TypedRecord<WorkflowInstanceRecord> catchEvent =
         streamProcessorRule.awaitElementInState(
-            "catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+            "catch-event", WorkflowInstanceIntent.EVENT_ACTIVATED);
 
     final WorkflowInstanceSubscriptionRecord subscription = subscriptionRecordForEvent(catchEvent);
 
@@ -625,7 +633,8 @@ public class WorkflowInstanceStreamProcessorTest {
             envRule
                 .events()
                 .onlyWorkflowInstanceRecords()
-                .withIntent(WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING)
+                .skipUntil(r -> r.getValue().getElementId().equals(wrapString("task")))
+                .withIntent(WorkflowInstanceIntent.EVENT_TRIGGERING)
                 .map(TypedRecord::getValue)
                 .map(WorkflowInstanceRecord::getElementId)
                 .map(BufferUtil::bufferAsString))

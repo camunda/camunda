@@ -19,7 +19,6 @@ import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_READY;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.END_EVENT_OCCURRED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.PAYLOAD_UPDATED;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -75,10 +74,6 @@ public class ZeebeAssertHelper {
 
   public static void assertElementReady(String element) {
     assertElementInState(ELEMENT_READY, element, (e) -> {});
-  }
-
-  public static void assertEndEventOccurred(String activityId) {
-    assertElementInState(END_EVENT_OCCURRED, activityId, (e) -> {});
   }
 
   public static void assertWorkflowInstanceCanceled(String bpmnId) {

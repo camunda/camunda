@@ -46,10 +46,9 @@ public class BoundaryEventTransformer implements ModelElementTransformer<Boundar
   }
 
   private void bindLifecycle(TransformContext context, ExecutableBoundaryEvent element) {
+    element.bindLifecycleState(WorkflowInstanceIntent.EVENT_TRIGGERING, BpmnStep.TRIGGER_EVENT);
     element.bindLifecycleState(
-        WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING, BpmnStep.TRIGGER_EVENT);
-    element.bindLifecycleState(
-        WorkflowInstanceIntent.CATCH_EVENT_TRIGGERED, context.getCurrentFlowNodeOutgoingStep());
+        WorkflowInstanceIntent.EVENT_TRIGGERED, context.getCurrentFlowNodeOutgoingStep());
   }
 
   private void attachToActivity(

@@ -25,6 +25,7 @@ import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.processor.activity.ActivateActivityHandler;
 import io.zeebe.broker.workflow.processor.activity.CompleteActivityHandler;
 import io.zeebe.broker.workflow.processor.activity.TerminateActivityHandler;
+import io.zeebe.broker.workflow.processor.event.ActivateEventHandler;
 import io.zeebe.broker.workflow.processor.event.SubscribeEventHandler;
 import io.zeebe.broker.workflow.processor.event.TriggerEventHandler;
 import io.zeebe.broker.workflow.processor.flownode.ActivateFlowNodeHandler;
@@ -39,6 +40,7 @@ import io.zeebe.broker.workflow.processor.sequenceflow.ParallelMergeHandler;
 import io.zeebe.broker.workflow.processor.sequenceflow.StartFlowNodeHandler;
 import io.zeebe.broker.workflow.processor.sequenceflow.TakeSequenceFlowHandler;
 import io.zeebe.broker.workflow.processor.servicetask.CreateJobHandler;
+import io.zeebe.broker.workflow.processor.servicetask.SubscribeReceiveTaskHandler;
 import io.zeebe.broker.workflow.processor.servicetask.TerminateServiceTaskHandler;
 import io.zeebe.broker.workflow.processor.subprocess.TerminateContainedElementsHandler;
 import io.zeebe.broker.workflow.processor.subprocess.TriggerStartEventHandler;
@@ -72,9 +74,10 @@ public class BpmnStepHandlers {
     stepHandlers.put(BpmnStep.COMPLETE_ACTIVITY, new CompleteActivityHandler());
     stepHandlers.put(BpmnStep.TERMINATE_ACTIVITY, new TerminateActivityHandler(incidentState));
 
-    // service task
+    // task
     stepHandlers.put(BpmnStep.CREATE_JOB, new CreateJobHandler());
     stepHandlers.put(BpmnStep.TERMINATE_JOB_TASK, new TerminateServiceTaskHandler(zeebeState));
+    stepHandlers.put(BpmnStep.SUBSCRIBE_RECEIVE_TASK, new SubscribeReceiveTaskHandler());
 
     // exclusive gateway
     stepHandlers.put(BpmnStep.EXCLUSIVE_SPLIT, new ExclusiveSplitHandler());
@@ -86,15 +89,15 @@ public class BpmnStepHandlers {
     stepHandlers.put(BpmnStep.TRIGGER_EVENT_BASED_GATEWAY, new TriggerEventBasedGatewayHandler());
 
     // events
+    stepHandlers.put(BpmnStep.ACTIVATE_EVENT, new ActivateEventHandler());
     stepHandlers.put(BpmnStep.SUBSCRIBE_TO_EVENTS, new SubscribeEventHandler());
     stepHandlers.put(BpmnStep.TRIGGER_EVENT, new TriggerEventHandler());
 
     // sequence flow
     stepHandlers.put(
-        BpmnStep.START_FLOW_NODE, new StartFlowNodeHandler(WorkflowInstanceIntent.ELEMENT_READY));
+        BpmnStep.ENTER_FLOW_NODE, new StartFlowNodeHandler(WorkflowInstanceIntent.ELEMENT_READY));
     stepHandlers.put(
-        BpmnStep.TRIGGER_END_EVENT,
-        new StartFlowNodeHandler(WorkflowInstanceIntent.END_EVENT_OCCURRED));
+        BpmnStep.ENTER_EVENT, new StartFlowNodeHandler(WorkflowInstanceIntent.EVENT_ACTIVATING));
     stepHandlers.put(
         BpmnStep.ACTIVATE_GATEWAY,
         new StartFlowNodeHandler(WorkflowInstanceIntent.GATEWAY_ACTIVATED));

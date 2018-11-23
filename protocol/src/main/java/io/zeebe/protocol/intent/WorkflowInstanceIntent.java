@@ -17,28 +17,26 @@ package io.zeebe.protocol.intent;
 
 public enum WorkflowInstanceIntent implements Intent {
   CREATE((short) 0),
+  CANCEL((short) 1),
 
-  START_EVENT_OCCURRED((short) 1),
-  END_EVENT_OCCURRED((short) 2),
+  UPDATE_PAYLOAD((short) 2),
+  PAYLOAD_UPDATED((short) 3),
 
-  SEQUENCE_FLOW_TAKEN((short) 3),
+  SEQUENCE_FLOW_TAKEN((short) 4),
 
-  GATEWAY_ACTIVATED((short) 4),
+  GATEWAY_ACTIVATED((short) 5),
 
-  ELEMENT_READY((short) 5),
-  ELEMENT_ACTIVATED((short) 6),
-  ELEMENT_COMPLETING((short) 7),
-  ELEMENT_COMPLETED((short) 8),
-  ELEMENT_TERMINATING((short) 9),
-  ELEMENT_TERMINATED((short) 10),
+  ELEMENT_READY((short) 6),
+  ELEMENT_ACTIVATED((short) 7),
+  ELEMENT_COMPLETING((short) 8),
+  ELEMENT_COMPLETED((short) 9),
+  ELEMENT_TERMINATING((short) 10),
+  ELEMENT_TERMINATED((short) 11),
 
-  CANCEL((short) 11),
-
-  UPDATE_PAYLOAD((short) 12),
-  PAYLOAD_UPDATED((short) 13),
-
-  CATCH_EVENT_TRIGGERING((short) 14),
-  CATCH_EVENT_TRIGGERED((short) 15);
+  EVENT_ACTIVATING((short) 12),
+  EVENT_ACTIVATED((short) 13),
+  EVENT_TRIGGERING((short) 14),
+  EVENT_TRIGGERED((short) 15);
 
   private final short value;
 
@@ -55,35 +53,35 @@ public enum WorkflowInstanceIntent implements Intent {
       case 0:
         return CREATE;
       case 1:
-        return START_EVENT_OCCURRED;
-      case 2:
-        return END_EVENT_OCCURRED;
-      case 3:
-        return SEQUENCE_FLOW_TAKEN;
-      case 4:
-        return GATEWAY_ACTIVATED;
-      case 5:
-        return ELEMENT_READY;
-      case 6:
-        return ELEMENT_ACTIVATED;
-      case 7:
-        return ELEMENT_COMPLETING;
-      case 8:
-        return ELEMENT_COMPLETED;
-      case 9:
-        return ELEMENT_TERMINATING;
-      case 10:
-        return ELEMENT_TERMINATED;
-      case 11:
         return CANCEL;
-      case 12:
+      case 2:
         return UPDATE_PAYLOAD;
-      case 13:
+      case 3:
         return PAYLOAD_UPDATED;
+      case 4:
+        return SEQUENCE_FLOW_TAKEN;
+      case 5:
+        return GATEWAY_ACTIVATED;
+      case 6:
+        return ELEMENT_READY;
+      case 7:
+        return ELEMENT_ACTIVATED;
+      case 8:
+        return ELEMENT_COMPLETING;
+      case 9:
+        return ELEMENT_COMPLETED;
+      case 10:
+        return ELEMENT_TERMINATING;
+      case 11:
+        return ELEMENT_TERMINATED;
+      case 12:
+        return EVENT_ACTIVATING;
+      case 13:
+        return EVENT_ACTIVATED;
       case 14:
-        return CATCH_EVENT_TRIGGERING;
+        return EVENT_TRIGGERING;
       case 15:
-        return CATCH_EVENT_TRIGGERED;
+        return EVENT_TRIGGERED;
       default:
         return Intent.UNKNOWN;
     }

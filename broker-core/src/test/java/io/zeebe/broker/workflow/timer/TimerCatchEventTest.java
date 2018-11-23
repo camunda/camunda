@@ -119,10 +119,10 @@ public class TimerCatchEventTest {
     assertThat(RecordingExporter.workflowInstanceRecords().withElementId("timer").limit(4))
         .extracting(r -> r.getMetadata().getIntent())
         .containsExactly(
-            WorkflowInstanceIntent.ELEMENT_READY,
-            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-            WorkflowInstanceIntent.ELEMENT_COMPLETING,
-            WorkflowInstanceIntent.ELEMENT_COMPLETED);
+            WorkflowInstanceIntent.EVENT_ACTIVATING,
+            WorkflowInstanceIntent.EVENT_ACTIVATED,
+            WorkflowInstanceIntent.EVENT_TRIGGERING,
+            WorkflowInstanceIntent.EVENT_TRIGGERED);
 
     assertThat(RecordingExporter.timerRecords().limit(4))
         .extracting(r -> r.getMetadata().getIntent())
@@ -145,7 +145,7 @@ public class TimerCatchEventTest {
 
     // when
     final Record<WorkflowInstanceRecordValue> activatedEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_ACTIVATED)
             .withElementId("timer")
             .getFirst();
 
@@ -188,7 +188,7 @@ public class TimerCatchEventTest {
 
     // when
     final Record<WorkflowInstanceRecordValue> activatedEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_ACTIVATED)
             .withElementId("timer")
             .getFirst();
 
@@ -196,7 +196,7 @@ public class TimerCatchEventTest {
 
     // then
     final Record<WorkflowInstanceRecordValue> completedEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERED)
             .withElementId("timer")
             .getFirst();
 
@@ -260,11 +260,11 @@ public class TimerCatchEventTest {
 
     // then
     final Record<WorkflowInstanceRecordValue> timer1 =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERED)
             .withElementId("timer1")
             .getFirst();
     final Record<WorkflowInstanceRecordValue> timer2 =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERED)
             .withElementId("timer2")
             .getFirst();
 
@@ -345,7 +345,7 @@ public class TimerCatchEventTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERING)
                 .withElementId("timer")
                 .getFirst())
         .isNotNull();
@@ -392,7 +392,7 @@ public class TimerCatchEventTest {
                 .withElementId(PROCESS_ID)
                 .exists())
         .isTrue();
-    assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).count()).isEqualTo(2);
+    assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(2).count()).isEqualTo(2);
   }
 
   @Test
@@ -417,7 +417,8 @@ public class TimerCatchEventTest {
                 .withElementId(PROCESS_ID)
                 .exists())
         .isTrue();
-    assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).count())
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.CREATED).limit(expectedRepetitions).count())
         .isEqualTo(expectedRepetitions);
   }
 }

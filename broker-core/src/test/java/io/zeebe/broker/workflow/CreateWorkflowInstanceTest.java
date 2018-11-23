@@ -183,10 +183,10 @@ public class CreateWorkflowInstanceTest {
     final Record<WorkflowInstanceRecordValue> event =
         testClient
             .receiveWorkflowInstances()
-            .withIntent(WorkflowInstanceIntent.START_EVENT_OCCURRED)
+            .withIntent(WorkflowInstanceIntent.ELEMENT_READY)
             .getFirst();
 
-    assertWorkflowInstanceRecord(workflowKey, 2, resp.getKey(), "bar", event);
+    assertWorkflowInstanceRecord(workflowKey, 2, resp.getKey(), "process", event);
   }
 
   @Test
@@ -216,10 +216,10 @@ public class CreateWorkflowInstanceTest {
     final Record<WorkflowInstanceRecordValue> event =
         testClient
             .receiveWorkflowInstances()
-            .withIntent(WorkflowInstanceIntent.START_EVENT_OCCURRED)
+            .withIntent(WorkflowInstanceIntent.ELEMENT_READY)
             .getFirst();
 
-    assertWorkflowInstanceRecord(workflowKey, 1, resp.getKey(), "foo", event);
+    assertWorkflowInstanceRecord(workflowKey, 1, resp.getKey(), "process", event);
   }
 
   @Test

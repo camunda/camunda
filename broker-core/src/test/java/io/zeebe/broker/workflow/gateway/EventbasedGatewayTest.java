@@ -123,10 +123,11 @@ public class EventbasedGatewayTest {
         .extracting(r -> tuple(r.getValue().getElementId(), r.getMetadata().getIntent()))
         .containsExactly(
             tuple("gateway", WorkflowInstanceIntent.GATEWAY_ACTIVATED),
-            tuple("timer-1", WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING),
-            tuple("timer-1", WorkflowInstanceIntent.CATCH_EVENT_TRIGGERED),
+            tuple("timer-1", WorkflowInstanceIntent.EVENT_TRIGGERING),
+            tuple("timer-1", WorkflowInstanceIntent.EVENT_TRIGGERED),
             tuple("to-end1", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple("end1", WorkflowInstanceIntent.END_EVENT_OCCURRED),
+            tuple("end1", WorkflowInstanceIntent.EVENT_ACTIVATING),
+            tuple("end1", WorkflowInstanceIntent.EVENT_ACTIVATED),
             tuple(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETING),
             tuple(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED));
   }
@@ -202,8 +203,8 @@ public class EventbasedGatewayTest {
         .hasHandlerFlowNodeId("timer-1");
 
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.END_EVENT_OCCURRED)
-                .withElementId("end1")
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN)
+                .withElementId("to-end1")
                 .exists())
         .isTrue();
 
@@ -236,8 +237,8 @@ public class EventbasedGatewayTest {
         .hasMessageName("msg-1");
 
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.END_EVENT_OCCURRED)
-                .withElementId("end1")
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN)
+                .withElementId("to-end1")
                 .exists())
         .isTrue();
 
