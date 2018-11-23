@@ -1,8 +1,8 @@
 package org.camunda.optimize.service.es.report;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.SingleReportResultDto;
 import org.camunda.optimize.service.es.filter.QueryFilterEnhancer;
 import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
@@ -21,11 +21,11 @@ import org.camunda.optimize.service.es.report.command.pi.duration.groupby.date.w
 import org.camunda.optimize.service.es.report.command.pi.duration.groupby.date.withprocesspart.MaxProcessInstanceDurationGroupByStartDateWithProcessPartCommand;
 import org.camunda.optimize.service.es.report.command.pi.duration.groupby.date.withprocesspart.MedianProcessInstanceDurationGroupByStartDateWithProcessPartCommand;
 import org.camunda.optimize.service.es.report.command.pi.duration.groupby.date.withprocesspart.MinProcessInstanceDurationGroupByStartDateWithProcessPartCommand;
+import org.camunda.optimize.service.es.report.command.pi.duration.groupby.none.withprocesspart.AverageProcessInstanceDurationGroupByNoneWithProcessPartCommand;
 import org.camunda.optimize.service.es.report.command.pi.duration.groupby.none.withoutprocesspart.AverageProcessInstanceDurationGroupByNoneCommand;
 import org.camunda.optimize.service.es.report.command.pi.duration.groupby.none.withoutprocesspart.MaxProcessInstanceDurationGroupByNoneCommand;
 import org.camunda.optimize.service.es.report.command.pi.duration.groupby.none.withoutprocesspart.MedianProcessInstanceDurationGroupByNoneCommand;
 import org.camunda.optimize.service.es.report.command.pi.duration.groupby.none.withoutprocesspart.MinProcessInstanceDurationGroupByNoneCommand;
-import org.camunda.optimize.service.es.report.command.pi.duration.groupby.none.withprocesspart.AverageProcessInstanceDurationGroupByNoneWithProcessPartCommand;
 import org.camunda.optimize.service.es.report.command.pi.duration.groupby.none.withprocesspart.MaxProcessInstanceDurationGroupByNoneWithProcessPartCommand;
 import org.camunda.optimize.service.es.report.command.pi.duration.groupby.none.withprocesspart.MedianProcessInstanceDurationGroupByNoneWithProcessPartCommand;
 import org.camunda.optimize.service.es.report.command.pi.duration.groupby.none.withprocesspart.MinProcessInstanceDurationGroupByNoneWithProcessPartCommand;
@@ -262,20 +262,20 @@ public class ReportEvaluator {
     );
   }
 
-  public ProcessReportResultDto evaluate(ProcessReportDataDto reportData) throws OptimizeException {
+  public SingleReportResultDto evaluate(SingleReportDataDto reportData) throws OptimizeException {
     CommandContext commandContext = createCommandContext(reportData);
     Command evaluationCommand = extractCommand(reportData);
-    ProcessReportResultDto result = evaluationCommand.evaluate(commandContext);
+    SingleReportResultDto result = evaluationCommand.evaluate(commandContext);
     ReportUtil.copyReportData(reportData, result);
     return result;
   }
 
-  private Command extractCommand(ProcessReportDataDto reportData) {
+  private Command extractCommand(SingleReportDataDto reportData) {
     ValidationHelper.validate(reportData);
     return possibleCommands.getOrDefault(reportData.createCommandKey(), new NotSupportedCommand());
   }
 
-  private CommandContext createCommandContext(ProcessReportDataDto reportData) {
+  private CommandContext createCommandContext(SingleReportDataDto reportData) {
     CommandContext commandContext = new CommandContext();
     commandContext.setConfigurationService(configurationService);
     commandContext.setEsclient(esclient);

@@ -1,6 +1,5 @@
 package org.camunda.optimize;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
@@ -10,9 +9,7 @@ import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefini
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
@@ -106,6 +103,7 @@ public class OptimizeRequestExecutor {
   }
 
 
+
   public Response execute() {
     Invocation.Builder builder = prepareRequest();
 
@@ -132,7 +130,7 @@ public class OptimizeRequestExecutor {
   private Invocation.Builder prepareRequest() {
     WebTarget webTarget = client.path(this.path);
 
-    if (queryParams != null && queryParams.size() != 0) {
+    if(queryParams != null && queryParams.size() != 0) {
       for (Map.Entry<String, Object> queryParam : queryParams.entrySet()) {
         webTarget = webTarget.queryParam(queryParam.getKey(), queryParam.getValue());
       }
@@ -229,16 +227,16 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildCreateSingleReportRequest() {
-    this.path = "report";
+    this.path = "report/single";
     this.requestType = POST;
-    this.body = Entity.json("{\"combined\":false,\"reportType\":\"process\"}");
+    this.body = Entity.json("");
     return this;
   }
 
   public OptimizeRequestExecutor buildCreateCombinedReportRequest() {
-    this.path = "report";
+    this.path = "report/combined";
     this.requestType = POST;
-    this.body = Entity.json("{\"combined\":true,\"reportType\":\"process\"}");
+    this.body = Entity.json("");
     return this;
   }
 
@@ -277,17 +275,17 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildEvaluateSingleUnsavedReportRequest(ProcessReportDataDto entity) {
-    this.path = "report/evaluate";
-    this.body = getBody(new SingleReportDefinitionDto<>(entity));
+  public OptimizeRequestExecutor buildEvaluateSingleUnsavedReportRequest(SingleReportDataDto entity) {
+    this.path = "report/evaluate/single";
+    this.body = getBody(entity);
     this.requestType = POST;
     return this;
   }
 
   public OptimizeRequestExecutor buildEvaluateCombinedUnsavedReportRequest(CombinedReportDataDto entity) {
-    this.path = "report/evaluate";
+    this.path = "report/evaluate/combined";
     this.requestType = POST;
-    this.body = getBody(new CombinedReportDefinitionDto(entity));
+    this.body = getBody(entity);
     return this;
   }
 
@@ -388,7 +386,7 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildEvaluateSharedDashboardReportRequest(String dashboardShareId, String reportId) {
-    this.path = "share/dashboard/" + dashboardShareId + "/report/" + reportId + "/evaluate";
+    this.path = "share/dashboard/" + dashboardShareId + "/report/" + reportId  + "/evaluate";
     this.requestType = GET;
     return this;
   }
@@ -518,11 +516,7 @@ public class OptimizeRequestExecutor {
 
 
   private Entity getBody(Object entity) {
-    try {
-      return entity == null ? Entity.json("") : Entity.json(objectMapper.writeValueAsString(entity));
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException("Couldn't serialize request" + e.getMessage(), e);
-    }
+    return entity == null ? Entity.json("") : Entity.json(entity);
   }
 
   private String authenticateUserRequest(String username, String password) {
@@ -531,8 +525,8 @@ public class OptimizeRequestExecutor {
     entity.setPassword(password);
 
     Response response = client.path("authentication")
-      .request()
-      .post(Entity.json(entity));
+            .request()
+            .post(Entity.json(entity));
     return createOptimizeAuthCookieValue(response.readEntity(String.class));
   }
 }

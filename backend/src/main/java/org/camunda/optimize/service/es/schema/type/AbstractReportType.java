@@ -15,12 +15,10 @@ public abstract class AbstractReportType extends StrictTypeMappingCreator {
   public static final String LAST_MODIFIER = "lastModifier";
 
   public static final String REPORT_TYPE = "reportType";
-  public static final String COMBINED = "combined";
   public static final String DATA = "data";
 
   @Override
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
-    // @formatter:off
      XContentBuilder newBuilder = xContentBuilder
       .startObject(ID)
         .field("type", "keyword")
@@ -44,11 +42,7 @@ public abstract class AbstractReportType extends StrictTypeMappingCreator {
       .endObject()
       .startObject(REPORT_TYPE)
         .field("type", "keyword")
-      .endObject()
-      .startObject(COMBINED)
-       .field("type", "boolean")
       .endObject();
-     // @formatter:on
      newBuilder = addDataField(newBuilder);
      return newBuilder;
   }

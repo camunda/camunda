@@ -3,20 +3,25 @@ package org.camunda.optimize.service.es.report.command.util;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.GroupByDateUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.SingleReportResultDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.DATE_UNIT_DAY;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.DATE_UNIT_HOUR;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.DATE_UNIT_MONTH;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.DATE_UNIT_WEEK;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.DATE_UNIT_YEAR;
+
 public class ReportUtil {
 
   private static Logger logger = LoggerFactory.getLogger(ReportUtil.class);
 
-  public static void copyReportData(ProcessReportDataDto from, ProcessReportResultDto to) {
-    ProcessReportDataDto reportDataDto = new ProcessReportDataDto();
+  public static void copyReportData(SingleReportDataDto from, SingleReportResultDto to) {
+    SingleReportDataDto reportDataDto = new SingleReportDataDto();
     reportDataDto.setProcessDefinitionKey(from.getProcessDefinitionKey());
     reportDataDto.setProcessDefinitionVersion(from.getProcessDefinitionVersion());
     reportDataDto.setView(from.getView());
@@ -28,17 +33,17 @@ public class ReportUtil {
     to.setData(reportDataDto);
   }
 
-  public static DateHistogramInterval getDateHistogramInterval(GroupByDateUnit interval) throws OptimizeException {
+  public static DateHistogramInterval getDateHistogramInterval(String interval) throws OptimizeException {
     switch (interval) {
-      case YEAR:
+      case DATE_UNIT_YEAR:
         return DateHistogramInterval.YEAR;
-      case MONTH:
+      case DATE_UNIT_MONTH:
         return DateHistogramInterval.MONTH;
-      case WEEK:
+      case DATE_UNIT_WEEK:
         return DateHistogramInterval.WEEK;
-      case DAY:
+      case DATE_UNIT_DAY:
         return DateHistogramInterval.DAY;
-      case HOUR:
+      case DATE_UNIT_HOUR:
         return DateHistogramInterval.HOUR;
       default:
         logger.error("Unknown interval {}. Please state a valid interval", interval);

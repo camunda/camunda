@@ -3,18 +3,15 @@ package org.camunda.optimize.service.es.report.flownode.duration;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.ReportConstants;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.variable.BooleanVariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ExecutedFlowNodeFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.MapProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewOperation;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.ExecutedFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.util.ExecutedFlowNodeFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapSingleReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
@@ -31,7 +28,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createMinFlowNodeDurationGroupByFlowNodeHeatmapReport;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_DURATION_PROPERTY;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FLOW_NODE_ENTITY;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MIN_OPERATION;
+import static org.camunda.optimize.test.util.ReportDataBuilderHelper
+  .createMinFlowNodeDurationGroupByFlowNodeHeatmapReport;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -66,18 +67,18 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ProcessReportDataDto reportData = getMinFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    MapProcessReportResultDto result = evaluateReport(reportData);
+    SingleReportDataDto reportData = getMinFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
-    ProcessReportDataDto resultReportDataDto = result.getData();
+    SingleReportDataDto resultReportDataDto = result.getData();
     assertThat(result.getProcessInstanceCount(), is(1L));
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinition.getKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(String.valueOf(processDefinition.getVersion())));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getOperation(), is(ProcessViewOperation.MIN));
-    assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.FLOW_NODE));
-    assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
+    assertThat(resultReportDataDto.getView().getOperation(), is(VIEW_MIN_OPERATION));
+    assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_FLOW_NODE_ENTITY));
+    assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_DURATION_PROPERTY));
     assertThat(result.getResult(), is(notNullValue()));
     Map<String, Long> flowNodeIdToMinimumExecutionDuration = result.getResult();
     assertThat(flowNodeIdToMinimumExecutionDuration.size(), is(3));
@@ -98,8 +99,8 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ProcessReportDataDto reportData = getMinFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    MapProcessReportResultDto result = evaluateReport(reportData);
+    SingleReportDataDto reportData = getMinFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
     Map<String, Long> flowNodeIdToMinimumExecutionDuration = result.getResult();
@@ -122,9 +123,9 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ProcessReportDataDto reportData =
+    SingleReportDataDto reportData =
       getMinFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    MapProcessReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
     Map<String, Long> flowNodeIdToMinimumExecutionDuration = result.getResult();
@@ -161,10 +162,10 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
-    ProcessReportDataDto reportData = createMinFlowNodeDurationGroupByFlowNodeHeatmapReport(
+    SingleReportDataDto reportData = createMinFlowNodeDurationGroupByFlowNodeHeatmapReport(
         latestDefinition.getKey(), ReportConstants.ALL_VERSIONS
     );
-    MapProcessReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     //then
     Map<String, Long> flowNodeIdToMinimumExecutionDuration = result.getResult();
@@ -189,10 +190,10 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
-    ProcessReportDataDto reportData = createMinFlowNodeDurationGroupByFlowNodeHeatmapReport(
+    SingleReportDataDto reportData = createMinFlowNodeDurationGroupByFlowNodeHeatmapReport(
         latestDefinition.getKey(), ReportConstants.ALL_VERSIONS
     );
-    MapProcessReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     //then
     Map<String, Long> flowNodeIdToMinimumExecutionDuration = result.getResult();
@@ -214,10 +215,10 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
-    ProcessReportDataDto reportData = createMinFlowNodeDurationGroupByFlowNodeHeatmapReport(
+    SingleReportDataDto reportData = createMinFlowNodeDurationGroupByFlowNodeHeatmapReport(
         processDefinition.getKey(), ReportConstants.ALL_VERSIONS
     );
-    MapProcessReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     //then
     Map<String, Long> flowNodeIdToMinimumExecutionDuration = result.getResult();
@@ -242,10 +243,10 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ProcessReportDataDto reportData1 = getMinFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    MapProcessReportResultDto result1 = evaluateReport(reportData1);
-    ProcessReportDataDto reportData2 = getMinFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition2);
-    MapProcessReportResultDto result2 = evaluateReport(reportData2);
+    SingleReportDataDto reportData1 = getMinFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    MapSingleReportResultDto result1 = evaluateReport(reportData1);
+    SingleReportDataDto reportData2 = getMinFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition2);
+    MapSingleReportResultDto result2 = evaluateReport(reportData2);
 
     // then
     Map<String, Long> flowNodeIdToMinimumExecutionDuration = result1.getResult();
@@ -260,9 +261,9 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
   public void noEventMatchesReturnsEmptyResult() {
 
     // when
-    ProcessReportDataDto reportData =
+    SingleReportDataDto reportData =
       createMinFlowNodeDurationGroupByFlowNodeHeatmapReport("nonExistingProcessDefinitionId", "1");
-    MapProcessReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
     Map<String, Long> flowNodeIdToMinimumExecutionDuration = result.getResult();
@@ -298,9 +299,9 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ProcessReportDataDto reportData =
+    SingleReportDataDto reportData =
       createMinFlowNodeDurationGroupByFlowNodeHeatmapReport(subProcessDefinition.getKey(), String.valueOf(subProcessDefinition.getVersion()));
-    MapProcessReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
     Map<String, Long> flowNodeIdToMinimumExecutionDuration = result.getResult();
@@ -322,8 +323,8 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ProcessReportDataDto reportData = getMinFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    MapProcessReportResultDto result = evaluateReport(reportData);
+    SingleReportDataDto reportData = getMinFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
     Map<String, Long> flowNodeIdToMinimumExecutionDuration = result.getResult();
@@ -342,9 +343,9 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ProcessReportDataDto reportData = getMinFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    SingleReportDataDto reportData = getMinFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(null, past.minusSeconds(1L)));
-    MapProcessReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
@@ -376,9 +377,9 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ProcessReportDataDto reportData = getMinFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    SingleReportDataDto reportData = getMinFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     reportData.setFilter(createVariableFilter());
-    MapProcessReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
@@ -387,7 +388,7 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     assertThat(flowNodeIdToExecutionFrequency.get(SERVICE_TASK_ID ), is(10L));
   }
 
-  private List<ProcessFilterDto> createVariableFilter() {
+  private List<FilterDto> createVariableFilter() {
     BooleanVariableFilterDataDto data = new BooleanVariableFilterDataDto("true");
     data.setName("var");
 
@@ -410,12 +411,12 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ProcessReportDataDto reportData = getMinFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    SingleReportDataDto reportData = getMinFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
           .id("task1")
           .build();
     reportData.getFilter().addAll(flowNodeFilter);
-    MapProcessReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
@@ -428,7 +429,7 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
   @Test
   public void optimizeExceptionOnViewEntityIsNull() {
     // given
-    ProcessReportDataDto dataDto =
+    SingleReportDataDto dataDto =
       createMinFlowNodeDurationGroupByFlowNodeHeatmapReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getView().setEntity(null);
 
@@ -442,7 +443,7 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
   @Test
   public void optimizeExceptionOnViewPropertyIsNull() {
     // given
-    ProcessReportDataDto dataDto =
+    SingleReportDataDto dataDto =
       createMinFlowNodeDurationGroupByFlowNodeHeatmapReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getView().setProperty(null);
 
@@ -456,7 +457,7 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
   @Test
   public void optimizeExceptionOnGroupByTypeIsNull() {
     // given
-    ProcessReportDataDto dataDto =
+    SingleReportDataDto dataDto =
       createMinFlowNodeDurationGroupByFlowNodeHeatmapReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getGroupBy().setType(null);
 
@@ -496,21 +497,21 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
-  private MapProcessReportResultDto evaluateReport(ProcessReportDataDto reportData) {
+  private MapSingleReportResultDto evaluateReport(SingleReportDataDto reportData) {
     Response response = evaluateReportAndReturnResponse(reportData);
     assertThat(response.getStatus(), is(200));
 
-    return response.readEntity(MapProcessReportResultDto.class);
+    return response.readEntity(MapSingleReportResultDto.class);
   }
 
-  private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
+  private Response evaluateReportAndReturnResponse(SingleReportDataDto reportData) {
     return embeddedOptimizeRule
             .getRequestExecutor()
             .buildEvaluateSingleUnsavedReportRequest(reportData)
             .execute();
   }
 
-  private ProcessReportDataDto getMinFlowNodeDurationGroupByFlowNodeHeatmapReport(ProcessDefinitionEngineDto processDefinition) {
+  private SingleReportDataDto getMinFlowNodeDurationGroupByFlowNodeHeatmapReport(ProcessDefinitionEngineDto processDefinition) {
     return createMinFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
   }
 

@@ -1,6 +1,6 @@
 package org.camunda.optimize.service.es.report.command.flownode.duration;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.MapProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapSingleReportResultDto;
 import org.camunda.optimize.service.es.report.command.FlowNodeGroupingCommand;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.action.search.SearchResponse;
@@ -35,7 +35,7 @@ public abstract class AbstractFlowNodeDurationByFlowNodeCommand<T extends Aggreg
   private static final String DURATION_AGGREGATION = "aggregatedDuration";
 
   @Override
-  protected MapProcessReportResultDto evaluate() {
+  protected MapSingleReportResultDto evaluate() {
 
     logger.debug("Evaluating flow node duration grouped by flow node report " +
       "for process definition key [{}] and version [{}]",
@@ -59,8 +59,8 @@ public abstract class AbstractFlowNodeDurationByFlowNodeCommand<T extends Aggreg
       .get();
 
     Map<String, Long> resultMap = processAggregations(response.getAggregations());
-    MapProcessReportResultDto resultDto =
-      new MapProcessReportResultDto();
+    MapSingleReportResultDto resultDto =
+      new MapSingleReportResultDto();
     resultDto.setResult(resultMap);
     resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
     return resultDto;

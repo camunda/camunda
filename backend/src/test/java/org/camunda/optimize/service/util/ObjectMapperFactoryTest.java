@@ -2,10 +2,8 @@ package org.camunda.optimize.service.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportType;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.variable.BooleanVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -20,7 +18,6 @@ import java.time.format.DateTimeFormatter;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.Assert.assertThat;
 
@@ -37,42 +34,17 @@ public class ObjectMapperFactoryTest {
 
   @Before
   public void init() {
-    optimizeMapper = optimizeMapper == null ? objectMapperFactory.createOptimizeMapper() : optimizeMapper;
-    engineMapper = engineMapper == null ? objectMapperFactory.createEngineMapper() : engineMapper;
-  }
-
-  /**
-   * By default jackson fails if the external type id property is present but the actual property not.
-   * In this case "reportType" is the external type id and "data" is the property.
-   *
-   * @throws Exception
-   * @see com.fasterxml.jackson.databind.DeserializationFeature#FAIL_ON_MISSING_EXTERNAL_TYPE_ID_PROPERTY
-   */
-  @Test
-  public void testNoFailOnMissingReportDataAlthoughReportTypeSet() throws Exception {
-    final ReportDefinitionDto reportDefinitionDto = optimizeMapper.readValue(
-      getClass().getResourceAsStream("/test/data/single-process-report-definition-create-request.json"),
-      ReportDefinitionDto.class
-    );
-    assertThat(reportDefinitionDto.getCombined(), is(false));
-    assertThat(reportDefinitionDto.getReportType(), is(ReportType.PROCESS));
-    assertThat(reportDefinitionDto.getData(), is(nullValue()));
+    optimizeMapper = optimizeMapper == null? objectMapperFactory.createOptimizeMapper(): optimizeMapper;
+    engineMapper = engineMapper == null? objectMapperFactory.createEngineMapper(): engineMapper;
   }
 
   @Test
   public void testFilterSerialization() throws Exception {
-    ProcessReportDataDto data = optimizeMapper.readValue(
-      this.getClass()
-        .getResourceAsStream("/test/data/filter_request.json"),
-      ProcessReportDataDto.class
-    );
-    assertThat(((BooleanVariableFilterDataDto) data.getFilter().get(0).getData()).getData().getValue(), is("true"));
+    SingleReportDataDto data = optimizeMapper.readValue(this.getClass().getResourceAsStream("/test/data/filter_request.json"), SingleReportDataDto.class);
+    assertThat(((BooleanVariableFilterDataDto)data.getFilter().get(0).getData()).getData().getValue(), is("true"));
 
-    data = optimizeMapper.readValue(
-      this.getClass().getResourceAsStream("/test/data/filter_request_single.json"),
-      ProcessReportDataDto.class
-    );
-    assertThat(((BooleanVariableFilterDataDto) data.getFilter().get(0).getData()).getData().getValue(), is("true"));
+    data = optimizeMapper.readValue(this.getClass().getResourceAsStream("/test/data/filter_request_single.json"), SingleReportDataDto.class);
+    assertThat(((BooleanVariableFilterDataDto)data.getFilter().get(0).getData()).getData().getValue(), is("true"));
   }
 
   @Test
@@ -83,9 +55,8 @@ public class ObjectMapperFactoryTest {
     assertThat(s, is(notNullValue()));
 
     DateHolder result = optimizeMapper.readValue(
-      s,
-      DateHolder.class
-    );
+        s,
+        DateHolder.class);
     assertThat(result.getDate(), is(instance.getDate()));
   }
 
@@ -103,9 +74,9 @@ public class ObjectMapperFactoryTest {
     String value = "2017-12-11T17:28:38";
     DateHolder toTest = new DateHolder();
     toTest.setDate(
-      ZonedDateTime
-        .parse(value, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").withZone(ZoneId.systemDefault()))
-        .toOffsetDateTime()
+        ZonedDateTime
+            .parse(value, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").withZone(ZoneId.systemDefault()))
+            .toOffsetDateTime()
     );
 
     assertThat("value is [" + value + "]", optimizeMapper.writeValueAsString(toTest), containsString(value));
@@ -119,9 +90,8 @@ public class ObjectMapperFactoryTest {
     assertThat(s, is(notNullValue()));
 
     DateHolder result = engineMapper.readValue(
-      s,
-      DateHolder.class
-    );
+        s,
+        DateHolder.class);
     assertThat(result.getDate(), is(instance.getDate()));
   }
 
@@ -139,14 +109,13 @@ public class ObjectMapperFactoryTest {
     String value = "2017-12-11T17:28:38";
     DateHolder toTest = new DateHolder();
     toTest.setDate(
-      ZonedDateTime
-        .parse(value, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").withZone(ZoneId.systemDefault()))
-        .toOffsetDateTime()
+        ZonedDateTime
+            .parse(value, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").withZone(ZoneId.systemDefault()))
+            .toOffsetDateTime()
     );
 
     assertThat("value is [" + value + "]", engineMapper.writeValueAsString(toTest), containsString(value));
   }
-
 
   static class DateHolder {
     private OffsetDateTime date;

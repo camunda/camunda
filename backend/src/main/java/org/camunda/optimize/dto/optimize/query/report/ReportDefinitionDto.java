@@ -1,5 +1,6 @@
 package org.camunda.optimize.dto.optimize.query.report;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
@@ -7,14 +8,14 @@ import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinit
 
 import java.time.OffsetDateTime;
 
-import static org.camunda.optimize.dto.optimize.ReportConstants.REPORT_DEFINITION_COMBINED_FIELD;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.COMBINED_REPORT_TYPE;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.SINGLE_REPORT_TYPE;
 
-@JsonTypeInfo(
-  use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = REPORT_DEFINITION_COMBINED_FIELD
-)
+
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "reportType")
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = SingleReportDefinitionDto.class, name = "false"),
-  @JsonSubTypes.Type(value = CombinedReportDefinitionDto.class, name = "true"),
+    @JsonSubTypes.Type(value = SingleReportDefinitionDto.class, name = SINGLE_REPORT_TYPE),
+    @JsonSubTypes.Type(value = CombinedReportDefinitionDto.class, name = COMBINED_REPORT_TYPE),
 })
 public abstract class ReportDefinitionDto<DATA extends ReportDataDto> {
 
@@ -25,10 +26,9 @@ public abstract class ReportDefinitionDto<DATA extends ReportDataDto> {
   protected String owner;
   protected String lastModifier;
 
-  protected Boolean combined;
+  @JsonProperty
+  protected String reportType;
   protected DATA data;
-
-  protected ReportType reportType;
 
   public String getId() {
     return id;
@@ -78,10 +78,6 @@ public abstract class ReportDefinitionDto<DATA extends ReportDataDto> {
     this.lastModifier = lastModifier;
   }
 
-  public Boolean getCombined() {
-    return combined;
-  }
-
   public DATA getData() {
     return data;
   }
@@ -90,8 +86,11 @@ public abstract class ReportDefinitionDto<DATA extends ReportDataDto> {
     this.data = data;
   }
 
-  public ReportType getReportType() {
+  public String getReportType() {
     return reportType;
   }
 
+  public void setReportType(String reportType) {
+    this.reportType = reportType;
+  }
 }

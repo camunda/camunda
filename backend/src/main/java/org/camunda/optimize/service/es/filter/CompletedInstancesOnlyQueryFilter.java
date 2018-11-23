@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.es.filter;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.CompletedInstancesOnlyFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.CompletedInstancesOnlyFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.RunningInstancesOnlyFilterDataDto;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.stereotype.Component;

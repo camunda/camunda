@@ -12,6 +12,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+import javax.ws.rs.core.GenericType;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
@@ -19,8 +22,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 
-import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.rest.VariableRestService.NAME_PREFIX;
+import static org.camunda.optimize.rest.VariableRestService.PROCESS_DEFINITION_KEY;
+import static org.camunda.optimize.rest.VariableRestService.PROCESS_DEFINITION_VERSION;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;

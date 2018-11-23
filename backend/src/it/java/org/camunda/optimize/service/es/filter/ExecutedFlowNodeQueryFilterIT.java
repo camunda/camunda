@@ -3,12 +3,12 @@ package org.camunda.optimize.service.es.filter;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutedFlowNodeFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ExecutedFlowNodeFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.ExecutedFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.ExecutedFlowNodeFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.util.ExecutedFlowNodeFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataSingleReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -43,28 +43,28 @@ public class ExecutedFlowNodeQueryFilterIT {
   private final static String USER_TASK_ACTIVITY_ID = "User-Task";
   private final static String USER_TASK_ACTIVITY_ID_2 = "User-Task2";
 
-  private RawDataProcessReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition, List<ProcessFilterDto> filter) {
-    ProcessReportDataDto reportData =
+  private RawDataSingleReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition, List<FilterDto> filter) {
+    SingleReportDataDto reportData =
       createReportDataViewRawAsTable(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
     reportData.setFilter(filter);
     return evaluateReport(reportData);
   }
 
-  private RawDataProcessReportResultDto evaluateReport(ProcessReportDataDto reportData) {
+  private RawDataSingleReportResultDto evaluateReport(SingleReportDataDto reportData) {
     Response response = evaluateReportAndReturnResponse(reportData);
     MatcherAssert.assertThat(response.getStatus(), is(200));
-    return response.readEntity(RawDataProcessReportResultDto.class);
+    return response.readEntity(RawDataSingleReportResultDto.class);
   }
 
   private Response evaluateReportAndReturnResponse(String processDefinitionKey, ExecutedFlowNodeFilterDto filterDto) {
-    ProcessReportDataDto reportData = createReportDataViewRawAsTable(processDefinitionKey, "1");
-    List<ProcessFilterDto> filter = new ArrayList<>();
+    SingleReportDataDto reportData = createReportDataViewRawAsTable(processDefinitionKey, "1");
+    List<FilterDto> filter = new ArrayList<>();
     filter.add(filterDto);
     reportData.setFilter(filter);
     return evaluateReportAndReturnResponse(reportData);
   }
 
-  private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
+  private Response evaluateReportAndReturnResponse(SingleReportDataDto reportData) {
     return embeddedOptimizeRule
             .getRequestExecutor()
             .buildEvaluateSingleUnsavedReportRequest(reportData)
@@ -87,7 +87,7 @@ public class ExecutedFlowNodeQueryFilterIT {
           .inOperator()
           .build();
 
-    RawDataProcessReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
+    RawDataSingleReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
     // then
     assertResults(result, 1);
   }
@@ -108,7 +108,7 @@ public class ExecutedFlowNodeQueryFilterIT {
           .notInOperator()
           .build();
 
-    RawDataProcessReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
+    RawDataSingleReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result, 1);
@@ -133,7 +133,7 @@ public class ExecutedFlowNodeQueryFilterIT {
           .id(USER_TASK_ACTIVITY_ID)
           .inOperator()
           .build();
-    RawDataProcessReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
+    RawDataSingleReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result, 3);
@@ -159,7 +159,7 @@ public class ExecutedFlowNodeQueryFilterIT {
           .id(USER_TASK_ACTIVITY_ID)
           .notInOperator()
           .build();
-    RawDataProcessReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
+    RawDataSingleReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result, 2);
@@ -187,7 +187,7 @@ public class ExecutedFlowNodeQueryFilterIT {
           .and()
           .id(USER_TASK_ACTIVITY_ID_2)
           .build();
-    RawDataProcessReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
+    RawDataSingleReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result, 2);
@@ -218,7 +218,7 @@ public class ExecutedFlowNodeQueryFilterIT {
           .id(USER_TASK_ACTIVITY_ID_2)
           .notInOperator()
           .build();
-    RawDataProcessReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
+    RawDataSingleReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result, 1);
@@ -237,8 +237,8 @@ public class ExecutedFlowNodeQueryFilterIT {
     assertResults(result, 2);
   }
 
-  private RawDataProcessReportResultDto getRawDataReportResultDto(ProcessDefinitionEngineDto processDefinition, List<ExecutedFlowNodeFilterDto> executedFlowNodes) {
-    ArrayList<ProcessFilterDto> filter = new ArrayList<>(executedFlowNodes);
+  private RawDataSingleReportResultDto getRawDataReportResultDto(ProcessDefinitionEngineDto processDefinition, List<ExecutedFlowNodeFilterDto> executedFlowNodes) {
+    ArrayList<FilterDto> filter = new ArrayList<>(executedFlowNodes);
     return evaluateReportWithFilter(processDefinition, filter);
   }
 
@@ -264,7 +264,7 @@ public class ExecutedFlowNodeQueryFilterIT {
           .ids(USER_TASK_ACTIVITY_ID, USER_TASK_ACTIVITY_ID_2)
           .inOperator()
           .build();
-    RawDataProcessReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
+    RawDataSingleReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result, 3);
@@ -299,7 +299,7 @@ public class ExecutedFlowNodeQueryFilterIT {
           .ids("UserTask-PathA", "FinalUserTask")
           .notInOperator()
           .build();
-    RawDataProcessReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
+    RawDataSingleReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result, 3);
@@ -343,7 +343,7 @@ public class ExecutedFlowNodeQueryFilterIT {
           .and()
             .id("FinalUserTask")
           .build();
-    RawDataProcessReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
+    RawDataSingleReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result,3);
@@ -383,7 +383,7 @@ public class ExecutedFlowNodeQueryFilterIT {
             .id("UserTask-PathB")
             .inOperator()
           .build();
-    RawDataProcessReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
+    RawDataSingleReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result, 1);
@@ -425,7 +425,7 @@ public class ExecutedFlowNodeQueryFilterIT {
     List<ExecutedFlowNodeFilterDto> executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
           .id(USER_TASK_ACTIVITY_ID)
           .build();
-    RawDataProcessReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
+    RawDataSingleReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result, 2);
@@ -462,7 +462,7 @@ public class ExecutedFlowNodeQueryFilterIT {
     assertThat(response.getStatus(),is(500));
   }
 
-  private void assertResults(RawDataProcessReportResultDto resultDto, int piCount) {
+  private void assertResults(RawDataSingleReportResultDto resultDto, int piCount) {
     assertThat(resultDto.getResult().size(), is(piCount));
   }
 

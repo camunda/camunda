@@ -1,10 +1,6 @@
 package org.camunda.optimize.service.es.filter;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.startDate.DateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.startDate.DateFilterType;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.startDate.FixedDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.startDate.RelativeDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.startDate.RelativeDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.startDate.*;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -20,6 +16,8 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
 import java.util.List;
 
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.FIXED_DATE_FILTER;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.RELATIVE_DATE_FILTER;
 
 public abstract class DateQueryFilter implements QueryFilter<DateFilterDataDto> {
   private  org.slf4j.Logger logger = LoggerFactory.getLogger(getClass());
@@ -35,10 +33,10 @@ public abstract class DateQueryFilter implements QueryFilter<DateFilterDataDto> 
       List<QueryBuilder> filters = query.filter();
       for (DateFilterDataDto dateDto : dates) {
         RangeQueryBuilder queryDate = null;
-        if (DateFilterType.FIXED.equals(dateDto.getType())) {
+        if (FIXED_DATE_FILTER.equals(dateDto.getType())) {
           FixedDateFilterDataDto fixedStartDateFilterDataDto = (FixedDateFilterDataDto) dateDto;
           queryDate = createFixedStartDateFilter(fixedStartDateFilterDataDto, dateFieldType);
-        } else if (DateFilterType.RELATIVE.equals(dateDto.getType())) {
+        } else if (RELATIVE_DATE_FILTER.equals(dateDto.getType())) {
           RelativeDateFilterDataDto relativeStartDateFilterDataDto= (RelativeDateFilterDataDto) dateDto;
           queryDate = createRelativeStartDateFilter(relativeStartDateFilterDataDto, dateFieldType);
         } else {

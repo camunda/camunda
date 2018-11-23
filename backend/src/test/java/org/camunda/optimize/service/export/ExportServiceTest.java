@@ -1,6 +1,6 @@
 package org.camunda.optimize.service.export;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataProcessInstanceDto;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -9,7 +9,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.*;
 
 
 public class ExportServiceTest {

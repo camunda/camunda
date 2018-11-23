@@ -1,16 +1,16 @@
 package org.camunda.optimize.service.es.report.command.pi.frequency;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.NumberProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.NumberSingleReportResultDto;
 import org.camunda.optimize.service.es.report.command.ReportCommand;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 
-public class CountProcessInstanceFrequencyGroupByNoneCommand extends ReportCommand<NumberProcessReportResultDto> {
+public class CountProcessInstanceFrequencyGroupByNoneCommand extends ReportCommand<NumberSingleReportResultDto> {
 
   @Override
-  protected NumberProcessReportResultDto evaluate() {
+  protected NumberSingleReportResultDto evaluate() {
 
     logger.debug("Evaluating count process instance frequency grouped by none report " +
       "for process definition key [{}] and version [{}]",
@@ -31,7 +31,7 @@ public class CountProcessInstanceFrequencyGroupByNoneCommand extends ReportComma
       .setSize(0)
       .get();
 
-    NumberProcessReportResultDto numberResult = new NumberProcessReportResultDto();
+    NumberSingleReportResultDto numberResult = new NumberSingleReportResultDto();
     numberResult.setResult(response.getHits().getTotalHits());
     numberResult.setProcessInstanceCount(response.getHits().getTotalHits());
     return numberResult;

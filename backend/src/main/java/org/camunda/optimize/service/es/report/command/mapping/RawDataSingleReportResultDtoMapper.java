@@ -3,8 +3,8 @@ package org.camunda.optimize.service.es.report.command.mapping;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataSingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.value.VariableInstanceDto;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHits;
@@ -29,7 +29,7 @@ public class RawDataSingleReportResultDtoMapper {
     this.recordLimit = recordLimit;
   }
 
-  public RawDataProcessReportResultDto mapFrom(final SearchResponse searchResponse, final ObjectMapper objectMapper) {
+  public RawDataSingleReportResultDto mapFrom(final SearchResponse searchResponse, final ObjectMapper objectMapper) {
     List<RawDataProcessInstanceDto> rawData = new ArrayList<>();
     Set<String> allVariableNames = new HashSet<>();
     SearchHits searchHits = searchResponse.getHits();
@@ -96,9 +96,9 @@ public class RawDataSingleReportResultDtoMapper {
     return result;
   }
 
-  private RawDataProcessReportResultDto createResult(final List<RawDataProcessInstanceDto> limitedRawDataResult,
-                                                     final Long totalHits) {
-    RawDataProcessReportResultDto result = new RawDataProcessReportResultDto();
+  private RawDataSingleReportResultDto createResult(final List<RawDataProcessInstanceDto> limitedRawDataResult,
+                                                    final Long totalHits) {
+    RawDataSingleReportResultDto result = new RawDataSingleReportResultDto();
     result.setResult(limitedRawDataResult);
     result.setProcessInstanceCount(totalHits);
     return result;

@@ -2,11 +2,10 @@ package org.camunda.optimize.service.es.filter;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewOperation;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataSingleReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -21,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_RAW_DATA_OPERATION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -54,14 +54,14 @@ public abstract class AbstractRollingDateFilterIT {
 
   protected void assertResults(
       ProcessInstanceEngineDto processInstance,
-      RawDataProcessReportResultDto result,
+      RawDataSingleReportResultDto result,
       int expectedPiCount
   ) {
-    ProcessReportDataDto resultDataDto = result.getData();
+    SingleReportDataDto resultDataDto = result.getData();
     assertThat(resultDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
-    assertThat(resultDataDto.getView().getOperation(), is(ProcessViewOperation.RAW));
+    assertThat(resultDataDto.getView().getOperation(), is(VIEW_RAW_DATA_OPERATION));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat("rolling date result size", result.getResult().size(), is(expectedPiCount));
 
@@ -71,31 +71,31 @@ public abstract class AbstractRollingDateFilterIT {
     }
   }
 
-  protected RawDataProcessReportResultDto createAndEvaluateReportWithRollingStartDateFilter(
+  protected RawDataSingleReportResultDto createAndEvaluateReportWithRollingStartDateFilter(
       String processDefinitionKey,
       String processDefinitionVersion,
       String unit,
       boolean newToken
   ) {
-    ProcessReportDataDto reportData = ReportDataBuilderHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
-    List<ProcessFilterDto> rollingDateFilter = DateUtilHelper.createRollingStartDateFilter(1L, unit);
+    SingleReportDataDto reportData = ReportDataBuilderHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+    List<FilterDto> rollingDateFilter = DateUtilHelper.createRollingStartDateFilter(1L, unit);
     reportData.setFilter(rollingDateFilter);
     return evaluateReport(reportData, newToken);
   }
 
-  protected RawDataProcessReportResultDto createAndEvaluateReportWithRollingEndDateFilter(
+  protected RawDataSingleReportResultDto createAndEvaluateReportWithRollingEndDateFilter(
           String processDefinitionKey,
           String processDefinitionVersion,
           String unit,
           boolean newToken
   ) {
-    ProcessReportDataDto reportData = ReportDataBuilderHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
-    List<ProcessFilterDto> rollingDateFilter = DateUtilHelper.createRollingEndDateFilter(1L, unit);
+    SingleReportDataDto reportData = ReportDataBuilderHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+    List<FilterDto> rollingDateFilter = DateUtilHelper.createRollingEndDateFilter(1L, unit);
     reportData.setFilter(rollingDateFilter);
     return evaluateReport(reportData, newToken);
   }
 
-  protected RawDataProcessReportResultDto evaluateReport(ProcessReportDataDto reportData, boolean newToken) {
+  protected RawDataSingleReportResultDto evaluateReport(SingleReportDataDto reportData, boolean newToken) {
     Response response;
     if (newToken) {
       response = evaluateReportAndReturnResponseWithNewToken(reportData);
@@ -104,17 +104,17 @@ public abstract class AbstractRollingDateFilterIT {
     }
     assertThat(response.getStatus(), is(200));
 
-    return response.readEntity(RawDataProcessReportResultDto.class);
+    return response.readEntity(RawDataSingleReportResultDto.class);
   }
 
-  protected Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
+  protected Response evaluateReportAndReturnResponse(SingleReportDataDto reportData) {
     return embeddedOptimizeRule
             .getRequestExecutor()
             .buildEvaluateSingleUnsavedReportRequest(reportData)
             .execute();
   }
 
-  protected Response evaluateReportAndReturnResponseWithNewToken(ProcessReportDataDto reportData) {
+  protected Response evaluateReportAndReturnResponseWithNewToken(SingleReportDataDto reportData) {
     String header = "Bearer " + embeddedOptimizeRule.getNewAuthenticationToken();
     return embeddedOptimizeRule
             .getRequestExecutor()

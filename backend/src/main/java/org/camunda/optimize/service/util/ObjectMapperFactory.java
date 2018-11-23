@@ -54,8 +54,7 @@ public class ObjectMapperFactory {
         SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
         DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
         DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
-        DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES,
-        DeserializationFeature.FAIL_ON_MISSING_EXTERNAL_TYPE_ID_PROPERTY
+        DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES
       )
       .featuresToEnable(
         JsonParser.Feature.ALLOW_COMMENTS,

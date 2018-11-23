@@ -2,15 +2,15 @@ package org.camunda.optimize.service.es.retrieval;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.variable.BooleanVariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ExecutedFlowNodeFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.process.parameters.ProcessPartDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.ExecutedFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.util.ExecutedFlowNodeFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.report.single.parameters.ProcessPartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataSingleReportResultDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -126,7 +126,7 @@ public class SingleReportHandlingIT {
   public void updateReport() {
     // given
     String id = createNewReport();
-    ProcessReportDataDto reportData = new ProcessReportDataDto();
+    SingleReportDataDto reportData = new SingleReportDataDto();
     reportData.setProcessDefinitionKey("procdef");
     reportData.setProcessDefinitionVersion("123");
     reportData.setFilter(Collections.emptyList());
@@ -135,7 +135,7 @@ public class SingleReportHandlingIT {
     processPartDto.setStart("start123");
     processPartDto.setEnd("end123");
     reportData.getParameters().setProcessPart(processPartDto);
-    SingleReportDefinitionDto<ProcessReportDataDto> report = new SingleReportDefinitionDto<>();
+    SingleReportDefinitionDto report = new SingleReportDefinitionDto();
     report.setData(reportData);
     report.setId("shouldNotBeUpdated");
     report.setLastModifier("shouldNotBeUpdatedManually");
@@ -151,7 +151,7 @@ public class SingleReportHandlingIT {
 
     // then
     assertThat(reports.size(), is(1));
-    SingleReportDefinitionDto<ProcessReportDataDto> newReport = (SingleReportDefinitionDto<ProcessReportDataDto>) reports.get(0);
+    SingleReportDefinitionDto newReport = reports.get(0);
     assertThat(newReport.getData().getProcessDefinitionKey(), is("procdef"));
     assertThat(newReport.getData().getProcessDefinitionVersion(), is("123"));
     assertThat(newReport.getData().getConfiguration(), is("aRandomConfiguration"));
@@ -168,8 +168,7 @@ public class SingleReportHandlingIT {
   public void updateReportWithoutPDInformation() {
     // given
     String id = createNewReport();
-    SingleReportDefinitionDto<ProcessReportDataDto> updatedReport = new SingleReportDefinitionDto<>();
-    updatedReport.setData(new ProcessReportDataDto());
+    SingleReportDefinitionDto updatedReport = new SingleReportDefinitionDto();
 
     //when
     Response updateReportResponse = getUpdateReportResponse(id, updatedReport);
@@ -178,7 +177,7 @@ public class SingleReportHandlingIT {
     assertThat(updateReportResponse.getStatus(), is(500));
 
     //when
-    ProcessReportDataDto data = new ProcessReportDataDto();
+    SingleReportDataDto data = new SingleReportDataDto();
     data.setProcessDefinitionVersion("BLAH");
     updatedReport.setData(data);
     updateReportResponse = getUpdateReportResponse(id, updatedReport);
@@ -187,7 +186,7 @@ public class SingleReportHandlingIT {
     assertThat(updateReportResponse.getStatus(), is(500));
 
     //when
-    data = new ProcessReportDataDto();
+    data = new SingleReportDataDto();
     data.setProcessDefinitionKey("BLAH");
     updatedReport.setData(data);
     updateReportResponse = getUpdateReportResponse(id, updatedReport);
@@ -196,7 +195,7 @@ public class SingleReportHandlingIT {
     assertThat(updateReportResponse.getStatus(), is(500));
 
     //when
-    data = new ProcessReportDataDto();
+    data = new SingleReportDataDto();
     data.setProcessDefinitionKey("BLAH");
     data.setProcessDefinitionVersion("BLAH");
     updatedReport.setData(data);
@@ -210,14 +209,14 @@ public class SingleReportHandlingIT {
   public void updateReportWithFilters() {
     // given
     String id = createNewReport();
-    ProcessReportDataDto reportData = new ProcessReportDataDto();
+    SingleReportDataDto reportData = new SingleReportDataDto();
     reportData.setProcessDefinitionKey("procdef");
     reportData.setProcessDefinitionVersion("123");
 
     reportData.getFilter().addAll(DateUtilHelper.createFixedStartDateFilter(null, null));
     reportData.getFilter().addAll(createVariableFilter());
     reportData.getFilter().addAll(createExecutedFlowNodeFilter());
-    SingleReportDefinitionDto<ProcessReportDataDto> report = new SingleReportDefinitionDto<>();
+    SingleReportDefinitionDto report = new SingleReportDefinitionDto();
     report.setData(reportData);
     report.setId("shouldNotBeUpdated");
     report.setLastModifier("shouldNotBeUpdatedManually");
@@ -233,13 +232,13 @@ public class SingleReportHandlingIT {
 
     // then
     assertThat(reports.size(), is(1));
-    SingleReportDefinitionDto<ProcessReportDataDto> newReport = (SingleReportDefinitionDto<ProcessReportDataDto>) reports.get(0);
+    SingleReportDefinitionDto newReport = reports.get(0);
     assertThat(newReport.getData(), is(notNullValue()));
     reportData = newReport.getData();
     assertThat(reportData.getFilter().size(), is(3));
   }
 
-  private List<ProcessFilterDto> createVariableFilter() {
+  private List<FilterDto> createVariableFilter() {
     BooleanVariableFilterDataDto data = new BooleanVariableFilterDataDto("true");
     data.setName("foo");
 
@@ -248,7 +247,7 @@ public class SingleReportHandlingIT {
     return Collections.singletonList(variableFilterDto);
   }
 
-  private List<ProcessFilterDto> createExecutedFlowNodeFilter() {
+  private List<FilterDto> createExecutedFlowNodeFilter() {
     List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
           .id("task1")
           .build();
@@ -280,9 +279,9 @@ public class SingleReportHandlingIT {
   public void reportEvaluationReturnsMetaData() {
     // given
     String reportId = createNewReport();
-    ProcessReportDataDto reportData =
+    SingleReportDataDto reportData =
       createReportDataViewRawAsTable(FOO_PROCESS_DEFINITION_KEY, FOO_PROCESS_DEFINITION_VERSION);
-    SingleReportDefinitionDto<ProcessReportDataDto> report = new SingleReportDefinitionDto<>();
+    SingleReportDefinitionDto report = new SingleReportDefinitionDto();
     report.setData(reportData);
     report.setName("name");
     OffsetDateTime now = OffsetDateTime.now();
@@ -290,7 +289,7 @@ public class SingleReportHandlingIT {
     updateReport(reportId, report);
 
     // when
-    RawDataProcessReportResultDto result = evaluateRawDataReportById(reportId);
+    RawDataSingleReportResultDto result = evaluateRawDataReportById(reportId);
 
     // then
     assertThat(result.getId(), is(reportId));
@@ -419,8 +418,8 @@ public class SingleReportHandlingIT {
   }
 
   private ReportDefinitionDto constructReportWithFakePD() {
-    SingleReportDefinitionDto<ProcessReportDataDto> reportDefinitionDto = new SingleReportDefinitionDto<>();
-    ProcessReportDataDto data = new ProcessReportDataDto();
+    SingleReportDefinitionDto reportDefinitionDto = new SingleReportDefinitionDto();
+    SingleReportDataDto data = new SingleReportDataDto();
     data.setProcessDefinitionVersion("FAKE");
     data.setProcessDefinitionKey("FAKE");
     reportDefinitionDto.setData(data);
@@ -498,11 +497,11 @@ public class SingleReportHandlingIT {
             .execute();
   }
 
-  private RawDataProcessReportResultDto evaluateRawDataReportById(String reportId) {
+  private RawDataSingleReportResultDto evaluateRawDataReportById(String reportId) {
     return embeddedOptimizeRule
             .getRequestExecutor()
             .buildEvaluateSavedReportRequest(reportId)
-            .execute(RawDataProcessReportResultDto.class, 200);
+            .execute(RawDataSingleReportResultDto.class, 200);
   }
 
   private List<SingleReportDefinitionDto> getAllReports() {

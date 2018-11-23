@@ -5,9 +5,8 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.GroupByDateUnit;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -33,6 +32,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.DATE_UNIT_DAY;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -74,7 +74,7 @@ public class ExportServiceIT {
         ReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByStartDate(
           FAKE,
           FAKE,
-          GroupByDateUnit.DAY
+          DATE_UNIT_DAY
         ),
         "/csv/count_pi_frequency_group_by_start_date.csv",
         "Count PI Grouped By PI Start Date"
@@ -91,7 +91,7 @@ public class ExportServiceIT {
         ReportDataBuilderHelper.createAverageProcessInstanceDurationGroupByStartDateReport(
           FAKE,
           FAKE,
-          GroupByDateUnit.DAY
+          DATE_UNIT_DAY
         ),
         "/csv/avg_pi_duration_group_by_start_date.csv",
         "Avg PI Duration Grouped By PI Start Date"
@@ -107,7 +107,7 @@ public class ExportServiceIT {
     });
   }
 
-  private ProcessReportDataDto currentReport;
+  private SingleReportDataDto currentReport;
   private String expectedCSV;
 
   private static final String FAKE = "FAKE";
@@ -125,7 +125,7 @@ public class ExportServiceIT {
       .around(embeddedOptimizeRule)
       .around(engineDatabaseRule);
 
-  public ExportServiceIT(ProcessReportDataDto currentReport, String expectedCSV, String testName) {
+  public ExportServiceIT(SingleReportDataDto currentReport, String expectedCSV, String testName) {
     this.currentReport = currentReport;
     this.expectedCSV = expectedCSV;
   }
@@ -175,9 +175,9 @@ public class ExportServiceIT {
     return stringExpected;
   }
 
-  private String createAndStoreDefaultReportDefinition(ProcessReportDataDto reportData) {
+  private String createAndStoreDefaultReportDefinition(SingleReportDataDto reportData) {
     String id = createNewReportHelper();
-    SingleReportDefinitionDto<ProcessReportDataDto> report = new SingleReportDefinitionDto<>();
+    SingleReportDefinitionDto report = new SingleReportDefinitionDto();
     report.setData(reportData);
     report.setId("something");
     report.setLastModifier("something");

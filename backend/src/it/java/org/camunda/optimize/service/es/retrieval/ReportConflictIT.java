@@ -16,11 +16,10 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDat
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
+import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.util.ReportDataBuilderHelper;
@@ -70,13 +69,12 @@ public class ReportConflictIT {
     String[] expectedConflictedItemIds = new String[]{combinedReportId};
 
     // when
-    final SingleReportDefinitionDto<ProcessReportDataDto> firstSingleReport =
-      (SingleReportDefinitionDto) getReport(firstSingleReportId);
-    final SingleReportDefinitionDto<ProcessReportDataDto> reportUpdate = new SingleReportDefinitionDto<>();
+    final SingleReportDefinitionDto firstSingleReport = (SingleReportDefinitionDto) getReport(firstSingleReportId);
+    final SingleReportDefinitionDto reportUpdate = new SingleReportDefinitionDto();
     reportUpdate.setData(ReportDataBuilderHelper.createAverageProcessInstanceDurationGroupByStartDateReport(
       firstSingleReport.getData().getProcessDefinitionKey(),
       firstSingleReport.getData().getProcessDefinitionVersion(),
-      GroupByDateUnit.DAY
+      ReportConstants.DATE_UNIT_DAY
     ));
     ConflictResponseDto conflictResponseDto = updateReportFailWithConflict(firstSingleReportId, reportUpdate, force);
 
@@ -98,13 +96,12 @@ public class ReportConflictIT {
     String[] expectedConflictedItemIds = new String[]{alertForReport};
 
     // when
-    final SingleReportDefinitionDto<ProcessReportDataDto> singleReport =
-      (SingleReportDefinitionDto) getReport(reportId);
-    final SingleReportDefinitionDto<ProcessReportDataDto> reportUpdate = new SingleReportDefinitionDto<>();
+    final SingleReportDefinitionDto singleReport = (SingleReportDefinitionDto) getReport(reportId);
+    final SingleReportDefinitionDto reportUpdate = new SingleReportDefinitionDto();
     reportUpdate.setData(ReportDataBuilderHelper.createAverageProcessInstanceDurationGroupByStartDateReport(
       singleReport.getData().getProcessDefinitionKey(),
       singleReport.getData().getProcessDefinitionVersion(),
-      GroupByDateUnit.DAY
+      ReportConstants.DATE_UNIT_DAY
     ));
     ConflictResponseDto conflictResponseDto = updateReportFailWithConflict(reportId, reportUpdate, force);
 

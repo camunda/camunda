@@ -1,9 +1,8 @@
 package org.camunda.optimize.service.es.report.command.pi.duration.groupby.date;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.GroupByDateUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.StartDateGroupByValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.MapProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.StartDateGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.value.StartDateGroupByValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapSingleReportResultDto;
 import org.camunda.optimize.service.es.report.command.ReportCommand;
 import org.camunda.optimize.service.es.report.command.util.ReportUtil;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
@@ -24,13 +23,13 @@ import java.util.Map;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 
 public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
-    extends ReportCommand<MapProcessReportResultDto> {
+    extends ReportCommand<MapSingleReportResultDto> {
 
   protected static final String DURATION_AGGREGATION = "durationAggregation";
   private static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
 
   @Override
-  protected MapProcessReportResultDto evaluate() throws OptimizeException {
+  protected MapSingleReportResultDto evaluate() throws OptimizeException {
 
     logger.debug("Evaluating process instance duration grouped by start date report " +
       "for process definition key [{}] and version [{}]",
@@ -56,7 +55,7 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
       .get();
 
 
-    MapProcessReportResultDto mapResult = new MapProcessReportResultDto();
+    MapSingleReportResultDto mapResult = new MapSingleReportResultDto();
     mapResult.setResult(processAggregations(response.getAggregations()));
     mapResult.setProcessInstanceCount(response.getHits().getTotalHits());
     return mapResult;
@@ -78,7 +77,7 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
     return result;
   }
 
-  private AggregationBuilder createAggregation(GroupByDateUnit unit) throws OptimizeException {
+  private AggregationBuilder createAggregation(String unit) throws OptimizeException {
     DateHistogramInterval interval = ReportUtil.getDateHistogramInterval(unit);
     return AggregationBuilders
       .dateHistogram(DATE_HISTOGRAM_AGGREGATION)

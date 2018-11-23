@@ -4,6 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.exceptions.OptimizeException;
@@ -39,17 +43,31 @@ public class ReportRestService {
   private ReportService reportService;
 
   /**
-   * Creates an empty new report.
+   * Creates an empty single report.
    *
    * @return the id of the report
    */
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public IdDto createNewReport(@Context ContainerRequestContext requestContext,
-                               ReportDefinitionDto<?> reportDefinitionDto) throws JsonProcessingException {
+  @Path("/single")
+  public IdDto createNewSingleReport(@Context ContainerRequestContext requestContext) {
     String userId = getRequestUser(requestContext);
-    return reportService.createNewReportAndReturnId(userId, reportDefinitionDto);
+    return reportService.createNewSingleReportAndReturnId(userId);
+  }
+
+  /**
+   * Creates an empty combined report.
+   *
+   * @return the id of the report
+   */
+  @POST
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Path("/combined")
+  public IdDto createNewCombinedReport(@Context ContainerRequestContext requestContext) {
+    String userId = getRequestUser(requestContext);
+    return reportService.createNewCombinedReportAndReturnId(userId);
   }
 
   /**
@@ -134,19 +152,39 @@ public class ReportRestService {
     return reportService.evaluateSavedReport(userId, reportId);
   }
 
+
   /**
-   * Evaluates the given report and returns the result.
+   * Evaluates the given single report and returns the result.
    *
    * @return A report definition that is also containing the actual result of the report evaluation.
    */
   @POST
-  @Path("/evaluate")
+  @Path("/evaluate/single")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public ReportResultDto evaluateReport(@Context ContainerRequestContext requestContext,
-                                        ReportDefinitionDto reportDefinitionDto) {
+                                        SingleReportDataDto reportData) {
     String userId = getRequestUser(requestContext);
-    return reportService.evaluateReport(userId, reportDefinitionDto);
+    SingleReportDefinitionDto reportDefinition = new SingleReportDefinitionDto();
+    reportDefinition.setData(reportData);
+    return reportService.evaluateSingleReport(userId, reportDefinition);
+  }
+
+  /**
+   * Evaluates the given combined report and returns the result.
+   *
+   * @return A report definition that is also containing the actual result of the report evaluation.
+   */
+  @POST
+  @Path("/evaluate/combined")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public ReportResultDto evaluateReport(@Context ContainerRequestContext requestContext,
+                                        CombinedReportDataDto reportData) {
+    String userId = getRequestUser(requestContext);
+    CombinedReportDefinitionDto reportDefinition = new CombinedReportDefinitionDto();
+    reportDefinition.setData(reportData);
+    return reportService.evaluateCombinedReport(userId, reportDefinition);
   }
 
 }

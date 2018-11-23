@@ -4,11 +4,8 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.builder.AbstractServiceTaskBuilder;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.MapProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewOperation;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapSingleReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -24,7 +21,10 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_COUNT_OPERATION;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FLOW_NODE_ENTITY;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FREQUENCY_PROPERTY;
 import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -55,10 +55,10 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
+    SingleReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
         latestProcess.getProcessDefinitionKey(), ALL_VERSIONS
     );
-    MapProcessReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     //then
     assertThat(result.getResult(), is(notNullValue()));
@@ -78,10 +78,10 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
+    SingleReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
         latestProcess.getProcessDefinitionKey(), ALL_VERSIONS
     );
-    MapProcessReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     //then
     assertThat(result.getResult(), is(notNullValue()));
@@ -99,19 +99,19 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
+    SingleReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
         processInstanceDto.getProcessDefinitionKey(), ALL_VERSIONS
     );
-    MapProcessReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
-    ProcessReportDataDto resultReportDataDto = result.getData();
+    SingleReportDataDto resultReportDataDto = result.getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(ALL_VERSIONS));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getOperation(), is(ProcessViewOperation.COUNT));
-    assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.FLOW_NODE));
-    assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.FREQUENCY));
+    assertThat(resultReportDataDto.getView().getOperation(), is(VIEW_COUNT_OPERATION));
+    assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_FLOW_NODE_ENTITY));
+    assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_FREQUENCY_PROPERTY));
     assertThat(result.getResult(), is(notNullValue()));
     Map<String, Long> flowNodeIdToExecutionFrequency = result.getResult();
     assertThat(flowNodeIdToExecutionFrequency.size(), is(3));
@@ -127,19 +127,19 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
+    SingleReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
         processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
     );
-    MapProcessReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
-    ProcessReportDataDto resultReportDataDto = result.getData();
+    SingleReportDataDto resultReportDataDto = result.getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getOperation(), is(ProcessViewOperation.COUNT));
-    assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.FLOW_NODE));
-    assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.FREQUENCY));
+    assertThat(resultReportDataDto.getView().getOperation(), is(VIEW_COUNT_OPERATION));
+    assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_FLOW_NODE_ENTITY));
+    assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_FREQUENCY_PROPERTY));
     assertThat(result.getResult(), is(notNullValue()));
     Map<String, Long> flowNodeIdToExecutionFrequency = result.getResult();
     assertThat(flowNodeIdToExecutionFrequency.size(), is(3));
@@ -155,20 +155,20 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
+    SingleReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
         processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
     );
-    MapProcessReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
-    ProcessReportDataDto resultReportDataDto = result.getData();
+    SingleReportDataDto resultReportDataDto = result.getData();
     assertThat(result.getProcessInstanceCount(), is(1L));
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getOperation(), is(ProcessViewOperation.COUNT));
-    assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.FLOW_NODE));
-    assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.FREQUENCY));
+    assertThat(resultReportDataDto.getView().getOperation(), is(VIEW_COUNT_OPERATION));
+    assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_FLOW_NODE_ENTITY));
+    assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_FREQUENCY_PROPERTY));
     assertThat(result.getResult(), is(notNullValue()));
     Map<String, Long> flowNodeIdToExecutionFrequency = result.getResult();
     assertThat(flowNodeIdToExecutionFrequency.size(), is(3));
@@ -185,10 +185,10 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
+    SingleReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
         engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion()
     );
-    MapProcessReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
@@ -208,15 +208,15 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ProcessReportDataDto reportData =
+    SingleReportDataDto reportData =
       createCountFlowNodeFrequencyGroupByFlowNode(instanceDto.getProcessDefinitionKey(), instanceDto.getProcessDefinitionVersion());
-    MapProcessReportResultDto result1 = evaluateReport(reportData);
+    MapSingleReportResultDto result1 = evaluateReport(reportData);
     reportData.setProcessDefinitionKey(instanceDto2.getProcessDefinitionKey());
     reportData.setProcessDefinitionVersion(instanceDto2.getProcessDefinitionVersion());
-    MapProcessReportResultDto result2 = evaluateReport(reportData);
+    MapSingleReportResultDto result2 = evaluateReport(reportData);
 
     // then
-    ProcessReportDataDto resultReportDataDto1 = result1.getData();
+    SingleReportDataDto resultReportDataDto1 = result1.getData();
     assertThat(resultReportDataDto1.getProcessDefinitionKey(), is(instanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto1.getProcessDefinitionVersion(), is(instanceDto.getProcessDefinitionVersion()));
     assertThat(result1.getResult(), is(notNullValue()));
@@ -224,7 +224,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     assertThat(flowNodeIdToExecutionFrequency.size(), is(3));
     assertThat(flowNodeIdToExecutionFrequency.get(TEST_ACTIVITY ), is(2L));
 
-    ProcessReportDataDto resultReportDataDto2 = result2.getData();
+    SingleReportDataDto resultReportDataDto2 = result2.getData();
     assertThat(resultReportDataDto2.getProcessDefinitionKey(), is(instanceDto2.getProcessDefinitionKey()));
     assertThat(resultReportDataDto2.getProcessDefinitionVersion(), is(instanceDto2.getProcessDefinitionVersion()));
     assertThat(result2.getResult(), is(notNullValue()));
@@ -254,10 +254,10 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
+    SingleReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
         instanceDto.getProcessDefinitionKey(), instanceDto.getProcessDefinitionVersion()
     );
-    MapProcessReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
@@ -307,9 +307,9 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     assertThat(definitions.size(),is(2));
 
     //when
-    ProcessReportDataDto reportData =
+    SingleReportDataDto reportData =
       createCountFlowNodeFrequencyGroupByFlowNode(testMIProcess, "1");
-    MapProcessReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     //then
     assertThat(result.getResult(), is(notNullValue()));
@@ -326,11 +326,11 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
+    SingleReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
         processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion()
     );
     reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(null, past.minusSeconds(1L)));
-    MapProcessReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
@@ -354,7 +354,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
   @Test
   public void optimizeExceptionOnViewEntityIsNull() {
     // given
-    ProcessReportDataDto dataDto = createCountFlowNodeFrequencyGroupByFlowNode("123", "1");
+    SingleReportDataDto dataDto = createCountFlowNodeFrequencyGroupByFlowNode("123", "1");
     dataDto.getView().setEntity(null);
 
     //when
@@ -367,7 +367,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
   @Test
   public void optimizeExceptionOnViewPropertyIsNull() {
     // given
-    ProcessReportDataDto dataDto = createCountFlowNodeFrequencyGroupByFlowNode("123", "1");
+    SingleReportDataDto dataDto = createCountFlowNodeFrequencyGroupByFlowNode("123","1");
     dataDto.getView().setProperty(null);
 
     //when
@@ -380,7 +380,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
   @Test
   public void optimizeExceptionOnGroupByTypeIsNull() {
     // given
-    ProcessReportDataDto dataDto = createCountFlowNodeFrequencyGroupByFlowNode("123", "1");
+    SingleReportDataDto dataDto = createCountFlowNodeFrequencyGroupByFlowNode("123", "1");
     dataDto.getGroupBy().setType(null);
 
     //when
@@ -419,14 +419,14 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
   }
 
 
-  private MapProcessReportResultDto evaluateReport(ProcessReportDataDto reportData) {
+  private MapSingleReportResultDto evaluateReport(SingleReportDataDto reportData) {
     Response response = evaluateReportAndReturnResponse(reportData);
     assertThat(response.getStatus(), is(200));
 
-    return response.readEntity(MapProcessReportResultDto.class);
+    return response.readEntity(MapSingleReportResultDto.class);
   }
 
-  private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
+  private Response evaluateReportAndReturnResponse(SingleReportDataDto reportData) {
     return embeddedOptimizeRule
             .getRequestExecutor()
             .buildEvaluateSingleUnsavedReportRequest(reportData)

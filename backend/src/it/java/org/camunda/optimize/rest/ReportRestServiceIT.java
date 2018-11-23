@@ -4,8 +4,8 @@ import junitparams.JUnitParamsRunner;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.exceptions.ReportEvaluationException;
 import org.camunda.optimize.service.sharing.AbstractSharingIT;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -18,7 +18,9 @@ import org.junit.runner.RunWith;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -106,16 +108,16 @@ public class ReportRestServiceIT {
     // when
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdateReportRequest(id, constructProcessReportWithFakePD())
+      .buildUpdateReportRequest(id, constructReportWithFakePD())
       .execute();
 
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
   }
 
-  private SingleReportDefinitionDto<ProcessReportDataDto> constructProcessReportWithFakePD() {
-    SingleReportDefinitionDto<ProcessReportDataDto> reportDefinitionDto = new SingleReportDefinitionDto<>();
-    ProcessReportDataDto data = new ProcessReportDataDto();
+  private ReportDefinitionDto constructReportWithFakePD() {
+    SingleReportDefinitionDto reportDefinitionDto = new SingleReportDefinitionDto();
+    SingleReportDataDto data = new SingleReportDataDto();
     data.setProcessDefinitionVersion("FAKE");
     data.setProcessDefinitionKey("FAKE");
     reportDefinitionDto.setData(data);
@@ -278,7 +280,7 @@ public class ReportRestServiceIT {
   @Test
   public void evaluateUnsavedReport() {
     //given
-    ProcessReportDataDto reportDataDto = ReportDataBuilderHelper.createReportDataViewRawAsTable(
+    SingleReportDataDto reportDataDto = ReportDataBuilderHelper.createReportDataViewRawAsTable(
       RANDOM_KEY,
       RANDOM_VERSION
     );
@@ -359,7 +361,7 @@ public class ReportRestServiceIT {
   @Test
   public void evaluateReportWithoutViewById() {
     //given
-    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNoneNumber =
+    SingleReportDataDto countFlowNodeFrequencyGroupByFlowNoneNumber =
       ReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNodeNumber(RANDOM_KEY, RANDOM_VERSION);
     countFlowNodeFrequencyGroupByFlowNoneNumber.setView(null);
     String id = createAndStoreDefaultReportDefinition(
@@ -383,9 +385,9 @@ public class ReportRestServiceIT {
       .execute(ReportDefinitionDto.class, 200);
   }
 
-  private String createAndStoreDefaultReportDefinition(ProcessReportDataDto reportDataViewRawAsTable) {
+  private String createAndStoreDefaultReportDefinition(SingleReportDataDto reportDataViewRawAsTable) {
     String id = addEmptyReportToOptimize();
-    SingleReportDefinitionDto<ProcessReportDataDto> report = new SingleReportDefinitionDto<>();
+    SingleReportDefinitionDto report = new SingleReportDefinitionDto();
     report.setData(reportDataViewRawAsTable);
     report.setId(RANDOM_STRING);
     report.setLastModifier(RANDOM_STRING);

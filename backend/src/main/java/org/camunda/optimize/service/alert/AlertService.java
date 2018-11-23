@@ -5,10 +5,8 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.EmailAlertEnabledDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.service.es.reader.AlertReader;
 import org.camunda.optimize.service.es.writer.AlertWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -36,6 +34,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_NONE_TYPE;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.SINGLE_NUMBER_VISUALIZATION;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.SINGLE_REPORT_TYPE;
 
 
 @Component
@@ -311,7 +313,7 @@ public class AlertService {
    * Check if it's still evaluated as number.
    */
   public void deleteAlertsIfNeeded(String reportId, ReportDefinitionDto reportDefinition) {
-    if (reportDefinition instanceof SingleReportDefinitionDto) {
+    if (SINGLE_REPORT_TYPE.equals(reportDefinition.getReportType())) {
       SingleReportDefinitionDto singleReport = (SingleReportDefinitionDto) reportDefinition;
       if (!validateIfReportIsSuitableForAlert(singleReport)) {
         this.deleteAlertsForReport(reportId);
@@ -320,14 +322,12 @@ public class AlertService {
   }
 
   public boolean validateIfReportIsSuitableForAlert(SingleReportDefinitionDto report) {
-    if (report.getData() instanceof ProcessReportDataDto) {
-      final ProcessReportDataDto data = (ProcessReportDataDto) report.getData();
-      return data.getGroupBy() != null
-        && ProcessGroupByType.NONE.equals(data.getGroupBy().getType())
-        && ProcessVisualization.NUMBER.equals(data.getVisualization());
-    } else {
-      return false;
-    }
+    final SingleReportDataDto data = report.getData();
+    return data != null &&
+      data.getGroupBy() != null &&
+      (GROUP_BY_NONE_TYPE.equals(data.getGroupBy().getType()) &&
+        SINGLE_NUMBER_VISUALIZATION.equals(data.getVisualization())
+      );
   }
 
   public JobDetail createStatusCheckJobDetails(AlertDefinitionDto fakeReportAlert) {
