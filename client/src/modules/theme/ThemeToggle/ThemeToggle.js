@@ -22,8 +22,8 @@ export default function ThemeToggle() {
         <React.Fragment>
           <Toggle
             onClick={toggleTheme}
-            title="toggle theme"
-            aria-label="toggle theme"
+            title="Toggle theme"
+            aria-label="Toggle theme"
           />
         </React.Fragment>
       )}

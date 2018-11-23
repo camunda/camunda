@@ -30,8 +30,8 @@ export default class Paginator extends React.Component {
     return (
       <Styled.Pagination>
         <Styled.Page
-          title="first page"
-          aria-label="first page"
+          title="First page"
+          aria-label="First page"
           disabled={currentPage === 1}
           withIcon
           onClick={this.handlePageChange(1)}
@@ -39,8 +39,8 @@ export default class Paginator extends React.Component {
           <LeftBar />
         </Styled.Page>
         <Styled.Page
-          title="previous page"
-          aria-label="previous page"
+          title="Previous page"
+          aria-label="Previous page"
           disabled={currentPage === 1}
           withIcon
           onClick={this.handlePageChange(currentPage - 1)}
@@ -50,8 +50,8 @@ export default class Paginator extends React.Component {
         {!pageRange.includes(1) && (
           <React.Fragment>
             <Styled.Page
-              title="first page"
-              aria-label="first page"
+              title="First page"
+              aria-label="First page"
               onClick={this.handlePageChange(1)}
             >
               1
@@ -63,8 +63,8 @@ export default class Paginator extends React.Component {
         )}
         {pageRange.map(page => (
           <Styled.Page
-            title={`page ${page}`}
-            aria-label={`page ${page}`}
+            title={`Page ${page}`}
+            aria-label={`Page ${page}`}
             key={page}
             active={page === currentPage}
             onClick={this.handlePageChange(page)}
@@ -78,8 +78,8 @@ export default class Paginator extends React.Component {
               <Styled.PageSeparator>…</Styled.PageSeparator>
             )}
             <Styled.Page
-              title={`page ${maxPage}`}
-              aria-label={`page ${maxPage}`}
+              title={`Page ${maxPage}`}
+              aria-label={`Page ${maxPage}`}
               onClick={this.handlePageChange(maxPage)}
             >
               {maxPage}
@@ -87,8 +87,8 @@ export default class Paginator extends React.Component {
           </React.Fragment>
         )}
         <Styled.Page
-          title="next page"
-          aria-label="next page"
+          title="Next page"
+          aria-label="Next page"
           disabled={currentPage === maxPage}
           withIcon
           onClick={this.handlePageChange(currentPage + 1)}
@@ -96,8 +96,8 @@ export default class Paginator extends React.Component {
           <Right />
         </Styled.Page>
         <Styled.Page
-          title="last page"
-          aria-label="last page"
+          title="Last page"
+          aria-label="Last page"
           disabled={currentPage === maxPage}
           withIcon
           onClick={this.handlePageChange(maxPage)}
