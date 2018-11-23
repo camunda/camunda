@@ -158,8 +158,6 @@ export default withErrorHandling(
       const processDefinitionWasUpdated =
         updates.processDefinitionKey || updates.processDefinitionVersion;
       if (processDefinitionWasUpdated) {
-        data.processPart = null;
-
         if (data.groupBy && data.groupBy.type === 'variable') {
           data.groupBy = null;
           data.visualization = null;
@@ -167,12 +165,12 @@ export default withErrorHandling(
         await this.loadXmlToConfiguration(data);
       }
 
-      if (updates.view) {
-        data.configuration = {...data.configuration, targetValue: null};
+      if (updates.view || processDefinitionWasUpdated) {
+        data.configuration.targetValue = null;
         data.processPart = null;
       }
 
-      // if combined report has no reports or switching to heatmap then reset configuration
+      // if combined report has no reports then reset configuration
       if (this.state.reportType === 'combined' && updates.reportIds && !updates.reportIds.length) {
         data.configuration = {targetValue: null};
       }

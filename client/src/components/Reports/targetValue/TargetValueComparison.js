@@ -1,8 +1,6 @@
 import React from 'react';
 
-import TargetValueModal from './TargetValueModal';
-
-import {isDurationHeatmap, isChart} from './service';
+import {DurationHeatmapModal} from './DurationHeatmap';
 
 import {ButtonGroup, Button, Icon} from 'components';
 
@@ -70,31 +68,20 @@ export default class TargetValueComparison extends React.Component {
     this.closeModal();
   };
 
-  isEnabled = () => {
-    return isDurationHeatmap(this.props.reportResult) || isChart(this.props.reportResult);
-  };
-
   render() {
-    const isEnabled = this.isEnabled();
-
     return (
       <ButtonGroup className="TargetValueComparison">
         <Button
           className="TargetValueComparison__toggleButton"
-          disabled={!isEnabled}
-          active={this.getConfig().active && isEnabled}
+          active={this.getConfig().active}
           onClick={this.toggleMode}
         >
           Target Value
         </Button>
-        <Button
-          className="TargetValueComparison__editButton"
-          disabled={!isEnabled}
-          onClick={this.openModal}
-        >
+        <Button className="TargetValueComparison__editButton" onClick={this.openModal}>
           <Icon type="settings" />
         </Button>
-        <TargetValueModal
+        <DurationHeatmapModal
           open={this.state.modalOpen}
           onClose={this.closeModal}
           configuration={this.props.configuration}

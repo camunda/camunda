@@ -202,6 +202,22 @@ it('should only display process part button if view is process instance duration
   expect(node.find('ProcessPart')).not.toBePresent();
 });
 
+it('should only display target value button if view is flownode duration', () => {
+  const node = shallow(
+    <ReportControlPanel
+      {...data}
+      visualization="heat"
+      view={{entity: 'flowNode', property: 'duration'}}
+    />
+  );
+
+  expect(node.find('TargetValueComparison')).toBePresent();
+
+  node.setProps({view: {entity: 'flowNode', property: 'frequency'}});
+
+  expect(node.find('TargetValueComparison')).not.toBePresent();
+});
+
 it('should not update the target value when changing from line chart to barchart or the reverse', () => {
   const spy = jest.fn();
   const node = shallow(

@@ -71,22 +71,11 @@ const invalidProps = {
   }
 };
 
-it('should display a disabled double button', () => {
+it('should display a double button', () => {
   const node = shallow(<TargetValueComparison {...invalidProps} />);
 
   expect(node.find('.TargetValueComparison__toggleButton')).toBePresent();
-  expect(node.find('.TargetValueComparison__toggleButton')).toBeDisabled();
   expect(node.find('.TargetValueComparison__editButton')).toBePresent();
-  expect(node.find('.TargetValueComparison__editButton')).toBeDisabled();
-});
-
-it('should enable the double button if the configuration is valid', () => {
-  const node = shallow(<TargetValueComparison {...validProps} />);
-
-  expect(node.find('.TargetValueComparison__toggleButton')).toBePresent();
-  expect(node.find('.TargetValueComparison__toggleButton')).not.toBeDisabled();
-  expect(node.find('.TargetValueComparison__editButton')).toBePresent();
-  expect(node.find('.TargetValueComparison__editButton')).not.toBeDisabled();
 });
 
 it('should toggle the mode with the left button', () => {

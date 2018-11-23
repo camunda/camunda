@@ -140,13 +140,15 @@ export default class ReportControlPanel extends React.Component {
               }
             />
           </li>
-          <li>
-            <TargetValueComparison
-              reportResult={this.props.reportResult}
-              configuration={this.props.configuration}
-              onChange={this.props.updateReport}
-            />
-          </li>
+          {this.shouldDisplayTargetValue() && (
+            <li>
+              <TargetValueComparison
+                reportResult={this.props.reportResult}
+                configuration={this.props.configuration}
+                onChange={this.props.updateReport}
+              />
+            </li>
+          )}
           <Configuration
             type={this.props.visualization}
             configuration={this.props.configuration}
@@ -171,6 +173,19 @@ export default class ReportControlPanel extends React.Component {
   shouldDisplayProcessPart = () => {
     const {view} = this.props;
     return view && view.entity === 'processInstance' && view.property === 'duration';
+  };
+
+  shouldDisplayTargetValue = () => {
+    const {view, visualization, processDefinitionKey, processDefinitionVersion} = this.props;
+
+    return (
+      view &&
+      view.entity === 'flowNode' &&
+      view.property === 'duration' &&
+      visualization === 'heat' &&
+      processDefinitionKey &&
+      processDefinitionVersion
+    );
   };
 
   renderDropdown = (type, config) => {

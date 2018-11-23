@@ -22,20 +22,3 @@ export function isDurationHeatmap(reportResult) {
     visualization === 'heat'
   );
 }
-
-export function isChart(reportResult) {
-  const {reportType} = reportResult;
-  let {reportIds} = reportResult.data;
-  if (reportType !== 'combined' || !reportIds || !reportIds.length) return false;
-  const visualization = reportResult.result[reportIds[0]].data.visualization;
-  return reportIds && (visualization === 'bar' || visualization === 'line');
-}
-
-export function isValidNumber(value) {
-  if (typeof value === 'number') {
-    return true;
-  }
-  if (typeof value === 'string') {
-    return value.trim() && !isNaN(value.trim()) && +value >= 0;
-  }
-}
