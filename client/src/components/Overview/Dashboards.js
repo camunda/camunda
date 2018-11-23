@@ -93,7 +93,7 @@ class Dashboards extends React.Component {
         {error}
         {search}
         {loading}
-        <ul>
+        <ul className="entityList">
           {empty}
           {this.state.entities
             .filter(({name}) => name.toLowerCase().includes(this.state.search.toLowerCase()))

@@ -1,5 +1,13 @@
 import React from 'react';
-import {Button, Message, LoadingIndicator, Input, ConfirmationModal, Icon} from 'components';
+import {
+  Button,
+  Message,
+  LoadingIndicator,
+  Input,
+  ConfirmationModal,
+  Icon,
+  Dropdown
+} from 'components';
 
 import {withErrorHandling} from 'HOC';
 import {Redirect, Link} from 'react-router-dom';
@@ -9,6 +17,8 @@ import entityIcons from './entityIcons';
 import {createReport, loadReports, deleteReport, getReportInfo, getReportIcon} from './service';
 import LastModified from './subComponents/LastModified';
 import NoEntities from './subComponents/NoEntities';
+
+import './Reports.scss';
 
 const HeaderIcon = entityIcons.report.header.Component;
 
@@ -97,16 +107,21 @@ class Reports extends React.Component {
         <h1>
           <HeaderIcon /> Reports
         </h1>
-        <Button color="green" className="createButton" onClick={this.createReport}>
-          Create New Report
-        </Button>
-        <Button color="green" className="createButton" onClick={this.createCombinedReport}>
-          Create a Combined Report
-        </Button>
+        <div className="createButton">
+          <Button color="green" onClick={this.createReport}>
+            Create BPMN Report
+          </Button>
+          <Dropdown label={<Icon type="down" />}>
+            <Dropdown.Option onClick={this.createReport}>Create BPMN Report</Dropdown.Option>
+            <Dropdown.Option onClick={this.createCombinedReport}>
+              Create Combined BPMN Report
+            </Dropdown.Option>
+          </Dropdown>
+        </div>
         {error}
         {search}
         {loading}
-        <ul>
+        <ul className="entityList">
           {empty}
           {this.state.entities
             .filter(({name}) => name.toLowerCase().includes(this.state.search.toLowerCase()))

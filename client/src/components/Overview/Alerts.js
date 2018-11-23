@@ -82,12 +82,12 @@ class Alerts extends React.Component {
   showCreateModal = this.showEditModalFor({});
   closeEditModal = () => this.setState({editEntity: null});
 
-  updateOrCreateAlert = entity => {
+  updateOrCreateAlert = async entity => {
     const editEntity = this.state.editEntity;
     if (editEntity.id) {
-      updateAlert(editEntity.id, entity);
+      await updateAlert(editEntity.id, entity);
     } else {
-      createAlert(entity);
+      await createAlert(entity);
     }
     this.closeEditModal();
 
@@ -120,7 +120,7 @@ class Alerts extends React.Component {
         </Button>
         {error}
         {loading}
-        <ul>
+        <ul className="entityList">
           {empty}
           {this.state.entities.map((itemData, idx) => (
             <li key={idx}>

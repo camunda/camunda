@@ -2,7 +2,7 @@ import React from 'react';
 import {Icon, Message, LoadingIndicator} from 'components';
 
 import {withErrorHandling} from 'HOC';
-import {Link} from 'react-router-dom';
+import {Link, Redirect} from 'react-router-dom';
 
 import './Home.scss';
 import entityIcons from './entityIcons';
@@ -26,6 +26,7 @@ class Home extends React.Component {
   state = {
     reports: [],
     loadingReports: true,
+    redirect: false,
     dashboards: [],
     loadingDashboards: true
   };
@@ -45,10 +46,15 @@ class Home extends React.Component {
     });
   };
 
-  createDashboard = async () => this.setState({redirect: await createDashboard()});
-  createReport = async () => this.setState({redirect: await createReport(false)});
+  createDashboard = async () =>
+    this.setState({redirect: `/dashboard/${await createDashboard()}/edit?new`});
+  createReport = async () => this.setState({redirect: `/report/${await createReport(false)}/edit?new`});
 
   render() {
+    if (this.state.redirect) {
+      return <Redirect to={this.state.redirect} />;
+    }
+
     if (this.props.error) {
       return (
         <Message type="error">
@@ -79,7 +85,7 @@ class Home extends React.Component {
           <DashboardHeaderIcon /> Dashboards
         </h1>
         {loading}
-        <ul>
+        <ul className="entityList">
           {empty}
           {this.state.dashboards.map((itemData, idx) => (
             <li key={idx}>
@@ -131,7 +137,7 @@ class Home extends React.Component {
           <ReportHeaderIcon /> Reports
         </h1>
         {loading}
-        <ul>
+        <ul className="entityList">
           {empty}
           {this.state.reports.slice(0, 5).map((itemData, idx) => {
             const {Icon: ReportIcon, label} = getReportIcon(itemData, this.state.reports);

@@ -1,0 +1,22 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should have a Dropdown with more creation options 1`] = `
+<Dropdown
+  label={
+    <Icon
+      type="down"
+    />
+  }
+>
+  <DropdownOption
+    onClick={[Function]}
+  >
+    Create BPMN Report
+  </DropdownOption>
+  <DropdownOption
+    onClick={[Function]}
+  >
+    Create Combined BPMN Report
+  </DropdownOption>
+</Dropdown>
+`;

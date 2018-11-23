@@ -1,7 +1,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {Button} from 'components';
+import {Button, Dropdown} from 'components';
 
 import ReportsWithErrorHandling from './Reports';
 import {loadReports, createReport, getReportIcon} from './service';
@@ -95,7 +95,7 @@ it('should redirect to new report edit page', async () => {
 
   await node
     .find('.createButton')
-    .first()
+    .find(Button)
     .simulate('click');
 
   expect(node.find('Redirect')).toBePresent();
@@ -210,10 +210,11 @@ it('should check for deletion conflicts', () => {
   expect(checkDeleteConflict).toHaveBeenCalledWith(report.id);
 });
 
-it('should have a create combined report button', () => {
+it('should have a Dropdown with more creation options', () => {
   const node = shallow(<Reports {...props} />);
 
-  expect(node.find('.createButton')).toHaveLength(2);
+  expect(node.find('.createButton').find(Dropdown)).toBePresent();
+  expect(node.find('.createButton').find(Dropdown)).toMatchSnapshot();
 });
 
 it('should reload the reports after deletion', async () => {

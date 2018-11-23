@@ -1,0 +1,35 @@
+.Reports {
+  .createButton {
+    & > .Button {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+
+    .Dropdown {
+      border-left: 1px solid lightgreen;
+
+      .downIcon {
+        display: none;
+      }
+
+      .activateButton {
+        padding-right: 12px;
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+
+        color: white;
+        background-color: #00c364;
+        border: 1px solid #00c364;
+
+        &:hover {
+          background-color: #00aa4b; /* #00c364 -> darken 10% */
+          border: 1px solid #00aa4b;
+        }
+
+        .Icon {
+          margin: 0;
+        }
+      }
+    }
+  }
+}
