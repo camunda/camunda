@@ -163,14 +163,30 @@
           <groupId>org.springframework.boot</groupId>
           <artifactId>spring-boot-maven-plugin</artifactId>
           <version>${version.spring.boot}</version>
-          <configuration>
-            <classifier>exec</classifier>
-          </configuration>
         </plugin>
 
+        <plugin>
+          <groupId>org.sonatype.plugins</groupId>
+          <artifactId>nexus-staging-maven-plugin</artifactId>
+          <version>1.6.8</version>
+          <extensions>true</extensions>
+          <configuration>
+            <detectBuildFailures>true</detectBuildFailures>
+            <serverId>camunda-nexus</serverId>
+            <nexusUrl>https://app.camunda.com/nexus</nexusUrl>
+            <skipStaging>true</skipStaging>
+          </configuration>
+        </plugin>
       </plugins>
 
     </pluginManagement>
+
+    <plugins>
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>nexus-staging-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
   </build>
 
   <distributionManagement>
