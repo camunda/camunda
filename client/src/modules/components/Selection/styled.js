@@ -110,6 +110,7 @@ export const DropdownWrapper = styled.div`
   position: relative;
   top: 1px;
   height: 26px;
+  z-index: 1;
   padding: 0 2px;
   margin-right: 10px;
   border-right: 1px solid ${'rgba(255, 255, 255, 0.15)'};
