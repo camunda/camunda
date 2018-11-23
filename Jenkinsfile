@@ -4,6 +4,10 @@ def jdkVersion = 'jdk-8-latest'
 def mavenVersion = 'maven-3.5-latest'
 def mavenSettingsConfig = 'camunda-maven-settings'
 
+def storeNumOfBuilds() {
+  return env.BRANCH_NAME ==~ /(master|develop|stage)/ ? '10' : '3'
+}
+
 def joinJmhResults = '''\
 #!/bin/bash -x
 cat **/*/jmh-result.json | jq -s add > target/jmh-result.json
@@ -37,7 +41,7 @@ pipeline {
     agent { node { label 'ubuntu-large' } }
 
     options {
-        buildDiscarder(logRotator(daysToKeepStr:'14', numToKeepStr:'10'))
+        buildDiscarder(logRotator(daysToKeepStr:'14', numToKeepStr:storeNumOfBuilds()))
         timestamps()
         timeout(time: 45, unit: 'MINUTES')
     }
