@@ -48,7 +48,7 @@ public class TerminateFlowNodeHandler implements BpmnStepHandler<ExecutableFlowN
     if (elementInstance.isInterrupted()) {
       context
           .getCatchEventOutput()
-          .triggerBoundaryEventFromInterruptedElement(elementInstance, output.getStreamWriter());
+          .triggerInterruptedElement(elementInstance, context.getOutput().getStreamWriter());
     }
 
     output.appendFollowUpEvent(

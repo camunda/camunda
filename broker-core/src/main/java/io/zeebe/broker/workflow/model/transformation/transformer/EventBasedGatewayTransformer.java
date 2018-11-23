@@ -18,8 +18,8 @@
 package io.zeebe.broker.workflow.model.transformation.transformer;
 
 import io.zeebe.broker.workflow.model.BpmnStep;
+import io.zeebe.broker.workflow.model.element.ExecutableCatchEventElement;
 import io.zeebe.broker.workflow.model.element.ExecutableEventBasedGateway;
-import io.zeebe.broker.workflow.model.element.ExecutableIntermediateCatchElement;
 import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
@@ -41,8 +41,7 @@ public class EventBasedGatewayTransformer implements ModelElementTransformer<Eve
     final ExecutableEventBasedGateway gateway =
         workflow.getElementById(element.getId(), ExecutableEventBasedGateway.class);
 
-    final List<ExecutableIntermediateCatchElement> connectedEvents =
-        getConnectedCatchEvents(gateway);
+    final List<ExecutableCatchEventElement> connectedEvents = getConnectedCatchEvents(gateway);
     gateway.setEvents(connectedEvents);
 
     bindLifecycle(element, gateway, context);
@@ -51,12 +50,12 @@ public class EventBasedGatewayTransformer implements ModelElementTransformer<Eve
     connectedEvents.forEach(event -> bindLifecycle(event, context));
   }
 
-  private List<ExecutableIntermediateCatchElement> getConnectedCatchEvents(
+  private List<ExecutableCatchEventElement> getConnectedCatchEvents(
       final ExecutableEventBasedGateway gateway) {
     return gateway
         .getOutgoing()
         .stream()
-        .map(e -> (ExecutableIntermediateCatchElement) e.getTarget())
+        .map(e -> (ExecutableCatchEventElement) e.getTarget())
         .collect(Collectors.toList());
   }
 
@@ -69,7 +68,7 @@ public class EventBasedGatewayTransformer implements ModelElementTransformer<Eve
         WorkflowInstanceIntent.GATEWAY_ACTIVATED, BpmnStep.SUBSCRIBE_TO_EVENTS);
   }
 
-  private void bindLifecycle(ExecutableIntermediateCatchElement event, TransformContext context) {
+  private void bindLifecycle(ExecutableCatchEventElement event, TransformContext context) {
     event.bindLifecycleState(
         WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING, BpmnStep.TRIGGER_EVENT_BASED_GATEWAY);
     event.bindLifecycleState(

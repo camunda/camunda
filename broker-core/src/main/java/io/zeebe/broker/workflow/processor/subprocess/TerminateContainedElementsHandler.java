@@ -65,7 +65,7 @@ public class TerminateContainedElementsHandler
       if (elementInstance.isInterrupted()) {
         context
             .getCatchEventOutput()
-            .triggerBoundaryEventFromInterruptedElement(elementInstance, output.getStreamWriter());
+            .triggerInterruptedElement(elementInstance, output.getStreamWriter());
       }
 
       elementInstanceState.visitFailedTokens(

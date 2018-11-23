@@ -34,8 +34,7 @@ public class PropagateTerminationHandler implements BpmnStepHandler<ExecutableFl
       if (flowScopeInstance.isInterrupted()) {
         context
             .getCatchEventOutput()
-            .triggerBoundaryEventFromInterruptedElement(
-                flowScopeInstance, output.getStreamWriter());
+            .triggerInterruptedElement(flowScopeInstance, context.getOutput().getStreamWriter());
       }
 
       output.appendFollowUpEvent(

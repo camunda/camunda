@@ -79,31 +79,25 @@ public class RepeatingInterval {
    * @return a RepeatingInterval based on the given text
    */
   public static RepeatingInterval parse(String text, String intervalDesignator) {
-    final int intervalDesignatorOffset = text.indexOf(intervalDesignator);
-    int repetitions = INFINITE;
-    final Interval interval;
-
-    if (text.charAt(0) != 'R') {
+    if (!text.startsWith("R")) {
       throw new DateTimeParseException("Repetition spec must start with R", text, 0);
     }
 
-    if (intervalDesignatorOffset == -1 || intervalDesignatorOffset == text.length() - 1) {
+    final int intervalDesignatorOffset = text.indexOf(intervalDesignator);
+    if (intervalDesignatorOffset == -1) {
       throw new DateTimeParseException("No interval given", text, intervalDesignatorOffset);
     }
 
-    final String intervalText = text.substring(intervalDesignatorOffset + 1);
-    interval = Interval.parse(intervalText);
-
-    if (intervalDesignatorOffset > 1) {
-      final String repetitionsText = text.substring(1, intervalDesignatorOffset);
-
-      try {
-        repetitions = Integer.parseInt(repetitionsText);
-      } catch (NumberFormatException e) {
-        throw new DateTimeParseException("Cannot parse repetitions count", repetitionsText, 1, e);
-      }
+    if (intervalDesignatorOffset == 1) { // startsWith("R/")
+      return new RepeatingInterval(INFINITE, Interval.parse(text.substring(2)));
     }
 
-    return new RepeatingInterval(repetitions, interval);
+    try {
+      return new RepeatingInterval(
+          Integer.parseInt(text.substring(1, intervalDesignatorOffset)),
+          Interval.parse(text.substring(intervalDesignatorOffset + 1)));
+    } catch (NumberFormatException e) {
+      throw new DateTimeParseException("Cannot parse repetitions count", text, 1, e);
+    }
   }
 }

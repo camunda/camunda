@@ -17,15 +17,14 @@
  */
 package io.zeebe.broker.workflow.model.element;
 
-import java.time.Duration;
+import io.zeebe.model.bpmn.util.time.RepeatingInterval;
 
 public interface ExecutableCatchEvent extends ExecutableFlowElement {
-
   boolean isTimer();
 
   boolean isMessage();
 
   ExecutableMessage getMessage();
 
-  Duration getDuration();
+  RepeatingInterval getTimer();
 }

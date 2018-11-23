@@ -22,18 +22,18 @@ import java.util.List;
 public class ExecutableEventBasedGateway extends ExecutableFlowNode
     implements ExecutableCatchEventSupplier {
 
-  private List<ExecutableIntermediateCatchElement> events;
+  private List<ExecutableCatchEventElement> events;
 
   public ExecutableEventBasedGateway(String id) {
     super(id);
   }
 
   @Override
-  public List<ExecutableIntermediateCatchElement> getEvents() {
+  public List<ExecutableCatchEventElement> getEvents() {
     return events;
   }
 
-  public void setEvents(List<ExecutableIntermediateCatchElement> events) {
+  public void setEvents(List<ExecutableCatchEventElement> events) {
     this.events = events;
   }
 }

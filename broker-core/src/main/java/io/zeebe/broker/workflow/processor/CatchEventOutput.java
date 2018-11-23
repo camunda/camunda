@@ -26,24 +26,24 @@ import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.broker.workflow.model.element.ExecutableCatchEvent;
 import io.zeebe.broker.workflow.model.element.ExecutableMessage;
-import io.zeebe.broker.workflow.processor.boundary.BoundaryEventHelper;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.EventTrigger;
 import io.zeebe.broker.workflow.state.TimerInstance;
 import io.zeebe.broker.workflow.state.WorkflowInstanceSubscription;
+import io.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResult;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResults;
 import io.zeebe.protocol.impl.record.value.incident.ErrorType;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.TimerIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.sched.clock.ActorClock;
-import java.time.Duration;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
 /** Split into multiple files once we have a reasonable amount of event triggers. */
 public class CatchEventOutput {
-  private final BoundaryEventHelper boundaryEventHelper = new BoundaryEventHelper();
   private final ZeebeState state;
   private final SubscriptionCommandSender subscriptionCommandSender;
 
@@ -64,19 +64,35 @@ public class CatchEventOutput {
     for (final ExecutableCatchEvent event : events) {
       if (event.isTimer()) {
         subscribeToTimerEvent(
-            context.getRecord().getKey(), event, context.getOutput().getStreamWriter());
+            context.getRecord().getKey(),
+            event.getId(),
+            event.getTimer(),
+            context.getOutput().getStreamWriter());
       } else if (event.isMessage()) {
         subscribeToMessageEvent(context, event);
       }
     }
   }
 
-  public void triggerBoundaryEventFromInterruptedElement(
-      ElementInstance element, TypedStreamWriter writer) {
-    assert element.isInterrupted() : "element must have been interrupted";
+  // CATCH EVENTS
+  private final WorkflowInstanceRecord workflowInstanceRecord = new WorkflowInstanceRecord();
 
+  public void triggerCatchEvent(
+      WorkflowInstanceRecord source,
+      DirectBuffer elementId,
+      DirectBuffer payload,
+      TypedStreamWriter writer) {
+    workflowInstanceRecord.wrap(source);
+    workflowInstanceRecord.setPayload(payload);
+    workflowInstanceRecord.setElementId(elementId);
+
+    writer.appendNewEvent(WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING, workflowInstanceRecord);
+  }
+
+  public void triggerInterruptedElement(ElementInstance element, TypedStreamWriter writer) {
     final EventTrigger interruptingEventTrigger = element.getInterruptingEventTrigger();
-    boundaryEventHelper.triggerCatchEvent(
+
+    triggerCatchEvent(
         element.getValue(),
         interruptingEventTrigger.getHandlerNodeId(),
         interruptingEventTrigger.getPayload(),
@@ -87,14 +103,18 @@ public class CatchEventOutput {
   private final TimerRecord timerRecord = new TimerRecord();
 
   public void subscribeToTimerEvent(
-      long elementInstanceKey, ExecutableCatchEvent event, TypedStreamWriter writer) {
-    final Duration duration = event.getDuration();
-    final long dueDate = ActorClock.currentTimeMillis() + duration.toMillis();
+      long elementInstanceKey,
+      DirectBuffer handlerNodeId,
+      RepeatingInterval timer,
+      TypedStreamWriter writer) {
+    final long nowMs = ActorClock.currentTimeMillis();
+    final long dueDate = timer.getInterval().toEpochMilli(nowMs);
 
     timerRecord
-        .setElementInstanceKey(elementInstanceKey)
+        .setRepetitions(timer.getRepetitions())
         .setDueDate(dueDate)
-        .setHandlerNodeId(event.getId());
+        .setElementInstanceKey(elementInstanceKey)
+        .setHandlerNodeId(handlerNodeId);
     writer.appendNewCommand(TimerIntent.CREATE, timerRecord);
   }
 

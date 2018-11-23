@@ -18,6 +18,7 @@
 package io.zeebe.broker.workflow.data;
 
 import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
@@ -27,11 +28,13 @@ public class TimerRecord extends UnpackedObject {
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
   private final LongProperty dueDateProp = new LongProperty("dueDate");
   private final StringProperty handlerNodeId = new StringProperty("handlerNodeId");
+  private final IntegerProperty repetitionsProp = new IntegerProperty("repetitions");
 
   public TimerRecord() {
     this.declareProperty(elementInstanceKeyProp)
         .declareProperty(dueDateProp)
-        .declareProperty(handlerNodeId);
+        .declareProperty(handlerNodeId)
+        .declareProperty(repetitionsProp);
   }
 
   public long getElementInstanceKey() {
@@ -58,6 +61,15 @@ public class TimerRecord extends UnpackedObject {
 
   public TimerRecord setHandlerNodeId(DirectBuffer handlerNodeId) {
     this.handlerNodeId.setValue(handlerNodeId);
+    return this;
+  }
+
+  public int getRepetitions() {
+    return repetitionsProp.getValue();
+  }
+
+  public TimerRecord setRepetitions(int repetitions) {
+    this.repetitionsProp.setValue(repetitions);
     return this;
   }
 }
