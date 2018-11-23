@@ -24,8 +24,6 @@ import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 public class MessageCatchElementHandler implements BpmnStepHandler<ExecutableMessageCatchElement> {
   @Override
   public void handle(final BpmnStepContext<ExecutableMessageCatchElement> context) {
-    context
-        .getCatchEventOutput()
-        .subscribeToMessageEvent(context, context.getElement().getMessage());
+    context.getCatchEventOutput().subscribeToMessageEvent(context, context.getElement());
   }
 }

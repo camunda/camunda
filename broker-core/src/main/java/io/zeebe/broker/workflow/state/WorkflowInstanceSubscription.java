@@ -36,6 +36,7 @@ public class WorkflowInstanceSubscription implements BufferReader, BufferWriter 
 
   private final DirectBuffer messageName = new UnsafeBuffer();
   private final DirectBuffer correlationKey = new UnsafeBuffer();
+  private final DirectBuffer handlerNodeId = new UnsafeBuffer();
 
   private long workflowInstanceKey;
   private long elementInstanceKey;
@@ -54,13 +55,14 @@ public class WorkflowInstanceSubscription implements BufferReader, BufferWriter 
   public WorkflowInstanceSubscription(
       long workflowInstanceKey,
       long elementInstanceKey,
+      DirectBuffer handlerNodeId,
       DirectBuffer messageName,
       DirectBuffer correlationKey,
       final long commandSentTime) {
-    this.workflowInstanceKey = workflowInstanceKey;
-    this.elementInstanceKey = elementInstanceKey;
-    this.commandSentTime = commandSentTime;
+    this(workflowInstanceKey, elementInstanceKey);
 
+    this.handlerNodeId.wrap(handlerNodeId);
+    this.commandSentTime = commandSentTime;
     this.messageName.wrap(messageName);
     this.correlationKey.wrap(correlationKey);
   }
@@ -79,6 +81,14 @@ public class WorkflowInstanceSubscription implements BufferReader, BufferWriter 
 
   public void setCorrelationKey(DirectBuffer correlationKey) {
     this.correlationKey.wrap(correlationKey);
+  }
+
+  public DirectBuffer getHandlerNodeId() {
+    return handlerNodeId;
+  }
+
+  public void setHandlerNodeId(DirectBuffer handlerNodeId) {
+    this.handlerNodeId.wrap(handlerNodeId);
   }
 
   public long getWorkflowInstanceKey() {
@@ -131,6 +141,7 @@ public class WorkflowInstanceSubscription implements BufferReader, BufferWriter 
 
   @Override
   public void wrap(final DirectBuffer buffer, int offset, final int length) {
+    final int startOffset = offset;
     this.workflowInstanceKey = buffer.getLong(offset, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
@@ -147,12 +158,19 @@ public class WorkflowInstanceSubscription implements BufferReader, BufferWriter 
     offset += Integer.BYTES;
 
     offset = readIntoBuffer(buffer, offset, messageName);
-    readIntoBuffer(buffer, offset, correlationKey);
+    offset = readIntoBuffer(buffer, offset, correlationKey);
+    offset = readIntoBuffer(buffer, offset, handlerNodeId);
+
+    assert (offset - startOffset) == length : "End offset differs from length";
   }
 
   @Override
   public int getLength() {
-    return Long.BYTES * 3 + Integer.BYTES * 4 + messageName.capacity() + correlationKey.capacity();
+    return Long.BYTES * 3
+        + Integer.BYTES * 5
+        + messageName.capacity()
+        + correlationKey.capacity()
+        + handlerNodeId.capacity();
   }
 
   @Override
@@ -174,6 +192,7 @@ public class WorkflowInstanceSubscription implements BufferReader, BufferWriter 
 
     offset = writeIntoBuffer(buffer, offset, messageName);
     offset = writeIntoBuffer(buffer, offset, correlationKey);
+    offset = writeIntoBuffer(buffer, offset, handlerNodeId);
     assert offset == getLength() : "End offset differs with getLength()";
   }
 

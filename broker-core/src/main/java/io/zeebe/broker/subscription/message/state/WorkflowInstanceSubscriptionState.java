@@ -292,7 +292,7 @@ public class WorkflowInstanceSubscriptionState implements StateLifecycleListener
     return found;
   }
 
-  private void remove(final WorkflowInstanceSubscription subscription) {
+  public void remove(final WorkflowInstanceSubscription subscription) {
     try (final WriteOptions options = new WriteOptions();
         final ZbWriteBatch batch = new ZbWriteBatch()) {
       int keyLength = writeSubscriptionKey(keyBuffer, 0, subscription);

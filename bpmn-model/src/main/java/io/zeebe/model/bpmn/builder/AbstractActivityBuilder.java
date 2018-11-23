@@ -29,6 +29,7 @@ import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.function.Consumer;
 
 /** @author Sebastian Menski */
 public abstract class AbstractActivityBuilder<
@@ -51,6 +52,12 @@ public abstract class AbstractActivityBuilder<
     setBoundaryEventCoordinates(boundaryEventBpmnShape);
 
     return boundaryEvent.builder();
+  }
+
+  public BoundaryEventBuilder boundaryEvent(String id, Consumer<BoundaryEventBuilder> consumer) {
+    final BoundaryEventBuilder builder = boundaryEvent(id);
+    consumer.accept(builder);
+    return builder;
   }
 
   public MultiInstanceLoopCharacteristicsBuilder multiInstance() {

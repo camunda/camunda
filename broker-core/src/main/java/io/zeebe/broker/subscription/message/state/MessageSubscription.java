@@ -55,10 +55,6 @@ public class MessageSubscription implements BufferReader, BufferWriter {
     this.elementInstanceKey = elementInstanceKey;
   }
 
-  public void setMessageName(DirectBuffer messageName) {
-    this.messageName.wrap(messageName);
-  }
-
   public DirectBuffer getMessageName() {
     return messageName;
   }

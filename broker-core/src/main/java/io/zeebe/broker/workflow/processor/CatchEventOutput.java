@@ -27,6 +27,7 @@ import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.broker.workflow.model.element.ExecutableIntermediateCatchElement;
 import io.zeebe.broker.workflow.model.element.ExecutableMessage;
+import io.zeebe.broker.workflow.model.element.ExecutableMessageCatchElement;
 import io.zeebe.broker.workflow.processor.boundary.BoundaryEventHelper;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.EventTrigger;
@@ -68,7 +69,7 @@ public class CatchEventOutput {
         subscribeToTimerEvent(
             context.getElementInstance(), event, context.getOutput().getStreamWriter());
       } else if (event.getMessage() != null) {
-        subscribeToMessageEvent(context, event.getMessage());
+        subscribeToMessageEvent(context, event);
       }
     }
   }
@@ -121,7 +122,9 @@ public class CatchEventOutput {
   private final MsgPackQueryProcessor queryProcessor = new MsgPackQueryProcessor();
   private WorkflowInstanceSubscription subscription = new WorkflowInstanceSubscription();
 
-  public void subscribeToMessageEvent(BpmnStepContext<?> context, ExecutableMessage message) {
+  public void subscribeToMessageEvent(
+      BpmnStepContext<?> context, ExecutableMessageCatchElement handler) {
+    final ExecutableMessage message = handler.getMessage();
     final DirectBuffer extractedKey = extractCorrelationKey(context, message);
 
     if (extractedKey == null) {
@@ -138,6 +141,7 @@ public class CatchEventOutput {
     subscription.setCommandSentTime(ActorClock.currentTimeMillis());
     subscription.setWorkflowInstanceKey(workflowInstanceKey);
     subscription.setCorrelationKey(correlationKey);
+    subscription.setHandlerNodeId(handler.getId());
     state.getWorkflowInstanceSubscriptionState().put(subscription);
 
     context
