@@ -36,10 +36,6 @@ func (client *ZBClientImpl) NewCancelInstanceCommand() commands.CancelInstanceSt
 	return commands.NewCancelInstanceCommand(client.gateway, client.requestTimeout)
 }
 
-func (client *ZBClientImpl) NewCreateJobCommand() commands.CreateJobCommandStep1 {
-	return commands.NewCreateJobCommand(client.gateway, client.requestTimeout)
-}
-
 func (client *ZBClientImpl) NewCompleteJobCommand() commands.CompleteJobCommandStep1 {
 	return commands.NewCompleteJobCommand(client.gateway, client.requestTimeout)
 }

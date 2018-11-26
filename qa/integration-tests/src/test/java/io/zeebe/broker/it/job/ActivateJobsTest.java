@@ -182,14 +182,7 @@ public class ActivateJobsTest {
   }
 
   private long createJob(String type) {
-    return client
-        .jobClient()
-        .newCreateCommand()
-        .jobType(type)
-        .addCustomHeaders(CUSTOM_HEADERS)
-        .payload(PAYLOAD)
-        .send()
-        .join()
-        .getKey();
+    return clientRule.createSingleJob(
+        type, b -> b.zeebeTaskHeader("foo", "bar"), "{\"hello\":\"world\"}");
   }
 }

@@ -26,7 +26,6 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo;
 import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo.Builder;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
@@ -131,10 +130,6 @@ public class ResponseMapper {
 
   public static PublishMessageResponse toPublishMessageResponse(long key, Object brokerResponse) {
     return PublishMessageResponse.getDefaultInstance();
-  }
-
-  public static CreateJobResponse toCreateJobResponse(long key, JobRecord brokerResponse) {
-    return CreateJobResponse.newBuilder().setKey(key).build();
   }
 
   public static UpdateJobRetriesResponse toUpdateJobRetriesResponse(

@@ -29,6 +29,7 @@ import io.zeebe.exporter.record.value.TimerRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -57,6 +58,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
@@ -203,15 +205,29 @@ public class PartitionTestClient {
     assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.PAYLOAD_UPDATED);
   }
 
-  public ExecuteCommandResponse createJob(final String type) {
-    return apiRule
-        .createCmdRequest()
-        .type(ValueType.JOB, JobIntent.CREATE)
-        .command()
-        .put("type", type)
-        .put("retries", 3)
-        .done()
-        .sendAndAwait();
+  public long createJob(final String type) {
+    return createJob(type, b -> {}, "{}");
+  }
+
+  public long createJob(final String type, Consumer<ServiceTaskBuilder> consumer, String payload) {
+    deploy(
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "task",
+                b -> {
+                  b.zeebeTaskType(type).zeebeTaskRetries(3);
+                  consumer.accept(b);
+                })
+            .done());
+
+    final long workflowInstance = createWorkflowInstance("process", payload);
+
+    return RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withType(type)
+        .filter(j -> j.getValue().getHeaders().getWorkflowInstanceKey() == workflowInstance)
+        .getFirst()
+        .getKey();
   }
 
   public void completeJobOfType(final String jobType) {

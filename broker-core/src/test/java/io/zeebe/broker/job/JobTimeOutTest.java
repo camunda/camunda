@@ -27,12 +27,10 @@ import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.RecordMetadata;
 import io.zeebe.exporter.record.value.JobRecordValue;
-import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import java.time.Duration;
 import java.util.List;
@@ -226,17 +224,7 @@ public class JobTimeOutTest {
   }
 
   private long createJob(final String type) {
-    final ExecuteCommandResponse resp =
-        apiRule
-            .createCmdRequest()
-            .type(ValueType.JOB, JobIntent.CREATE)
-            .command()
-            .put("type", type)
-            .put("retries", 3)
-            .done()
-            .sendAndAwait();
-
-    return resp.getKey();
+    return apiRule.partitionClient().createJob(type);
   }
 
   private void assertNoMoreJobsReceived(Intent lastIntent) {

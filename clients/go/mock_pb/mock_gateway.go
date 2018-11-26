@@ -90,24 +90,6 @@ func (mr *MockGatewayClientMockRecorder) CompleteJob(arg0, arg1 interface{}, arg
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompleteJob", reflect.TypeOf((*MockGatewayClient)(nil).CompleteJob), varargs...)
 }
 
-// CreateJob mocks base method
-func (m *MockGatewayClient) CreateJob(arg0 context.Context, arg1 *pb.CreateJobRequest, arg2 ...grpc.CallOption) (*pb.CreateJobResponse, error) {
-	varargs := []interface{}{arg0, arg1}
-	for _, a := range arg2 {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "CreateJob", varargs...)
-	ret0, _ := ret[0].(*pb.CreateJobResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateJob indicates an expected call of CreateJob
-func (mr *MockGatewayClientMockRecorder) CreateJob(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
-	varargs := append([]interface{}{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateJob", reflect.TypeOf((*MockGatewayClient)(nil).CreateJob), varargs...)
-}
-
 // CreateWorkflowInstance mocks base method
 func (m *MockGatewayClient) CreateWorkflowInstance(arg0 context.Context, arg1 *pb.CreateWorkflowInstanceRequest, arg2 ...grpc.CallOption) (*pb.CreateWorkflowInstanceResponse, error) {
 	varargs := []interface{}{arg0, arg1}
@@ -214,6 +196,24 @@ func (m *MockGatewayClient) PublishMessage(arg0 context.Context, arg1 *pb.Publis
 func (mr *MockGatewayClientMockRecorder) PublishMessage(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PublishMessage", reflect.TypeOf((*MockGatewayClient)(nil).PublishMessage), varargs...)
+}
+
+// ResolveIncident mocks base method
+func (m *MockGatewayClient) ResolveIncident(arg0 context.Context, arg1 *pb.ResolveIncidentRequest, arg2 ...grpc.CallOption) (*pb.ResolveIncidentResponse, error) {
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ResolveIncident", varargs...)
+	ret0, _ := ret[0].(*pb.ResolveIncidentResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ResolveIncident indicates an expected call of ResolveIncident
+func (mr *MockGatewayClientMockRecorder) ResolveIncident(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResolveIncident", reflect.TypeOf((*MockGatewayClient)(nil).ResolveIncident), varargs...)
 }
 
 // Topology mocks base method

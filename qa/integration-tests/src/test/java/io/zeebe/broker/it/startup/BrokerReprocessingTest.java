@@ -36,7 +36,6 @@ import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.events.DeploymentEvent;
-import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.subscription.JobWorker;
@@ -324,52 +323,10 @@ public class BrokerReprocessingTest {
   }
 
   @Test
-  public void shouldLockAndCompleteStandaloneJobAfterRestart() {
-    // given
-    clientRule.getJobClient().newCreateCommand().jobType("foo").send().join();
-    assertJobCreated("foo");
-
-    // when
-    reprocessingTrigger.accept(this);
-
-    clientRule
-        .getJobClient()
-        .newWorker()
-        .jobType("foo")
-        .handler(
-            (client, job) -> client.newCompleteCommand(job.getKey()).payload(NULL_PAYLOAD).send())
-        .open();
-
-    // then
-    assertJobCompleted("foo");
-  }
-
-  @Test
-  @Ignore("https://github.com/zeebe-io/zeebe/issues/1518")
-  public void shouldCompleteStandaloneJobAfterRestart() {
-    // given
-    clientRule.getJobClient().newCreateCommand().jobType("foo").send().join();
-
-    final RecordingJobHandler recordingJobHandler = new RecordingJobHandler();
-    clientRule.getJobClient().newWorker().jobType("foo").handler(recordingJobHandler).open();
-
-    waitUntil(() -> !recordingJobHandler.getHandledJobs().isEmpty());
-
-    // when
-    reprocessingTrigger.accept(this);
-
-    final ActivatedJob jobEvent = recordingJobHandler.getHandledJobs().get(0);
-    clientRule.getJobClient().newCompleteCommand(jobEvent.getKey()).send().join();
-
-    // then
-    assertJobCompleted("foo");
-  }
-
-  @Test
   @Ignore("https://github.com/zeebe-io/zeebe/issues/1518")
   public void shouldNotReceiveLockedJobAfterRestart() {
     // given
-    clientRule.getJobClient().newCreateCommand().jobType("foo").send().join();
+    clientRule.createSingleJob("foo");
 
     final RecordingJobHandler jobHandler = new RecordingJobHandler();
     clientRule.getJobClient().newWorker().jobType("foo").handler(jobHandler).open();
@@ -394,7 +351,7 @@ public class BrokerReprocessingTest {
   @Ignore("https://github.com/zeebe-io/zeebe/issues/1518")
   public void shouldReceiveLockExpiredJobAfterRestart() {
     // given
-    clientRule.getJobClient().newCreateCommand().jobType("foo").send().join();
+    clientRule.createSingleJob("foo");
 
     final RecordingJobHandler jobHandler = new RecordingJobHandler();
     final JobWorker subscription =
@@ -544,15 +501,14 @@ public class BrokerReprocessingTest {
     // given
     deploy(WORKFLOW, "workflow.bpmn");
 
-    final Supplier<JobEvent> jobCreator =
-        () -> clientRule.getJobClient().newCreateCommand().jobType("foo").send().join();
+    final Supplier<Long> jobCreator = () -> clientRule.createSingleJob("foo");
 
-    final long job1Key = jobCreator.get().getKey();
+    final long job1Key = jobCreator.get();
 
     // when
     reprocessingTrigger.accept(this);
 
-    final long job2Key = jobCreator.get().getKey();
+    final long job2Key = jobCreator.get();
 
     // then
     assertThat(job2Key).isGreaterThan(job1Key);

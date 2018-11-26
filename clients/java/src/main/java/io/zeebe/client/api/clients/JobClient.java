@@ -17,34 +17,17 @@ package io.zeebe.client.api.clients;
 
 import io.zeebe.client.api.commands.ActivateJobsCommandStep1;
 import io.zeebe.client.api.commands.CompleteJobCommandStep1;
-import io.zeebe.client.api.commands.CreateJobCommandStep1;
 import io.zeebe.client.api.commands.FailJobCommandStep1;
 import io.zeebe.client.api.commands.UpdateRetriesJobCommandStep1;
 import io.zeebe.client.api.subscription.JobWorkerBuilderStep1;
 
 /**
  * A client with access to all job-related operation:
- * <li>create a (standalone) job
  * <li>complete a job
  * <li>mark a job as failed
  * <li>update the retries of a job
  */
 public interface JobClient {
-
-  /**
-   * Command to create a new (standalone) job. The job is not linked to a workflow instance.
-   *
-   * <pre>
-   * jobClient
-   *  .newCreateCommand()
-   *  .type("my-todos")
-   *  .payload(json)
-   *  .send();
-   * </pre>
-   *
-   * @return a builder for the command
-   */
-  CreateJobCommandStep1 newCreateCommand();
 
   /**
    * Command to complete a job.

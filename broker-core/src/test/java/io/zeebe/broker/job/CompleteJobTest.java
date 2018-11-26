@@ -196,8 +196,7 @@ public class CompleteJobTest {
   @Test
   public void shouldRejectCompletionIfJobIsCompleted() {
     // given
-    final ExecuteCommandResponse response2 = createJob(JOB_TYPE);
-    assertThat(response2.getRecordType()).isEqualTo(RecordType.EVENT);
+    createJob(JOB_TYPE);
 
     apiRule.activateJobs(JOB_TYPE).await();
 
@@ -219,8 +218,7 @@ public class CompleteJobTest {
   @Test
   public void shouldRejectCompletionIfJobIsFailed() {
     // given
-    final ExecuteCommandResponse job = createJob(JOB_TYPE);
-    assertThat(job.getRecordType()).isEqualTo(RecordType.EVENT);
+    createJob(JOB_TYPE);
 
     // when
     apiRule.activateJobs(JOB_TYPE).await();
@@ -236,15 +234,8 @@ public class CompleteJobTest {
     assertThat(response.getIntent()).isEqualTo(JobIntent.COMPLETE);
   }
 
-  private ExecuteCommandResponse createJob(final String type) {
-    return apiRule
-        .createCmdRequest()
-        .type(ValueType.JOB, JobIntent.CREATE)
-        .command()
-        .put("type", type)
-        .put("retries", 3)
-        .done()
-        .sendAndAwait();
+  private long createJob(final String type) {
+    return apiRule.partitionClient().createJob(type);
   }
 
   private void failJob(final long key) {

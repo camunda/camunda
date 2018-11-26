@@ -22,13 +22,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.client.api.clients.JobClient;
-import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.protocol.Protocol;
 import java.time.Duration;
 import java.util.stream.IntStream;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -47,13 +44,6 @@ public class JobWorkerWithMultiplePartitionsTest {
   @Rule public ExpectedException exception = ExpectedException.none();
 
   @Rule public Timeout timeout = Timeout.seconds(20);
-
-  private JobClient jobClient;
-
-  @Before
-  public void setUp() {
-    jobClient = clientRule.getClient().jobClient();
-  }
 
   @Test
   public void shouldReceiveJobsFromMultiplePartitions() {
@@ -94,7 +84,7 @@ public class JobWorkerWithMultiplePartitionsTest {
     assertThat(receivedPartitionIds).containsExactlyInAnyOrder(partitionIds);
   }
 
-  private JobEvent createJobOfType(final String type) {
-    return jobClient.newCreateCommand().jobType(type).send().join();
+  private long createJobOfType(final String type) {
+    return clientRule.createSingleJob(type);
   }
 }

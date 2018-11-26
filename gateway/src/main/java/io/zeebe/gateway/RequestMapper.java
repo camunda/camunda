@@ -18,7 +18,6 @@ package io.zeebe.gateway;
 import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerCancelWorkflowInstanceRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
-import io.zeebe.gateway.impl.broker.request.BrokerCreateJobRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerDeployWorkflowRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
@@ -33,7 +32,6 @@ import io.zeebe.gateway.impl.data.MsgPackConverter;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
@@ -77,18 +75,6 @@ public class RequestMapper {
     brokerRequest
         .setMessageId(grpcRequest.getMessageId())
         .setTimeToLive(grpcRequest.getTimeToLive())
-        .setPayload(ensureJsonSet(grpcRequest.getPayload()));
-
-    return brokerRequest;
-  }
-
-  public static BrokerCreateJobRequest toCreateJobRequest(CreateJobRequest grpcRequest) {
-    final BrokerCreateJobRequest brokerRequest =
-        new BrokerCreateJobRequest(grpcRequest.getJobType());
-
-    brokerRequest
-        .setRetries(grpcRequest.getRetries())
-        .setCustomHeaders(ensureJsonSet(grpcRequest.getCustomHeaders()))
         .setPayload(ensureJsonSet(grpcRequest.getPayload()));
 
     return brokerRequest;

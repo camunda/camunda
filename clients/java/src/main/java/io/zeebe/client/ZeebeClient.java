@@ -39,7 +39,6 @@ public interface ZeebeClient extends AutoCloseable {
 
   /**
    * A client to
-   * <li>create a (standalone) job
    * <li>complete a job
    * <li>mark a job as failed
    * <li>update the retries of a job

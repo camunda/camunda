@@ -17,16 +17,14 @@ package io.zeebe.gateway.broker;
 
 import static io.zeebe.protocol.clientapi.ControlMessageType.REQUEST_TOPOLOGY;
 import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.*;
 import static org.hamcrest.CoreMatchers.containsString;
 
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import io.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
-import io.zeebe.gateway.impl.broker.request.BrokerCreateJobRequest;
+import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerError;
 import io.zeebe.gateway.impl.broker.response.BrokerRejection;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
@@ -38,7 +36,9 @@ import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.brokerapi.ControlMessageRequest;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandResponseBuilder;
@@ -131,14 +131,14 @@ public class BrokerClientTest {
   public void shouldReturnErrorOnRequestFailure() {
     // given
     broker
-        .onExecuteCommandRequest(ValueType.JOB, JobIntent.CREATE)
+        .onExecuteCommandRequest(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
         .respondWithError()
         .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
         .errorData("test")
         .register();
 
-    final BrokerResponse<JobRecord> response =
-        client.sendRequest(new BrokerCreateJobRequest("foo")).join();
+    final BrokerResponse<WorkflowInstanceRecord> response =
+        client.sendRequest(new BrokerCreateWorkflowInstanceRequest()).join();
 
     assertThat(response.isError()).isTrue();
     final BrokerError error = response.getError();
@@ -147,18 +147,26 @@ public class BrokerClientTest {
 
     // then
     assertAtLeastTopologyRefreshRequests(1);
-    assertCreateJobRequests(1);
+
+    final List<ExecuteCommandRequest> receivedCommandRequests = broker.getReceivedCommandRequests();
+    assertThat(receivedCommandRequests).hasSize(1);
+
+    receivedCommandRequests.forEach(
+        request -> {
+          assertThat(request.valueType()).isEqualTo(ValueType.WORKFLOW_INSTANCE);
+          assertThat(request.intent()).isEqualTo(WorkflowInstanceIntent.CREATE);
+        });
   }
 
   @Test
-  public void shouldReturnErroOnReadResponseFailure() {
+  public void shouldReturnErrorOnReadResponseFailure() {
     // given
-    broker.jobs().registerCreateCommand();
+    registerCreateWfCommand();
 
-    final BrokerCreateJobRequest request =
-        new BrokerCreateJobRequest("foo") {
+    final BrokerCreateWorkflowInstanceRequest request =
+        new BrokerCreateWorkflowInstanceRequest() {
           @Override
-          protected JobRecord toResponseDto(DirectBuffer buffer) {
+          protected WorkflowInstanceRecord toResponseDto(DirectBuffer buffer) {
             throw new RuntimeException("Catch Me");
           }
         };
@@ -175,7 +183,7 @@ public class BrokerClientTest {
   public void shouldThrowExceptionIfPartitionNotFoundResponse() {
     // given
     broker
-        .onExecuteCommandRequest(ValueType.JOB, JobIntent.CREATE)
+        .onExecuteCommandRequest(ValueType.WORKFLOW_INSTANCE, JobIntent.CREATE)
         .respondWithError()
         .errorCode(ErrorCode.PARTITION_NOT_FOUND)
         .errorData("")
@@ -190,7 +198,7 @@ public class BrokerClientTest {
     // specifically.
 
     // when
-    client.sendRequest(new BrokerCreateJobRequest("foo")).join();
+    client.sendRequest(new BrokerCreateWorkflowInstanceRequest()).join();
   }
 
   @Test
@@ -242,7 +250,7 @@ public class BrokerClientTest {
 
     // when then
     for (int i = 0; i < clientMaxRequests; i++) {
-      client.sendRequest(new BrokerCreateJobRequest("foo")).join();
+      client.sendRequest(new BrokerCreateWorkflowInstanceRequest()).join();
     }
   }
 
@@ -256,23 +264,23 @@ public class BrokerClientTest {
 
     stubJobResponse();
 
-    final List<ActorFuture<BrokerResponse<JobRecord>>> futures = new ArrayList<>();
+    final List<ActorFuture<BrokerResponse<WorkflowInstanceRecord>>> futures = new ArrayList<>();
     for (int i = 0; i < clientMaxRequests; i++) {
-      final ActorFuture<BrokerResponse<JobRecord>> future =
-          client.sendRequest(new BrokerCreateJobRequest("bar"));
+      final ActorFuture<BrokerResponse<WorkflowInstanceRecord>> future =
+          client.sendRequest(new BrokerCreateWorkflowInstanceRequest());
 
       futures.add(future);
     }
 
     // when
-    for (final ActorFuture<BrokerResponse<JobRecord>> future : futures) {
+    for (final ActorFuture<BrokerResponse<WorkflowInstanceRecord>> future : futures) {
       future.join();
     }
 
     // then
     for (int i = 0; i < clientMaxRequests; i++) {
-      final ActorFuture<BrokerResponse<JobRecord>> future =
-          client.sendRequest(new BrokerCreateJobRequest("bar"));
+      final ActorFuture<BrokerResponse<WorkflowInstanceRecord>> future =
+          client.sendRequest(new BrokerCreateWorkflowInstanceRequest());
 
       futures.add(future);
     }
@@ -284,15 +292,15 @@ public class BrokerClientTest {
     broker.onExecuteCommandRequest(ValueType.JOB, JobIntent.COMPLETE).doNotRespond();
 
     // given
-    final List<ActorFuture<BrokerResponse<JobRecord>>> futures = new ArrayList<>();
+    final List<ActorFuture<BrokerResponse<WorkflowInstanceRecord>>> futures = new ArrayList<>();
     for (int i = 0; i < clientMaxRequests; i++) {
-      final ActorFuture<BrokerResponse<JobRecord>> future =
-          client.sendRequest(new BrokerCreateJobRequest("foo"));
+      final ActorFuture<BrokerResponse<WorkflowInstanceRecord>> future =
+          client.sendRequest(new BrokerCreateWorkflowInstanceRequest());
       futures.add(future);
     }
 
     // when
-    for (final ActorFuture<BrokerResponse<JobRecord>> future : futures) {
+    for (final ActorFuture<BrokerResponse<WorkflowInstanceRecord>> future : futures) {
       try {
         future.join();
         fail("exception expected");
@@ -303,8 +311,8 @@ public class BrokerClientTest {
 
     // then
     for (int i = 0; i < clientMaxRequests; i++) {
-      final ActorFuture<BrokerResponse<JobRecord>> future =
-          client.sendRequest(new BrokerCreateJobRequest("foo"));
+      final ActorFuture<BrokerResponse<WorkflowInstanceRecord>> future =
+          client.sendRequest(new BrokerCreateWorkflowInstanceRequest());
 
       futures.add(future);
     }
@@ -330,7 +338,7 @@ public class BrokerClientTest {
 
     // when
     try {
-      client.sendRequest(new BrokerCreateJobRequest("foo")).join();
+      client.sendRequest(new BrokerCreateWorkflowInstanceRequest()).join();
 
       fail("should throw exception");
     } catch (final Exception e) {
@@ -348,7 +356,7 @@ public class BrokerClientTest {
   public void shouldThrottleTopologyRefreshRequestsWhenPartitionCannotBeDetermined() {
     // when
     final long start = System.currentTimeMillis();
-    assertThatThrownBy(() -> client.sendRequest(new BrokerCreateJobRequest("baz")).join());
+    assertThatThrownBy(() -> client.sendRequest(new BrokerCreateWorkflowInstanceRequest()).join());
     final long requestDuration = System.currentTimeMillis() - start;
 
     // then
@@ -492,7 +500,7 @@ public class BrokerClientTest {
   }
 
   private void stubJobResponse() {
-    broker.jobs().registerCreateCommand();
+    registerCreateWfCommand();
     broker.jobs().registerCompleteCommand();
   }
 
@@ -540,14 +548,18 @@ public class BrokerClientTest {
         });
   }
 
-  private void assertCreateJobRequests(final int count) {
-    final List<ExecuteCommandRequest> receivedCommandRequests = broker.getReceivedCommandRequests();
-    assertThat(receivedCommandRequests).hasSize(count);
+  public void registerCreateWfCommand() {
+    final ExecuteCommandResponseBuilder builder =
+        broker
+            .onExecuteCommandRequest(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
+            .respondWith()
+            .event()
+            .intent(WorkflowInstanceIntent.ELEMENT_READY)
+            .key(r -> r.key())
+            .value()
+            .allOf((r) -> r.getCommand())
+            .done();
 
-    receivedCommandRequests.forEach(
-        request -> {
-          assertThat(request.valueType()).isEqualTo(ValueType.JOB);
-          assertThat(request.intent()).isEqualTo(JobIntent.CREATE);
-        });
+    builder.register();
   }
 }

@@ -31,7 +31,3 @@ An important aspect of Zeebe is that a broker does not assume that a worker is a
 Zeebe decouples creation of jobs from performing the work on them. It is always possible to create jobs at the highest possible rate, regardless of whether there is currently a worker available to work on them or not. This is possible as Zeebe queues jobs until it can push them out to workers. If no job worker is currently subscribed, jobs remain queued. If a worker is subscribed, Zeebe's backpressure protocols ensure that workers can control the rate at which they receive jobs.
 
 This allows the system to take in bursts of traffic and effectively act as a _buffer_ in front of the job workers.
-
-## Standalone Jobs
-
-Jobs can also be created standalone \(i.e., without an orchestrating workflow\). In that case, Zeebe acts like a regular queue.

@@ -65,7 +65,15 @@ public class ServiceTaskTest {
             .serviceTask("task", t -> t.zeebeTaskType("foo"))
             .endEvent("end")
             .done();
-    deploy(modelInstance);
+
+    final DeploymentEvent deploymentEvent =
+        clientRule
+            .getWorkflowClient()
+            .newDeployCommand()
+            .addWorkflowModel(modelInstance, "workflow.bpmn")
+            .send()
+            .join();
+    clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
 
     // when
     final WorkflowInstanceEvent workflowInstance =

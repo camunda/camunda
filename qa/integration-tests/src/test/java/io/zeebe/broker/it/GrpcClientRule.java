@@ -25,7 +25,12 @@ import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.clients.WorkflowClient;
 import io.zeebe.client.api.commands.PartitionInfo;
 import io.zeebe.client.api.commands.Topology;
+import io.zeebe.client.api.events.DeploymentEvent;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
 import java.util.function.Consumer;
@@ -102,5 +107,52 @@ public class GrpcClientRule extends ExternalResource {
 
   public JobClient getJobClient() {
     return getClient().jobClient();
+  }
+
+  public long createSingleJob(String type) {
+    return createSingleJob(type, b -> {}, "{}");
+  }
+
+  public long createSingleJob(String type, Consumer<ServiceTaskBuilder> consumer) {
+    return createSingleJob(type, consumer, "{}");
+  }
+
+  public long createSingleJob(String type, Consumer<ServiceTaskBuilder> consumer, String payload) {
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .serviceTask(
+                "task",
+                t -> {
+                  t.zeebeTaskType(type);
+                  consumer.accept(t);
+                })
+            .endEvent("end")
+            .done();
+
+    final DeploymentEvent deploymentEvent =
+        getWorkflowClient()
+            .newDeployCommand()
+            .addWorkflowModel(modelInstance, "workflow.bpmn")
+            .send()
+            .join();
+    waitUntilDeploymentIsDone(deploymentEvent.getKey());
+
+    // when
+    final long workflowInstanceKey =
+        getWorkflowClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId("process")
+            .latestVersion()
+            .payload(payload)
+            .send()
+            .join()
+            .getWorkflowInstanceKey();
+
+    return RecordingExporter.jobRecords(JobIntent.CREATED)
+        .filter(j -> j.getValue().getHeaders().getWorkflowInstanceKey() == workflowInstanceKey)
+        .withType(type)
+        .getFirst()
+        .getKey();
   }
 }
