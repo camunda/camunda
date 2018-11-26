@@ -23,6 +23,7 @@ exports[`Selections should render a CollapsablePanel 1`] = `
     >
       <Badge
         isActive={true}
+        position={0}
         type="SELECTIONS"
       >
         2

@@ -6,8 +6,12 @@ import {COMBO_BADGE_TYPE} from 'modules/constants';
 import * as Styled from './styled';
 
 export default function ComboBadge(props) {
-  const children = React.Children.map(props.children, child =>
-    React.cloneElement(child, {type: props.type, isActive: props.isActive})
+  const children = React.Children.map(props.children, (child, index) =>
+    React.cloneElement(child, {
+      type: props.type,
+      isActive: props.isActive,
+      position: index
+    })
   );
   return <Styled.ComboBadge {...props}> {children}</Styled.ComboBadge>;
 }

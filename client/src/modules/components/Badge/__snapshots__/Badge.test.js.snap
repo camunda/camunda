@@ -3,6 +3,7 @@
 exports[`Badge should contain passed number 1`] = `
 <Themed(styled.div)
   isActive={true}
+  position={0}
 >
   123
 </Themed(styled.div)>

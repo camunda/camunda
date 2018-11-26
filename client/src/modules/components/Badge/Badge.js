@@ -6,7 +6,11 @@ import {BADGE_TYPE} from 'modules/constants';
 import * as Styled from './styled';
 
 export default function Badge(props) {
-  return <Styled.Badge {...props} />;
+  const isRoundBagde =
+    props.children.toString().length === 1 && props.position === 0;
+  const Component = isRoundBagde ? Styled.BadgeCircle : Styled.Badge;
+
+  return <Component {...props} />;
 }
 
 Badge.propTypes = {
@@ -19,5 +23,7 @@ Badge.propTypes = {
 };
 
 Badge.defaultProps = {
-  isActive: true
+  isActive: true,
+  /* position of Badge in ComboBadge; independent Badges have position 0 */
+  position: 0
 };

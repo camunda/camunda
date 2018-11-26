@@ -1,5 +1,4 @@
 import styled, {css} from 'styled-components';
-
 import {BADGE_TYPE} from 'modules/constants';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
@@ -56,16 +55,29 @@ const opacityStyle = props =>
         })};
       `;
 
-export const Badge = themed(styled.div`
+const badgeCss = css`
   display: inline-block;
   height: 17px;
-  padding: 0 6px;
-  min-width: 17px;
   margin-left: 7px;
-  border-radius: 8.5px;
   font-size: 12px;
   font-weight: 600;
   line-height: 1.5;
   ${badgeStyle};
   ${opacityStyle};
+`;
+
+export const Badge = themed(styled.div`
+  padding: 0 6px;
+  min-width: 17px;
+
+  border-radius: 8.5px;
+  ${badgeCss};
+`);
+
+export const BadgeCircle = themed(styled.div`
+  width: 17px;
+  padding: 0;
+  text-align: center;
+  border-radius: 50%;
+  ${badgeCss};
 `);

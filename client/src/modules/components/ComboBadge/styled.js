@@ -56,7 +56,7 @@ export const Left = themed(styled(Badge)`
 `);
 
 export const Right = themed(styled(Badge)`
-  padding-left: 18px;
+  padding-left: 15px;
   padding-right: 10px;
   margin-left: -10px;
   ${props =>

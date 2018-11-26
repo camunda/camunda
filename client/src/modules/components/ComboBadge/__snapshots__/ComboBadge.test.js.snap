@@ -8,12 +8,14 @@ exports[`ComboBadge should contain passed numbers 1`] = `
   <Left
     isActive={true}
     key=".0"
+    position={0}
   >
     1
   </Left>
   <Right
     isActive={true}
     key=".1"
+    position={1}
   >
     2
   </Right>

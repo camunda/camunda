@@ -33,6 +33,7 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
         </span>
         <Badge
           isActive={false}
+          position={0}
           type="RUNNING_INSTANCES"
         >
           0
@@ -53,6 +54,7 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
         </span>
         <Badge
           isActive={false}
+          position={0}
           type="FILTERS"
         >
           0
@@ -73,6 +75,7 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
         </span>
         <Badge
           isActive={false}
+          position={0}
           type="INCIDENTS"
         >
           0
