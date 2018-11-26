@@ -25,6 +25,7 @@ import {ReactComponent as error} from './error.svg';
 import {ReactComponent as warning} from './warning.svg';
 import {ReactComponent as closeLarge} from './close-large.svg';
 import {ReactComponent as checkLarge} from './check-large.svg';
+import {ReactComponent as collection} from './collection.svg';
 
 const icons = {
   autorefresh,
@@ -53,7 +54,8 @@ const icons = {
   error,
   warning,
   'check-large': checkLarge,
-  'close-large': closeLarge
+  'close-large': closeLarge,
+  collection
 };
 
 export default icons;

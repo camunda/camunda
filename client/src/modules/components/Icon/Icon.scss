@@ -40,7 +40,8 @@ $icons: (
   'error',
   'warning',
   'close-large',
-  'check-large'
+  'check-large',
+  'collection'
 );
 
 @each $icon in $icons {
