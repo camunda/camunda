@@ -16,7 +16,7 @@
     <dependencySet>
       <outputDirectory>server/</outputDirectory>
       <includes>
-        <include>org.elasticsearch.distribution.zip:elasticsearch:zip</include>
+        <include>org.elasticsearch.distribution.zip:elasticsearch-oss:zip</include>
       </includes>
       <unpack>true</unpack>
     </dependencySet>
@@ -41,6 +41,7 @@
     <file>
       <source>README.txt</source>
       <filtered>true</filtered>
+      <lineEnding>keep</lineEnding>
       <outputDirectory></outputDirectory>
     </file>
   </files>
