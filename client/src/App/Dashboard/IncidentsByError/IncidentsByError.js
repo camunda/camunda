@@ -48,7 +48,7 @@ export default class IncidentsByError extends React.Component {
             <Styled.VersionLi key={item.workflowId}>
               <Styled.IncidentLink to={`/instances${query}`} title={title}>
                 <IncidentByError
-                  label={`${name} - Version ${item.version}`}
+                  label={`${name} – Version ${item.version}`}
                   incidentsCount={item.instancesWithActiveIncidentsCount}
                   perUnit
                 />

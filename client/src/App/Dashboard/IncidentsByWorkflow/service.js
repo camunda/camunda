@@ -4,5 +4,8 @@ export function getUrl(bpmnProcessId, version) {
 }
 
 export function getTitle(workflowName, version, incidentsCount) {
-  return `View ${incidentsCount} Instances with Incidents in version(s) ${version} of Workflow ${workflowName}`;
+  const isOneVersion = !version.toString().includes(',');
+  return `View ${incidentsCount} Instances with Incidents in version${
+    isOneVersion ? '' : 's'
+  } ${version} of Workflow ${workflowName}`;
 }

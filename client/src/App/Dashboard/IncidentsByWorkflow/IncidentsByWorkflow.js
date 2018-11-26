@@ -71,7 +71,7 @@ export default class IncidentsByWorkflow extends React.Component {
         title={getTitle(name, versions, item.instancesWithActiveIncidentsCount)}
       >
         <IncidentByWorkflow
-          label={`${name} (Version ${versions})`}
+          label={`${name} – Version ${versions}`}
           incidentsCount={item.instancesWithActiveIncidentsCount}
           activeCount={item.activeInstancesCount}
         />
