@@ -15,6 +15,7 @@ function MetricTile({label, type, value, expandFilters}) {
       to={`/instances${query}`}
       type={type}
       onClick={expandFilters}
+      title={`View ${value} ${label}`}
     >
       <Styled.Metric>{value}</Styled.Metric>
       <Styled.Label>{label}</Styled.Label>
