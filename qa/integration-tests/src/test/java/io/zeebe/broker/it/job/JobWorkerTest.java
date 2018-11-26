@@ -322,37 +322,6 @@ public class JobWorkerTest {
   }
 
   @Test
-  public void shouldUpdateJobRetries() {
-    // given
-    final JobEvent job = jobClient.newCreateCommand().jobType("foo").retries(1).send().join();
-
-    final RecordingJobHandler jobHandler =
-        new RecordingJobHandler(
-            (c, j) -> {
-              throw new RuntimeException("expected failure");
-            },
-            (c, j) -> c.newCompleteCommand(j.getKey()).send().join());
-
-    jobClient
-        .newWorker()
-        .jobType("foo")
-        .handler(jobHandler)
-        .timeout(Duration.ofMinutes(5))
-        .name("test")
-        .open();
-
-    waitUntil(() -> jobHandler.getHandledJobs().size() == 1);
-    waitUntil(() -> jobRecords(JobIntent.FAILED).withRetries(0).exists());
-
-    // when
-    jobClient.newUpdateRetriesCommand(job.getKey()).retries(2).send().join();
-
-    // then
-    waitUntil(() -> jobHandler.getHandledJobs().size() == 2);
-    waitUntil(() -> jobRecords(JobIntent.COMPLETED).exists());
-  }
-
-  @Test
   public void shouldExpireJobLock() {
     // given
     final JobEvent job = createJobOfType("foo");

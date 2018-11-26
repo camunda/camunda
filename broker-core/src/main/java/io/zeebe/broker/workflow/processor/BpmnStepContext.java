@@ -17,14 +17,14 @@
  */
 package io.zeebe.broker.workflow.processor;
 
-import io.zeebe.broker.incident.data.ErrorType;
-import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.logstreams.processor.TypedCommandWriter;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.msgpack.mapping.MsgPackMergeTool;
+import io.zeebe.protocol.impl.record.value.incident.ErrorType;
+import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -124,7 +124,7 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
     incidentCommand.reset();
 
     incidentCommand
-        .initFromWorkflowInstanceFailure(record)
+        .initFromWorkflowInstanceFailure(record.getKey(), record.getValue())
         .setErrorType(errorType)
         .setErrorMessage(errorMessage);
 

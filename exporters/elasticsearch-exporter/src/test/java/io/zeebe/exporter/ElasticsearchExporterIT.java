@@ -24,8 +24,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.IncidentRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.ZeebeTestRule;
 import io.zeebe.test.util.TestUtil;
@@ -117,8 +119,6 @@ public class ElasticsearchExporterIT {
               if (fail.getAndSet(false)) {
                 // fail job
                 client.newFailCommand(job.getKey()).retries(0).errorMessage("failed").send().join();
-                // update retries to resolve incident
-                client.newUpdateRetriesCommand(job.getKey()).retries(3).send().join();
               } else {
                 client.newCompleteCommand(job.getKey()).send().join();
               }
@@ -133,6 +133,18 @@ public class ElasticsearchExporterIT {
         .correlationKey(orderId)
         .send()
         .join();
+
+    // wait for incident
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();
+    // update retries to resolve incident
+    zeebeClient
+        .jobClient()
+        .newUpdateRetriesCommand(incident.getValue().getJobKey())
+        .retries(3)
+        .send()
+        .join();
+    zeebeClient.workflowClient().newResolveIncidentCommand(incident.getKey()).send().join();
 
     // wait until workflow instance is completed
     TestUtil.waitUntil(

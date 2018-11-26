@@ -367,6 +367,18 @@ public class PartitionTestClient {
     return receiveIncidents().withIntent(intent).onlyCommands().getFirst();
   }
 
+  public ExecuteCommandResponse resolveIncident(long incidentKey) {
+
+    return apiRule
+        .createCmdRequest()
+        .partitionId(partitionId)
+        .type(ValueType.INCIDENT, IncidentIntent.RESOLVE)
+        .key(incidentKey)
+        .command()
+        .done()
+        .sendAndAwait();
+  }
+
   /////////////////////////////////////////////
   // DEPLOYMENTS //////////////////////////////
   /////////////////////////////////////////////

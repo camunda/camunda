@@ -17,12 +17,12 @@
  */
 package io.zeebe.broker.workflow.processor.boundary;
 
-import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.workflow.model.element.ExecutableBoundaryEvent;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.broker.workflow.processor.flownode.IOMappingHelper;
 import io.zeebe.msgpack.mapping.MappingException;
+import io.zeebe.protocol.impl.record.value.incident.ErrorType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class TriggerBoundaryEventHandler implements BpmnStepHandler<ExecutableBoundaryEvent> {

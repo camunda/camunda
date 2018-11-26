@@ -23,14 +23,15 @@ import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.RecordMetadata;
 import io.zeebe.exporter.record.value.IncidentRecordValue;
+import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.record.value.incident.ErrorType;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
@@ -135,13 +136,15 @@ public class ExpressionIncidentTest {
     testClient.createWorkflowInstance("workflow", asMsgPack("foo", "bar"));
 
     // then incident is created
-    testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
+    final Record<IncidentRecordValue> incidentEvent =
+        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     final Record failureEvent =
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.GATEWAY_ACTIVATED);
 
     // when correct payload is used
     testClient.updatePayload(failureEvent.getKey(), asMsgPack("foo", 7).byteArray());
+    testClient.resolveIncident(incidentEvent.getKey());
 
     // then
     final List<Record> incidentRecords =
@@ -192,55 +195,29 @@ public class ExpressionIncidentTest {
   @Test
   public void shouldResolveIncidentForFailedConditionAfterUploadingWrongPayload() {
     // given
-
-    // when
     testClient.createWorkflowInstance("workflow", asMsgPack("foo", "bar"));
 
-    // then incident is created
-    testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
+    final long incidentKey = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED).getKey();
+    final long failedEventKey =
+        testClient
+            .receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.GATEWAY_ACTIVATED)
+            .getKey();
+    testClient.updatePayload(failedEventKey, asMsgPack("foo", 10).byteArray());
+    testClient.resolveIncident(incidentKey);
 
-    final Record failureEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.GATEWAY_ACTIVATED);
-
-    // when not correct payload is used
-    testClient.updatePayload(failureEvent.getKey(), asMsgPack("foo", 10).byteArray());
-
-    // then
-    List<Record> incidentRecords =
+    final Record<IncidentRecordValue> secondIncident =
         testClient
             .receiveIncidents()
-            .limit(r -> r.getMetadata().getIntent() == IncidentIntent.RESOLVED)
-            .collect(Collectors.toList());
-
-    List<Record> workflowInstanceRecords =
-        testClient
-            .receiveWorkflowInstances()
-            .limit(r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.GATEWAY_ACTIVATED)
-            .collect(Collectors.toList());
-
-    assertThat(incidentRecords)
-        .extracting(Record::getMetadata)
-        .extracting(
-            RecordMetadata::getRecordType, RecordMetadata::getValueType, RecordMetadata::getIntent)
-        .containsSubsequence(
-            tuple(RecordType.COMMAND, ValueType.INCIDENT, IncidentIntent.RESOLVE),
-            tuple(RecordType.EVENT, ValueType.INCIDENT, IncidentIntent.RESOLVED));
-
-    assertThat(workflowInstanceRecords)
-        .extracting(Record::getMetadata)
-        .extracting(
-            RecordMetadata::getRecordType, RecordMetadata::getValueType, RecordMetadata::getIntent)
-        .containsSubsequence(
-            tuple(
-                RecordType.EVENT,
-                ValueType.WORKFLOW_INSTANCE,
-                WorkflowInstanceIntent.GATEWAY_ACTIVATED));
+            .skipUntil(r -> r.getMetadata().getIntent() == IncidentIntent.RESOLVED)
+            .withIntent(IncidentIntent.CREATED)
+            .getFirst();
 
     // when correct payload is used
-    testClient.updatePayload(failureEvent.getKey(), asMsgPack("foo", 7).byteArray());
+    testClient.updatePayload(failedEventKey, asMsgPack("foo", 7).byteArray());
+    testClient.resolveIncident(secondIncident.getKey());
 
     // then
-    incidentRecords =
+    final List<Record<IncidentRecordValue>> incidentRecords =
         testClient
             .receiveIncidents()
             .skipUntil(r -> r.getMetadata().getIntent() == IncidentIntent.RESOLVED)
@@ -248,7 +225,7 @@ public class ExpressionIncidentTest {
             .limit(r -> r.getMetadata().getIntent() == IncidentIntent.RESOLVED)
             .collect(Collectors.toList());
 
-    workflowInstanceRecords =
+    final List<Record<WorkflowInstanceRecordValue>> workflowInstanceRecords =
         testClient
             .receiveWorkflowInstances()
             .skipUntil(r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.GATEWAY_ACTIVATED)
@@ -258,7 +235,7 @@ public class ExpressionIncidentTest {
                         && r.getValue().getWorkflowInstanceKey() == r.getKey())
             .collect(Collectors.toList());
 
-    // RESOLVE triggers  RESOLVED
+    // RESOLVE triggers RESOLVED
     assertThat(incidentRecords)
         .extracting(Record::getMetadata)
         .extracting(
@@ -292,13 +269,15 @@ public class ExpressionIncidentTest {
     testClient.createWorkflowInstance("workflow", asMsgPack("foo", 12));
 
     // then incident is created
-    testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
+    final Record<IncidentRecordValue> incidentEvent =
+        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     final Record failureEvent =
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.GATEWAY_ACTIVATED);
 
     // when
     testClient.updatePayload(failureEvent.getKey(), asMsgPack("foo", 7).byteArray());
+    testClient.resolveIncident(incidentEvent.getKey());
 
     // then
     testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVED);

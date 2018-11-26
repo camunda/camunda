@@ -201,6 +201,13 @@ message ActivateJobsResponse {
   repeated ActivatedJob jobs = 1;
 }
 
+message ResolveIncidentRequest {
+  int64 incidentKey = 1;
+}
+
+message ResolveIncidentResponse {
+}
+
 service Gateway {
   rpc Topology (TopologyRequest) returns (TopologyResponse) {
   }
@@ -227,5 +234,7 @@ service Gateway {
   rpc ListWorkflows (ListWorkflowsRequest) returns (ListWorkflowsResponse) {
   }
   rpc GetWorkflow (GetWorkflowRequest) returns (GetWorkflowResponse) {
+  }
+  rpc ResolveIncident (ResolveIncidentRequest) returns (ResolveIncidentResponse) {
   }
 }

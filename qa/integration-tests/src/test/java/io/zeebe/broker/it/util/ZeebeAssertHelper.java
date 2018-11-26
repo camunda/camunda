@@ -204,8 +204,4 @@ public class ZeebeAssertHelper {
                 .exists())
         .isTrue();
   }
-
-  public static void assertIncidentDeleted() {
-    assertThat(RecordingExporter.incidentRecords(IncidentIntent.RESOLVED).exists()).isTrue();
-  }
 }

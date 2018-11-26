@@ -20,7 +20,6 @@ package io.zeebe.broker.incident;
 import static io.zeebe.protocol.intent.IncidentIntent.RESOLVED;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.record.Assertions;
 import io.zeebe.exporter.record.Record;
@@ -28,6 +27,7 @@ import io.zeebe.exporter.record.value.IncidentRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.impl.record.value.incident.ErrorType;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
@@ -119,7 +119,7 @@ public class MessageIncidentTest {
 
   @Test
   public void shouldResolveIncidentIfCorrelationKeyNotFound() {
-    // when
+    // given
     final long workflowInstance = testClient.createWorkflowInstance(PROCESS_ID);
 
     final Record<IncidentRecordValue> incidentCreatedRecord =
@@ -127,6 +127,9 @@ public class MessageIncidentTest {
 
     testClient.updatePayload(
         incidentCreatedRecord.getValue().getElementInstanceKey(), "{\"orderId\":\"order123\"}");
+
+    // when
+    testClient.resolveIncident(incidentCreatedRecord.getKey());
 
     // then
     assertThat(
