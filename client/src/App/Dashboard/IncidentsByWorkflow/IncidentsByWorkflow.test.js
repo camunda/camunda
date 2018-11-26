@@ -79,7 +79,7 @@ describe('IncidentsByWorkflow', () => {
       '/instances?filter={"workflow":"loanProcess","version":"1","incidents":true}'
     );
     expect(statisticsAnchor.props().title).toBe(
-      'View 16 Instances with Incidents in version(s) 1 of Workflow loanProcess'
+      'View 16 Instances with Incidents in version 1 of Workflow loanProcess'
     );
 
     expect(nodeIncidentByWorkflow.props().label).toContain(
@@ -131,7 +131,7 @@ describe('IncidentsByWorkflow', () => {
       '/instances?filter={"workflow":"orderProcess","version":"all","incidents":true}'
     );
     expect(headerNode.props().title).toBe(
-      'View 65 Instances with Incidents in version(s) 1, 2 of Workflow Order process'
+      'View 65 Instances with Incidents in versions 1, 2 of Workflow Order process'
     );
 
     expect(headerStatistic.props().label).toContain(
