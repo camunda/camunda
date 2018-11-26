@@ -320,7 +320,7 @@ public class RecordingGatewayService extends GatewayImplBase {
       description = cause.getMessage();
     }
 
-    return Status.INTERNAL.augmentDescription(description).asRuntimeException();
+    return Status.INTERNAL.augmentDescription(description).withCause(cause).asRuntimeException();
   }
 
   @FunctionalInterface
