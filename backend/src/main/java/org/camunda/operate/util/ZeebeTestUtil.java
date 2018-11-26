@@ -41,7 +41,7 @@ public abstract class ZeebeTestUtil {
         .send()
         .join();
     logger.debug("Deployment of resource [{}] was performed", classpathResources);
-    return String.valueOf(deploymentEvent.getWorkflows().get(0).getWorkflowKey());
+    return String.valueOf(deploymentEvent.getWorkflows().get(classpathResources.length - 1).getWorkflowKey());
   }
 
   /**

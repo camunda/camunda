@@ -100,7 +100,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  public void testActivityCompleted() {
+  public void testWorkflowInstanceAndActivityCompleted() {
     // having
     String processId = "demoProcess";
     BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)

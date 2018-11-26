@@ -13,6 +13,7 @@
 package org.camunda.operate.it;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.es.reader.WorkflowReader;
@@ -78,6 +79,20 @@ public class WorkflowIT extends OperateZeebeIntegrationTest {
     assertThat(workflowEntity.getBpmnXml()).isNotEmpty();
     assertThat(workflowEntity.getName()).isEqualTo("Demo process");
 
+  }
+
+  @Test
+  public void testTwoWorkflowsFromOneDeploymentCreated() {
+    //when
+    String bpmnProcessId1 = "demoProcess";
+    String bpmnProcessId2 = "processWithGateway";
+    deployWorkflow("demoProcess_v_1.bpmn", "processWithGateway.bpmn");
+
+    //then
+    final Map<String, WorkflowEntity> workflows = workflowReader.getWorkflows();
+    assertThat(workflows).hasSize(2);
+
+    assertThat(workflows.values()).extracting("bpmnProcessId").containsExactlyInAnyOrder(bpmnProcessId1, bpmnProcessId2);
   }
 
   @Test
