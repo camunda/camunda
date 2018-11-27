@@ -18,7 +18,7 @@ const iconStyle = css`
 
 export const FoldButton = styled.button`
   background: transparent;
-  border: none;
+  border-color: none;
 
   padding: 0;
   top: 1px;
@@ -49,7 +49,8 @@ export const Summary = themed(styled.div`
   position: relative;
   height: 32px;
   flex: 1;
-  border-bottom: ${props => (!props.isFolded ? 'none' : borderBottomStyle)};
+  border-bottom: ${props =>
+    !props.isFolded ? '1px solid transparent' : borderBottomStyle};
   border-color: ${props => (!props.isSelected ? '' : Colors.selections)};
 `);
 

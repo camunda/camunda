@@ -47,6 +47,7 @@ const colorStyle = css`
 
 export const LogEntryToggle = themed(styled.button`
   display: flex;
+  align-items: center;
   position: absolute;
   left: 0;
   top: 0;

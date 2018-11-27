@@ -11,6 +11,7 @@ export const InstanceEvents = themed(styled(
   )
 )`
   flex: 1;
+  align-items: center;
   position: relative;
 
   overflow: auto;
@@ -19,8 +20,8 @@ export const InstanceEvents = themed(styled(
       dark: Colors.uiDark04,
       light: Colors.uiLight05
     })};
-  border-top: none;
-  border-bottom: none;
+  border-top-color: transparent;
+  border-bottom-color: transparent;
 `);
 
 export const EventsContainer = styled.ul`
