@@ -155,7 +155,8 @@ public class UpgradeExecutionPlan implements UpgradePlan {
     ESIndexAdjuster.updateDataByTypeName(
       configurationService.getMetaDataType(),
       termQuery(METADATA_TYPE_SCHEMA_VERSION, fromVersion),
-      String.format("ctx._source.schemaVersion = \"%s\"", toVersion)
+      String.format("ctx._source.schemaVersion = \"%s\"", toVersion),
+      null
     );
   }
 

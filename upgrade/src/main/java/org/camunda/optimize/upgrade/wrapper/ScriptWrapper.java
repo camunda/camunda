@@ -1,12 +1,21 @@
 package org.camunda.optimize.upgrade.wrapper;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ScriptWrapper {
   private String source;
   private String lang = "painless";
+  private Object params;
 
   public ScriptWrapper(String mappingScript) {
     this.source = mappingScript;
+    this.params = null;
+  }
+
+  public ScriptWrapper(String mappingScript, Object params) {
+    this.source = mappingScript;
+    this.params = params;
   }
 
   public String getSource() {
@@ -23,5 +32,13 @@ public class ScriptWrapper {
 
   public void setLang(String lang) {
     this.lang = lang;
+  }
+
+  public Object getParams() {
+    return params;
+  }
+
+  public void setParams(Object params) {
+    this.params = params;
   }
 }

@@ -110,9 +110,14 @@ public class CombinedReportHandlingIT {
   @Test
   public void updateCombinedReport() {
     // given
+    ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
     String id = createNewCombinedReport();
+    String singleReportId = createNewSingleNumberReport(engineDto);
     CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
-    report.setData(createCombinedReport("foo123"));
+    report.setData(createCombinedReport(singleReportId));
     report.setId("shouldNotBeUpdated");
     report.setLastModifier("shouldNotBeUpdatedManually");
     report.setName("MyReport");
@@ -126,16 +131,37 @@ public class CombinedReportHandlingIT {
     List<ReportDefinitionDto> reports = getAllReports();
 
     // then
-    assertThat(reports.size(), is(1));
-    CombinedReportDefinitionDto newReport = (CombinedReportDefinitionDto) reports.get(0);
+    assertThat(reports.size(), is(2));
+    CombinedReportDefinitionDto newReport = (CombinedReportDefinitionDto) reports.stream()
+      .filter(r -> r instanceof CombinedReportDefinitionDto).findFirst().get();
     assertThat(newReport.getData().getReportIds().isEmpty(), is(false));
-    assertThat(newReport.getData().getReportIds().get(0), is("foo123"));
+    assertThat(newReport.getData().getReportIds().get(0), is(singleReportId));
     assertThat(newReport.getData().getConfiguration(), is("aRandomConfiguration"));
+    assertThat(newReport.getData().getVisualization(), is(ProcessVisualization.NUMBER));
     assertThat(newReport.getId(), is(id));
     assertThat(newReport.getCreated(), is(not(shouldBeIgnoredDate)));
     assertThat(newReport.getLastModified(), is(not(shouldBeIgnoredDate)));
     assertThat(newReport.getName(), is("MyReport"));
     assertThat(newReport.getOwner(), is("NewOwner"));
+  }
+
+  @Test
+  public void addUncombinableReportThrowsError() {
+    // given
+    ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
+    String numberReportId = createNewSingleNumberReport(engineDto);
+    String rawReportId = createNewSingleRawReport(engineDto);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    String combinedReportId = createNewCombinedReport();
+    CombinedReportDefinitionDto combinedReport = new CombinedReportDefinitionDto();
+    combinedReport.setData(createCombinedReport(numberReportId, rawReportId));
+    Response response = getUpdateReportResponse(combinedReportId, combinedReport, true);
+
+    // then
+    assertThat(response.getStatus(), is(500));
   }
 
   @Test
@@ -232,7 +258,7 @@ public class CombinedReportHandlingIT {
   public void deletedSingleReportsAreRemovedFromCombinedReportWhenForced() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
-    String singleReportIdToDelete = createNewSingleReport();
+    String singleReportIdToDelete = createNewSingleMapReport(engineDto);
     String remainingSingleReportId = createNewSingleMapReport(engineDto);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();

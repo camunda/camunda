@@ -1,15 +1,29 @@
 package org.camunda.optimize.upgrade.main.impl;
 
+import com.jayway.jsonpath.JsonPath;
+import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchRestClientBuilder;
+import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.main.Upgrade;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
+import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
 import org.camunda.optimize.upgrade.steps.schema.CreateIndexAliasForExistingIndexStep;
+import org.camunda.optimize.upgrade.util.SchemaUpgradeUtil;
+import org.elasticsearch.client.Response;
+import org.elasticsearch.client.RestClient;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_REPORT_TYPE;
@@ -68,7 +82,7 @@ public class UpgradeFrom22To23 implements Upgrade {
           new CreateIndexAliasForExistingIndexStep(configurationService.getReportShareType(), TO_VERSION)
         )
         .addUpgradeStep(
-          new CreateIndexAliasForExistingIndexStep(COMBINED_REPORT_TYPE, TO_VERSION)
+          new CreateIndexAliasForExistingIndexStep(COMBINED_REPORT_TYPE, TO_VERSION, getNewCombinedReportMapping())
         )
         .addUpgradeStep(
           new CreateIndexAliasForExistingIndexStep(SINGLE_REPORT_TYPE, TO_VERSION)
@@ -80,11 +94,61 @@ public class UpgradeFrom22To23 implements Upgrade {
           new CreateIndexAliasForExistingIndexStep(TIMESTAMP_BASED_IMPORT_INDEX_TYPE, TO_VERSION)
         )
         .addUpgradeStep(relocateProcessPart())
+        .addUpgradeStep(buildFillVisualizationFieldOfCombinedReportWithDataStep())
         .build();
       upgradePlan.execute();
     } catch (Exception e) {
       logger.error("Error while executing upgrade", e);
       System.exit(2);
+    }
+  }
+
+  private String getNewCombinedReportMapping() {
+    String pathToMapping = "upgrade/main/UpgradeFrom22To23/add_visualization_to_combined_report_index_mapping.json";
+    return SchemaUpgradeUtil.readClasspathFileAsString(pathToMapping);
+  }
+
+  private UpgradeStep buildFillVisualizationFieldOfCombinedReportWithDataStep() {
+    // @formatter:off
+    String updateScript =
+      "if(ctx._source.data != null) {" +
+        "if(ctx._source.data.reportIds != null && !ctx._source.data.reportIds.isEmpty()) {" +
+          "String firstReportId = ctx._source.data.reportIds.get(0);" +
+          "String visualizationOfCombinedReport = params[firstReportId];" +
+          "ctx._source.data.visualization = visualizationOfCombinedReport;" +
+        "} else {" +
+          "ctx._source.data.visualization = null;" +
+        "}" +
+      "}";
+    // @formatter:on
+    return new UpdateDataStep(
+      COMBINED_REPORT_TYPE,
+      QueryBuilders.matchAllQuery(),
+      updateScript,
+      buildSingleReportIdToVisualizationMap()
+    );
+  }
+
+  private Map<String, String> buildSingleReportIdToVisualizationMap() {
+    RestClient build = ElasticsearchRestClientBuilder.build(configurationService);
+    try {
+      Response response =
+        build.performRequest("GET", getOptimizeIndexAliasForType(SINGLE_REPORT_TYPE) + "/_search");
+      String json = EntityUtils.toString(response.getEntity());
+      List<Map> hits = JsonPath.read(json, "$.hits.hits.*");
+      Map<String, String> reportIdToVisualization = new HashMap<>();
+      for (Map hit : hits) {
+        Map source = (Map) hit.get("_source");
+        String id = (String) source.get("id");
+        Map data = (Map) source.get("data");
+        String visualization = (String) data.get("visualization");
+        reportIdToVisualization.put(id, visualization);
+      }
+      return reportIdToVisualization;
+    } catch (IOException e) {
+      String errorMessage =
+        "Could not retrieve all single reports to update combined report visualization field!";
+      throw new UpgradeRuntimeException(errorMessage, e);
     }
   }
 

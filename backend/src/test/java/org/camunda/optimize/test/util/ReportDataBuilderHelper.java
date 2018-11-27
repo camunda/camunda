@@ -706,7 +706,7 @@ public class ReportDataBuilderHelper {
     return createReportDataViewRaw(
         processDefinitionKey,
         processDefinitionVersion,
-        ProcessVisualization.HEAT,
+        ProcessVisualization.NUMBER,
         view,
         groupByDto
     );

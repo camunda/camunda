@@ -329,7 +329,7 @@ public class ESIndexAdjuster {
     return indexName + "/" + type;
   }
 
-  public void updateDataByTypeName(String typeName, QueryBuilder query, String updateScript) {
+  public void updateDataByTypeName(String typeName, QueryBuilder query, String updateScript, Object parameters) {
     String aliasName = getOptimizeIndexAliasForType(typeName);
     logger.debug(
       "Updating data for indexAlias [{}] using script [{}] and query [{}].", aliasName, updateScript, query.toString()
@@ -337,7 +337,7 @@ public class ESIndexAdjuster {
 
     try {
       HashMap<String, Object> data = new HashMap<>();
-      ScriptWrapper scriptWrapper = new ScriptWrapper(updateScript);
+      ScriptWrapper scriptWrapper = new ScriptWrapper(updateScript, parameters);
 
       data.put("script", objectMapper.convertValue(scriptWrapper, new TypeReference<HashMap<String, Object>>() {
       }));

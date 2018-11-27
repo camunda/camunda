@@ -1,9 +1,12 @@
 package org.camunda.optimize.service.es.reader;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.get.GetResponse;
@@ -14,6 +17,7 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.SearchHit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,8 +25,10 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
@@ -92,6 +98,50 @@ public class ReportReader {
       esclient,
       configurationService.getElasticsearchScrollTimeout()
     );
+  }
+
+  public List<SingleReportDefinitionDto<ProcessReportDataDto>> getAllSingleProcessReportsForIds(List<String> reportIds) {
+    logger.debug("Fetching all available single process reports for ids [{}]", reportIds);
+
+    String[] reportIdsAsArray = reportIds.toArray(new String[0]);
+    SearchResponse response = esclient
+      .prepareSearch(getOptimizeIndexAliasForType(SINGLE_REPORT_TYPE))
+      .setQuery(QueryBuilders.idsQuery().addIds(reportIdsAsArray))
+      .setSize(reportIds.size())
+      .get();
+
+    List<SingleReportDefinitionDto<ProcessReportDataDto>> singleReportDefinitionDtos =
+      new ArrayList<>(reportIds.size());
+    for (SearchHit hit : response.getHits().getHits()) {
+      String sourceAsString = hit.getSourceAsString();
+      try {
+        SingleReportDefinitionDto<ProcessReportDataDto> singleReportDefinitionDto = objectMapper.readValue(
+          sourceAsString,
+          new TypeReference<SingleReportDefinitionDto<ProcessReportDataDto>>(){}
+        );
+        singleReportDefinitionDtos.add(singleReportDefinitionDto);
+      } catch (IOException e) {
+        String reason = "While mapping search results of single report "
+          + "it was not possible to deserialize a hit from Elasticsearch!"
+          + " Hit response from Elasticsearch: "
+          + sourceAsString;
+        logger.error(reason, e);
+        throw new OptimizeRuntimeException(reason, e);
+      }
+    }
+
+    if (reportIds.size() != singleReportDefinitionDtos.size()) {
+      List<String> fetchedReportIds = singleReportDefinitionDtos.stream()
+        .map(SingleReportDefinitionDto::getId)
+        .collect(Collectors.toList());
+      String errorMessage =
+        String.format("Error trying to fetch reports for given ids. Given ids [%s] and fetched [%s]. " +
+                        "There is a mismatch here. Maybe one report does not exist?",
+                      reportIds, fetchedReportIds);
+      logger.error(errorMessage);
+      throw new OptimizeRuntimeException(errorMessage);
+    }
+    return singleReportDefinitionDtos;
   }
 
   public List<CombinedReportDefinitionDto> findFirstCombinedReportsForSimpleReport(String simpleReportId) {

@@ -11,6 +11,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_RE
 public class CombinedReportType extends AbstractReportType {
 
   public static final String REPORT_IDS = "reportIds";
+  public static final String VISUALIZATION = "visualization";
   public static final String CONFIGURATION = "configuration";
 
   @Override
@@ -26,6 +27,9 @@ public class CombinedReportType extends AbstractReportType {
         .startObject("properties")
           .startObject(CONFIGURATION)
             .field("enabled", false)
+          .endObject()
+          .startObject(VISUALIZATION)
+            .field("type", "keyword")
           .endObject()
           .startObject(REPORT_IDS)
             .field("type", "keyword")

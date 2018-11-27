@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
@@ -26,10 +27,13 @@ import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluation
 import org.camunda.optimize.service.es.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConflictException;
 import org.camunda.optimize.service.exceptions.OptimizeException;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.security.SharingService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.ValidationHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -42,6 +46,8 @@ import java.util.stream.Collectors;
 
 @Component
 public class ReportService {
+
+  private final static Logger logger = LoggerFactory.getLogger(ReportService.class);
 
   @Autowired
   private ReportWriter reportWriter;
@@ -132,32 +138,61 @@ public class ReportService {
     }
   }
 
-  public <T extends ReportDataDto> void updateReportWithAuthorizationCheck(String reportId,
-                                                                           ReportDefinitionDto<T> updatedReport,
-                                                                           String userId,
-                                                                           boolean force) throws OptimizeException {
+  public void updateCombinedProcessReportWithAuthorizationCheck(String reportId,
+                                                                CombinedReportDefinitionDto updatedReport,
+                                                                String userId,
+                                                                boolean force) throws OptimizeException {
     ValidationHelper.validateDefinitionData(updatedReport.getData());
     ReportDefinitionDto currentReportVersion = getReportWithAuthorizationCheck(reportId, userId);
-    ReportDefinitionUpdateDto<T> reportUpdate = convertToReportUpdate(reportId, updatedReport, userId);
+    ReportDefinitionUpdateDto<CombinedReportDataDto> reportUpdate =
+      convertToReportUpdate(reportId, updatedReport, userId);
+
+    CombinedReportDataDto data = reportUpdate.getData();
+    if (data.getReportIds() != null && !data.getReportIds().isEmpty()) {
+      List<SingleReportDefinitionDto<ProcessReportDataDto>> reportsOfCombinedReport =
+        reportReader.getAllSingleProcessReportsForIds(data.getReportIds());
+
+      SingleReportDefinitionDto<ProcessReportDataDto> firstReport = reportsOfCombinedReport.get(0);
+      boolean allReportsCanBeCombined =
+        reportsOfCombinedReport.stream().noneMatch(r -> semanticsForCombinedReportChanged(firstReport, r));
+      if (allReportsCanBeCombined) {
+        data.setVisualization(firstReport.getData().getVisualization());
+      } else {
+        String errorMessage =
+          String.format("Can't update combined report with id [%s] and name [%s]. " +
+                          "The following report ids are not combinable: [%s]",
+                        reportId, updatedReport.getName(), data.getReportIds()
+          );
+        logger.error(errorMessage);
+        throw new OptimizeRuntimeException(errorMessage);
+      }
+    }
 
     if (!force) {
       checkForUpdateConflicts(currentReportVersion, updatedReport);
     }
+    reportWriter.updateCombinedReport(reportUpdate);
+  }
 
-    if (updatedReport instanceof SingleReportDefinitionDto) {
-      final SingleReportDefinitionDto currentSingleReport = (SingleReportDefinitionDto) currentReportVersion;
-      final SingleReportDefinitionDto singleReportUpdate = (SingleReportDefinitionDto) updatedReport;
+  public void updateSingleProcessReportWithAuthorizationCheck(String reportId,
+                                                              SingleReportDefinitionDto<SingleReportDataDto> updatedReport,
+                                                              String userId,
+                                                              boolean force) throws OptimizeException {
+    ValidationHelper.validateDefinitionData(updatedReport.getData());
+    ReportDefinitionDto currentReportVersion = getReportWithAuthorizationCheck(reportId, userId);
+    ReportDefinitionUpdateDto reportUpdate = convertToReportUpdate(reportId, updatedReport, userId);
 
-      reportWriter.updateSingleReport(reportUpdate);
-      alertService.deleteAlertsIfNeeded(reportId, singleReportUpdate);
-
-      if (semanticsForCombinedReportChanged(currentSingleReport, singleReportUpdate)) {
-        reportWriter.removeSingleReportFromCombinedReports(reportId);
-      }
-    } else {
-      reportWriter.updateCombinedReport(reportUpdate);
+    if (!force) {
+      checkForUpdateConflicts(currentReportVersion, updatedReport);
     }
+    final SingleReportDefinitionDto currentSingleReport = (SingleReportDefinitionDto) currentReportVersion;
 
+    reportWriter.updateSingleReport(reportUpdate);
+    alertService.deleteAlertsIfNeeded(reportId, updatedReport);
+
+    if (semanticsForCombinedReportChanged(currentSingleReport, updatedReport)) {
+      reportWriter.removeSingleReportFromCombinedReports(reportId);
+    }
   }
 
   private void checkForUpdateConflicts(ReportDefinitionDto currentReportVersion,

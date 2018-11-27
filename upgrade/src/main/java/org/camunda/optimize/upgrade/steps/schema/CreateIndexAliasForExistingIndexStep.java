@@ -9,11 +9,19 @@ import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.get
 public class CreateIndexAliasForExistingIndexStep implements UpgradeStep {
   private final String typeName;
   private final String targetVersion;
+  private final String customMapping;
 
   public CreateIndexAliasForExistingIndexStep(final String typeName,
                                               final String targetVersion) {
     this.targetVersion = targetVersion;
     this.typeName = typeName;
+    this.customMapping = null;
+  }
+
+  public CreateIndexAliasForExistingIndexStep(String typeName, String targetVersion, String customMapping) {
+    this.typeName = typeName;
+    this.targetVersion = targetVersion;
+    this.customMapping = customMapping;
   }
 
   @Override
@@ -25,6 +33,7 @@ public class CreateIndexAliasForExistingIndexStep implements UpgradeStep {
     final String targetIndexName = getOptimizeIndexNameForAliasAndVersion(targetIndexAlias, targetVersion);
 
     String indexMappings = esIndexAdjuster.getIndexMappings(sourceIndexName);
+    indexMappings = customMapping != null ? customMapping : indexMappings;
 
     // create new index and reindex data to it
     esIndexAdjuster.createIndex(targetIndexName, indexMappings);
