@@ -17,7 +17,15 @@
  */
 package io.zeebe.broker.workflow.model.element;
 
-public interface ExecutableMessageCatchElement extends ExecutableFlowElement {
+import java.time.Duration;
+
+public interface ExecutableCatchEvent extends ExecutableFlowElement {
+
+  boolean isTimer();
+
+  boolean isMessage();
 
   ExecutableMessage getMessage();
+
+  Duration getDuration();
 }

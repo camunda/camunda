@@ -18,20 +18,19 @@
 package io.zeebe.broker.workflow.processor.activity;
 
 import io.zeebe.broker.incident.processor.IncidentState;
-import io.zeebe.broker.workflow.model.element.ExecutableActivity;
+import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.flownode.TerminateFlowNodeHandler;
 
-public class TerminateActivityHandler<T extends ExecutableActivity>
-    extends TerminateFlowNodeHandler<T> {
+public class TerminateActivityHandler extends TerminateFlowNodeHandler {
 
   public TerminateActivityHandler(IncidentState incidentState) {
     super(incidentState);
   }
 
   @Override
-  protected void terminate(BpmnStepContext<T> context) {
+  protected void terminate(BpmnStepContext<ExecutableFlowNode> context) {
     super.terminate(context);
-    context.getCatchEventOutput().unsubscribeFromCatchEvents(context);
+    context.getCatchEventOutput().unsubscribeFromCatchEvents(context.getRecord().getKey(), context);
   }
 }

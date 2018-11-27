@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.model.transformation.handler;
+package io.zeebe.broker.workflow.model.transformation.transformer;
 
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
@@ -36,7 +36,7 @@ import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class ServiceTaskHandler implements ModelElementTransformer<ServiceTask> {
+public class ServiceTaskTransformer implements ModelElementTransformer<ServiceTask> {
 
   private static final int INITIAL_SIZE_KEY_VALUE_PAIR = 128;
 

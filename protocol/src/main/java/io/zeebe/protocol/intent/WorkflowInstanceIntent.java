@@ -17,9 +17,12 @@ package io.zeebe.protocol.intent;
 
 public enum WorkflowInstanceIntent implements Intent {
   CREATE((short) 0),
+
   START_EVENT_OCCURRED((short) 1),
   END_EVENT_OCCURRED((short) 2),
+
   SEQUENCE_FLOW_TAKEN((short) 3),
+
   GATEWAY_ACTIVATED((short) 4),
 
   ELEMENT_READY((short) 5),

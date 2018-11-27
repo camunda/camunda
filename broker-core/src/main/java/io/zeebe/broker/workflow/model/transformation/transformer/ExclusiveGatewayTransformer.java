@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.model.transformation.handler;
+package io.zeebe.broker.workflow.model.transformation.transformer;
 
 import io.zeebe.broker.workflow.model.BpmnStep;
 import io.zeebe.broker.workflow.model.element.ExecutableExclusiveGateway;
@@ -28,7 +28,7 @@ import io.zeebe.model.bpmn.instance.SequenceFlow;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.Collection;
 
-public class ExclusiveGatewayHandler implements ModelElementTransformer<ExclusiveGateway> {
+public class ExclusiveGatewayTransformer implements ModelElementTransformer<ExclusiveGateway> {
 
   @Override
   public Class<ExclusiveGateway> getType() {

@@ -15,15 +15,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.processor.message;
+package io.zeebe.broker.workflow.model.element;
 
-import io.zeebe.broker.workflow.model.element.ExecutableMessageCatchElement;
-import io.zeebe.broker.workflow.processor.BpmnStepContext;
-import io.zeebe.broker.workflow.processor.BpmnStepHandler;
+import java.util.List;
 
-public class MessageCatchElementHandler implements BpmnStepHandler<ExecutableMessageCatchElement> {
-  @Override
-  public void handle(final BpmnStepContext<ExecutableMessageCatchElement> context) {
-    context.getCatchEventOutput().subscribeToMessageEvent(context, context.getElement());
-  }
+public interface ExecutableCatchEventSupplier extends ExecutableFlowElement {
+
+  List<? extends ExecutableCatchEvent> getEvents();
 }

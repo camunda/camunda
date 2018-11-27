@@ -15,26 +15,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.processor.sequenceflow;
+package io.zeebe.broker.workflow.processor.event;
 
-import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
-import io.zeebe.broker.workflow.model.element.ExecutableSequenceFlow;
+import io.zeebe.broker.workflow.model.element.ExecutableCatchEventSupplier;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class TriggerEndEventHandler implements BpmnStepHandler<ExecutableSequenceFlow> {
+public class SubscribeEventHandler implements BpmnStepHandler<ExecutableCatchEventSupplier> {
 
   @Override
-  public void handle(BpmnStepContext<ExecutableSequenceFlow> context) {
+  public void handle(final BpmnStepContext<ExecutableCatchEventSupplier> context) {
+    final ExecutableCatchEventSupplier supplier = context.getElement();
 
-    final ExecutableSequenceFlow sequenceFlow = context.getElement();
-    final ExecutableFlowNode targetNode = sequenceFlow.getTarget();
+    context.getCatchEventOutput().subscribeToCatchEvents(context, supplier.getEvents());
 
-    final WorkflowInstanceRecord value = context.getValue();
-    value.setElementId(targetNode.getId());
-
-    context.getOutput().appendNewEvent(WorkflowInstanceIntent.END_EVENT_OCCURRED, value);
+    // TODO ignore intermediate catch events because they are treater as activities - #1698
+    if (context.getElementInstance() == null) {
+      context.getOutput().deferEvent(context.getRecord());
+    }
   }
 }

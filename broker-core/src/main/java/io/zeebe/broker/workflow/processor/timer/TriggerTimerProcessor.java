@@ -27,9 +27,12 @@ import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.broker.workflow.processor.boundary.BoundaryEventHelper;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.ElementInstanceState;
+import io.zeebe.broker.workflow.state.StoredRecord;
+import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
 import io.zeebe.broker.workflow.state.TimerInstance;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
@@ -63,6 +66,8 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
 
     streamWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
 
+    // TODO handler trigger events in a uniform way - #1699
+
     if (elementInstance != null
         && elementInstance.getState() == WorkflowInstanceIntent.ELEMENT_ACTIVATED) {
       if (boundaryEventHelper.shouldTriggerBoundaryEvent(
@@ -78,6 +83,18 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
       }
 
       elementInstanceState.flushDirtyState();
+
+    } else {
+      final StoredRecord tokenEvent = elementInstanceState.getTokenEvent(elementInstanceKey);
+
+      if (tokenEvent != null && tokenEvent.getPurpose() == Purpose.DEFERRED_TOKEN) {
+        // continue at an event-based gateway
+        final WorkflowInstanceRecord deferedRecord = tokenEvent.getRecord().getValue();
+        deferedRecord.setPayload(EMPTY_DOCUMENT).setElementId(timerRecord.getHandlerNodeId());
+
+        streamWriter.appendFollowUpEvent(
+            tokenEvent.getKey(), WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING, deferedRecord);
+      }
     }
 
     workflowState.getTimerState().remove(timerInstance);

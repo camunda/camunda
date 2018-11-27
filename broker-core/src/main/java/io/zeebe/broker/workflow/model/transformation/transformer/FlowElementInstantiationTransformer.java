@@ -15,11 +15,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.model.transformation.handler;
+package io.zeebe.broker.workflow.model.transformation.transformer;
 
 import io.zeebe.broker.workflow.model.element.AbstractFlowElement;
 import io.zeebe.broker.workflow.model.element.ExecutableActivity;
 import io.zeebe.broker.workflow.model.element.ExecutableBoundaryEvent;
+import io.zeebe.broker.workflow.model.element.ExecutableEventBasedGateway;
 import io.zeebe.broker.workflow.model.element.ExecutableExclusiveGateway;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElementContainer;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
@@ -33,6 +34,7 @@ import io.zeebe.broker.workflow.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.Activity;
 import io.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.zeebe.model.bpmn.instance.EndEvent;
+import io.zeebe.model.bpmn.instance.EventBasedGateway;
 import io.zeebe.model.bpmn.instance.ExclusiveGateway;
 import io.zeebe.model.bpmn.instance.FlowElement;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
@@ -46,7 +48,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-public class FlowElementHandler implements ModelElementTransformer<FlowElement> {
+public class FlowElementInstantiationTransformer implements ModelElementTransformer<FlowElement> {
 
   private static final Map<Class<?>, Function<String, AbstractFlowElement>> ELEMENT_FACTORIES;
 
@@ -56,6 +58,7 @@ public class FlowElementHandler implements ModelElementTransformer<FlowElement> 
     ELEMENT_FACTORIES.put(Activity.class, ExecutableActivity::new);
     ELEMENT_FACTORIES.put(BoundaryEvent.class, ExecutableBoundaryEvent::new);
     ELEMENT_FACTORIES.put(EndEvent.class, ExecutableFlowNode::new);
+    ELEMENT_FACTORIES.put(EventBasedGateway.class, ExecutableEventBasedGateway::new);
     ELEMENT_FACTORIES.put(ExclusiveGateway.class, ExecutableExclusiveGateway::new);
     ELEMENT_FACTORIES.put(IntermediateCatchEvent.class, ExecutableIntermediateCatchElement::new);
     ELEMENT_FACTORIES.put(ParallelGateway.class, ExecutableFlowNode::new);
@@ -77,6 +80,10 @@ public class FlowElementHandler implements ModelElementTransformer<FlowElement> 
     final Class<?> elemenType = element.getElementType().getInstanceType();
 
     final Function<String, AbstractFlowElement> elementFactory = ELEMENT_FACTORIES.get(elemenType);
+    if (elementFactory == null) {
+      throw new IllegalStateException("no transformer found for element type: " + elemenType);
+    }
+
     final AbstractFlowElement executableElement = elementFactory.apply(element.getId());
 
     workflow.addFlowElement(executableElement);

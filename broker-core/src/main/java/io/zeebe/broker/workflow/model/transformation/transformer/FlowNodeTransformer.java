@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.model.transformation.handler;
+package io.zeebe.broker.workflow.model.transformation.transformer;
 
 import io.zeebe.broker.workflow.model.BpmnStep;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
@@ -30,7 +30,7 @@ import io.zeebe.msgpack.mapping.Mapping;
 import io.zeebe.msgpack.mapping.MappingBuilder;
 import java.util.Collection;
 
-public class FlowNodeHandler implements ModelElementTransformer<FlowNode> {
+public class FlowNodeTransformer implements ModelElementTransformer<FlowNode> {
 
   private final MappingBuilder mappingBuilder = new MappingBuilder();
 

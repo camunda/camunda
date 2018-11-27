@@ -24,9 +24,8 @@ import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.workflow.data.TimerRecord;
-import io.zeebe.broker.workflow.model.element.ExecutableIntermediateCatchElement;
+import io.zeebe.broker.workflow.model.element.ExecutableCatchEvent;
 import io.zeebe.broker.workflow.model.element.ExecutableMessage;
-import io.zeebe.broker.workflow.model.element.ExecutableMessageCatchElement;
 import io.zeebe.broker.workflow.processor.boundary.BoundaryEventHelper;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.EventTrigger;
@@ -53,22 +52,20 @@ public class CatchEventOutput {
     this.subscriptionCommandSender = subscriptionCommandSender;
   }
 
-  public void unsubscribeFromCatchEvents(BpmnStepContext<?> context) {
+  public void unsubscribeFromCatchEvents(long elementInstanceKey, BpmnStepContext<?> context) {
     // at the moment, the way the state is handled we don't need specific event information to
     // unsubscribe from an event trigger, but once messages are supported it will be necessary.
-    unsubscribeFromTimerEvents(
-        context.getElementInstance().getKey(), context.getOutput().getStreamWriter());
-    unsubscribeFromMessageEvents(context);
+    unsubscribeFromTimerEvents(elementInstanceKey, context.getOutput().getStreamWriter());
+    unsubscribeFromMessageEvents(elementInstanceKey, context);
   }
 
   public void subscribeToCatchEvents(
-      BpmnStepContext<?> context, final List<? extends ExecutableIntermediateCatchElement> events) {
-
-    for (final ExecutableIntermediateCatchElement event : events) {
-      if (event.getDuration() != null) {
+      BpmnStepContext<?> context, final List<? extends ExecutableCatchEvent> events) {
+    for (final ExecutableCatchEvent event : events) {
+      if (event.isTimer()) {
         subscribeToTimerEvent(
-            context.getElementInstance(), event, context.getOutput().getStreamWriter());
-      } else if (event.getMessage() != null) {
+            context.getRecord().getKey(), event, context.getOutput().getStreamWriter());
+      } else if (event.isMessage()) {
         subscribeToMessageEvent(context, event);
       }
     }
@@ -90,12 +87,12 @@ public class CatchEventOutput {
   private final TimerRecord timerRecord = new TimerRecord();
 
   public void subscribeToTimerEvent(
-      ElementInstance element, ExecutableIntermediateCatchElement event, TypedStreamWriter writer) {
+      long elementInstanceKey, ExecutableCatchEvent event, TypedStreamWriter writer) {
     final Duration duration = event.getDuration();
     final long dueDate = ActorClock.currentTimeMillis() + duration.toMillis();
 
     timerRecord
-        .setElementInstanceKey(element.getKey())
+        .setElementInstanceKey(elementInstanceKey)
         .setDueDate(dueDate)
         .setHandlerNodeId(event.getId());
     writer.appendNewCommand(TimerIntent.CREATE, timerRecord);
@@ -122,8 +119,7 @@ public class CatchEventOutput {
   private final MsgPackQueryProcessor queryProcessor = new MsgPackQueryProcessor();
   private WorkflowInstanceSubscription subscription = new WorkflowInstanceSubscription();
 
-  public void subscribeToMessageEvent(
-      BpmnStepContext<?> context, ExecutableMessageCatchElement handler) {
+  public void subscribeToMessageEvent(BpmnStepContext<?> context, ExecutableCatchEvent handler) {
     final ExecutableMessage message = handler.getMessage();
     final DirectBuffer extractedKey = extractCorrelationKey(context, message);
 
@@ -132,7 +128,7 @@ public class CatchEventOutput {
     }
 
     final long workflowInstanceKey = context.getValue().getWorkflowInstanceKey();
-    final long elementInstanceKey = context.getElementInstance().getKey();
+    final long elementInstanceKey = context.getRecord().getKey();
     final DirectBuffer messageName = cloneBuffer(message.getMessageName());
     final DirectBuffer correlationKey = cloneBuffer(extractedKey);
 
@@ -152,12 +148,11 @@ public class CatchEventOutput {
                     workflowInstanceKey, elementInstanceKey, messageName, correlationKey));
   }
 
-  public void unsubscribeFromMessageEvents(BpmnStepContext<?> context) {
+  public void unsubscribeFromMessageEvents(long elementInstanceKey, BpmnStepContext<?> context) {
     state
         .getWorkflowInstanceSubscriptionState()
         .visitElementSubscriptions(
-            context.getElementInstance().getKey(),
-            sub -> unsubscribeFromMessageEvent(context, sub));
+            elementInstanceKey, sub -> unsubscribeFromMessageEvent(context, sub));
   }
 
   private boolean unsubscribeFromMessageEvent(

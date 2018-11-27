@@ -35,8 +35,21 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
+import java.util.Arrays;
+import java.util.List;
 
 public class WorkflowEventProcessors {
+
+  private static final List<WorkflowInstanceIntent> WORKFLOW_INSTANCE_COMMANDS =
+      Arrays.asList(
+          WorkflowInstanceIntent.CREATE,
+          WorkflowInstanceIntent.CANCEL,
+          WorkflowInstanceIntent.UPDATE_PAYLOAD);
+
+  private static boolean isWorkflowInstanceEvent(WorkflowInstanceIntent intent) {
+    return !WORKFLOW_INSTANCE_COMMANDS.contains(intent)
+        && intent != WorkflowInstanceIntent.PAYLOAD_UPDATED;
+  }
 
   public static BpmnStepProcessor addWorkflowProcessors(
       TypedEventStreamProcessorBuilder typedProcessorBuilder,
@@ -75,63 +88,20 @@ public class WorkflowEventProcessors {
     final WorkflowInstanceCommandProcessor commandProcessor =
         new WorkflowInstanceCommandProcessor(workflowEngineState);
 
-    builder
-        .onCommand(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE, commandProcessor)
-        .onCommand(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CANCEL, commandProcessor)
-        .onCommand(
-            ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.UPDATE_PAYLOAD, commandProcessor);
+    WORKFLOW_INSTANCE_COMMANDS.forEach(
+        intent -> builder.onCommand(ValueType.WORKFLOW_INSTANCE, intent, commandProcessor));
   }
 
   private static void addBpmnStepProcessor(
       TypedEventStreamProcessorBuilder streamProcessorBuilder,
       BpmnStepProcessor bpmnStepProcessor) {
-    streamProcessorBuilder
-        .onEvent(
-            ValueType.WORKFLOW_INSTANCE,
-            WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
-            bpmnStepProcessor)
-        .onEvent(
-            ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.ELEMENT_READY, bpmnStepProcessor)
-        .onEvent(
-            ValueType.WORKFLOW_INSTANCE,
-            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-            bpmnStepProcessor)
-        .onEvent(
-            ValueType.WORKFLOW_INSTANCE,
-            WorkflowInstanceIntent.ELEMENT_COMPLETING,
-            bpmnStepProcessor)
-        .onEvent(
-            ValueType.WORKFLOW_INSTANCE,
-            WorkflowInstanceIntent.START_EVENT_OCCURRED,
-            bpmnStepProcessor)
-        .onEvent(
-            ValueType.WORKFLOW_INSTANCE,
-            WorkflowInstanceIntent.END_EVENT_OCCURRED,
-            bpmnStepProcessor)
-        .onEvent(
-            ValueType.WORKFLOW_INSTANCE,
-            WorkflowInstanceIntent.GATEWAY_ACTIVATED,
-            bpmnStepProcessor)
-        .onEvent(
-            ValueType.WORKFLOW_INSTANCE,
-            WorkflowInstanceIntent.ELEMENT_COMPLETED,
-            bpmnStepProcessor)
-        .onEvent(
-            ValueType.WORKFLOW_INSTANCE,
-            WorkflowInstanceIntent.ELEMENT_TERMINATING,
-            bpmnStepProcessor)
-        .onEvent(
-            ValueType.WORKFLOW_INSTANCE,
-            WorkflowInstanceIntent.ELEMENT_TERMINATED,
-            bpmnStepProcessor)
-        .onEvent(
-            ValueType.WORKFLOW_INSTANCE,
-            WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING,
-            bpmnStepProcessor)
-        .onEvent(
-            ValueType.WORKFLOW_INSTANCE,
-            WorkflowInstanceIntent.CATCH_EVENT_TRIGGERED,
-            bpmnStepProcessor);
+
+    Arrays.stream(WorkflowInstanceIntent.values())
+        .filter(WorkflowEventProcessors::isWorkflowInstanceEvent)
+        .forEach(
+            intent ->
+                streamProcessorBuilder.onEvent(
+                    ValueType.WORKFLOW_INSTANCE, intent, bpmnStepProcessor));
   }
 
   private static void addMessageStreamProcessors(

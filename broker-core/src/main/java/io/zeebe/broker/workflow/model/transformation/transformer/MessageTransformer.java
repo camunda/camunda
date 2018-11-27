@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.model.transformation.handler;
+package io.zeebe.broker.workflow.model.transformation.transformer;
 
 import io.zeebe.broker.workflow.model.element.ExecutableMessage;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
@@ -26,7 +26,7 @@ import io.zeebe.msgpack.jsonpath.JsonPathQuery;
 import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
 import io.zeebe.util.buffer.BufferUtil;
 
-public class MessageHandler implements ModelElementTransformer<Message> {
+public class MessageTransformer implements ModelElementTransformer<Message> {
 
   @Override
   public Class<Message> getType() {

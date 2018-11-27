@@ -18,7 +18,7 @@
 package io.zeebe.broker.workflow.processor.flownode;
 
 import io.zeebe.broker.incident.processor.IncidentState;
-import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
+import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.broker.workflow.processor.EventOutput;
@@ -26,18 +26,17 @@ import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class TerminateFlowNodeHandler<T extends ExecutableFlowElement>
-    implements BpmnStepHandler<T> {
+public class TerminateFlowNodeHandler implements BpmnStepHandler<ExecutableFlowNode> {
 
   protected final IncidentState incidentState;
-  private BpmnStepContext<T> context;
+  private BpmnStepContext<ExecutableFlowNode> context;
 
   public TerminateFlowNodeHandler(IncidentState incidentState) {
     this.incidentState = incidentState;
   }
 
   @Override
-  public void handle(BpmnStepContext<T> context) {
+  public void handle(BpmnStepContext<ExecutableFlowNode> context) {
     this.context = context;
     final EventOutput output = context.getOutput();
     final ElementInstance elementInstance = context.getElementInstance();
@@ -63,7 +62,7 @@ public class TerminateFlowNodeHandler<T extends ExecutableFlowElement>
    *
    * @param context current processor context
    */
-  protected void terminate(BpmnStepContext<T> context) {}
+  protected void terminate(BpmnStepContext<ExecutableFlowNode> context) {}
 
   private void resolveExistingIncident(IncidentRecord incidentRecord, long incidentKey) {
     context.getOutput().appendResolvedIncidentEvent(incidentKey, incidentRecord);

@@ -15,26 +15,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.model.transformation.handler;
+package io.zeebe.broker.workflow.model.element;
 
-import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
-import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
-import io.zeebe.broker.workflow.model.transformation.TransformContext;
-import io.zeebe.model.bpmn.instance.Process;
+import java.util.List;
 
-public class CreateWorkflowHandler implements ModelElementTransformer<Process> {
+public class ExecutableEventBasedGateway extends ExecutableFlowNode
+    implements ExecutableCatchEventSupplier {
 
-  @Override
-  public Class<Process> getType() {
-    return Process.class;
+  private List<ExecutableIntermediateCatchElement> events;
+
+  public ExecutableEventBasedGateway(String id) {
+    super(id);
   }
 
   @Override
-  public void transform(Process element, TransformContext context) {
+  public List<ExecutableIntermediateCatchElement> getEvents() {
+    return events;
+  }
 
-    final String id = element.getId();
-    final ExecutableWorkflow workflow = new ExecutableWorkflow(id);
-    context.addWorkflow(workflow);
-    context.setCurrentWorkflow(workflow);
+  public void setEvents(List<ExecutableIntermediateCatchElement> events) {
+    this.events = events;
   }
 }

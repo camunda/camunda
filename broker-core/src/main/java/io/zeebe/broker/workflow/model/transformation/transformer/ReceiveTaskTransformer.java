@@ -15,36 +15,45 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.model.transformation.handler;
+package io.zeebe.broker.workflow.model.transformation.transformer;
 
 import io.zeebe.broker.workflow.model.BpmnStep;
-import io.zeebe.broker.workflow.model.element.ExecutableActivity;
+import io.zeebe.broker.workflow.model.element.ExecutableMessage;
+import io.zeebe.broker.workflow.model.element.ExecutableReceiveTask;
 import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
-import io.zeebe.model.bpmn.instance.Activity;
+import io.zeebe.model.bpmn.instance.Message;
+import io.zeebe.model.bpmn.instance.ReceiveTask;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class ActivityHandler implements ModelElementTransformer<Activity> {
+public class ReceiveTaskTransformer implements ModelElementTransformer<ReceiveTask> {
+
   @Override
-  public Class<Activity> getType() {
-    return Activity.class;
+  public Class<ReceiveTask> getType() {
+    return ReceiveTask.class;
   }
 
   @Override
-  public void transform(Activity element, TransformContext context) {
-    final ExecutableWorkflow workflow = context.getCurrentWorkflow();
-    final ExecutableActivity activity =
-        workflow.getElementById(element.getId(), ExecutableActivity.class);
+  public void transform(ReceiveTask element, TransformContext context) {
 
-    activity.bindLifecycleState(WorkflowInstanceIntent.ELEMENT_READY, BpmnStep.ACTIVATE_ACTIVITY);
-    activity.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.COMPLETE_ACTIVITY);
-    activity.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_COMPLETED, context.getCurrentFlowNodeOutgoingStep());
-    activity.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.TERMINATE_ACTIVITY);
-    activity.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.PROPAGATE_TERMINATION);
+    // only message supported at this point
+
+    final ExecutableWorkflow workflow = context.getCurrentWorkflow();
+    final ExecutableReceiveTask executableElement =
+        workflow.getElementById(element.getId(), ExecutableReceiveTask.class);
+
+    final Message message = element.getMessage();
+
+    final ExecutableMessage executableMessage = context.getMessage(message.getId());
+    executableElement.setMessage(executableMessage);
+
+    bindLifecycle(context, executableElement);
+  }
+
+  private void bindLifecycle(
+      TransformContext context, final ExecutableReceiveTask executableElement) {
+    executableElement.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.SUBSCRIBE_TO_EVENTS);
   }
 }

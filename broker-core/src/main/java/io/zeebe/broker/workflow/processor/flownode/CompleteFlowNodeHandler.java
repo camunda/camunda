@@ -24,11 +24,11 @@ import io.zeebe.msgpack.mapping.MappingException;
 import io.zeebe.protocol.impl.record.value.incident.ErrorType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class CompleteFlowNodeHandler<T extends ExecutableFlowNode> implements BpmnStepHandler<T> {
+public class CompleteFlowNodeHandler implements BpmnStepHandler<ExecutableFlowNode> {
   private final IOMappingHelper ioMappingHelper = new IOMappingHelper();
 
   @Override
-  public void handle(BpmnStepContext<T> context) {
+  public void handle(BpmnStepContext<ExecutableFlowNode> context) {
     try {
       ioMappingHelper.applyOutputMappings(context);
 
@@ -50,5 +50,5 @@ public class CompleteFlowNodeHandler<T extends ExecutableFlowNode> implements Bp
    *
    * @param context current processor context
    */
-  public void complete(BpmnStepContext<? extends T> context) {}
+  public void complete(BpmnStepContext<ExecutableFlowNode> context) {}
 }

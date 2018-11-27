@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.model.transformation.handler;
+package io.zeebe.broker.workflow.model.transformation.transformer;
 
 import io.zeebe.broker.workflow.model.BpmnStep;
 import io.zeebe.broker.workflow.model.element.ExecutableIntermediateCatchElement;
@@ -31,7 +31,7 @@ import io.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.time.Duration;
 
-public class IntermediateCatchEventHandler
+public class IntermediateCatchEventTransformer
     implements ModelElementTransformer<IntermediateCatchEvent> {
 
   @Override
@@ -47,9 +47,6 @@ public class IntermediateCatchEventHandler
         workflow.getElementById(element.getId(), ExecutableIntermediateCatchElement.class);
 
     final EventDefinition eventDefinition = element.getEventDefinitions().iterator().next();
-
-    bindDefaultLifecycle(context, executableElement);
-
     if (eventDefinition instanceof MessageEventDefinition) {
       transformMessageEventDefinition(
           context, executableElement, (MessageEventDefinition) eventDefinition);
@@ -57,6 +54,8 @@ public class IntermediateCatchEventHandler
     } else if (eventDefinition instanceof TimerEventDefinition) {
       transformTimerEventDefinition(executableElement, (TimerEventDefinition) eventDefinition);
     }
+
+    bindLifecycle(context, executableElement);
   }
 
   private void transformMessageEventDefinition(
@@ -67,11 +66,6 @@ public class IntermediateCatchEventHandler
     final Message message = messageEventDefinition.getMessage();
     final ExecutableMessage executableMessage = context.getMessage(message.getId());
     executableElement.setMessage(executableMessage);
-
-    executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.SUBSCRIBE_TO_INTERMEDIATE_MESSAGE);
-    executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.TERMINATE_INTERMEDIATE_MESSAGE);
   }
 
   private void transformTimerEventDefinition(
@@ -81,23 +75,22 @@ public class IntermediateCatchEventHandler
     final String timeDuration = timerEventDefinition.getTimeDuration().getTextContent();
     final Duration duration = Duration.parse(timeDuration);
     executableElement.setDuration(duration);
-
-    executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.CREATE_TIMER);
-    executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.TERMINATE_TIMER);
   }
 
-  private void bindDefaultLifecycle(
+  private void bindLifecycle(
       TransformContext context, ExecutableIntermediateCatchElement executableElement) {
     executableElement.bindLifecycleState(
         WorkflowInstanceIntent.ELEMENT_READY, BpmnStep.ACTIVATE_FLOW_NODE);
+    executableElement.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.SUBSCRIBE_TO_EVENTS);
 
     executableElement.bindLifecycleState(
         WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.COMPLETE_FLOW_NODE);
     executableElement.bindLifecycleState(
         WorkflowInstanceIntent.ELEMENT_COMPLETED, context.getCurrentFlowNodeOutgoingStep());
 
+    executableElement.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.TERMINATE_ACTIVITY);
     executableElement.bindLifecycleState(
         WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.PROPAGATE_TERMINATION);
   }

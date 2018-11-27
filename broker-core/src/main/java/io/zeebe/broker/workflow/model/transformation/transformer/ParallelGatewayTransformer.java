@@ -15,33 +15,29 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.model.transformation.handler;
+package io.zeebe.broker.workflow.model.transformation.transformer;
 
-import io.zeebe.broker.workflow.model.BpmnStep;
-import io.zeebe.broker.workflow.model.element.ExecutableFlowElementContainer;
+import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
-import io.zeebe.model.bpmn.instance.SubProcess;
+import io.zeebe.model.bpmn.instance.ParallelGateway;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class SubProcessHandler implements ModelElementTransformer<SubProcess> {
+public class ParallelGatewayTransformer implements ModelElementTransformer<ParallelGateway> {
 
   @Override
-  public Class<SubProcess> getType() {
-    return SubProcess.class;
+  public Class<ParallelGateway> getType() {
+    return ParallelGateway.class;
   }
 
   @Override
-  public void transform(SubProcess element, TransformContext context) {
+  public void transform(ParallelGateway element, TransformContext context) {
+    final ExecutableWorkflow workflow = context.getCurrentWorkflow();
+    final ExecutableFlowNode gateway =
+        workflow.getElementById(element.getId(), ExecutableFlowNode.class);
 
-    final ExecutableWorkflow currentWorkflow = context.getCurrentWorkflow();
-    final ExecutableFlowElementContainer subprocess =
-        currentWorkflow.getElementById(element.getId(), ExecutableFlowElementContainer.class);
-
-    subprocess.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.TRIGGER_START_EVENT);
-    subprocess.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.TERMINATE_CONTAINED_INSTANCES);
+    gateway.bindLifecycleState(
+        WorkflowInstanceIntent.GATEWAY_ACTIVATED, context.getCurrentFlowNodeOutgoingStep());
   }
 }

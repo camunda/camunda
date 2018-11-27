@@ -15,25 +15,32 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.processor.flownode;
+package io.zeebe.broker.workflow.processor.event;
 
-import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
-import io.zeebe.broker.workflow.model.element.ExecutableSequenceFlow;
+import io.zeebe.broker.workflow.model.element.ExecutableIntermediateCatchElement;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.broker.workflow.processor.flownode.IOMappingHelper;
+import io.zeebe.msgpack.mapping.MappingException;
+import io.zeebe.protocol.impl.record.value.incident.ErrorType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class TakeSequenceFlowHandler implements BpmnStepHandler<ExecutableFlowNode> {
+public class TriggerEventHandler implements BpmnStepHandler<ExecutableIntermediateCatchElement> {
+  private final IOMappingHelper ioMappingHelper = new IOMappingHelper();
 
   @Override
-  public void handle(BpmnStepContext<ExecutableFlowNode> context) {
-    // the activity has exactly one outgoing sequence flow
-    final ExecutableSequenceFlow sequenceFlow = context.getElement().getOutgoing().get(0);
+  public void handle(BpmnStepContext<ExecutableIntermediateCatchElement> context) {
+    try {
+      ioMappingHelper.applyOutputMappings(context);
 
-    final WorkflowInstanceRecord value = context.getValue();
-    value.setElementId(sequenceFlow.getId());
-
-    context.getOutput().appendNewEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, value);
+      context
+          .getOutput()
+          .appendFollowUpEvent(
+              context.getRecord().getKey(),
+              WorkflowInstanceIntent.CATCH_EVENT_TRIGGERED,
+              context.getValue());
+    } catch (MappingException e) {
+      context.raiseIncident(ErrorType.IO_MAPPING_ERROR, e.getMessage());
+    }
   }
 }

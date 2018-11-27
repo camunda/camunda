@@ -15,9 +15,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.processor.boundary;
+package io.zeebe.broker.workflow.processor.gateway;
 
-import io.zeebe.broker.workflow.model.element.ExecutableBoundaryEvent;
+import io.zeebe.broker.workflow.model.element.ExecutableIntermediateCatchElement;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.broker.workflow.processor.flownode.IOMappingHelper;
@@ -25,11 +25,15 @@ import io.zeebe.msgpack.mapping.MappingException;
 import io.zeebe.protocol.impl.record.value.incident.ErrorType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class TriggerBoundaryEventHandler implements BpmnStepHandler<ExecutableBoundaryEvent> {
+public class TriggerEventBasedGatewayHandler
+    implements BpmnStepHandler<ExecutableIntermediateCatchElement> {
   private final IOMappingHelper ioMappingHelper = new IOMappingHelper();
 
   @Override
-  public void handle(BpmnStepContext<ExecutableBoundaryEvent> context) {
+  public void handle(BpmnStepContext<ExecutableIntermediateCatchElement> context) {
+
+    context.getCatchEventOutput().unsubscribeFromCatchEvents(context.getRecord().getKey(), context);
+
     try {
       ioMappingHelper.applyOutputMappings(context);
 

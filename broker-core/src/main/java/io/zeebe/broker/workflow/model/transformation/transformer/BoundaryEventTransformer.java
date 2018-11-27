@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.model.transformation.handler;
+package io.zeebe.broker.workflow.model.transformation.transformer;
 
 import io.zeebe.broker.workflow.model.BpmnStep;
 import io.zeebe.broker.workflow.model.element.ExecutableActivity;
@@ -33,7 +33,7 @@ import io.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.time.Duration;
 
-public class BoundaryEventHandler implements ModelElementTransformer<BoundaryEvent> {
+public class BoundaryEventTransformer implements ModelElementTransformer<BoundaryEvent> {
   @Override
   public Class<BoundaryEvent> getType() {
     return BoundaryEvent.class;
@@ -50,7 +50,7 @@ public class BoundaryEventHandler implements ModelElementTransformer<BoundaryEve
     attachToActivity(event, workflow, element);
 
     element.bindLifecycleState(
-        WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING, BpmnStep.TRIGGER_BOUNDARY_EVENT);
+        WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING, BpmnStep.TRIGGER_EVENT);
     element.bindLifecycleState(
         WorkflowInstanceIntent.CATCH_EVENT_TRIGGERED, context.getCurrentFlowNodeOutgoingStep());
   }
