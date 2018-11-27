@@ -1,7 +1,7 @@
 package org.camunda.operate.rest;
 
 import org.camunda.operate.security.WebSecurityConfig;
-import org.camunda.operate.util.nobeans.TestApplicationWithNoBeans;
+import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;

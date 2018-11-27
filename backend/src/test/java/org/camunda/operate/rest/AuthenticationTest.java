@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.camunda.operate.rest.dto.UserDto;
 import org.camunda.operate.security.WebSecurityConfig;
-import org.camunda.operate.util.nobeans.TestApplicationWithNoBeans;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +25,7 @@ import static org.camunda.operate.security.WebSecurityConfig.LOGIN_RESOURCE;
 import static org.camunda.operate.security.WebSecurityConfig.LOGOUT_RESOURCE;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 
 
 @RunWith(SpringRunner.class)

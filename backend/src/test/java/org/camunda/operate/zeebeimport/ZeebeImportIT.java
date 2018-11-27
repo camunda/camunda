@@ -67,14 +67,18 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     //when
     //1st load workflow instance index, then deployment
-    elasticsearchTestRule.processAllEvents(10, ZeebeESImporter.ImportValueType.WORKFLOW_INSTANCE);
-    elasticsearchTestRule.processAllEvents(2, ZeebeESImporter.ImportValueType.DEPLOYMENT);
+    processAllEvents(10, ZeebeESImporter.ImportValueType.WORKFLOW_INSTANCE);
+    processAllEvents(2, ZeebeESImporter.ImportValueType.DEPLOYMENT);
 
     //then
     final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
     assertThat(workflowInstanceEntity.getWorkflowId()).isEqualTo(workflowId);
     assertThat(workflowInstanceEntity.getWorkflowName()).isEqualTo("Demo process");
     assertThat(workflowInstanceEntity.getWorkflowVersion()).isEqualTo(1);
+  }
+
+  protected void processAllEvents(int expectedMinEventsCount, ZeebeESImporter.ImportValueType workflowInstance) {
+    elasticsearchTestRule.processAllEvents(expectedMinEventsCount, workflowInstance);
   }
 
   @Test
@@ -90,8 +94,8 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     //when
     //1st load incident and then workflow instance events
-    elasticsearchTestRule.processAllEvents(1, ZeebeESImporter.ImportValueType.INCIDENT);
-    elasticsearchTestRule.processAllEvents(8, ZeebeESImporter.ImportValueType.WORKFLOW_INSTANCE);
+    processAllEvents(1, ZeebeESImporter.ImportValueType.INCIDENT);
+    processAllEvents(8, ZeebeESImporter.ImportValueType.WORKFLOW_INSTANCE);
 
     //then
     final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
@@ -143,8 +147,8 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     setJobWorker(ZeebeTestUtil.completeTask(getClient(), activityId, getWorkerName(), "{}"));
 
-    elasticsearchTestRule.processAllEvents(20, ZeebeESImporter.ImportValueType.WORKFLOW_INSTANCE);
-    elasticsearchTestRule.processAllEvents(2, ZeebeESImporter.ImportValueType.INCIDENT);
+    processAllEvents(20, ZeebeESImporter.ImportValueType.WORKFLOW_INSTANCE);
+    processAllEvents(2, ZeebeESImporter.ImportValueType.INCIDENT);
 
     //then
     final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
@@ -181,8 +185,8 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     ZeebeTestUtil.cancelWorkflowInstance(getClient(), workflowInstanceKey);
 
-    elasticsearchTestRule.processAllEvents(20, ZeebeESImporter.ImportValueType.WORKFLOW_INSTANCE);
-    elasticsearchTestRule.processAllEvents(2, ZeebeESImporter.ImportValueType.INCIDENT);
+    processAllEvents(20, ZeebeESImporter.ImportValueType.WORKFLOW_INSTANCE);
+    processAllEvents(2, ZeebeESImporter.ImportValueType.INCIDENT);
 
     //then
     final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));

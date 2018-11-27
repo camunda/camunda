@@ -25,7 +25,7 @@ import org.camunda.operate.rest.dto.EventQueryDto;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.MockUtil;
 import org.camunda.operate.util.OperateIntegrationTest;
-import org.camunda.operate.util.nobeans.TestApplicationWithNoBeans;
+import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;

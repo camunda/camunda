@@ -18,7 +18,7 @@ import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
-import org.camunda.operate.util.nobeans.TestApplicationWithNoBeans;
+import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
