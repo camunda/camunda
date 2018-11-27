@@ -15,13 +15,11 @@ export const InstanceEvents = themed(styled(
   position: relative;
 
   overflow: auto;
-  border: solid 1px
+  border-right: solid 1px
     ${themeStyle({
       dark: Colors.uiDark04,
       light: Colors.uiLight05
     })};
-  border-top-color: transparent;
-  border-bottom-color: transparent;
 `);
 
 export const EventsContainer = styled.ul`

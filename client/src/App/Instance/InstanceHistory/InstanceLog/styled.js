@@ -51,11 +51,12 @@ export const LogEntryToggle = themed(styled.button`
   position: absolute;
   left: 0;
   top: 0;
+
+  height: 32px;
   width: 100%;
-  height: 100%;
+
   margin: 0;
   border: none;
-  padding: 5px;
   padding-left: 43px;
   text-align: left;
   ${colorStyle};

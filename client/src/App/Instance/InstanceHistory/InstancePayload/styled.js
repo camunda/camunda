@@ -6,13 +6,7 @@ export const InstancePayload = themed(styled.div`
   font-size: 14px;
 
   overflow: auto;
-  border: solid 1px
-    ${themeStyle({
-      dark: Colors.uiDark04,
-      light: Colors.uiLight05
-    })};
-  border-top: none;
-  border-bottom: none;
+
   position: relative;
   background-color: ${themeStyle({
     dark: Colors.uiDark02,
@@ -79,4 +73,8 @@ export const TR = themed(styled.tr`
     dark: Colors.uiDark04,
     light: Colors.uiLight05
   })};
+
+  &:first-child {
+    border-top: none;
+  }
 `);
