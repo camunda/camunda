@@ -73,6 +73,21 @@ public class MessageMappingTest {
           .endEvent()
           .done();
 
+  private static final BpmnModelInstance EVENT_BASED_GATEWAY_WORKFLOW =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent("start")
+          .eventBasedGateway()
+          .id("gateway")
+          .intermediateCatchEvent(
+              "catch", c -> c.message(m -> m.name("message").zeebeCorrelationKey("$.key")))
+          .sequenceFlowId("to-end1")
+          .endEvent("end1")
+          .moveToLastGateway()
+          .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT10S"))
+          .sequenceFlowId("to-end2")
+          .endEvent("end2")
+          .done();
+
   @Parameter(0)
   public String elementType;
 
@@ -88,6 +103,7 @@ public class MessageMappingTest {
       {"intermediate message catch event", CATCH_EVENT_WORKFLOW, "catch"},
       {"receive task", RECEIVE_TASK_WORKFLOW, "catch"},
       {"boundary event", BOUNDARY_EVENT_WORKFLOW, PROCESS_ID},
+      {"event-based gateway", EVENT_BASED_GATEWAY_WORKFLOW, PROCESS_ID},
     };
   }
 

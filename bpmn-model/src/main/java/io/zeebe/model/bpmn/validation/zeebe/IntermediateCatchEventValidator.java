@@ -48,6 +48,13 @@ public class IntermediateCatchEventValidator
 
       if (SUPPORTED_EVENTS.stream().noneMatch(c -> c.isAssignableFrom(type))) {
         validationResultCollector.addError(0, "Event definition must be one of: message, timer");
+
+      } else if (eventDefinition instanceof TimerEventDefinition) {
+        final TimerEventDefinition timerEventDefinition = (TimerEventDefinition) eventDefinition;
+        if (timerEventDefinition.getTimeDuration() == null) {
+          validationResultCollector.addError(
+              0, "Intermediate timer catch event must have a time duration.");
+        }
       }
     }
   }
