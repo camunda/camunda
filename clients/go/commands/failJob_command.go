@@ -15,7 +15,12 @@ type FailJobCommandStep1 interface {
 }
 
 type FailJobCommandStep2 interface {
-	Retries(int32) DispatchFailJobCommand
+	Retries(int32) FailJobCommandStep3
+}
+
+type FailJobCommandStep3 interface {
+	DispatchFailJobCommand
+	ErrorMessage(string) FailJobCommandStep3
 }
 
 type FailJobCommand struct {
@@ -29,8 +34,13 @@ func (cmd *FailJobCommand) JobKey(jobKey int64) FailJobCommandStep2 {
 	return cmd
 }
 
-func (cmd *FailJobCommand) Retries(retries int32) DispatchFailJobCommand {
+func (cmd *FailJobCommand) Retries(retries int32) FailJobCommandStep3 {
 	cmd.request.Retries = retries
+	return cmd
+}
+
+func (cmd *FailJobCommand) ErrorMessage(errorMessage string) FailJobCommandStep3 {
+	cmd.request.ErrorMessage = errorMessage
 	return cmd
 }
 

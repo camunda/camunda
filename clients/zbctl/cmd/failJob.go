@@ -21,19 +21,20 @@ import (
 )
 
 var (
-	failJobRetriesKey  int64
+	failJobKey         int64
 	failJobRetriesFlag int32
+	failJobErrorMessage string
 )
 
 var failJobCmd = &cobra.Command{
 	Use:     "job <key>",
 	Short:   "Fail a job",
-	Args:    keyArg(&failJobRetriesKey),
+	Args:    keyArg(&failJobKey),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		_, err := client.NewFailJobCommand().JobKey(failJobRetriesKey).Retries(failJobRetriesFlag).Send()
+		_, err := client.NewFailJobCommand().JobKey(failJobKey).Retries(failJobRetriesFlag).ErrorMessage(failJobErrorMessage).Send()
 		if err == nil {
-			log.Println("Failed job with key", failJobRetriesKey, "and set remaining retries to", failJobRetriesFlag)
+			log.Println("Failed job with key", failJobKey, "and set remaining retries to", failJobRetriesFlag)
 		}
 
 		return err
@@ -43,5 +44,7 @@ var failJobCmd = &cobra.Command{
 func init() {
 	failCmd.AddCommand(failJobCmd)
 	failJobCmd.Flags().Int32Var(&failJobRetriesFlag, "retries", commands.DefaultJobRetries, "Specify remaining retries of job")
+	failJobCmd.Flags().StringVar(&failJobErrorMessage, "errorMessage", "", "Specify failure error message")
+
 	failJobCmd.MarkFlagRequired("retries")
 }
