@@ -37,7 +37,6 @@
     <module>json-el</module>
     <module>json-path</module>
     <module>build-tools</module>
-    <module>githooks-plugin</module>
     <module>gateway-protocol</module>
     <module>gateway</module>
     <module>clients/java</module>
