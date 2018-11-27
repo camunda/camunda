@@ -22,6 +22,7 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.EndEvent;
 import io.zeebe.model.bpmn.instance.IntermediateThrowEvent;
 import io.zeebe.model.bpmn.instance.Message;
+import io.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.zeebe.model.bpmn.instance.ReceiveTask;
 import io.zeebe.model.bpmn.instance.StartEvent;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
@@ -61,6 +62,14 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
             .done(),
         singletonList(
             expect(ZeebeSubscription.class, "zeebe:correlationKey must be present and not empty"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .intermediateCatchEvent("foo")
+            .messageEventDefinition()
+            .done(),
+        singletonList(expect(MessageEventDefinition.class, "Must reference a message"))
       },
       // validate receive tasks
       {
