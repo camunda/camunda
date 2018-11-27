@@ -16,6 +16,7 @@
 
 package io.zeebe.model.bpmn.instance;
 
+import io.zeebe.model.bpmn.Query;
 import java.util.Collection;
 
 /**
@@ -56,4 +57,6 @@ public interface Activity extends FlowNode, InteractionNode {
   LoopCharacteristics getLoopCharacteristics();
 
   void setLoopCharacteristics(LoopCharacteristics loopCharacteristics);
+
+  Query<BoundaryEvent> getBoundaryEvents();
 }

@@ -21,6 +21,7 @@ import io.zeebe.model.bpmn.Query;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Stream;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.type.ModelElementType;
 
@@ -31,6 +32,10 @@ public class QueryImpl<T extends ModelElementInstance> implements Query<T> {
 
   public QueryImpl(Collection<T> collection) {
     this.collection = collection;
+  }
+
+  public Stream<T> stream() {
+    return collection.stream();
   }
 
   @Override

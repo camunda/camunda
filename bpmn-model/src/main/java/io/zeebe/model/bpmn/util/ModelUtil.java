@@ -16,25 +16,14 @@
 package io.zeebe.model.bpmn.util;
 
 import io.zeebe.model.bpmn.instance.Activity;
-import io.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.zeebe.model.bpmn.instance.MessageEventDefinition;
-import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class ModelUtil {
-  public static List<BoundaryEvent> getActivityBoundaryEvent(Activity activity) {
-    final Collection<BoundaryEvent> boundaryEvents =
-        activity.getParentElement().getChildElementsByType(BoundaryEvent.class);
-
-    return boundaryEvents
-        .stream()
-        .filter(event -> event.getAttachedTo().equals(activity))
-        .collect(Collectors.toList());
-  }
-
   public static List<MessageEventDefinition> getActivityMessageBoundaryEvents(Activity activity) {
-    return getActivityBoundaryEvent(activity)
+    return activity
+        .getBoundaryEvents()
         .stream()
         .flatMap(event -> event.getEventDefinitions().stream())
         .filter(definition -> definition instanceof MessageEventDefinition)
