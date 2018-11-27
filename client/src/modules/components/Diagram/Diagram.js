@@ -272,7 +272,9 @@ class Diagram extends React.Component {
     Object.assign(img, {
       src: iconMap[state][this.props.theme],
       width: 24,
-      height: 24
+      height: 24,
+      // makes the icon non dragable and blocks click listener
+      style: 'pointer-events: none;'
     });
 
     // Add the created overlay to the diagram.

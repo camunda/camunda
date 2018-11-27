@@ -5,6 +5,7 @@ Object {
   "html": <img
     height="24"
     src="diagram-badge-single-instance-active.svg"
+    style="pointer-events: none;"
     width="24"
   />,
   "position": Object {
@@ -19,6 +20,7 @@ Object {
   "html": <img
     height="24"
     src="diagram-badge-single-instance-canceled-light.svg"
+    style="pointer-events: none;"
     width="24"
   />,
   "position": Object {
@@ -33,6 +35,7 @@ Object {
   "html": <img
     height="24"
     src="diagram-badge-single-instance-completed-dark.svg"
+    style="pointer-events: none;"
     width="24"
   />,
   "position": Object {
@@ -47,6 +50,7 @@ Object {
   "html": <img
     height="24"
     src="diagram-badge-single-instance-completed-light.svg"
+    style="pointer-events: none;"
     width="24"
   />,
   "position": Object {
@@ -61,6 +65,7 @@ Object {
   "html": <img
     height="24"
     src="diagram-badge-single-instance-incident.svg"
+    style="pointer-events: none;"
     width="24"
   />,
   "position": Object {
@@ -75,6 +80,7 @@ Object {
   "html": <img
     height="24"
     src="diagram-badge-single-instance-canceled-dark.svg"
+    style="pointer-events: none;"
     width="24"
   />,
   "position": Object {
