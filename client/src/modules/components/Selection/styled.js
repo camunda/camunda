@@ -122,6 +122,7 @@ export const ActionButton = styled.button`
   width: 16px;
   height: 16px;
   padding: 0px;
+  z-index: 3;
 `;
 
 export const DeleteIcon = styled(RemoveItem)`
