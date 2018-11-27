@@ -1,11 +1,12 @@
 package zbc
 
 import (
+	"time"
+
 	"github.com/zeebe-io/zeebe/clients/go/commands"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
 	"github.com/zeebe-io/zeebe/clients/go/worker"
 	"google.golang.org/grpc"
-	"time"
 )
 
 const DefaultRequestTimeout = 15 * time.Second
@@ -26,6 +27,10 @@ func (client *ZBClientImpl) NewDeployWorkflowCommand() *commands.DeployCommand {
 
 func (client *ZBClientImpl) NewPublishMessageCommand() commands.PublishMessageCommandStep1 {
 	return commands.NewPublishMessageCommand(client.gateway, client.requestTimeout)
+}
+
+func (client *ZBClientImpl) NewResolveIncidentCommand() commands.ResolveIncidentCommandStep1 {
+	return commands.NewResolveIncidentCommand(client.gateway, client.requestTimeout)
 }
 
 func (client *ZBClientImpl) NewCreateInstanceCommand() commands.CreateInstanceCommandStep1 {
