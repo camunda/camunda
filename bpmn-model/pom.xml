@@ -19,7 +19,7 @@
       <dependency>
         <groupId>org.camunda.bpm.model</groupId>
         <artifactId>camunda-xml-model</artifactId>
-        <version>7.9.0</version>
+        <version>7.10.0</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
