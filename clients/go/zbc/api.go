@@ -1,9 +1,10 @@
 package zbc
 
 import (
+	"time"
+
 	"github.com/zeebe-io/zeebe/clients/go/commands"
 	"github.com/zeebe-io/zeebe/clients/go/worker"
-	"time"
 )
 
 type ZBClient interface {
@@ -13,6 +14,7 @@ type ZBClient interface {
 	NewCreateInstanceCommand() commands.CreateInstanceCommandStep1
 	NewCancelInstanceCommand() commands.CancelInstanceStep1
 	NewUpdatePayloadCommand() commands.UpdatePayloadCommandStep1
+	NewResolveIncidentCommand() commands.ResolveIncidentCommandStep1
 
 	NewPublishMessageCommand() commands.PublishMessageCommandStep1
 
