@@ -68,7 +68,7 @@ See the [Gateways](/bpmn-workflows/gateways.html) section on which types of gate
 <video src="/bpmn-workflows/catch-event.mp4" autoplay muted loop height="200px"></video>
 </center>
 
-The circle with the envolope symbol is a catching message event. It makes the token continue as soon as a message is received. The XML representation of the workflow contains the criteria for which kind of message triggers continuation.
+The circle with the envelope symbol is a catching message event. It makes the token continue as soon as a message is received. The XML representation of the workflow contains the criteria for which kind of message triggers continuation.
 
 Events can be added to the workflow in various ways. Not only can they be used to make a token wait at a certain point, but also for interrupting a token's progress.
 
