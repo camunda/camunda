@@ -22,6 +22,7 @@ import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.zeebeimport.cache.WorkflowCache;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +48,10 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
   @Autowired
   @Qualifier("workflowInstanceIsCompletedCheck")
   private Predicate<Object[]> workflowInstanceIsCompletedCheck;
+
+  @Autowired
+  @Qualifier("workflowInstanceIsCanceledCheck")
+  private Predicate<Object[]> workflowInstanceIsCanceledCheck;
 
   private ZeebeClient zeebeClient;
 
@@ -396,6 +401,56 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
 //      .findFirst().get();
 //    assertThat(xorActivity.getState()).isEqualTo(ActivityState.COMPLETED);
 //    assertThat(xorActivity.getEndDate()).isNotNull();
+  }
+
+
+  @Test
+  @Ignore("OPE-335")
+  public void testWorkflowInstanceWithIncidentOnGatewayIsCanceled() {
+    // having
+    String activityId = "xor";
+
+    String processId = "demoProcess";
+    BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
+      .startEvent("start")
+        .exclusiveGateway(activityId)
+        .sequenceFlowId("s1").condition("$.foo < 5")
+          .serviceTask("task1").zeebeTaskType("task1")
+          .endEvent()
+        .moveToLastGateway()
+        .sequenceFlowId("s2").condition("$.foo >= 5")
+          .serviceTask("task2").zeebeTaskType("task2")
+          .endEvent()
+      .done();
+    final String resourceName = processId + ".bpmn";
+    deployWorkflow(workflow, resourceName);
+
+    //when
+    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");      //wrong payload provokes incident
+    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceKey, "task1");
+
+    //then incident created, activity in INCIDENT state
+    WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
+    assertThat(workflowInstanceEntity.getIncidents().size()).isEqualTo(1);
+    IncidentEntity incidentEntity = workflowInstanceEntity.getIncidents().get(0);
+    assertThat(incidentEntity.getState()).isEqualTo(IncidentState.ACTIVE);
+
+    //when I cancel workflow instance
+    ZeebeTestUtil.cancelWorkflowInstance(zeebeClient, workflowInstanceKey);
+    elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCanceledCheck, workflowInstanceKey);
+
+    //then incident is deleted
+    workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
+    assertThat(workflowInstanceEntity.getIncidents().size()).isEqualTo(1);
+    incidentEntity = workflowInstanceEntity.getIncidents().get(0);
+    assertThat(incidentEntity.getActivityId()).isEqualTo(activityId);
+    assertThat(incidentEntity.getState()).isEqualTo(IncidentState.DELETED);
+
+    //assert activity fields
+    final ActivityInstanceEntity xorActivity = workflowInstanceEntity.getActivities().stream().filter(a -> a.getActivityId().equals("xor"))
+      .findFirst().get();
+    assertThat(xorActivity.getState()).isEqualTo(ActivityState.TERMINATED);
+    assertThat(xorActivity.getEndDate()).isNotNull();
   }
 
   @Test
