@@ -47,8 +47,8 @@ export default class SelectionList extends React.Component {
                     selectionId={selectionId}
                     instances={instancesMap}
                     instanceCount={totalCount}
-                    onRetry={() => onRetrySelection(openSelection)}
-                    onCancel={() => onCancelSelection(openSelection)}
+                    onRetry={() => onRetrySelection(selectionId)}
+                    onCancel={() => onCancelSelection(selectionId)}
                     onToggle={() => onToggleSelection(selectionId)}
                     onDelete={() => onDeleteSelection(selectionId)}
                   />
