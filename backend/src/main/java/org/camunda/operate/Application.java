@@ -27,7 +27,6 @@ public class Application {
     logger.debug("Create Data generator stub");
     return manuallyCalled -> {
       logger.debug("No demo data will be created");
-      return false;
     };
   }
 

@@ -47,8 +47,6 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
   protected Random random = new Random();
 
-  private ScheduledExecutorService scheduler;
-
   protected List<Long> workflowInstanceKeys = new ArrayList<>();
   protected List<Long> doNotTouchWorkflowInstanceKeys = new ArrayList<>();
 
@@ -288,7 +286,6 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     jobWorkers.add(progressSimpleTask("processPayment"));
 
     //start more instances after 1 minute
-    scheduler = Executors.newScheduledThreadPool(2);
     scheduler.schedule(() ->
         startWorkflowInstances(1)
       , 1, TimeUnit.MINUTES);

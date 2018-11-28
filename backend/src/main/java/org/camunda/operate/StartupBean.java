@@ -45,7 +45,7 @@ public class StartupBean {
     elasticsearchSchemaManager.initializeSchema();
     logger.debug("INIT: Generate demo data...");
     try {
-      dataGenerator.createZeebeData(false);
+      dataGenerator.createZeebeDataAsync(false);
     } catch (Exception ex) {
       logger.debug("Demo data could not be generated. Cause: {}", ex.getMessage());
       logger.error("Error occurred when generating demo data.", ex);
