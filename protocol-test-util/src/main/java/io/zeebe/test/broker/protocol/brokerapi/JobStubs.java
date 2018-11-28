@@ -21,31 +21,10 @@ import java.util.function.Consumer;
 
 public class JobStubs {
 
-  private StubBrokerRule broker;
+  private final StubBrokerRule broker;
 
   public JobStubs(StubBrokerRule broker) {
     this.broker = broker;
-  }
-
-  public void registerCreateCommand() {
-    registerCreateCommand(r -> {});
-  }
-
-  public void registerCreateCommand(Consumer<ExecuteCommandResponseBuilder> modifier) {
-    final ExecuteCommandResponseBuilder builder =
-        broker
-            .onExecuteCommandRequest(ValueType.JOB, JobIntent.CREATE)
-            .respondWith()
-            .event()
-            .intent(JobIntent.CREATED)
-            .key(r -> r.key())
-            .value()
-            .allOf((r) -> r.getCommand())
-            .done();
-
-    modifier.accept(builder);
-
-    builder.register();
   }
 
   public void registerCompleteCommand() {

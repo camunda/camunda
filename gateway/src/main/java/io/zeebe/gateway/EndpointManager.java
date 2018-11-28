@@ -30,8 +30,6 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
@@ -97,16 +95,6 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
         request,
         RequestMapper::toPublishMessageRequest,
         ResponseMapper::toPublishMessageResponse,
-        responseObserver);
-  }
-
-  @Override
-  public void createJob(
-      CreateJobRequest request, StreamObserver<CreateJobResponse> responseObserver) {
-    sendRequest(
-        request,
-        RequestMapper::toCreateJobRequest,
-        ResponseMapper::toCreateJobResponse,
         responseObserver);
   }
 

@@ -1,12 +1,14 @@
 package integration
 
 import (
+	"fmt"
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/zeebe-io/zeebe/clients/go/zbc"
 	"github.com/zeebe-io/zeebe/clients/go/entities"
 	"github.com/zeebe-io/zeebe/clients/go/worker"
-	"time"
+	"github.com/zeebe-io/zeebe/clients/go/zbc"
 )
 
 var _ = Describe("JobWorker", func() {
@@ -27,11 +29,19 @@ var _ = Describe("JobWorker", func() {
 
 		It("should create jobs and fail/complete with job worker", func() {
 			var retries int32 = 2
-			jobs := 100
+			jobStartCount := 10
+			jobs := jobStartCount
+
+			_, err := client.NewDeployWorkflowCommand().AddResourceFile("../../../java/src/test/resources/workflows/simple-process.bpmn").Send()
+			Expect(err).To(BeNil())
 
 			for i := 0; i < jobs; i++ {
 				go func() {
-					_, err := client.NewCreateJobCommand().JobType("foo").Retries(retries).Send()
+					_, err := client.
+						NewCreateInstanceCommand().
+						BPMNProcessId("simpleProcess").
+						LatestVersion().
+						Send()
 					Expect(err).To(BeNil())
 				}()
 			}
@@ -54,8 +64,8 @@ var _ = Describe("JobWorker", func() {
 				select {
 				case <-completeCallback:
 					jobs--
-				case <-time.After(30 * time.Second):
-					Fail("failed to complete jobs in timeout")
+				case <-time.After(10 * time.Second):
+					Fail(fmt.Sprintf("Expected to complete %d jobs, but %d left.", jobStartCount, jobs))
 				}
 
 				if jobs <= 0 {

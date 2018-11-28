@@ -128,16 +128,4 @@ public class IncidentAssert {
         .hasErrorType(errorType)
         .hasErrorMessage(errorMsg);
   }
-
-  public static void assertIncidentOfStandaloneJob(
-      Record<IncidentRecordValue> incidentEvent, long jobKey) {
-    Assertions.assertThat(incidentEvent.getValue())
-        .hasErrorType(ErrorType.JOB_NO_RETRIES.name())
-        .hasErrorMessage("No more retries left.")
-        .hasBpmnProcessId("")
-        .hasWorkflowInstanceKey(-1)
-        .hasElementId("")
-        .hasElementInstanceKey(-1)
-        .hasJobKey(jobKey);
-  }
 }

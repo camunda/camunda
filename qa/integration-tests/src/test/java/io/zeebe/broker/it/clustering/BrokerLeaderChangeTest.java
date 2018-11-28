@@ -23,7 +23,6 @@ import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.client.api.commands.BrokerInfo;
 import io.zeebe.client.api.commands.PartitionBrokerRole;
 import io.zeebe.client.api.commands.PartitionInfo;
-import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.subscription.JobWorker;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
@@ -78,12 +77,11 @@ public class BrokerLeaderChangeTest {
     // given
     final BrokerInfo leaderForPartition = clusteringRule.getLeaderForPartition(1);
 
-    final JobEvent jobEvent =
-        clientRule.getJobClient().newCreateCommand().jobType(JOB_TYPE).send().join();
+    final long jobKey = clientRule.createSingleJob(JOB_TYPE);
 
     // when
     clusteringRule.stopBroker(leaderForPartition.getNodeId());
-    final JobCompleter jobCompleter = new JobCompleter(jobEvent);
+    final JobCompleter jobCompleter = new JobCompleter(jobKey);
 
     // then
     jobCompleter.waitForJobCompletion();
@@ -95,8 +93,7 @@ public class BrokerLeaderChangeTest {
     private final JobWorker jobWorker;
     private final CountDownLatch latch = new CountDownLatch(1);
 
-    JobCompleter(final JobEvent jobEvent) {
-      final long eventKey = jobEvent.getKey();
+    JobCompleter(final long jobKey) {
 
       jobWorker =
           clientRule
@@ -105,7 +102,7 @@ public class BrokerLeaderChangeTest {
               .jobType(JOB_TYPE)
               .handler(
                   (client, job) -> {
-                    if (job.getKey() == eventKey) {
+                    if (job.getKey() == jobKey) {
                       client.newCompleteCommand(job.getKey()).payload(NULL_PAYLOAD).send();
                       latch.countDown();
                     }

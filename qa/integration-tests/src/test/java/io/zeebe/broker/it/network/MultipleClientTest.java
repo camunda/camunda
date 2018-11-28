@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.client.api.events.JobEvent;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -47,16 +46,16 @@ public class MultipleClientTest {
     client2.getJobClient().newWorker().jobType("bar").handler(handler2).open();
 
     // when
-    final JobEvent job1 = client1.getJobClient().newCreateCommand().jobType("foo").send().join();
-    final JobEvent job2 = client1.getJobClient().newCreateCommand().jobType("bar").send().join();
+    final long job1Key = client1.createSingleJob("foo");
+    final long job2Key = client1.createSingleJob("bar");
 
     // then
     waitUntil(() -> handler1.getHandledJobs().size() + handler2.getHandledJobs().size() >= 2);
 
     assertThat(handler1.getHandledJobs()).hasSize(1);
-    assertThat(handler1.getHandledJobs().get(0).getKey()).isEqualTo(job1.getKey());
+    assertThat(handler1.getHandledJobs().get(0).getKey()).isEqualTo(job1Key);
 
     assertThat(handler2.getHandledJobs()).hasSize(1);
-    assertThat(handler2.getHandledJobs().get(0).getKey()).isEqualTo(job2.getKey());
+    assertThat(handler2.getHandledJobs().get(0).getKey()).isEqualTo(job2Key);
   }
 }

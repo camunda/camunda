@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.incident;
 
-import static io.zeebe.broker.incident.IncidentAssert.assertIncidentOfStandaloneJob;
 import static io.zeebe.broker.incident.IncidentAssert.assertIncidentRecordValue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -273,43 +272,6 @@ public class JobFailIncidentTest {
         resolvedIncidentEvent);
   }
 
-  @Test
-  public void shouldCreateIncidentIfStandaloneJobHasNoRetriesLeft() {
-    // given
-    createStandaloneJob();
-
-    // when
-    failJobWithNoRetriesLeft();
-
-    // then
-    final Record failedEvent = testClient.receiveFirstJobEvent(JobIntent.FAILED);
-    final Record<IncidentRecordValue> incidentEvent =
-        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
-
-    assertThat(incidentEvent.getKey()).isGreaterThan(0);
-    assertIncidentOfStandaloneJob(incidentEvent, failedEvent.getKey());
-  }
-
-  @Test
-  public void shouldResolveStandaloneIncidentIfJobRetriesIncreased() {
-    // given
-    createStandaloneJob();
-    failJobWithNoRetriesLeft();
-    final Record<IncidentRecordValue> incidentCreatedEvent =
-        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
-
-    // when
-    updateJobRetries();
-    testClient.resolveIncident(incidentCreatedEvent.getKey());
-
-    // then
-    final Record jobEvent = testClient.receiveFirstJobEvent(JobIntent.FAILED);
-    final Record incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
-
-    assertThat(incidentEvent.getKey()).isGreaterThan(0);
-    assertIncidentOfStandaloneJob(incidentEvent, jobEvent.getKey());
-  }
-
   private void failJobWithNoRetriesLeft() {
     apiRule.activateJobs("test").await();
 
@@ -340,13 +302,6 @@ public class JobFailIncidentTest {
 
     assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
     assertThat(response.getIntent()).isEqualTo(JobIntent.FAILED);
-  }
-
-  private void createStandaloneJob() {
-    final ExecuteCommandResponse response = testClient.createJob("test");
-
-    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.getIntent()).isEqualTo(JobIntent.CREATED);
   }
 
   private void updateJobRetries() {

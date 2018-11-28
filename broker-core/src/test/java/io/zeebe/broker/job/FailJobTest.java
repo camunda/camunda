@@ -207,10 +207,10 @@ public class FailJobTest {
   @Test
   public void shouldRejectFailIfJobCreated() {
     // given
-    final ExecuteCommandResponse createResponse = client.createJob(JOB_TYPE);
+    final long jobKey = client.createJob(JOB_TYPE);
 
     // when
-    final ExecuteCommandResponse response = client.failJob(createResponse.getKey(), 3);
+    final ExecuteCommandResponse response = client.failJob(jobKey, 3);
 
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);

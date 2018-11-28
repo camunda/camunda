@@ -17,7 +17,6 @@ package io.zeebe.broker.it.clustering;
 
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.it.util.ZeebeAssertHelper;
-import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.commands.BrokerInfo;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -34,8 +33,6 @@ public class TaskEventClusteredTest {
   @Ignore("https://github.com/zeebe-io/zeebe/issues/844")
   public void shouldCreateJobWhenFollowerUnavailable() {
     // given
-    final ZeebeClient client = clientRule.getClient();
-
     final BrokerInfo leader = clusteringRule.getLeaderForPartition(0);
 
     // choosing a new leader in a raft group where the previously leading broker is no longer
@@ -43,7 +40,7 @@ public class TaskEventClusteredTest {
     clusteringRule.stopBroker(leader.getNodeId());
 
     // when
-    client.jobClient().newCreateCommand().jobType("bar").send().join();
+    clientRule.createSingleJob("bar");
 
     // then
     ZeebeAssertHelper.assertJobCreated("bar");

@@ -28,8 +28,6 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
@@ -74,7 +72,6 @@ public class RecordingGatewayService extends GatewayImplBase {
         DeployWorkflowRequest.class, r -> DeployWorkflowResponse.getDefaultInstance());
     addRequestHandler(
         PublishMessageRequest.class, r -> PublishMessageResponse.getDefaultInstance());
-    addRequestHandler(CreateJobRequest.class, r -> CreateJobResponse.getDefaultInstance());
     addRequestHandler(
         CreateWorkflowInstanceRequest.class,
         r -> CreateWorkflowInstanceResponse.getDefaultInstance());
@@ -109,12 +106,6 @@ public class RecordingGatewayService extends GatewayImplBase {
   @Override
   public void publishMessage(
       PublishMessageRequest request, StreamObserver<PublishMessageResponse> responseObserver) {
-    handle(request, responseObserver);
-  }
-
-  @Override
-  public void createJob(
-      CreateJobRequest request, StreamObserver<CreateJobResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
@@ -224,11 +215,6 @@ public class RecordingGatewayService extends GatewayImplBase {
                 .setKey(key)
                 .addAllWorkflows(Arrays.asList(deployedWorkflows))
                 .build());
-  }
-
-  public void onCreateJobRequest(long key) {
-    addRequestHandler(
-        CreateJobRequest.class, request -> CreateJobResponse.newBuilder().setKey(key).build());
   }
 
   public void onCreateWorkflowInstanceRequest(

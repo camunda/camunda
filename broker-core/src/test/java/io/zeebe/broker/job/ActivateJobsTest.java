@@ -66,7 +66,8 @@ import org.junit.rules.RuleChain;
 public class ActivateJobsTest {
 
   public static final String JOB_TYPE = "theJobType";
-  public static final byte[] PAYLOAD_MSG_PACK = MsgPackUtil.asMsgPack("{\"foo\": \"bar\"}");
+  public static final String JSON_PAYLOAD = "{\"foo\": \"bar\"}";
+  public static final byte[] PAYLOAD_MSG_PACK = MsgPackUtil.asMsgPack(JSON_PAYLOAD);
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
@@ -393,16 +394,7 @@ public class ActivateJobsTest {
   }
 
   private long createJob(String jobType) {
-    return apiRule
-        .createCmdRequest()
-        .type(ValueType.JOB, JobIntent.CREATE)
-        .command()
-        .put("type", jobType)
-        .put("retries", 3)
-        .put("payload", PAYLOAD_MSG_PACK)
-        .done()
-        .sendAndAwait()
-        .getKey();
+    return apiRule.partitionClient().createJob(jobType, b -> b.zeebeTaskRetries(3), JSON_PAYLOAD);
   }
 
   private List<Job> activateJobs(int amount) {
