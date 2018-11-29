@@ -301,6 +301,18 @@ public class JobState implements StateLifecycleListener {
         });
   }
 
+  public JobRecord updateJobRetries(final long jobKey, final int retries) {
+    final JobRecord job = getJob(jobKey);
+    if (job != null) {
+      job.setRetries(retries);
+
+      final DirectBuffer keyBuffer = getDefaultKey(jobKey);
+      final DirectBuffer valueBuffer = writeValue(job);
+      db.put(jobsColumnFamily, keyBuffer, valueBuffer);
+    }
+    return job;
+  }
+
   public JobRecord getJob(final long key) {
     final DirectBuffer keyBuffer = getDefaultKey(key);
     return getJob(keyBuffer);
