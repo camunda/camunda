@@ -21,7 +21,6 @@ import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.incident.processor.IncidentEventProcessors;
 import io.zeebe.broker.job.JobEventProcessors;
-import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory.Builder;
 import io.zeebe.broker.logstreams.processor.TypedEventStreamProcessorBuilder;
@@ -47,11 +46,7 @@ import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceGroupReference;
-import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.*;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.ServerTransport;
 
@@ -109,7 +104,7 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
     final TypedStreamEnvironment streamEnvironment =
         new TypedStreamEnvironment(partition.getLogStream(), clientApiTransport.getOutput());
 
-    final ZeebeState zeebeState = new ZeebeState();
+    final ZeebeState zeebeState = new ZeebeState(partitionId);
     final StateStorage stateStorage =
         partition.getStateStorageFactory().create(partitionId, PROCESSOR_NAME);
     final StateSnapshotController stateSnapshotController =
@@ -130,18 +125,17 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
       int partitionId,
       TypedStreamEnvironment streamEnvironment,
       ZeebeState zeebeState) {
-    final KeyGenerator keyGenerator = KeyGenerator.createKeyGenerator(partitionId, zeebeState);
     final TypedEventStreamProcessorBuilder typedProcessorBuilder =
         streamEnvironment
             .newStreamProcessor()
-            .keyGenerator(keyGenerator)
+            .keyGenerator(zeebeState.getKeyGenerator())
             .withStateController(zeebeState);
 
     addDistributeDeploymentProcessors(zeebeState, streamEnvironment, typedProcessorBuilder);
     final BpmnStepProcessor stepProcessor =
         addWorkflowProcessors(zeebeState, typedProcessorBuilder);
     addDeploymentRelatedProcessorAndServices(
-        partitionServiceName, partitionId, zeebeState.getWorkflowState(), typedProcessorBuilder);
+        partitionServiceName, partitionId, zeebeState, typedProcessorBuilder);
     addIncidentProcessors(zeebeState, stepProcessor, typedProcessorBuilder);
     addJobProcessors(zeebeState, typedProcessorBuilder);
     addMessageProcessors(zeebeState, typedProcessorBuilder);
@@ -186,10 +180,10 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
   public void addDeploymentRelatedProcessorAndServices(
       ServiceName<Partition> partitionServiceName,
       int partitionId,
-      WorkflowState workflowState,
+      ZeebeState zeebeState,
       TypedEventStreamProcessorBuilder typedProcessorBuilder) {
+    final WorkflowState workflowState = zeebeState.getWorkflowState();
     if (partitionId == Protocol.DEPLOYMENT_PARTITION) {
-
       typedProcessorBuilder.withListener(
           new WorkflowRepository(
               clientApiTransport,
@@ -198,7 +192,7 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
               workflowState,
               partitionServiceName));
       DeploymentEventProcessors.addTransformingDeploymentProcessor(
-          typedProcessorBuilder, workflowState);
+          typedProcessorBuilder, zeebeState);
     } else {
       DeploymentEventProcessors.addDeploymentCreateProcessor(typedProcessorBuilder, workflowState);
     }

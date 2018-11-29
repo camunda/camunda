@@ -19,6 +19,7 @@ package io.zeebe.broker.logstreams.state;
 
 import io.zeebe.broker.incident.processor.IncidentState;
 import io.zeebe.broker.job.JobState;
+import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.subscription.message.state.MessageState;
 import io.zeebe.broker.subscription.message.state.MessageSubscriptionState;
 import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionState;
@@ -26,6 +27,7 @@ import io.zeebe.broker.util.KeyStateController;
 import io.zeebe.broker.workflow.deployment.distribute.processor.state.DeploymentsState;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.logstreams.rocksdb.ZbRocksDb;
+import io.zeebe.protocol.Protocol;
 import java.io.File;
 import java.util.List;
 
@@ -39,6 +41,15 @@ public class ZeebeState extends KeyStateController {
   private final WorkflowInstanceSubscriptionState workflowInstanceSubscriptionState =
       new WorkflowInstanceSubscriptionState();
   private final IncidentState incidentState = new IncidentState();
+  private final KeyState keyState;
+
+  public ZeebeState() {
+    this(Protocol.DEPLOYMENT_PARTITION);
+  }
+
+  public ZeebeState(int partitionId) {
+    keyState = new KeyState(partitionId);
+  }
 
   @Override
   public ZbRocksDb open(final File dbDirectory, final boolean reopen) throws Exception {
@@ -49,6 +60,7 @@ public class ZeebeState extends KeyStateController {
     columnFamilyNames.addAll(MessageSubscriptionState.getColumnFamilyNames());
     columnFamilyNames.addAll(WorkflowInstanceSubscriptionState.getColumnFamilyNames());
     columnFamilyNames.addAll(IncidentState.getColumnFamilyNames());
+    columnFamilyNames.addAll(KeyState.getColumnFamilyNames());
 
     final ZbRocksDb rocksDB = super.open(dbDirectory, reopen, columnFamilyNames);
 
@@ -59,6 +71,7 @@ public class ZeebeState extends KeyStateController {
     messageSubscriptionState.onOpened(this);
     workflowInstanceSubscriptionState.onOpened(this);
     incidentState.onOpened(this);
+    keyState.onOpened(this);
 
     return rocksDB;
   }
@@ -89,5 +102,9 @@ public class ZeebeState extends KeyStateController {
 
   public IncidentState getIncidentState() {
     return incidentState;
+  }
+
+  public KeyGenerator getKeyGenerator() {
+    return keyState;
   }
 }

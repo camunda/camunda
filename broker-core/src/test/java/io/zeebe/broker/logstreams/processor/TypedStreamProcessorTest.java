@@ -35,6 +35,7 @@ import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -82,9 +83,10 @@ public class TypedStreamProcessorTest {
     final TypedStreamEnvironment env =
         new TypedStreamEnvironment(streams.getLogStream(STREAM_NAME), output);
 
+    final AtomicLong key = new AtomicLong();
     final TypedStreamProcessor streamProcessor =
         env.newStreamProcessor()
-            .keyGenerator(new KeyGenerator(env.getStream().getPartitionId(), 0, 1))
+            .keyGenerator(() -> key.getAndIncrement())
             .onCommand(ValueType.DEPLOYMENT, DeploymentIntent.CREATE, new BatchProcessor())
             .build();
 

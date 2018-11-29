@@ -26,12 +26,28 @@ import org.rocksdb.ColumnFamilyHandle;
 
 public class NextValueManager {
 
+  private static final int INITIAL_VALUE = 0;
+
   private final StateController rocksDbWrapper;
   private final MutableDirectBuffer nextValueBuffer;
 
+  private final long initialValue;
+
   public NextValueManager(StateController rocksDbWrapper) {
+    this(rocksDbWrapper, INITIAL_VALUE);
+  }
+
+  /**
+   * Creates next value manager with state controller and an initial value. The first {@link
+   * #getNextValue(ColumnFamilyHandle, byte[])} call will return initial value + 1.
+   *
+   * @param rocksDbWrapper
+   * @param initialValue initial value to start with
+   */
+  public NextValueManager(StateController rocksDbWrapper, long initialValue) {
     this.rocksDbWrapper = rocksDbWrapper;
     nextValueBuffer = new UnsafeBuffer(new byte[Long.BYTES]);
+    this.initialValue = initialValue;
   }
 
   public long getNextValue(ColumnFamilyHandle columnFamilyHandle, byte[] key) {
@@ -40,7 +56,7 @@ public class NextValueManager {
         rocksDbWrapper.get(
             columnFamilyHandle, key, 0, key.length, generateKeyBytes, 0, generateKeyBytes.length);
 
-    long previousKey = 0;
+    long previousKey = initialValue;
     final boolean keyWasFound = readBytes == generateKeyBytes.length;
     if (keyWasFound) {
       previousKey = nextValueBuffer.getLong(0, STATE_BYTE_ORDER);

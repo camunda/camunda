@@ -19,8 +19,9 @@ package io.zeebe.broker.logstreams.processor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.util.KeyStateController;
+import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.protocol.Protocol;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,90 +31,62 @@ public class KeyGeneratorTest {
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  private KeyStateController stateController;
   private KeyGenerator keyGenerator;
+  private ZeebeState zeebeState;
 
   @Before
-  public void setUp() {
-    stateController = new KeyStateController();
-    keyGenerator = new KeyGenerator(0, 0, 1, stateController);
+  public void setUp() throws Exception {
+    zeebeState = new ZeebeState();
+    zeebeState.open(folder.newFolder("db"), false);
+    keyGenerator = zeebeState.getKeyGenerator();
+  }
+
+  @After
+  public void tearDown() {
+    zeebeState.close();
   }
 
   @Test
-  public void shouldInitKeyStateOnOpen() throws Exception {
+  public void shouldGetFirstValue() {
     // given
 
     // when
-    stateController.open(folder.newFolder("rocksdb"), false);
+    final long firstKey = keyGenerator.nextKey();
 
     // then
-    assertThat(stateController.getNextKey()).isEqualTo(0);
+    assertThat(firstKey).isEqualTo(1);
   }
 
   @Test
-  public void shouldGenerateNextKey() throws Exception {
+  public void shouldGetNextValue() {
     // given
-    stateController.open(folder.newFolder("rocksdb"), false);
+    final long key = keyGenerator.nextKey();
 
     // when
     final long nextKey = keyGenerator.nextKey();
 
     // then
-    assertThat(nextKey).isEqualTo(0);
-    assertThat(stateController.getNextKey()).isEqualTo(1);
+    assertThat(nextKey).isGreaterThan(key);
   }
 
   @Test
-  public void shouldHaveUniqueGlobalKeyFormat() {
+  public void shouldGetUniqueValuesOverPartitions() throws Exception {
     // given
-    final KeyGenerator keyGenerator = new KeyGenerator(1, 5, 1);
+    final ZeebeState otherZeebeState = new ZeebeState(1);
+    otherZeebeState.open(folder.newFolder("db2"), false);
+    final KeyGenerator keyGenerator2 = otherZeebeState.getKeyGenerator();
+
+    final long keyOfFirstPartition = keyGenerator.nextKey();
 
     // when
-    final long nextKey = keyGenerator.nextKey();
+    final long keyOfSecondPartition = keyGenerator2.nextKey();
 
     // then
-    final int partitionId = (int) (nextKey >> Protocol.KEY_BITS);
-    assertThat(partitionId).isEqualTo(1);
-    final long localKey = nextKey ^ ((long) partitionId << Protocol.KEY_BITS);
-    assertThat(localKey).isEqualTo(5);
-  }
+    assertThat(keyOfFirstPartition).isNotEqualTo(keyOfSecondPartition);
 
-  @Test
-  public void shouldGenerateNextKetWithoutStateController() {
-    // given
-    final KeyGenerator keyGenerator = new KeyGenerator(0, 0, 1);
+    assertThat(Protocol.decodePartitionId(keyOfFirstPartition)).isEqualTo(0);
+    assertThat(Protocol.decodePartitionId(keyOfSecondPartition)).isEqualTo(1);
 
-    // when
-    final long key = keyGenerator.nextKey();
-
-    // then
-    assertThat(key).isEqualTo(0);
-  }
-
-  @Test
-  public void shouldGenerateDifferentKeysOnDifferentPartitions() {
-    // given
-    final KeyGenerator firstPartitionGenerator = new KeyGenerator(0, 0, 1);
-    final KeyGenerator secondPartitionGenerator = new KeyGenerator(1, 0, 1);
-
-    // when
-    final long key = firstPartitionGenerator.nextKey();
-    final long otherKey = secondPartitionGenerator.nextKey();
-
-    // then
-    assertThat(key).isNotEqualTo(otherKey);
-  }
-
-  @Test
-  public void shouldSetKey() {
-    // given
-    final KeyGenerator keyGenerator = new KeyGenerator(0, 0, 1);
-    keyGenerator.setKey(1L);
-
-    // when
-    final long key = keyGenerator.nextKey();
-
-    // then
-    assertThat(key).isEqualTo(2L);
+    otherZeebeState.close();
   }
 }

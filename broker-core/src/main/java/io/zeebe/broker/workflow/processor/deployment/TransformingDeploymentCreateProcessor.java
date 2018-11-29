@@ -17,11 +17,8 @@
  */
 package io.zeebe.broker.workflow.processor.deployment;
 
-import io.zeebe.broker.logstreams.processor.SideEffectProducer;
-import io.zeebe.broker.logstreams.processor.TypedRecord;
-import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
-import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
-import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.broker.logstreams.processor.*;
+import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.workflow.deployment.transform.DeploymentTransformer;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.protocol.clientapi.RejectionType;
@@ -35,9 +32,9 @@ public class TransformingDeploymentCreateProcessor
   private final DeploymentTransformer deploymentTransformer;
   private final WorkflowState workflowState;
 
-  public TransformingDeploymentCreateProcessor(final WorkflowState workflowState) {
-    this.workflowState = workflowState;
-    this.deploymentTransformer = new DeploymentTransformer(workflowState);
+  public TransformingDeploymentCreateProcessor(final ZeebeState zeebeState) {
+    this.workflowState = zeebeState.getWorkflowState();
+    this.deploymentTransformer = new DeploymentTransformer(zeebeState);
   }
 
   @Override

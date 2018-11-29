@@ -22,10 +22,7 @@ import static io.zeebe.broker.workflow.WorkflowAssert.assertWorkflowInstanceReco
 import static io.zeebe.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
 import static io.zeebe.msgpack.spec.MsgPackHelper.NIL;
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
-import static io.zeebe.test.broker.protocol.clientapi.PartitionTestClient.PROP_WORKFLOW_INSTANCE_KEY;
-import static io.zeebe.test.broker.protocol.clientapi.PartitionTestClient.PROP_WORKFLOW_KEY;
-import static io.zeebe.test.broker.protocol.clientapi.PartitionTestClient.PROP_WORKFLOW_PAYLOAD;
-import static io.zeebe.test.broker.protocol.clientapi.PartitionTestClient.PROP_WORKFLOW_VERSION;
+import static io.zeebe.test.broker.protocol.clientapi.PartitionTestClient.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
@@ -91,6 +88,46 @@ public class CreateWorkflowInstanceTest {
     assertThat(resp.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
     assertThat(resp.getRejectionReason()).isEqualTo("Workflow is not deployed");
     assertThat(resp.getValue()).containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process");
+  }
+
+  @Test
+  public void shouldWorkflowAndInstanceHaveUniqueKeys() {
+    // given
+    final ExecuteCommandResponse response =
+        testClient.deployWithResponse(
+            Bpmn.createExecutableProcess("process").startEvent().endEvent().done());
+    final ExecuteCommandResponse response2 =
+        testClient.deployWithResponse(
+            Bpmn.createExecutableProcess("process2").startEvent().endEvent().done());
+    final ExecuteCommandResponse response3 =
+        testClient.deployWithResponse(
+            Bpmn.createExecutableProcess("process3").startEvent().endEvent().done());
+    final long workflowKey = extractWorkflowKey(response);
+    final long workflowKey2 = extractWorkflowKey(response2);
+    final long workflowKey3 = extractWorkflowKey(response3);
+
+    // when
+    final ExecuteCommandResponse resp =
+        apiRule
+            .createCmdRequest()
+            .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
+            .command()
+            .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
+            .done()
+            .sendAndAwait();
+
+    // then
+    assertThat(
+            new long[] {
+              response.getKey(),
+              response2.getKey(),
+              response3.getKey(),
+              workflowKey,
+              workflowKey2,
+              workflowKey3
+            })
+        .doesNotHaveDuplicates()
+        .doesNotContain(resp.getKey());
   }
 
   @Test
