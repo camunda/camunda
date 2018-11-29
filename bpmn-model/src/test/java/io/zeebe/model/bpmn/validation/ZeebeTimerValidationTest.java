@@ -19,7 +19,10 @@ import static io.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
 import static java.util.Collections.singletonList;
 
 import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.instance.BoundaryEvent;
+import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.zeebe.model.bpmn.instance.TimerEventDefinition;
+import java.util.Arrays;
 import org.junit.runners.Parameterized.Parameters;
 
 public class ZeebeTimerValidationTest extends AbstractZeebeValidationTest {
@@ -43,7 +46,8 @@ public class ZeebeTimerValidationTest extends AbstractZeebeValidationTest {
             .done(),
         singletonList(
             expect(
-                TimerEventDefinition.class, "Time cycles must be non-interrupting boundary events"))
+                IntermediateCatchEvent.class,
+                "Intermediate timer catch event must have a time duration."))
       },
       {
         Bpmn.createExecutableProcess("process")
@@ -54,8 +58,7 @@ public class ZeebeTimerValidationTest extends AbstractZeebeValidationTest {
             .endEvent()
             .done(),
         singletonList(
-            expect(
-                TimerEventDefinition.class, "Time cycles must be non-interrupting boundary events"))
+            expect(BoundaryEvent.class, "Interrupting events of this type are not supported"))
       },
       {
         Bpmn.createExecutableProcess("process")
@@ -82,7 +85,10 @@ public class ZeebeTimerValidationTest extends AbstractZeebeValidationTest {
             .intermediateCatchEvent("catch", b -> b.timerWithDate("2017-01-01"))
             .endEvent()
             .done(),
-        singletonList(
+        Arrays.asList(
+            expect(
+                IntermediateCatchEvent.class,
+                "Intermediate timer catch event must have a time duration."),
             expect(
                 TimerEventDefinition.class,
                 "Timer event definitions with timeDate are not supported"))

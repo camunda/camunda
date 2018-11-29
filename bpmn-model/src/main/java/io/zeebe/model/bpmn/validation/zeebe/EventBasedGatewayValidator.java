@@ -19,12 +19,15 @@ import io.zeebe.model.bpmn.instance.EventBasedGateway;
 import io.zeebe.model.bpmn.instance.EventDefinition;
 import io.zeebe.model.bpmn.instance.FlowNode;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
+import io.zeebe.model.bpmn.instance.Message;
 import io.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
 import io.zeebe.model.bpmn.instance.TimerEventDefinition;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
@@ -57,6 +60,17 @@ public class EventBasedGatewayValidator implements ModelElementValidator<EventBa
     if (!isValid) {
       validationResultCollector.addError(0, ERROR_UNSUPPORTED_TARGET_NODE);
     }
+
+    getMessageEventDefinitions(outgoingSequenceFlows)
+        .map(MessageEventDefinition::getMessage)
+        .collect(Collectors.groupingBy(Message::getName, Collectors.counting()))
+        .entrySet()
+        .stream()
+        .filter(e -> e.getValue() > 1)
+        .forEach(
+            e ->
+                validationResultCollector.addError(
+                    0, "Multiple message catch events with the same name are not allowed."));
   }
 
   private boolean isValidOutgoingSequenceFlow(SequenceFlow flow) {
@@ -81,5 +95,17 @@ public class EventBasedGatewayValidator implements ModelElementValidator<EventBa
           .stream()
           .anyMatch(e -> e.isAssignableFrom(eventDefinition.getClass()));
     }
+  }
+
+  private Stream<MessageEventDefinition> getMessageEventDefinitions(
+      Collection<SequenceFlow> outgoingSequenceFlows) {
+    return outgoingSequenceFlows
+        .stream()
+        .map(SequenceFlow::getTarget)
+        .filter(t -> t instanceof IntermediateCatchEvent)
+        .map(IntermediateCatchEvent.class::cast)
+        .flatMap(e -> e.getEventDefinitions().stream())
+        .filter(e -> e instanceof MessageEventDefinition)
+        .map(MessageEventDefinition.class::cast);
   }
 }

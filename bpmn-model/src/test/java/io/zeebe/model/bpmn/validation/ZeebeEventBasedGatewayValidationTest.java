@@ -20,6 +20,7 @@ import static java.util.Collections.singletonList;
 
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.EventBasedGateway;
+import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import org.junit.runners.Parameterized.Parameters;
 
 public class ZeebeEventBasedGatewayValidationTest extends AbstractZeebeValidationTest {
@@ -38,6 +39,36 @@ public class ZeebeEventBasedGatewayValidationTest extends AbstractZeebeValidatio
             expect(
                 EventBasedGateway.class,
                 "Event-based gateway must have at least 2 outgoing sequence flows."))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .eventBasedGateway()
+            .intermediateCatchEvent()
+            .timerWithCycle("R/PT1M")
+            .moveToLastGateway()
+            .intermediateCatchEvent(
+                "catch", c -> c.message(m -> m.name("msg").zeebeCorrelationKey("$.foo")))
+            .done(),
+        singletonList(
+            expect(
+                IntermediateCatchEvent.class,
+                "Intermediate timer catch event must have a time duration."))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .eventBasedGateway()
+            .intermediateCatchEvent(
+                "catch-1", c -> c.message(m -> m.name("msg").zeebeCorrelationKey("$.foo")))
+            .moveToLastGateway()
+            .intermediateCatchEvent(
+                "catch-2", c -> c.message(m -> m.name("msg").zeebeCorrelationKey("$.foo")))
+            .done(),
+        singletonList(
+            expect(
+                EventBasedGateway.class,
+                "Multiple message catch events with the same name are not allowed."))
       },
       {
         Bpmn.createExecutableProcess("process")

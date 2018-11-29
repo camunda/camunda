@@ -28,8 +28,9 @@ import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionState;
 import io.zeebe.broker.workflow.processor.boundary.BoundaryEventHelper;
-import io.zeebe.broker.workflow.state.DeployedWorkflow;
 import io.zeebe.broker.workflow.state.ElementInstance;
+import io.zeebe.broker.workflow.state.StoredRecord;
+import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
 import io.zeebe.broker.workflow.state.WorkflowInstanceSubscription;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.logstreams.log.LogStream;
@@ -53,10 +54,7 @@ public final class CorrelateWorkflowInstanceSubscription
   private final WorkflowInstanceSubscriptionState subscriptionState;
   private final SubscriptionCommandSender subscriptionCommandSender;
 
-  private TypedRecord<WorkflowInstanceSubscriptionRecord> record;
   private WorkflowInstanceSubscriptionRecord subscriptionRecord;
-  private TypedStreamWriter streamWriter;
-  private Consumer<SideEffectProducer> sideEffect;
 
   public CorrelateWorkflowInstanceSubscription(
       final TopologyManager topologyManager,
@@ -92,37 +90,12 @@ public final class CorrelateWorkflowInstanceSubscription
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
 
-    this.record = record;
     this.subscriptionRecord = record.getValue();
-    this.streamWriter = streamWriter;
-    this.sideEffect = sideEffect;
+    final long elementInstanceKey = subscriptionRecord.getElementInstanceKey();
 
-    final ElementInstance eventInstance =
-        workflowState
-            .getElementInstanceState()
-            .getInstance(subscriptionRecord.getElementInstanceKey());
-
-    if (eventInstance == null) {
-      streamWriter.appendRejection(
-          record, RejectionType.NOT_APPLICABLE, "activity is not active anymore");
-
-    } else {
-      final long workflowKey = eventInstance.getValue().getWorkflowKey();
-      final DeployedWorkflow workflow = workflowState.getWorkflowByKey(workflowKey);
-      if (workflow != null) {
-        onWorkflowAvailable();
-      } else {
-        streamWriter.appendRejection(
-            record, RejectionType.NOT_APPLICABLE, "workflow is not available");
-      }
-    }
-  }
-
-  private void onWorkflowAvailable() {
-    // remove subscription if pending
     final WorkflowInstanceSubscription subscription =
-        subscriptionState.getSubscription(
-            subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageName());
+        subscriptionState.getSubscription(elementInstanceKey, subscriptionRecord.getMessageName());
+
     if (subscription == null) {
       streamWriter.appendRejection(
           record, RejectionType.NOT_APPLICABLE, "subscription is already correlated");
@@ -133,38 +106,71 @@ public final class CorrelateWorkflowInstanceSubscription
 
     subscriptionState.remove(subscription);
 
-    final ElementInstance eventInstance =
-        workflowState
-            .getElementInstanceState()
-            .getInstance(subscriptionRecord.getElementInstanceKey());
+    sideEffect.accept(this::sendAcknowledgeCommand);
 
-    final WorkflowInstanceRecord value = eventInstance.getValue();
-    value.setPayload(subscriptionRecord.getPayload());
+    correlateMessageToWorkflowInstance(record, streamWriter, elementInstanceKey, subscription);
+  }
 
-    streamWriter.appendFollowUpEvent(
-        record.getKey(), WorkflowInstanceSubscriptionIntent.CORRELATED, subscriptionRecord);
+  private void correlateMessageToWorkflowInstance(
+      final TypedRecord<WorkflowInstanceSubscriptionRecord> record,
+      final TypedStreamWriter streamWriter,
+      final long elementInstanceKey,
+      final WorkflowInstanceSubscription subscription) {
 
-    if (eventInstance.getState() == WorkflowInstanceIntent.ELEMENT_ACTIVATED) {
+    // TODO handler trigger events in a uniform way - #1699
+
+    final ElementInstance elementInstance =
+        workflowState.getElementInstanceState().getInstance(elementInstanceKey);
+
+    if (elementInstance != null
+        && elementInstance.getState() == WorkflowInstanceIntent.ELEMENT_ACTIVATED) {
+
+      final WorkflowInstanceRecord value = elementInstance.getValue();
+      value.setPayload(subscriptionRecord.getPayload());
+
+      streamWriter.appendFollowUpEvent(
+          record.getKey(), WorkflowInstanceSubscriptionIntent.CORRELATED, subscriptionRecord);
+
       if (boundaryEventHelper.shouldTriggerBoundaryEvent(
-          eventInstance, subscription.getHandlerNodeId())) {
+          elementInstance, subscription.getHandlerNodeId())) {
         boundaryEventHelper.triggerBoundaryEvent(
             workflowState,
-            eventInstance,
+            elementInstance,
             subscription.getHandlerNodeId(),
             subscriptionRecord.getPayload(),
             streamWriter);
       } else {
         streamWriter.appendFollowUpEvent(
-            subscriptionRecord.getElementInstanceKey(),
-            WorkflowInstanceIntent.ELEMENT_COMPLETING,
-            value);
-        eventInstance.setState(WorkflowInstanceIntent.ELEMENT_COMPLETING);
-        eventInstance.setValue(value);
+            elementInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETING, value);
+        elementInstance.setState(WorkflowInstanceIntent.ELEMENT_COMPLETING);
+        elementInstance.setValue(value);
+      }
+
+      workflowState.getElementInstanceState().flushDirtyState();
+
+    } else {
+
+      final StoredRecord tokenEvent =
+          workflowState.getElementInstanceState().getTokenEvent(elementInstanceKey);
+
+      if (tokenEvent != null && tokenEvent.getPurpose() == Purpose.DEFERRED_TOKEN) {
+        // continue at an event-based gateway
+        final WorkflowInstanceRecord deferedRecord = tokenEvent.getRecord().getValue();
+        deferedRecord
+            .setPayload(subscriptionRecord.getPayload())
+            .setElementId(subscription.getHandlerNodeId());
+
+        streamWriter.appendFollowUpEvent(
+            record.getKey(), WorkflowInstanceSubscriptionIntent.CORRELATED, subscriptionRecord);
+
+        streamWriter.appendFollowUpEvent(
+            tokenEvent.getKey(), WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING, deferedRecord);
+
+      } else {
+        streamWriter.appendRejection(
+            record, RejectionType.NOT_APPLICABLE, "activity is not active anymore");
       }
     }
-
-    sideEffect.accept(this::sendAcknowledgeCommand);
-    workflowState.getElementInstanceState().flushDirtyState();
   }
 
   private boolean sendAcknowledgeCommand() {

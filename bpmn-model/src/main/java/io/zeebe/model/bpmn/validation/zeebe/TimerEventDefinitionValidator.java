@@ -15,7 +15,6 @@
  */
 package io.zeebe.model.bpmn.validation.zeebe;
 
-import io.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.zeebe.model.bpmn.instance.TimeCycle;
 import io.zeebe.model.bpmn.instance.TimeDate;
 import io.zeebe.model.bpmn.instance.TimeDuration;
@@ -23,7 +22,6 @@ import io.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.zeebe.model.bpmn.util.time.RepeatingInterval;
 import java.time.Duration;
 import java.time.format.DateTimeParseException;
-import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
@@ -67,15 +65,10 @@ public class TimerEventDefinitionValidator implements ModelElementValidator<Time
       TimerEventDefinition element,
       ValidationResultCollector validationResultCollector,
       TimeCycle timeCycle) {
-    final ModelElementInstance parent = element.getParentElement();
     try {
       RepeatingInterval.parse(timeCycle.getTextContent());
     } catch (DateTimeParseException e) {
       validationResultCollector.addError(0, "Time cycle is invalid");
-    }
-
-    if (!(parent instanceof BoundaryEvent) || ((BoundaryEvent) parent).cancelActivity()) {
-      validationResultCollector.addError(0, "Time cycles must be non-interrupting boundary events");
     }
   }
 

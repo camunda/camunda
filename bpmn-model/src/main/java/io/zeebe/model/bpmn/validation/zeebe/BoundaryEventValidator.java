@@ -15,24 +15,15 @@
  */
 package io.zeebe.model.bpmn.validation.zeebe;
 
-import io.zeebe.model.bpmn.impl.instance.MessageEventDefinitionImpl;
-import io.zeebe.model.bpmn.impl.instance.TimerEventDefinitionImpl;
 import io.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.zeebe.model.bpmn.instance.EventDefinition;
+import io.zeebe.model.bpmn.instance.MessageEventDefinition;
+import io.zeebe.model.bpmn.instance.TimerEventDefinition;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
 public class BoundaryEventValidator implements ModelElementValidator<BoundaryEvent> {
-  private static final Map<Class<? extends EventDefinition>, SupportLevel> SUPPORTED_EVENTS =
-      new HashMap<>();
-
-  static {
-    SUPPORTED_EVENTS.put(TimerEventDefinitionImpl.class, SupportLevel.All);
-    SUPPORTED_EVENTS.put(MessageEventDefinitionImpl.class, SupportLevel.Interrupting);
-  }
 
   @Override
   public Class<BoundaryEvent> getElementType() {
@@ -64,10 +55,24 @@ public class BoundaryEventValidator implements ModelElementValidator<BoundaryEve
       validationResultCollector.addError(0, "Must have exactly one event definition");
     } else {
       final EventDefinition eventDefinition = eventDefinitions.iterator().next();
-      final Class<? extends EventDefinition> type = eventDefinition.getClass();
-      final SupportLevel supportLevel = SUPPORTED_EVENTS.getOrDefault(type, SupportLevel.None);
+      final SupportLevel supportLevel = getSupportLevel(eventDefinition);
 
       validateSupportLevel(element, validationResultCollector, supportLevel);
+    }
+  }
+
+  private SupportLevel getSupportLevel(EventDefinition eventDefinition) {
+    if (eventDefinition instanceof MessageEventDefinition) {
+      return SupportLevel.Interrupting;
+    } else if (eventDefinition instanceof TimerEventDefinition) {
+      final TimerEventDefinition timerEventDefinition = (TimerEventDefinition) eventDefinition;
+      if (timerEventDefinition.getTimeCycle() != null) {
+        return SupportLevel.NonInterrupting;
+      } else {
+        return SupportLevel.All;
+      }
+    } else {
+      return SupportLevel.None;
     }
   }
 
@@ -90,6 +95,8 @@ public class BoundaryEventValidator implements ModelElementValidator<BoundaryEve
           validationResultCollector.addError(
               0, "Interrupting events of this type are not supported");
         }
+        break;
+      default:
         break;
     }
   }
