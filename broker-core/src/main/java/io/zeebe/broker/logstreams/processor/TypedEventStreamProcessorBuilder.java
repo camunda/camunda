@@ -17,13 +17,11 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import io.zeebe.logstreams.snapshot.BaseValueSnapshotSupport;
 import io.zeebe.logstreams.snapshot.ComposedSnapshot;
 import io.zeebe.logstreams.spi.ComposableSnapshotSupport;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.logstreams.state.StateController;
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.value.BaseValue;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
@@ -104,7 +102,6 @@ public class TypedEventStreamProcessorBuilder {
   /** Only required if a stream processor writes events to its own stream. */
   public TypedEventStreamProcessorBuilder keyGenerator(KeyGenerator keyGenerator) {
     this.keyGenerator = keyGenerator;
-    withStateResource(keyGenerator);
     return this;
   }
 
@@ -118,17 +115,6 @@ public class TypedEventStreamProcessorBuilder {
             stateController.close();
           }
         });
-    return this;
-  }
-
-  public TypedEventStreamProcessorBuilder withStateResource(BaseValue value) {
-    this.stateResources.add(new BaseValueSnapshotSupport(value));
-    return this;
-  }
-
-  public TypedEventStreamProcessorBuilder withStateResource(
-      ComposableSnapshotSupport snapshotSupport) {
-    this.stateResources.add(snapshotSupport);
     return this;
   }
 

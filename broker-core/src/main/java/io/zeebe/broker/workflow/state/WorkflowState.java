@@ -30,15 +30,9 @@ import org.rocksdb.ColumnFamilyHandle;
 
 public class WorkflowState implements StateLifecycleListener {
 
-  private static final byte[] WORKFLOW_KEY_FAMILY_NAME = "sorkflowStateWorkflowKey".getBytes();
   private static final byte[] WORKFLOW_VERSION_FAMILY_NAME =
       "workflowStateWorkflowVersion".getBytes();
-  public static final byte[][] COLUMN_FAMILY_NAMES = {
-    WORKFLOW_KEY_FAMILY_NAME, WORKFLOW_VERSION_FAMILY_NAME
-  };
-
-  private static final byte[] LATEST_WORKFLOW_KEY = "latestWorkflowKey".getBytes();
-  public static final String SUB_SUFFIX = "Workflow";
+  public static final byte[][] COLUMN_FAMILY_NAMES = {WORKFLOW_VERSION_FAMILY_NAME};
 
   public static List<byte[]> getColumnFamilyNames() {
     return Stream.of(
@@ -50,7 +44,6 @@ public class WorkflowState implements StateLifecycleListener {
         .collect(Collectors.toList());
   }
 
-  private ColumnFamilyHandle workflowKeyHandle;
   private ColumnFamilyHandle workflowVersionHandle;
   private NextValueManager nextValueManager;
   private WorkflowPersistenceCache workflowPersistenceCache;
@@ -59,17 +52,12 @@ public class WorkflowState implements StateLifecycleListener {
 
   @Override
   public void onOpened(StateController stateController) {
-    workflowKeyHandle = stateController.getColumnFamilyHandle(WORKFLOW_KEY_FAMILY_NAME);
     workflowVersionHandle = stateController.getColumnFamilyHandle(WORKFLOW_VERSION_FAMILY_NAME);
 
     nextValueManager = new NextValueManager(stateController);
     workflowPersistenceCache = new WorkflowPersistenceCache(stateController);
     timerInstanceState = new TimerInstanceState(stateController);
     elementInstanceState = new ElementInstanceState(stateController);
-  }
-
-  public long getNextWorkflowKey() {
-    return nextValueManager.getNextValue(workflowKeyHandle, LATEST_WORKFLOW_KEY);
   }
 
   public int getNextWorkflowVersion(String bpmnProcessId) {

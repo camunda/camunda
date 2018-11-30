@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.util;
 
-import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.processor.TypedEventStreamProcessorBuilder;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.state.ZeebeState;
@@ -111,7 +110,7 @@ public class StreamProcessorRule implements TestRule {
           final TypedEventStreamProcessorBuilder processorBuilder =
               streamEnvironment
                   .newStreamProcessor()
-                  .keyGenerator(KeyGenerator.createKeyGenerator(0, zeebeState))
+                  .keyGenerator(zeebeState.getKeyGenerator())
                   .withStateController(zeebeState);
           return factory.apply(processorBuilder, zeebeState);
         });

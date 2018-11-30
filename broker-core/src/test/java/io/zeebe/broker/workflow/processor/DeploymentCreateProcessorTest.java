@@ -24,7 +24,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.util.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
-import io.zeebe.broker.workflow.deployment.transform.DeploymentTransformer;
 import io.zeebe.broker.workflow.processor.deployment.DeploymentEventProcessors;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.model.bpmn.Bpmn;
@@ -65,11 +64,11 @@ public class DeploymentCreateProcessorTest {
   @Test
   public void shouldRejectTwoCreatingCommands() {
     // given
-    creatingDeployment();
     streamProcessor.blockAfterDeploymentEvent(
         r -> r.getMetadata().getIntent() == DeploymentIntent.CREATE);
-
     streamProcessor.start();
+
+    creatingDeployment();
     waitUntil(() -> streamProcessor.isBlocked());
 
     // when
@@ -101,9 +100,9 @@ public class DeploymentCreateProcessorTest {
     // given
     streamProcessor.blockAfterDeploymentEvent(
         r -> r.getMetadata().getIntent() == DeploymentIntent.CREATE);
+    streamProcessor.start();
 
     creatingDeployment(4);
-    streamProcessor.start();
     waitUntil(() -> streamProcessor.isBlocked());
 
     // when
@@ -135,12 +134,12 @@ public class DeploymentCreateProcessorTest {
   }
 
   private void creatingDeployment(final long key) {
-    final DeploymentRecord deploymentRecord = creatingDeploymentRecord(workflowState);
+    final DeploymentRecord deploymentRecord = creatingDeploymentRecord();
 
     rule.writeCommand(key, DeploymentIntent.CREATE, deploymentRecord);
   }
 
-  public static DeploymentRecord creatingDeploymentRecord(WorkflowState workflowState) {
+  public static DeploymentRecord creatingDeploymentRecord() {
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess("processId")
             .startEvent()
@@ -160,9 +159,6 @@ public class DeploymentCreateProcessorTest {
         .setResource(wrapString(Bpmn.convertToString(modelInstance)))
         .setResourceType(ResourceType.BPMN_XML);
 
-    final DeploymentTransformer deploymentTransformer = new DeploymentTransformer(workflowState);
-
-    deploymentTransformer.transform(deploymentRecord);
     return deploymentRecord;
   }
 }

@@ -55,7 +55,7 @@ public class TransformingDeploymentCreateProcessorTest {
             (typedEventStreamProcessorBuilder, zeebeState) -> {
               workflowState = zeebeState.getWorkflowState();
               DeploymentEventProcessors.addTransformingDeploymentProcessor(
-                  typedEventStreamProcessorBuilder, workflowState);
+                  typedEventStreamProcessorBuilder, zeebeState);
 
               return typedEventStreamProcessorBuilder.build();
             });
