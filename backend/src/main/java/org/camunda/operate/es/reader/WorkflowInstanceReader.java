@@ -29,6 +29,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
+import org.elasticsearch.index.query.IdsQueryBuilder;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.RangeQueryBuilder;
@@ -69,6 +70,7 @@ import static org.camunda.operate.util.ElasticsearchUtil.joinWithOr;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -383,7 +385,7 @@ public class WorkflowInstanceReader {
    * @return
    */
   public WorkflowInstanceEntity getWorkflowInstanceById(String workflowInstanceId) {
-    final TermQueryBuilder q = termQuery(ElasticsearchUtil.ES_ID_FIELD_NAME, workflowInstanceId);
+    final IdsQueryBuilder q = idsQuery().addIds(workflowInstanceId);
 
     final SearchResponse response = esClient.prepareSearch(workflowInstanceType.getAlias())
       .setQuery(q)

@@ -30,12 +30,14 @@ public class ElasticsearchSchemaManager {
   @Autowired
   private TransportClient esClient;
 
-  public void initializeSchema() {
+  public boolean initializeSchema() {
     if (!schemaAlreadyExists()) {
       logger.info("Elasticsearch schema is empty. Indices will be created.");
       createIndices();
+      return true;
     } else {
       logger.info("Elasticsearch schema already exists");
+      return false;
     }
   }
 

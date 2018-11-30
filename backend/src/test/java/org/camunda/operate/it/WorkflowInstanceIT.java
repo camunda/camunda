@@ -16,6 +16,7 @@ import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.types.WorkflowInstanceType;
 import org.camunda.operate.rest.dto.EventQueryDto;
+import org.camunda.operate.rest.exception.NotFoundException;
 import org.camunda.operate.util.IdTestUtil;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
@@ -52,6 +53,10 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
   @Autowired
   @Qualifier("workflowInstanceIsCanceledCheck")
   private Predicate<Object[]> workflowInstanceIsCanceledCheck;
+
+  @Autowired
+  @Qualifier("workflowInstanceIsCreatedCheck")
+  private Predicate<Object[]> workflowInstanceIsCreatedCheck;
 
   private ZeebeClient zeebeClient;
 
@@ -482,6 +487,27 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     assertThat(lastActivity.getEndDate()).isAfterOrEqualTo(testStartTime);
     assertThat(lastActivity.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
 
+  }
+
+  @Test
+  public void testWorkflowInstanceById() {
+    String processId = "demoProcess";
+    final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
+    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCreatedCheck, workflowInstanceKey);
+
+    final WorkflowInstanceEntity workflowInstanceById = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
+    assertThat(workflowInstanceById).isNotNull();
+  }
+
+  @Test(expected = NotFoundException.class)
+  public void testWorkflowInstanceByIdFailForUnknownId() {
+    String processId = "demoProcess";
+    final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
+    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCreatedCheck, workflowInstanceKey);
+
+    final WorkflowInstanceEntity workflowInstanceById = workflowInstanceReader.getWorkflowInstanceById("wrongId");
   }
 
   private void assertStartActivityCompleted(ActivityInstanceEntity startActivity) {

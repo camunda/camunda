@@ -13,14 +13,19 @@ public class OperateProperties {
 
   public static final String PREFIX = "camunda.bpm.operate";
 
+  /**
+   * Indicates, whether loading of Zeebe data should start on startup.
+   */
   private boolean startLoadingDataOnStartup = true;
 
+  /**
+   * Maximum size of batch operation.
+   */
   private Long batchOperationMaxSize;
 
   @NestedConfigurationProperty
-  private ElasticsearchProperties elasticsearch = new ElasticsearchProperties();
+  private OperateElasticsearchProperties elasticsearch = new OperateElasticsearchProperties();
 
-  //TODO not all properties make sense
   @NestedConfigurationProperty
   private ZeebeElasticsearchProperties zeebeElasticsearch = new ZeebeElasticsearchProperties();
 
@@ -46,11 +51,11 @@ public class OperateProperties {
     this.batchOperationMaxSize = batchOperationMaxSize;
   }
 
-  public ElasticsearchProperties getElasticsearch() {
+  public OperateElasticsearchProperties getElasticsearch() {
     return elasticsearch;
   }
 
-  public void setElasticsearch(ElasticsearchProperties elasticsearch) {
+  public void setElasticsearch(OperateElasticsearchProperties elasticsearch) {
     this.elasticsearch = elasticsearch;
   }
 

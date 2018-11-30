@@ -37,7 +37,6 @@ public abstract class ElasticsearchUtil {
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchUtil.class);
 
   public static final String ES_INDEX_TYPE = "_doc";
-  public static final String ES_ID_FIELD_NAME = "_id";
 
   public static QueryBuilder joinWithOr(BoolQueryBuilder boolQueryBuilder, QueryBuilder... queries) {
     List<QueryBuilder> notNullQueries = CollectionUtil.throwAwayNullElements(queries);

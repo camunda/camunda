@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.camunda.operate.rest.dto.UserDto;
 import org.camunda.operate.security.WebSecurityConfig;
+import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +26,6 @@ import static org.camunda.operate.security.WebSecurityConfig.LOGIN_RESOURCE;
 import static org.camunda.operate.security.WebSecurityConfig.LOGOUT_RESOURCE;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
-import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 
 
 @RunWith(SpringRunner.class)
@@ -108,6 +108,28 @@ public class AuthenticationTest {
     assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(responseEntity.getBody().getFirstname()).isNotEmpty();
     assertThat(responseEntity.getBody().getLastname()).isNotEmpty();
+  }
+
+  @Test
+  public void testEndpointsNotAccessibleAfterLogout() {
+    //when user is logged in
+    HttpEntity<MultiValueMap<String, String>> loginRequest = prepareLoginRequest(USERNAME, PASSWORD);
+    ResponseEntity<Void> loginResponse = login(loginRequest);
+    String session = loginResponse.getHeaders().get("Set-Cookie").get(0);
+    
+    //then endpoints are accessible
+    ResponseEntity<Object> responseEntity = testRestTemplate.exchange(CURRENT_USER_URL, HttpMethod.GET, prepareRequestWithCookies(session), Object.class);
+    assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(responseEntity.getBody()).isNotNull();
+
+    //when user logged out
+    HttpEntity<Map<String, String>> logoutRequest = prepareRequestWithCookies(session);
+    logout(logoutRequest);
+
+    //then endpoint is not accessible
+    responseEntity = testRestTemplate.exchange(CURRENT_USER_URL, HttpMethod.GET, prepareRequestWithCookies(session), Object.class);
+    assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
   }
 
   protected HttpEntity<MultiValueMap<String, String>> prepareLoginRequest(String username, String password) {

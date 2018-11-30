@@ -7,7 +7,7 @@ import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.es.ElasticsearchSchemaManager;
 import org.camunda.operate.es.types.TypeMappingCreator;
 import org.camunda.operate.exceptions.PersistenceException;
-import org.camunda.operate.property.ElasticsearchProperties;
+import org.camunda.operate.property.OperateElasticsearchProperties;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.zeebeimport.ElasticsearchBulkProcessor;
 import org.camunda.operate.zeebeimport.ZeebeESImporter;
@@ -56,10 +56,10 @@ public class ElasticsearchTestRule extends ExternalResource {
   @Override
   public void before() {
     final String indexSuffix = TestUtil.createRandomString(10);
-    workflowIndexName = ElasticsearchProperties.WORKFLOW_INDEX_PATTERN + "_" + indexSuffix;
-    workflowInstanceIndexName = ElasticsearchProperties.WORKFLOW_INSTANCE_INDEX_PATTERN + "_" + indexSuffix;
-    eventIndexName = ElasticsearchProperties.EVENT_INDEX_PATTERN + "_" + indexSuffix;
-    importPositionIndexName = ElasticsearchProperties.IMPORT_POSITION_INDEX_PATTERN + "_" + indexSuffix;
+    workflowIndexName = OperateElasticsearchProperties.WORKFLOW_INDEX_PATTERN + "_" + indexSuffix;
+    workflowInstanceIndexName = OperateElasticsearchProperties.WORKFLOW_INSTANCE_INDEX_PATTERN + "_" + indexSuffix;
+    eventIndexName = OperateElasticsearchProperties.EVENT_INDEX_PATTERN + "_" + indexSuffix;
+    importPositionIndexName = OperateElasticsearchProperties.IMPORT_POSITION_INDEX_PATTERN + "_" + indexSuffix;
     operateProperties.getElasticsearch().setWorkflowIndexName(workflowIndexName);
     operateProperties.getElasticsearch().setWorkflowInstanceIndexName(workflowInstanceIndexName);
     operateProperties.getElasticsearch().setEventIndexName(eventIndexName);
@@ -78,15 +78,15 @@ public class ElasticsearchTestRule extends ExternalResource {
   @Override
   public void after() {
     removeAllIndices();
-    operateProperties.getElasticsearch().setWorkflowIndexName(ElasticsearchProperties.WORKFLOW_INDEX_PATTERN);
-    operateProperties.getElasticsearch().setWorkflowInstanceIndexName(ElasticsearchProperties.WORKFLOW_INSTANCE_INDEX_PATTERN);
-    operateProperties.getElasticsearch().setEventIndexName(ElasticsearchProperties.EVENT_INDEX_PATTERN);
-    operateProperties.getElasticsearch().setImportPositionIndexName(ElasticsearchProperties.IMPORT_POSITION_INDEX_PATTERN);
+    operateProperties.getElasticsearch().setWorkflowIndexName(OperateElasticsearchProperties.WORKFLOW_INDEX_PATTERN);
+    operateProperties.getElasticsearch().setWorkflowInstanceIndexName(OperateElasticsearchProperties.WORKFLOW_INSTANCE_INDEX_PATTERN);
+    operateProperties.getElasticsearch().setEventIndexName(OperateElasticsearchProperties.EVENT_INDEX_PATTERN);
+    operateProperties.getElasticsearch().setImportPositionIndexName(OperateElasticsearchProperties.IMPORT_POSITION_INDEX_PATTERN);
 
-    operateProperties.getElasticsearch().setWorkflowAlias(ElasticsearchProperties.WORKFLOW_INDEX_PATTERN);
-    operateProperties.getElasticsearch().setWorkflowInstanceAlias(ElasticsearchProperties.WORKFLOW_INSTANCE_INDEX_PATTERN);
-    operateProperties.getElasticsearch().setEventAlias(ElasticsearchProperties.EVENT_INDEX_PATTERN);
-    operateProperties.getElasticsearch().setImportPositionAlias(ElasticsearchProperties.IMPORT_POSITION_INDEX_PATTERN);
+    operateProperties.getElasticsearch().setWorkflowAlias(OperateElasticsearchProperties.WORKFLOW_INDEX_PATTERN);
+    operateProperties.getElasticsearch().setWorkflowInstanceAlias(OperateElasticsearchProperties.WORKFLOW_INSTANCE_INDEX_PATTERN);
+    operateProperties.getElasticsearch().setEventAlias(OperateElasticsearchProperties.EVENT_INDEX_PATTERN);
+    operateProperties.getElasticsearch().setImportPositionAlias(OperateElasticsearchProperties.IMPORT_POSITION_INDEX_PATTERN);
 
 //    if (haveToClean) {
 //      logger.info("cleaning up elasticsearch on finish");

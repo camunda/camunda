@@ -12,7 +12,7 @@ import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.index.query.IdsQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
@@ -24,7 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.camunda.operate.es.types.WorkflowType.BPMN_XML;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
 
@@ -48,7 +48,7 @@ public class WorkflowReader {
    * @return
    */
   public String getDiagram(String workflowId) {
-    final TermQueryBuilder q = termQuery(ElasticsearchUtil.ES_ID_FIELD_NAME, workflowId);
+    final IdsQueryBuilder q = idsQuery().addIds(workflowId);
 
     final SearchResponse response = esClient.prepareSearch(workflowType.getAlias())
       .setFetchSource(BPMN_XML, null)
@@ -71,7 +71,7 @@ public class WorkflowReader {
    * @return
    */
   public WorkflowEntity getWorkflow(String workflowId) {
-    final TermQueryBuilder q = termQuery(ElasticsearchUtil.ES_ID_FIELD_NAME, workflowId);
+    final IdsQueryBuilder q = idsQuery().addIds(workflowId);
 
     final SearchResponse response = esClient.prepareSearch(workflowType.getAlias())
       .setQuery(q)

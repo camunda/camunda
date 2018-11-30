@@ -18,7 +18,7 @@ public class ZeebeElasticsearchProperties extends ElasticsearchProperties {
     this.setDateFormat("yyyy-MM-dd");   //hard-coded, as not configurable on Zeebe side
   }
 
-  private String prefix;
+  private String prefix = "zeebe-record";
 
   public String getPrefix() {
     return prefix;

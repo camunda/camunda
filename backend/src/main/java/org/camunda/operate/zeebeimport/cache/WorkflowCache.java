@@ -47,19 +47,27 @@ public class WorkflowCache {
       return cachedWorkflowData.getName();
     } else {
       final WorkflowData newValue = findWorkflow(workflowId, bpmnProcessId);
-      putToCache(workflowId, newValue);
-      return newValue.getName();
+      if (newValue != null) {
+        putToCache(workflowId, newValue);
+        return newValue.getName();
+      } else {
+        return null;
+      }
     }
   }
 
-  public int getWorkflowVersion(String workflowId, String bpmnProcessId) {
+  public Integer getWorkflowVersion(String workflowId, String bpmnProcessId) {
     final WorkflowData cachedWorkflowData = cache.get(workflowId);
     if (cachedWorkflowData != null) {
       return cachedWorkflowData.getVersion();
     } else {
       final WorkflowData newValue = findWorkflow(workflowId, bpmnProcessId);
-      putToCache(workflowId, newValue);
-      return newValue.getVersion();
+      if (newValue != null) {
+        putToCache(workflowId, newValue);
+        return newValue.getVersion();
+      } else {
+        return null;
+      }
     }
   }
 
@@ -96,7 +104,7 @@ public class WorkflowCache {
     cache.put(workflowId, workflow);
   }
 
-  static class WorkflowData {
+  public static class WorkflowData {
     private long key;
     private String name;
     private int version;
