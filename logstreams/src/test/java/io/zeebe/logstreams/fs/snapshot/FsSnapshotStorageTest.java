@@ -17,13 +17,11 @@ package io.zeebe.logstreams.fs.snapshot;
 
 import static io.zeebe.util.StringUtil.getBytes;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.logstreams.impl.snapshot.fs.FsReadableSnapshot;
 import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotStorage;
 import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotStorageConfiguration;
 import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotWriter;
-import io.zeebe.logstreams.impl.snapshot.fs.FsTemporarySnapshotWriter;
 import io.zeebe.logstreams.spi.SnapshotMetadata;
 import io.zeebe.util.FileUtil;
 import java.io.File;
@@ -212,43 +210,6 @@ public class FsSnapshotStorageTest {
     assertThat(fsSnapshotStorage.snapshotExists(firstName, 1L)).isFalse();
     assertThat(fsSnapshotStorage.snapshotExists("something weird that should not exist", 2L))
         .isFalse();
-  }
-
-  @SuppressWarnings("ConstantConditions")
-  @Test
-  public void shouldFailToCreateTemporarySnapshotWriterIfSnapshotAlreadyExists() throws Exception {
-    // given
-    final String name = "snapshot";
-    final long logPosition = 3L;
-
-    // when
-    writeSnapshot(name, logPosition);
-
-    // then
-    // assert that allocated resources were removed in case of exception
-    final int expectedFilesCount = tempFolder.getRoot().listFiles().length;
-    assertThatThrownBy(() -> fsSnapshotStorage.createTemporarySnapshot(name, logPosition))
-        .isInstanceOf(Exception.class);
-    assertThat(tempFolder.getRoot().listFiles().length).isEqualTo(expectedFilesCount);
-  }
-
-  @Test
-  public void shouldCreateTemporarySnapshotWriter() throws Exception {
-    // given
-    final String name = "snapshot";
-    final long logPosition = 4L;
-
-    // when
-    final FsTemporarySnapshotWriter temporarySnapshotWriter =
-        fsSnapshotStorage.createTemporarySnapshot(name, logPosition);
-
-    // then
-    assertThat(temporarySnapshotWriter).isNotNull();
-
-    final File[] files = tempFolder.getRoot().listFiles();
-    assertThat(files).isNotNull();
-    assertThat(files.length).isEqualTo(1);
-    assertThat(files[0].getName()).matches(".+\\.tmp");
   }
 
   protected String getFileName(String absolutePath) {

@@ -29,20 +29,6 @@ public class FsSnapshotMetadata implements SnapshotMetadata {
   protected final long position;
   protected final long size;
   protected final byte[] checksum;
-  protected final boolean replicable;
-
-  public FsSnapshotMetadata(
-      final String name,
-      final long position,
-      final long size,
-      final boolean replicable,
-      final byte[] checksum) {
-    this.name = name;
-    this.position = position;
-    this.size = size;
-    this.replicable = replicable;
-    this.checksum = checksum;
-  }
 
   public FsSnapshotMetadata(
       final FsSnapshotStorageConfiguration config,
@@ -52,7 +38,6 @@ public class FsSnapshotMetadata implements SnapshotMetadata {
     this.name = config.getSnapshotNameFromFileName(snapshotFile.getName());
     this.position = position;
     this.size = snapshotFile.length();
-    this.replicable = config.isReplicable(this.name);
 
     this.checksum = extractAndValidateChecksum(config, snapshotFile, checksumFile);
   }
@@ -70,11 +55,6 @@ public class FsSnapshotMetadata implements SnapshotMetadata {
   @Override
   public long getSize() {
     return size;
-  }
-
-  @Override
-  public boolean isReplicable() {
-    return replicable;
   }
 
   @Override

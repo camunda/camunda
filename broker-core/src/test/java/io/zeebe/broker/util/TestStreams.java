@@ -27,20 +27,13 @@ import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRec
 import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
-import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotController;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.log.LogStreamRecordWriter;
-import io.zeebe.logstreams.log.LogStreamWriterImpl;
-import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.log.*;
 import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.logstreams.processor.StreamProcessorController;
 import io.zeebe.logstreams.spi.SnapshotController;
 import io.zeebe.logstreams.spi.SnapshotStorage;
-import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.logstreams.state.StateController;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
@@ -223,16 +216,14 @@ public class TestStreams {
   }
 
   public StreamProcessorControl initStreamProcessor(
-      final String log, final StreamProcessor streamProcessor) {
-    return initStreamProcessor(log, 0, () -> streamProcessor);
-  }
-
-  public StreamProcessorControl initStreamProcessor(
-      final String log, final int streamProcessorId, final Supplier<StreamProcessor> factory) {
+      final String log,
+      final int streamProcessorId,
+      final StateController stateController,
+      final Supplier<StreamProcessor> factory) {
     final LogStream stream = getLogStream(log);
 
     final StreamProcessorControlImpl control =
-        new StreamProcessorControlImpl(stream, factory, streamProcessorId);
+        new StreamProcessorControlImpl(stream, stateController, factory, streamProcessorId);
 
     closeables.manage(control);
 
@@ -244,6 +235,7 @@ public class TestStreams {
     private final Supplier<StreamProcessor> factory;
     private final int streamProcessorId;
     private final LogStream stream;
+    private final StateController stateController;
 
     protected SuspendableStreamProcessor currentStreamProcessor;
     protected StreamProcessorController currentController;
@@ -252,9 +244,11 @@ public class TestStreams {
 
     public StreamProcessorControlImpl(
         final LogStream stream,
+        final StateController stateController,
         final Supplier<StreamProcessor> factory,
         final int streamProcessorId) {
       this.stream = stream;
+      this.stateController = stateController;
       this.factory = factory;
       this.streamProcessorId = streamProcessorId;
     }
@@ -390,15 +384,8 @@ public class TestStreams {
       // once in a test
       final String name = currentStreamProcessor.wrappedProcessor.getClass().getSimpleName();
 
-      if (currentStreamProcessor.getStateController() != null) {
-        final StateStorage stateStorage = getStateStorageFactory().create(streamProcessorId, name);
-        currentSnapshotController =
-            new StateSnapshotController(currentStreamProcessor.getStateController(), stateStorage);
-      } else {
-        currentSnapshotController =
-            new FsSnapshotController(
-                getSnapshotStorage(), name, currentStreamProcessor.getStateResource());
-      }
+      final StateStorage stateStorage = getStateStorageFactory().create(streamProcessorId, name);
+      currentSnapshotController = new StateSnapshotController(stateController, stateStorage);
 
       return LogStreams.createStreamProcessor(name, streamProcessorId, currentStreamProcessor)
           .logStream(stream)
@@ -421,16 +408,6 @@ public class TestStreams {
 
     public SuspendableStreamProcessor(final StreamProcessor wrappedProcessor) {
       this.wrappedProcessor = wrappedProcessor;
-    }
-
-    @Override
-    public SnapshotSupport getStateResource() {
-      return wrappedProcessor.getStateResource();
-    }
-
-    @Override
-    public StateController getStateController() {
-      return wrappedProcessor.getStateController();
     }
 
     public void resume() {

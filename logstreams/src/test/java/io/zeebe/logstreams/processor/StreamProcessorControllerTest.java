@@ -20,13 +20,11 @@ import static io.zeebe.util.StringUtil.getBytes;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
@@ -35,7 +33,6 @@ import static org.mockito.Mockito.when;
 
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
-import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotController;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.SnapshotController;
@@ -51,8 +48,6 @@ import io.zeebe.util.sched.future.ActorFuture;
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.DirectBuffer;
@@ -62,23 +57,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.rocksdb.RocksDBException;
 
-@RunWith(Parameterized.class)
 public class StreamProcessorControllerTest {
-  enum StateBackends {
-    ROCKSDB,
-    INMEMORY
-  }
-
-  @Parameterized.Parameters
-  public static Collection<Object[]> data() {
-    return Arrays.asList(new Object[][] {{StateBackends.ROCKSDB}, {StateBackends.INMEMORY}});
-  }
 
   private static final String PROCESSOR_NAME = "testProcessor";
   private static final int PROCESSOR_ID = 1;
@@ -88,16 +71,14 @@ public class StreamProcessorControllerTest {
   private static final DirectBuffer EVENT_1 = wrapString("FOO");
   private static final DirectBuffer EVENT_2 = wrapString("BAR");
 
-  private TemporaryFolder temporaryFolder = new TemporaryFolder();
-  private LogStreamRule logStreamRule = new LogStreamRule(temporaryFolder);
-  private LogStreamWriterRule writer = new LogStreamWriterRule(logStreamRule);
-  private LogStreamReaderRule reader = new LogStreamReaderRule(logStreamRule);
+  private final TemporaryFolder temporaryFolder = new TemporaryFolder();
+  private final LogStreamRule logStreamRule = new LogStreamRule(temporaryFolder);
+  private final LogStreamWriterRule writer = new LogStreamWriterRule(logStreamRule);
+  private final LogStreamReaderRule reader = new LogStreamReaderRule(logStreamRule);
 
   @Rule
   public RuleChain ruleChain =
       RuleChain.outerRule(temporaryFolder).around(logStreamRule).around(reader).around(writer);
-
-  private StateBackends stateBackend;
 
   private StreamProcessorService streamProcessorService;
   private StreamProcessorController streamProcessorController;
@@ -106,10 +87,6 @@ public class StreamProcessorControllerTest {
   private EventProcessor eventProcessor;
   private EventFilter eventFilter;
   private StateController stateController;
-
-  public StreamProcessorControllerTest(StateBackends stateBackend) {
-    this.stateBackend = stateBackend;
-  }
 
   @Before
   public void setup() throws Exception {
@@ -138,7 +115,7 @@ public class StreamProcessorControllerTest {
     inOrder.verify(eventProcessor, times(1)).writeEvent(any());
     inOrder.verify(eventProcessor, times(1)).updateState();
 
-    inOrder.verify(snapshotController, times(1)).takeSnapshot(any(), anyLong());
+    inOrder.verify(snapshotController, times(1)).takeSnapshot(any());
     inOrder.verify(streamProcessor, times(1)).onClose();
 
     inOrder.verifyNoMoreInteractions();
@@ -359,7 +336,7 @@ public class StreamProcessorControllerTest {
     logStreamRule.getClock().addTime(SNAPSHOT_INTERVAL);
 
     // then
-    verify(snapshotController, timeout(5000).times(1)).takeSnapshot(args.capture(), anyLong());
+    verify(snapshotController, timeout(5000).times(1)).takeSnapshot(args.capture());
     assertThat(args.getValue().getLastSuccessfulProcessedEventPosition())
         .isEqualTo(lastEventPosition);
     assertThat(args.getValue().getLastWrittenEventPosition()).isEqualTo(lastEventPosition);
@@ -378,7 +355,7 @@ public class StreamProcessorControllerTest {
     streamProcessorController.closeAsync().join();
 
     // then
-    verify(snapshotController, timeout(5000).times(1)).takeSnapshot(args.capture(), anyLong());
+    verify(snapshotController, timeout(5000).times(1)).takeSnapshot(args.capture());
     assertThat(args.getValue().getLastSuccessfulProcessedEventPosition())
         .isEqualTo(lastEventPosition);
     assertThat(args.getValue().getLastWrittenEventPosition()).isEqualTo(lastEventPosition);
@@ -405,11 +382,6 @@ public class StreamProcessorControllerTest {
 
   @Test
   public void shouldNotRecoverFromSnapshotWithInvalidLastWrittenTerm() throws Exception {
-    // test here does not apply to in-memory state
-    if (stateBackend == StateBackends.INMEMORY) {
-      return;
-    }
-
     // given
     final long lastProcessedEventPosition = writeEventAndWaitUntilProcessed(EVENT_1);
     final StateSnapshotMetadata valid =
@@ -442,11 +414,6 @@ public class StreamProcessorControllerTest {
 
   @Test
   public void shouldNotRecoverFromSnapshotWithUncommittedLastWrittenEvent() throws Exception {
-    // test here does not apply to in-memory state
-    if (stateBackend == StateBackends.INMEMORY) {
-      return;
-    }
-
     // given
     final long lastProcessedEventPosition = writeEventAndWaitUntilProcessed(EVENT_1);
     final StateSnapshotMetadata valid =
@@ -567,9 +534,9 @@ public class StreamProcessorControllerTest {
     streamProcessorController =
         LogStreams.createStreamProcessor("read-only", PROCESSOR_ID, streamProcessor)
             .logStream(logStreamRule.getLogStream())
-            .snapshotStorage(logStreamRule.getSnapshotStorage())
             .actorScheduler(logStreamRule.getActorScheduler())
             .serviceContainer(logStreamRule.getServiceContainer())
+            .snapshotController(snapshotController)
             .readOnly(true)
             .build()
             .join()
@@ -602,16 +569,11 @@ public class StreamProcessorControllerTest {
 
   @Test
   public void shouldTakeStateSnapshotEvenIfLastWrittenEventIsUncommitted() throws Exception {
-    if (stateBackend != StateBackends.ROCKSDB) {
-      return;
-    }
-
     // given
     final ArgumentCaptor<StateSnapshotMetadata> args =
         ArgumentCaptor.forClass(StateSnapshotMetadata.class);
     final MutableStateSnapshotMetadata expectedState =
         new MutableStateSnapshotMetadata(-1, -1, -1, true);
-
     // when
     changeMockInActorContext(
         () ->
@@ -624,55 +586,18 @@ public class StreamProcessorControllerTest {
                 .when(eventProcessor)
                 .writeEvent(any()));
     expectedState.setLastSuccessfulProcessedEventPosition(writeEventAndWaitUntilProcessed(EVENT_1));
-
     // when
     logStreamRule.getClock().addTime(SNAPSHOT_INTERVAL);
     streamProcessorController.closeAsync().join();
-
     // then
-    verify(snapshotController, timeout(5000).times(1)).takeSnapshot(args.capture(), anyLong());
+    verify(snapshotController, timeout(5000).times(1)).takeSnapshot(args.capture());
     assertThat(args.getValue()).isEqualTo(expectedState);
   }
 
-  @Test
-  public void shouldNotTakeFsSnapshotIfLastWrittenEventIsUncommitted() throws Exception {
-    if (stateBackend != StateBackends.INMEMORY) {
-      return;
-    }
-
-    // when
-    changeMockInActorContext(
-        () -> {
-          doAnswer(i -> writer.writeEvent(EVENT_2, false)).when(eventProcessor).writeEvent(any());
-        });
-    writeEventAndWaitUntilProcessed(EVENT_1);
-
-    // when
-    logStreamRule.getClock().addTime(SNAPSHOT_INTERVAL);
-    streamProcessorController.closeAsync().join();
-
-    // then
-    verify(snapshotController, times(1)).takeSnapshot(any(), anyLong());
-    verify(snapshotController, never()).takeSnapshot(any());
-  }
-
   private void installStreamProcessorService() throws IOException {
-    switch (stateBackend) {
-      case ROCKSDB:
-        stateController = spy(new StateController());
-        streamProcessor.setStateController(stateController);
-        snapshotController =
-            spy(new StateSnapshotController(stateController, createStateStorage()));
-        break;
-      case INMEMORY:
-        snapshotController =
-            spy(
-                new FsSnapshotController(
-                    logStreamRule.getSnapshotStorage(),
-                    PROCESSOR_NAME,
-                    streamProcessor.getStateResource()));
-        break;
-    }
+    stateController = spy(new StateController());
+    streamProcessor.setStateController(stateController);
+    snapshotController = spy(new StateSnapshotController(stateController, createStateStorage()));
 
     streamProcessorService =
         LogStreams.createStreamProcessor(PROCESSOR_NAME, PROCESSOR_ID, streamProcessor)
@@ -709,29 +634,13 @@ public class StreamProcessorControllerTest {
   }
 
   private void setState(final String value) throws RocksDBException {
-    switch (stateBackend) {
-      case ROCKSDB:
-        stateController.getDb().put(STATE_KEY, getBytes(value));
-        break;
-      case INMEMORY:
-        streamProcessor.getSnapshot().setValue(value);
-        break;
-    }
+    stateController.getDb().put(STATE_KEY, getBytes(value));
   }
 
   private String getState() throws RocksDBException {
     final String state;
 
-    switch (stateBackend) {
-      case ROCKSDB:
-        state = new String(stateController.getDb().get(STATE_KEY));
-        break;
-      case INMEMORY:
-        state = streamProcessor.getSnapshot().getValue();
-        break;
-      default:
-        throw new IllegalStateException("unexpected case");
-    }
+    state = new String(stateController.getDb().get(STATE_KEY));
 
     return state;
   }

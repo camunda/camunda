@@ -17,32 +17,14 @@
  */
 package io.zeebe.broker.clustering;
 
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.CLUSTERING_BASE_LAYER;
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.FOLLOWER_PARTITION_GROUP_NAME;
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.GOSSIP_JOIN_SERVICE;
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.GOSSIP_SERVICE;
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.MANAGEMENT_API_REQUEST_HANDLER_SERVICE_NAME;
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.RAFT_BOOTSTRAP_SERVICE;
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.RAFT_CONFIGURATION_MANAGER;
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.RAFT_SERVICE_GROUP;
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.REMOTE_ADDRESS_MANAGER_SERVICE;
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.SNAPSHOT_REPLICATION_INSTALL_SERVICE_NAME;
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.TOPOLOGY_MANAGER_SERVICE;
-import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_CLIENT_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_SERVER_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_CLIENT_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.SUBSCRIPTION_API_CLIENT_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.bufferingServerTransport;
-import static io.zeebe.broker.transport.TransportServiceNames.clientTransport;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.*;
+import static io.zeebe.broker.transport.TransportServiceNames.*;
 
-import io.zeebe.broker.clustering.api.ManagementApiRequestHandlerService;
 import io.zeebe.broker.clustering.base.connections.RemoteAddressManager;
 import io.zeebe.broker.clustering.base.gossip.GossipJoinService;
 import io.zeebe.broker.clustering.base.gossip.GossipService;
 import io.zeebe.broker.clustering.base.partitions.BootstrapPartitions;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManagerService;
-import io.zeebe.broker.clustering.base.snapshots.SnapshotReplicationInstallService;
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.TopologyManagerService;
 import io.zeebe.broker.system.Component;
@@ -100,31 +82,6 @@ public class ClusterComponent implements Component {
         .dependency(
             clientTransport(SUBSCRIPTION_API_CLIENT_NAME),
             remoteAddressManager.getSubscriptionClientTransportInjector())
-        .install();
-
-    final ManagementApiRequestHandlerService managementApiRequestHandlerService =
-        new ManagementApiRequestHandlerService(brokerConfig);
-    baseLayerInstall
-        .createService(
-            MANAGEMENT_API_REQUEST_HANDLER_SERVICE_NAME, managementApiRequestHandlerService)
-        .dependency(
-            bufferingServerTransport(MANAGEMENT_API_SERVER_NAME),
-            managementApiRequestHandlerService.getServerTransportInjector())
-        .dependency(
-            RAFT_CONFIGURATION_MANAGER,
-            managementApiRequestHandlerService.getRaftPersistentConfigurationManagerInjector())
-        .groupReference(
-            LEADER_PARTITION_GROUP_NAME,
-            managementApiRequestHandlerService.getLeaderPartitionsGroupReference())
-        .install();
-
-    final SnapshotReplicationInstallService snapshotReplicationInstallService =
-        new SnapshotReplicationInstallService(brokerConfig);
-    baseLayerInstall
-        .createService(SNAPSHOT_REPLICATION_INSTALL_SERVICE_NAME, snapshotReplicationInstallService)
-        .groupReference(
-            FOLLOWER_PARTITION_GROUP_NAME,
-            snapshotReplicationInstallService.getFollowerPartitionsGroupReference())
         .install();
 
     initGossip(baseLayerInstall, context, localMember);

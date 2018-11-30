@@ -30,6 +30,9 @@ import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.state.StateController;
+import io.zeebe.logstreams.state.StateSnapshotController;
+import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.logstreams.util.LogStreamWriterRule;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -53,9 +56,17 @@ public class StreamProcessorReprocessingTest {
 
   private static final DirectBuffer EVENT = wrapString("FOO");
 
-  private TemporaryFolder temporaryFolder = new TemporaryFolder();
-  private LogStreamRule logStreamRule = new LogStreamRule(temporaryFolder);
-  private LogStreamWriterRule writer = new LogStreamWriterRule(logStreamRule);
+  private final TemporaryFolder temporaryFolder = new TemporaryFolder();
+  private final LogStreamRule logStreamRule =
+      new LogStreamRule(
+          temporaryFolder,
+          logStreamBuilder -> {
+            final String logDirectory = logStreamBuilder.getLogDirectory();
+            final StateStorage stateStorage = new StateStorage(logDirectory);
+            stateSnapshotController =
+                new StateSnapshotController(new StateController(), stateStorage);
+          });
+  private final LogStreamWriterRule writer = new LogStreamWriterRule(logStreamRule);
 
   @Rule
   public RuleChain ruleChain =
@@ -64,6 +75,7 @@ public class StreamProcessorReprocessingTest {
   private RecordingStreamProcessor streamProcessor;
   private EventProcessor eventProcessor;
   private EventFilter eventFilter;
+  private StateSnapshotController stateSnapshotController;
 
   @Before
   public void init() {
@@ -88,10 +100,11 @@ public class StreamProcessorReprocessingTest {
 
   private ActorFuture<StreamProcessorService> openStreamProcessorControllerAsync(
       StreamProcessor streamProcessor) {
+
     return LogStreams.createStreamProcessor(PROCESSOR_NAME, PROCESSOR_ID, streamProcessor)
         .logStream(logStreamRule.getLogStream())
-        .snapshotStorage(logStreamRule.getSnapshotStorage())
         .actorScheduler(logStreamRule.getActorScheduler())
+        .snapshotController(stateSnapshotController)
         .serviceContainer(logStreamRule.getServiceContainer())
         .eventFilter(eventFilter)
         .build();
@@ -276,7 +289,7 @@ public class StreamProcessorReprocessingTest {
     final StreamProcessorBuilder builder =
         LogStreams.createStreamProcessor("read-only", PROCESSOR_ID, streamProcessor)
             .logStream(logStreamRule.getLogStream())
-            .snapshotStorage(logStreamRule.getSnapshotStorage())
+            .snapshotController(stateSnapshotController)
             .actorScheduler(logStreamRule.getActorScheduler())
             .serviceContainer(logStreamRule.getServiceContainer())
             .readOnly(true);
@@ -384,7 +397,7 @@ public class StreamProcessorReprocessingTest {
   public class ResumableProcessor extends FunctionProcessor {
     private StreamProcessorContext context;
     private LoggedEvent currentEvent;
-    private List<Long> processedRecords = new CopyOnWriteArrayList(); // i.e. not reprocessed
+    private final List<Long> processedRecords = new CopyOnWriteArrayList(); // i.e. not reprocessed
 
     ResumableProcessor(Consumer<LoggedEvent> function) {
       super(function);

@@ -22,7 +22,6 @@ import io.zeebe.broker.exporter.context.ExporterContext;
 import io.zeebe.broker.exporter.record.RecordMetadataImpl;
 import io.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.zeebe.broker.exporter.stream.ExporterRecord.ExporterPosition;
-import io.zeebe.broker.logstreams.processor.NoopSnapshotSupport;
 import io.zeebe.exporter.context.Controller;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.spi.Exporter;
@@ -32,8 +31,6 @@ import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
-import io.zeebe.logstreams.spi.SnapshotSupport;
-import io.zeebe.logstreams.state.StateController;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.protocol.clientapi.RecordType;
@@ -49,7 +46,6 @@ import java.util.List;
 import org.slf4j.LoggerFactory;
 
 public class ExporterStreamProcessor implements StreamProcessor {
-  private static final SnapshotSupport NONE = new NoopSnapshotSupport();
 
   private final RecordMetadata rawMetadata = new RecordMetadata();
   private final List<ExporterContainer> containers;
@@ -70,16 +66,6 @@ public class ExporterStreamProcessor implements StreamProcessor {
     for (final ExporterDescriptor descriptor : descriptors) {
       this.containers.add(new ExporterContainer(descriptor));
     }
-  }
-
-  @Override
-  public SnapshotSupport getStateResource() {
-    return NONE;
-  }
-
-  @Override
-  public StateController getStateController() {
-    return state;
   }
 
   public StateSnapshotController createSnapshotController(final StateStorage storage) {
@@ -206,7 +192,7 @@ public class ExporterStreamProcessor implements StreamProcessor {
 
   private class RecordExporter implements EventProcessor {
     private final ExporterObjectMapper objectMapper = new ExporterObjectMapper();
-    private ExporterRecordMapper recordMapper = new ExporterRecordMapper(objectMapper);
+    private final ExporterRecordMapper recordMapper = new ExporterRecordMapper(objectMapper);
     private Record record;
     private boolean shouldExecuteSideEffects;
     private int exporterIndex;
@@ -271,5 +257,9 @@ public class ExporterStreamProcessor implements StreamProcessor {
 
       return 0;
     }
+  }
+
+  public ExporterStreamProcessorState getState() {
+    return state;
   }
 }

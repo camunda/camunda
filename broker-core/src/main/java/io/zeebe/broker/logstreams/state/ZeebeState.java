@@ -23,15 +23,15 @@ import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.subscription.message.state.MessageState;
 import io.zeebe.broker.subscription.message.state.MessageSubscriptionState;
 import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionState;
-import io.zeebe.broker.util.KeyStateController;
 import io.zeebe.broker.workflow.deployment.distribute.processor.state.DeploymentsState;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.logstreams.rocksdb.ZbRocksDb;
+import io.zeebe.logstreams.state.StateController;
 import io.zeebe.protocol.Protocol;
 import java.io.File;
 import java.util.List;
 
-public class ZeebeState extends KeyStateController {
+public class ZeebeState extends StateController {
 
   private final WorkflowState workflowState = new WorkflowState();
   private final DeploymentsState deploymentState = new DeploymentsState();

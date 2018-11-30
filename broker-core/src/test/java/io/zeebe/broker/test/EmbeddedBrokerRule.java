@@ -66,12 +66,15 @@ public class EmbeddedBrokerRule extends ExternalResource {
   private static final boolean ENABLE_DEBUG_EXPORTER = false;
   private static final boolean ENABLE_HTTP_EXPORTER = false;
 
-  private static final Consumer<BrokerCfg> DEFAULT_CONFIGURATOR = cfg -> {};
   private static final String SNAPSHOTS_DIRECTORY = "snapshots";
   private static final String STATE_DIRECTORY = "state";
   public static final String DEFAULT_CONFIG_FILE = "zeebe.test.cfg.toml";
 
   protected static final Logger LOG = TestLoggers.TEST_LOGGER;
+  public static final int INSTALL_TIMEOUT = 5;
+  public static final TimeUnit INSTALL_TIMEOUT_UNIT = TimeUnit.SECONDS;
+  public static final String INSTALL_TIMEOUT_ERROR_MSG =
+      "Deployment partition not installed into the container within %d %s.";
 
   protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
@@ -220,12 +223,12 @@ public class EmbeddedBrokerRule extends ExternalResource {
           .dependency(
               TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME))
           .install()
-          .get(5, TimeUnit.SECONDS);
+          .get(INSTALL_TIMEOUT, INSTALL_TIMEOUT_UNIT);
 
     } catch (final InterruptedException | ExecutionException | TimeoutException e) {
       stopBroker();
       throw new RuntimeException(
-          "System patition not installed into the container withing 25 seconds.", e);
+          String.format(INSTALL_TIMEOUT_ERROR_MSG, INSTALL_TIMEOUT, INSTALL_TIMEOUT_UNIT), e);
     }
 
     dataDirectories = broker.getBrokerContext().getBrokerConfiguration().getData().getDirectories();
