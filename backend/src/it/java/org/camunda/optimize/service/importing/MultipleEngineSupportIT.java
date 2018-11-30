@@ -220,6 +220,33 @@ public class MultipleEngineSupportIT {
   }
 
   @Test
+  public void userIsAuthorizedAgainstEachEngine() {
+    // given
+    addSecondEngineToConfiguration();
+    defaultEngineRule.addUser("kermit", "kermit");
+    defaultEngineRule.addUser("gonzo", "gonzo");
+    defaultEngineRule.grantUserOptimizeAccess("kermit");
+    secondEngineRule.addUser("kermit", "kermit");
+    secondEngineRule.addUser("gonzo", "gonzo");
+    secondEngineRule.grantUserOptimizeAccess("gonzo");
+
+    // when
+    Response response = embeddedOptimizeRule.authenticateUserRequest("kermit", "kermit");
+
+    // then
+    assertThat(response.getStatus(),is(200));
+    String responseEntity = response.readEntity(String.class);
+    assertThat(responseEntity,is(notNullValue()));
+
+    response = embeddedOptimizeRule.authenticateUserRequest("gonzo", "gonzo");
+
+    // then
+    assertThat(response.getStatus(),is(200));
+    responseEntity = response.readEntity(String.class);
+    assertThat(responseEntity,is(notNullValue()));
+  }
+
+  @Test
   public void afterRestartOfOptimizeRightImportIndexIsUsed() throws Exception {
     // given
     addSecondEngineToConfiguration();

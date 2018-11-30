@@ -20,6 +20,14 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 @Component
 public class ApplicationAuthorizationService {
 
+  /**
+   * Checks for a given engine if the user is authorized for optimize access.
+   * 
+   * @return True, if and only if there is a global grant (but no user/group
+   *         revoke) or a group grant (but no user revoke) or a user grant.
+   *         Notice that this implies that false is returned also if there is no
+   *         grant nor revoke.
+   */
   public boolean isAuthorizedToAccessOptimize(String username, EngineContext engineContext) {
     return performAuthorizationCheck(username, engineContext);
   }

@@ -28,32 +28,45 @@ public class AuthenticationService {
   @Autowired
   private ApplicationAuthorizationService applicationAuthorizationService;
 
-  public String authenticateUser(CredentialsDto credentials) {
+  /**
+   * Authenticates user and checks for optimize authorization.
+   * 
+   * @throws ForbiddenException
+   *           if no engine that authenticates the user also authorizes the user
+   * @throws NotAuthorizedException
+   *           if no engine authenticates the user
+   */
+  public String authenticateUser(CredentialsDto credentials) throws ForbiddenException, NotAuthorizedException {
+   
+    boolean userAuthenticated = false;
+
     for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
 
       boolean isValidUser = engineAuthenticationProvider.authenticate(credentials, engineContext);
+      userAuthenticated |= isValidUser;
 
       if (isValidUser) {
         boolean isAuthorized =
           applicationAuthorizationService.isAuthorizedToAccessOptimize(credentials.getUsername(), engineContext);
         if (isAuthorized) {
           return createUserSession(credentials, engineContext);
-        } else {
-          throwForbiddenException(credentials);
         }
 
       }
     }
-    // could not find an authorized authorized user, so throw an exception
-    logger.error("Error during user authentication");
-    throw new NotAuthorizedException("Could not log you in. Please check your username and password.", "ignored");
-  }
-
-  private void throwForbiddenException(CredentialsDto credentialsDto) {
-    String errorMessage = "The user [" + credentialsDto.getUsername() + "] is not authorized to " +
-      "access Optimize! Please check the Camunda Admin configuration to change user authorizations!";
-    logger.error(errorMessage);
-    throw new ForbiddenException(errorMessage);
+    
+    if (userAuthenticated) {
+      // could not find an engine that grants optimize permission
+      String errorMessage = "The user [" + credentials.getUsername() + "] is not authorized to "
+          + "access Optimize. Please check the Camunda Admin configuration to change user " 
+          + "authorizations in at least one process engine.";
+      logger.error(errorMessage);
+      throw new ForbiddenException(errorMessage);
+    } else {
+      // could not find an engine that authenticates user
+      logger.error("Error during user authentication");
+      throw new NotAuthorizedException("Could not log you in. Please check your username and password.", "ignored");
+    }
   }
 
   private String createUserSession(CredentialsDto credentials, EngineContext engineContext) {
