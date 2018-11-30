@@ -12,6 +12,7 @@
  */
 package org.camunda.operate.it;
 
+import java.util.LinkedHashMap;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.zeebeimport.cache.WorkflowCache;
@@ -48,6 +49,12 @@ public class WorkflowCacheIT extends OperateZeebeIntegrationTest {
   @After
   public void after() {
     super.after();
+    //clean the cache
+    try {
+      FieldSetter.setField(workflowCache, WorkflowCache.class.getDeclaredField("cache"), new LinkedHashMap<>());
+    } catch (NoSuchFieldException e) {
+      fail("Failed to inject ZeebeClient into some of the beans");
+    }
   }
 
   @Test
