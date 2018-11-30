@@ -29,4 +29,8 @@ public final class Version {
   public static final String getPatchVersionFrom(String plainVersion) {
     return plainVersion.split("\\.")[2];
   }
+
+  public static String getMajorAndMinor(String currentVersion) {
+    return getMajorVersionFrom(currentVersion) + "." + getMinorVersionFrom(currentVersion);
+  }
 }

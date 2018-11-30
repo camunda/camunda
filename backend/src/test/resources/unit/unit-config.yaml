@@ -27,6 +27,5 @@ es:
       certificate_authorities: ''
       verification_mode: ''
       enabled: false
-
 email:
   enabled: true

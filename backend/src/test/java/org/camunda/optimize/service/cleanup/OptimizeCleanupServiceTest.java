@@ -40,7 +40,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class OptimizeCleanupServiceTest {
+public class  OptimizeCleanupServiceTest {
 
   @Mock
   private ProcessDefinitionReader processDefinitionReader;

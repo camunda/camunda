@@ -38,7 +38,7 @@ public class MetadataService {
       Optional<MetadataDto> data = metadataReader.readMetadata();
       data.map((metadataDto) -> {
         if (!this.version.equals(metadataDto.getSchemaVersion())) {
-          throw new OptimizeRuntimeException("Optimize version is not matching schema");
+          throw new OptimizeRuntimeException("The Elasticsearch data structure doesn't match the current Optimize version");
         }
         return null;
       }).orElseGet(() -> {

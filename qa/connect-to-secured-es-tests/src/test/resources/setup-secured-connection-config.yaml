@@ -12,3 +12,5 @@ es:
       certificate_authorities: 'certs/ca/ca.crt'
       verification_mode: 'certificate'
       enabled: true
+container:
+  checkMetadata: false

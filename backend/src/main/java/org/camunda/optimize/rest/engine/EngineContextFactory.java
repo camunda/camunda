@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.service.util.VersionChecker.checkEngineVersionSupport;
+
 
 @Component
 public class EngineContextFactory {
@@ -44,7 +46,14 @@ public class EngineContextFactory {
   public void init() {
     this.configuredEngines = new ArrayList<>();
     for (Map.Entry<String, EngineConfiguration> config : configurationService.getConfiguredEngines().entrySet()) {
-      configuredEngines.add(constructEngineContext(config));
+      EngineContext engineContext = constructEngineContext(config);
+      if (configurationService.getCheckMetadata()) {
+        checkEngineVersionSupport(
+          configurationService.getEngineRestApiEndpointOfCustomEngine(engineContext.getEngineAlias()),
+          engineContext
+        );
+      }
+      configuredEngines.add(engineContext);
     }
   }
 
@@ -65,7 +74,7 @@ public class EngineContextFactory {
         )
       );
     }
-    for (EngineRestFilter engineRestFilter :  engineRestFilterProvider.getPlugins()) {
+    for (EngineRestFilter engineRestFilter : engineRestFilterProvider.getPlugins()) {
       client.register(new ClientRequestFilter() {
 
         @Override

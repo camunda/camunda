@@ -69,7 +69,7 @@ public class MetadataServiceIT {
       embeddedOptimizeRule.startOptimize();
     } catch (Exception e) {
       //expected
-      assertThat(e.getCause().getMessage(), is("Optimize version is not matching schema"));
+      assertThat(e.getCause().getMessage(), is("The Elasticsearch data structure doesn't match the current Optimize version"));
       elasticSearchRule.deleteOptimizeIndexes();
       embeddedOptimizeRule.stopOptimize();
       embeddedOptimizeRule.startOptimize();

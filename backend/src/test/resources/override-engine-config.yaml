@@ -2,7 +2,7 @@
 engines:
   myAwesomeEngine:
     name: default
-    rest: http://localhost:8080/engine-rest
+    rest: "http://localhost:8080/engine-rest"
     authentication:
       enabled: false
       password: ''
