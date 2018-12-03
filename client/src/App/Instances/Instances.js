@@ -7,11 +7,11 @@ import withSharedState from 'modules/components/withSharedState';
 import SplitPane from 'modules/components/SplitPane';
 import Diagram from 'modules/components/Diagram';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
-import {DEFAULT_FILTER, PAGE_TITLE} from 'modules/constants';
+import {DEFAULT_FILTER, PAGE_TITLE, DEFAULT_SORTING} from 'modules/constants';
+
 import {
   fetchWorkflowInstanceBySelection,
   fetchWorkflowInstances,
-  fetchWorkflowInstancesCount,
   fetchGroupedWorkflowInstances,
   fetchWorkflowInstancesStatistics
 } from 'modules/api/instances';
@@ -79,7 +79,9 @@ class Instances extends Component {
       diagramWorkflow: {},
       IdsOfInstancesInSelections: [],
       groupedWorkflowInstances: {},
-      statistics: []
+      statistics: [],
+      workflowInstances: [],
+      workflowInstancesLoaded: false
     };
   }
 
@@ -98,6 +100,18 @@ class Instances extends Component {
   }
 
   async componentDidUpdate(prevProps, prevState) {
+    if (!isEqual(prevState.filter, this.state.filter)) {
+      const instances = await this.fetchWorkflowInstances();
+
+      this.setState({
+        workflowInstancesLoaded: true,
+        workflowInstances: instances.workflowInstances,
+        filterCount: instances.totalCount
+      });
+
+      this.props.storeStateLocally({filterCount: instances.totalCount});
+    }
+
     // filter in url has changed
     if (
       !isEqual(
@@ -215,8 +229,6 @@ class Instances extends Component {
       if (shouldRefreshStatistics) {
         await this.fetchDiagramStatistics();
       }
-
-      this.handleFilterCount();
     });
   };
 
@@ -407,22 +419,22 @@ class Instances extends Component {
     );
   };
 
-  handleFilterCount = async () => {
-    const filterCount = await fetchWorkflowInstancesCount(
-      parseFilterForRequest(
-        getFilterWithWorkflowIds(
-          this.state.filter,
-          this.state.groupedWorkflowInstances
-        )
-      )
-    );
-
-    this.setState({
-      filterCount
+  fetchWorkflowInstances = async (
+    sorting = DEFAULT_SORTING,
+    firstElement = 0
+  ) => {
+    const instances = await fetchWorkflowInstances({
+      queries: [
+        {
+          ...parseFilterForRequest(this.state.filter)
+        }
+      ],
+      sorting,
+      firstResult: firstElement,
+      maxResults: 50
     });
 
-    // save filterCount to localStorage
-    this.props.storeStateLocally({filterCount});
+    return instances;
   };
 
   handleFilterChange = async newFilter => {
@@ -483,12 +495,12 @@ class Instances extends Component {
           <Styled.Content>
             <Styled.Filters>
               <Filters
+                activityIds={this.state.activityIds}
+                groupedWorkflowInstances={this.state.groupedWorkflowInstances}
                 filter={this.state.filter}
                 filterCount={this.state.filterCount}
-                activityIds={this.state.activityIds}
                 onFilterReset={this.handleFilterReset}
                 onFilterChange={this.handleFilterChange}
-                groupedWorkflowInstances={this.state.groupedWorkflowInstances}
               />
             </Styled.Filters>
 
@@ -515,52 +527,54 @@ To see a diagram, select a Workflow in the Filters panel.`}
                   )}
                   {!isEmpty(this.state.diagramWorkflow) && (
                     <Diagram
-                      workflowId={this.state.diagramWorkflow.id}
-                      onFlowNodesDetailsReady={this.fetchDiagramStatistics}
                       flowNodesStatisticsOverlay={this.state.statistics}
-                      selectedFlowNode={this.state.filter.activityId}
+                      onFlowNodesDetailsReady={this.fetchDiagramStatistics}
                       onFlowNodeSelected={this.handleFlowNodeSelection}
+                      selectedFlowNode={this.state.filter.activityId}
                       selectableFlowNodes={this.state.activityIds.map(
                         item => item.value
                       )}
+                      workflowId={this.state.diagramWorkflow.id}
                     />
                   )}
                 </SplitPane.Pane.Body>
               </Styled.Pane>
 
               <ListView
-                openSelection={this.state.openSelection}
-                filterCount={this.state.filterCount}
-                onUpdateSelection={change => {
-                  this.handleStateChange({selection: {...change}});
-                }}
-                selection={this.state.selection}
-                selections={this.state.selections}
+                instances={this.state.workflowInstances}
+                instancesLoaded={this.state.workflowInstancesLoaded}
+                fetchWorkflowInstances={this.fetchWorkflowInstances}
                 filter={getFilterWithWorkflowIds(
                   this.state.filter,
                   this.state.groupedWorkflowInstances
                 )}
-                errorMessage={this.state.errorMessage}
+                filterCount={this.state.filterCount}
+                onUpdateSelection={change => {
+                  this.handleStateChange({selection: {...change}});
+                }}
                 onAddNewSelection={this.handleAddNewSelection}
                 onAddToSpecificSelection={this.handleAddToSelectionById}
                 onAddToOpenSelection={() =>
                   this.handleAddToSelectionById(this.state.openSelection)
                 }
+                openSelection={this.state.openSelection}
+                selection={this.state.selection}
+                selections={this.state.selections}
               />
             </Styled.Center>
           </Styled.Content>
           <Selections
-            openSelection={this.state.openSelection}
-            selections={this.state.selections}
-            rollingSelectionIndex={this.state.rollingSelectionIndex}
-            selectionCount={this.state.selectionCount}
-            instancesInSelectionsCount={this.state.instancesInSelectionsCount}
             filter={getFilterWithWorkflowIds(
               this.state.filter,
               this.state.groupedWorkflowInstances
             )}
-            storeStateLocally={this.props.storeStateLocally}
+            instancesInSelectionsCount={this.state.instancesInSelectionsCount}
             onStateChange={this.handleStateChange}
+            openSelection={this.state.openSelection}
+            rollingSelectionIndex={this.state.rollingSelectionIndex}
+            selections={this.state.selections}
+            selectionCount={this.state.selectionCount}
+            storeStateLocally={this.props.storeStateLocally}
           />
         </Styled.Instances>
       </Fragment>

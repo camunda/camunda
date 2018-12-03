@@ -3,9 +3,7 @@ import PropTypes from 'prop-types';
 
 import SplitPane from 'modules/components/SplitPane';
 import {EXPAND_STATE, SORT_ORDER, DEFAULT_SORTING} from 'modules/constants';
-import {isEqual, isEmpty} from 'lodash';
-import {parseFilterForRequest} from 'modules/utils/filter';
-import {fetchWorkflowInstances} from 'modules/api/instances';
+import {isEqual} from 'lodash';
 
 import List from './List';
 import ListFooter from './ListFooter';
@@ -13,32 +11,31 @@ import * as Styled from './styled';
 
 export default class ListView extends React.Component {
   static propTypes = {
-    selection: PropTypes.object.isRequired,
-    filterCount: PropTypes.number.isRequired,
-    onUpdateSelection: PropTypes.func.isRequired,
-    filter: PropTypes.object.isRequired,
-    openSelection: PropTypes.number,
     expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
-    errorMessage: PropTypes.string,
+    filter: PropTypes.object.isRequired,
+    filterCount: PropTypes.number.isRequired,
     selections: PropTypes.array,
     onAddNewSelection: PropTypes.func,
     onAddToSpecificSelection: PropTypes.func,
-    onAddToOpenSelection: PropTypes.func
+    onAddToOpenSelection: PropTypes.func,
+    onUpdateSelection: PropTypes.func.isRequired,
+    openSelection: PropTypes.number,
+    selection: PropTypes.object.isRequired,
+    instancesLoaded: PropTypes.bool,
+    instances: PropTypes.array
   };
 
   state = {
-    firstElement: 0,
-    instances: [],
     entriesPerPage: 0,
-    sorting: DEFAULT_SORTING,
-    isDataLoaded: false
+    firstElement: 0,
+    sorting: DEFAULT_SORTING
   };
 
-  componentDidMount() {
-    !isEmpty(this.props.filter) && this.loadData();
-  }
-
-  componentDidUpdate(prevProps, prevState) {
+  async componentDidUpdate(prevProps, prevState) {
+    const hasFilterChanged = !isEqual(prevProps.filter, this.props.filter);
+    const hasFirstElementChanged =
+      prevState.firstElement !== this.state.firstElement;
+    const hasSortingChanged = !isEqual(prevState.sorting, this.state.sorting);
     const listHasFinishedInstances =
       this.props.filter.canceled || this.props.filter.completed;
 
@@ -47,38 +44,18 @@ export default class ListView extends React.Component {
       return this.setState({sorting: DEFAULT_SORTING});
     }
 
-    const hasFilterChanged = !isEqual(prevProps.filter, this.props.filter);
-    const hasFirstElementChanged =
-      prevState.firstElement !== this.state.firstElement;
-    const hasSortingChanged = !isEqual(prevState.sorting, this.state.sorting);
-
     // set firstElement to 0 when filter changes
     if (hasFilterChanged && this.state.firstElement !== 0) {
       return this.setState({firstElement: 0});
     }
 
-    if (hasFilterChanged || hasFirstElementChanged || hasSortingChanged) {
-      this.loadData();
+    if (hasFirstElementChanged || hasSortingChanged) {
+      await this.props.fetchWorkflowInstances(
+        this.state.sorting,
+        this.state.firstElement
+      );
     }
   }
-
-  loadData = async () => {
-    const instances = await fetchWorkflowInstances({
-      queries: [
-        {
-          ...parseFilterForRequest(this.props.filter)
-        }
-      ],
-      sorting: this.state.sorting,
-      firstResult: this.state.firstElement,
-      maxResults: 50
-    });
-
-    this.setState({
-      instances: instances.workflowInstances,
-      isDataLoaded: true
-    });
-  };
 
   // (1) should make state sort order asc if key is currently sorted by in desc order
   handleSorting = key => {
@@ -107,14 +84,14 @@ export default class ListView extends React.Component {
       onUpdateSelection
     } = this.props;
 
-    const isListEmpty = this.state.instances.length === 0;
+    const isListEmpty = this.props.instances.length === 0;
 
     return (
       <SplitPane.Pane {...this.props} hasShiftableControls>
         <SplitPane.Pane.Header>Instances</SplitPane.Pane.Header>
         <Styled.PaneBody>
           <List
-            data={this.state.instances}
+            data={this.props.instances}
             selection={selection}
             filterCount={filterCount}
             filter={filter}
@@ -125,7 +102,7 @@ export default class ListView extends React.Component {
             onEntriesPerPageChange={entriesPerPage =>
               this.setState({entriesPerPage})
             }
-            isDataLoaded={this.state.isDataLoaded}
+            isDataLoaded={this.props.instancesLoaded}
           />
         </Styled.PaneBody>
         <SplitPane.Pane.Footer>
