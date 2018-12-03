@@ -19,7 +19,7 @@ jest.mock('services', () => {
 jest.mock('./service', () => {
   return {
     formatResult: (data, result) => result,
-    getTableProps: (reportType, result, data, processInstanceCount) => ({
+    getTableProps: (combined, result, data, processInstanceCount) => ({
       data: {a: 1, b: 2},
       labels: ['a', 'b'],
       processInstanceCount
@@ -29,7 +29,7 @@ jest.mock('./service', () => {
 
 it('should display a number if visualization is number', () => {
   const report = {
-    reportType: 'single',
+    combined: false,
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
@@ -56,7 +56,7 @@ it('should display a number if visualization is number', () => {
 
 it('should provide an errorMessage property to the component', () => {
   const report = {
-    reportType: 'single',
+    combined: false,
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
@@ -81,7 +81,7 @@ it('should provide an errorMessage property to the component', () => {
 
 it('should instruct to add a process definition key if not available', () => {
   const report = {
-    reportType: 'single',
+    combined: false,
     data: {
       processDefinitionKey: '',
       processDefinitionVersion: '1',
@@ -105,7 +105,7 @@ it('should instruct to add a process definition key if not available', () => {
 
 it('should instruct to add a process definition version if not available', () => {
   const report = {
-    reportType: 'single',
+    combined: false,
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '',
@@ -129,7 +129,7 @@ it('should instruct to add a process definition version if not available', () =>
 
 it('should instruct to add view option if not available', () => {
   const report = {
-    reportType: 'single',
+    combined: false,
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
@@ -151,7 +151,7 @@ it('should instruct to add view option if not available', () => {
 
 it('should instruct to add group by option if not available', () => {
   const report = {
-    reportType: 'single',
+    combined: false,
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
@@ -173,7 +173,7 @@ it('should instruct to add group by option if not available', () => {
 
 it('should instruct to add visualization option if not available', () => {
   const report = {
-    reportType: 'single',
+    combined: false,
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
@@ -197,7 +197,7 @@ it('should instruct to add visualization option if not available', () => {
 
 it('should not add instruction for group by if operation is raw data', () => {
   const report = {
-    reportType: 'single',
+    combined: false,
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
@@ -222,7 +222,7 @@ it('should not add instruction for group by if operation is raw data', () => {
 });
 
 const exampleDurationReport = {
-  reportType: 'single',
+  combined: false,
   data: {
     processDefinitionKey: 'aKey',
     processDefinitionVersion: '1',
@@ -267,7 +267,7 @@ it('should return flownode Id if name is null when calling applyFlowNodeNames', 
 
 it('should instruct to select one or more reports if no reports are selected for combined reports', () => {
   const report = {
-    reportType: 'combined',
+    combined: true,
     data: {
       configuration: {},
       reports: []
@@ -283,7 +283,7 @@ it('should instruct to select one or more reports if no reports are selected for
 
 it('should include the instance count if indicated in the config', () => {
   const report = {
-    reportType: 'single',
+    combined: false,
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
@@ -346,7 +346,7 @@ describe('combined Report View', () => {
   };
 
   const CombinedReport = {
-    reportType: 'combined',
+    combined: true,
     data: {
       configuration: {},
       reports: ['report A']

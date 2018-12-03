@@ -222,7 +222,7 @@ it('should return false if the entity is not combined or is combined but does no
 
   const isValidCombinedReport = node
     .instance()
-    .isValidCombinedReport({reportType: 'combined', data: {reportIds: null}});
+    .isValidCombinedReport({combined: true, data: {reportIds: null}});
 
   expect(!!isValidCombinedReport).toBe(false);
 });
@@ -233,7 +233,7 @@ it('should add label combined if the report is combined', () => {
       api="endpoint"
       showDeleteModal={() => {}}
       label="Report"
-      data={{...sampleEntity, reportType: 'combined', data: {reportIds: null}}}
+      data={{...sampleEntity, combined: true, data: {reportIds: null}}}
     />
   );
   expect(node).toIncludeText('Combined');
@@ -296,7 +296,7 @@ it('should render the correct entity Icon for combined reports', () => {
       api="endpoint"
       showDeleteModal={() => {}}
       label="Report"
-      data={{...sampleEntity, reportType: 'combined', data: {reportIds: [1]}}}
+      data={{...sampleEntity, combined: true, data: {reportIds: [1]}}}
       getReportVis={spy}
     />
   );

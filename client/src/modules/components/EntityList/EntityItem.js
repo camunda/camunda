@@ -45,12 +45,7 @@ export default class EntityItem extends React.Component {
   };
 
   isValidCombinedReport = entity => {
-    return (
-      entity.reportType &&
-      entity.reportType === 'combined' &&
-      entity.data.reportIds &&
-      entity.data.reportIds.length
-    );
+    return entity.combined && entity.data && entity.data.reportIds && entity.data.reportIds.length;
   };
 
   formatData = entity => {
@@ -164,11 +159,7 @@ export default class EntityItem extends React.Component {
             <div className="textInfo">
               <div className="data dataTitle">
                 <h3>{formatters.getHighlightedText(data.title, this.props.query)}</h3>
-                {allEntityData.reportType && allEntityData.reportType === 'combined' ? (
-                  <span>Combined</span>
-                ) : (
-                  ''
-                )}
+                {allEntityData.combined ? <span>Combined</span> : ''}
               </div>
               <div className="extraInfo">{data.content}</div>
             </div>

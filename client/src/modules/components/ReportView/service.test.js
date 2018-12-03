@@ -2,7 +2,7 @@ import {getTableProps, formatResult, getChartProps} from './service';
 
 const exampleDurationReport = {
   name: 'report A',
-  reportType: 'single',
+  combined: false,
   processInstanceCount: 100,
   data: {
     processDefinitionKey: 'aKey',
@@ -24,7 +24,7 @@ const exampleDurationReport = {
 };
 
 const combinedReport = {
-  reportType: 'combined',
+  combined: true,
   data: {
     configuration: {},
     reports: ['report A', 'report B']
@@ -105,7 +105,7 @@ it('should sort time data ascending for charts', () => {
 
 it('should return correct single table repot data proberties', () => {
   const tableProps = getTableProps(
-    exampleDurationReport.reportType,
+    exampleDurationReport.combined,
     exampleDurationReport.result,
     exampleDurationReport.data,
     exampleDurationReport.processInstanceCount
@@ -120,7 +120,7 @@ it('should return correct single table repot data proberties', () => {
 
 it('should return correct cominbed table repot data proberties', () => {
   const tableProps = getTableProps(
-    combinedReport.reportType,
+    combinedReport.combined,
     combinedReport.result,
     combinedReport.data,
     combinedReport.processInstanceCount
@@ -136,7 +136,7 @@ it('should return correct cominbed table repot data proberties', () => {
 
 it('should return correct single chart repot data proberties', () => {
   const chartProps = getChartProps(
-    exampleDurationReport.reportType,
+    exampleDurationReport.combined,
     exampleDurationReport.result,
     exampleDurationReport.data,
     exampleDurationReport.processInstanceCount
@@ -165,7 +165,7 @@ it('should return correct cominbed chart repot data proberties for single report
   };
 
   const chartProps = getChartProps(
-    combinedChartReport.reportType,
+    combinedChartReport.combined,
     combinedChartReport.result,
     exampleChartDurationReport.data,
     combinedChartReport.processInstanceCount

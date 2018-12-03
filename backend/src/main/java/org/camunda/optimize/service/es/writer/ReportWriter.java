@@ -61,8 +61,8 @@ public class ReportWriter {
     return createNewCombinedReportAndReturnId(userId, reportDefinitionDto);
   }
 
-  public IdDto createNewCombinedReportAndReturnId(final String userId,
-                                                  final CombinedReportDefinitionDto reportDefinitionDto) {
+  private IdDto createNewCombinedReportAndReturnId(final String userId,
+                                                   final CombinedReportDefinitionDto reportDefinitionDto) {
     logger.debug("Writing new combined report to Elasticsearch");
     final String id = IdGenerator.getNextId();
     reportDefinitionDto.setId(id);

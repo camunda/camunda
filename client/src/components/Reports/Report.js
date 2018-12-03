@@ -55,7 +55,8 @@ export default withErrorHandling(
         originalName: null,
         confirmModalVisible: false,
         serverError: null,
-        reportType: null,
+        combined: false,
+        reportType: 'process',
         redirectToReport: false,
         conflict: null
       };
@@ -72,8 +73,8 @@ export default withErrorHandling(
       return {theOnlyKey: null, latestVersion: null};
     };
 
-    initializeReport = async reportType => {
-      if (reportType === 'combined')
+    initializeReport = async combined => {
+      if (combined)
         return {
           reportIds: null,
           configuration: {}
@@ -102,10 +103,10 @@ export default withErrorHandling(
       await this.props.mightFail(
         loadSingleReport(this.id),
         async response => {
-          const {name, lastModifier, lastModified, data, reportType} = response;
+          const {name, lastModifier, lastModified, data, combined} = response;
 
           const reportResult = await getReportData(this.id);
-          const stateData = data || (await this.initializeReport(reportType));
+          const stateData = data || (await this.initializeReport(combined));
           this.setState(
             {
               name,
@@ -114,11 +115,11 @@ export default withErrorHandling(
               loaded: true,
               data: stateData,
               originalData: {...stateData},
-              reportResult: reportResult || {reportType, data: stateData},
+              reportResult: reportResult || {combined, data: stateData},
               originalName: name,
-              reportType
+              combined
             },
-            () => {
+            async () => {
               if (isNew) {
                 this.save();
               }
@@ -171,30 +172,30 @@ export default withErrorHandling(
       }
 
       // if combined report has no reports then reset configuration
-      if (this.state.reportType === 'combined' && updates.reportIds && !updates.reportIds.length) {
+      if (this.state.combined && updates.reportIds && !updates.reportIds.length) {
         data.configuration = {targetValue: null};
       }
 
       this.setState({data});
 
-      this.updateReportResult(updates, data);
+      await this.updateReportResult(updates, data);
     };
 
     updateReportResult = async (updates, data) => {
-      const {reportType, reportResult} = this.state;
+      const {combined, reportType, reportResult} = this.state;
 
       const updatedSomethingOtherThanConfiguration = Object.keys(updates).find(
         entry => entry !== 'configuration'
       );
       if (updatedSomethingOtherThanConfiguration && !this.onlyVisualizationChanged(updates)) {
         let newReportResult;
-        if (reportType === 'combined' || this.allFieldsAreSelected(data)) {
+        if (combined || this.allFieldsAreSelected(data)) {
           this.setState({loadingReportData: true});
-          newReportResult = await getReportData(data, reportType);
+          newReportResult = await getReportData({combined, reportType, data});
           this.setState({loadingReportData: false});
         }
         if (!newReportResult) {
-          newReportResult = {reportType, data};
+          newReportResult = {combined, data};
         }
         this.setState(state => ({
           reportResult: {
@@ -203,7 +204,7 @@ export default withErrorHandling(
           }
         }));
       } else {
-        let newReportResult = reportResult || {reportType, data};
+        let newReportResult = reportResult || {combined, data};
         this.setState({
           reportResult: {
             ...newReportResult,
@@ -260,7 +261,8 @@ export default withErrorHandling(
           {
             name: this.state.name,
             data: this.state.data,
-            reportType: this.state.reportType
+            reportType: 'process',
+            combined: this.state.combined
           },
           this.state.conflict !== null
         ),
@@ -290,9 +292,9 @@ export default withErrorHandling(
 
     cancel = async () => {
       let reportResult = await getReportData(this.id);
-      const {reportType, originalData, originalName} = this.state;
+      const {combined, originalData, originalName} = this.state;
       if (!reportResult) {
-        reportResult = {reportType, data: originalData};
+        reportResult = {combined, data: originalData};
       }
       this.setState({
         name: originalName,
@@ -369,7 +371,7 @@ export default withErrorHandling(
         data,
         reportResult,
         loadingReportData,
-        reportType,
+        combined,
         redirectToReport
       } = this.state;
       return (
@@ -416,7 +418,7 @@ export default withErrorHandling(
             </div>
           </div>
 
-          {reportType === 'single' && (
+          {!combined && (
             <ReportControlPanel
               {...data}
               reportResult={reportResult}
@@ -456,7 +458,7 @@ export default withErrorHandling(
                 />
               )}
             </div>
-            {reportType === 'combined' && (
+            {combined && (
               <CombinedReportPanel
                 reportResult={reportResult}
                 configuration={data.configuration}
@@ -528,7 +530,7 @@ export default withErrorHandling(
 
     updateConfiguration = prop => newValue => {
       const changes = {
-        reportType: {$set: this.state.reportType},
+        combined: {$set: this.state.combined},
         data: {configuration: {[prop]: {$set: newValue}}}
       };
       this.setState(

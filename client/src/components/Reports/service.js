@@ -31,7 +31,7 @@ export async function loadVariables(processDefinitionKey, processDefinitionVersi
   return await response.json();
 }
 
-export async function getReportData(query, reportType) {
+export async function getReportData(query) {
   let response;
 
   try {
@@ -40,7 +40,7 @@ export async function getReportData(query, reportType) {
       response = await get(`api/report/${query}/evaluate`);
     } else {
       // evaluate unsaved report
-      response = await post(`api/report/evaluate/${reportType}`, query);
+      response = await post(`api/report/evaluate/`, query);
     }
   } catch (e) {
     return null;

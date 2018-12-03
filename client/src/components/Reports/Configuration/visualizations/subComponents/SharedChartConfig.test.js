@@ -2,7 +2,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 import SharedChartConfig from './SharedChartConfig';
 
-const report = {reportType: 'single', data: {view: {property: 'frequency'}}};
+const report = {combined: false, data: {view: {property: 'frequency'}}};
 
 const configuration = {
   showInstanceCount: false,
@@ -25,7 +25,7 @@ it('it should hide ColorPicker for combined report configuration', () => {
     <SharedChartConfig
       {...{
         report: {
-          reportType: 'combined',
+          combined: true,
           result: {
             test1: {data: {view: {property: 'frequency'}}}
           }

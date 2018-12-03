@@ -67,7 +67,7 @@ export default function ChartTargetInput({configuration: {targetValue}, onChange
 }
 
 function isDurationReport(report) {
-  if (report.reportType === 'single') return report.data.view.property === 'duration';
+  if (!report.combined && report.data) return report.data.view.property === 'duration';
   else if (report.result && Object.values(report.result).length)
     return Object.values(report.result)[0].data.view.property === 'duration';
   else return false;

@@ -204,7 +204,7 @@ it('should return correct labels and body when combining to table report', async
       }
     ],
     labels: [['key', 'value'], ['key', 'value']],
-    reportType: 'combined',
+    combined: true,
     property: 'frequency',
     processInstanceCount: [100, 100],
     reportsNames: ['Report A', 'Report B'],
@@ -261,7 +261,7 @@ it('should not include a column in a combined report if it is hidden in the conf
       }
     ],
     labels: [['key', 'value'], ['key', 'value']],
-    reportType: 'combined',
+    combined: true,
     property: 'frequency',
     configuration: {hideRelativeValue: true},
     processInstanceCount: [100, 100],

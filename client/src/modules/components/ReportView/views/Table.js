@@ -20,8 +20,8 @@ export default withErrorHandling(
       needEndpoint: false
     };
 
-    static getDerivedStateFromProps({data, reportType}) {
-      if (data && (!reportType || reportType === 'single') && isRaw(data)) {
+    static getDerivedStateFromProps({data, combined}) {
+      if (data && !combined && isRaw(data)) {
         return {needEndpoint: true};
       }
       return null;
@@ -127,13 +127,13 @@ export default withErrorHandling(
         labels = [],
         data,
         sorting,
-        reportType = 'single',
+        combined = false,
         processInstanceCount,
         updateSorting
       } = this.props;
 
       // Combined Report
-      if (reportType === 'combined') return this.processCombinedData();
+      if (combined) return this.processCombinedData();
       // raw data
       if (isRaw(data))
         return {

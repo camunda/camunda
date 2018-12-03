@@ -6,7 +6,7 @@ import ChartTargetInput from './ChartTargetInput';
 
 const validProps = {
   report: {
-    reportType: 'single',
+    combined: false,
     data: {
       processDefinitionKey: 'a',
       processDefinitionVersion: 1,
@@ -72,7 +72,7 @@ it('should display select dateFormat dropdown when viewProberty equal duration',
 it('should hide select dateFormat dropdown when viewProberty is not equal duration', () => {
   const newProps = {
     report: {
-      reportType: 'single',
+      combined: false,
       data: {
         processDefinitionKey: 'a',
         processDefinitionVersion: 1,
@@ -115,7 +115,7 @@ it('should display select date format if combined report is duration report', as
     ...validProps,
     report: {
       ...validProps.reportResult,
-      reportType: 'combined',
+      combined: true,
       result: {
         test: {
           data: {

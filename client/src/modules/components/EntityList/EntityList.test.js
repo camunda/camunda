@@ -466,7 +466,7 @@ it('should display a button to create combined report if specified', () => {
   expect(node.find('.combineButton')).toBePresent();
 });
 
-it('should invok createEntity with parameter "combined" when create combined button is clicked', async () => {
+it('should invoke createEntity with parameter "combined" when create combined button is clicked', async () => {
   const node = mount(
     shallow(<EntityList api="endpoint" label="Report" operations={['combine']} />).get(0)
   );
@@ -477,14 +477,14 @@ it('should invok createEntity with parameter "combined" when create combined but
     data: [sampleEntity]
   });
 
-  expect(spy).toHaveBeenCalledWith('combined');
+  expect(spy).toHaveBeenCalledWith({combined: true, reportType: 'process'});
   node.find('button.combineButton').simulate('click');
   await node.update();
 
   expect(create).toHaveBeenCalled();
 });
 
-it('should invok createEntity with parameter "single" when create new Entity is clicked', async () => {
+it('should invoke createEntity with parameter combined false when create new Entity is clicked', async () => {
   const node = mount(
     shallow(<EntityList api="endpoint" label="Report" operations={['create']} />).get(0)
   );
@@ -496,7 +496,7 @@ it('should invok createEntity with parameter "single" when create new Entity is 
     data: [sampleEntity]
   });
 
-  expect(spy).toBeCalledWith('single');
+  expect(spy).toBeCalledWith({combined: false, reportType: 'process'});
 
   node.find('button.createButton').simulate('click');
   await node.update();
@@ -522,11 +522,11 @@ it('should delete a report and its references if it was included in a combined r
     shallow(<EntityList api="endpoint" label="Report" operations={['delete']} />).get(0)
   );
 
-  const singleReport = {...sampleEntity, reportType: 'single', data: {visualization: 'bar'}};
+  const singleReport = {...sampleEntity, combined: false, data: {visualization: 'bar'}};
   const combinedReport = {
     ...sampleEntity,
     id: '2',
-    reportType: 'combined',
+    combined: true,
     data: {reportIds: ['1', '2']}
   };
 

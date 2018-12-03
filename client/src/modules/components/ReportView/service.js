@@ -3,8 +3,8 @@ import {reportConfig} from 'services';
 
 const {view, groupBy, getLabelFor} = reportConfig;
 
-export function getTableProps(reportType, result, data, processInstanceCount) {
-  if (reportType === 'combined') {
+export function getTableProps(combined, result, data, processInstanceCount) {
+  if (combined) {
     return getCombinedProps(result);
   }
   const viewLabel = getLabelFor(view, data.view);
@@ -17,8 +17,8 @@ export function getTableProps(reportType, result, data, processInstanceCount) {
   };
 }
 
-export function getChartProps(reportType, result, data, processInstanceCount) {
-  if (reportType === 'combined') {
+export function getChartProps(combined, result, data, processInstanceCount) {
+  if (combined) {
     const groupBy = data.groupBy;
     const isDate =
       groupBy.type === 'startDate' ||

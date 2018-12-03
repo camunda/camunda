@@ -3,7 +3,7 @@ import {extractProcessDefinitionName} from './GetProcessDefinitionName';
 export function getCustomReportInfo(report) {
   if (report.data) {
     // if not empty combined
-    if (report.reportType === 'combined' && report.data.reportIds && report.data.reportIds.length) {
+    if (report.combined && report.data.reportIds && report.data.reportIds.length) {
       const reportsCount = report.data.reportIds.length;
       return `${reportsCount} report${reportsCount !== 1 ? 's' : ''}`;
     }

@@ -28,7 +28,7 @@ describe('getCustomReportInfo', () => {
   });
 
   it('should return the number of report if the report is combined', () => {
-    const label = getCustomReportInfo({reportType: 'combined', data: {reportIds: ['1', '2']}});
+    const label = getCustomReportInfo({combined: true, data: {reportIds: ['1', '2']}});
     expect(label).toBe('2 reports');
   });
 

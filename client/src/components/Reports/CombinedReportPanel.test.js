@@ -19,7 +19,7 @@ const reportsList = [
   {
     id: '10d5cd05-6f7c-4f74-970c-f31e065f646b',
     name: 'Single Report',
-    reportType: 'single',
+    combined: false,
     data: {
       processDefinitionKey: 'leadQualification',
       processDefinitionVersion: '1',
@@ -38,7 +38,7 @@ const reportsList = [
   {
     id: '9100f0c9-4f8d-491d-b2ae-9d67d682a52d',
     name: 'Combined Report',
-    reportType: 'combined',
+    combined: true,
     data: {
       configuration: {},
       reportIds: ['10d5cd05-6f7c-4f74-970c-f31e065f646b']
@@ -47,7 +47,7 @@ const reportsList = [
   {
     id: 'flow-node-report',
     name: 'heatmap report',
-    reportType: 'single',
+    combined: false,
     data: {
       processDefinitionKey: 'leadQualification',
       processDefinitionVersion: '1',

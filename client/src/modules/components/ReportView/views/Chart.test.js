@@ -133,7 +133,7 @@ it('should include the relative value in tooltips', () => {
       data={data}
       processInstanceCount={5}
       property="frequency"
-      reportType="single"
+      combined={false}
       targetValue={{active: false}}
       formatter={v => v}
     />
@@ -243,12 +243,7 @@ it('should return correct chart data object for a combined report', () => {
   const data = [{foo: 123, bar: 5}, {foo: 1, dar: 3}];
   uniteResults.mockReturnValue(data);
   const node = shallow(
-    <Chart
-      configuration={{}}
-      data={data}
-      reportType="combined"
-      reportsNames={['Report A', 'Report B']}
-    />
+    <Chart configuration={{}} data={data} combined={true} reportsNames={['Report A', 'Report B']} />
   );
 
   const result = node.instance().createChartData(data, 'line');

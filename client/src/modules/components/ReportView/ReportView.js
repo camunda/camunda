@@ -32,7 +32,7 @@ export default class ReportView extends React.Component {
   };
 
   componentDidMount() {
-    if (this.props.report.reportType === 'single') {
+    if (!this.props.report.combined) {
       const {processDefinitionVersion, processDefinitionKey} = this.getDataFromProps(this.props);
       if (processDefinitionKey && processDefinitionVersion) {
         this.loadFlowNodeNames(processDefinitionKey, processDefinitionVersion);
@@ -47,7 +47,7 @@ export default class ReportView extends React.Component {
   render() {
     const {report} = this.props;
     if (report) {
-      return report.reportType === 'single'
+      return !report.combined
         ? this.checkProcDefAndRenderReport(report)
         : this.checkCombinedAndRender(report);
     } else {
@@ -60,7 +60,7 @@ export default class ReportView extends React.Component {
     if (result && typeof result === 'object' && Object.keys(result).length) {
       const {data} = Object.values(report.result)[0];
       const combinedReportData = {...data, configuration: report.data.configuration};
-      return this.getConfig(data.visualization, 'combined', report.result, combinedReportData);
+      return this.getConfig(data.visualization, report.combined, report.result, combinedReportData);
     }
     return this.buildInstructionMessage('one or more reports from the list', true);
   };
@@ -122,7 +122,7 @@ export default class ReportView extends React.Component {
   };
 
   async componentDidUpdate(prevProps) {
-    if (this.props.report.reportType === 'single') {
+    if (!this.props.report.combined) {
       const {
         processDefinitionVersion: nextProcDefVersion,
         processDefinitionKey: nextProcDefKey
@@ -155,7 +155,7 @@ export default class ReportView extends React.Component {
   };
 
   renderSingleReport = report => {
-    let {data, result, processInstanceCount} = report;
+    let {data, result, processInstanceCount, combined} = report;
 
     const visualizations = ['pie', 'line', 'bar', 'table'];
     if (data.view.entity === 'flowNode' && visualizations.includes(data.visualization) && result) {
@@ -166,7 +166,7 @@ export default class ReportView extends React.Component {
       return <LoadingIndicator />;
     }
 
-    return this.getConfig(data.visualization, 'single', result, data, processInstanceCount);
+    return this.getConfig(data.visualization, combined, result, data, processInstanceCount);
   };
 
   getCombinedNumberData = result => {
@@ -175,18 +175,18 @@ export default class ReportView extends React.Component {
     }));
   };
 
-  getConfig = (visualization, reportType, result, data, processInstanceCount) => {
+  getConfig = (visualization, combined, result, data, processInstanceCount) => {
     let config;
 
     switch (visualization) {
       case 'number':
-        if (reportType === 'combined') {
+        if (combined) {
           config = {
             component: Chart,
             props: {
               reportsNames: Object.values(result).map(report => report.name),
               data: this.getCombinedNumberData(result),
-              reportType: 'combined',
+              combined: true,
               configuration: data.configuration,
               isDate: false,
               type: 'bar',
@@ -210,8 +210,8 @@ export default class ReportView extends React.Component {
         config = {
           component: Table,
           props: {
-            ...getTableProps(reportType, result, data, processInstanceCount),
-            reportType,
+            ...getTableProps(combined, result, data, processInstanceCount),
+            combined,
             configuration: data.configuration,
             sorting: data.parameters && data.parameters.sorting,
             disableReportScrolling: this.props.disableReportScrolling,
@@ -239,9 +239,9 @@ export default class ReportView extends React.Component {
         config = {
           component: Chart,
           props: {
-            ...getChartProps(reportType, result, data, processInstanceCount),
+            ...getChartProps(combined, result, data, processInstanceCount),
             configuration: data.configuration,
-            reportType,
+            combined,
             type: visualization,
             property: data.view.property,
             targetValue: data.configuration.targetValue

@@ -105,12 +105,12 @@ exports[`it should match snapshot - SharedChartConfig 1`] = `
       }
       report={
         Object {
+          "combined": false,
           "data": Object {
             "view": Object {
               "property": "frequency",
             },
           },
-          "reportType": "single",
         }
       }
     />

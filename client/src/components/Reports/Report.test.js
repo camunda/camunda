@@ -115,7 +115,7 @@ const sampleReport = {
   name: 'name',
   lastModifier: 'lastModifier',
   lastModified: '2017-11-11T11:11:11.1111+0200',
-  reportType: 'single',
+  combined: false,
   data: {
     processDefinitionKey: null,
     configuration: {}
@@ -242,7 +242,7 @@ it('should not contain a Control Panel in edit mode for a combined report', () =
 
   const combinedReport = {
     ...sampleReport,
-    reportType: 'combined',
+    combined: true,
     result: {
       test: {
         data: {
@@ -761,7 +761,7 @@ describe('edit mode', async () => {
 
     const combinedReport = {
       ...sampleReport,
-      reportType: 'combined',
+      combined: true,
       data: {
         reportIds: ['test'],
         configuration: {

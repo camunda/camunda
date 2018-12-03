@@ -45,10 +45,10 @@ class EntityList extends React.Component {
     );
   };
 
-  createEntity = type => async evt => {
+  createEntity = reportTypeData => async evt => {
     if (this.props.ContentPanel) return this.openNewContentPanel();
     this.setState({
-      redirectToEntity: await create(this.props.api, {reportType: type})
+      redirectToEntity: await create(this.props.api, reportTypeData)
     });
   };
 
@@ -65,8 +65,7 @@ class EntityList extends React.Component {
   filterEntity = id => {
     return this.state.data.filter(entity => entity.id !== id).map(entity => {
       if (
-        entity.reportType &&
-        entity.reportType === 'combined' &&
+        entity.combined &&
         entity.data &&
         entity.data.reportIds &&
         entity.data.reportIds.includes(id)
@@ -79,12 +78,13 @@ class EntityList extends React.Component {
   };
 
   duplicateEntity = async id => {
-    const {data, reports, name, reportType} = this.state.data.find(entity => entity.id === id);
+    const {data, reports, name, combined} = this.state.data.find(entity => entity.id === id);
     const copy = {
       ...(data && {data}),
       ...(reports && {reports}),
       name: `${name} - Copy`,
-      reportType
+      reportType: 'process',
+      combined
     };
     await duplicate(this.props.api, copy);
     // fetch the data again after duplication to update the state
@@ -148,12 +148,20 @@ class EntityList extends React.Component {
         <h1 className="heading">{label}s</h1>
         <div className="tools">
           {operations.includes('combine') && (
-            <Button color="green" className="combineButton" onClick={this.createEntity('combined')}>
+            <Button
+              color="green"
+              className="combineButton"
+              onClick={this.createCombinedProcessReport()}
+            >
               Create a Combined {label}
             </Button>
           )}
           {operations.includes('create') && (
-            <Button color="green" className="createButton" onClick={this.createEntity('single')}>
+            <Button
+              color="green"
+              className="createButton"
+              onClick={this.createSingleProcessReport()}
+            >
               Create New {label}
             </Button>
           )}
@@ -187,7 +195,7 @@ class EntityList extends React.Component {
         <ul className="list">
           <li className="item noEntities">
             {`There are no ${this.props.label}s configured.`}
-            <Button type="link" className="createLink" onClick={this.createEntity('single')}>
+            <Button type="link" className="createLink" onClick={this.createSingleProcessReport()}>
               Create a new {this.props.label}…
             </Button>
           </li>
@@ -237,6 +245,14 @@ class EntityList extends React.Component {
       editEntity
     });
   };
+
+  createSingleProcessReport() {
+    return this.createEntity({combined: false, reportType: 'process'});
+  }
+
+  createCombinedProcessReport() {
+    return this.createEntity({combined: true, reportType: 'process'});
+  }
 
   render() {
     const {error, includeViewAllLink, ContentPanel} = this.props;

@@ -51,7 +51,7 @@ export default class Configuration extends React.Component {
     const Component = visualizations[this.props.type];
     const report = this.props.report;
     const isEmptyCombined =
-      report.reportType === 'combined' && (!report.data.reportIds || !report.data.reportIds.length);
+      report.combined && (!report.data.reportIds || !report.data.reportIds.length);
 
     return (
       <li className="Configuration">

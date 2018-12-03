@@ -7,7 +7,7 @@ import './SharedChartConfig.scss';
 export default function SharedChartConfig({configuration, onChange, report, hideTooltipOptions}) {
   const enabledTarget = configuration.targetValue ? configuration.targetValue.active : false;
   const defaultValues = {target: '', dateFormat: '', isBelow: false};
-  const isSingleReport = report.reportType === 'single';
+  const isSingleReport = !report.combined;
   const isFrequency = isSingleReport
     ? report.data.view.property === 'frequency'
     : Object.values(report.result)[0].data.view.property === 'frequency';

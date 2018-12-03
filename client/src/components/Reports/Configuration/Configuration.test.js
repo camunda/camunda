@@ -32,7 +32,7 @@ it('should be disabled if no type is set', () => {
 
 it('should be disabled if combined report is empty', () => {
   const node = shallow(
-    <Configuration type="combined" report={{reportType: 'combined', data: {reportIds: null}}} />
+    <Configuration type="combined" report={{combined: true, data: {reportIds: null}}} />
   );
 
   expect(node.find('Popover')).toBeDisabled();

@@ -75,7 +75,7 @@ export default themed(
     };
 
     createChartData = (data, type, targetValue) => {
-      const isCombined = this.props.reportType === 'combined';
+      const isCombined = this.props.combined;
       let dataArr = data;
       if (!isCombined) dataArr = [data];
 
@@ -128,7 +128,7 @@ export default themed(
     };
 
     createSingleTargetLineDataset = (targetValue, data, datasetColor, reportName) => {
-      const isCombined = this.props.reportType === 'combined';
+      const isCombined = this.props.combined;
       const allValues = Object.values(data);
 
       const datasets = [
@@ -233,10 +233,9 @@ export default themed(
         ? convertToMilliseconds(values.target, values.dateFormat)
         : values.target;
 
-      const targetColor =
-        this.props.reportType === 'combined'
-          ? this.getStripedColor(datasetColor)
-          : this.getColorFor('targetBar');
+      const targetColor = this.props.combined
+        ? this.getStripedColor(datasetColor)
+        : this.getColorFor('targetBar');
 
       return Object.values(data).map(height => {
         if (values.isBelow) return height < barValue ? datasetColor : targetColor;
@@ -294,7 +293,7 @@ export default themed(
     };
 
     createBarOptions = (data, targetValue) => {
-      const isCombined = this.props.reportType === 'combined';
+      const isCombined = this.props.combined;
       const targetLine = targetValue ? this.getFormattedTargetValue(targetValue) : 0;
       return {
         ...(this.props.configuration.pointMarkers === false
@@ -431,8 +430,7 @@ export default themed(
                 processInstanceCountArr &&
                 !hideRelativeValue
               ) {
-                if (this.props.reportType === 'single')
-                  processInstanceCountArr = [processInstanceCountArr];
+                if (!this.props.combined) processInstanceCountArr = [processInstanceCountArr];
 
                 let processInstanceCount = processInstanceCountArr[datasetIndex];
                 // in the case of the line with target value we have 2 datasets for each report
