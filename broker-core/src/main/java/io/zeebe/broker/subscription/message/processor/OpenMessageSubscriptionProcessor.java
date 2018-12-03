@@ -24,37 +24,29 @@ import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
-import io.zeebe.broker.subscription.message.state.Message;
 import io.zeebe.broker.subscription.message.state.MessageState;
 import io.zeebe.broker.subscription.message.state.MessageSubscription;
 import io.zeebe.broker.subscription.message.state.MessageSubscriptionState;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
-import io.zeebe.util.sched.clock.ActorClock;
 import java.util.function.Consumer;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class OpenMessageSubscriptionProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
 
-  private final MessageState messageState;
+  private final MessageCorrelator messageCorrelator;
   private final MessageSubscriptionState subscriptionState;
   private final SubscriptionCommandSender commandSender;
 
-  private final DirectBuffer messagePayload = new UnsafeBuffer(0, 0);
-
-  private Consumer<SideEffectProducer> sideEffect;
   private MessageSubscriptionRecord subscriptionRecord;
-  private MessageSubscription subscription;
 
   public OpenMessageSubscriptionProcessor(
       final MessageState messageState,
       final MessageSubscriptionState subscriptionState,
       final SubscriptionCommandSender commandSender) {
-    this.messageState = messageState;
     this.subscriptionState = subscriptionState;
     this.commandSender = commandSender;
+    this.messageCorrelator = new MessageCorrelator(messageState, subscriptionState, commandSender);
   }
 
   @Override
@@ -63,7 +55,6 @@ public class OpenMessageSubscriptionProcessor
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
-    this.sideEffect = sideEffect;
     subscriptionRecord = record.getValue();
 
     if (subscriptionState.existSubscriptionForElementInstance(
@@ -75,65 +66,35 @@ public class OpenMessageSubscriptionProcessor
       return;
     }
 
-    handleNewSubscription(record, streamWriter);
+    handleNewSubscription(record, streamWriter, sideEffect);
   }
 
   private void handleNewSubscription(
-      final TypedRecord<MessageSubscriptionRecord> record, final TypedStreamWriter streamWriter) {
-
-    sideEffect.accept(this::sendAcknowledgeCommand);
-
-    subscription =
+      final TypedRecord<MessageSubscriptionRecord> record,
+      final TypedStreamWriter streamWriter,
+      Consumer<SideEffectProducer> sideEffect) {
+    final MessageSubscription subscription =
         new MessageSubscription(
             subscriptionRecord.getWorkflowInstanceKey(),
             subscriptionRecord.getElementInstanceKey(),
             subscriptionRecord.getMessageName(),
-            subscriptionRecord.getCorrelationKey());
-    subscriptionState.put(subscription);
+            subscriptionRecord.getCorrelationKey(),
+            subscriptionRecord.shouldCloseOnCorrelate());
 
-    messageState.visitMessages(
-        subscriptionRecord.getMessageName(),
-        subscriptionRecord.getCorrelationKey(),
-        this::correlateMessage);
+    sideEffect.accept(this::sendAcknowledgeCommand);
+
+    subscriptionState.put(subscription);
+    messageCorrelator.correlateNextMessage(subscription, subscriptionRecord, sideEffect);
 
     streamWriter.appendFollowUpEvent(
         record.getKey(), MessageSubscriptionIntent.OPENED, subscriptionRecord);
-  }
-
-  private boolean correlateMessage(final Message message) {
-    // correlate the first message which is not correlated to the workflow instance yet
-
-    final boolean isCorrelatedBefore =
-        messageState.existMessageCorrelation(
-            message.getKey(), subscriptionRecord.getWorkflowInstanceKey());
-
-    if (!isCorrelatedBefore) {
-
-      subscriptionState.updateToCorrelatingState(
-          subscription, message.getPayload(), ActorClock.currentTimeMillis());
-
-      // send the correlate instead of acknowledge command
-      messagePayload.wrap(message.getPayload());
-      sideEffect.accept(this::sendCorrelateCommand);
-
-      messageState.putMessageCorrelation(
-          message.getKey(), subscriptionRecord.getWorkflowInstanceKey());
-    }
-    return isCorrelatedBefore;
-  }
-
-  private boolean sendCorrelateCommand() {
-    return commandSender.correlateWorkflowInstanceSubscription(
-        subscriptionRecord.getWorkflowInstanceKey(),
-        subscriptionRecord.getElementInstanceKey(),
-        subscriptionRecord.getMessageName(),
-        messagePayload);
   }
 
   private boolean sendAcknowledgeCommand() {
     return commandSender.openWorkflowInstanceSubscription(
         subscriptionRecord.getWorkflowInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
-        subscriptionRecord.getMessageName());
+        subscriptionRecord.getMessageName(),
+        subscriptionRecord.shouldCloseOnCorrelate());
   }
 }

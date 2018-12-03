@@ -307,6 +307,7 @@ public class WorkflowInstanceSubscriptionStateTest {
         wrapString(handlerId),
         wrapString(name),
         wrapString(correlationKey),
-        1_000);
+        1_000,
+        true);
   }
 }

@@ -53,7 +53,8 @@ public class MessageEventProcessors {
         .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.CORRELATE,
-            new CorrelateMessageSubscriptionProcessor(subscriptionState))
+            new CorrelateMessageSubscriptionProcessor(
+                messageState, subscriptionState, subscriptionCommandSender))
         .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.CLOSE,

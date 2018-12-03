@@ -127,7 +127,8 @@ public class SubscriptionApiCommandMessageHandler implements ServerMessageHandle
         .setWorkflowInstanceKey(openMessageSubscriptionCommand.getWorkflowInstanceKey())
         .setElementInstanceKey(openMessageSubscriptionCommand.getElementInstanceKey())
         .setMessageName(openMessageSubscriptionCommand.getMessageName())
-        .setCorrelationKey(openMessageSubscriptionCommand.getCorrelationKey());
+        .setCorrelationKey(openMessageSubscriptionCommand.getCorrelationKey())
+        .setCloseOnCorrelate(openMessageSubscriptionCommand.shouldCloseOnCorrelate());
 
     return writeCommand(
         openMessageSubscriptionCommand.getSubscriptionPartitionId(),
@@ -149,7 +150,8 @@ public class SubscriptionApiCommandMessageHandler implements ServerMessageHandle
             openWorkflowInstanceSubscriptionCommand.getSubscriptionPartitionId())
         .setWorkflowInstanceKey(workflowInstanceKey)
         .setElementInstanceKey(openWorkflowInstanceSubscriptionCommand.getElementInstanceKey())
-        .setMessageName(openWorkflowInstanceSubscriptionCommand.getMessageName());
+        .setMessageName(openWorkflowInstanceSubscriptionCommand.getMessageName())
+        .setCloseOnCorrelate(openWorkflowInstanceSubscriptionCommand.shouldCloseOnCorrelate());
 
     return writeCommand(
         workflowInstancePartitionId,
