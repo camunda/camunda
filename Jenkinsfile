@@ -160,11 +160,6 @@ pipeline {
           }
         }
         stage('IT 7.9') {
-          when {
-            beforeAgent true
-            // reenable after platform release OPT-1637
-            branch 'none'
-          }
           agent {
             kubernetes {
               cloud 'optimize-ci'
@@ -186,11 +181,6 @@ pipeline {
           }
         }
         stage('IT 7.8') {
-          when {
-            beforeAgent true
-            // reenable after platform release OPT-1637
-            branch 'none'
-          }
           agent {
             kubernetes {
               cloud 'optimize-ci'
