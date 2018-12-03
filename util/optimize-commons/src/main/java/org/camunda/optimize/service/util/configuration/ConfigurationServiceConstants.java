@@ -96,4 +96,5 @@ public interface ConfigurationServiceConstants {
 
   String HISTORY_CLEANUP = "$.historyCleanup";
 
+  String SHARING_ENABLED = "$.sharing.enabled";
 }

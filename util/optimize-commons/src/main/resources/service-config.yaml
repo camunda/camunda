@@ -272,6 +272,9 @@ export:
     # Position of first record which will be exported in CSV
     offset: 0
 
+sharing:
+  enabled: true
+
 historyCleanup:
   # switch for the cleanup, defaults to false
   enabled: false

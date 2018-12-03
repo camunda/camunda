@@ -406,6 +406,12 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildCheckIsSharingEnabledRequest() {
+    this.path = "share/isEnabled";
+    this.requestType = GET;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildDeleteReportShareRequest(String id) {
     this.path = "share/report/" + id;
     this.requestType = DELETE;

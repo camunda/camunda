@@ -147,6 +147,7 @@ public class ConfigurationService {
   // history cleanup
   private OptimizeCleanupConfiguration cleanupServiceConfiguration;
 
+  private Boolean sharingEnabled;
 
   public ConfigurationService() {
     this((String[]) null, null);
@@ -593,6 +594,13 @@ public class ConfigurationService {
     return processDefinitionXmlEndpoint;
   }
 
+  public Boolean getSharingEnabled() {
+    if (sharingEnabled == null) {
+      sharingEnabled = configJsonContext.read(ConfigurationServiceConstants.SHARING_ENABLED);
+    }
+    return sharingEnabled;
+  }
+
   public String getDecisionDefinitionXmlEndpoint() {
     if (decisionDefinitionXmlEndpoint == null) {
       decisionDefinitionXmlEndpoint = cutTrailingSlash(
@@ -970,6 +978,10 @@ public class ConfigurationService {
         configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_VERIFICATION_MODE);
     }
     return elasticsearchSecuritySSLVerificationMode;
+  }
+
+  public void setSharingEnabled(Boolean sharingEnabled) {
+    this.sharingEnabled = sharingEnabled;
   }
 
   public void setConfigJsonContext(ReadContext configJsonContext) {

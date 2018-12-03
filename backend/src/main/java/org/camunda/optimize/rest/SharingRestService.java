@@ -8,8 +8,13 @@ import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchResultDto;
+import org.camunda.optimize.dto.optimize.rest.SharingEnabledDto;
 import org.camunda.optimize.rest.providers.Secured;
+import org.camunda.optimize.service.exceptions.OptimizeException;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.exceptions.SharingNotAllowedException;
 import org.camunda.optimize.service.security.SharingService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -34,15 +39,22 @@ public class SharingRestService {
   @Autowired
   private SharingService sharingService;
 
+  @Autowired
+  private ConfigurationService configurationService;
+
   @POST
   @Secured
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   @Path("/report")
   public IdDto createNewReportShare(@Context ContainerRequestContext requestContext,
-                                    ReportShareDto createSharingDto) {
-    String userId = getRequestUser(requestContext);
-    return sharingService.createNewReportShareIfAbsent(createSharingDto, userId);
+                                    ReportShareDto createSharingDto) throws SharingNotAllowedException {
+    if (configurationService.getSharingEnabled()) {
+      String userId = getRequestUser(requestContext);
+      return sharingService.createNewReportShareIfAbsent(createSharingDto, userId);
+    } else {
+      throw new SharingNotAllowedException("Sharing of reports is disabled per Optimize configuration");
+    }
   }
 
   @POST
@@ -51,9 +63,21 @@ public class SharingRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   @Path("/dashboard")
   public IdDto createNewDashboardShare (@Context ContainerRequestContext requestContext,
-                                        DashboardShareDto createSharingDto) {
-    String userId = getRequestUser(requestContext);
-    return sharingService.crateNewDashboardShare(createSharingDto, userId);
+                                        DashboardShareDto createSharingDto) throws SharingNotAllowedException {
+    if (configurationService.getSharingEnabled()) {
+      String userId = getRequestUser(requestContext);
+      return sharingService.crateNewDashboardShare(createSharingDto, userId);
+    } else {
+      throw new SharingNotAllowedException("Sharing of dashboards is disabled per Optimize configuration");
+    }
+  }
+
+  @GET
+  @Secured
+  @Produces(MediaType.APPLICATION_JSON)
+  @Path("/isEnabled")
+  public SharingEnabledDto isSharingEnabled() {
+    return new SharingEnabledDto(configurationService.getSharingEnabled());
   }
 
   @DELETE
