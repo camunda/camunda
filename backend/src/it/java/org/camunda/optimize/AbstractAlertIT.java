@@ -10,8 +10,8 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.alert.SyncListener;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -185,15 +185,16 @@ public abstract class AbstractAlertIT {
     return id;
   }
 
-  protected SingleReportDefinitionDto getReportDefinitionDto(ProcessDefinitionEngineDto processDefinition) {
+  protected SingleReportDefinitionDto<ProcessReportDataDto> getReportDefinitionDto(ProcessDefinitionEngineDto processDefinition) {
     return getReportDefinitionDto(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
   }
 
 
-  protected SingleReportDefinitionDto getReportDefinitionDto(String processDefinitionKey, String processDefinitionVersion) {
-    SingleReportDataDto reportData =
-      ReportDataBuilderHelper.createPiFrequencyCountGroupedByNoneAsNumber(processDefinitionKey, processDefinitionVersion);
-    SingleReportDefinitionDto report = new SingleReportDefinitionDto();
+  protected SingleReportDefinitionDto<ProcessReportDataDto> getReportDefinitionDto(String processDefinitionKey, String processDefinitionVersion) {
+    ProcessReportDataDto reportData = ReportDataBuilderHelper.createPiFrequencyCountGroupedByNoneAsNumber(
+      processDefinitionKey, processDefinitionVersion
+    );
+    SingleReportDefinitionDto<ProcessReportDataDto> report = new SingleReportDefinitionDto<>();
     report.setData(reportData);
     report.setId("something");
     report.setLastModifier("something");
@@ -240,10 +241,11 @@ public abstract class AbstractAlertIT {
     return id;
   }
 
-  private ReportDefinitionDto getDurationReportDefinitionDto(String processDefinitionKey, String processDefinitionVersion) {
-    SingleReportDataDto reportData =
-      createAvgPiDurationAsNumberGroupByNone(processDefinitionKey, processDefinitionVersion);
-    SingleReportDefinitionDto report = new SingleReportDefinitionDto();
+  private SingleReportDefinitionDto<ProcessReportDataDto> getDurationReportDefinitionDto(String processDefinitionKey, String processDefinitionVersion) {
+    ProcessReportDataDto reportData = createAvgPiDurationAsNumberGroupByNone(
+      processDefinitionKey, processDefinitionVersion
+    );
+    SingleReportDefinitionDto<ProcessReportDataDto> report = new SingleReportDefinitionDto<>();
     report.setData(reportData);
     report.setId("something");
     report.setLastModifier("something");

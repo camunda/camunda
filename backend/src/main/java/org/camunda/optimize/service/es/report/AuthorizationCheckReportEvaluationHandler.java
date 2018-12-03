@@ -2,13 +2,12 @@ package org.camunda.optimize.service.es.report;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.SINGLE_REPORT_TYPE;
 
 @Component
 public class AuthorizationCheckReportEvaluationHandler extends ReportEvaluationHandler {
@@ -25,11 +24,13 @@ public class AuthorizationCheckReportEvaluationHandler extends ReportEvaluationH
   private SessionService sessionService;
 
   protected boolean isAuthorizedToSeeReport(String userId, ReportDefinitionDto report) {
-    if (SINGLE_REPORT_TYPE.equals(report.getReportType())) {
-      SingleReportDefinitionDto singleReport = (SingleReportDefinitionDto) report;
-      SingleReportDataDto reportData = singleReport.getData();
-      return reportData == null ||
-        sessionService.isAuthorizedToSeeDefinition(userId, reportData.getProcessDefinitionKey());
+    if (report instanceof SingleReportDefinitionDto) {
+      if (report.getData() instanceof ProcessReportDataDto) {
+        ProcessReportDataDto reportData = (ProcessReportDataDto) report.getData();
+        return sessionService.isAuthorizedToSeeDefinition(userId, reportData.getProcessDefinitionKey());
+      } else {
+        return true;
+      }
     }
     return true;
   }

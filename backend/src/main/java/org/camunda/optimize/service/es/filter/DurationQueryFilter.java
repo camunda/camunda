@@ -1,6 +1,6 @@
 package org.camunda.optimize.service.es.filter;
 
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.DurationFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;

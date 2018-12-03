@@ -3,9 +3,9 @@ package org.camunda.optimize.service.es.filter;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.CompletedInstancesOnlyFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataSingleReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -49,10 +49,10 @@ public class CompletedInstancesOnlyFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    SingleReportDataDto reportData =
+    ProcessReportDataDto reportData =
       ReportDataBuilderHelper.createReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
     reportData.setFilter(Collections.singletonList(new CompletedInstancesOnlyFilterDto()));
-    RawDataSingleReportResultDto result = evaluateReport(reportData);
+    RawDataProcessReportResultDto result = evaluateReport(reportData);
 
     // then
     assertThat(result.getResult().size(), is(2));
@@ -60,13 +60,13 @@ public class CompletedInstancesOnlyFilterIT {
     assertThat(result.getResult().get(1).getProcessInstanceId(), is(not(thirdProcInst.getId())));
   }
 
-  private RawDataSingleReportResultDto evaluateReport(SingleReportDataDto reportData) {
+  private RawDataProcessReportResultDto evaluateReport(ProcessReportDataDto reportData) {
     Response response = evaluateReportAndReturnResponse(reportData);
     assertThat(response.getStatus(), is(200));
-    return response.readEntity(RawDataSingleReportResultDto.class);
+    return response.readEntity(RawDataProcessReportResultDto.class);
   }
 
-  private Response evaluateReportAndReturnResponse(SingleReportDataDto reportData) {
+  private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
             .getRequestExecutor()
             .buildEvaluateSingleUnsavedReportRequest(reportData)

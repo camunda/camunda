@@ -2,11 +2,11 @@ package org.camunda.optimize.service.export;
 
 import com.opencsv.CSVWriter;
 import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.ViewDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapSingleReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataSingleReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.MapProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.service.es.report.PlainReportEvaluationHandler;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
@@ -37,8 +37,8 @@ public class ExportService {
 
   private byte[] writeRawDataToBytes(
     Map<String, Long> result,
-    GroupByDto groupBy,
-    ViewDto view,
+    ProcessGroupByDto groupBy,
+    ProcessViewDto view,
     Integer limit,
     Integer offset
   ) {
@@ -96,8 +96,8 @@ public class ExportService {
 
     byte[] result = reportResultDto.map((reportResult) -> {
       byte[] bytes = null;
-      if (reportResult.getClass().equals(RawDataSingleReportResultDto.class)) {
-        RawDataSingleReportResultDto cast = (RawDataSingleReportResultDto) reportResult;
+      if (reportResult.getClass().equals(RawDataProcessReportResultDto.class)) {
+        RawDataProcessReportResultDto cast = (RawDataProcessReportResultDto) reportResult;
         bytes = this.writeRawDataToBytes(
           cast.getResult(),
           limit,
@@ -105,8 +105,8 @@ public class ExportService {
           excludedColumns
         );
 
-      } else if (reportResult.getClass().equals(MapSingleReportResultDto.class)) {
-        MapSingleReportResultDto cast = (MapSingleReportResultDto) reportResult;
+      } else if (reportResult.getClass().equals(MapProcessReportResultDto.class)) {
+        MapProcessReportResultDto cast = (MapProcessReportResultDto) reportResult;
         bytes = this.writeRawDataToBytes(
           cast.getResult(),
           cast.getData().getGroupBy(),

@@ -1,17 +1,18 @@
 package org.camunda.optimize.service.es.report.command.util;
 
-import org.camunda.optimize.dto.optimize.query.report.single.group.FlowNodesGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.NoneGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.StartDateGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.VariableGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.value.StartDateGroupByValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.value.VariableGroupByValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.StartDateGroupByValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
 
 
 public class GroupByDtoCreator {
 
-  public static GroupByDto createGroupByStartDateDto(String dateInterval) {
+  public static ProcessGroupByDto createGroupByStartDateDto(GroupByDateUnit dateInterval) {
     StartDateGroupByDto groupByDto = new StartDateGroupByDto();
     StartDateGroupByValueDto valueDto = new StartDateGroupByValueDto();
     valueDto.setUnit(dateInterval);
@@ -20,19 +21,19 @@ public class GroupByDtoCreator {
     return groupByDto;
   }
 
-  public static GroupByDto createGroupByStartDateDto() {
+  public static ProcessGroupByDto createGroupByStartDateDto() {
     return createGroupByStartDateDto(null);
   }
 
-  public static GroupByDto createGroupByFlowNode() {
+  public static ProcessGroupByDto createGroupByFlowNode() {
     return new FlowNodesGroupByDto();
   }
 
-  public static GroupByDto createGroupByNone() {
+  public static ProcessGroupByDto createGroupByNone() {
     return new NoneGroupByDto();
   }
 
-  public static GroupByDto createGroupByVariable(String variableName, String variableType) {
+  public static ProcessGroupByDto createGroupByVariable(String variableName, String variableType) {
     VariableGroupByValueDto groupByValueDto = new VariableGroupByValueDto();
     groupByValueDto.setName(variableName);
     groupByValueDto.setType(variableType);
@@ -41,7 +42,7 @@ public class GroupByDtoCreator {
     return groupByDto;
   }
 
-  public static GroupByDto createGroupByVariable() {
+  public static ProcessGroupByDto createGroupByVariable() {
     return createGroupByVariable(null, null);
   }
 }

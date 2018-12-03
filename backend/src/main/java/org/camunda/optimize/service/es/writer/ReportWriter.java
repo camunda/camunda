@@ -5,10 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
-import org.camunda.optimize.service.es.report.command.util.ReportConstants;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.es.schema.type.CombinedReportType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.delete.DeleteResponse;
@@ -30,20 +31,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
-import static org.camunda.optimize.service.es.schema.type.AbstractReportType.DATA;
-import static org.camunda.optimize.service.es.schema.type.SingleReportType.CREATED;
-import static org.camunda.optimize.service.es.schema.type.SingleReportType.ID;
-import static org.camunda.optimize.service.es.schema.type.SingleReportType.LAST_MODIFIED;
-import static org.camunda.optimize.service.es.schema.type.SingleReportType.LAST_MODIFIER;
-import static org.camunda.optimize.service.es.schema.type.SingleReportType.NAME;
-import static org.camunda.optimize.service.es.schema.type.SingleReportType.OWNER;
-import static org.camunda.optimize.service.es.schema.type.SingleReportType.REPORT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CREATE_SUCCESSFUL_RESPONSE_RESULT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DELETE_SUCCESSFUL_RESPONSE_RESULT;
@@ -53,7 +45,6 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_REPO
 public class ReportWriter {
 
   private static final String DEFAULT_REPORT_NAME = "New Report";
-  private static final String CONFIGURATION = "configuration";
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
   @Autowired
@@ -65,56 +56,95 @@ public class ReportWriter {
   @Autowired
   private DateTimeFormatter dateTimeFormatter;
 
-  public IdDto createNewSingleReportAndReturnId(String userId) {
-    logger.debug("Creating single report!");
-
-    return createNewReportAndReturnId(userId, ReportConstants.SINGLE_REPORT_TYPE, SINGLE_REPORT_TYPE);
-  }
-
   public IdDto createNewCombinedReportAndReturnId(String userId) {
-    logger.debug("Creating combined report!");
-
-    return createNewReportAndReturnId(userId, ReportConstants.COMBINED_REPORT_TYPE, COMBINED_REPORT_TYPE);
+    final CombinedReportDefinitionDto reportDefinitionDto = new CombinedReportDefinitionDto();
+    return createNewCombinedReportAndReturnId(userId, reportDefinitionDto);
   }
 
-  private IdDto createNewReportAndReturnId(String userId, String reportType, String elasticsearchType) {
-    logger.debug("Writing new report to Elasticsearch");
+  public IdDto createNewCombinedReportAndReturnId(final String userId,
+                                                  final CombinedReportDefinitionDto reportDefinitionDto) {
+    logger.debug("Writing new combined report to Elasticsearch");
+    final String id = IdGenerator.getNextId();
+    reportDefinitionDto.setId(id);
+    final OffsetDateTime now = OffsetDateTime.now();
+    reportDefinitionDto.setCreated(now);
+    reportDefinitionDto.setLastModified(now);
+    reportDefinitionDto.setOwner(userId);
+    reportDefinitionDto.setLastModifier(userId);
+    reportDefinitionDto.setName(DEFAULT_REPORT_NAME);
 
-    String id = IdGenerator.getNextId();
-    Map<String, Object> map = new HashMap<>();
-    map.put(CREATED, currentDateAsString());
-    map.put(LAST_MODIFIED, currentDateAsString());
-    map.put(OWNER, userId);
-    map.put(LAST_MODIFIER, userId);
-    map.put(NAME, DEFAULT_REPORT_NAME);
-    map.put(REPORT_TYPE, reportType);
-    map.put(ID, id);
+    try {
+      IndexResponse indexResponse = esclient
+        .prepareIndex(
+          getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE),
+          COMBINED_REPORT_TYPE,
+          id
+        )
+        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
+        .setSource(objectMapper.writeValueAsString(reportDefinitionDto), XContentType.JSON)
+        .get();
 
-    HashMap<String, Object> data = new HashMap<>();
-    data.put(CONFIGURATION, new HashMap<String, Object>());
-    map.put(DATA, data);
+      if (!indexResponse.getResult().getLowercase().equals(CREATE_SUCCESSFUL_RESPONSE_RESULT)) {
+        String message = "Could not write report to Elasticsearch. " +
+          "Maybe the connection to Elasticsearch got lost?";
+        logger.error(message);
+        throw new OptimizeRuntimeException(message);
+      }
 
-    IndexResponse indexResponse = esclient
-      .prepareIndex(
-        getOptimizeIndexAliasForType(elasticsearchType),
-        elasticsearchType,
-        id
-      )
-      .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
-      .setSource(map)
-      .get();
+      logger.debug("Report with id [{}] has successfully been created.", id);
+      IdDto idDto = new IdDto();
+      idDto.setId(id);
+      return idDto;
+    } catch (JsonProcessingException e) {
+      String errorMessage = "Was not able to insert combined report. Could not serialize report!";
+      logger.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+  }
 
-    if (!indexResponse.getResult().getLowercase().equals(CREATE_SUCCESSFUL_RESPONSE_RESULT)) {
-      String message = "Could not write report to Elasticsearch. " +
-        "Maybe the connection to Elasticsearch got lost?";
-      logger.error(message);
-      throw new OptimizeRuntimeException(message);
+  public IdDto createNewSingleReportAndReturnId(final String userId,
+                                                final SingleReportDefinitionDto reportDefinitionDto) {
+    logger.debug("Writing new single report to Elasticsearch");
+
+    final String id = IdGenerator.getNextId();
+    reportDefinitionDto.setId(id);
+    final OffsetDateTime now = OffsetDateTime.now();
+    reportDefinitionDto.setCreated(now);
+    reportDefinitionDto.setLastModified(now);
+    reportDefinitionDto.setOwner(userId);
+    reportDefinitionDto.setLastModifier(userId);
+    reportDefinitionDto.setName(DEFAULT_REPORT_NAME);
+    switch (reportDefinitionDto.getReportType()) {
+      case PROCESS:
+        reportDefinitionDto.setData(new ProcessReportDataDto());
+        break;
+      default:
+        throw new IllegalStateException("Unsupported type: " + reportDefinitionDto.getReportType());
     }
 
-    logger.debug("Report with id [{}] has successfully been created.", id);
-    IdDto idDto = new IdDto();
-    idDto.setId(id);
-    return idDto;
+    try {
+      IndexResponse indexResponse = esclient
+        .prepareIndex(getOptimizeIndexAliasForType(SINGLE_REPORT_TYPE), SINGLE_REPORT_TYPE, id)
+        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
+        .setSource(objectMapper.writeValueAsString(reportDefinitionDto), XContentType.JSON)
+        .get();
+
+      if (!indexResponse.getResult().getLowercase().equals(CREATE_SUCCESSFUL_RESPONSE_RESULT)) {
+        String message = "Could not write report to Elasticsearch. " +
+          "Maybe the connection to Elasticsearch got lost?";
+        logger.error(message);
+        throw new OptimizeRuntimeException(message);
+      }
+
+      logger.debug("Single Report with id [{}] has successfully been created.", id);
+      IdDto idDto = new IdDto();
+      idDto.setId(id);
+      return idDto;
+    } catch (JsonProcessingException e) {
+      String errorMessage = "Was not able to insert single report. Could not serialize report!";
+      logger.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
   }
 
   public void updateSingleReport(ReportDefinitionUpdateDto updatedReport) {
@@ -164,10 +194,6 @@ public class ReportWriter {
     }
   }
 
-  private String currentDateAsString() {
-    return dateTimeFormatter.format(LocalDateUtil.getCurrentDateTime());
-  }
-
   public void deleteSingleReport(String reportId) {
     logger.debug("Deleting single report with id [{}]", reportId);
 
@@ -202,8 +228,8 @@ public class ReportWriter {
       .setMaxRetries(configurationService.getNumberOfRetriesOnConflict())
       .filter(
         QueryBuilders.nestedQuery(
-          DATA,
-          QueryBuilders.termQuery(DATA + "." + CombinedReportType.REPORT_IDS, reportId),
+          CombinedReportType.DATA,
+          QueryBuilders.termQuery(CombinedReportType.DATA + "." + CombinedReportType.REPORT_IDS, reportId),
           ScoreMode.None
         )
       )

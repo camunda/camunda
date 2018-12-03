@@ -1,6 +1,6 @@
 package org.camunda.optimize.service.es.filter;
 
-import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataSingleReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.Test;
@@ -27,7 +27,7 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
 
     LocalDateUtil.setCurrentTime(processInstanceStartTime);
 
-    RawDataSingleReportResultDto result = createAndEvaluateReportWithRollingStartDateFilter(
+    RawDataProcessReportResultDto result = createAndEvaluateReportWithRollingStartDateFilter(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion(),
         "days",
@@ -66,7 +66,7 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     LocalDateUtil.setCurrentTime(processInstanceEndTime);
 
     //token has to be refreshed, as the old one expired already after moving the date
-    RawDataSingleReportResultDto result = createAndEvaluateReportWithRollingEndDateFilter(
+    RawDataProcessReportResultDto result = createAndEvaluateReportWithRollingEndDateFilter(
             processInstance.getProcessDefinitionKey(),
             processInstance.getProcessDefinitionVersion(),
             "days",

@@ -1,8 +1,8 @@
 package org.camunda.optimize.service.es.filter;
 
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataSingleReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.DateUtilHelper;
 import org.junit.Assert;
@@ -26,13 +26,13 @@ public class DurationFilterIT extends AbstractDurationFilterIT {
     ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
 
     // when
-    SingleReportDataDto reportData =
+    ProcessReportDataDto reportData =
       createReportDataViewRawAsTable(processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
-    List<FilterDto> gte = DateUtilHelper.createDurationFilter(">=", 2, "Seconds");
-    List<FilterDto> lt = DateUtilHelper.createDurationFilter("<", 1, "Days");
+    List<ProcessFilterDto> gte = DateUtilHelper.createDurationFilter(">=", 2, "Seconds");
+    List<ProcessFilterDto> lt = DateUtilHelper.createDurationFilter("<", 1, "Days");
     gte.addAll(lt);
     reportData.setFilter(gte);
-    RawDataSingleReportResultDto result = evaluateReport(reportData);
+    RawDataProcessReportResultDto result = evaluateReport(reportData);
 
     // then
     assertResult(processInstance, result);
@@ -45,7 +45,7 @@ public class DurationFilterIT extends AbstractDurationFilterIT {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    SingleReportDataDto reportData =
+    ProcessReportDataDto reportData =
       createReportDataViewRawAsTable(processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
     reportData.setFilter(DateUtilHelper.createDurationFilter(">=", 2, null));
 

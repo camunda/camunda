@@ -3,10 +3,10 @@ package org.camunda.optimize.service.es.filter;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.CanceledInstancesOnlyFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataSingleReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledInstancesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -54,10 +54,10 @@ public class CanceledInstancesOnlyFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    SingleReportDataDto reportData =
+    ProcessReportDataDto reportData =
             ReportDataBuilderHelper.createReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
     reportData.setFilter(Collections.singletonList(new CanceledInstancesOnlyFilterDto()));
-    RawDataSingleReportResultDto result = evaluateReport(reportData);
+    RawDataProcessReportResultDto result = evaluateReport(reportData);
 
     // then
     assertThat(result.getResult().size(), is(2));
@@ -91,10 +91,10 @@ public class CanceledInstancesOnlyFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    SingleReportDataDto reportData =
+    ProcessReportDataDto reportData =
             ReportDataBuilderHelper.createReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
     reportData.setFilter(Collections.singletonList(new CanceledInstancesOnlyFilterDto()));
-    RawDataSingleReportResultDto result = evaluateReport(reportData);
+    RawDataProcessReportResultDto result = evaluateReport(reportData);
 
     //then
     assertThat(result.getResult().size(), is(2));
@@ -122,10 +122,10 @@ public class CanceledInstancesOnlyFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    SingleReportDataDto reportData =
+    ProcessReportDataDto reportData =
             ReportDataBuilderHelper.createReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
     reportData.setFilter(Collections.singletonList(new CanceledInstancesOnlyFilterDto()));
-    RawDataSingleReportResultDto result = evaluateReport(reportData);
+    RawDataProcessReportResultDto result = evaluateReport(reportData);
 
     //then
     assertThat(result.getResult().size(), is(2));
@@ -138,13 +138,13 @@ public class CanceledInstancesOnlyFilterIT {
     assertThat(resultProcDefIds.contains(secondProcInst.getId()), is(true));
   }
 
-  private RawDataSingleReportResultDto evaluateReport(SingleReportDataDto reportData) {
+  private RawDataProcessReportResultDto evaluateReport(ProcessReportDataDto reportData) {
     Response response = evaluateReportAndReturnResponse(reportData);
     assertThat(response.getStatus(), is(200));
-    return response.readEntity(RawDataSingleReportResultDto.class);
+    return response.readEntity(RawDataProcessReportResultDto.class);
   }
 
-  private Response evaluateReportAndReturnResponse(SingleReportDataDto reportData) {
+  private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
             .getRequestExecutor()
             .buildEvaluateSingleUnsavedReportRequest(reportData)

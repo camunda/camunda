@@ -1,6 +1,6 @@
 package org.camunda.optimize.service.es.filter;
 
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.FilterDataDto;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 
 import java.util.List;

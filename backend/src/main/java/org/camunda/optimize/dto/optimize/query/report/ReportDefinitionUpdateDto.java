@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.OffsetDateTime;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ReportDefinitionUpdateDto {
+public class ReportDefinitionUpdateDto<DATA extends ReportDataDto> {
 
   protected String id;
   protected String name;
@@ -13,8 +13,7 @@ public class ReportDefinitionUpdateDto {
   protected OffsetDateTime created;
   protected String owner;
   protected String lastModifier;
-  protected String reportType;
-  protected Object data;
+  protected DATA data;
 
   public String getId() {
     return id;
@@ -64,19 +63,12 @@ public class ReportDefinitionUpdateDto {
     this.lastModifier = lastModifier;
   }
 
-  public Object getData() {
+  public DATA getData() {
     return data;
   }
 
-  public void setData(Object data) {
+  public void setData(DATA data) {
     this.data = data;
   }
 
-  public String getReportType() {
-    return reportType;
-  }
-
-  public void setReportType(String reportType) {
-    this.reportType = reportType;
-  }
 }

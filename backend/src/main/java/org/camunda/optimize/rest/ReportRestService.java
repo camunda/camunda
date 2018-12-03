@@ -3,10 +3,6 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.exceptions.OptimizeException;
@@ -42,31 +38,17 @@ public class ReportRestService {
   private ReportService reportService;
 
   /**
-   * Creates an empty single report.
+   * Creates an empty new report.
    *
    * @return the id of the report
    */
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  @Path("/single")
-  public IdDto createNewSingleReport(@Context ContainerRequestContext requestContext) {
+  public IdDto createNewReport(@Context ContainerRequestContext requestContext,
+                               ReportDefinitionDto<?> reportDefinitionDto) {
     String userId = getRequestUser(requestContext);
-    return reportService.createNewSingleReportAndReturnId(userId);
-  }
-
-  /**
-   * Creates an empty combined report.
-   *
-   * @return the id of the report
-   */
-  @POST
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
-  @Path("/combined")
-  public IdDto createNewCombinedReport(@Context ContainerRequestContext requestContext) {
-    String userId = getRequestUser(requestContext);
-    return reportService.createNewCombinedReportAndReturnId(userId);
+    return reportService.createNewReportAndReturnId(userId, reportDefinitionDto);
   }
 
   /**
@@ -151,39 +133,19 @@ public class ReportRestService {
     return reportService.evaluateSavedReport(userId, reportId);
   }
 
-
   /**
-   * Evaluates the given single report and returns the result.
+   * Evaluates the given report and returns the result.
    *
    * @return A report definition that is also containing the actual result of the report evaluation.
    */
   @POST
-  @Path("/evaluate/single")
+  @Path("/evaluate")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public ReportResultDto evaluateReport(@Context ContainerRequestContext requestContext,
-                                        SingleReportDataDto reportData) {
+                                        ReportDefinitionDto reportDefinitionDto) {
     String userId = getRequestUser(requestContext);
-    SingleReportDefinitionDto reportDefinition = new SingleReportDefinitionDto();
-    reportDefinition.setData(reportData);
-    return reportService.evaluateSingleReport(userId, reportDefinition);
-  }
-
-  /**
-   * Evaluates the given combined report and returns the result.
-   *
-   * @return A report definition that is also containing the actual result of the report evaluation.
-   */
-  @POST
-  @Path("/evaluate/combined")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
-  public ReportResultDto evaluateReport(@Context ContainerRequestContext requestContext,
-                                        CombinedReportDataDto reportData) {
-    String userId = getRequestUser(requestContext);
-    CombinedReportDefinitionDto reportDefinition = new CombinedReportDefinitionDto();
-    reportDefinition.setData(reportData);
-    return reportService.evaluateCombinedReport(userId, reportDefinition);
+    return reportService.evaluateReport(userId, reportDefinitionDto);
   }
 
 }

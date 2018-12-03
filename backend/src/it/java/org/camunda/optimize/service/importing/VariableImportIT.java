@@ -2,8 +2,8 @@ package org.camunda.optimize.service.importing;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapSingleReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.MapProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -350,10 +350,10 @@ public class VariableImportIT {
   }
 
   private void assertThatEveryFlowNodeWasExecuted4Times(String processDefinitionKey) {
-    SingleReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
+    ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
       processDefinitionKey, ALL_VERSIONS
     );
-    MapSingleReportResultDto result = evaluateReport(reportData);
+    MapProcessReportResultDto result = evaluateReport(reportData);
     assertThat(result.getResult(), is(notNullValue()));
     Map<String, Long> flowNodeIdToExecutionFrequency = result.getResult();
     for (Long frequency : flowNodeIdToExecutionFrequency.values()) {
@@ -361,14 +361,14 @@ public class VariableImportIT {
     }
   }
 
-  private MapSingleReportResultDto evaluateReport(SingleReportDataDto reportData) {
+  private MapProcessReportResultDto evaluateReport(ProcessReportDataDto reportData) {
     Response response = evaluateReportAndReturnResponse(reportData);
     assertThat(response.getStatus(), is(200));
 
-    return response.readEntity(MapSingleReportResultDto.class);
+    return response.readEntity(MapProcessReportResultDto.class);
   }
 
-  private Response evaluateReportAndReturnResponse(SingleReportDataDto reportData) {
+  private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
             .getRequestExecutor()
             .buildEvaluateSingleUnsavedReportRequest(reportData)

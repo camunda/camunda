@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.es.report.command;
 
-import org.camunda.optimize.dto.optimize.query.report.single.parameters.SortingDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataSingleReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.parameters.SortingDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.service.es.report.command.mapping.RawDataSingleReportResultDtoMapper;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.VariableHelper;
@@ -19,7 +19,7 @@ import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VA
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_VALUE;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-public class RawDataCommand extends ReportCommand<RawDataSingleReportResultDto> {
+public class RawDataCommand extends ReportCommand<RawDataProcessReportResultDto> {
   private static final String VARIABLE_PREFIX = "variable:";
 
   private static final Long RAW_DATA_LIMIT = 1_000L;
@@ -27,7 +27,7 @@ public class RawDataCommand extends ReportCommand<RawDataSingleReportResultDto> 
   private final RawDataSingleReportResultDtoMapper rawDataSingleReportResultDtoMapper =
     new RawDataSingleReportResultDtoMapper(RAW_DATA_LIMIT);
 
-  public RawDataSingleReportResultDto evaluate() {
+  public RawDataProcessReportResultDto evaluate() {
     logger.debug(
       "Evaluating raw data report for process definition key [{}] and version [{}]",
       reportData.getProcessDefinitionKey(),

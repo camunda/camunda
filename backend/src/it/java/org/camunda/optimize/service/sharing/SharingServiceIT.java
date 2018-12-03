@@ -2,8 +2,8 @@ package org.camunda.optimize.service.sharing;
 
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
@@ -637,13 +637,13 @@ public class SharingServiceIT extends AbstractSharingIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     String reportId = this.createNewReport();
-    SingleReportDataDto reportData = ReportDataBuilderHelper
+    ProcessReportDataDto reportData = ReportDataBuilderHelper
       .createCountFlowNodeFrequencyGroupByFlowNodeNumber(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion()
       );
     reportData.setView(null);
-    SingleReportDefinitionDto report = new SingleReportDefinitionDto();
+    SingleReportDefinitionDto<ProcessReportDataDto> report = new SingleReportDefinitionDto<>();
     report.setData(reportData);
     updateReport(reportId, report);
 
