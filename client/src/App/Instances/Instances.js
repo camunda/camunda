@@ -7,7 +7,12 @@ import withSharedState from 'modules/components/withSharedState';
 import SplitPane from 'modules/components/SplitPane';
 import Diagram from 'modules/components/Diagram';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
-import {DEFAULT_FILTER, PAGE_TITLE, DEFAULT_SORTING} from 'modules/constants';
+import {
+  DEFAULT_FILTER,
+  PAGE_TITLE,
+  DEFAULT_SORTING,
+  SORT_ORDER
+} from 'modules/constants';
 
 import {
   fetchWorkflowInstanceBySelection,
@@ -81,7 +86,9 @@ class Instances extends Component {
       groupedWorkflowInstances: {},
       statistics: [],
       workflowInstances: [],
-      workflowInstancesLoaded: false
+      workflowInstancesLoaded: false,
+      firstElement: 0,
+      sorting: DEFAULT_SORTING
     };
   }
 
@@ -100,8 +107,29 @@ class Instances extends Component {
   }
 
   async componentDidUpdate(prevProps, prevState) {
-    if (!isEqual(prevState.filter, this.state.filter)) {
-      const instances = await this.fetchWorkflowInstances();
+    const listHasFinishedInstances =
+      this.state.filter.canceled || this.state.filter.completed;
+
+    // reset sorting  before fetching, if sortBy is endDate and list has no finished instances
+    if (!listHasFinishedInstances && this.state.sorting.sortBy === 'endDate') {
+      return this.setState({sorting: DEFAULT_SORTING});
+    }
+
+    const hasFirstElementChanged =
+      prevState.firstElement !== this.state.firstElement;
+    const hasSortingChanged = !isEqual(prevState.sorting, this.state.sorting);
+    const hasFilterChanged = !isEqual(prevState.filter, this.state.filter);
+
+    // set firstElement to 0 when filter changes
+    if (hasFilterChanged && this.state.firstElement !== 0) {
+      this.setState({firstElement: 0});
+    }
+
+    if (hasFilterChanged || hasSortingChanged || hasFirstElementChanged) {
+      const instances = await this.fetchWorkflowInstances(
+        this.state.sorting,
+        this.state.firstElement
+      );
 
       this.setState({
         workflowInstancesLoaded: true,
@@ -124,6 +152,22 @@ class Instances extends Component {
       this.updateLocalStorageFilter();
     }
   }
+
+  // (1) should make state sort order asc if key is currently sorted by in desc order
+  handleSorting = key => {
+    const {
+      sorting: {sortBy: currentSortBy, sortOrder: currentSortOrder}
+    } = this.state;
+
+    let newSorting = {sortBy: key, sortOrder: SORT_ORDER.DESC};
+
+    if (currentSortBy === key && currentSortOrder === SORT_ORDER.DESC) {
+      newSorting.sortOrder = SORT_ORDER.ASC;
+    }
+
+    return this.setState({sorting: newSorting});
+  };
+  handleFirstElementChange = firstElement => this.setState({firstElement});
 
   updateLocalStorageFilter = () => {
     // write current filter selection to local storage
@@ -560,6 +604,10 @@ To see a diagram, select a Workflow in the Filters panel.`}
                 openSelection={this.state.openSelection}
                 selection={this.state.selection}
                 selections={this.state.selections}
+                onSort={this.handleSorting}
+                sorting={this.state.sorting}
+                firstElement={this.state.firstElement}
+                onFirstElementChange={this.handleFirstElementChange}
               />
             </Styled.Center>
           </Styled.Content>

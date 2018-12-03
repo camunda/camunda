@@ -2,8 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import SplitPane from 'modules/components/SplitPane';
-import {EXPAND_STATE, SORT_ORDER, DEFAULT_SORTING} from 'modules/constants';
-import {isEqual} from 'lodash';
+import {EXPAND_STATE} from 'modules/constants';
 
 import List from './List';
 import ListFooter from './ListFooter';
@@ -22,72 +21,36 @@ export default class ListView extends React.Component {
     openSelection: PropTypes.number,
     selection: PropTypes.object.isRequired,
     instancesLoaded: PropTypes.bool,
-    instances: PropTypes.array
+    instances: PropTypes.array.isRequired,
+    sorting: PropTypes.object.isRequired,
+    onSort: PropTypes.func.isRequired,
+    firstElement: PropTypes.number.isRequired,
+    onFirstElementChange: PropTypes.func.isRequired,
+    className: PropTypes.string
   };
 
   state = {
-    entriesPerPage: 0,
-    firstElement: 0,
-    sorting: DEFAULT_SORTING
-  };
-
-  async componentDidUpdate(prevProps, prevState) {
-    const hasFilterChanged = !isEqual(prevProps.filter, this.props.filter);
-    const hasFirstElementChanged =
-      prevState.firstElement !== this.state.firstElement;
-    const hasSortingChanged = !isEqual(prevState.sorting, this.state.sorting);
-    const listHasFinishedInstances =
-      this.props.filter.canceled || this.props.filter.completed;
-
-    // reset sorting  before fetching, if sortBy is endDate and list has no finished instances
-    if (!listHasFinishedInstances && this.state.sorting.sortBy === 'endDate') {
-      return this.setState({sorting: DEFAULT_SORTING});
-    }
-
-    // set firstElement to 0 when filter changes
-    if (hasFilterChanged && this.state.firstElement !== 0) {
-      return this.setState({firstElement: 0});
-    }
-
-    if (hasFirstElementChanged || hasSortingChanged) {
-      await this.props.fetchWorkflowInstances(
-        this.state.sorting,
-        this.state.firstElement
-      );
-    }
-  }
-
-  // (1) should make state sort order asc if key is currently sorted by in desc order
-  handleSorting = key => {
-    const {
-      sorting: {sortBy: currentSortBy, sortOrder: currentSortOrder}
-    } = this.state;
-
-    let newSorting = {sortBy: key, sortOrder: SORT_ORDER.DESC};
-
-    if (currentSortBy === key && currentSortOrder === SORT_ORDER.DESC) {
-      newSorting.sortOrder = SORT_ORDER.ASC;
-    }
-
-    return this.setState({sorting: newSorting});
+    entriesPerPage: 0
   };
 
   render() {
     const {
       selection,
       filter,
-      expandState,
       filterCount,
       onAddToOpenSelection,
       onAddNewSelection,
       onAddToSpecificSelection,
-      onUpdateSelection
+      onUpdateSelection,
+      onSort,
+      onFirstElementChange,
+      ...paneProps
     } = this.props;
 
     const isListEmpty = this.props.instances.length === 0;
 
     return (
-      <SplitPane.Pane {...this.props} hasShiftableControls>
+      <SplitPane.Pane {...paneProps} hasShiftableControls>
         <SplitPane.Pane.Header>Instances</SplitPane.Pane.Header>
         <Styled.PaneBody>
           <List
@@ -95,9 +58,9 @@ export default class ListView extends React.Component {
             selection={selection}
             filterCount={filterCount}
             filter={filter}
-            expandState={expandState}
-            sorting={this.state.sorting}
-            onSort={this.handleSorting}
+            expandState={this.props.expandState}
+            sorting={this.props.sorting}
+            onSort={this.props.onSort}
             onUpdateSelection={onUpdateSelection}
             onEntriesPerPageChange={entriesPerPage =>
               this.setState({entriesPerPage})
@@ -110,16 +73,14 @@ export default class ListView extends React.Component {
             <ListFooter
               filterCount={filterCount}
               perPage={this.state.entriesPerPage}
-              firstElement={this.state.firstElement}
+              firstElement={this.props.firstElement}
               selection={this.props.selection}
               selections={this.props.selections}
               openSelection={this.props.openSelection}
               onAddToSpecificSelection={onAddToSpecificSelection}
               onAddToOpenSelection={onAddToOpenSelection}
               onAddNewSelection={onAddNewSelection}
-              onFirstElementChange={firstElement =>
-                this.setState({firstElement})
-              }
+              onFirstElementChange={this.props.onFirstElementChange}
             />
           )}
         </SplitPane.Pane.Footer>

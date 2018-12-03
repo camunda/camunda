@@ -34,7 +34,10 @@ const mockProps = {
   onAddToSpecificSelection: onAddToSpecificSelection,
   onAddToOpenSelection: onAddToOpenSelection,
   onAddNewSelection: onAddNewSelection,
-  onFirstElementChange: onFirstElementChange
+  onFirstElementChange: onFirstElementChange,
+  onSort: jest.fn(),
+  sorting: DEFAULT_SORTING,
+  firstElement: 0
 };
 const mockPropsWithInstances = {
   ...mockProps,
@@ -53,55 +56,7 @@ describe('ListView', () => {
     // given
     const instance = new ListView();
     // then
-    expect(instance.state.firstElement).toBe(0);
     expect(instance.state.entriesPerPage).toBe(0);
-    expect(instance.state.sorting).toBe(DEFAULT_SORTING);
-  });
-
-  it('should reset the page if the filter changes', () => {
-    // given
-    const node = shallow(Component);
-
-    node.setState({firstElement: 10});
-    node.setProps({filter: {prop: 1}});
-
-    expect(node.state().firstElement).toBe(0);
-  });
-
-  describe('loadData', () => {
-    it('should load data if the current page changes', async () => {
-      // given
-      const node = shallow(Component);
-
-      // when data fetched
-      await flushPromises();
-      node.update();
-
-      node.setState({firstElement: 10});
-
-      // then
-      expect(mockProps.fetchWorkflowInstances).toHaveBeenCalledTimes(1);
-    });
-
-    it('should reset sorting when endDate sort is active and has no finished instances', async () => {
-      // given
-      const node = shallow(Component);
-
-      // when data fetched
-      await flushPromises();
-      node.update();
-
-      node.setProps({filter: {completed: true}});
-      node.update();
-
-      node.setState({sortBy: 'endDate', sortOrder: SORT_ORDER.ASC});
-      node.update();
-
-      node.setProps({filter: DEFAULT_FILTER});
-      node.update();
-
-      expect(node.state().sorting).toEqual(DEFAULT_SORTING);
-    });
   });
 
   describe('display instances List', () => {
@@ -167,16 +122,12 @@ describe('ListView', () => {
       });
       node.update();
 
-      node.setState({firstElement: 8});
-
       const changeFirstElement = node
         .find(ListFooter)
         .prop('onFirstElementChange');
 
       // then
       expect(changeFirstElement).toBeDefined();
-      changeFirstElement(87);
-      expect(node.state('firstElement')).toBe(87);
     });
 
     it('should pass a method to the instances list to update the entries per page', async () => {
@@ -196,57 +147,6 @@ describe('ListView', () => {
       expect(changeEntriesPerPage).toBeDefined();
       changeEntriesPerPage(87);
       expect(node.state('entriesPerPage')).toBe(87);
-    });
-  });
-
-  describe('handleSorting', () => {
-    it('should make state sort order asc if key is currently sorted by in desc order', () => {
-      // given
-      const node = shallow(Component);
-      const KEY = 'foo';
-      node.setState({sorting: {sortBy: KEY, sortOrder: SORT_ORDER.DESC}});
-      node.update();
-
-      // when
-      node.instance().handleSorting(KEY);
-      node.update();
-
-      // then
-      expect(node.state('sorting').sortBy).toBe(KEY);
-      expect(node.state('sorting').sortOrder).toBe(SORT_ORDER.ASC);
-    });
-
-    it('should make state sort order desc if key is currently sorted by in asc order', () => {
-      // given
-      const node = shallow(Component);
-      const KEY = 'foo';
-      node.setState({sorting: {sortBy: KEY, sortOrder: SORT_ORDER.ASC}});
-      node.update();
-
-      // when
-      node.instance().handleSorting(KEY);
-      node.update();
-
-      // then
-      expect(node.state('sorting').sortBy).toBe(KEY);
-      expect(node.state('sorting').sortOrder).toBe(SORT_ORDER.DESC);
-    });
-
-    it('should make state sort order desc if key is not currently sorted by', () => {
-      // given
-      const node = shallow(Component);
-
-      const KEY = 'foo';
-      node.setState({sorting: {sortBy: 'bar', sortOrder: SORT_ORDER.DESC}});
-      node.update();
-
-      // when
-      node.instance().handleSorting(KEY);
-      node.update();
-
-      // then
-      expect(node.state('sorting').sortBy).toBe(KEY);
-      expect(node.state('sorting').sortOrder).toBe(SORT_ORDER.DESC);
     });
   });
 });

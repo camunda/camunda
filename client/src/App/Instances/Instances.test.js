@@ -141,7 +141,10 @@ const selection = createSelection({selectionId: 'foo', totalCount: 21});
 
 // mock api
 api.fetchWorkflowInstancesCount = mockResolvedAsyncFn(Count);
-api.fetchWorkflowInstances = mockResolvedAsyncFn([]);
+api.fetchWorkflowInstances = mockResolvedAsyncFn({
+  workflowInstances: [],
+  totalCount: 583
+});
 api.fetchGroupedWorkflowInstances = mockResolvedAsyncFn(groupedWorkflowsMock);
 api.fetchWorkflowInstancesStatistics = mockResolvedAsyncFn(statistics);
 api.fetchWorkflowInstanceBySelection = mockResolvedAsyncFn({
