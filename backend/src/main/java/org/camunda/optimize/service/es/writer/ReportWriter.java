@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.service.es.schema.type.AbstractReportType.DATA;
 import static org.camunda.optimize.service.es.schema.type.SingleReportType.CREATED;
 import static org.camunda.optimize.service.es.schema.type.SingleReportType.ID;
 import static org.camunda.optimize.service.es.schema.type.SingleReportType.LAST_MODIFIED;
@@ -52,6 +53,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_REPO
 public class ReportWriter {
 
   private static final String DEFAULT_REPORT_NAME = "New Report";
+  private static final String CONFIGURATION = "configuration";
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
   @Autowired
@@ -87,6 +89,10 @@ public class ReportWriter {
     map.put(NAME, DEFAULT_REPORT_NAME);
     map.put(REPORT_TYPE, reportType);
     map.put(ID, id);
+
+    HashMap<String, Object> data = new HashMap<>();
+    data.put(CONFIGURATION, new HashMap<String, Object>());
+    map.put(DATA, data);
 
     IndexResponse indexResponse = esclient
       .prepareIndex(
@@ -196,8 +202,8 @@ public class ReportWriter {
       .setMaxRetries(configurationService.getNumberOfRetriesOnConflict())
       .filter(
         QueryBuilders.nestedQuery(
-          CombinedReportType.DATA,
-          QueryBuilders.termQuery(CombinedReportType.DATA + "." + CombinedReportType.REPORT_IDS, reportId),
+          DATA,
+          QueryBuilders.termQuery(DATA + "." + CombinedReportType.REPORT_IDS, reportId),
           ScoreMode.None
         )
       )
