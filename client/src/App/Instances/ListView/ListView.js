@@ -25,8 +25,7 @@ export default class ListView extends React.Component {
     sorting: PropTypes.object.isRequired,
     onSort: PropTypes.func.isRequired,
     firstElement: PropTypes.number.isRequired,
-    onFirstElementChange: PropTypes.func.isRequired,
-    className: PropTypes.string
+    onFirstElementChange: PropTypes.func.isRequired
   };
 
   state = {
@@ -55,17 +54,17 @@ export default class ListView extends React.Component {
         <Styled.PaneBody>
           <List
             data={this.props.instances}
-            isDataLoaded={this.props.instancesLoaded}
-            expandState={this.props.expandState}
+            selection={selection}
             filterCount={filterCount}
             filter={filter}
             sorting={this.props.sorting}
             onSort={this.props.onSort}
-            selection={selection}
+            expandState={this.props.expandState}
             onUpdateSelection={onUpdateSelection}
             onEntriesPerPageChange={entriesPerPage =>
               this.setState({entriesPerPage})
             }
+            isDataLoaded={this.props.instancesLoaded}
           />
         </Styled.PaneBody>
         <SplitPane.Pane.Footer>

@@ -440,13 +440,13 @@ describe('Instances', () => {
         expect(api.fetchWorkflowInstancesStatistics).toHaveBeenCalledTimes(0);
       });
 
-      it('should fetch diagram statistics when instance state in filter changes', async () => {
+      it('should not fetch diagram statistics when filter has no diagram data', async () => {
         // given
         const node = shallow(
           <Instances
             storeStateLocally={() => {}}
             location={{
-              search: '?filter={"active": false, "incidents": true}'
+              search: '?filter={"active": true, "incidents": true}'
             }}
             getStateLocally={() => {
               return {filterCount: 0};
@@ -461,7 +461,7 @@ describe('Instances', () => {
         // chage state filters in the url
         node.setProps({
           location: {
-            search: '?filter={"active":true,"incidents":true}'
+            search: '?filter={"active":true,"incidents":false}'
           }
         });
         const fetchDiagramStatistics = jest.spyOn(
@@ -473,45 +473,7 @@ describe('Instances', () => {
         node.update();
 
         // then
-        expect(fetchDiagramStatistics).toHaveBeenCalledTimes(1);
-        fetchDiagramStatistics.mockRestore();
-      });
-
-      it('should fetch diagram statistics when activityId in filter changes', async () => {
-        // given
-        const node = shallow(
-          <Instances
-            storeStateLocally={() => {}}
-            location={{
-              search: '?filter={"active": false, "incidents": true}'
-            }}
-            getStateLocally={() => {
-              return {filterCount: 0};
-            }}
-            history={{push: () => {}}}
-          />
-        );
-
-        //when
-        await flushPromises();
-        node.update();
-        // chage state filters in the url
-        node.setProps({
-          location: {
-            search:
-              '?filter={"active":false,"incidents":true, "activityId": "x"}'
-          }
-        });
-        const fetchDiagramStatistics = jest.spyOn(
-          node.instance(),
-          'fetchDiagramStatistics'
-        );
-
-        await flushPromises();
-        node.update();
-
-        // then
-        expect(fetchDiagramStatistics).toHaveBeenCalledTimes(1);
+        expect(fetchDiagramStatistics).not.toHaveBeenCalled();
         fetchDiagramStatistics.mockRestore();
       });
     });
