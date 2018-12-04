@@ -31,9 +31,13 @@ ln -fvs ${WORKSPACE} ${PROJECT_DIR}
 def goTests() {
     return '''\
 #!/bin/bash -eux
-cd ${GOPATH}/src/github.com/zeebe-io/zeebe/clients/go
 export CGO_ENABLED=0
+
+cd ${GOPATH}/src/github.com/zeebe-io/zeebe/clients/go
 make install-deps test
+
+cd ${GOPATH}/src/github.com/zeebe-io/zeebe/clients/zbctl
+make test
 '''
 }
 
