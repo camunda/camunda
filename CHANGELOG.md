@@ -1,3 +1,43 @@
+<a name="0.14.0"></a>
+## 0.14.0 (2018-12-04)
+
+
+#### Bug Fixes
+
+* **broker-core:**
+  *  update job state on update retries ([8c0a424b](https://github.com/zeebe-io/zeebe/commit/8c0a424b020651d653b5dedd2387b601b037ff5a))
+  *  fix xor incident resolving ([ab592682](https://github.com/zeebe-io/zeebe/commit/ab5926822b3beaa404d1e8e008b80ed30e4462af))
+  *  fix job state on cancel command ([024aafe3](https://github.com/zeebe-io/zeebe/commit/024aafe3152bac6605ef4526b3fa97e59fccee6c))
+* **clients/java:**
+  *  dont break cause chain ([be010d0e](https://github.com/zeebe-io/zeebe/commit/be010d0e0fcd898a91a5456cbe49d2912ccb34bd))
+  *  fix default job poll interval and message ttl ([ab714eaa](https://github.com/zeebe-io/zeebe/commit/ab714eaaa7265d01c8da4bc861490fa512de6082))
+* **exporters:**  fix elastic search exporter test ([5848318c](https://github.com/zeebe-io/zeebe/commit/5848318c5d0eb24e5be4d38f1a5c8d8968283f1d))
+* **exporters/elasticsearch:**  delayed flush should ignore bulk size ([beb15efc](https://github.com/zeebe-io/zeebe/commit/beb15efc2a7fa9c181cb9d7de017d93e27bccdff))
+
+#### Features
+
+* **bpmn-model:**
+  *  enable non-interrupting time cycle boundary events ([bcf57f5e](https://github.com/zeebe-io/zeebe/commit/bcf57f5eba3dad93fe2ef8bc99926841f1d2624b))
+  *  enable interrupting message boundary events ([ff1bddcd](https://github.com/zeebe-io/zeebe/commit/ff1bddcd44386f15a081139af197950b45d85588))
+  *  allow timer boundary events ([edb345d1](https://github.com/zeebe-io/zeebe/commit/edb345d1138dc37d555f882ea99e02e1b5488f5e))
+* **broker-core:**
+  *  add support for event-based gateway ([425d6ca4](https://github.com/zeebe-io/zeebe/commit/425d6ca421cab2c09d1ba7cd8d41cb9ceb6ff16e))
+  *  support interrupting message boundary events ([ea442ee9](https://github.com/zeebe-io/zeebe/commit/ea442ee9166dd8759b4880060efb5f176136279c))
+  *  add job error message to failed jobs ([7baff1b7](https://github.com/zeebe-io/zeebe/commit/7baff1b79e97b3e60dd33c71100141535ddc66ba))
+  *  impl new incident concept ([2a26ff58](https://github.com/zeebe-io/zeebe/commit/2a26ff58fc2b69a7d56d4862d5f59ec8ce87a4b6))
+  *  support interrupting timer boundary events ([910b7b78](https://github.com/zeebe-io/zeebe/commit/910b7b78ba8167f2d1faec727e1f1cb21178f89c))
+* **clients/go:**
+  *  add resolve incident command ([e1a850db](https://github.com/zeebe-io/zeebe/commit/e1a850db1fe5023f1669a3555c2a0e7ff3cf6064))
+  *  add error message to fail job command ([32bc691d](https://github.com/zeebe-io/zeebe/commit/32bc691db77a884ce5f93138059e84ef434c71bc))
+* **clients/java:**  add resolve incident command ([25c1df38](https://github.com/zeebe-io/zeebe/commit/25c1df38a834032036cfbff77d38b3962062c13d))
+* **clients/zbctl:**
+  *  add resolve incident command ([3360289b](https://github.com/zeebe-io/zeebe/commit/3360289bb945c876e8a68d9684f0ac68934d376e))
+  *  add fail job error message flag ([83269d8c](https://github.com/zeebe-io/zeebe/commit/83269d8cfbb50b09940860692d7f2c4085ad311e))
+  *  implement publish message command ([1abca40a](https://github.com/zeebe-io/zeebe/commit/1abca40a7a96b9c7b92662bc35a74b4252f95771))
+* **gateway:**  add incident resolve request to gateway ([e2eca8d2](https://github.com/zeebe-io/zeebe/commit/e2eca8d21c94ff82390eb2c9e24a2ad033db722d))
+
+
+
 <a name="0.13.0"></a>
 ## 0.13.0 (2018-11-06)
 
