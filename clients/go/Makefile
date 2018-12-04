@@ -9,4 +9,5 @@ test:
 	go test -v ./commands/
 	go test -v ./entities/
 	go test -v ./worker/
+	go test -v ./tests/
 	cd tests/integration/ && ginkgo && cd ../..
