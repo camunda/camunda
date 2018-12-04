@@ -55,17 +55,17 @@ export default class ListView extends React.Component {
         <Styled.PaneBody>
           <List
             data={this.props.instances}
-            selection={selection}
+            isDataLoaded={this.props.instancesLoaded}
+            expandState={this.props.expandState}
             filterCount={filterCount}
             filter={filter}
-            expandState={this.props.expandState}
             sorting={this.props.sorting}
             onSort={this.props.onSort}
+            selection={selection}
             onUpdateSelection={onUpdateSelection}
             onEntriesPerPageChange={entriesPerPage =>
               this.setState({entriesPerPage})
             }
-            isDataLoaded={this.props.instancesLoaded}
           />
         </Styled.PaneBody>
         <SplitPane.Pane.Footer>

@@ -97,7 +97,7 @@ class Instances extends Component {
     const groupedWorkflows = await fetchGroupedWorkflowInstances();
     this.setGroupedWorkflowInstances(groupedWorkflows);
     await this.validateAndSetUrlFilter();
-    await this.updateFilterRelatedState();
+    await this.setFilterAndRelatedState();
     this.updateLocalStorageFilter();
 
     if (this.state.selectionCount) {
@@ -107,25 +107,20 @@ class Instances extends Component {
   }
 
   async componentDidUpdate(prevProps, prevState) {
-    const listHasFinishedInstances =
-      this.state.filter.canceled || this.state.filter.completed;
-
-    // reset sorting  before fetching, if sortBy is endDate and list has no finished instances
-    if (!listHasFinishedInstances && this.state.sorting.sortBy === 'endDate') {
-      return this.setState({sorting: DEFAULT_SORTING});
-    }
-
     const hasFirstElementChanged =
       prevState.firstElement !== this.state.firstElement;
     const hasSortingChanged = !isEqual(prevState.sorting, this.state.sorting);
     const hasFilterChanged = !isEqual(prevState.filter, this.state.filter);
 
-    // set firstElement to 0 when filter changes
-    if (hasFilterChanged && this.state.firstElement !== 0) {
-      this.setState({firstElement: 0});
-    }
-
     if (hasFilterChanged || hasSortingChanged || hasFirstElementChanged) {
+      const isFinishedInFilter =
+        this.state.filter.canceled || this.state.filter.completed;
+
+      // reset sorting  by endDate when no finished filter is selected
+      if (!isFinishedInFilter && this.state.sorting.sortBy === 'endDate') {
+        return this.setState({sorting: DEFAULT_SORTING});
+      }
+
       const instances = await this.fetchWorkflowInstances(
         this.state.sorting,
         this.state.firstElement
@@ -134,26 +129,26 @@ class Instances extends Component {
       this.setState({
         workflowInstancesLoaded: true,
         workflowInstances: instances.workflowInstances,
-        filterCount: instances.totalCount
+        filterCount: instances.totalCount,
+        firstElement: hasFilterChanged ? 0 : this.state.firstElement
       });
 
+      // update local storage data
+      hasFilterChanged && this.updateLocalStorageFilter();
       this.props.storeStateLocally({filterCount: instances.totalCount});
     }
 
-    // filter in url has changed
-    if (
-      !isEqual(
-        parseQueryString(prevProps.location.search).filter,
-        parseQueryString(this.props.location.search).filter
-      )
-    ) {
+    const hasFilterUrlChanged = !isEqual(
+      parseQueryString(prevProps.location.search).filter,
+      parseQueryString(this.props.location.search).filter
+    );
+
+    if (hasFilterUrlChanged) {
       await this.validateAndSetUrlFilter();
-      await this.updateFilterRelatedState();
-      this.updateLocalStorageFilter();
+      await this.setFilterAndRelatedState();
     }
   }
 
-  // (1) should make state sort order asc if key is currently sorted by in desc order
   handleSorting = key => {
     const {
       sorting: {sortBy: currentSortBy, sortOrder: currentSortOrder}
@@ -167,12 +162,14 @@ class Instances extends Component {
 
     return this.setState({sorting: newSorting});
   };
+
   handleFirstElementChange = firstElement => this.setState({firstElement});
 
   updateLocalStorageFilter = () => {
     // write current filter selection to local storage
     this.props.storeStateLocally({filter: this.state.filter});
   };
+
   getIdsOfInstancesInSelections() {
     let ids = new Set();
     this.state.selections.map(
@@ -229,7 +226,7 @@ class Instances extends Component {
     this.setState({statistics});
   };
 
-  updateFilterRelatedState = async () => {
+  setFilterAndRelatedState = async () => {
     const {filter} = parseQueryString(this.props.location.search);
     const {workflow, version} = filter;
     // the url filter has fields that result in showing a diagram
@@ -245,6 +242,7 @@ class Instances extends Component {
     // fetch new statistics only if filter changes for the same diagram
     // if the filter.workflow && filter.version change, statistics are fetched onFlowNodesDetailsReady
     const shouldRefreshStatistics =
+      hasWorflowDiagramData &&
       this.state.filter.workflow === filter.workflow &&
       this.state.filter.version === filter.version &&
       !isEqual(this.state.filter, filter);
@@ -527,6 +525,7 @@ class Instances extends Component {
 
     return (
       <Fragment>
+        {/* Header performs two workflowInstances count fetches  on first render*/}
         <Header
           active="instances"
           filter={this.state.filter}
