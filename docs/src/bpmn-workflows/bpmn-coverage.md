@@ -243,20 +243,20 @@ Elements marked in orange are currently implemented by Zeebe.
           <span class="fa fa-link bpmn-symbol-link"></span>
         </div>
       </a>
-      <div class="bpmn-symbol-container">
-        <svg height="60" version="1.1" width="60" xmlns="http://www.w3.org/2000/svg" style="overflow: hidden; position: relative; left: -0.625px;">
-          <path fill="#ffffff" stroke="#333333" d="M5,25L25,5L45,25L25,45L5,25" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="1" style="stroke-linecap: round; stroke-linejoin: round; stroke-opacity: 1;"></path>
-          <text x="11" y="55" text-anchor="start" font="10px &quot;Arial&quot;" stroke="none" fill="#333333" style="text-anchor: start; font-style: normal; font-variant: normal; font-weight: normal; font-stretch: normal; font-size: 12px; line-height: normal; font-family: Arial, Helvetica, sans-serif;" font-size="12px" font-family="Arial, Helvetica, sans-serif">
-            <tspan dy="4">Event</tspan>
-          </text>
-          <circle cx="25" cy="25" r="12.121212121212121" fill="none" stroke="#333333" stroke-opacity="1" stroke-width="1" style="stroke-opacity: 1;"></circle>
-          <circle cx="25" cy="25" r="10.121212121212121" fill="none" stroke="#333333" stroke-opacity="1" stroke-width="1" style="stroke-opacity: 1;"></circle>
-          <path fill="none" stroke="#333333" d="M24.827514,26.844972L15.759248000000001,26.844216L12.957720300000002,18.219549L20.294545,12.889969L27.630481000000003,18.220774L24.827514,26.844972Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="1" transform="matrix(1,0,0,1,5,5)" style="stroke-linecap: round; stroke-linejoin: round; stroke-opacity: 1;"></path>
-        </svg>
-        <a href="">
-          <span class="glyphicon glyphicon-eye-open"></span>
-        </a>
-      </div>
+      <a href="/bpmn-workflows/event-based-gateways.html">
+	      <div class="bpmn-symbol-container implemented">
+	        <svg height="60" version="1.1" width="60" xmlns="http://www.w3.org/2000/svg" style="overflow: hidden; position: relative; left: -0.625px;">
+	          <path fill="#ffffff" stroke="#333333" d="M5,25L25,5L45,25L25,45L5,25" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="1" style="stroke-linecap: round; stroke-linejoin: round; stroke-opacity: 1;"></path>
+	          <text x="11" y="55" text-anchor="start" font="10px &quot;Arial&quot;" stroke="none" fill="#333333" style="text-anchor: start; font-style: normal; font-variant: normal; font-weight: normal; font-stretch: normal; font-size: 12px; line-height: normal; font-family: Arial, Helvetica, sans-serif;" font-size="12px" font-family="Arial, Helvetica, sans-serif">
+	            <tspan dy="4">Event</tspan>
+	          </text>
+	          <circle cx="25" cy="25" r="12.121212121212121" fill="none" stroke="#333333" stroke-opacity="1" stroke-width="1" style="stroke-opacity: 1;"></circle>
+	          <circle cx="25" cy="25" r="10.121212121212121" fill="none" stroke="#333333" stroke-opacity="1" stroke-width="1" style="stroke-opacity: 1;"></circle>
+	          <path fill="none" stroke="#333333" d="M24.827514,26.844972L15.759248000000001,26.844216L12.957720300000002,18.219549L20.294545,12.889969L27.630481000000003,18.220774L24.827514,26.844972Z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="1" transform="matrix(1,0,0,1,5,5)" style="stroke-linecap: round; stroke-linejoin: round; stroke-opacity: 1;"></path>
+	        </svg>
+	        <span class="fa fa-link bpmn-symbol-link"></span>
+	      </div>
+      </a>
       <div class="bpmn-symbol-container">
         <svg height="60" version="1.1" width="60" xmlns="http://www.w3.org/2000/svg" style="overflow: hidden; position: relative; left: -0.875px;">
           <path fill="#ffffff" stroke="#333333" d="M5,25L25,5L45,25L25,45L5,25" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="1" style="stroke-linecap: round; stroke-linejoin: round; stroke-opacity: 1;"></path>
