@@ -112,8 +112,6 @@ public class StreamProcessorController extends Actor {
 
   @Override
   protected void onActorStarting() {
-    streamProcessor.getStateResource().reset();
-
     final LogStream logStream = streamProcessorContext.getLogStream();
 
     final MetricsManager metricsManager = actorScheduler.getMetricsManager();
@@ -419,7 +417,7 @@ public class StreamProcessorController extends Actor {
         metadata.getLastSuccessfulProcessedEventPosition());
 
     try {
-      snapshotController.takeSnapshot(metadata, commitPosition);
+      snapshotController.takeSnapshot(metadata);
 
       final long snapshotCreationTime = System.currentTimeMillis() - start;
       LOG.info("Creation of snapshot {} took {} ms.", name, snapshotCreationTime);

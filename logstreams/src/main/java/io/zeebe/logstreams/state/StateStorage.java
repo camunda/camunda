@@ -24,11 +24,20 @@ import org.slf4j.Logger;
 
 /** Handles how snapshots/databases are stored on the file system. */
 public class StateStorage {
-  private static final Logger LOG = Loggers.ROCKSDB_LOGGER;
 
+  private static final Logger LOG = Loggers.ROCKSDB_LOGGER;
   private static final String SEPARATOR = "_";
+
+  public static final String DEFAULT_RUNTIME_DIRECTORY = "runtime";
+  public static final String DEFAULT_SNAPSHOTS_DIRECTORY = "snapshots";
+
   private final File runtimeDirectory;
   private final File snapshotsDirectory;
+
+  public StateStorage(final String rootDirectory) {
+    this.runtimeDirectory = new File(rootDirectory, DEFAULT_RUNTIME_DIRECTORY);
+    this.snapshotsDirectory = new File(rootDirectory, DEFAULT_SNAPSHOTS_DIRECTORY);
+  }
 
   public StateStorage(final File runtimeDirectory, final File snapshotsDirectory) {
     this.runtimeDirectory = runtimeDirectory;

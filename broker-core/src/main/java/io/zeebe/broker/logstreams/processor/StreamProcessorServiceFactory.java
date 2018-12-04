@@ -25,7 +25,6 @@ import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.processor.EventFilter;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.spi.SnapshotController;
-import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.servicecontainer.Service;
@@ -65,7 +64,6 @@ public class StreamProcessorServiceFactory implements Service<StreamProcessorSer
 
   public class Builder {
     private final LogStream logStream;
-    private final SnapshotStorage snapshotStorage;
 
     private SnapshotController snapshotController;
     private String processorName;
@@ -78,7 +76,6 @@ public class StreamProcessorServiceFactory implements Service<StreamProcessorSer
 
     public Builder(Partition partition, ServiceName<Partition> serviceName) {
       this.logStream = partition.getLogStream();
-      snapshotStorage = partition.getSnapshotStorage();
       this.additionalDependencies.add(serviceName);
     }
 
@@ -140,7 +137,6 @@ public class StreamProcessorServiceFactory implements Service<StreamProcessorSer
           .actorScheduler(actorScheduler)
           .serviceContainer(serviceContainer)
           .snapshotController(snapshotController)
-          .snapshotStorage(snapshotStorage)
           .snapshotPeriod(snapshotPeriod)
           .logStream(logStream)
           .eventFilter(eventFilter)

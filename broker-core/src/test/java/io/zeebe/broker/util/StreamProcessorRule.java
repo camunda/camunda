@@ -24,6 +24,7 @@ import io.zeebe.broker.transport.clientapi.BufferingServerOutput;
 import io.zeebe.broker.util.TestStreams.FluentLogWriter;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.processor.StreamProcessor;
+import io.zeebe.logstreams.state.StateController;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.intent.Intent;
@@ -33,6 +34,7 @@ import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
@@ -82,8 +84,9 @@ public class StreamProcessorRule implements TestRule {
   }
 
   public StreamProcessorControl runStreamProcessor(
+      Supplier<StateController> stateFactory,
       Function<TypedStreamEnvironment, StreamProcessor> factory) {
-    final StreamProcessorControl control = initStreamProcessor(factory);
+    final StreamProcessorControl control = initStreamProcessor(stateFactory, factory);
     control.start();
     return control;
   }
@@ -96,17 +99,20 @@ public class StreamProcessorRule implements TestRule {
   }
 
   public StreamProcessorControl initStreamProcessor(
+      Supplier<StateController> stateFactory,
       Function<TypedStreamEnvironment, StreamProcessor> factory) {
-    return streams.initStreamProcessor(STREAM_NAME, 0, () -> factory.apply(streamEnvironment));
+    return streams.initStreamProcessor(
+        STREAM_NAME, 0, stateFactory.get(), () -> factory.apply(streamEnvironment));
   }
 
   public StreamProcessorControl initStreamProcessor(
       BiFunction<TypedEventStreamProcessorBuilder, ZeebeState, StreamProcessor> factory) {
+    final ZeebeState zeebeState = new ZeebeState();
     return streams.initStreamProcessor(
         STREAM_NAME,
         0,
+        zeebeState,
         () -> {
-          final ZeebeState zeebeState = new ZeebeState();
           final TypedEventStreamProcessorBuilder processorBuilder =
               streamEnvironment
                   .newStreamProcessor()

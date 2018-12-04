@@ -19,9 +19,6 @@ package io.zeebe.broker.clustering.base;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
-import io.zeebe.broker.clustering.base.snapshots.SnapshotReplicationInstallService;
-import io.zeebe.broker.clustering.base.snapshots.SnapshotReplicationService;
-import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.gossip.Gossip;
 import io.zeebe.raft.Raft;
@@ -31,8 +28,6 @@ public class ClusterBaseLayerServiceNames {
   public static final ServiceName<Void> CLUSTERING_BASE_LAYER =
       ServiceName.newServiceName("cluster.base.bootstrapped", Void.class);
 
-  public static final ServiceName<Void> MANAGEMENT_API_REQUEST_HANDLER_SERVICE_NAME =
-      ServiceName.newServiceName("cluster.base.managementApiRequestHandlerService", Void.class);
   public static final ServiceName<TopologyManager> TOPOLOGY_MANAGER_SERVICE =
       ServiceName.newServiceName("cluster.base.topologyManager", TopologyManager.class);
   public static final ServiceName<Void> REMOTE_ADDRESS_MANAGER_SERVICE =
@@ -75,19 +70,4 @@ public class ClusterBaseLayerServiceNames {
       ServiceName.newServiceName("cluster.base.leaderGroup", Partition.class);
   public static final ServiceName<Partition> FOLLOWER_PARTITION_GROUP_NAME =
       ServiceName.newServiceName("cluster.base.followerGroup", Partition.class);
-
-  public static final ServiceName<SnapshotReplicationInstallService>
-      SNAPSHOT_REPLICATION_INSTALL_SERVICE_NAME =
-          ServiceName.newServiceName(
-              "cluster.orchestration.snapshotReplication.install",
-              SnapshotReplicationInstallService.class);
-
-  public static ServiceName<SnapshotReplicationService> snapshotReplicationServiceName(
-      final Partition partition) {
-    final PartitionInfo info = partition.getInfo();
-    final String name =
-        String.format("cluster.base.snapshot.partition-%d.replicate", info.getPartitionId());
-
-    return ServiceName.newServiceName(name, SnapshotReplicationService.class);
-  }
 }

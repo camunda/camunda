@@ -20,7 +20,6 @@ package io.zeebe.broker.clustering.base.partitions;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.broker.logstreams.state.StateStorageFactory;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
@@ -36,8 +35,6 @@ public class Partition implements Service<Partition> {
 
   private final Injector<LogStream> logStreamInjector = new Injector<>();
 
-  private final Injector<SnapshotStorage> snapshotStorageInjector = new Injector<>();
-
   private final Injector<StateStorageFactory> stateStorageFactoryInjector = new Injector<>();
 
   private final PartitionInfo info;
@@ -45,8 +42,6 @@ public class Partition implements Service<Partition> {
   private final RaftState state;
 
   private LogStream logStream;
-
-  private SnapshotStorage snapshotStorage;
 
   private StateStorageFactory stateStorageFactory;
 
@@ -58,7 +53,6 @@ public class Partition implements Service<Partition> {
   @Override
   public void start(final ServiceStartContext startContext) {
     logStream = logStreamInjector.getValue();
-    snapshotStorage = snapshotStorageInjector.getValue();
     stateStorageFactory = stateStorageFactoryInjector.getValue();
   }
 
@@ -81,14 +75,6 @@ public class Partition implements Service<Partition> {
 
   public Injector<LogStream> getLogStreamInjector() {
     return logStreamInjector;
-  }
-
-  public SnapshotStorage getSnapshotStorage() {
-    return snapshotStorage;
-  }
-
-  public Injector<SnapshotStorage> getSnapshotStorageInjector() {
-    return snapshotStorageInjector;
   }
 
   public StateStorageFactory getStateStorageFactory() {

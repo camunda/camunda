@@ -39,31 +39,6 @@
   <sbe:message name="NotLeaderResponse" id="5">
   </sbe:message>
 
-  <sbe:message name="ListSnapshotsRequest" id="6">
-    <field name="partitionId" id="0" type="uint16"/>
-  </sbe:message>
-
-  <sbe:message name="ListSnapshotsResponse" id="7">
-    <group name="snapshots" id="0" dimensionType="groupSizeEncoding">
-      <field name="length" id="1" type="uint64"/>
-      <field name="logPosition" id="2" type="uint64"/>
-      <data name="name" id="3" type="varDataEncoding"/>
-      <data name="checksum" id="4" type="varDataEncoding"/>
-    </group>
-  </sbe:message>
-
-  <sbe:message name="FetchSnapshotChunkRequest" id="8">
-    <field name="partitionId" id="0" type="uint16"/>
-    <field name="logPosition" id="1" type="uint64"/>
-    <field name="chunkOffset" id="2" type="uint64"/>
-    <field name="chunkLength" id="3" type="int32"/>
-    <data name="name" id="4" type="varDataEncoding"/>
-  </sbe:message>
-
-  <sbe:message name="FetchSnapshotChunkResponse" id="9">
-    <data name="data" id="0" type="blob"/>
-  </sbe:message>
-
   <sbe:message name="ErrorResponse" id="10">
     <field name="code" id="1" type="errorResponseCode"/>
     <data name="data" id="2" type="varDataEncoding"/>

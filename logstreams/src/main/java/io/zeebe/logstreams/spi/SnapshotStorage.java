@@ -40,14 +40,6 @@ public interface SnapshotStorage {
   SnapshotWriter createSnapshot(String name, long logPosition) throws Exception;
 
   /**
-   * Deletes all existing snapshot and checksum files.
-   *
-   * @param name the name of the snapshot
-   * @return true if the purging was successful otherwise false
-   */
-  boolean purgeSnapshot(String name);
-
-  /**
    * Returns a list of available snapshots; for each snapshot item, it returns the latest file.
    *
    * @return all available snapshots
@@ -56,14 +48,4 @@ public interface SnapshotStorage {
 
   /** Returns whether or not there already exists a snapshot for the given name + position. */
   boolean snapshotExists(String name, long logPosition);
-
-  /**
-   * Returns a writer to create a temporary snapshot.
-   *
-   * @param name the snapshot name
-   * @param logPosition the logPosition
-   * @return pre-configured SnapshotWriter
-   * @throws Exception if it fails to prepare the necessary resources for the temporary snapshot
-   */
-  SnapshotWriter createTemporarySnapshot(String name, long logPosition) throws Exception;
 }

@@ -16,7 +16,6 @@
 package io.zeebe.logstreams.processor;
 
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.spi.SnapshotSupport;
 import java.util.function.Consumer;
 
 public class FunctionProcessor implements StreamProcessor, EventProcessor {
@@ -25,11 +24,6 @@ public class FunctionProcessor implements StreamProcessor, EventProcessor {
 
   FunctionProcessor(Consumer<LoggedEvent> function) {
     this.function = function;
-  }
-
-  @Override
-  public SnapshotSupport getStateResource() {
-    return new StringValueSnapshot();
   }
 
   @Override

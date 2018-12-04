@@ -26,9 +26,6 @@ public interface SnapshotMetadata {
   /** @return the size (in bytes) of the snapshot */
   long getSize();
 
-  /** @return true if the snapshot should be replicated, false otherwise */
-  boolean isReplicable();
-
   /** @return the checksum of the snapshot */
   byte[] getChecksum();
 }

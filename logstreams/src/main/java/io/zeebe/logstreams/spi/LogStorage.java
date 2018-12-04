@@ -20,26 +20,26 @@ import java.nio.ByteBuffer;
 /** Log structured storage abstraction */
 public interface LogStorage {
   /**
-   * Status code returned by the {@link #readBytes(ByteBuffer, int, int, long) read} operation in
-   * case the provided address is invalid and does not exist.
+   * Status code returned by the {@link #read(ByteBuffer, long)} operation in case the provided
+   * address is invalid and does not exist.
    */
   long OP_RESULT_INVALID_ADDR = -1L;
 
   /**
-   * Status code returned by the {@link #readBytes(ByteBuffer, int, int, long) read} operation in
-   * case the provided address does exist but data is not available yet. This indicates that
-   * retrying the operation with the same parameters will eventually return data assuming that more
-   * data will be written to the log.
+   * Status code returned by the {@link #read(ByteBuffer, long)} operation in case the provided
+   * address does exist but data is not available yet. This indicates that retrying the operation
+   * with the same parameters will eventually return data assuming that more data will be written to
+   * the log.
    */
   long OP_RESULT_NO_DATA = -2L;
 
   /**
-   * Status code returned by the {@link #readBytes(ByteBuffer, int, int, long) read} operation only
-   * if underlying storage is block-addressable (in contrast to byte addressable). If the storage is
-   * block addressable, consumers of this API can only read complete addressable blocks of data at a
-   * time. In order to read a block, the provided read buffer must provide sufficient capacity to
-   * read at least one complete block. If sufficient capacity is not available in the read buffer to
-   * fit at least a complete block, this status code is returned.
+   * Status code returned by the {@link #read(ByteBuffer, long)} operation only if underlying
+   * storage is block-addressable (in contrast to byte addressable). If the storage is block
+   * addressable, consumers of this API can only read complete addressable blocks of data at a time.
+   * In order to read a block, the provided read buffer must provide sufficient capacity to read at
+   * least one complete block. If sufficient capacity is not available in the read buffer to fit at
+   * least a complete block, this status code is returned.
    */
   long OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY = -3L;
 

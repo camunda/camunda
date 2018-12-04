@@ -37,6 +37,7 @@ import io.zeebe.util.DurationUtil;
 import java.time.Duration;
 
 public class LogStreamsComponent implements Component {
+
   @Override
   public void init(SystemContext context) {
     final ServiceContainer serviceContainer = context.getServiceContainer();
