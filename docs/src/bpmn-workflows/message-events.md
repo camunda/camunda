@@ -11,7 +11,7 @@ A message can be referenced by one or more message events. It holds the informat
 * the name of the message
 * the correlation key
 
-The correlation key is specified as [JSON Path](reference/json-conditions.html) expression. It is evaluated when the message event is entered and extracts the value from the workflow instance payload. The value must be a string.
+The correlation key is specified as JSON Path expression. It is evaluated when the message event is entered and extracts the value from the workflow instance payload. The value must be a string. If the correlation key can't be resolved or it is not a string then an incident is created.
 
 XML representation:
 
@@ -29,8 +29,6 @@ XML representation:
 
 When a token arrives at the message intermediate catch event, it will wait there until a proper message is correlated. The correlation to the event is based on the name of the message and the correlation key. When a message is correlated then its payload is merged into the workflow instance payload and the event is left.
 
-Read more about [message correlation](reference/message-correlation.html).
-
 XML representation:
 
 ```xml
@@ -43,7 +41,7 @@ XML representation:
 
 ### Payload Mapping
 
-By default, the complete message payload is merged into the workflow instance payload. This behavior can be customized by defining an output mapping at the intermediate catch event. See the [Input/Output Mappings](/bpmn-workflows/data-flow.html#inputoutput-mappings) section for details on this concept.
+By default, the complete message payload is merged into the workflow instance payload. This behavior can be customized by defining an output mapping at the intermediate catch event. 
 
 XML representation:
 
@@ -56,3 +54,10 @@ XML representation:
   </bpmn:extensionElements>
 </bpmn:intermediateCatchEvent>
 ```
+
+## Additional Resources
+
+* [Message Correlation](reference/message-correlation.html)
+* [JSON Path](reference/json-conditions.html)
+* [Input/Output Mappings](/bpmn-workflows/data-flow.html#inputoutput-mappings)
+* [Incidents](/reference/incidents.html)

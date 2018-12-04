@@ -17,7 +17,7 @@ When the worker modifies the payload, the result is merged on top-level into the
 
 ## Payload Mappings
 
-We distinguish between *input*, *output* and *merging* mappings. Input/Output mappings are used to adapt payload to the context of an activity. Merging mappings are used whenever multiple flows of execution are joined into one, for example at a merging parallel gateway.
+We distinguish between *input* and *output* mappings. Mappings are used to adapt payload to the context of an activity.
 
 Payload mappings are pairs of [JSONPath](http://goessner.net/articles/JsonPath/) expressions. Every mapping has a *source* and a *target* expression. The source expression describes the path in the source document from which to copy data. The target expression describes the path in the new document that the data should be copied to. When multiple mappings are defined, they are applied in the order of their appearance.
 
@@ -26,6 +26,8 @@ Payload mappings are pairs of [JSONPath](http://goessner.net/articles/JsonPath/)
 ### Input/Output Mappings
 
 Before starting a workflow element, Zeebe applies input mappings to the payload and generates a new JSON document. Upon element completion, output mappings are applied to map the result back into the workflow instance payload.
+
+If a mapping can't be applied then an incident is created.
 
 Examples in BPMN:
 
@@ -71,48 +73,11 @@ Example:
 </serviceTask>
 ```
 
-Additional Resources:
+## Additional Resources
 
 * [Input Mapping Examples](/reference/json-payload-mapping.html#input-mapping)
 * [Output Mapping Examples](/reference/json-payload-mapping.html#output-mapping)
 * [JSONPath Reference](/reference/json-path.html)
-
-
-### Merging Mappings
-
-A merging mapping can be defined wherever multiple paths of executions are merged into one. Examples in BPMN:
-
-* Merging Parallel Gateway: when triggered, the payloads of each incoming sequence flow are merged.
-* Embedded Sub Process: On completion, the payloads of each triggered end event are merged.
-
-![payload](/bpmn-workflows/merging-mapping.png)
-
-The merge consists of three steps:
-
-1. Initialize target payload as empty document.
-1. Merge all source payloads into the target payload.
-1. On top, apply merge mappings as defined at the workflow elements.
-
-In addition to source and target expressions, merge mappings have a third parameter *type* with these values:
-
-* **PUT**: Puts the source value at the target path. *This is the default output value.*
-* **COLLECT**: Collects the source value in an array at the target path.
-
-Example:
-
-```xml
-<bpmn:sequenceFlow id="flow1">
-  <extensionElements>
-    <zeebe:payloadMappings>
-      <zeebe:mapping source="$.flightPrice" target="$.prices" type="COLLECT" />
-    </zeebe:payloadMappings>
-  </extensionElements>
-</sequenceFlow>
-```
-
-Additional Resources:
-
-* [Merging Mapping Examples](/reference/json-payload-mapping.html#merging-mapping)
-* [JSONPath Reference](/reference/json-path.html)
+* [Incidents](/reference/incidents.html)
 
 
