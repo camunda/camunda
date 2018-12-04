@@ -68,7 +68,7 @@ public class ServiceTaskTest {
 
     final DeploymentEvent deploymentEvent =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newDeployCommand()
             .addWorkflowModel(modelInstance, "workflow.bpmn")
             .send()
@@ -78,7 +78,7 @@ public class ServiceTaskTest {
     // when
     final WorkflowInstanceEvent workflowInstance =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newCreateInstanceCommand()
             .bpmnProcessId("process")
             .latestVersion()
@@ -111,7 +111,7 @@ public class ServiceTaskTest {
 
     final WorkflowInstanceEvent workflowInstance =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newCreateInstanceCommand()
             .bpmnProcessId("process")
             .latestVersion()
@@ -121,7 +121,7 @@ public class ServiceTaskTest {
     // when
     final RecordingJobHandler recordingJobHandler = new RecordingJobHandler();
 
-    clientRule.getJobClient().newWorker().jobType("foo").handler(recordingJobHandler).open();
+    clientRule.getClient().newWorker().jobType("foo").handler(recordingJobHandler).open();
 
     // then
     waitUntil(() -> recordingJobHandler.getHandledJobs().size() >= 1);
@@ -160,7 +160,7 @@ public class ServiceTaskTest {
     deploy(modelInstance);
 
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId("process")
         .latestVersion()
@@ -169,7 +169,7 @@ public class ServiceTaskTest {
 
     // when
     clientRule
-        .getJobClient()
+        .getClient()
         .newWorker()
         .jobType("foo")
         .handler((client, job) -> client.newCompleteCommand(job.getKey()).send())
@@ -192,7 +192,7 @@ public class ServiceTaskTest {
     deploy(modelInstance);
 
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId("process")
         .latestVersion()
@@ -203,7 +203,7 @@ public class ServiceTaskTest {
     // when
     final RecordingJobHandler recordingJobHandler = new RecordingJobHandler();
 
-    clientRule.getJobClient().newWorker().jobType("foo").handler(recordingJobHandler).open();
+    clientRule.getClient().newWorker().jobType("foo").handler(recordingJobHandler).open();
 
     // then
     waitUntil(() -> recordingJobHandler.getHandledJobs().size() >= 1);
@@ -224,7 +224,7 @@ public class ServiceTaskTest {
     deploy(modelInstance);
 
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId("process")
         .latestVersion()
@@ -233,7 +233,7 @@ public class ServiceTaskTest {
 
     // when
     clientRule
-        .getJobClient()
+        .getClient()
         .newWorker()
         .jobType("foo")
         .handler(
@@ -263,7 +263,7 @@ public class ServiceTaskTest {
     deploy(modelInstance);
 
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId("process")
         .latestVersion()
@@ -273,7 +273,7 @@ public class ServiceTaskTest {
 
     // when
     clientRule
-        .getJobClient()
+        .getClient()
         .newWorker()
         .jobType("foo")
         .handler(
@@ -294,14 +294,14 @@ public class ServiceTaskTest {
 
     // given
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newDeployCommand()
         .addResourceFile(getClass().getResource("/workflows/orderProcess.bpmn").getFile())
         .send()
         .join();
 
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId("order-process")
         .latestVersion()
@@ -317,9 +317,9 @@ public class ServiceTaskTest {
             client.newCompleteCommand(job.getKey()).payload("{}").send().join();
           }
         };
-    clientRule.getJobClient().newWorker().jobType("collect-money").handler(defaultHandler).open();
+    clientRule.getClient().newWorker().jobType("collect-money").handler(defaultHandler).open();
     clientRule
-        .getJobClient()
+        .getClient()
         .newWorker()
         .jobType("fetch-items")
         .handler(
@@ -327,7 +327,7 @@ public class ServiceTaskTest {
               client.newCompleteCommand(job.getKey()).payload("{\"foo\":\"bar\"}").send().join();
             })
         .open();
-    clientRule.getJobClient().newWorker().jobType("ship-parcel").handler(defaultHandler).open();
+    clientRule.getClient().newWorker().jobType("ship-parcel").handler(defaultHandler).open();
 
     // then
     assertWorkflowInstanceCompleted(
@@ -357,7 +357,7 @@ public class ServiceTaskTest {
     for (int i = 0; i < instances; i++) {
       final WorkflowInstanceEvent instanceEvent =
           clientRule
-              .getWorkflowClient()
+              .getClient()
               .newCreateInstanceCommand()
               .bpmnProcessId("process")
               .latestVersion()
@@ -368,7 +368,7 @@ public class ServiceTaskTest {
     }
 
     clientRule
-        .getJobClient()
+        .getClient()
         .newWorker()
         .jobType("foo")
         .handler(
@@ -390,7 +390,7 @@ public class ServiceTaskTest {
   private DeploymentEvent deploy(BpmnModelInstance modelInstance) {
     final DeploymentEvent deploymentEvent =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newDeployCommand()
             .addWorkflowModel(modelInstance, "workflow.bpmn")
             .send()

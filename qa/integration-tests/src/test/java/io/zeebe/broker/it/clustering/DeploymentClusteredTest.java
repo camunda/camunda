@@ -61,12 +61,7 @@ public class DeploymentClusteredTest {
 
     // when
     final DeploymentEvent deploymentEvent =
-        client
-            .workflowClient()
-            .newDeployCommand()
-            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-            .send()
-            .join();
+        client.newDeployCommand().addWorkflowModel(WORKFLOW, "workflow.bpmn").send().join();
 
     // then
     assertThat(deploymentEvent.getWorkflows().size()).isEqualTo(1);
@@ -78,12 +73,7 @@ public class DeploymentClusteredTest {
 
     // when
     final DeploymentEvent deploymentEvent =
-        client
-            .workflowClient()
-            .newDeployCommand()
-            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-            .send()
-            .join();
+        client.newDeployCommand().addWorkflowModel(WORKFLOW, "workflow.bpmn").send().join();
 
     clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
 
@@ -91,7 +81,6 @@ public class DeploymentClusteredTest {
     for (int p = 0; p < PARTITION_COUNT; p++) {
       final long workflowInstanceKey =
           client
-              .workflowClient()
               .newCreateInstanceCommand()
               .bpmnProcessId("process")
               .latestVersion()
@@ -113,12 +102,7 @@ public class DeploymentClusteredTest {
 
     // then
     final DeploymentEvent deploymentEvent =
-        client
-            .workflowClient()
-            .newDeployCommand()
-            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-            .send()
-            .join();
+        client.newDeployCommand().addWorkflowModel(WORKFLOW, "workflow.bpmn").send().join();
 
     assertThat(deploymentEvent.getWorkflows().size()).isEqualTo(1);
     clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
@@ -131,12 +115,7 @@ public class DeploymentClusteredTest {
 
     clusteringRule.stopBroker(2);
     final DeploymentEvent deploymentEvent =
-        client
-            .workflowClient()
-            .newDeployCommand()
-            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-            .send()
-            .join();
+        client.newDeployCommand().addWorkflowModel(WORKFLOW, "workflow.bpmn").send().join();
 
     clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
 
@@ -165,12 +144,7 @@ public class DeploymentClusteredTest {
 
     // then
     final DeploymentEvent deploymentEvent =
-        client
-            .workflowClient()
-            .newDeployCommand()
-            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-            .send()
-            .join();
+        client.newDeployCommand().addWorkflowModel(WORKFLOW, "workflow.bpmn").send().join();
 
     assertThat(deploymentEvent.getWorkflows().size()).isEqualTo(1);
     clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
@@ -185,11 +159,6 @@ public class DeploymentClusteredTest {
     expectedException.expectMessage("SAXException while parsing input stream");
 
     // when
-    client
-        .workflowClient()
-        .newDeployCommand()
-        .addResourceStringUtf8("invalid", "invalid.bpmn")
-        .send()
-        .join();
+    client.newDeployCommand().addResourceStringUtf8("invalid", "invalid.bpmn").send().join();
   }
 }

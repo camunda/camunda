@@ -40,7 +40,7 @@ public class CreateWorkflowInstanceTest extends ClientTest {
 
     // when
     final WorkflowInstanceEvent response =
-        client.workflowClient().newCreateInstanceCommand().workflowKey(123).send().join();
+        client.newCreateInstanceCommand().workflowKey(123).send().join();
 
     // then
     assertThat(response.getWorkflowKey()).isEqualTo(123);
@@ -55,13 +55,7 @@ public class CreateWorkflowInstanceTest extends ClientTest {
   @Test
   public void shouldCreateWorkflowInstanceByBpmnProcessId() {
     // when
-    client
-        .workflowClient()
-        .newCreateInstanceCommand()
-        .bpmnProcessId("testProcess")
-        .latestVersion()
-        .send()
-        .join();
+    client.newCreateInstanceCommand().bpmnProcessId("testProcess").latestVersion().send().join();
 
     // then
     final CreateWorkflowInstanceRequest request = gatewayService.getLastRequest();
@@ -72,13 +66,7 @@ public class CreateWorkflowInstanceTest extends ClientTest {
   @Test
   public void shouldCreateWorkflowInstanceByBpmnProcessIdAndVersion() {
     // when
-    client
-        .workflowClient()
-        .newCreateInstanceCommand()
-        .bpmnProcessId("testProcess")
-        .version(123)
-        .send()
-        .join();
+    client.newCreateInstanceCommand().bpmnProcessId("testProcess").version(123).send().join();
 
     // then
     final CreateWorkflowInstanceRequest request = gatewayService.getLastRequest();
@@ -89,13 +77,7 @@ public class CreateWorkflowInstanceTest extends ClientTest {
   @Test
   public void shouldCreateWorkflowInstanceWithStringPayload() {
     // when
-    client
-        .workflowClient()
-        .newCreateInstanceCommand()
-        .workflowKey(123)
-        .payload("{\"foo\": \"bar\"}")
-        .send()
-        .join();
+    client.newCreateInstanceCommand().workflowKey(123).payload("{\"foo\": \"bar\"}").send().join();
 
     // then
     final CreateWorkflowInstanceRequest request = gatewayService.getLastRequest();
@@ -109,13 +91,7 @@ public class CreateWorkflowInstanceTest extends ClientTest {
     final InputStream inputStream = new ByteArrayInputStream(payload.getBytes(Charsets.UTF_8));
 
     // when
-    client
-        .workflowClient()
-        .newCreateInstanceCommand()
-        .workflowKey(123)
-        .payload(inputStream)
-        .send()
-        .join();
+    client.newCreateInstanceCommand().workflowKey(123).payload(inputStream).send().join();
 
     // then
     final CreateWorkflowInstanceRequest request = gatewayService.getLastRequest();
@@ -126,7 +102,6 @@ public class CreateWorkflowInstanceTest extends ClientTest {
   public void shouldCreateWorkflowInstanceWithMapPayload() {
     // when
     client
-        .workflowClient()
         .newCreateInstanceCommand()
         .workflowKey(123)
         .payload(Collections.singletonMap("foo", "bar"))
@@ -141,13 +116,7 @@ public class CreateWorkflowInstanceTest extends ClientTest {
   @Test
   public void shouldCreateWorkflowInstanceWithObjectPayload() {
     // when
-    client
-        .workflowClient()
-        .newCreateInstanceCommand()
-        .workflowKey(123)
-        .payload(new Payload())
-        .send()
-        .join();
+    client.newCreateInstanceCommand().workflowKey(123).payload(new Payload()).send().join();
 
     // then
     final CreateWorkflowInstanceRequest request = gatewayService.getLastRequest();
@@ -161,8 +130,7 @@ public class CreateWorkflowInstanceTest extends ClientTest {
         CreateWorkflowInstanceRequest.class, () -> new ClientException("Invalid request"));
 
     // when
-    assertThatThrownBy(
-            () -> client.workflowClient().newCreateInstanceCommand().workflowKey(123).send().join())
+    assertThatThrownBy(() -> client.newCreateInstanceCommand().workflowKey(123).send().join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("Invalid request");
   }

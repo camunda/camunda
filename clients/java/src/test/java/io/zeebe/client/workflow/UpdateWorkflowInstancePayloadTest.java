@@ -38,7 +38,7 @@ public class UpdateWorkflowInstancePayloadTest extends ClientTest {
     final String updatedPayload = "{\"key\": \"val\"}";
 
     // when
-    client.workflowClient().newUpdatePayloadCommand(123).payload(updatedPayload).send().join();
+    client.newUpdatePayloadCommand(123).payload(updatedPayload).send().join();
 
     // then
     final UpdateWorkflowInstancePayloadRequest request = gatewayService.getLastRequest();
@@ -53,7 +53,7 @@ public class UpdateWorkflowInstancePayloadTest extends ClientTest {
     final InputStream payloadStream = new ByteArrayInputStream(StringUtil.getBytes(updatedPayload));
 
     // when
-    client.workflowClient().newUpdatePayloadCommand(123).payload(payloadStream).send().join();
+    client.newUpdatePayloadCommand(123).payload(payloadStream).send().join();
 
     // then
     final UpdateWorkflowInstancePayloadRequest request = gatewayService.getLastRequest();
@@ -66,7 +66,7 @@ public class UpdateWorkflowInstancePayloadTest extends ClientTest {
     final Map<String, Object> payloadMap = Collections.singletonMap("key", "val");
 
     // when
-    client.workflowClient().newUpdatePayloadCommand(123).payload(payloadMap).send().join();
+    client.newUpdatePayloadCommand(123).payload(payloadMap).send().join();
 
     // then
     final UpdateWorkflowInstancePayloadRequest request = gatewayService.getLastRequest();
@@ -79,7 +79,7 @@ public class UpdateWorkflowInstancePayloadTest extends ClientTest {
     final Map<String, Object> payloadMap = Collections.singletonMap("key", "val");
 
     // when
-    client.workflowClient().newUpdatePayloadCommand(123).payload((Object) payloadMap).send().join();
+    client.newUpdatePayloadCommand(123).payload((Object) payloadMap).send().join();
 
     // then
     final UpdateWorkflowInstancePayloadRequest request = gatewayService.getLastRequest();
@@ -93,8 +93,7 @@ public class UpdateWorkflowInstancePayloadTest extends ClientTest {
         UpdateWorkflowInstancePayloadRequest.class, () -> new ClientException("Invalid request"));
 
     // when
-    assertThatThrownBy(
-            () -> client.workflowClient().newUpdatePayloadCommand(123).payload("[]").send().join())
+    assertThatThrownBy(() -> client.newUpdatePayloadCommand(123).payload("[]").send().join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("Invalid request");
   }

@@ -62,7 +62,6 @@ public class JobWorkerWithMultiplePartitionsTest {
     // when
     clientRule
         .getClient()
-        .jobClient()
         .newWorker()
         .jobType(jobType)
         .handler(handler)

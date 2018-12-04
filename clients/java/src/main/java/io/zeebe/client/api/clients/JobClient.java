@@ -15,11 +15,8 @@
  */
 package io.zeebe.client.api.clients;
 
-import io.zeebe.client.api.commands.ActivateJobsCommandStep1;
 import io.zeebe.client.api.commands.CompleteJobCommandStep1;
 import io.zeebe.client.api.commands.FailJobCommandStep1;
-import io.zeebe.client.api.commands.UpdateRetriesJobCommandStep1;
-import io.zeebe.client.api.subscription.JobWorkerBuilderStep1;
 
 /**
  * A client with access to all job-related operation:
@@ -68,87 +65,4 @@ public interface JobClient {
    * @return a builder for the command
    */
   FailJobCommandStep1 newFailCommand(long jobKey);
-
-  /**
-   * Command to update the retries of a job.
-   *
-   * <pre>
-   * long jobKey = ..;
-   *
-   * jobClient
-   *  .newUpdateRetriesCommand(jobKey)
-   *  .retries(3)
-   *  .send();
-   * </pre>
-   *
-   * <p>If the given retries are greater than zero then this job will be picked up again by a job
-   * subscription and a related incident will be marked as resolved.
-   *
-   * @param jobKey the key of the job to update
-   * @return a builder for the command
-   */
-  UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(long jobKey);
-
-  /**
-   * Registers a new job worker for jobs of a given type.
-   *
-   * <p>After registration, the broker activates available jobs and assigns them to this worker. It
-   * then publishes them to the client. The given worker is called for every received job, works on
-   * them and eventually completes them.
-   *
-   * <pre>
-   * JobWorker worker = jobClient
-   *  .newWorker()
-   *  .jobType("payment")
-   *  .handler(paymentHandler)
-   *  .open();
-   *
-   * ...
-   * worker.close();
-   * </pre>
-   *
-   * Example JobHandler implementation:
-   *
-   * <pre>
-   * public class PaymentHandler implements JobHandler
-   * {
-   *   &#64;Override
-   *   public void handle(JobClient client, JobEvent jobEvent)
-   *   {
-   *     String json = jobEvent.getPayload();
-   *     // modify payload
-   *
-   *     client
-   *      .newCompleteCommand()
-   *      .event(jobEvent)
-   *      .payload(json)
-   *      .send();
-   *   }
-   * };
-   * </pre>
-   *
-   * @return a builder for the worker registration
-   */
-  JobWorkerBuilderStep1 newWorker();
-
-  /**
-   * Command to activate multiple jobs of a given type.
-   *
-   * <pre>
-   * jobClient
-   *  .newActivateJobsCommand()
-   *  .jobType("payment")
-   *  .amount(10)
-   *  .workerName("paymentWorker")
-   *  .timeout(Duration.ofMinutes(10))
-   *  .send();
-   * </pre>
-   *
-   * <p>The command will try to activate maximal {@code amount} jobs of given {@code jobType}. If
-   * less then {@code amount} jobs of the {@code jobType} are available for activation the returned
-   * list will have fewer elements.
-   *
-   * @return a builder for the command
-   */
-  ActivateJobsCommandStep1 newActivateJobsCommand();
 }

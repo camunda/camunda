@@ -33,12 +33,11 @@ public class JobWorkerCreator {
     final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
     try (ZeebeClient client = builder.build()) {
-      final JobClient jobClient = client.jobClient();
 
       System.out.println("Opening job worker.");
 
       final JobWorker workerRegistration =
-          jobClient
+          client
               .newWorker()
               .jobType(jobType)
               .handler(new ExampleJobHandler())

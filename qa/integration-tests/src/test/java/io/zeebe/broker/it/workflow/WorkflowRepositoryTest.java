@@ -56,7 +56,7 @@ public class WorkflowRepositoryTest {
   public void deployWorkflows() {
     final DeploymentEvent firstDeployment =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newDeployCommand()
             .addWorkflowModel(workflow1v1, "workflow1.bpmn")
             .send()
@@ -64,7 +64,7 @@ public class WorkflowRepositoryTest {
 
     final DeploymentEvent secondDeployment =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newDeployCommand()
             .addWorkflowModel(workflow1v2, "workflow1.bpmn")
             .send()
@@ -72,7 +72,7 @@ public class WorkflowRepositoryTest {
 
     final DeploymentEvent thirdDeployment =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newDeployCommand()
             .addWorkflowModel(workflow2, "workflow2.bpmn")
             .send()
@@ -89,7 +89,7 @@ public class WorkflowRepositoryTest {
   public void shouldGetResourceByBpmnProcessIdAndLatestVersion() {
     final WorkflowResource workflowResource =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newResourceRequest()
             .bpmnProcessId("wf1")
             .latestVersion()
@@ -106,13 +106,7 @@ public class WorkflowRepositoryTest {
   @Test
   public void shouldGetResourceByBpmnProcessIdAndVersion() {
     final WorkflowResource workflowResource =
-        clientRule
-            .getWorkflowClient()
-            .newResourceRequest()
-            .bpmnProcessId("wf1")
-            .version(1)
-            .send()
-            .join();
+        clientRule.getClient().newResourceRequest().bpmnProcessId("wf1").version(1).send().join();
 
     assertThat(workflowResource.getBpmnProcessId()).isEqualTo("wf1");
     assertThat(workflowResource.getVersion()).isEqualTo(1);
@@ -125,7 +119,7 @@ public class WorkflowRepositoryTest {
   public void shouldGetResourceByWorkflowKey() throws Exception {
     final WorkflowResource workflowResource =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newResourceRequest()
             .workflowKey(getWorkflowKey("wf2", 1))
             .send()
@@ -143,7 +137,7 @@ public class WorkflowRepositoryTest {
   @Test
   public void shouldFailToGetResourceByWorkflowKeyIfNotExist() {
     final ZeebeFuture<WorkflowResource> future =
-        clientRule.getWorkflowClient().newResourceRequest().workflowKey(123).send();
+        clientRule.getClient().newResourceRequest().workflowKey(123).send();
 
     assertThatThrownBy(future::join)
         // TODO(menski): embedded errors in grpc need for typing
@@ -154,12 +148,7 @@ public class WorkflowRepositoryTest {
   @Test
   public void shouldFailToGetResourceByBpmnProcessIdIfNotExist() {
     final ZeebeFuture<WorkflowResource> future =
-        clientRule
-            .getWorkflowClient()
-            .newResourceRequest()
-            .bpmnProcessId("foo")
-            .latestVersion()
-            .send();
+        clientRule.getClient().newResourceRequest().bpmnProcessId("foo").latestVersion().send();
 
     assertThatThrownBy(future::join)
         // TODO(menski): embedded errors in grpc need for typing
@@ -170,7 +159,7 @@ public class WorkflowRepositoryTest {
   @Test
   public void shouldGetDeployedWorkflows() {
     final List<Workflow> workflows =
-        clientRule.getWorkflowClient().newWorkflowRequest().send().join().getWorkflows();
+        clientRule.getClient().newWorkflowRequest().send().join().getWorkflows();
 
     assertThat(workflows).hasSize(3);
     assertThat(workflows).extracting(Workflow::getBpmnProcessId).contains("wf1", "wf1", "wf2");
@@ -188,7 +177,7 @@ public class WorkflowRepositoryTest {
   public void shouldGetDeployedWorkflowsByBpmnProcessId() {
     final List<Workflow> workflows =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newWorkflowRequest()
             .bpmnProcessId("wf1")
             .send()
@@ -208,7 +197,7 @@ public class WorkflowRepositoryTest {
   public void shouldGetNoDeployedWorkflowsIfBpmnProcessIdNotExist() {
     final List<Workflow> workflows =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newWorkflowRequest()
             .bpmnProcessId("foo")
             .send()

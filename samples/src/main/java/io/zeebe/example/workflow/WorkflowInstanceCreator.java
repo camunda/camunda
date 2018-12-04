@@ -17,7 +17,6 @@ package io.zeebe.example.workflow;
 
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
-import io.zeebe.client.api.clients.WorkflowClient;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 
 public class WorkflowInstanceCreator {
@@ -30,12 +29,11 @@ public class WorkflowInstanceCreator {
     final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
     try (ZeebeClient client = builder.build()) {
-      final WorkflowClient workflowClient = client.workflowClient();
 
       System.out.println("Creating workflow instance");
 
       final WorkflowInstanceEvent workflowInstanceEvent =
-          workflowClient
+          client
               .newCreateInstanceCommand()
               .bpmnProcessId(bpmnProcessId)
               .latestVersion()

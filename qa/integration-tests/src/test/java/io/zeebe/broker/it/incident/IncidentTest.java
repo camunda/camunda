@@ -26,7 +26,6 @@ import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.it.util.ZeebeAssertHelper;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.clients.JobClient;
-import io.zeebe.client.api.clients.WorkflowClient;
 import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.response.ActivatedJob;
@@ -60,21 +59,16 @@ public class IncidentTest {
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
-  private WorkflowClient workflowClient;
-  private JobClient jobClient;
-
   @Before
-  public void setUp() {
-    workflowClient = clientRule.getClient().workflowClient();
-    jobClient = clientRule.getClient().jobClient();
-  }
+  public void setUp() {}
 
   @Test
   public void shouldRejectResolveOnNonExistingIncident() {
     // given
 
     // when
-    Assertions.assertThatThrownBy(() -> workflowClient.newResolveIncidentCommand(1).send().join())
+    Assertions.assertThatThrownBy(
+            () -> clientRule.getClient().newResolveIncidentCommand(1).send().join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("Expected to resolve an incident with key 1, but no incident found");
   }
@@ -84,7 +78,8 @@ public class IncidentTest {
     // given
     deploy();
 
-    workflowClient
+    clientRule
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId("process")
         .latestVersion()
@@ -95,12 +90,13 @@ public class IncidentTest {
         RecordingExporter.incidentRecords(CREATED).getFirst();
 
     // when
-    workflowClient
+    clientRule
+        .getClient()
         .newUpdatePayloadCommand(incident.getValue().getElementInstanceKey())
         .payload(PAYLOAD)
         .send()
         .join();
-    workflowClient.newResolveIncidentCommand(incident.getKey()).send();
+    clientRule.getClient().newResolveIncidentCommand(incident.getKey()).send();
 
     // then
     assertJobCreated("test");
@@ -112,7 +108,8 @@ public class IncidentTest {
     // given
     deploy();
 
-    workflowClient
+    clientRule
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId("process")
         .latestVersion()
@@ -123,18 +120,19 @@ public class IncidentTest {
         RecordingExporter.incidentRecords(CREATED).getFirst();
 
     // when
-    workflowClient
+    clientRule
+        .getClient()
         .newUpdatePayloadCommand(incident.getValue().getElementInstanceKey())
         .payload(PAYLOAD)
         .send()
         .join();
-    workflowClient.newResolveIncidentCommand(incident.getKey()).send();
+    clientRule.getClient().newResolveIncidentCommand(incident.getKey()).send();
 
     // then
     assertJobCreated("test");
     assertIncidentResolved();
     Assertions.assertThatThrownBy(
-            () -> workflowClient.newResolveIncidentCommand(incident.getKey()).send().join())
+            () -> clientRule.getClient().newResolveIncidentCommand(incident.getKey()).send().join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining(
             "Expected to resolve an incident with key "
@@ -148,7 +146,8 @@ public class IncidentTest {
     deploy();
 
     final WorkflowInstanceEvent workflowInstance =
-        workflowClient
+        clientRule
+            .getClient()
             .newCreateInstanceCommand()
             .bpmnProcessId("process")
             .latestVersion()
@@ -158,7 +157,8 @@ public class IncidentTest {
     assertIncidentCreated();
 
     // when
-    workflowClient
+    clientRule
+        .getClient()
         .newCancelInstanceCommand(workflowInstance.getWorkflowInstanceKey())
         .send()
         .join();
@@ -172,7 +172,8 @@ public class IncidentTest {
     // given a workflow instance with an open job
     deploy();
 
-    workflowClient
+    clientRule
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId("process")
         .latestVersion()
@@ -185,7 +186,7 @@ public class IncidentTest {
     jobHandler.failJob = true;
 
     clientRule
-        .getJobClient()
+        .getClient()
         .newWorker()
         .jobType("test")
         .handler(jobHandler)
@@ -202,10 +203,10 @@ public class IncidentTest {
 
     final ActivatedJob job = jobHandler.job;
 
-    jobClient.newUpdateRetriesCommand(job.getKey()).retries(3).send().join();
+    clientRule.getClient().newUpdateRetriesCommand(job.getKey()).retries(3).send().join();
 
     // and incident resolve command is send
-    workflowClient.newResolveIncidentCommand(incident.getKey()).send();
+    clientRule.getClient().newResolveIncidentCommand(incident.getKey()).send();
 
     // then the incident is resolved
     ZeebeAssertHelper.assertIncidentResolved();
@@ -217,7 +218,8 @@ public class IncidentTest {
     // given a workflow instance with an open job
     deploy();
 
-    workflowClient
+    clientRule
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId("process")
         .latestVersion()
@@ -231,7 +233,7 @@ public class IncidentTest {
             client.newFailCommand(job.getKey()).retries(0).errorMessage("failed message").send();
 
     clientRule
-        .getJobClient()
+        .getClient()
         .newWorker()
         .jobType("test")
         .handler(jobHandler)
@@ -250,7 +252,8 @@ public class IncidentTest {
     // given a workflow instance with an open job
     deploy();
 
-    workflowClient
+    clientRule
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId("process")
         .latestVersion()
@@ -271,7 +274,7 @@ public class IncidentTest {
         };
 
     clientRule
-        .getJobClient()
+        .getClient()
         .newWorker()
         .jobType("test")
         .handler(jobHandler)
@@ -287,7 +290,12 @@ public class IncidentTest {
 
   private void deploy() {
     final DeploymentEvent deploymentEvent =
-        workflowClient.newDeployCommand().addWorkflowModel(WORKFLOW, "workflow.bpmn").send().join();
+        clientRule
+            .getClient()
+            .newDeployCommand()
+            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
+            .send()
+            .join();
 
     clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
   }

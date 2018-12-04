@@ -34,7 +34,7 @@ public class CompleteJobTest extends ClientTest {
     final long jobKey = 12;
 
     // when
-    client.jobClient().newCompleteCommand(jobKey).send().join();
+    client.newCompleteCommand(jobKey).send().join();
 
     // then
     final CompleteJobRequest request = gatewayService.getLastRequest();
@@ -49,7 +49,7 @@ public class CompleteJobTest extends ClientTest {
     final String json = JsonUtil.toJson(Collections.singletonMap("key", "val"));
 
     // when
-    client.jobClient().newCompleteCommand(jobKey).payload(json).send().join();
+    client.newCompleteCommand(jobKey).payload(json).send().join();
 
     // then
     final CompleteJobRequest request = gatewayService.getLastRequest();
@@ -65,7 +65,6 @@ public class CompleteJobTest extends ClientTest {
 
     // when
     client
-        .jobClient()
         .newCompleteCommand(jobKey)
         .payload(new ByteArrayInputStream(StringUtil.getBytes(json)))
         .send()
@@ -84,7 +83,7 @@ public class CompleteJobTest extends ClientTest {
     final Map<String, Object> map = Collections.singletonMap("key", "val");
 
     // when
-    client.jobClient().newCompleteCommand(jobKey).payload(map).send().join();
+    client.newCompleteCommand(jobKey).payload(map).send().join();
 
     // then
     final String expectedJson = JsonUtil.toJson(map);
@@ -103,7 +102,7 @@ public class CompleteJobTest extends ClientTest {
     pojo.setKey("val");
 
     // when
-    client.jobClient().newCompleteCommand(jobKey).payload(pojo).send().join();
+    client.newCompleteCommand(jobKey).payload(pojo).send().join();
 
     // then
     final String expectedJson = JsonUtil.toJson(pojo);

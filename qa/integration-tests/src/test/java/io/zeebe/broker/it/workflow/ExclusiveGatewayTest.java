@@ -52,7 +52,7 @@ public class ExclusiveGatewayTest {
 
     // when
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId("workflow")
         .latestVersion()
@@ -81,7 +81,7 @@ public class ExclusiveGatewayTest {
 
     // when
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId("workflow")
         .latestVersion()
@@ -112,7 +112,7 @@ public class ExclusiveGatewayTest {
 
     // when
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId("workflow")
         .latestVersion()
@@ -121,7 +121,7 @@ public class ExclusiveGatewayTest {
         .join();
 
     clientRule
-        .getJobClient()
+        .getClient()
         .newWorker()
         .jobType("inc")
         .handler(
@@ -145,7 +145,7 @@ public class ExclusiveGatewayTest {
   private void deploy(BpmnModelInstance workflowDefinition) {
     final DeploymentEvent deploymentEvent =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newDeployCommand()
             .addWorkflowModel(workflowDefinition, "workflow.bpmn")
             .send()

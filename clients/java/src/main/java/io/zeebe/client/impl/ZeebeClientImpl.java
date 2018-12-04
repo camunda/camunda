@@ -21,9 +21,32 @@ import io.grpc.ManagedChannelBuilder;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.api.clients.JobClient;
-import io.zeebe.client.api.clients.WorkflowClient;
+import io.zeebe.client.api.commands.ActivateJobsCommandStep1;
+import io.zeebe.client.api.commands.CancelWorkflowInstanceCommandStep1;
+import io.zeebe.client.api.commands.CompleteJobCommandStep1;
+import io.zeebe.client.api.commands.CreateWorkflowInstanceCommandStep1;
+import io.zeebe.client.api.commands.DeployWorkflowCommandStep1;
+import io.zeebe.client.api.commands.FailJobCommandStep1;
+import io.zeebe.client.api.commands.PublishMessageCommandStep1;
+import io.zeebe.client.api.commands.ResolveIncidentCommandStep1;
 import io.zeebe.client.api.commands.TopologyRequestStep1;
+import io.zeebe.client.api.commands.UpdatePayloadWorkflowInstanceCommandStep1;
+import io.zeebe.client.api.commands.UpdateRetriesJobCommandStep1;
+import io.zeebe.client.api.commands.WorkflowRequestStep1;
+import io.zeebe.client.api.commands.WorkflowResourceRequestStep1;
+import io.zeebe.client.api.subscription.JobWorkerBuilderStep1;
 import io.zeebe.client.cmd.ClientException;
+import io.zeebe.client.impl.job.ActivateJobsCommandImpl;
+import io.zeebe.client.impl.job.JobUpdateRetriesCommandImpl;
+import io.zeebe.client.impl.subscription.JobWorkerBuilderImpl;
+import io.zeebe.client.impl.workflow.CancelWorkflowInstanceCommandImpl;
+import io.zeebe.client.impl.workflow.CreateWorkflowInstanceCommandImpl;
+import io.zeebe.client.impl.workflow.DeployWorkflowCommandImpl;
+import io.zeebe.client.impl.workflow.GetWorkflowCommandImpl;
+import io.zeebe.client.impl.workflow.ListWorkflowsCommandImpl;
+import io.zeebe.client.impl.workflow.PublishMessageCommandImpl;
+import io.zeebe.client.impl.workflow.ResolveIncidentCommandImpl;
+import io.zeebe.client.impl.workflow.UpdateWorkflowInstancePayloadCommandImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.util.CloseableSilently;
@@ -43,6 +66,7 @@ public class ZeebeClientImpl implements ZeebeClient {
   private final ManagedChannel channel;
   private final ScheduledExecutorService executorService;
   private final List<CloseableSilently> closeables = new CopyOnWriteArrayList<>();
+  private final JobClient jobClient;
 
   public ZeebeClientImpl(final ZeebeClientConfiguration configuration) {
     this(configuration, buildChannel(configuration));
@@ -61,6 +85,7 @@ public class ZeebeClientImpl implements ZeebeClient {
     this.channel = channel;
     this.asyncStub = GatewayGrpc.newStub(channel);
     this.executorService = executorService;
+    this.jobClient = newJobClient();
   }
 
   public static ManagedChannel buildChannel(ZeebeClientConfiguration config) {
@@ -82,16 +107,6 @@ public class ZeebeClientImpl implements ZeebeClient {
       ZeebeClientConfiguration configuration) {
     final int threadCount = configuration.getNumJobWorkerExecutionThreads();
     return Executors.newScheduledThreadPool(threadCount);
-  }
-
-  @Override
-  public WorkflowClient workflowClient() {
-    return new WorkflowsClientImpl(asyncStub, config, objectMapper);
-  }
-
-  @Override
-  public JobClient jobClient() {
-    return new JobClientImpl(asyncStub, config, objectMapper, executorService, closeables);
   }
 
   @Override
@@ -127,5 +142,78 @@ public class ZeebeClientImpl implements ZeebeClient {
     } catch (InterruptedException e) {
       throw new ClientException("Failed to await termination of in-flight requests", e);
     }
+  }
+
+  @Override
+  public DeployWorkflowCommandStep1 newDeployCommand() {
+    return new DeployWorkflowCommandImpl(asyncStub);
+  }
+
+  @Override
+  public CreateWorkflowInstanceCommandStep1 newCreateInstanceCommand() {
+    return new CreateWorkflowInstanceCommandImpl(asyncStub, objectMapper);
+  }
+
+  @Override
+  public CancelWorkflowInstanceCommandStep1 newCancelInstanceCommand(
+      final long workflowInstanceKey) {
+    return new CancelWorkflowInstanceCommandImpl(asyncStub, workflowInstanceKey);
+  }
+
+  @Override
+  public UpdatePayloadWorkflowInstanceCommandStep1 newUpdatePayloadCommand(
+      final long elementInstanceKey) {
+    return new UpdateWorkflowInstancePayloadCommandImpl(
+        asyncStub, objectMapper, elementInstanceKey);
+  }
+
+  @Override
+  public PublishMessageCommandStep1 newPublishMessageCommand() {
+    return new PublishMessageCommandImpl(asyncStub, config, objectMapper);
+  }
+
+  @Override
+  public WorkflowResourceRequestStep1 newResourceRequest() {
+    return new GetWorkflowCommandImpl(asyncStub);
+  }
+
+  @Override
+  public WorkflowRequestStep1 newWorkflowRequest() {
+    return new ListWorkflowsCommandImpl(asyncStub);
+  }
+
+  @Override
+  public ResolveIncidentCommandStep1 newResolveIncidentCommand(long incidentKey) {
+    return new ResolveIncidentCommandImpl(asyncStub, incidentKey);
+  }
+
+  @Override
+  public UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(long jobKey) {
+    return new JobUpdateRetriesCommandImpl(asyncStub, jobKey);
+  }
+
+  @Override
+  public JobWorkerBuilderStep1 newWorker() {
+    return new JobWorkerBuilderImpl(
+        config, asyncStub, jobClient, objectMapper, executorService, closeables);
+  }
+
+  private JobClient newJobClient() {
+    return new JobClientImpl(asyncStub, config, objectMapper, executorService, closeables);
+  }
+
+  @Override
+  public ActivateJobsCommandStep1 newActivateJobsCommand() {
+    return new ActivateJobsCommandImpl(asyncStub, config, objectMapper);
+  }
+
+  @Override
+  public CompleteJobCommandStep1 newCompleteCommand(long jobKey) {
+    return jobClient.newCompleteCommand(jobKey);
+  }
+
+  @Override
+  public FailJobCommandStep1 newFailCommand(long jobKey) { // TODO Auto-generated method stub
+    return jobClient.newFailCommand(jobKey);
   }
 }

@@ -45,7 +45,7 @@ public class CreateDeploymentTest {
     // when
     final DeploymentEvent result =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newDeployCommand()
             .addWorkflowModel(workflow, "workflow.bpmn")
             .send()
@@ -70,7 +70,7 @@ public class CreateDeploymentTest {
 
     // when
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newDeployCommand()
         .addResourceStringUtf8("Foooo", "invalid.bpmn")
         .send()
@@ -85,7 +85,7 @@ public class CreateDeploymentTest {
 
     // when
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newDeployCommand()
         .addResourceFile(
             getClass()
@@ -107,7 +107,7 @@ public class CreateDeploymentTest {
 
     // when
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newDeployCommand()
         .addWorkflowModel(model, "workflow.bpmn")
         .send()
@@ -119,7 +119,7 @@ public class CreateDeploymentTest {
     // when
     final DeploymentEvent result =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newDeployCommand()
             .addResourceFromClasspath("workflows/simple-workflow.yaml")
             .send()

@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.client.api.clients.JobClient;
+import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.subscription.JobWorker;
 import io.zeebe.exporter.record.Record;
@@ -54,11 +54,11 @@ public class JobWorkerTest {
 
   @Rule public Timeout timeout = Timeout.seconds(20);
 
-  private JobClient jobClient;
+  private ZeebeClient client;
 
   @Before
   public void setUp() {
-    jobClient = clientRule.getClient().jobClient();
+    client = clientRule.getClient();
   }
 
   @Test
@@ -69,7 +69,7 @@ public class JobWorkerTest {
     // when
     final RecordingJobHandler jobHandler = new RecordingJobHandler();
 
-    jobClient
+    client
         .newWorker()
         .jobType("foo")
         .handler(jobHandler)
@@ -92,7 +92,7 @@ public class JobWorkerTest {
 
     final RecordingJobHandler jobHandler = new RecordingJobHandler();
 
-    jobClient
+    client
         .newWorker()
         .jobType("foo")
         .handler(jobHandler)
@@ -104,7 +104,7 @@ public class JobWorkerTest {
     final ActivatedJob lockedJob = jobHandler.getHandledJobs().get(0);
 
     // when
-    jobClient.newCompleteCommand(lockedJob.getKey()).send().join();
+    client.newCompleteCommand(lockedJob.getKey()).send().join();
 
     // then
     waitUntil(() -> jobRecords(JobIntent.COMPLETED).exists());
@@ -131,7 +131,7 @@ public class JobWorkerTest {
         new RecordingJobHandler(
             (c, t) -> c.newCompleteCommand(t.getKey()).payload("{\"a\":3}").send());
 
-    jobClient
+    client
         .newWorker()
         .jobType("foo")
         .handler(jobHandler)
@@ -162,7 +162,7 @@ public class JobWorkerTest {
     final RecordingJobHandler jobHandler = new RecordingJobHandler();
 
     final JobWorker subscription =
-        jobClient
+        client
             .newWorker()
             .jobType("foo")
             .handler(jobHandler)
@@ -198,7 +198,7 @@ public class JobWorkerTest {
               c.newCompleteCommand(j.getKey()).send().join();
             });
 
-    jobClient
+    client
         .newWorker()
         .jobType("foo")
         .handler(handler)
@@ -225,7 +225,7 @@ public class JobWorkerTest {
             (c, j) -> c.newCompleteCommand(j.getKey()).send().join());
 
     // when
-    jobClient.newWorker().jobType("foo").handler(jobHandler).name("myWorker").open();
+    client.newWorker().jobType("foo").handler(jobHandler).name("myWorker").open();
 
     // then
     waitUntil(() -> jobHandler.getHandledJobs().size() == 2);
@@ -245,7 +245,7 @@ public class JobWorkerTest {
             (c, j) -> c.newFailCommand(j.getKey()).retries(0).errorMessage("this failed").send());
 
     // when
-    jobClient.newWorker().jobType("foo").handler(jobHandler).name("myWorker").open();
+    client.newWorker().jobType("foo").handler(jobHandler).name("myWorker").open();
 
     // then
     waitUntil(() -> jobHandler.getHandledJobs().size() == 1);
@@ -270,7 +270,7 @@ public class JobWorkerTest {
             (c, j) -> c.newCompleteCommand(j.getKey()).send().join());
 
     // when
-    jobClient
+    client
         .newWorker()
         .jobType("foo")
         .handler(jobHandler)
@@ -300,7 +300,7 @@ public class JobWorkerTest {
             });
 
     // when
-    jobClient
+    client
         .newWorker()
         .jobType("foo")
         .handler(jobHandler)
@@ -324,7 +324,7 @@ public class JobWorkerTest {
               // don't complete the job - just wait for lock expiration
             });
 
-    jobClient
+    client
         .newWorker()
         .jobType("foo")
         .handler(jobHandler)
@@ -352,7 +352,7 @@ public class JobWorkerTest {
     final RecordingJobHandler jobHandler =
         new RecordingJobHandler((c, t) -> c.newCompleteCommand(t.getKey()).send().join());
 
-    jobClient
+    client
         .newWorker()
         .jobType("foo")
         .handler(jobHandler)
@@ -360,7 +360,7 @@ public class JobWorkerTest {
         .name("test")
         .open();
 
-    jobClient
+    client
         .newWorker()
         .jobType("foo")
         .handler(jobHandler)
@@ -385,7 +385,7 @@ public class JobWorkerTest {
 
     final RecordingJobHandler jobHandler = new RecordingJobHandler();
 
-    jobClient
+    client
         .newWorker()
         .jobType("foo")
         .handler(jobHandler)
@@ -393,7 +393,7 @@ public class JobWorkerTest {
         .name("test")
         .open();
 
-    jobClient
+    client
         .newWorker()
         .jobType("bar")
         .handler(jobHandler)
@@ -415,7 +415,7 @@ public class JobWorkerTest {
     final RecordingJobHandler jobHandler = new RecordingJobHandler();
 
     // when
-    jobClient
+    client
         .newWorker()
         .jobType("foo")
         .handler(jobHandler)

@@ -79,7 +79,6 @@ public class ActivateJobsTest {
     // when
     final ActivateJobsResponse response =
         client
-            .jobClient()
             .newActivateJobsCommand()
             .jobType(JOB_TYPE)
             .amount(amount)
@@ -133,7 +132,7 @@ public class ActivateJobsTest {
 
     // when
     final ActivateJobsResponse response =
-        client.jobClient().newActivateJobsCommand().jobType(jobType).amount(amount).send().join();
+        client.newActivateJobsCommand().jobType(jobType).amount(amount).send().join();
 
     // then
     assertThat(response.getJobs()).hasSize(expectedJobsCount);
@@ -152,7 +151,6 @@ public class ActivateJobsTest {
             .flatMap(
                 i ->
                     client
-                        .jobClient()
                         .newActivateJobsCommand()
                         .jobType(JOB_TYPE)
                         .amount(1)

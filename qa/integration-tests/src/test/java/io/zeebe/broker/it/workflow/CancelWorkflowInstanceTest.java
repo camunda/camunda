@@ -55,7 +55,7 @@ public class CancelWorkflowInstanceTest {
   public void init() {
     final DeploymentEvent deploymentEvent =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newDeployCommand()
             .addWorkflowModel(WORKFLOW, "workflow.bpmn")
             .send()
@@ -69,7 +69,7 @@ public class CancelWorkflowInstanceTest {
     // given
     final WorkflowInstanceEvent workflowInstance =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newCreateInstanceCommand()
             .bpmnProcessId("process")
             .latestVersion()
@@ -78,7 +78,7 @@ public class CancelWorkflowInstanceTest {
 
     // when
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCancelInstanceCommand(workflowInstance.getWorkflowInstanceKey())
         .send()
         .join();
@@ -92,7 +92,7 @@ public class CancelWorkflowInstanceTest {
     // given
     final WorkflowInstanceEvent workflowInstance =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newCreateInstanceCommand()
             .bpmnProcessId("process")
             .latestVersion()
@@ -102,7 +102,7 @@ public class CancelWorkflowInstanceTest {
     final List<ActivatedJob> jobEvents = new ArrayList<>();
 
     clientRule
-        .getJobClient()
+        .getClient()
         .newWorker()
         .jobType("test")
         .handler((c, job) -> jobEvents.add(job))
@@ -111,7 +111,7 @@ public class CancelWorkflowInstanceTest {
     waitUntil(() -> jobEvents.size() > 0);
 
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCancelInstanceCommand(workflowInstance.getWorkflowInstanceKey())
         .send()
         .join();
@@ -119,7 +119,7 @@ public class CancelWorkflowInstanceTest {
     // when
     assertThatThrownBy(
             () -> {
-              clientRule.getJobClient().newCompleteCommand(jobEvents.get(0).getKey()).send().join();
+              clientRule.getClient().newCompleteCommand(jobEvents.get(0).getKey()).send().join();
             })
         .isInstanceOf(ClientException.class);
 

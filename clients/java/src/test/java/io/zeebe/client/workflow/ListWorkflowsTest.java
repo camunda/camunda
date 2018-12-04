@@ -54,7 +54,7 @@ public class ListWorkflowsTest extends ClientTest {
     gatewayService.onListWorkflowsRequest(workflows);
 
     // when
-    final Workflows response = client.workflowClient().newWorkflowRequest().send().join();
+    final Workflows response = client.newWorkflowRequest().send().join();
 
     // then
     assertThat(response.getWorkflows()).hasSize(workflows.length);
@@ -74,7 +74,7 @@ public class ListWorkflowsTest extends ClientTest {
     final String bpmnProcessId = "testProcess";
 
     // when
-    client.workflowClient().newWorkflowRequest().bpmnProcessId(bpmnProcessId).send().join();
+    client.newWorkflowRequest().bpmnProcessId(bpmnProcessId).send().join();
 
     // then
     final ListWorkflowsRequest request = gatewayService.getLastRequest();

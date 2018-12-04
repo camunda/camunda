@@ -57,7 +57,7 @@ public class MessageCorrelationTest {
   public void init() {
     final DeploymentEvent deploymentEvent =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newDeployCommand()
             .addWorkflowModel(WORKFLOW, "wf.bpmn")
             .send()
@@ -70,7 +70,7 @@ public class MessageCorrelationTest {
   public void shouldCorrelateMessage() {
     // given
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId(PROCESS_ID)
         .latestVersion()
@@ -80,7 +80,7 @@ public class MessageCorrelationTest {
 
     // when
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newPublishMessageCommand()
         .messageName("order canceled")
         .correlationKey("order-123")
@@ -103,7 +103,7 @@ public class MessageCorrelationTest {
   public void shouldCorrelateMessageWithZeroTTL() {
     // given
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId(PROCESS_ID)
         .latestVersion()
@@ -115,7 +115,7 @@ public class MessageCorrelationTest {
 
     // when
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newPublishMessageCommand()
         .messageName("order canceled")
         .correlationKey("order-123")
@@ -131,7 +131,7 @@ public class MessageCorrelationTest {
   public void shouldNotCorrelateMessageAfterTTL() {
     // given
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newPublishMessageCommand()
         .messageName("order canceled")
         .correlationKey("order-123")
@@ -141,7 +141,7 @@ public class MessageCorrelationTest {
         .join();
 
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newPublishMessageCommand()
         .messageName("order canceled")
         .correlationKey("order-123")
@@ -152,7 +152,7 @@ public class MessageCorrelationTest {
 
     // when
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId(PROCESS_ID)
         .latestVersion()
@@ -172,7 +172,7 @@ public class MessageCorrelationTest {
   public void shouldRejectMessageWithSameId() {
     // given
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newPublishMessageCommand()
         .messageName("order canceled")
         .correlationKey("order-123")
@@ -183,7 +183,7 @@ public class MessageCorrelationTest {
     // when
     final ZeebeFuture<Void> future =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newPublishMessageCommand()
             .messageName("order canceled")
             .correlationKey("order-123")

@@ -21,8 +21,6 @@ import io.zeebe.broker.it.clustering.ClusteringRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
-import io.zeebe.client.api.clients.JobClient;
-import io.zeebe.client.api.clients.WorkflowClient;
 import io.zeebe.client.api.commands.PartitionInfo;
 import io.zeebe.client.api.commands.Topology;
 import io.zeebe.client.api.events.DeploymentEvent;
@@ -101,14 +99,6 @@ public class GrpcClientRule extends ExternalResource {
         .collect(Collectors.toList());
   }
 
-  public WorkflowClient getWorkflowClient() {
-    return getClient().workflowClient();
-  }
-
-  public JobClient getJobClient() {
-    return getClient().jobClient();
-  }
-
   public long createSingleJob(String type) {
     return createSingleJob(type, b -> {}, "{}");
   }
@@ -131,7 +121,7 @@ public class GrpcClientRule extends ExternalResource {
             .done();
 
     final DeploymentEvent deploymentEvent =
-        getWorkflowClient()
+        getClient()
             .newDeployCommand()
             .addWorkflowModel(modelInstance, "workflow.bpmn")
             .send()
@@ -140,7 +130,7 @@ public class GrpcClientRule extends ExternalResource {
 
     // when
     final long workflowInstanceKey =
-        getWorkflowClient()
+        getClient()
             .newCreateInstanceCommand()
             .bpmnProcessId("process")
             .latestVersion()
