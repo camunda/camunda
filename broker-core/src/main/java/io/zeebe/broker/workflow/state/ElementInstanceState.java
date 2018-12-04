@@ -38,10 +38,13 @@ import org.rocksdb.ColumnFamilyHandle;
 public class ElementInstanceState {
 
   private static final byte[] ELEMENT_PARENT_CHILD_KEY_FAMILY_NAME =
-      "elementParentChild".getBytes();
-  private static final byte[] ELEMENT_INSTANCE_KEY_FAMILY_NAME = "elementInstanceKey".getBytes();
-  private static final byte[] TOKEN_EVENTS_KEY_FAMILY_NAME = "tokenEvents".getBytes();
-  private static final byte[] TOKEN_PARENT_CHILD_KEY_FAMILY_NAME = "tokenParentChild".getBytes();
+      "elementInstanceStateElementParentChild".getBytes();
+  private static final byte[] ELEMENT_INSTANCE_KEY_FAMILY_NAME =
+      "elementInstanceStateElementInstanceKey".getBytes();
+  private static final byte[] TOKEN_EVENTS_KEY_FAMILY_NAME =
+      "elementInstanceStateTokenEvents".getBytes();
+  private static final byte[] TOKEN_PARENT_CHILD_KEY_FAMILY_NAME =
+      "elementInstanceStateTokenParentChild".getBytes();
   private static final byte[] EMPTY_VALUE = new byte[1];
 
   public static final byte[][] COLUMN_FAMILY_NAMES = {
@@ -64,6 +67,7 @@ public class ElementInstanceState {
 
   private final ColumnFamilyHandle elementParentChildHandle;
   private final ColumnFamilyHandle elementInstanceHandle;
+
   // key => record
   private final ColumnFamilyHandle tokenEventHandle;
   // (element instance key, purpose) => token event key
@@ -241,7 +245,6 @@ public class ElementInstanceState {
             record.getKey(),
             (WorkflowInstanceIntent) record.getMetadata().getIntent(),
             record.getValue());
-
     final StoredRecord storedRecord = new StoredRecord(indexedRecord, purpose);
 
     final int keyLength =
@@ -276,7 +279,7 @@ public class ElementInstanceState {
   }
 
   public List<IndexedRecord> getDeferredTokens(long scopeKey) {
-    return getTokenEvents(scopeKey, Purpose.DEFERRED_TOKEN);
+    return collectTokenEvents(scopeKey, Purpose.DEFERRED_TOKEN);
   }
 
   public IndexedRecord getFailedToken(long key) {
@@ -288,24 +291,55 @@ public class ElementInstanceState {
     }
   }
 
-  public List<IndexedRecord> getFinishedTokens(long scopeKey) {
-    return getTokenEvents(scopeKey, Purpose.FINISHED_TOKEN);
+  public void updateFailedToken(IndexedRecord indexedRecord) {
+    final StoredRecord storedRecord = new StoredRecord(indexedRecord, Purpose.FAILED_TOKEN);
+
+    keyBuffer.putLong(0, indexedRecord.getKey(), STATE_BYTE_ORDER);
+    storedRecord.write(valueBuffer, 0);
+
+    rocksDbWrapper.put(
+        tokenEventHandle,
+        keyBuffer.byteArray(),
+        0,
+        Long.BYTES,
+        valueBuffer.byteArray(),
+        0,
+        storedRecord.getLength());
   }
 
-  private List<IndexedRecord> getTokenEvents(long scopeKey, Purpose purpose) {
+  public List<IndexedRecord> getFinishedTokens(long scopeKey) {
+    return collectTokenEvents(scopeKey, Purpose.FINISHED_TOKEN);
+  }
+
+  private List<IndexedRecord> collectTokenEvents(long scopeKey, Purpose purpose) {
+    final List<IndexedRecord> records = new ArrayList<>();
+    visitTokens(scopeKey, purpose, records::add);
+    return records;
+  }
+
+  @FunctionalInterface
+  public interface TokenVisitor {
+    void visitToken(IndexedRecord indexedRecord);
+  }
+
+  public void visitFailedTokens(long scopeKey, TokenVisitor visitor) {
+    visitTokens(scopeKey, Purpose.FAILED_TOKEN, visitor);
+  }
+
+  private void visitTokens(long scopeKey, Purpose purpose, TokenVisitor visitor) {
     longKeyPurposeBuffer.putLong(0, scopeKey, STATE_BYTE_ORDER);
     longKeyPurposeBuffer.putByte(Long.BYTES, (byte) purpose.ordinal());
 
-    final List<IndexedRecord> records = new ArrayList<>();
     rocksDbWrapper.whileEqualPrefix(
         tokenParentChildHandle,
         longKeyPurposeBuffer.byteArray(),
         (key, value) -> {
           final StoredRecord tokenEvent =
               getTokenEvent(getLong(key, Long.BYTES + BitUtil.SIZE_OF_BYTE));
-          records.add(tokenEvent.getRecord());
+          if (tokenEvent != null) {
+            visitor.visitToken(tokenEvent.getRecord());
+          }
         });
-    return records;
   }
 
   private static long getLong(byte[] array, int offset) {

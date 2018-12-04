@@ -19,20 +19,16 @@ package io.zeebe.broker.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
-import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
-import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
-import java.util.List;
-import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -69,11 +65,7 @@ public class JobUpdateRetriesTest {
     final ExecuteCommandResponse response = client.updateJobRetries(jobEvent.getKey(), NEW_RETRIES);
 
     // then
-    final Record jobCommand =
-        apiRule.partitionClient().receiveFirstJobCommand(JobIntent.UPDATE_RETRIES);
-
     assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.getSourceRecordPosition()).isEqualTo(jobCommand.getPosition());
     assertThat(response.getIntent()).isEqualTo(JobIntent.RETRIES_UPDATED);
 
     assertThat(response.getKey()).isEqualTo(jobEvent.getKey());
@@ -89,53 +81,6 @@ public class JobUpdateRetriesTest {
         client.receiveFirstJobEvent(JobIntent.RETRIES_UPDATED);
 
     assertThat(loggedEvent.getValue().getType()).isEqualTo(JOB_TYPE);
-  }
-
-  @Test
-  public void shouldUpdateRetriesAndRetry() {
-    // given
-    client.createJob(JOB_TYPE);
-    apiRule.activateJobs(JOB_TYPE).await();
-
-    final Record jobEvent = client.receiveFirstJobEvent(JobIntent.ACTIVATED);
-
-    client.failJob(jobEvent.getKey(), 0);
-
-    // when
-    final ExecuteCommandResponse response = client.updateJobRetries(jobEvent.getKey(), NEW_RETRIES);
-    apiRule.activateJobs(JOB_TYPE).await();
-
-    // then
-    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.getIntent()).isEqualTo(JobIntent.RETRIES_UPDATED);
-
-    // and the job is published again
-    final Record republishedEvent =
-        client
-            .receiveJobs()
-            .skipUntil(job -> job.getMetadata().getIntent() == JobIntent.RETRIES_UPDATED)
-            .withIntent(JobIntent.ACTIVATED)
-            .getFirst();
-    assertThat(republishedEvent.getKey()).isEqualTo(jobEvent.getKey());
-    assertThat(republishedEvent.getPosition()).isNotEqualTo(jobEvent.getPosition());
-    assertThat(republishedEvent.getTimestamp().toEpochMilli())
-        .isGreaterThanOrEqualTo(jobEvent.getTimestamp().toEpochMilli());
-
-    // and the job lifecycle is correct
-    final List<Record> jobEvents = client.receiveJobs().limit(8).collect(Collectors.toList());
-
-    assertThat(jobEvents)
-        .extracting(Record::getMetadata)
-        .extracting(e -> e.getRecordType(), e -> e.getValueType(), e -> e.getIntent())
-        .containsExactly(
-            tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.CREATE),
-            tuple(RecordType.EVENT, ValueType.JOB, JobIntent.CREATED),
-            tuple(RecordType.EVENT, ValueType.JOB, JobIntent.ACTIVATED),
-            tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.FAIL),
-            tuple(RecordType.EVENT, ValueType.JOB, JobIntent.FAILED),
-            tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.UPDATE_RETRIES),
-            tuple(RecordType.EVENT, ValueType.JOB, JobIntent.RETRIES_UPDATED),
-            tuple(RecordType.EVENT, ValueType.JOB, JobIntent.ACTIVATED));
   }
 
   @Test

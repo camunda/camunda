@@ -5,11 +5,9 @@ the need to write a single line of code.
 
 1. [Download the Zeebe distribution](#step-1-download-the-zeebe-distribution)
 1. [Start the Zeebe broker](#step-2-start-the-zeebe-broker)
-1. [Create a job](#step-3-create-a-job)
-1. [Complete a job](#step-4-complete-a-job)
-1. [Deploy a workflow](#step-5-deploy-a-workflow)
-1. [Create a workflow instance](#step-6-create-a-workflow-instance)
-1. [Complete the workflow instance](#step-7-complete-the-workflow-instance)
+1. [Deploy a workflow](#step-3-deploy-a-workflow)
+1. [Create a workflow instance](#step-4-create-a-workflow-instance)
+1. [Complete a workflow instance](#step-5-complete-a-workflow-instance)
 1. [Next steps](#next-steps)
 
 > **Note:** Some command examples might not work on Windows if you use cmd or
@@ -41,36 +39,63 @@ tree -d
 
 ## Step 2: Start the Zeebe broker
 
-Change into the `bin/` folder and execute the `broker` file if you are using
-Linux or MacOS, or the `broker.bat` file if you are using Windows. This will
-start a new Zeebe broker.
+To start a Zeebe broker use the `broker` or `broker.bat` file located in the
+`bin/` folder.
 
 ```
-cd bin/
-./broker
+./bin/broker
 ```
 ```
-13:59:21.973 [service-controller] [0.0.0.0:26501-zb-actors-1] INFO  io.zeebe.broker.transport - Bound managementApi.server to /0.0.0.0:26502
-13:59:21.973 [service-controller] [0.0.0.0:26501-zb-actors-0] INFO  io.zeebe.transport - Bound replicationApi.server to /0.0.0.0:26503
-13:59:21.975 [service-controller] [0.0.0.0:26501-zb-actors-1] INFO  io.zeebe.broker.transport - Bound subscriptionApi.server to /0.0.0.0:26504
-13:59:22.014 [] [main] INFO  io.zeebe.transport.endpoint - Registering endpoint for node '-1' with address '0.0.0.0:26501' on transport 'broker-client'
-13:59:22.015 [] [main] INFO  io.zeebe.transport.endpoint - Registering endpoint for node '-1' with address '0.0.0.0:26501' on transport 'broker-client-internal'
-13:59:22.031 [service-controller] [0.0.0.0:26501-zb-actors-1] INFO  io.zeebe.transport - Bound clientApi.server to /0.0.0.0:26501
-13:59:22.031 [service-controller] [0.0.0.0:26501-zb-actors-0] INFO  io.zeebe.transport.endpoint - Registering endpoint for node '0' with address '0.0.0.0:26502' on transport 'managementApi.client'
-13:59:22.033 [service-controller] [0.0.0.0:26501-zb-actors-0] INFO  io.zeebe.transport.endpoint - Registering endpoint for node '0' with address '0.0.0.0:26504' on transport 'subscriptionApi.client'
-13:59:22.144 [topology] [0.0.0.0:26501-zb-actors-1] INFO  io.zeebe.transport.endpoint - Registering endpoint for node '0' with address '0.0.0.0:26502' on transport 'managementApi.client'
-13:59:22.145 [topology] [0.0.0.0:26501-zb-actors-1] INFO  io.zeebe.transport.endpoint - Registering endpoint for node '0' with address '0.0.0.0:26503' on transport 'replicationApi.client'
-13:59:22.145 [topology] [0.0.0.0:26501-zb-actors-1] INFO  io.zeebe.transport.endpoint - Registering endpoint for node '0' with address '0.0.0.0:26504' on transport 'subscriptionApi.client'
-13:59:22.169 [io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl] [client-zb-actors-0] INFO  io.zeebe.transport.endpoint - Registering endpoint for node '0' with address '0.0.0.0:26501' on transport 'broker-client'
-13:59:22.170 [io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl] [client-zb-actors-0] INFO  io.zeebe.transport.endpoint - Registering endpoint for node '0' with address '0.0.0.0:26501' on transport 'broker-client-internal'
-13:59:22.444 [] [main] INFO  io.zeebe.gateway - Gateway started using grpc server: ServerImpl{logId=2, transportServer=NettyServer{logId=1, address=/0.0.0.0:26500}}
-13:59:22.453 [service-controller] [0.0.0.0:26501-zb-actors-1] INFO  io.zeebe.raft - Created raft partition-0 with configuration RaftConfiguration{heartbeatInterval='250ms', electionInterval='1s', leaveTimeout='1s'}
-13:59:22.505 [partition-0] [0.0.0.0:26501-zb-actors-0] INFO  io.zeebe.raft - Joined raft in term 0
-13:59:22.897 [exporter] [0.0.0.0:26501-zb-actors-0] INFO  io.zeebe.broker.exporter.debug - Debug exporter opened
+10:59:33.121 [] [main] INFO  io.zeebe.util.config - Reading configuration for class class io.zeebe.broker.system.configuration.BrokerCfg from file /tmp/zeebe/zeebe-broker-0.13.1/conf/zeebe.cfg.toml
+10:59:33.227 [] [main] INFO  io.zeebe.broker.system - Scheduler configuration: Threads{cpu-bound: 2, io-bound: 2}.
+10:59:33.251 [] [main] INFO  io.zeebe.broker.system - Version: 0.13.1
+10:59:33.256 [] [main] INFO  io.zeebe.broker.system - Starting broker with configuration {
+  "network": {
+    "host": "0.0.0.0",
+    "defaultSendBufferSize": "16M",
+    "portOffset": 0,
+    "client": {
+      "controlMessageBufferSize": "8M",
+      "host": "0.0.0.0",
+      "port": 26501,
+      "sendBufferSize": "16M"
+    },
+    ...
+}
+10:59:33.310 [] [main] INFO  io.zeebe.gateway - Version: 0.13.1
+10:59:33.310 [] [main] INFO  io.zeebe.gateway - Starting gateway with configuration {
+  "enable": true,
+  "network": {
+    "host": "0.0.0.0",
+    "port": 26500
+  },
+  "cluster": {
+    "contactPoint": "0.0.0.0:26501",
+    "transportBuffer": "2M",
+    "requestTimeout": "15s"
+  },
+  "threads": {
+    "managementThreads": 1
+  }
+}
+10:59:33.310 [service-controller] [0.0.0.0:26501-zb-actors-1] INFO  io.zeebe.transport - Bound replicationApi.server to /0.0.0.0:26503
+10:59:33.311 [service-controller] [0.0.0.0:26501-zb-actors-0] INFO  io.zeebe.broker.transport - Bound subscriptionApi.server to /0.0.0.0:26504
+10:59:33.311 [service-controller] [0.0.0.0:26501-zb-actors-0] INFO  io.zeebe.broker.transport - Bound managementApi.server to /0.0.0.0:26502
+10:59:33.327 [] [main] INFO  io.zeebe.transport.endpoint - Registering endpoint for node '-1' with address '0.0.0.0:26501' on transport 'broker-client'
+10:59:33.327 [] [main] INFO  io.zeebe.transport.endpoint - Registering endpoint for node '-1' with address '0.0.0.0:26501' on transport 'broker-client-internal'
+10:59:33.329 [service-controller] [0.0.0.0:26501-zb-actors-0] INFO  io.zeebe.transport.endpoint - Registering endpoint for node '0' with address '0.0.0.0:26502' on transport 'managementApi.client'
+10:59:33.336 [service-controller] [0.0.0.0:26501-zb-actors-0] INFO  io.zeebe.transport.endpoint - Registering endpoint for node '0' with address '0.0.0.0:26504' on transport 'subscriptionApi.client'
+10:59:33.350 [service-controller] [0.0.0.0:26501-zb-actors-0] INFO  io.zeebe.transport - Bound clientApi.server to /0.0.0.0:26501
+10:59:33.414 [topology] [0.0.0.0:26501-zb-actors-0] INFO  io.zeebe.transport.endpoint - Registering endpoint for node '0' with address '0.0.0.0:26502' on transport 'managementApi.client'
+10:59:33.414 [topology] [0.0.0.0:26501-zb-actors-0] INFO  io.zeebe.transport.endpoint - Registering endpoint for node '0' with address '0.0.0.0:26503' on transport 'replicationApi.client'
+10:59:33.415 [topology] [0.0.0.0:26501-zb-actors-0] INFO  io.zeebe.transport.endpoint - Registering endpoint for node '0' with address '0.0.0.0:26504' on transport 'subscriptionApi.client'
+10:59:33.500 [io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl] [gateway-zb-actors-0] INFO  io.zeebe.transport.endpoint - Registering endpoint for node '0' with address '0.0.0.0:26501' on transport 'broker-client'
+10:59:33.501 [io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl] [gateway-zb-actors-0] INFO  io.zeebe.transport.endpoint - Registering endpoint for node '0' with address '0.0.0.0:26501' on transport 'broker-client-internal'
+10:59:33.571 [service-controller] [0.0.0.0:26501-zb-actors-0] INFO  io.zeebe.raft - Created raft partition-0 with configuration RaftConfiguration{heartbeatInterval='250ms', electionInterval='1s', leaveTimeout='1s'}
+10:59:33.604 [partition-0] [0.0.0.0:26501-zb-actors-0] INFO  io.zeebe.raft - Joined raft in term 0
+```
 
-```
-
-You will see some output which contains the version of the broker, or different
+You will see some output which contains the version of the broker and
 configuration parameters like directory locations and API socket addresses.
 
 To continue this guide open another terminal to execute commands using the
@@ -90,70 +115,7 @@ Brokers:
     Partition 0 : Leader
 ```
 
-## Step 3: Create a job
-
-A work item in Zeebe is called a [job](/basics/job-workers.html#what-is-a-job). To identify a category of work items
-the job has a type specified by the user. For this example we will use the
-job type `step3`. A job can have a payload which can then be used to
-execute the action required for this work item. In this example we will set the
-payload to contain the key `zeebe` and the value `2018`. When the job was created
-the response will contain the unique key of this job instance.
-
-> **Note:** Windows users who want to execute this command using cmd or Powershell
-> have to escape the payload differently.
-> - cmd: `"{\"zeebe\": 2018}"`
-> - Powershell: `'{"\"zeebe"\": 2018}'`
-
-```
-./bin/zbctl create job step3 --payload '{"zeebe": 2018}'
-```
-```
-{
-  "key": 2
-}
-
-```
-
-## Step 4: Complete a job
-
-Before a job can be completed it has to be activated by a job worker. After a job
-is activated it can be completed or failed by the worker.
-`zbctl` allows us to activate jobs for a given type and afterwards complete them with an updated payload.
-
-First activate a job of the type `step3`. The returned job contains the unique `key` of the job
-which is used to complete the job later.
-```
-./bin/zbctl activate jobs step3
-```
-```
-2018/10/15 13:47:35 Activated 1 for type step3
-2018/10/15 13:47:35 Job 1 / 1
-{
-  "key": 2,
-  "type": "step3",
-  "jobHeaders": {
-    "workflowInstanceKey": -1,
-    "workflowDefinitionVersion": -1,
-    "workflowKey": -1,
-    "activityInstanceKey": -1
-  },
-  "customHeaders": "{}",
-  "worker": "zbctl",
-  "retries": 3,
-  "deadline": 1539604355443,
-  "payload": "{\"zeebe\":2018}"
-}
-```
-
-After working on the job we can complete it using the `key` from the activated job.
-```
-./bin/zbctl complete job 2
-```
-```
-2018/10/15 13:48:26 Completed job with key 2 and payload {}
-```
-
-## Step 5: Deploy a workflow
+## Step 3: Deploy a workflow
 
 A [workflow](basics/workflows.html) is used to orchestrate loosely coupled job
 workers and the flow of data between them.
@@ -166,8 +128,8 @@ download it with the following link:
 
 The process describes a sequential flow of three tasks *Collect Money*, *Fetch
 Items* and *Ship Parcel*. If you open the `order-process.bpmn` file in a text
-editor you will see that every task has type defined in the XML which is later
-used as job type.
+editor you will see that every task has an attribute `type` defined in the XML
+which is later used as job type.
 
 ```
 <!-- [...] -->
@@ -201,7 +163,7 @@ But first let's deploy the workflow to the Zeebe broker.
 ```
 ```
 {
-  "key": 1,
+  "key": 2,
   "workflows": [
     {
       "bpmnProcessId": "order-process",
@@ -213,12 +175,12 @@ But first let's deploy the workflow to the Zeebe broker.
 }
 ```
 
-## Step 6: Create a workflow instance
+## Step 4: Create a workflow instance
 
 After the workflow is deployed we can create new instances of it. Every
 instance of a workflow is a single execution of the workflow. To create a new
 instance we have to specify the process ID from the BPMN file, in
-our case the ID is `order-process`.
+our case the ID is `order-process` as defined in the `order-process.bpmn`:
 
 ```
 <bpmn:process id="order-process" isExecutable="true">
@@ -240,23 +202,24 @@ specify the initial data of the instance as payload when we start the instance.
   "workflowKey": 1,
   "bpmnProcessId": "order-process",
   "version": 1,
-  "workflowInstanceKey": 6
+  "workflowInstanceKey": 3
 }
 ```
 
-## Step 7: Complete the workflow instance
+## Step 5: Complete a workflow instance
 
-To complete the instance all three jobs have to be completed. Therefore we
-need to activate and complete one job per type. Instead of activating and completing
-each job manually we can create a [job worker](/basics/job-workers.html). A job worker
-is a long living process which repeatly tries to activate jobs for a given job type
-and completes them after executing its business logic. The `zbctl` also provides
-a command to spawn simple job workers using an external command or script. The
-job worker will receive for every job the payload as JSON object on `stdin` and
-has to return its result also as JSON object on `stdout` if it handled the job
-successfully.
+To complete the instance all three tasks have to be executed. In Zeebe a job is
+created for every task which is reached during workflow instance execution. In
+order to finish a job and thereby the corresponding task it has to be activated
+and completed by a [job worker](/basics/job-workers.html). A job worker is a
+long living process which repeatedly tries to activate jobs for a given job
+type and completes them after executing its business logic. The `zbctl` also
+provides a command to spawn simple job workers using an external command or
+script. The job worker will receive for every job the payload as JSON object on
+`stdin` and has to return its result also as JSON object on `stdout` if it
+handled the job successfully.
 
-In this example we use the unix command `cat` which just outputs what it recieves
+In this example we use the unix command `cat` which just outputs what it receives
 on `stdin`. To complete a workflow instance we now have to create a job worker for
 each of the three task types from the workflow definition: `payment-service`,
 `inventory-service` and `shipment-service`.
@@ -271,14 +234,14 @@ each of the three task types from the workflow definition: `payment-service`,
 ./bin/zbctl create worker shipment-service --handler cat &
 ```
 ```
-2018/11/02 09:21:00 Activated job 12 with payload {"orderId":1234}
-2018/11/02 09:21:00 Handler completed job 12 with payload {"orderId":1234}
+2018/12/03 11:20:24 Activated job 7 with payload {"orderId":1234}
+2018/12/03 11:20:24 Handler completed job 7 with payload {"orderId":1234}
 
-2018/11/02 09:21:26 Activated job 27 with payload {"orderId":1234}
-2018/11/02 09:21:26 Handler completed job 27 with payload {"orderId":1234}
+2018/12/03 11:20:24 Activated job 13 with payload {"orderId":1234}
+2018/12/03 11:20:24 Handler completed job 13 with payload {"orderId":1234}
 
-2018/11/02 09:21:31 Activated job 62 with payload {"orderId":1234}
-2018/11/02 09:21:31 Handler completed job 62 with payload {"orderId":1234}
+2018/12/03 11:20:24 Activated job 20 with payload {"orderId":1234}
+2018/12/03 11:20:24 Handler completed job 20 with payload {"orderId":1234}
 ```
 
 After the job workers are running in the background we can create more instances

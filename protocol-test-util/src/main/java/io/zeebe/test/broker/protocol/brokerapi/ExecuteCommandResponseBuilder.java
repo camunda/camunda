@@ -20,7 +20,6 @@ import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.util.collection.MapFactoryBuilder;
-import java.time.Instant;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -57,26 +56,6 @@ public class ExecuteCommandResponseBuilder {
     return this;
   }
 
-  public ExecuteCommandResponseBuilder position(long position) {
-    return position((r) -> position);
-  }
-
-  public ExecuteCommandResponseBuilder position(
-      Function<ExecuteCommandRequest, Long> positionFunction) {
-    commandResponseWriter.setPositionFunction(positionFunction);
-    return this;
-  }
-
-  public ExecuteCommandResponseBuilder sourceRecordPosition(long sourceRecordPosition) {
-    return sourceRecordPosition((r) -> sourceRecordPosition);
-  }
-
-  public ExecuteCommandResponseBuilder sourceRecordPosition(
-      Function<ExecuteCommandRequest, Long> sourceRecordPositionFunction) {
-    commandResponseWriter.setSourceRecordPositionFunction(sourceRecordPositionFunction);
-    return this;
-  }
-
   public ExecuteCommandResponseBuilder value(Map<String, Object> map) {
     commandResponseWriter.setEventFunction((re) -> map);
     return this;
@@ -107,11 +86,6 @@ public class ExecuteCommandResponseBuilder {
 
   public MapFactoryBuilder<ExecuteCommandRequest, ExecuteCommandResponseBuilder> value() {
     return new MapFactoryBuilder<>(this, commandResponseWriter::setEventFunction);
-  }
-
-  public ExecuteCommandResponseBuilder timestamp(Instant timestamp) {
-    commandResponseWriter.setTimestamp(timestamp);
-    return this;
   }
 
   public void register() {

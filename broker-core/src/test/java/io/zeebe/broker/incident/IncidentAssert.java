@@ -17,11 +17,11 @@
  */
 package io.zeebe.broker.incident;
 
-import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.exporter.record.Assertions;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.IncidentRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.impl.record.value.incident.ErrorType;
 
 public class IncidentAssert {
 
@@ -127,17 +127,5 @@ public class IncidentAssert {
     Assertions.assertThat(incidentEvent.getValue())
         .hasErrorType(errorType)
         .hasErrorMessage(errorMsg);
-  }
-
-  public static void assertIncidentOfStandaloneJob(
-      Record<IncidentRecordValue> incidentEvent, long jobKey) {
-    Assertions.assertThat(incidentEvent.getValue())
-        .hasErrorType(ErrorType.JOB_NO_RETRIES.name())
-        .hasErrorMessage("No more retries left.")
-        .hasBpmnProcessId("")
-        .hasWorkflowInstanceKey(-1)
-        .hasElementId("")
-        .hasElementInstanceKey(-1)
-        .hasJobKey(jobKey);
   }
 }

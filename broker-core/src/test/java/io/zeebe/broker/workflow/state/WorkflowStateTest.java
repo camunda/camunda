@@ -20,7 +20,7 @@ package io.zeebe.broker.workflow.state;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
+import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.workflow.deployment.transform.DeploymentTransformer;
 import io.zeebe.broker.workflow.model.element.AbstractFlowElement;
 import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
@@ -29,7 +29,6 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
 import java.util.Collection;
-import java.util.List;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -41,39 +40,18 @@ public class WorkflowStateTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   private WorkflowState workflowState;
+  private ZeebeState zeebeState;
 
   @Before
   public void setUp() throws Exception {
-    workflowState = new WorkflowState();
-    workflowState.open(folder.newFolder("rocksdb"), false);
+    zeebeState = new ZeebeState();
+    zeebeState.open(folder.newFolder("rocksdb"), false);
+    workflowState = zeebeState.getWorkflowState();
   }
 
   @After
   public void tearDown() {
-    workflowState.close();
-  }
-
-  @Test
-  public void shouldGetNextWorkflowKey() {
-    // given
-
-    // when
-    final long nextWorkflowKey = workflowState.getNextWorkflowKey();
-
-    // then
-    assertThat(nextWorkflowKey).isEqualTo(1L);
-  }
-
-  @Test
-  public void shouldIncrementWorkflowKey() {
-    // given
-    workflowState.getNextWorkflowKey();
-
-    // when
-    final long nextWorkflowKey = workflowState.getNextWorkflowKey();
-
-    // then
-    assertThat(nextWorkflowKey).isEqualTo(2L);
+    zeebeState.close();
   }
 
   @Test
@@ -172,7 +150,7 @@ public class WorkflowStateTest {
   @Test
   public void shouldPutDeploymentToState() {
     // given
-    final DeploymentRecord deploymentRecord = creatingDeploymentRecord(workflowState);
+    final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
 
     // when
     workflowState.putDeployment(1, deploymentRecord);
@@ -189,8 +167,8 @@ public class WorkflowStateTest {
     // given
 
     // when
-    workflowState.putDeployment(1, creatingDeploymentRecord(workflowState));
-    workflowState.putDeployment(2, creatingDeploymentRecord(workflowState));
+    workflowState.putDeployment(1, creatingDeploymentRecord(zeebeState));
+    workflowState.putDeployment(2, creatingDeploymentRecord(zeebeState));
 
     // then
     final DeployedWorkflow deployedWorkflow =
@@ -213,10 +191,10 @@ public class WorkflowStateTest {
   @Test
   public void shouldRestartVersionCountOnDifferenProcessId() {
     // given
-    workflowState.putDeployment(1, creatingDeploymentRecord(workflowState));
+    workflowState.putDeployment(1, creatingDeploymentRecord(zeebeState));
 
     // when
-    workflowState.putDeployment(2, creatingDeploymentRecord(workflowState, "otherId"));
+    workflowState.putDeployment(2, creatingDeploymentRecord(zeebeState, "otherId"));
 
     // then
     final DeployedWorkflow deployedWorkflow =
@@ -240,8 +218,8 @@ public class WorkflowStateTest {
   @Test
   public void shouldGetLatestDeployedWorkflow() {
     // given
-    workflowState.putDeployment(1, creatingDeploymentRecord(workflowState));
-    workflowState.putDeployment(2, creatingDeploymentRecord(workflowState));
+    workflowState.putDeployment(1, creatingDeploymentRecord(zeebeState));
+    workflowState.putDeployment(2, creatingDeploymentRecord(zeebeState));
 
     // when
     final DeployedWorkflow latestWorkflow =
@@ -273,12 +251,12 @@ public class WorkflowStateTest {
   @Test
   public void shouldGetLatestDeployedWorkflowAfterDeploymentWasAdded() {
     // given
-    workflowState.putDeployment(1, creatingDeploymentRecord(workflowState));
+    workflowState.putDeployment(1, creatingDeploymentRecord(zeebeState));
     final DeployedWorkflow firstLatest =
         workflowState.getLatestWorkflowVersionByProcessId(wrapString("processId"));
 
     // when
-    workflowState.putDeployment(2, creatingDeploymentRecord(workflowState));
+    workflowState.putDeployment(2, creatingDeploymentRecord(zeebeState));
 
     // then
     final DeployedWorkflow latestWorkflow =
@@ -300,7 +278,7 @@ public class WorkflowStateTest {
   @Test
   public void shouldGetExecutableWorkflow() {
     // given
-    final DeploymentRecord deploymentRecord = creatingDeploymentRecord(workflowState);
+    final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
     workflowState.putDeployment(1, deploymentRecord);
 
     // when
@@ -317,7 +295,7 @@ public class WorkflowStateTest {
   @Test
   public void shouldGetExecutableWorkflowByKey() {
     // given
-    final DeploymentRecord deploymentRecord = creatingDeploymentRecord(workflowState);
+    final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
     final int deploymentKey = 1;
     workflowState.putDeployment(deploymentKey, deploymentRecord);
 
@@ -335,7 +313,7 @@ public class WorkflowStateTest {
   @Test
   public void shouldGetExecutableWorkflowByLatestWorkflow() {
     // given
-    final DeploymentRecord deploymentRecord = creatingDeploymentRecord(workflowState);
+    final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
     final int deploymentKey = 1;
     workflowState.putDeployment(deploymentKey, deploymentRecord);
 
@@ -353,9 +331,9 @@ public class WorkflowStateTest {
   @Test
   public void shouldGetAllWorkflows() {
     // given
-    workflowState.putDeployment(1, creatingDeploymentRecord(workflowState));
-    workflowState.putDeployment(2, creatingDeploymentRecord(workflowState));
-    workflowState.putDeployment(3, creatingDeploymentRecord(workflowState, "otherId"));
+    workflowState.putDeployment(1, creatingDeploymentRecord(zeebeState));
+    workflowState.putDeployment(2, creatingDeploymentRecord(zeebeState));
+    workflowState.putDeployment(3, creatingDeploymentRecord(zeebeState, "otherId"));
 
     // when
     final Collection<DeployedWorkflow> workflows = workflowState.getWorkflows();
@@ -372,8 +350,8 @@ public class WorkflowStateTest {
   @Test
   public void shouldGetAllWorkflowsWithProcessId() {
     // given
-    workflowState.putDeployment(1, creatingDeploymentRecord(workflowState));
-    workflowState.putDeployment(2, creatingDeploymentRecord(workflowState));
+    workflowState.putDeployment(1, creatingDeploymentRecord(zeebeState));
+    workflowState.putDeployment(2, creatingDeploymentRecord(zeebeState));
 
     // when
     final Collection<DeployedWorkflow> workflows =
@@ -390,8 +368,8 @@ public class WorkflowStateTest {
   @Test
   public void shouldNotGetWorkflowsWithOtherProcessId() {
     // given
-    workflowState.putDeployment(1, creatingDeploymentRecord(workflowState));
-    workflowState.putDeployment(2, creatingDeploymentRecord(workflowState, "otherId"));
+    workflowState.putDeployment(1, creatingDeploymentRecord(zeebeState));
+    workflowState.putDeployment(2, creatingDeploymentRecord(zeebeState, "otherId"));
 
     // when
     final Collection<DeployedWorkflow> workflows =
@@ -406,209 +384,11 @@ public class WorkflowStateTest {
     assertThat(workflows).extracting(DeployedWorkflow::getKey).containsOnly(2L);
   }
 
-  @Test
-  public void shouldPutAndFindWorkflowSubscription() {
-    // given
-    final WorkflowSubscription workflowSubscription =
-        new WorkflowSubscription("message", "correlation", 1, 2, 100);
-    workflowSubscription.setOpened();
-    // when
-    workflowState.put(workflowSubscription);
-
-    // then
-    final WorkflowInstanceSubscriptionRecord workflowInstanceSubscriptionRecord =
-        new WorkflowInstanceSubscriptionRecord();
-    workflowInstanceSubscriptionRecord.setMessageName(wrapString("message"));
-    workflowInstanceSubscriptionRecord.setWorkflowInstanceKey(1);
-    workflowInstanceSubscriptionRecord.setElementInstanceKey(2);
-
-    final WorkflowSubscription subscription =
-        workflowState.findSubscription(workflowInstanceSubscriptionRecord);
-
-    assertThat(subscription).isNotNull();
-
-    assertThat(subscription.getMessageName()).isEqualTo(wrapString("message"));
-    assertThat(subscription.getCorrelationKey()).isEqualTo(wrapString("correlation"));
-    assertThat(subscription.getWorkflowInstanceKey()).isEqualTo(1);
-    assertThat(subscription.getElementInstanceKey()).isEqualTo(2);
-    assertThat(subscription.getCommandSentTime()).isEqualTo(100);
-    assertThat(subscription.isOpening()).isFalse();
+  public static DeploymentRecord creatingDeploymentRecord(ZeebeState zeebeState) {
+    return creatingDeploymentRecord(zeebeState, "processId");
   }
 
-  @Test
-  public void shouldFindOneWorkflowSubscription() {
-    // given
-    workflowState.put(new WorkflowSubscription("message", "correlation", 1, 2, 100));
-    workflowState.put(new WorkflowSubscription("msg1", "correlation", 2, 3, 100));
-    workflowState.put(new WorkflowSubscription("msg2", "correlation", 3, 4, 100));
-
-    // when
-    final WorkflowInstanceSubscriptionRecord workflowInstanceSubscriptionRecord =
-        new WorkflowInstanceSubscriptionRecord();
-    workflowInstanceSubscriptionRecord.setMessageName(wrapString("message"));
-    workflowInstanceSubscriptionRecord.setWorkflowInstanceKey(1);
-    workflowInstanceSubscriptionRecord.setElementInstanceKey(2);
-
-    final WorkflowSubscription subscription =
-        workflowState.findSubscription(workflowInstanceSubscriptionRecord);
-
-    // then
-    assertThat(subscription).isNotNull();
-
-    assertThat(subscription.getMessageName()).isEqualTo(wrapString("message"));
-    assertThat(subscription.getCorrelationKey()).isEqualTo(wrapString("correlation"));
-    assertThat(subscription.getWorkflowInstanceKey()).isEqualTo(1);
-    assertThat(subscription.getElementInstanceKey()).isEqualTo(2);
-    assertThat(subscription.getCommandSentTime()).isEqualTo(100);
-  }
-
-  @Test
-  public void shouldNotFindWorkflowSubscriptionBefore() {
-    // given
-    final WorkflowSubscription workflowSubscription =
-        new WorkflowSubscription("message", "correlation", 1, 2, 100);
-    workflowState.put(workflowSubscription);
-
-    // when
-    final List<WorkflowSubscription> workflowSubscriptions =
-        workflowState.findSubscriptionsBefore(50L);
-
-    // then
-    assertThat(workflowSubscriptions).isEmpty();
-  }
-
-  @Test
-  public void shouldFindWorkflowSubscriptionBefore() {
-    // given
-    workflowState.put(new WorkflowSubscription("message", "correlation", 1, 2, 100));
-    workflowState.put(new WorkflowSubscription("msg", "correlation", 3, 4, 352));
-
-    // when
-    final List<WorkflowSubscription> workflowSubscriptions =
-        workflowState.findSubscriptionsBefore(101L);
-
-    // then
-    assertThat(workflowSubscriptions).hasSize(1);
-
-    assertThat(workflowSubscriptions)
-        .extracting(w -> w.getMessageName())
-        .containsExactly(wrapString("message"));
-    assertThat(workflowSubscriptions)
-        .extracting(w -> w.getWorkflowInstanceKey())
-        .containsExactly(1L);
-    assertThat(workflowSubscriptions)
-        .extracting(w -> w.getElementInstanceKey())
-        .containsExactly(2L);
-    assertThat(workflowSubscriptions).extracting(w -> w.getCommandSentTime()).containsExactly(100L);
-  }
-
-  @Test
-  public void shouldFindWorkflowSubscriptionBeforeInOrder() {
-    // given
-    // 100 = 00000000 00000000 00000000 01100100 (BE)
-    // 352 = 00000000 00000000 00000001 01100000 (BE)
-    workflowState.put(new WorkflowSubscription("message", "correlation", 1, 2, 100));
-    workflowState.put(new WorkflowSubscription("msg", "correlation", 3, 4, 352));
-
-    // when
-    final List<WorkflowSubscription> workflowSubscriptions =
-        workflowState.findSubscriptionsBefore(400L);
-
-    // then
-    assertThat(workflowSubscriptions).hasSize(2);
-    assertThat(workflowSubscriptions)
-        .extracting(s -> s.getWorkflowInstanceKey())
-        .containsExactly(1L, 3L);
-  }
-
-  @Test
-  public void shouldFindAllWorkflowSubscriptionBefore() {
-    // given
-    workflowState.put(new WorkflowSubscription("message", "correlation", 1, 2, 100));
-    workflowState.put(new WorkflowSubscription("msg", "correlation", 3, 4, 150));
-
-    // when
-    final List<WorkflowSubscription> workflowSubscriptions =
-        workflowState.findSubscriptionsBefore(151L);
-
-    // then
-    assertThat(workflowSubscriptions).hasSize(2);
-
-    assertThat(workflowSubscriptions)
-        .extracting(w -> w.getMessageName())
-        .containsExactlyInAnyOrder(wrapString("message"), wrapString("msg"));
-    assertThat(workflowSubscriptions)
-        .extracting(w -> w.getWorkflowInstanceKey())
-        .containsExactlyInAnyOrder(1L, 3L);
-    assertThat(workflowSubscriptions)
-        .extracting(w -> w.getElementInstanceKey())
-        .containsExactlyInAnyOrder(2L, 4L);
-    assertThat(workflowSubscriptions)
-        .extracting(w -> w.getCommandSentTime())
-        .containsExactlyInAnyOrder(100L, 150L);
-  }
-
-  @Test
-  public void shouldRemoveWorkflowSubscription() {
-    // given
-    final WorkflowSubscription workflowSubscription =
-        new WorkflowSubscription("message", "correlation", 1, 2, 100);
-    workflowState.put(workflowSubscription);
-
-    // when
-    workflowState.remove(workflowSubscription);
-
-    // then
-    final WorkflowInstanceSubscriptionRecord workflowInstanceSubscriptionRecord =
-        new WorkflowInstanceSubscriptionRecord();
-    workflowInstanceSubscriptionRecord.setMessageName(wrapString("message"));
-    workflowInstanceSubscriptionRecord.setWorkflowInstanceKey(1);
-    workflowInstanceSubscriptionRecord.setElementInstanceKey(2);
-
-    final WorkflowSubscription subscription =
-        workflowState.findSubscription(workflowInstanceSubscriptionRecord);
-
-    assertThat(subscription).isNull();
-
-    // and
-    final List<WorkflowSubscription> workflowSubscriptions =
-        workflowState.findSubscriptionsBefore(150L);
-    assertThat(workflowSubscriptions).isEmpty();
-  }
-
-  @Test
-  public void shouldRemoveWorkflowSubscriptionWithRecord() {
-    // given
-    final WorkflowSubscription workflowSubscription =
-        new WorkflowSubscription("message", "correlation", 1, 2, 100);
-    workflowState.put(workflowSubscription);
-
-    // when
-    final WorkflowInstanceSubscriptionRecord workflowInstanceSubscriptionRecord =
-        new WorkflowInstanceSubscriptionRecord();
-    workflowInstanceSubscriptionRecord.setMessageName(wrapString("message"));
-    workflowInstanceSubscriptionRecord.setWorkflowInstanceKey(1);
-    workflowInstanceSubscriptionRecord.setElementInstanceKey(2);
-    workflowState.remove(workflowInstanceSubscriptionRecord);
-
-    // then
-    final WorkflowSubscription subscription =
-        workflowState.findSubscription(workflowInstanceSubscriptionRecord);
-
-    assertThat(subscription).isNull();
-
-    // and
-    final List<WorkflowSubscription> workflowSubscriptions =
-        workflowState.findSubscriptionsBefore(150L);
-    assertThat(workflowSubscriptions).isEmpty();
-  }
-
-  public static DeploymentRecord creatingDeploymentRecord(WorkflowState workflowState) {
-    return creatingDeploymentRecord(workflowState, "processId");
-  }
-
-  public static DeploymentRecord creatingDeploymentRecord(
-      WorkflowState workflowState, String processId) {
+  public static DeploymentRecord creatingDeploymentRecord(ZeebeState zeebeState, String processId) {
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess(processId)
             .startEvent()
@@ -628,7 +408,7 @@ public class WorkflowStateTest {
         .setResource(wrapString(Bpmn.convertToString(modelInstance)))
         .setResourceType(ResourceType.BPMN_XML);
 
-    final DeploymentTransformer deploymentTransformer = new DeploymentTransformer(workflowState);
+    final DeploymentTransformer deploymentTransformer = new DeploymentTransformer(zeebeState);
 
     deploymentTransformer.transform(deploymentRecord);
     return deploymentRecord;

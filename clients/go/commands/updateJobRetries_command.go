@@ -6,6 +6,10 @@ import (
 	"time"
 )
 
+const (
+	DefaultJobRetries = 3
+)
+
 type DispatchUpdateJobRetriesCommand interface {
 	Send() (*pb.UpdateJobRetriesResponse, error)
 }

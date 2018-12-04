@@ -25,7 +25,6 @@ import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.clients.JobClient;
-import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.subscription.JobWorker;
 import io.zeebe.exporter.record.Record;
@@ -65,7 +64,7 @@ public class JobWorkerTest {
   @Test
   public void shouldOpenSubscription() throws InterruptedException {
     // given
-    final JobEvent job = createJobOfType("foo");
+    final long jobKey = createJobOfType("foo");
 
     // when
     final RecordingJobHandler jobHandler = new RecordingJobHandler();
@@ -83,7 +82,7 @@ public class JobWorkerTest {
 
     final List<ActivatedJob> jobs = jobHandler.getHandledJobs();
     assertThat(jobs).hasSize(1);
-    assertThat(jobs.get(0).getKey()).isEqualTo(job.getKey());
+    assertThat(jobs.get(0).getKey()).isEqualTo(jobKey);
   }
 
   @Test
@@ -124,14 +123,8 @@ public class JobWorkerTest {
   @Test
   public void shouldCompleteJobInHandler() throws InterruptedException {
     // given
-    final JobEvent createdEvent =
-        jobClient
-            .newCreateCommand()
-            .jobType("foo")
-            .payload("{\"a\":1}")
-            .addCustomHeader("b", "2")
-            .send()
-            .join();
+    final long jobKey =
+        clientRule.createSingleJob("foo", b -> b.zeebeTaskHeader("b", "2"), "{\"a\":1}");
 
     // when
     final RecordingJobHandler jobHandler =
@@ -152,7 +145,7 @@ public class JobWorkerTest {
     assertThat(jobHandler.getHandledJobs()).hasSize(1);
 
     final ActivatedJob subscribedJob = jobHandler.getHandledJobs().get(0);
-    assertThat(subscribedJob.getKey()).isEqualTo(createdEvent.getKey());
+    assertThat(subscribedJob.getKey()).isEqualTo(jobKey);
     assertThat(subscribedJob.getType()).isEqualTo("foo");
     assertThat(subscribedJob.getDeadline()).isAfter(Instant.now());
 
@@ -181,7 +174,7 @@ public class JobWorkerTest {
     subscription.close();
 
     // then
-    jobClient.newCreateCommand().jobType("foo").send();
+    clientRule.createSingleJob("foo");
 
     createJobOfType("foo");
 
@@ -243,9 +236,31 @@ public class JobWorkerTest {
   }
 
   @Test
+  public void shouldFailJobWithErrorMessage() {
+    // given
+    createJobOfType("foo");
+
+    final RecordingJobHandler jobHandler =
+        new RecordingJobHandler(
+            (c, j) -> c.newFailCommand(j.getKey()).retries(0).errorMessage("this failed").send());
+
+    // when
+    jobClient.newWorker().jobType("foo").handler(jobHandler).name("myWorker").open();
+
+    // then
+    waitUntil(() -> jobHandler.getHandledJobs().size() == 1);
+    final Record<JobRecordValue> record = jobRecords(JobIntent.FAILED).getFirst();
+    assertThat(record.getValue())
+        .hasType("foo")
+        .hasWorker("myWorker")
+        .hasRetries(0)
+        .hasErrorMessage("this failed");
+  }
+
+  @Test
   public void shouldMarkJobAsFailedAndRetryIfHandlerThrowsException() {
     // given
-    final JobEvent job = createJobOfType("foo");
+    final long jobKey = createJobOfType("foo");
 
     final RecordingJobHandler jobHandler =
         new RecordingJobHandler(
@@ -266,7 +281,6 @@ public class JobWorkerTest {
     // then the subscription is not broken and other jobs are still handled
     waitUntil(() -> jobHandler.getHandledJobs().size() == 2);
 
-    final long jobKey = job.getKey();
     assertThat(jobHandler.getHandledJobs())
         .extracting(ActivatedJob::getKey)
         .containsExactly(jobKey, jobKey);
@@ -277,7 +291,7 @@ public class JobWorkerTest {
   @Test
   public void shouldNotLockJobIfRetriesAreExhausted() {
     // given
-    jobClient.newCreateCommand().jobType("foo").retries(1).send().join();
+    clientRule.createSingleJob("foo", b -> b.zeebeTaskRetries(1));
 
     final RecordingJobHandler jobHandler =
         new RecordingJobHandler(
@@ -300,40 +314,9 @@ public class JobWorkerTest {
   }
 
   @Test
-  public void shouldUpdateJobRetries() {
-    // given
-    final JobEvent job = jobClient.newCreateCommand().jobType("foo").retries(1).send().join();
-
-    final RecordingJobHandler jobHandler =
-        new RecordingJobHandler(
-            (c, j) -> {
-              throw new RuntimeException("expected failure");
-            },
-            (c, j) -> c.newCompleteCommand(j.getKey()).send().join());
-
-    jobClient
-        .newWorker()
-        .jobType("foo")
-        .handler(jobHandler)
-        .timeout(Duration.ofMinutes(5))
-        .name("test")
-        .open();
-
-    waitUntil(() -> jobHandler.getHandledJobs().size() == 1);
-    waitUntil(() -> jobRecords(JobIntent.FAILED).withRetries(0).exists());
-
-    // when
-    jobClient.newUpdateRetriesCommand(job.getKey()).retries(2).send().join();
-
-    // then
-    waitUntil(() -> jobHandler.getHandledJobs().size() == 2);
-    waitUntil(() -> jobRecords(JobIntent.COMPLETED).exists());
-  }
-
-  @Test
   public void shouldExpireJobLock() {
     // given
-    final JobEvent job = createJobOfType("foo");
+    final long jobKey = createJobOfType("foo");
 
     final RecordingJobHandler jobHandler =
         new RecordingJobHandler(
@@ -355,7 +338,6 @@ public class JobWorkerTest {
     brokerRule.getClock().addTime(Duration.ofMinutes(6));
     waitUntil(() -> jobHandler.getHandledJobs().size() == 2);
 
-    final long jobKey = job.getKey();
     assertThat(jobHandler.getHandledJobs())
         .hasSize(2)
         .extracting(ActivatedJob::getKey)
@@ -445,7 +427,7 @@ public class JobWorkerTest {
     TestUtil.waitUntil(() -> jobHandler.getHandledJobs().size() > subscriptionCapacity);
   }
 
-  private JobEvent createJobOfType(final String type) {
-    return jobClient.newCreateCommand().jobType(type).send().join();
+  private long createJobOfType(final String type) {
+    return clientRule.createSingleJob(type);
   }
 }

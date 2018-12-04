@@ -26,7 +26,6 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo;
 import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo.Builder;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
@@ -36,6 +35,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.ListWorkflowsResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadResponse;
@@ -45,6 +45,7 @@ import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto.BrokerDto;
 import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto.PartitionDto;
 import io.zeebe.protocol.impl.data.repository.WorkflowMetadataAndResource;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
@@ -129,10 +130,6 @@ public class ResponseMapper {
 
   public static PublishMessageResponse toPublishMessageResponse(long key, Object brokerResponse) {
     return PublishMessageResponse.getDefaultInstance();
-  }
-
-  public static CreateJobResponse toCreateJobResponse(long key, JobRecord brokerResponse) {
-    return CreateJobResponse.newBuilder().setKey(key).build();
   }
 
   public static UpdateJobRetriesResponse toUpdateJobRetriesResponse(
@@ -223,6 +220,11 @@ public class ResponseMapper {
     }
 
     return responseBuilder.build();
+  }
+
+  public static ResolveIncidentResponse toResolveIncidentResponse(
+      long key, IncidentRecord incident) {
+    return ResolveIncidentResponse.getDefaultInstance();
   }
 
   private static JobHeaders fromBrokerJobHeaders(

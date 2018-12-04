@@ -28,7 +28,7 @@ public class CompleteProcessHandler implements BpmnStepHandler<ExecutableWorkflo
   public void handle(BpmnStepContext<ExecutableWorkflow> context) {
     context
         .getOutput()
-        .writeFollowUpEvent(
+        .appendFollowUpEvent(
             context.getRecord().getKey(),
             WorkflowInstanceIntent.ELEMENT_COMPLETED,
             context.getValue());

@@ -17,8 +17,14 @@
  */
 package io.zeebe.broker.workflow.model.element;
 
-public class ExecutableReceiveTask extends ExecutableFlowNode
-    implements ExecutableMessageCatchElement {
+import java.time.Duration;
+import java.util.Collections;
+import java.util.List;
+
+public class ExecutableReceiveTask extends ExecutableActivity
+    implements ExecutableCatchEvent, ExecutableCatchEventSupplier {
+
+  private final List<ExecutableCatchEvent> events = Collections.singletonList(this);
 
   public ExecutableReceiveTask(String id) {
     super(id);
@@ -33,5 +39,25 @@ public class ExecutableReceiveTask extends ExecutableFlowNode
 
   public void setMessage(ExecutableMessage message) {
     this.message = message;
+  }
+
+  @Override
+  public boolean isTimer() {
+    return false;
+  }
+
+  @Override
+  public boolean isMessage() {
+    return true;
+  }
+
+  @Override
+  public Duration getDuration() {
+    return null;
+  }
+
+  @Override
+  public List<ExecutableCatchEvent> getEvents() {
+    return events;
   }
 }

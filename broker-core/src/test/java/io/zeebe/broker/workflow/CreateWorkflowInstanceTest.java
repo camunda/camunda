@@ -18,20 +18,16 @@
 package io.zeebe.broker.workflow;
 
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
-import static io.zeebe.broker.test.MsgPackConstants.MSGPACK_PAYLOAD;
 import static io.zeebe.broker.workflow.WorkflowAssert.assertWorkflowInstanceRecord;
 import static io.zeebe.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
 import static io.zeebe.msgpack.spec.MsgPackHelper.NIL;
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.CREATE;
-import static io.zeebe.test.broker.protocol.clientapi.PartitionTestClient.PROP_WORKFLOW_INSTANCE_KEY;
-import static io.zeebe.test.broker.protocol.clientapi.PartitionTestClient.PROP_WORKFLOW_KEY;
-import static io.zeebe.test.broker.protocol.clientapi.PartitionTestClient.PROP_WORKFLOW_PAYLOAD;
-import static io.zeebe.test.broker.protocol.clientapi.PartitionTestClient.PROP_WORKFLOW_VERSION;
+import static io.zeebe.test.broker.protocol.clientapi.PartitionTestClient.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.broker.test.MsgPackConstants;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
@@ -86,16 +82,52 @@ public class CreateWorkflowInstanceTest {
             .sendAndAwait();
 
     // then
-    final Record<WorkflowInstanceRecordValue> createWorkflowCommand =
-        testClient.receiveFirstWorkflowInstanceCommand(CREATE);
-
     assertThat(resp.getKey()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
-    assertThat(resp.getSourceRecordPosition()).isEqualTo(createWorkflowCommand.getPosition());
     assertThat(resp.getPartitionId()).isEqualTo(apiRule.getDefaultPartitionId());
     assertThat(resp.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(resp.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
     assertThat(resp.getRejectionReason()).isEqualTo("Workflow is not deployed");
     assertThat(resp.getValue()).containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process");
+  }
+
+  @Test
+  public void shouldWorkflowAndInstanceHaveUniqueKeys() {
+    // given
+    final ExecuteCommandResponse response =
+        testClient.deployWithResponse(
+            Bpmn.createExecutableProcess("process").startEvent().endEvent().done());
+    final ExecuteCommandResponse response2 =
+        testClient.deployWithResponse(
+            Bpmn.createExecutableProcess("process2").startEvent().endEvent().done());
+    final ExecuteCommandResponse response3 =
+        testClient.deployWithResponse(
+            Bpmn.createExecutableProcess("process3").startEvent().endEvent().done());
+    final long workflowKey = extractWorkflowKey(response);
+    final long workflowKey2 = extractWorkflowKey(response2);
+    final long workflowKey3 = extractWorkflowKey(response3);
+
+    // when
+    final ExecuteCommandResponse resp =
+        apiRule
+            .createCmdRequest()
+            .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
+            .command()
+            .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
+            .done()
+            .sendAndAwait();
+
+    // then
+    assertThat(
+            new long[] {
+              response.getKey(),
+              response2.getKey(),
+              response3.getKey(),
+              workflowKey,
+              workflowKey2,
+              workflowKey3
+            })
+        .doesNotHaveDuplicates()
+        .doesNotContain(resp.getKey());
   }
 
   @Test
@@ -115,11 +147,7 @@ public class CreateWorkflowInstanceTest {
             .sendAndAwait();
 
     // then
-    final Record<WorkflowInstanceRecordValue> createWorkflowCommand =
-        testClient.receiveFirstWorkflowInstanceCommand(CREATE);
-
     assertThat(resp.getKey()).isGreaterThanOrEqualTo(0L);
-    assertThat(resp.getSourceRecordPosition()).isEqualTo(createWorkflowCommand.getPosition());
     assertThat(resp.getPartitionId()).isEqualTo(apiRule.getDefaultPartitionId());
     assertThat(resp.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_READY);
     assertThat(resp.getValue())
@@ -270,24 +298,19 @@ public class CreateWorkflowInstanceTest {
             .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
             .command()
             .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
-            .put(PROP_WORKFLOW_PAYLOAD, MSGPACK_PAYLOAD)
+            .put(PROP_WORKFLOW_PAYLOAD, MsgPackConstants.MSGPACK_PAYLOAD)
             .done()
             .sendAndAwait();
 
     // then
-
-    final Record<WorkflowInstanceRecordValue> createWorkflowCommand =
-        testClient.receiveFirstWorkflowInstanceCommand(CREATE);
-
     assertThat(resp.getKey()).isGreaterThanOrEqualTo(0L);
-    assertThat(resp.getSourceRecordPosition()).isEqualTo(createWorkflowCommand.getPosition());
     assertThat(resp.getPartitionId()).isEqualTo(apiRule.getDefaultPartitionId());
     assertThat(resp.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_READY);
     assertThat(resp.getValue())
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
         .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, resp.getKey())
         .containsEntry(PROP_WORKFLOW_VERSION, 1L)
-        .containsEntry(PROP_WORKFLOW_PAYLOAD, MSGPACK_PAYLOAD);
+        .containsEntry(PROP_WORKFLOW_PAYLOAD, MsgPackConstants.MSGPACK_PAYLOAD);
   }
 
   @Test

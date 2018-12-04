@@ -30,8 +30,6 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
@@ -44,6 +42,8 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.ListWorkflowsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ListWorkflowsResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
@@ -95,16 +95,6 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
         request,
         RequestMapper::toPublishMessageRequest,
         ResponseMapper::toPublishMessageResponse,
-        responseObserver);
-  }
-
-  @Override
-  public void createJob(
-      CreateJobRequest request, StreamObserver<CreateJobResponse> responseObserver) {
-    sendRequest(
-        request,
-        RequestMapper::toCreateJobRequest,
-        ResponseMapper::toCreateJobResponse,
         responseObserver);
   }
 
@@ -199,6 +189,16 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
                 topology.getPartitionsCount(), request, responseObserver));
   }
 
+  @Override
+  public void resolveIncident(
+      ResolveIncidentRequest request, StreamObserver<ResolveIncidentResponse> responseObserver) {
+    sendRequest(
+        request,
+        RequestMapper::toResolveIncidentRequest,
+        ResponseMapper::toResolveIncidentResponse,
+        responseObserver);
+  }
+
   private <GrpcRequestT, BrokerResponseT, GrpcResponseT> void sendRequest(
       final GrpcRequestT grpcRequest,
       final Function<GrpcRequestT, BrokerRequest<BrokerResponseT>> requestMapper,
@@ -232,6 +232,6 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
       description = cause.getMessage();
     }
 
-    return Status.INTERNAL.augmentDescription(description).asRuntimeException();
+    return Status.INTERNAL.augmentDescription(description).withCause(cause).asRuntimeException();
   }
 }

@@ -25,24 +25,22 @@ import java.util.function.Consumer;
 
 /** Things that only a stream processor should write to the log stream (+ commands) */
 public interface TypedStreamWriter extends TypedCommandWriter {
-  void writeRejection(
+  void appendRejection(
       TypedRecord<? extends UnpackedObject> command, RejectionType type, String reason);
 
-  void writeRejection(
+  void appendRejection(
       TypedRecord<? extends UnpackedObject> command,
       RejectionType type,
       String reason,
       Consumer<RecordMetadata> metadata);
 
   /** @return the key of the event */
-  long writeNewEvent(Intent intent, UnpackedObject value);
+  long appendNewEvent(Intent intent, UnpackedObject value);
 
-  void writeFollowUpEvent(long key, Intent intent, UnpackedObject value);
+  void appendFollowUpEvent(long key, Intent intent, UnpackedObject value);
 
-  void writeFollowUpEvent(
+  void appendFollowUpEvent(
       long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata);
-
-  TypedBatchWriter newBatch();
 
   KeyGenerator getKeyGenerator();
 

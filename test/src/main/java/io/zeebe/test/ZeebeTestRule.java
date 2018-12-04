@@ -15,19 +15,12 @@
  */
 package io.zeebe.test;
 
-import static org.assertj.core.api.Assertions.fail;
-
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.protocol.intent.JobIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.test.util.record.RecordingExporter;
-import io.zeebe.test.util.stream.StreamWrapperException;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Properties;
-import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import org.junit.rules.ExternalResource;
 
@@ -72,41 +65,8 @@ public class ZeebeTestRule extends ExternalResource {
     brokerRule.after();
   }
 
-  public void waitUntilWorkflowInstanceCompleted(final long key) {
-    try {
-      RecordingExporter.workflowInstanceRecords().withWorkflowInstanceKey(key).getFirst();
-    } catch (StreamWrapperException swe) {
-      throw new RuntimeException(
-          String.format("Expected to find workflow instance with key %s.", key), swe);
-    }
-
-    try {
-      RecordingExporter.workflowInstanceRecords()
-          .withWorkflowInstanceKey(key)
-          .withKey(key)
-          .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-          .getFirst();
-    } catch (StreamWrapperException swe) {
-      throw new RuntimeException(
-          String.format(
-              "Expected to find workflow instance with key %s in state ELEMENT_COMPLETED.", key),
-          swe);
-    }
-  }
-
-  public void waitUntilJobCompleted(final long key) {
-    try {
-      RecordingExporter.jobRecords().withKey(key).getFirst();
-    } catch (StreamWrapperException swe) {
-      throw new RuntimeException(String.format("Expected to find job with key %s.", key), swe);
-    }
-
-    try {
-      RecordingExporter.jobRecords(JobIntent.COMPLETED).withKey(key).getLast();
-    } catch (StreamWrapperException swe) {
-      throw new RuntimeException(
-          String.format("Expected to find job with key %s in state COMPLETED.", key), swe);
-    }
+  public static WorkflowInstanceAssert assertThat(WorkflowInstanceEvent workflowInstance) {
+    return WorkflowInstanceAssert.assertThat(workflowInstance);
   }
 
   public void printWorkflowInstanceEvents(final long key) {
@@ -116,26 +76,6 @@ public class ZeebeTestRule extends ExternalResource {
             event -> {
               System.out.println("> " + event.toJson());
             });
-  }
-
-  private void waitUntil(final BooleanSupplier condition, final String failureMessage) {
-    final long timeout = Instant.now().plus(Duration.ofSeconds(5)).toEpochMilli();
-
-    while (!condition.getAsBoolean() && System.currentTimeMillis() < timeout) {
-      sleep(100);
-    }
-
-    if (!condition.getAsBoolean()) {
-      fail(failureMessage);
-    }
-  }
-
-  private void sleep(final int millis) {
-    try {
-      Thread.sleep(millis);
-    } catch (final InterruptedException e) {
-      // ignore
-    }
   }
 
   public int getDefaultPartition() {

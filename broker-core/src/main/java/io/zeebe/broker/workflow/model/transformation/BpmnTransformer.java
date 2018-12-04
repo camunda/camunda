@@ -18,21 +18,23 @@
 package io.zeebe.broker.workflow.model.transformation;
 
 import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
-import io.zeebe.broker.workflow.model.transformation.handler.ActivityHandler;
-import io.zeebe.broker.workflow.model.transformation.handler.CreateWorkflowHandler;
-import io.zeebe.broker.workflow.model.transformation.handler.EndEventHandler;
-import io.zeebe.broker.workflow.model.transformation.handler.ExclusiveGatewayHandler;
-import io.zeebe.broker.workflow.model.transformation.handler.FlowElementHandler;
-import io.zeebe.broker.workflow.model.transformation.handler.FlowNodeHandler;
-import io.zeebe.broker.workflow.model.transformation.handler.IntermediateCatchEventHandler;
-import io.zeebe.broker.workflow.model.transformation.handler.MessageHandler;
-import io.zeebe.broker.workflow.model.transformation.handler.ParallelGatewayHandler;
-import io.zeebe.broker.workflow.model.transformation.handler.ProcessHandler;
-import io.zeebe.broker.workflow.model.transformation.handler.ReceiveTaskHandler;
-import io.zeebe.broker.workflow.model.transformation.handler.SequenceFlowHandler;
-import io.zeebe.broker.workflow.model.transformation.handler.ServiceTaskHandler;
-import io.zeebe.broker.workflow.model.transformation.handler.StartEventHandler;
-import io.zeebe.broker.workflow.model.transformation.handler.SubProcessHandler;
+import io.zeebe.broker.workflow.model.transformation.transformer.ActivityTransformer;
+import io.zeebe.broker.workflow.model.transformation.transformer.BoundaryEventTransformer;
+import io.zeebe.broker.workflow.model.transformation.transformer.ContextProcessTransformer;
+import io.zeebe.broker.workflow.model.transformation.transformer.EndEventTransformer;
+import io.zeebe.broker.workflow.model.transformation.transformer.EventBasedGatewayTransformer;
+import io.zeebe.broker.workflow.model.transformation.transformer.ExclusiveGatewayTransformer;
+import io.zeebe.broker.workflow.model.transformation.transformer.FlowElementInstantiationTransformer;
+import io.zeebe.broker.workflow.model.transformation.transformer.FlowNodeTransformer;
+import io.zeebe.broker.workflow.model.transformation.transformer.IntermediateCatchEventTransformer;
+import io.zeebe.broker.workflow.model.transformation.transformer.MessageTransformer;
+import io.zeebe.broker.workflow.model.transformation.transformer.ParallelGatewayTransformer;
+import io.zeebe.broker.workflow.model.transformation.transformer.ProcessTransformer;
+import io.zeebe.broker.workflow.model.transformation.transformer.ReceiveTaskTransformer;
+import io.zeebe.broker.workflow.model.transformation.transformer.SequenceFlowTransformer;
+import io.zeebe.broker.workflow.model.transformation.transformer.ServiceTaskTransformer;
+import io.zeebe.broker.workflow.model.transformation.transformer.StartEventTransformer;
+import io.zeebe.broker.workflow.model.transformation.transformer.SubProcessTransformer;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.traversal.ModelWalker;
 import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
@@ -50,27 +52,37 @@ public class BpmnTransformer {
    */
   private final TransformationVisitor step2Visitor;
 
+  /*
+   * Step 3: Modify elements based on the context
+   */
+  private final TransformationVisitor step3Visitor;
+
   private final JsonPathQueryCompiler jsonPathQueryCompiler = new JsonPathQueryCompiler();
 
   public BpmnTransformer() {
     this.step1Visitor = new TransformationVisitor();
-    step1Visitor.registerHandler(new FlowElementHandler());
-    step1Visitor.registerHandler(new CreateWorkflowHandler());
-    step1Visitor.registerHandler(new MessageHandler());
+    step1Visitor.registerHandler(new FlowElementInstantiationTransformer());
+    step1Visitor.registerHandler(new MessageTransformer());
+    step1Visitor.registerHandler(new ProcessTransformer());
 
     this.step2Visitor = new TransformationVisitor();
-    step2Visitor.registerHandler(new ActivityHandler());
-    step2Visitor.registerHandler(new EndEventHandler());
-    step2Visitor.registerHandler(new ExclusiveGatewayHandler());
-    step2Visitor.registerHandler(new FlowNodeHandler());
-    step2Visitor.registerHandler(new IntermediateCatchEventHandler());
-    step2Visitor.registerHandler(new ParallelGatewayHandler());
-    step2Visitor.registerHandler(new ProcessHandler());
-    step2Visitor.registerHandler(new SequenceFlowHandler());
-    step2Visitor.registerHandler(new ServiceTaskHandler());
-    step2Visitor.registerHandler(new ReceiveTaskHandler());
-    step2Visitor.registerHandler(new StartEventHandler());
-    step2Visitor.registerHandler(new SubProcessHandler());
+    step2Visitor.registerHandler(new ActivityTransformer());
+    step2Visitor.registerHandler(new BoundaryEventTransformer());
+    step2Visitor.registerHandler(new ContextProcessTransformer());
+    step2Visitor.registerHandler(new EndEventTransformer());
+    step2Visitor.registerHandler(new ExclusiveGatewayTransformer());
+    step2Visitor.registerHandler(new FlowNodeTransformer());
+    step2Visitor.registerHandler(new IntermediateCatchEventTransformer());
+    step2Visitor.registerHandler(new ParallelGatewayTransformer());
+    step2Visitor.registerHandler(new SequenceFlowTransformer());
+    step2Visitor.registerHandler(new ServiceTaskTransformer());
+    step2Visitor.registerHandler(new ReceiveTaskTransformer());
+    step2Visitor.registerHandler(new StartEventTransformer());
+    step2Visitor.registerHandler(new SubProcessTransformer());
+
+    this.step3Visitor = new TransformationVisitor();
+    step3Visitor.registerHandler(new ContextProcessTransformer());
+    step3Visitor.registerHandler(new EventBasedGatewayTransformer());
   }
 
   public List<ExecutableWorkflow> transformDefinitions(BpmnModelInstance modelInstance) {
@@ -83,6 +95,9 @@ public class BpmnTransformer {
 
     step2Visitor.setContext(context);
     walker.walk(step2Visitor);
+
+    step3Visitor.setContext(context);
+    walker.walk(step3Visitor);
 
     return context.getWorkflows();
   }

@@ -20,36 +20,39 @@ package io.zeebe.broker.subscription.message.processor;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.zeebe.broker.logstreams.processor.SideEffectProducer;
-import io.zeebe.broker.logstreams.processor.TypedBatchWriter;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.state.Message;
-import io.zeebe.broker.subscription.message.state.MessageStateController;
-import io.zeebe.broker.subscription.message.state.MessageSubscription;
+import io.zeebe.broker.subscription.message.state.MessageState;
+import io.zeebe.broker.subscription.message.state.MessageSubscriptionState;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.util.sched.clock.ActorClock;
-import java.util.List;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
+import org.agrona.collections.LongArrayList;
 
 public class PublishMessageProcessor implements TypedRecordProcessor<MessageRecord> {
 
-  private final MessageStateController messageStateController;
+  private final MessageState messageState;
+  private final MessageSubscriptionState subscriptionState;
   private final SubscriptionCommandSender commandSender;
 
   private TypedResponseWriter responseWriter;
   private MessageRecord messageRecord;
-  private List<MessageSubscription> matchingSubscriptions;
+
+  private final LongArrayList correlatedWorkflowInstances = new LongArrayList();
+  private final LongArrayList correlatedElementInstances = new LongArrayList();
 
   public PublishMessageProcessor(
-      MessageStateController messageStateController,
+      final MessageState messageState,
+      final MessageSubscriptionState subscriptionState,
       final SubscriptionCommandSender commandSender) {
-    this.messageStateController = messageStateController;
+    this.messageState = messageState;
+    this.subscriptionState = subscriptionState;
     this.commandSender = commandSender;
   }
 
@@ -63,7 +66,7 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
     messageRecord = command.getValue();
 
     if (messageRecord.hasMessageId()
-        && messageStateController.exist(
+        && messageState.exist(
             messageRecord.getName(),
             messageRecord.getCorrelationKey(),
             messageRecord.getMessageId())) {
@@ -72,7 +75,7 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
               "message with id '%s' is already published",
               bufferAsString(messageRecord.getMessageId()));
 
-      streamWriter.writeRejection(command, RejectionType.BAD_VALUE, rejectionReason);
+      streamWriter.appendRejection(command, RejectionType.BAD_VALUE, rejectionReason);
       responseWriter.writeRejectionOnCommand(command, RejectionType.BAD_VALUE, rejectionReason);
 
     } else {
@@ -86,27 +89,32 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
 
-    final TypedBatchWriter batchWriter = streamWriter.newBatch();
-    final long key = batchWriter.addNewEvent(MessageIntent.PUBLISHED, command.getValue());
+    final long key = streamWriter.appendNewEvent(MessageIntent.PUBLISHED, command.getValue());
     responseWriter.writeEventOnCommand(key, MessageIntent.PUBLISHED, command.getValue(), command);
 
-    // correlate the message only once per workflow instance
-    // - will be improved by #1421
-    matchingSubscriptions =
-        messageStateController
-            .findSubscriptions(messageRecord.getName(), messageRecord.getCorrelationKey())
-            .stream()
-            .collect(Collectors.groupingBy(MessageSubscription::getWorkflowInstanceKey))
-            .values()
-            .stream()
-            .map(sub -> sub.get(0))
-            .collect(Collectors.toList());
+    correlatedWorkflowInstances.clear();
+    correlatedElementInstances.clear();
 
-    for (final MessageSubscription sub : matchingSubscriptions) {
-      sub.setMessagePayload(messageRecord.getPayload());
+    subscriptionState.visitSubscriptions(
+        messageRecord.getName(),
+        messageRecord.getCorrelationKey(),
+        subscription -> {
+          final long workflowInstanceKey = subscription.getWorkflowInstanceKey();
+          final long elementInstanceKey = subscription.getElementInstanceKey();
 
-      messageStateController.updateCommandSentTime(sub);
-    }
+          // correlate the message only once per workflow instance
+          if (!subscription.isCorrelating()
+              && !correlatedWorkflowInstances.containsLong(workflowInstanceKey)) {
+
+            subscriptionState.updateToCorrelatingState(
+                subscription, messageRecord.getPayload(), ActorClock.currentTimeMillis());
+
+            correlatedWorkflowInstances.addLong(workflowInstanceKey);
+            correlatedElementInstances.addLong(elementInstanceKey);
+          }
+
+          return true;
+        });
 
     sideEffect.accept(this::correlateMessage);
 
@@ -120,30 +128,32 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
               messageRecord.getMessageId(),
               messageRecord.getTimeToLive(),
               messageRecord.getTimeToLive() + ActorClock.currentTimeMillis());
-      messageStateController.put(message);
+      messageState.put(message);
 
-      for (MessageSubscription sub : matchingSubscriptions) {
-        messageStateController.putMessageCorrelation(
-            message.getKey(), sub.getWorkflowInstanceKey());
-      }
+      correlatedWorkflowInstances.forEachOrderedLong(
+          workflowInstanceKey -> {
+            messageState.putMessageCorrelation(message.getKey(), workflowInstanceKey);
+          });
 
     } else {
       // don't add the message to the store to avoid that it can be correlated afterwards
-      batchWriter.addFollowUpEvent(key, MessageIntent.DELETED, messageRecord);
+      streamWriter.appendFollowUpEvent(key, MessageIntent.DELETED, messageRecord);
     }
   }
 
   private boolean correlateMessage() {
-    for (final MessageSubscription sub : matchingSubscriptions) {
+    for (int i = 0; i < correlatedWorkflowInstances.size(); i++) {
+      final long workflowInstanceKey = correlatedWorkflowInstances.getLong(i);
+      final long elementInstanceKey = correlatedElementInstances.getLong(i);
+
       final boolean success =
           commandSender.correlateWorkflowInstanceSubscription(
-              sub.getWorkflowInstanceKey(),
-              sub.getElementInstanceKey(),
+              workflowInstanceKey,
+              elementInstanceKey,
               messageRecord.getName(),
               messageRecord.getPayload());
 
       if (!success) {
-        // try again later
         return false;
       }
     }

@@ -30,4 +30,14 @@ public interface TimerRecordValue extends RecordValue {
 
   /** @return the due date of the timer as Unix timestamp in millis. */
   long getDueDate();
+
+  /**
+   * The handlerFlowNodeID property represent the ID, from the BPMN XML of the workflow, of the flow
+   * node which will handle the timer trigger's event. In normal flow, this is usually the same as
+   * the related activity's ID, but when the timer was created due to a boundary event, it will be
+   * that event's ID.
+   *
+   * @return the ID of the flow node which will handle the trigger element
+   */
+  String getHandlerFlowNodeId();
 }

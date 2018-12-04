@@ -19,6 +19,7 @@ import io.zeebe.client.api.commands.CancelWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.commands.CreateWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.commands.DeployWorkflowCommandStep1;
 import io.zeebe.client.api.commands.PublishMessageCommandStep1;
+import io.zeebe.client.api.commands.ResolveIncidentCommandStep1;
 import io.zeebe.client.api.commands.UpdatePayloadWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.commands.WorkflowRequestStep1;
 import io.zeebe.client.api.commands.WorkflowResourceRequestStep1;
@@ -70,15 +71,11 @@ public interface WorkflowClient {
    *
    * <pre>
    * workflowClient
-   *  .newCancelInstanceCommand(workflowInstanceEvent)
+   *  .newCancelInstanceCommand(workflowInstanceKey)
    *  .send();
    * </pre>
    *
-   * The workflow instance is specified by the given event. The event must be the latest event of
-   * the workflow instance to ensure that the command is based on the latest state of the workflow
-   * instance. If it's not the latest one then the command is rejected.
-   *
-   * @param event the latest workflow instance event
+   * @param workflowInstanceKey the key which identifies the corresponding workflow instance
    * @return a builder for the command
    */
   CancelWorkflowInstanceCommandStep1 newCancelInstanceCommand(long workflowInstanceKey);
@@ -88,17 +85,10 @@ public interface WorkflowClient {
    *
    * <pre>
    * workflowClient
-   *  .newUpdatePayloadCommand(workflowInstanceEvent)
+   *  .newUpdatePayloadCommand(elementInstanceKey)
    *  .payload(json)
    *  .send();
    * </pre>
-   *
-   * The workflow instance is specified by the given event. The event must be the latest event of
-   * the workflow instance to ensure that the command is based on the latest state of the workflow
-   * instance. If it's not the latest one then the command is rejected.
-   *
-   * <p>If the workflow instance failed because of a payload-related incident then it will try to
-   * resolve the incident with the given payload.
    *
    * @param elementInstanceKey the key of the element instance to update the payload for
    * @return a builder for the command
@@ -159,4 +149,18 @@ public interface WorkflowClient {
    * @return a builder of the request
    */
   WorkflowRequestStep1 newWorkflowRequest();
+
+  /**
+   * Command to resolve an existing incident.
+   *
+   * <pre>
+   * workflowClient
+   *  .newResolveIncidentCommand(incidentKey)
+   *  .send();
+   * </pre>
+   *
+   * @param incidentKey the key of the corresponding incident
+   * @return the builder for the command
+   */
+  ResolveIncidentCommandStep1 newResolveIncidentCommand(long incidentKey);
 }

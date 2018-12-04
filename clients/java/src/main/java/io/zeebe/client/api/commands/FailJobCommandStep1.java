@@ -31,5 +31,7 @@ public interface FailJobCommandStep1 {
 
   interface FailJobCommandStep2 extends FinalCommandStep<Void> {
     // the place for new optional parameters
+
+    FinalCommandStep errorMessage(String errorMsg);
   }
 }

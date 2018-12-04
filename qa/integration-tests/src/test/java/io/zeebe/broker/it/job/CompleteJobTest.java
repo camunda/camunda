@@ -25,7 +25,6 @@ import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.it.util.ZeebeAssertHelper;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.clients.JobClient;
-import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.cmd.ClientException;
 import java.util.Collections;
@@ -52,7 +51,7 @@ public class CompleteJobTest {
 
   @Before
   public void init() {
-    clientRule.getJobClient().newCreateCommand().jobType("test").send().join();
+    clientRule.createSingleJob("test");
 
     final RecordingJobHandler jobHandler = new RecordingJobHandler();
     clientRule.getJobClient().newWorker().jobType("test").handler(jobHandler).open();
@@ -157,20 +156,19 @@ public class CompleteJobTest {
   public void shouldProvideReasonInExceptionMessageOnRejection() {
     // given
     final JobClient jobClient = clientRule.getClient().jobClient();
-
-    final JobEvent job = jobClient.newCreateCommand().jobType("bar").send().join();
-    jobClient.newCompleteCommand(job.getKey()).send().join();
+    final long jobKey = clientRule.createSingleJob("bar");
+    jobClient.newCompleteCommand(jobKey).send().join();
 
     // then
     thrown.expect(ClientException.class);
     thrown.expectMessage(
         "Command (COMPLETE) for event with key "
-            + job.getKey()
+            + jobKey
             + " was rejected. It is not applicable in the current state. "
             + "Job does not exist");
 
     // when
-    jobClient.newCompleteCommand(job.getKey()).send().join();
+    jobClient.newCompleteCommand(jobKey).send().join();
   }
 
   public static class PayloadObject {

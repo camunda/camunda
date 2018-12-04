@@ -28,17 +28,6 @@ public interface SnapshotController {
   void takeSnapshot(StateSnapshotMetadata metadata) throws Exception;
 
   /**
-   * Temporary addition to add commitPosition to parameters, will be removed since it's only useful
-   * for FsSnapshotController.
-   *
-   * @param metadata current state metadata
-   * @param commitPosition temporary parameter, to be removed once Fs package is removed
-   */
-  default void takeSnapshot(StateSnapshotMetadata metadata, long commitPosition) throws Exception {
-    takeSnapshot(metadata);
-  }
-
-  /**
    * Recovers the state from the latest snapshot and returns the corresponding metadata. The
    * metadata is used by the StreamProcessController to know where to seek to in the log stream.
    * Defaults to: (-1, -1, term)

@@ -17,15 +17,8 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import io.zeebe.logstreams.snapshot.BaseValueSnapshotSupport;
-import io.zeebe.logstreams.snapshot.ComposedSnapshot;
-import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
-import io.zeebe.logstreams.spi.ComposableSnapshotSupport;
-import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.logstreams.state.StateController;
-import io.zeebe.map.ZbMap;
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.value.BaseValue;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
@@ -37,9 +30,6 @@ import java.util.function.Predicate;
 
 public class TypedEventStreamProcessorBuilder {
   protected final TypedStreamEnvironment environment;
-
-  protected StateController stateController;
-  protected List<ComposableSnapshotSupport> stateResources = new ArrayList<>();
 
   protected RecordProcessorMap eventProcessors = new RecordProcessorMap();
   protected List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
@@ -106,13 +96,11 @@ public class TypedEventStreamProcessorBuilder {
   /** Only required if a stream processor writes events to its own stream. */
   public TypedEventStreamProcessorBuilder keyGenerator(KeyGenerator keyGenerator) {
     this.keyGenerator = keyGenerator;
-    withStateResource(keyGenerator);
     return this;
   }
 
   public TypedEventStreamProcessorBuilder withStateController(
       final StateController stateController) {
-    this.stateController = stateController;
     withListener(
         new StreamProcessorLifecycleAware() {
           @Override
@@ -123,43 +111,9 @@ public class TypedEventStreamProcessorBuilder {
     return this;
   }
 
-  public TypedEventStreamProcessorBuilder withStateResource(ZbMap<?, ?> map) {
-    this.stateResources.add(new ZbMapSnapshotSupport<>(map));
-    withListener(
-        new StreamProcessorLifecycleAware() {
-          @Override
-          public void onClose() {
-            map.close();
-          }
-        });
-    return this;
-  }
-
-  public TypedEventStreamProcessorBuilder withStateResource(BaseValue value) {
-    this.stateResources.add(new BaseValueSnapshotSupport(value));
-    return this;
-  }
-
-  public TypedEventStreamProcessorBuilder withStateResource(
-      ComposableSnapshotSupport snapshotSupport) {
-    this.stateResources.add(snapshotSupport);
-    return this;
-  }
-
   public TypedStreamProcessor build() {
 
-    final SnapshotSupport snapshotSupport;
-    if (!stateResources.isEmpty()) {
-      snapshotSupport =
-          new ComposedSnapshot(
-              stateResources.toArray(new ComposableSnapshotSupport[stateResources.size()]));
-    } else {
-      snapshotSupport = new NoopSnapshotSupport();
-    }
-
     return new TypedStreamProcessor(
-        stateController,
-        snapshotSupport,
         environment.getOutput(),
         eventProcessors,
         lifecycleListeners,
@@ -170,7 +124,7 @@ public class TypedEventStreamProcessorBuilder {
 
   private static class DelegatingEventProcessor<T extends UnpackedObject>
       implements TypedRecordProcessor<T> {
-    private Function<TypedRecord<T>, TypedRecordProcessor<T>> dispatcher;
+    private final Function<TypedRecord<T>, TypedRecordProcessor<T>> dispatcher;
     private TypedRecordProcessor<T> selectedProcessor;
 
     DelegatingEventProcessor(Function<TypedRecord<T>, TypedRecordProcessor<T>> dispatcher) {

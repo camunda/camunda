@@ -19,7 +19,7 @@ package io.zeebe.broker.subscription.message.processor;
 
 import io.zeebe.broker.logstreams.processor.TypedCommandWriter;
 import io.zeebe.broker.subscription.message.state.Message;
-import io.zeebe.broker.subscription.message.state.MessageStateController;
+import io.zeebe.broker.subscription.message.state.MessageState;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.util.sched.clock.ActorClock;
@@ -27,23 +27,23 @@ import io.zeebe.util.sched.clock.ActorClock;
 public class MessageTimeToLiveChecker implements Runnable {
 
   private final TypedCommandWriter writer;
-  private final MessageStateController messageStateController;
+  private final MessageState messageState;
 
   private final MessageRecord deleteMessageCommand = new MessageRecord();
 
   public MessageTimeToLiveChecker(
-      TypedCommandWriter writer, MessageStateController messageStateController) {
+      final TypedCommandWriter writer, final MessageState messageState) {
     this.writer = writer;
-    this.messageStateController = messageStateController;
+    this.messageState = messageState;
   }
 
   @Override
   public void run() {
-    messageStateController.visitMessagesWithDeadlineBefore(
+    messageState.visitMessagesWithDeadlineBefore(
         ActorClock.currentTimeMillis(), this::writeDeleteMessageCommand);
   }
 
-  private boolean writeDeleteMessageCommand(Message message) {
+  private boolean writeDeleteMessageCommand(final Message message) {
     deleteMessageCommand.reset();
     deleteMessageCommand
         .setName(message.getName())
@@ -55,7 +55,7 @@ public class MessageTimeToLiveChecker implements Runnable {
       deleteMessageCommand.setMessageId(message.getId());
     }
 
-    writer.writeFollowUpCommand(message.getKey(), MessageIntent.DELETE, deleteMessageCommand);
+    writer.appendFollowUpCommand(message.getKey(), MessageIntent.DELETE, deleteMessageCommand);
 
     final long position = writer.flush();
     return position > 0;

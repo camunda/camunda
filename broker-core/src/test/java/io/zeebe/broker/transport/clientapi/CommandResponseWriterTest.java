@@ -33,9 +33,7 @@ import org.junit.Test;
 
 public class CommandResponseWriterTest {
   private static final int PARTITION_ID = 1;
-  private static final long SOURCE_RECORD_POSITION = 121L;
   private static final long KEY = 2L;
-  private static final long TIMESTAMP = 3L;
   private static final byte[] EVENT = getBytes("state");
 
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
@@ -59,11 +57,9 @@ public class CommandResponseWriterTest {
     responseWriter
         .partitionId(PARTITION_ID)
         .key(KEY)
-        .timestamp(TIMESTAMP)
         .recordType(RecordType.EVENT)
         .valueType(ValueType.JOB)
         .intent(JobIntent.CREATED)
-        .sourcePosition(SOURCE_RECORD_POSITION)
         .valueWriter(eventWriter);
 
     final UnsafeBuffer buf = new UnsafeBuffer(new byte[responseWriter.getLength()]);
@@ -86,10 +82,8 @@ public class CommandResponseWriterTest {
         buf, offset, responseDecoder.sbeBlockLength(), responseDecoder.sbeSchemaVersion());
     assertThat(responseDecoder.partitionId()).isEqualTo(PARTITION_ID);
     assertThat(responseDecoder.key()).isEqualTo(KEY);
-    assertThat(responseDecoder.timestamp()).isEqualTo(TIMESTAMP);
     assertThat(responseDecoder.recordType()).isEqualTo(RecordType.EVENT);
     assertThat(responseDecoder.valueType()).isEqualTo(ValueType.JOB);
-    assertThat(responseDecoder.sourceRecordPosition()).isEqualTo(SOURCE_RECORD_POSITION);
     assertThat(responseDecoder.intent()).isEqualTo(JobIntent.CREATED.value());
 
     assertThat(responseDecoder.valueLength()).isEqualTo(EVENT.length);

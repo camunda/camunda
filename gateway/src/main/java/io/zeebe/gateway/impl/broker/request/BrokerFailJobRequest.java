@@ -30,6 +30,11 @@ public class BrokerFailJobRequest extends BrokerExecuteCommand<JobRecord> {
     requestDto.setRetries(retries);
   }
 
+  public BrokerFailJobRequest setErrorMessage(String errorMessage) {
+    requestDto.setErrorMessage(errorMessage);
+    return this;
+  }
+
   @Override
   public JobRecord getRequestWriter() {
     return requestDto;

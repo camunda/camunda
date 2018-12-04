@@ -32,15 +32,15 @@ public final class JobCompletedEventProcessor implements TypedRecordProcessor<Jo
 
   private final WorkflowState workflowState;
 
-  public JobCompletedEventProcessor(WorkflowState workflowState) {
+  public JobCompletedEventProcessor(final WorkflowState workflowState) {
     this.workflowState = workflowState;
   }
 
   @Override
   public void processRecord(
-      TypedRecord<JobRecord> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter) {
+      final TypedRecord<JobRecord> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter) {
 
     final JobRecord jobEvent = record.getValue();
     final JobHeaders jobHeaders = jobEvent.getHeaders();
@@ -53,7 +53,7 @@ public final class JobCompletedEventProcessor implements TypedRecordProcessor<Jo
       final WorkflowInstanceRecord value = elementInstance.getValue();
       value.setPayload(jobEvent.getPayload());
 
-      streamWriter.writeFollowUpEvent(
+      streamWriter.appendFollowUpEvent(
           elementInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETING, value);
       elementInstance.setState(WorkflowInstanceIntent.ELEMENT_COMPLETING);
       elementInstance.setJobKey(-1);

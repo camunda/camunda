@@ -15,7 +15,9 @@
  */
 package io.zeebe.model.bpmn.validation.zeebe;
 
+import io.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.zeebe.model.bpmn.instance.EndEvent;
+import io.zeebe.model.bpmn.instance.EventBasedGateway;
 import io.zeebe.model.bpmn.instance.ExclusiveGateway;
 import io.zeebe.model.bpmn.instance.FlowElement;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
@@ -35,7 +37,9 @@ public class FlowElementValidator implements ModelElementValidator<FlowElement> 
   private static final Set<Class<?>> SUPPORTED_ELEMENT_TYPES = new HashSet<>();
 
   static {
+    SUPPORTED_ELEMENT_TYPES.add(BoundaryEvent.class);
     SUPPORTED_ELEMENT_TYPES.add(EndEvent.class);
+    SUPPORTED_ELEMENT_TYPES.add(EventBasedGateway.class);
     SUPPORTED_ELEMENT_TYPES.add(ExclusiveGateway.class);
     SUPPORTED_ELEMENT_TYPES.add(IntermediateCatchEvent.class);
     SUPPORTED_ELEMENT_TYPES.add(ParallelGateway.class);

@@ -19,7 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.test.util.TestUtil;
 import org.junit.Rule;
 import org.junit.Test;
@@ -52,17 +51,11 @@ public class ClientReconnectTest {
   }
 
   protected long createJob() {
-    final JobEvent jobEvent =
-        clientRule
-            .getJobClient()
-            .newCreateCommand()
-            .jobType("foo")
-            .addCustomHeader("k1", "a")
-            .addCustomHeader("k2", "b")
-            .payload("{ \"payload\" : 123 }")
-            .send()
-            .join();
-
-    return jobEvent.getKey();
+    return clientRule.createSingleJob(
+        "foo",
+        b -> {
+          b.zeebeTaskHeader("k1", "a").zeebeTaskHeader("k2", "b");
+        },
+        "{\"payload\":123}");
   }
 }

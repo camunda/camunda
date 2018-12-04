@@ -28,27 +28,15 @@ public class CopiedTypedEvent extends TypedEventImpl {
   private final long key;
   private final long position;
   private final long sourcePosition;
-  private final long timestamp;
   private final RecordMetadata metadata;
 
   CopiedTypedEvent(LoggedEvent event, UnpackedObject object) {
     this.value = object;
+    this.key = event.getKey();
     this.position = event.getPosition();
     this.sourcePosition = event.getSourceEventPosition();
-    this.key = event.getKey();
-    this.timestamp = event.getTimestamp();
     this.metadata = new RecordMetadata();
     event.readMetadata(metadata);
-  }
-
-  @Override
-  public long getKey() {
-    return key;
-  }
-
-  @Override
-  public long getSourcePosition() {
-    return sourcePosition;
   }
 
   @Override
@@ -57,13 +45,18 @@ public class CopiedTypedEvent extends TypedEventImpl {
   }
 
   @Override
-  public RecordMetadata getMetadata() {
-    return metadata;
+  public long getSourceEventPosition() {
+    return sourcePosition;
   }
 
   @Override
-  public long getTimestamp() {
-    return timestamp;
+  public long getKey() {
+    return key;
+  }
+
+  @Override
+  public RecordMetadata getMetadata() {
+    return metadata;
   }
 
   public static <T extends UnpackedObject> TypedRecord<T> toTypedEvent(

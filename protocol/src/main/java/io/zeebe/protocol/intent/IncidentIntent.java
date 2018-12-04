@@ -20,13 +20,9 @@ public enum IncidentIntent implements Intent {
   CREATED((short) 1),
 
   RESOLVE((short) 2),
-  RESOLVED((short) 3),
-  RESOLVE_FAILED((short) 4),
+  RESOLVED((short) 3);
 
-  DELETE((short) 5),
-  DELETED((short) 6);
-
-  private short value;
+  private final short value;
 
   IncidentIntent(short value) {
     this.value = value;
@@ -46,12 +42,6 @@ public enum IncidentIntent implements Intent {
         return RESOLVE;
       case 3:
         return RESOLVED;
-      case 4:
-        return RESOLVE_FAILED;
-      case 5:
-        return DELETE;
-      case 6:
-        return DELETED;
       default:
         return Intent.UNKNOWN;
     }

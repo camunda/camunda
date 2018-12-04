@@ -19,10 +19,10 @@ import static io.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
 import static java.util.Collections.singletonList;
 
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.zeebe.model.bpmn.instance.EndEvent;
 import io.zeebe.model.bpmn.instance.IntermediateThrowEvent;
 import io.zeebe.model.bpmn.instance.Message;
+import io.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.zeebe.model.bpmn.instance.ReceiveTask;
 import io.zeebe.model.bpmn.instance.StartEvent;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
@@ -62,6 +62,14 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
             .done(),
         singletonList(
             expect(ZeebeSubscription.class, "zeebe:correlationKey must be present and not empty"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .intermediateCatchEvent("foo")
+            .messageEventDefinition()
+            .done(),
+        singletonList(expect(MessageEventDefinition.class, "Must reference a message"))
       },
       // validate receive tasks
       {
@@ -103,15 +111,6 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
       {
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("task", t -> t.zeebeTaskType("foo"))
-            .boundaryEvent()
-            .message(b -> b.name("foo").zeebeCorrelationKey("correlationKey"))
-            .done(),
-        singletonList(expect(BoundaryEvent.class, "Elements of this type are not supported"))
-      },
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
             .intermediateThrowEvent()
             .message("foo")
             .done(),
@@ -134,6 +133,17 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
             .endEvent()
             .done(),
         singletonList(expect("subProcessStart", "Must be a none start event"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .receiveTask("task")
+            .message(m -> m.name("message").zeebeCorrelationKey("correlationKey"))
+            .boundaryEvent("boundary")
+            .message(m -> m.name("message").zeebeCorrelationKey("correlationKey"))
+            .endEvent()
+            .done(),
+        singletonList(expect("task", "Cannot reference the same message name as a boundary event"))
       },
     };
   }

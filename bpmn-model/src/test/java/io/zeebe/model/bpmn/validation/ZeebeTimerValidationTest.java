@@ -19,7 +19,10 @@ import static io.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
 import static java.util.Collections.singletonList;
 
 import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
+import io.zeebe.model.bpmn.instance.TimerEventDefinition;
+import java.util.Arrays;
 import org.junit.runners.Parameterized.Parameters;
 
 public class ZeebeTimerValidationTest extends AbstractZeebeValidationTest {
@@ -30,10 +33,43 @@ public class ZeebeTimerValidationTest extends AbstractZeebeValidationTest {
       {
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .intermediateCatchEvent("catch", c -> c.timerWithCycle(""))
+            .intermediateCatchEvent("catch", c -> c.timerWithDuration(""))
             .endEvent()
             .done(),
-        singletonList(expect(IntermediateCatchEvent.class, "Must have a time duration"))
+        singletonList(expect(TimerEventDefinition.class, "Time duration is invalid"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .intermediateCatchEvent("catch", c -> c.timerWithCycle("R5/PT05S"))
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                IntermediateCatchEvent.class,
+                "Intermediate timer catch event must have a time duration."))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task", b -> b.zeebeTaskType("type"))
+            .boundaryEvent("catch")
+            .timerWithCycle("R5/PT05S")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(BoundaryEvent.class, "Interrupting events of this type are not supported"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task", b -> b.zeebeTaskType("type"))
+            .boundaryEvent("catch")
+            .cancelActivity(false)
+            .timerWithCycle("R5/")
+            .endEvent()
+            .done(),
+        singletonList(expect(TimerEventDefinition.class, "Time cycle is invalid"))
       },
       {
         Bpmn.createExecutableProcess("process")
@@ -41,7 +77,21 @@ public class ZeebeTimerValidationTest extends AbstractZeebeValidationTest {
             .intermediateCatchEvent("catch", c -> c.timerWithDuration("foo"))
             .endEvent()
             .done(),
-        singletonList(expect(IntermediateCatchEvent.class, "Time duration is invalid"))
+        singletonList(expect(TimerEventDefinition.class, "Time duration is invalid"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .intermediateCatchEvent("catch", b -> b.timerWithDate("2017-01-01"))
+            .endEvent()
+            .done(),
+        Arrays.asList(
+            expect(
+                IntermediateCatchEvent.class,
+                "Intermediate timer catch event must have a time duration."),
+            expect(
+                TimerEventDefinition.class,
+                "Timer event definitions with timeDate are not supported"))
       },
     };
   }

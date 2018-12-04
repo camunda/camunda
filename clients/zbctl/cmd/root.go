@@ -17,7 +17,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/zeebe-io/zeebe/clients/go"
+	"github.com/zeebe-io/zeebe/clients/go/zbc"
 	"os"
 	"strconv"
 	"strings"

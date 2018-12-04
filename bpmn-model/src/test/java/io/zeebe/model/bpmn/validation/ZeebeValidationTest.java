@@ -69,7 +69,7 @@ public class ZeebeValidationTest extends AbstractZeebeValidationTest {
         Arrays.asList(
             expect(
                 CompensateEventDefinition.class, "Event definition of this type is not supported"),
-            expect(IntermediateCatchEvent.class, "Must have a message or timer event definition"))
+            expect(IntermediateCatchEvent.class, "Event definition must be one of: message, timer"))
       },
       {
         "no-start-event-sub-process.bpmn",
@@ -92,11 +92,19 @@ public class ZeebeValidationTest extends AbstractZeebeValidationTest {
       {
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .sequenceFlow(b -> b.id("flow").payloadMapping("$.foo", "$.bar"))
+            .serviceTask("task", b -> b.zeebeTaskType("type"))
+            .boundaryEvent("msg1")
+            .message(m -> m.name("message").zeebeCorrelationKey("$.id"))
+            .endEvent()
+            .moveToActivity("task")
+            .boundaryEvent("msg2")
+            .message(m -> m.name("message").zeebeCorrelationKey("$.orderId"))
             .endEvent()
             .done(),
         singletonList(
-            expect("flow", "Must only have payload mappings if its target is a parallel gateway"))
+            expect(
+                "task",
+                "Cannot have two message catch boundary events with the same name: message"))
       },
     };
   }

@@ -1,70 +1,74 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
-    package="io.zeebe.broker.subscription" id="6" version="1"
-    semanticVersion="${project.version}" description="Zeebe Subscription Protocol" byteOrder="littleEndian">
+  package="io.zeebe.broker.subscription" id="6" version="1"
+  semanticVersion="${project.version}" description="Zeebe Subscription Protocol"
+  byteOrder="littleEndian">
 
-    <types>
+  <types>
 
-        <composite name="messageHeader"
-            description="Message identifiers and length of message root">
-            <type name="blockLength" primitiveType="uint16" />
-            <type name="templateId" primitiveType="uint16" />
-            <type name="schemaId" primitiveType="uint16" />
-            <type name="version" primitiveType="uint16" />
-        </composite>
+    <composite name="messageHeader"
+      description="Message identifiers and length of message root">
+      <type name="blockLength" primitiveType="uint16"/>
+      <type name="templateId" primitiveType="uint16"/>
+      <type name="schemaId" primitiveType="uint16"/>
+      <type name="version" primitiveType="uint16"/>
+    </composite>
 
-        <composite name="varDataEncoding">
-            <type name="length" primitiveType="uint16" />
-            <type name="varData" primitiveType="uint8" length="0" characterEncoding="UTF-8" />
-        </composite>
+    <composite name="varDataEncoding">
+      <type name="length" primitiveType="uint16"/>
+      <type name="varData" primitiveType="uint8" length="0" characterEncoding="UTF-8"/>
+    </composite>
 
-        <composite name="groupSizeEncoding">
-            <type name="blockLength" primitiveType="uint16" />
-            <type name="numInGroup" primitiveType="uint8" semanticType="NumInGroup" />
-        </composite>
+    <composite name="groupSizeEncoding">
+      <type name="blockLength" primitiveType="uint16"/>
+      <type name="numInGroup" primitiveType="uint8" semanticType="NumInGroup"/>
+    </composite>
 
-    </types>
+  </types>
 
-    <sbe:message name="OpenMessageSubscription" id="0">
-    	<field name="subscriptionPartitionId" id="0" type="uint16"/>
-      <field name="workflowInstanceKey" id="1" type="uint64" />
-      <field name="elementInstanceKey" id="2" type="uint64" />  
-      <data name="messageName" id="3" type="varDataEncoding" />
-      <data name="correlationKey" id="4" type="varDataEncoding" />
-    </sbe:message>
-    
-    <sbe:message name="OpenWorkflowInstanceSubscription" id="1">
-    	<field name="subscriptionPartitionId" id="0" type="uint16"/>
-      <field name="workflowInstanceKey" id="1" type="uint64" />
-      <field name="elementInstanceKey" id="2" type="uint64" />  
-      <data name="messageName" id="3" type="varDataEncoding" />
-    </sbe:message>
-    
-    <sbe:message name="CorrelateWorkflowInstanceSubscription" id="2">
-      <field name="subscriptionPartitionId" id="0" type="uint16"/>
-      <field name="workflowInstanceKey" id="1" type="uint64" />
-      <field name="elementInstanceKey" id="2" type="uint64" />  
-      <data name="messageName" id="3" type="varDataEncoding" />
-      <data name="payload" id="4" type="varDataEncoding" />
-    </sbe:message>
-    
-    <sbe:message name="CorrelateMessageSubscription" id="3">
-      <field name="subscriptionPartitionId" id="0" type="uint16"/>
-      <field name="workflowInstanceKey" id="1" type="uint64" />
-      <field name="elementInstanceKey" id="2" type="uint64" />  
-      <data name="messageName" id="3" type="varDataEncoding" />
-    </sbe:message>
-    
-    <sbe:message name="CloseMessageSubscription" id="4">
-    	<field name="subscriptionPartitionId" id="0" type="uint16"/>
-      <field name="workflowInstanceKey" id="1" type="uint64" />
-      <field name="elementInstanceKey" id="2" type="uint64" />  
-    </sbe:message>s
-    
-    <sbe:message name="CloseWorkflowInstanceSubscription" id="5">
-    	<field name="subscriptionPartitionId" id="0" type="uint16"/>
-      <field name="workflowInstanceKey" id="1" type="uint64" />
-      <field name="elementInstanceKey" id="2" type="uint64" />  
-    </sbe:message>
+  <sbe:message name="OpenMessageSubscription" id="0">
+    <field name="subscriptionPartitionId" id="0" type="uint16"/>
+    <field name="workflowInstanceKey" id="1" type="uint64"/>
+    <field name="elementInstanceKey" id="2" type="uint64"/>
+    <data name="messageName" id="3" type="varDataEncoding"/>
+    <data name="correlationKey" id="4" type="varDataEncoding"/>
+  </sbe:message>
+
+  <sbe:message name="OpenWorkflowInstanceSubscription" id="1">
+    <field name="subscriptionPartitionId" id="0" type="uint16"/>
+    <field name="workflowInstanceKey" id="1" type="uint64"/>
+    <field name="elementInstanceKey" id="2" type="uint64"/>
+    <data name="messageName" id="3" type="varDataEncoding"/>
+  </sbe:message>
+
+  <sbe:message name="CorrelateWorkflowInstanceSubscription" id="2">
+    <field name="subscriptionPartitionId" id="0" type="uint16"/>
+    <field name="workflowInstanceKey" id="1" type="uint64"/>
+    <field name="elementInstanceKey" id="2" type="uint64"/>
+    <data name="messageName" id="3" type="varDataEncoding"/>
+    <data name="payload" id="4" type="varDataEncoding"/>
+  </sbe:message>
+
+  <sbe:message name="CorrelateMessageSubscription" id="3">
+    <field name="subscriptionPartitionId" id="0" type="uint16"/>
+    <field name="workflowInstanceKey" id="1" type="uint64"/>
+    <field name="elementInstanceKey" id="2" type="uint64"/>
+    <data name="messageName" id="3" type="varDataEncoding"/>
+  </sbe:message>
+
+  <sbe:message name="CloseMessageSubscription" id="4">
+    <field name="subscriptionPartitionId" id="0" type="uint16"/>
+    <field name="workflowInstanceKey" id="1" type="uint64"/>
+    <field name="elementInstanceKey" id="2" type="uint64"/>
+    <data name="messageName" id="3" type="varDataEncoding"/>
+  </sbe:message>
+  s
+
+  <sbe:message name="CloseWorkflowInstanceSubscription" id="5">
+    <field name="subscriptionPartitionId" id="0" type="uint16"/>
+    <field name="workflowInstanceKey" id="1" type="uint64"/>
+    <field name="elementInstanceKey" id="2" type="uint64"/>
+    <data name="messageName" id="3" type="varDataEncoding"/>
+  </sbe:message>
 
 </sbe:messageSchema>

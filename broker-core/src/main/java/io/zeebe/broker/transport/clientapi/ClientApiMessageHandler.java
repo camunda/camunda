@@ -33,10 +33,12 @@ import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.intent.Intent;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerMessageHandler;
 import io.zeebe.transport.ServerOutput;
@@ -81,6 +83,7 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
     recordsByType.put(ValueType.WORKFLOW_INSTANCE, new WorkflowInstanceRecord());
     recordsByType.put(ValueType.MESSAGE, new MessageRecord());
     recordsByType.put(ValueType.JOB_BATCH, new JobBatchRecord());
+    recordsByType.put(ValueType.INCIDENT, new IncidentRecord());
   }
 
   private boolean handleExecuteCommandRequest(
@@ -137,7 +140,7 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
     }
 
     eventMetadata.recordType(RecordType.COMMAND);
-    eventMetadata.intent(intent);
+    eventMetadata.intent(Intent.fromProtocolValue(eventType, intent));
     eventMetadata.valueType(eventType);
 
     logStreamWriter.wrap(partition.getLogStream());
@@ -148,13 +151,10 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
       logStreamWriter.keyNull();
     }
 
-    final long sourceRecordPosition = executeCommandRequestDecoder.sourceRecordPosition();
-
     final long eventPosition =
         logStreamWriter
             .metadataWriter(eventMetadata)
             .value(buffer, eventOffset, eventLength)
-            .sourceRecordPosition(sourceRecordPosition)
             .tryWrite();
 
     return eventPosition >= 0;

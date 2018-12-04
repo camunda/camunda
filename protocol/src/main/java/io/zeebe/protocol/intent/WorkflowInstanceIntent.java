@@ -17,9 +17,12 @@ package io.zeebe.protocol.intent;
 
 public enum WorkflowInstanceIntent implements Intent {
   CREATE((short) 0),
+
   START_EVENT_OCCURRED((short) 1),
   END_EVENT_OCCURRED((short) 2),
+
   SEQUENCE_FLOW_TAKEN((short) 3),
+
   GATEWAY_ACTIVATED((short) 4),
 
   ELEMENT_READY((short) 5),
@@ -32,7 +35,10 @@ public enum WorkflowInstanceIntent implements Intent {
   CANCEL((short) 11),
 
   UPDATE_PAYLOAD((short) 12),
-  PAYLOAD_UPDATED((short) 13);
+  PAYLOAD_UPDATED((short) 13),
+
+  CATCH_EVENT_TRIGGERING((short) 14),
+  CATCH_EVENT_TRIGGERED((short) 15);
 
   private final short value;
 
@@ -74,6 +80,10 @@ public enum WorkflowInstanceIntent implements Intent {
         return UPDATE_PAYLOAD;
       case 13:
         return PAYLOAD_UPDATED;
+      case 14:
+        return CATCH_EVENT_TRIGGERING;
+      case 15:
+        return CATCH_EVENT_TRIGGERED;
       default:
         return Intent.UNKNOWN;
     }

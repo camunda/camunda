@@ -15,9 +15,12 @@
  */
 package io.zeebe.test.util.record;
 
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.TimerRecordValue;
 import java.util.stream.Stream;
+import org.agrona.DirectBuffer;
 
 public class TimerRecordStream extends ExporterRecordStream<TimerRecordValue, TimerRecordStream> {
 
@@ -30,11 +33,19 @@ public class TimerRecordStream extends ExporterRecordStream<TimerRecordValue, Ti
     return new TimerRecordStream(wrappedStream);
   }
 
-  public TimerRecordStream withActivityInstanceId(final long activityInstanceId) {
-    return valueFilter(v -> v.getElementInstanceKey() == activityInstanceId);
+  public TimerRecordStream withElementInstanceKey(final long elementInstanceKey) {
+    return valueFilter(v -> v.getElementInstanceKey() == elementInstanceKey);
   }
 
   public TimerRecordStream withDueDate(final long dueDate) {
     return valueFilter(v -> v.getDueDate() == dueDate);
+  }
+
+  public TimerRecordStream withHandlerNodeId(final String handlerNodeId) {
+    return valueFilter(v -> v.getHandlerFlowNodeId().equals(handlerNodeId));
+  }
+
+  public TimerRecordStream withHandlerNodeId(final DirectBuffer handlerNodeId) {
+    return withHandlerNodeId(bufferAsString(handlerNodeId));
   }
 }

@@ -17,40 +17,37 @@
  */
 package io.zeebe.broker.workflow.processor;
 
-import io.zeebe.broker.incident.data.ErrorType;
-import io.zeebe.broker.incident.data.IncidentRecord;
-import io.zeebe.broker.logstreams.processor.SideEffectProducer;
 import io.zeebe.broker.logstreams.processor.TypedCommandWriter;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
-import io.zeebe.broker.logstreams.processor.TypedStreamWriterImpl;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
-import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.msgpack.mapping.MsgPackMergeTool;
+import io.zeebe.protocol.impl.record.value.incident.ErrorType;
+import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import java.util.function.Consumer;
 
 public class BpmnStepContext<T extends ExecutableFlowElement> {
 
+  private final IncidentRecord incidentCommand = new IncidentRecord();
+  private final SideEffectQueue sideEffect = new SideEffectQueue();
+  private final EventOutput eventOutput;
+  private final MsgPackMergeTool mergeTool;
+  private final CatchEventOutput catchEventOutput;
+
   private TypedRecord<WorkflowInstanceRecord> record;
-  private ExecutableWorkflow workflow;
   private ExecutableFlowElement element;
   private TypedCommandWriter commandWriter;
-  private final EventOutput eventOutput;
-  private Consumer<SideEffectProducer> sideEffect;
 
   private ElementInstance flowScopeInstance;
   private ElementInstance elementInstance;
 
-  private final IncidentRecord incidentCommand = new IncidentRecord();
-  private final MsgPackMergeTool mergeTool;
-
-  public BpmnStepContext(EventOutput eventOutput) {
+  public BpmnStepContext(EventOutput eventOutput, CatchEventOutput catchEventOutput) {
     this.eventOutput = eventOutput;
     this.mergeTool = new MsgPackMergeTool(4096);
+    this.catchEventOutput = catchEventOutput;
   }
 
   public TypedRecord<WorkflowInstanceRecord> getRecord() {
@@ -65,7 +62,7 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
     return (WorkflowInstanceIntent) record.getMetadata().getIntent();
   }
 
-  public void setRecord(TypedRecord<WorkflowInstanceRecord> record) {
+  public void setRecord(final TypedRecord<WorkflowInstanceRecord> record) {
     this.record = record;
   }
 
@@ -73,36 +70,36 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
     return (T) element;
   }
 
-  public void setElement(ExecutableFlowElement element) {
+  public void setElement(final ExecutableFlowElement element) {
     this.element = element;
-  }
-
-  public ExecutableWorkflow getWorkflow() {
-    return workflow;
-  }
-
-  public void setWorkflow(ExecutableWorkflow workflow) {
-    this.workflow = workflow;
   }
 
   public EventOutput getOutput() {
     return eventOutput;
   }
 
-  public void setStreamWriter(TypedStreamWriter streamWriter) {
+  public void setStreamWriter(final TypedStreamWriter streamWriter) {
     this.eventOutput.setStreamWriter(streamWriter);
     this.commandWriter = streamWriter;
+  }
+
+  public MsgPackMergeTool getMergeTool() {
+    return mergeTool;
   }
 
   public TypedCommandWriter getCommandWriter() {
     return commandWriter;
   }
 
+  public CatchEventOutput getCatchEventOutput() {
+    return catchEventOutput;
+  }
+
   public ElementInstance getFlowScopeInstance() {
     return flowScopeInstance;
   }
 
-  public void setFlowScopeInstance(ElementInstance flowScopeInstance) {
+  public void setFlowScopeInstance(final ElementInstance flowScopeInstance) {
     this.flowScopeInstance = flowScopeInstance;
   }
 
@@ -115,44 +112,23 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
     return elementInstance;
   }
 
-  public void setElementInstance(ElementInstance elementInstance) {
+  public void setElementInstance(final ElementInstance elementInstance) {
     this.elementInstance = elementInstance;
   }
 
-  public void setSideEffect(Consumer<SideEffectProducer> sideEffect) {
-    this.sideEffect = sideEffect;
-  }
-
-  public Consumer<SideEffectProducer> getSideEffect() {
+  public SideEffectQueue getSideEffect() {
     return sideEffect;
   }
 
-  public MsgPackMergeTool getMergeTool() {
-    return mergeTool;
-  }
-
   public void raiseIncident(ErrorType errorType, String errorMessage) {
-
     incidentCommand.reset();
 
     incidentCommand
-        .initFromWorkflowInstanceFailure(record)
+        .initFromWorkflowInstanceFailure(record.getKey(), record.getValue())
         .setErrorType(errorType)
         .setErrorMessage(errorMessage);
 
     eventOutput.storeFailedToken(record);
-
-    if (!record.getMetadata().hasIncidentKey()) {
-      commandWriter.writeNewCommand(IncidentIntent.CREATE, incidentCommand);
-    } else {
-      // TODO: casting is ok for the moment; the problem is rather that we
-      // write an event (not command) for a different stream processor
-      // => https://github.com/zeebe-io/zeebe/issues/1033
-      ((TypedStreamWriterImpl) commandWriter)
-          .writeFollowUpEvent(
-              record.getMetadata().getIncidentKey(),
-              IncidentIntent.RESOLVE_FAILED,
-              incidentCommand);
-    }
+    commandWriter.appendNewCommand(IncidentIntent.CREATE, incidentCommand);
   }
 }

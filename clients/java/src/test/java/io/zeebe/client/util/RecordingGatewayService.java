@@ -28,8 +28,6 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
@@ -44,6 +42,8 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
@@ -72,7 +72,6 @@ public class RecordingGatewayService extends GatewayImplBase {
         DeployWorkflowRequest.class, r -> DeployWorkflowResponse.getDefaultInstance());
     addRequestHandler(
         PublishMessageRequest.class, r -> PublishMessageResponse.getDefaultInstance());
-    addRequestHandler(CreateJobRequest.class, r -> CreateJobResponse.getDefaultInstance());
     addRequestHandler(
         CreateWorkflowInstanceRequest.class,
         r -> CreateWorkflowInstanceResponse.getDefaultInstance());
@@ -89,6 +88,8 @@ public class RecordingGatewayService extends GatewayImplBase {
     addRequestHandler(ListWorkflowsRequest.class, r -> ListWorkflowsResponse.getDefaultInstance());
     addRequestHandler(GetWorkflowRequest.class, r -> GetWorkflowResponse.getDefaultInstance());
     addRequestHandler(ActivateJobsRequest.class, r -> ActivateJobsResponse.getDefaultInstance());
+    addRequestHandler(
+        ResolveIncidentRequest.class, r -> ResolveIncidentResponse.getDefaultInstance());
   }
 
   @Override
@@ -105,12 +106,6 @@ public class RecordingGatewayService extends GatewayImplBase {
   @Override
   public void publishMessage(
       PublishMessageRequest request, StreamObserver<PublishMessageResponse> responseObserver) {
-    handle(request, responseObserver);
-  }
-
-  @Override
-  public void createJob(
-      CreateJobRequest request, StreamObserver<CreateJobResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
@@ -170,6 +165,12 @@ public class RecordingGatewayService extends GatewayImplBase {
     handle(request, responseObserver);
   }
 
+  @Override
+  public void resolveIncident(
+      ResolveIncidentRequest request, StreamObserver<ResolveIncidentResponse> responseObserver) {
+    handle(request, responseObserver);
+  }
+
   public static Partition partition(int partitionId, PartitionBrokerRole role) {
     return Partition.newBuilder().setPartitionId(partitionId).setRole(role).build();
   }
@@ -214,11 +215,6 @@ public class RecordingGatewayService extends GatewayImplBase {
                 .setKey(key)
                 .addAllWorkflows(Arrays.asList(deployedWorkflows))
                 .build());
-  }
-
-  public void onCreateJobRequest(long key) {
-    addRequestHandler(
-        CreateJobRequest.class, request -> CreateJobResponse.newBuilder().setKey(key).build());
   }
 
   public void onCreateWorkflowInstanceRequest(
@@ -320,7 +316,7 @@ public class RecordingGatewayService extends GatewayImplBase {
       description = cause.getMessage();
     }
 
-    return Status.INTERNAL.augmentDescription(description).asRuntimeException();
+    return Status.INTERNAL.augmentDescription(description).withCause(cause).asRuntimeException();
   }
 
   @FunctionalInterface

@@ -51,9 +51,11 @@ docker run --name zeebe -p 26500:26500 camunda/zeebe:latest
 
 ### Exposed Ports
 
-- `26500`: Client API
+- `26500`: Gateway API
+- `26501`: Client API
 - `26502`: Management API for broker to broker communcation
 - `26503`: Replication API for broker to broker replication
+- `26504`: Subscription API for message correlation
 
 ### Volumes
 

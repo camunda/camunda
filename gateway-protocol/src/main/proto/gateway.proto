@@ -71,19 +71,6 @@ message PublishMessageRequest {
 message PublishMessageResponse {
 }
 
-message CreateJobRequest {
-  string jobType = 1;
-  int32 retries = 2;
-  /* custom headers has to be a valid json object as string */
-  string customHeaders = 3;
-  /* payload has to be a valid json object as string */
-  string payload = 4;
-}
-
-message CreateJobResponse {
-  int64 key = 1;
-}
-
 message UpdateJobRetriesRequest {
   int64 jobKey = 1;
   int32 retries = 2;
@@ -95,6 +82,7 @@ message UpdateJobRetriesResponse {
 message FailJobRequest {
   int64 jobKey = 1;
   int32 retries = 2;
+  string errorMessage = 3;
 }
 
 message FailJobResponse {
@@ -200,14 +188,19 @@ message ActivateJobsResponse {
   repeated ActivatedJob jobs = 1;
 }
 
+message ResolveIncidentRequest {
+  int64 incidentKey = 1;
+}
+
+message ResolveIncidentResponse {
+}
+
 service Gateway {
   rpc Topology (TopologyRequest) returns (TopologyResponse) {
   }
   rpc DeployWorkflow (DeployWorkflowRequest) returns (DeployWorkflowResponse) {
   }
   rpc PublishMessage (PublishMessageRequest) returns (PublishMessageResponse) {
-  }
-  rpc CreateJob (CreateJobRequest) returns (CreateJobResponse) {
   }
   rpc UpdateJobRetries (UpdateJobRetriesRequest) returns (UpdateJobRetriesResponse) {
   }
@@ -226,5 +219,7 @@ service Gateway {
   rpc ListWorkflows (ListWorkflowsRequest) returns (ListWorkflowsResponse) {
   }
   rpc GetWorkflow (GetWorkflowRequest) returns (GetWorkflowResponse) {
+  }
+  rpc ResolveIncident (ResolveIncidentRequest) returns (ResolveIncidentResponse) {
   }
 }

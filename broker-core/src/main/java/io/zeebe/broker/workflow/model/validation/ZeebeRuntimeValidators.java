@@ -33,7 +33,6 @@ public class ZeebeRuntimeValidators {
     VALIDATORS.add(new ZeebeOutputValidator(expressionValidator));
     VALIDATORS.add(new SequenceFlowValidator(expressionValidator));
     VALIDATORS.add(new ZeebeIoMappingValidator());
-    VALIDATORS.add(new ZeebeMappingValidator(expressionValidator));
     VALIDATORS.add(new ZeebeSubscriptionValidator(expressionValidator));
   }
 }

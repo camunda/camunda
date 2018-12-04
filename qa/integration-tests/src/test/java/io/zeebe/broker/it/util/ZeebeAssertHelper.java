@@ -195,10 +195,13 @@ public class ZeebeAssertHelper {
   }
 
   public static void assertIncidentResolveFailed() {
-    assertThat(RecordingExporter.incidentRecords(IncidentIntent.RESOLVE_FAILED).exists()).isTrue();
-  }
+    assertThat(RecordingExporter.incidentRecords(IncidentIntent.RESOLVED).exists()).isTrue();
 
-  public static void assertIncidentDeleted() {
-    assertThat(RecordingExporter.incidentRecords(IncidentIntent.DELETED).exists()).isTrue();
+    assertThat(
+            RecordingExporter.incidentRecords()
+                .skipUntil(e -> e.getMetadata().getIntent() == IncidentIntent.RESOLVED)
+                .filter(e -> e.getMetadata().getIntent() == IncidentIntent.CREATED)
+                .exists())
+        .isTrue();
   }
 }

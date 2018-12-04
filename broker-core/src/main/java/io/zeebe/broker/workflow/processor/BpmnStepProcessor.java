@@ -23,10 +23,9 @@ import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
-import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
+import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
 import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
-import io.zeebe.broker.workflow.processor.timer.DueDateTimerChecker;
 import io.zeebe.broker.workflow.state.DeployedWorkflow;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.ElementInstanceState;
@@ -48,16 +47,14 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
   private ElementInstanceState elementInstanceState;
 
   public BpmnStepProcessor(
-      WorkflowEngineState state,
-      SubscriptionCommandSender subscriptionCommandSender,
-      DueDateTimerChecker timerChecker) {
+      WorkflowEngineState state, ZeebeState zeebeState, CatchEventOutput catchEventOutput) {
     this.state = state;
     this.workflowState = state.getWorkflowState();
-    this.stepHandlers =
-        new BpmnStepHandlers(subscriptionCommandSender, workflowState, timerChecker);
+    this.stepHandlers = new BpmnStepHandlers(workflowState, zeebeState);
     this.stepGuards = new BpmnStepGuards();
+
     final EventOutput eventOutput = new EventOutput(state);
-    this.context = new BpmnStepContext<>(eventOutput);
+    this.context = new BpmnStepContext<>(eventOutput, catchEventOutput);
   }
 
   @Override
@@ -93,7 +90,9 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
 
     context.setRecord(record);
     context.setStreamWriter(streamWriter);
-    context.setSideEffect(sideEffect);
+
+    context.getSideEffect().clear();
+    sideEffect.accept(context.getSideEffect());
 
     final long workflowKey = record.getValue().getWorkflowKey();
     final DeployedWorkflow deployedWorkflow = workflowState.getWorkflowByKey(workflowKey);
@@ -112,8 +111,6 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
     final DirectBuffer currentElementId = value.getElementId();
 
     final ExecutableWorkflow workflow = deployedWorkflow.getWorkflow();
-    context.setWorkflow(workflow);
-
     final ExecutableFlowElement flowElement = workflow.getElementById(currentElementId);
     context.setElement(flowElement);
   }

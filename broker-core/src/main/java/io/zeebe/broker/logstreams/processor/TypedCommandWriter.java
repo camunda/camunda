@@ -25,11 +25,11 @@ import java.util.function.Consumer;
 /** Things that any actor can write to a partition. */
 public interface TypedCommandWriter {
 
-  void writeNewCommand(Intent intent, UnpackedObject value);
+  void appendNewCommand(Intent intent, UnpackedObject value);
 
-  void writeFollowUpCommand(long key, Intent intent, UnpackedObject value);
+  void appendFollowUpCommand(long key, Intent intent, UnpackedObject value);
 
-  void writeFollowUpCommand(
+  void appendFollowUpCommand(
       long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata);
 
   /** @return position of new record, negative value on failure */

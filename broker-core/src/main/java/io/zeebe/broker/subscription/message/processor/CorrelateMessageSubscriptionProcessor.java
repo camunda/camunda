@@ -23,7 +23,7 @@ import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
-import io.zeebe.broker.subscription.message.state.MessageStateController;
+import io.zeebe.broker.subscription.message.state.MessageSubscriptionState;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import java.util.function.Consumer;
@@ -31,26 +31,30 @@ import java.util.function.Consumer;
 public class CorrelateMessageSubscriptionProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
 
-  private final MessageStateController messageStateController;
+  private final MessageSubscriptionState subscriptionState;
 
-  public CorrelateMessageSubscriptionProcessor(MessageStateController messageStateController) {
-    this.messageStateController = messageStateController;
+  public CorrelateMessageSubscriptionProcessor(final MessageSubscriptionState subscriptionState) {
+    this.subscriptionState = subscriptionState;
   }
 
   @Override
   public void processRecord(
-      TypedRecord<MessageSubscriptionRecord> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter,
-      Consumer<SideEffectProducer> sideEffect) {
+      final TypedRecord<MessageSubscriptionRecord> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter,
+      final Consumer<SideEffectProducer> sideEffect) {
 
     final MessageSubscriptionRecord subscriptionRecord = record.getValue();
 
-    if (messageStateController.remove(subscriptionRecord)) {
-      streamWriter.writeFollowUpEvent(
+    final boolean removed =
+        subscriptionState.remove(
+            subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageName());
+
+    if (removed) {
+      streamWriter.appendFollowUpEvent(
           record.getKey(), MessageSubscriptionIntent.CORRELATED, subscriptionRecord);
     } else {
-      streamWriter.writeRejection(
+      streamWriter.appendRejection(
           record, RejectionType.NOT_APPLICABLE, "subscription is already correlated");
     }
   }

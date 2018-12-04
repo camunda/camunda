@@ -16,9 +16,9 @@
 package io.zeebe.exporter;
 
 import static io.zeebe.exporter.ElasticsearchExporter.ZEEBE_RECORD_TEMPLATE_JSON;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -36,19 +36,20 @@ import java.time.Duration;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
 
 public class ElasticsearchExporterTest {
 
   private ElasticsearchExporterConfiguration config;
   private ElasticsearchClient esClient;
-
-  private long lastExportedRecordPosition;
+  private Controller controller;
 
   @Before
   public void setUp() {
     config = new ElasticsearchExporterConfiguration();
     esClient = mockElasticsearchClient();
+    controller = mock(Controller.class);
   }
 
   @Test
@@ -241,7 +242,7 @@ public class ElasticsearchExporterTest {
     exporter.export(record);
 
     // then
-    assertThat(lastExportedRecordPosition).isEqualTo(position);
+    verify(controller).updateLastExportedRecordPosition(position);
   }
 
   @Test
@@ -256,6 +257,62 @@ public class ElasticsearchExporterTest {
     verify(esClient).flush();
   }
 
+  @Test
+  public void shouldFlushAfterDelay() {
+    // given
+    config.index.event = true;
+    config.index.workflowInstance = true;
+    config.bulk.delay = 10;
+
+    // scenario: bulk size is not reached still we want to flush
+    config.bulk.size = Integer.MAX_VALUE;
+    when(esClient.shouldFlush()).thenReturn(false);
+
+    final ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
+
+    final ElasticsearchExporter exporter = createExporter(config);
+
+    // when
+    exporter.export(mockRecord(ValueType.WORKFLOW_INSTANCE, RecordType.EVENT));
+
+    // then
+    verify(controller).scheduleTask(eq(Duration.ofSeconds(10)), captor.capture());
+
+    // when
+    captor.getValue().run();
+
+    // then
+    verify(esClient).flush();
+  }
+
+  @Test
+  public void shouldUpdatePositionAfterDelayEvenIfNoRecordsAreExported() {
+    // given
+    // scenario: events are not exported but still their position should be recorded
+    config.index.event = false;
+    config.index.workflowInstance = false;
+
+    final ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
+
+    final ElasticsearchExporter exporter = createExporter(config);
+
+    final Record record = mockRecord(ValueType.WORKFLOW_INSTANCE, RecordType.EVENT);
+    when(record.getPosition()).thenReturn(1L, 2L, 3L);
+
+    exporter.export(record);
+    exporter.export(record);
+    exporter.export(record);
+
+    verify(controller).scheduleTask(any(), captor.capture());
+
+    // when
+    captor.getValue().run();
+
+    // then no record was indexed but the exporter record position was updated
+    verify(esClient, never()).index(any());
+    verify(controller).updateLastExportedRecordPosition(3L);
+  }
+
   private ElasticsearchExporter createExporter(
       final ElasticsearchExporterConfiguration configuration) {
     final ElasticsearchExporter exporter =
@@ -266,7 +323,7 @@ public class ElasticsearchExporterTest {
           }
         };
     exporter.configure(createContext(configuration));
-    exporter.open(createController());
+    exporter.open(controller);
     return exporter;
   }
 
@@ -296,20 +353,6 @@ public class ElasticsearchExporterTest {
             return (T) configuration;
           }
         };
-      }
-    };
-  }
-
-  private Controller createController() {
-    return new Controller() {
-      @Override
-      public void updateLastExportedRecordPosition(long position) {
-        lastExportedRecordPosition = position;
-      }
-
-      @Override
-      public void scheduleTask(Duration delay, Runnable task) {
-        // ignore
       }
     };
   }

@@ -56,6 +56,19 @@ public class RecordProcessorMap {
     if (index < 0) {
       throw new RuntimeException("Invalid intent value " + key3);
     }
+
+    final TypedRecordProcessor oldElement = elements[index];
+    if (oldElement != null) {
+      final String exceptionMsg =
+          String.format(
+              "Expected to have a single processor per intent,"
+                  + " got for intent %s duplicate processor %s have already %s",
+              Intent.fromProtocolValue(key2, (short) key3),
+              value.getClass().getName(),
+              oldElement.getClass().getName());
+      throw new IllegalStateException(exceptionMsg);
+    }
+
     elements[index] = value;
   }
 

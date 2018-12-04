@@ -19,8 +19,8 @@ package io.zeebe.broker.job;
 
 import static io.zeebe.exporter.record.Assertions.assertThat;
 import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
-import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_KEY;
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_PAYLOAD;
+import static io.zeebe.test.broker.protocol.clientapi.PartitionTestClient.PROP_WORKFLOW_BPMN_PROCESS_ID;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.test.util.record.RecordingExporter.jobBatchRecords;
 import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
@@ -28,7 +28,6 @@ import static io.zeebe.test.util.record.RecordingExporter.workflowInstanceRecord
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.JobBatchRecordValue;
@@ -67,7 +66,9 @@ import org.junit.rules.RuleChain;
 public class ActivateJobsTest {
 
   public static final String JOB_TYPE = "theJobType";
-  public static final byte[] PAYLOAD_MSG_PACK = MsgPackUtil.asMsgPack("{\"foo\": \"bar\"}");
+  public static final String JSON_PAYLOAD = "{\"foo\": \"bar\"}";
+  public static final byte[] PAYLOAD_MSG_PACK = MsgPackUtil.asMsgPack(JSON_PAYLOAD);
+  public static final String PROCESS_ID = "testProcess";
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
@@ -219,7 +220,6 @@ public class ActivateJobsTest {
     assertThat(jobBatchActivatedRecord)
         .hasKey(response.getKey())
         .hasSourceRecordPosition(jobBatchActivateRecord.getPosition())
-        .hasProducerId(StreamProcessorIds.JOB_STREAM_PROCESSOR_ID)
         .hasTimestamp(clock.getCurrentTime());
   }
 
@@ -308,8 +308,8 @@ public class ActivateJobsTest {
   public void shouldActivateJobsFromWorkflow() {
     // given
     final int jobAmount = 10;
-    final long workflowKey = deployWorkflow("foo", "bar", "baz");
-    final List<Long> workflowInstanceKeys = createWorkflowInstances(workflowKey, jobAmount);
+    deployWorkflow("foo", "bar", "baz");
+    final List<Long> workflowInstanceKeys = createWorkflowInstances(jobAmount);
 
     // when activating and completing all jobs
     waitUntil(
@@ -349,8 +349,8 @@ public class ActivateJobsTest {
 
     final Instant deadline = clock.getCurrentTime().plusMillis(timeout.toMillis());
 
-    final long workflowKey = deployWorkflow(JOB_TYPE);
-    createWorkflowInstance(workflowKey);
+    deployWorkflow(JOB_TYPE);
+    createWorkflowInstance();
     final Record<JobRecordValue> jobRecord =
         jobRecords(JobIntent.CREATED).withType(JOB_TYPE).getFirst();
 
@@ -395,16 +395,7 @@ public class ActivateJobsTest {
   }
 
   private long createJob(String jobType) {
-    return apiRule
-        .createCmdRequest()
-        .type(ValueType.JOB, JobIntent.CREATE)
-        .command()
-        .put("type", jobType)
-        .put("retries", 3)
-        .put("payload", PAYLOAD_MSG_PACK)
-        .done()
-        .sendAndAwait()
-        .getKey();
+    return apiRule.partitionClient().createJob(jobType, b -> b.zeebeTaskRetries(3), JSON_PAYLOAD);
   }
 
   private List<Job> activateJobs(int amount) {
@@ -451,8 +442,7 @@ public class ActivateJobsTest {
   }
 
   private long deployWorkflow(String... taskTypes) {
-    AbstractFlowNodeBuilder<?, ?> builder =
-        Bpmn.createExecutableProcess("testProcess").startEvent();
+    AbstractFlowNodeBuilder<?, ?> builder = Bpmn.createExecutableProcess(PROCESS_ID).startEvent();
 
     for (String taskType : taskTypes) {
       builder =
@@ -490,19 +480,23 @@ public class ActivateJobsTest {
     return outStream.toByteArray();
   }
 
-  private List<Long> createWorkflowInstances(long workflowKey, int amount) {
-    return Stream.generate(() -> workflowKey)
+  private List<Long> createWorkflowInstances(int amount) {
+    return Stream.generate(() -> PROCESS_ID)
         .limit(amount)
         .map(this::createWorkflowInstance)
         .collect(Collectors.toList());
   }
 
-  private long createWorkflowInstance(long workflowKey) {
+  private long createWorkflowInstance() {
+    return createWorkflowInstance(PROCESS_ID);
+  }
+
+  private long createWorkflowInstance(String processId) {
     return apiRule
         .createCmdRequest()
         .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
         .command()
-        .put(PROP_WORKFLOW_KEY, workflowKey)
+        .put(PROP_WORKFLOW_BPMN_PROCESS_ID, processId)
         .put(PROP_WORKFLOW_PAYLOAD, PAYLOAD_MSG_PACK)
         .done()
         .sendAndAwait()

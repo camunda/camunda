@@ -27,12 +27,10 @@ import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.RecordMetadata;
 import io.zeebe.exporter.record.value.JobRecordValue;
-import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import java.time.Duration;
 import java.util.List;
@@ -122,7 +120,7 @@ public class JobTimeOutTest {
 
     apiRule.activateJobs(apiRule.getDefaultPartitionId(), jobType, timeout);
     client.receiveFirstJobEvent(ACTIVATED);
-    brokerRule.getClock().addTime(JobStreamProcessor.TIME_OUT_POLLING_INTERVAL);
+    brokerRule.getClock().addTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
 
     // when expired
     client.receiveFirstJobEvent(TIME_OUT);
@@ -130,7 +128,7 @@ public class JobTimeOutTest {
 
     // then activated again
     final List<Record<JobRecordValue>> jobEvents =
-        client.receiveJobs().limit(8).collect(Collectors.toList());
+        client.receiveJobs().limit(6).collect(Collectors.toList());
 
     assertThat(jobEvents).extracting(e -> e.getKey()).contains(jobKey1);
     assertThat(jobEvents)
@@ -153,7 +151,7 @@ public class JobTimeOutTest {
     final long timeout = 10L;
     apiRule.activateJobs(apiRule.getDefaultPartitionId(), jobType, timeout);
     client.receiveFirstJobEvent(ACTIVATED);
-    brokerRule.getClock().addTime(JobStreamProcessor.TIME_OUT_POLLING_INTERVAL);
+    brokerRule.getClock().addTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
 
     // when expired
     client.receiveFirstJobEvent(TIME_OUT);
@@ -196,37 +194,37 @@ public class JobTimeOutTest {
 
     // when
     client.receiveJobs().withIntent(ACTIVATED).limit(2).count();
-    brokerRule.getClock().addTime(JobStreamProcessor.TIME_OUT_POLLING_INTERVAL);
+    brokerRule.getClock().addTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
     client.receiveFirstJobEvent(JobIntent.TIMED_OUT);
     apiRule.activateJobs(jobType);
 
     // then
-    final List<Record> expiredEvents = client.receiveJobs().limit(16).collect(Collectors.toList());
+    final List<Record<JobRecordValue>> activiatedEvents =
+        client
+            .receiveJobs()
+            .filter(e -> e.getMetadata().getIntent() == JobIntent.ACTIVATED)
+            .limit(4)
+            .collect(Collectors.toList());
 
-    assertThat(expiredEvents)
-        .filteredOn(e -> e.getMetadata().getIntent() == JobIntent.ACTIVATED)
+    assertThat(activiatedEvents)
         .hasSize(4)
         .extracting(e -> e.getKey())
         .containsExactlyInAnyOrder(jobKey1, jobKey2, jobKey1, jobKey2);
 
+    final List<Record<JobRecordValue>> expiredEvents =
+        client
+            .receiveJobs()
+            .filter(e -> e.getMetadata().getIntent() == JobIntent.TIMED_OUT)
+            .limit(2)
+            .collect(Collectors.toList());
+
     assertThat(expiredEvents)
-        .filteredOn(e -> e.getMetadata().getIntent() == JobIntent.TIMED_OUT)
         .extracting(e -> e.getKey())
         .containsExactlyInAnyOrder(jobKey1, jobKey2);
   }
 
   private long createJob(final String type) {
-    final ExecuteCommandResponse resp =
-        apiRule
-            .createCmdRequest()
-            .type(ValueType.JOB, JobIntent.CREATE)
-            .command()
-            .put("type", type)
-            .put("retries", 3)
-            .done()
-            .sendAndAwait();
-
-    return resp.getKey();
+    return apiRule.partitionClient().createJob(type);
   }
 
   private void assertNoMoreJobsReceived(Intent lastIntent) {

@@ -20,6 +20,5 @@ package io.zeebe.broker.workflow.processor;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
 
 public interface BpmnStepHandler<T extends ExecutableFlowElement> {
-
   void handle(BpmnStepContext<T> context);
 }

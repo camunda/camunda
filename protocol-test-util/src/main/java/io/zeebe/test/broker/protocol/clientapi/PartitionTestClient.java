@@ -17,6 +17,7 @@ package io.zeebe.test.broker.protocol.clientapi;
 
 import static io.zeebe.protocol.intent.JobIntent.ACTIVATED;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsArray;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.exporter.record.Record;
@@ -24,9 +25,11 @@ import io.zeebe.exporter.record.value.DeploymentRecordValue;
 import io.zeebe.exporter.record.value.IncidentRecordValue;
 import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.exporter.record.value.MessageRecordValue;
+import io.zeebe.exporter.record.value.TimerRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -35,6 +38,7 @@ import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.MessageIntent;
+import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.DeploymentRecordStream;
@@ -44,6 +48,7 @@ import io.zeebe.test.util.record.JobRecordStream;
 import io.zeebe.test.util.record.MessageRecordStream;
 import io.zeebe.test.util.record.MessageSubscriptionRecordStream;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.TimerRecordStream;
 import io.zeebe.test.util.record.WorkflowInstanceRecordStream;
 import io.zeebe.test.util.record.WorkflowInstanceSubscriptionRecordStream;
 import io.zeebe.util.buffer.BufferUtil;
@@ -53,6 +58,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
@@ -139,7 +145,6 @@ public class PartitionTestClient {
 
     assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
     assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_READY);
-    assertThat(response.getPosition()).isGreaterThanOrEqualTo(0L);
 
     return response.getKey();
   }
@@ -200,15 +205,29 @@ public class PartitionTestClient {
     assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.PAYLOAD_UPDATED);
   }
 
-  public ExecuteCommandResponse createJob(final String type) {
-    return apiRule
-        .createCmdRequest()
-        .type(ValueType.JOB, JobIntent.CREATE)
-        .command()
-        .put("type", type)
-        .put("retries", 3)
-        .done()
-        .sendAndAwait();
+  public long createJob(final String type) {
+    return createJob(type, b -> {}, "{}");
+  }
+
+  public long createJob(final String type, Consumer<ServiceTaskBuilder> consumer, String payload) {
+    deploy(
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "task",
+                b -> {
+                  b.zeebeTaskType(type).zeebeTaskRetries(3);
+                  consumer.accept(b);
+                })
+            .done());
+
+    final long workflowInstance = createWorkflowInstance("process", payload);
+
+    return RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withType(type)
+        .filter(j -> j.getValue().getHeaders().getWorkflowInstanceKey() == workflowInstance)
+        .getFirst()
+        .getKey();
   }
 
   public void completeJobOfType(final String jobType) {
@@ -260,24 +279,10 @@ public class PartitionTestClient {
             .findFirst()
             .orElseThrow(() -> new AssertionError("Expected job locked event but not found."));
 
-    final ExecuteCommandResponse response =
-        completeJob(jobEvent.getPosition(), jobEvent.getKey(), payload);
+    final ExecuteCommandResponse response = completeJob(jobEvent.getKey(), payload);
 
     assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
     assertThat(response.getIntent()).isEqualTo(JobIntent.COMPLETED);
-  }
-
-  public ExecuteCommandResponse completeJob(
-      final long sourceRecordPosition, final long key, final byte[] payload) {
-    return apiRule
-        .createCmdRequest()
-        .type(ValueType.JOB, JobIntent.COMPLETE)
-        .key(key)
-        .sourceRecordPosition(sourceRecordPosition)
-        .command()
-        .put("payload", payload)
-        .done()
-        .sendAndAwait();
   }
 
   public ExecuteCommandResponse failJob(long key, int retries) {
@@ -289,6 +294,23 @@ public class PartitionTestClient {
         .put("retries", retries)
         .done()
         .sendAndAwait();
+  }
+
+  public ExecuteCommandResponse failJobWithMessage(long key, int retries, String errorMessage) {
+    return apiRule
+        .createCmdRequest()
+        .type(ValueType.JOB, JobIntent.FAIL)
+        .key(key)
+        .command()
+        .put("retries", retries)
+        .put("errorMessage", errorMessage)
+        .done()
+        .sendAndAwait();
+  }
+
+  public ExecuteCommandResponse createJobIncidentWithJobErrorMessage(
+      long key, String errorMessage) {
+    return failJobWithMessage(key, 0, errorMessage);
   }
 
   public ExecuteCommandResponse updateJobRetries(long key, int retries) {
@@ -359,6 +381,18 @@ public class PartitionTestClient {
 
   public Record<IncidentRecordValue> receiveFirstIncidentCommand(final IncidentIntent intent) {
     return receiveIncidents().withIntent(intent).onlyCommands().getFirst();
+  }
+
+  public ExecuteCommandResponse resolveIncident(long incidentKey) {
+
+    return apiRule
+        .createCmdRequest()
+        .partitionId(partitionId)
+        .type(ValueType.INCIDENT, IncidentIntent.RESOLVE)
+        .key(incidentKey)
+        .command()
+        .done()
+        .sendAndAwait();
   }
 
   /////////////////////////////////////////////
@@ -481,5 +515,22 @@ public class PartitionTestClient {
 
   public WorkflowInstanceSubscriptionRecordStream receiveWorkflowInstanceSubscriptions() {
     return RecordingExporter.workflowInstanceSubscriptionRecords().withPartitionId(partitionId);
+  }
+
+  /////////////////////////////////////////////
+  // TIMER ////////////////////////////////////
+  /////////////////////////////////////////////
+
+  public TimerRecordStream receiveTimerRecords() {
+    return RecordingExporter.timerRecords().withPartitionId(partitionId);
+  }
+
+  public Record<TimerRecordValue> receiveTimerRecord(String handlerNodeId, TimerIntent intent) {
+    return receiveTimerRecords().withIntent(intent).withHandlerNodeId(handlerNodeId).getFirst();
+  }
+
+  public Record<TimerRecordValue> receiveTimerRecord(
+      DirectBuffer handlerNodeId, TimerIntent intent) {
+    return receiveTimerRecord(bufferAsString(handlerNodeId), intent);
   }
 }

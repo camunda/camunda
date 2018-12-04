@@ -17,11 +17,14 @@
 package io.zeebe.model.bpmn;
 
 import java.util.List;
+import java.util.stream.Stream;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.type.ModelElementType;
 
 /** @author Sebastian Menski */
 public interface Query<T extends ModelElementInstance> {
+
+  Stream<T> stream();
 
   List<T> list();
 

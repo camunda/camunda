@@ -19,6 +19,8 @@ package io.zeebe.broker.workflow.deployment.transform;
 
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.zeebe.broker.logstreams.processor.KeyGenerator;
+import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.workflow.model.yaml.BpmnYamlParser;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.model.bpmn.Bpmn;
@@ -42,13 +44,15 @@ public class DeploymentTransformer {
   private final BpmnValidator validator = new BpmnValidator();
   private final BpmnYamlParser yamlParser = new BpmnYamlParser();
   private final WorkflowState workflowState;
+  private final KeyGenerator keyGenerator;
 
   // internal changes during processing
   private RejectionType rejectionType;
   private String rejectionReason;
 
-  public DeploymentTransformer(final WorkflowState workflowState) {
-    this.workflowState = workflowState;
+  public DeploymentTransformer(final ZeebeState zeebeState) {
+    this.workflowState = zeebeState.getWorkflowState();
+    this.keyGenerator = zeebeState.getKeyGenerator();
   }
 
   public boolean transform(final DeploymentRecord deploymentEvent) {
@@ -113,7 +117,7 @@ public class DeploymentTransformer {
       if (workflow.isExecutable()) {
         final String bpmnProcessId = workflow.getId();
 
-        final long key = workflowState.getNextWorkflowKey();
+        final long key = keyGenerator.nextKey();
         final int version = workflowState.getNextWorkflowVersion(bpmnProcessId);
 
         deploymentEvent

@@ -40,8 +40,6 @@ import io.zeebe.broker.exporter.stream.ExporterRecord.ExporterPosition;
 import io.zeebe.broker.exporter.util.ControlledTestExporter;
 import io.zeebe.broker.exporter.util.PojoConfigurationExporter;
 import io.zeebe.broker.exporter.util.PojoConfigurationExporter.PojoExporterConfiguration;
-import io.zeebe.broker.incident.data.ErrorType;
-import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.util.StreamProcessorControl;
@@ -61,6 +59,8 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
+import io.zeebe.protocol.impl.record.value.incident.ErrorType;
+import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
@@ -127,7 +127,8 @@ public class ExporterStreamProcessorTest {
     }
 
     // when
-    final StreamProcessorControl control = rule.initStreamProcessor(e -> processor);
+    final StreamProcessorControl control =
+        rule.initStreamProcessor(() -> processor.getState(), e -> processor);
     control.start();
     assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
 
@@ -166,7 +167,7 @@ public class ExporterStreamProcessorTest {
     final ExporterStreamProcessor processor =
         new ExporterStreamProcessor(PARTITION_ID, Collections.singletonList(descriptor));
 
-    rule.runStreamProcessor(e -> processor);
+    rule.runStreamProcessor(() -> processor.getState(), e -> processor);
 
     // then
     final PojoExporterConfiguration configuration = PojoConfigurationExporter.configuration;
@@ -187,7 +188,8 @@ public class ExporterStreamProcessorTest {
     exporters.get(1).onClose(() -> closedExporters[1] = true);
 
     // when
-    final StreamProcessorControl control = rule.initStreamProcessor(e -> processor);
+    final StreamProcessorControl control =
+        rule.initStreamProcessor(() -> processor.getState(), e -> processor);
     control.start();
 
     // then
@@ -210,7 +212,8 @@ public class ExporterStreamProcessorTest {
     final ExporterStreamProcessor processor = createStreamProcessor(2);
 
     // when
-    final StreamProcessorControl control = rule.initStreamProcessor(e -> processor);
+    final StreamProcessorControl control =
+        rule.initStreamProcessor(() -> processor.getState(), e -> processor);
     final long lowestPosition = writeEvent();
     final long highestPosition = writeEvent();
 
@@ -255,11 +258,11 @@ public class ExporterStreamProcessorTest {
     final List<ExporterDescriptor> descriptors = createMockedExporters(1);
     final ExporterStreamProcessor processor =
         new ExporterStreamProcessor(PARTITION_ID, descriptors);
-    final ExporterStreamProcessorState state =
-        (ExporterStreamProcessorState) processor.getStateController();
+    final ExporterStreamProcessorState state = processor.getState();
 
     // when
-    final StreamProcessorControl control = rule.initStreamProcessor(e -> processor);
+    final StreamProcessorControl control =
+        rule.initStreamProcessor(() -> processor.getState(), e -> processor);
     final long lowestPosition = writeEvent();
     final long latestPosition = writeExporterEvent(descriptors.get(0).getId(), lowestPosition);
 
@@ -286,7 +289,8 @@ public class ExporterStreamProcessorTest {
             });
 
     // when
-    final StreamProcessorControl control = rule.initStreamProcessor(e -> processor);
+    final StreamProcessorControl control =
+        rule.initStreamProcessor(() -> processor.getState(), e -> processor);
     final long lowestPosition = writeEvent();
     final long highestPosition = writeEvent();
 
@@ -316,7 +320,8 @@ public class ExporterStreamProcessorTest {
 
     final long position = writeEvent();
 
-    final StreamProcessorControl control = rule.initStreamProcessor(e -> processor);
+    final StreamProcessorControl control =
+        rule.initStreamProcessor(() -> processor.getState(), e -> processor);
     control.blockAfterEvent(e -> e.getPosition() == position);
     control.start();
     TestUtil.waitUntil(control::isBlocked);
@@ -337,7 +342,8 @@ public class ExporterStreamProcessorTest {
         new ExporterStreamProcessor(PARTITION_ID, descriptors);
 
     // when
-    final StreamProcessorControl control = rule.initStreamProcessor(e -> processor);
+    final StreamProcessorControl control =
+        rule.initStreamProcessor(() -> processor.getState(), e -> processor);
     final long lowestPosition = writeEvent();
     final long latestPosition = writeExporterEvent(descriptors.get(0).getId(), lowestPosition);
 
@@ -397,7 +403,6 @@ public class ExporterStreamProcessorTest {
     // given
     final long elementInstanceKey = 34;
     final long workflowInstanceKey = 10;
-    final long failureEventPosition = 12;
     final String elementId = "activity";
     final String bpmnProcessId = "process";
     final String errorMessage = "error";
@@ -408,18 +413,15 @@ public class ExporterStreamProcessorTest {
         new IncidentRecord()
             .setElementInstanceKey(elementInstanceKey)
             .setWorkflowInstanceKey(workflowInstanceKey)
-            .setFailureEventPosition(failureEventPosition)
             .setElementId(wrapString(elementId))
             .setBpmnProcessId(wrapString(bpmnProcessId))
             .setErrorMessage(errorMessage)
             .setErrorType(errorType)
-            .setJobKey(jobKey)
-            .setPayload(PAYLOAD_MSGPACK);
+            .setJobKey(jobKey);
 
     final IncidentRecordValue recordValue =
         new IncidentRecordValueImpl(
             OBJECT_MAPPER,
-            PAYLOAD_JSON,
             errorType.name(),
             errorMessage,
             bpmnProcessId,
@@ -453,7 +455,8 @@ public class ExporterStreamProcessorTest {
             .setType(wrapString(type))
             .setPayload(PAYLOAD_MSGPACK)
             .setRetries(retries)
-            .setDeadline(deadline);
+            .setDeadline(deadline)
+            .setErrorMessage("failed message");
     record
         .getHeaders()
         .setBpmnProcessId(wrapString(bpmnProcessId))
@@ -480,7 +483,8 @@ public class ExporterStreamProcessorTest {
                 workflowKey,
                 workflowDefinitionVersion),
             CUSTOM_HEADERS,
-            retries);
+            retries,
+            "failed message");
 
     // then
     assertRecordExported(JobIntent.CREATED, record, recordValue);
@@ -634,6 +638,7 @@ public class ExporterStreamProcessorTest {
         .setType(wrapString(type))
         .setPayload(PAYLOAD_MSGPACK)
         .setRetries(3)
+        .setErrorMessage("failed message")
         .setDeadline(1000L);
 
     jobRecord
@@ -660,7 +665,8 @@ public class ExporterStreamProcessorTest {
                 workflowKey,
                 workflowDefinitionVersion),
             Collections.EMPTY_MAP,
-            3);
+            3,
+            "failed message");
 
     final JobBatchRecordValueImpl recordValue =
         new JobBatchRecordValueImpl(
@@ -734,7 +740,9 @@ public class ExporterStreamProcessorTest {
   private void assertRecordExported(
       final Intent intent, final UnpackedObject record, final RecordValue expectedRecordValue) {
     // setup stream processor
-    final StreamProcessorControl control = rule.initStreamProcessor(e -> createStreamProcessor(1));
+    final ExporterStreamProcessor processor = createStreamProcessor(1);
+    final StreamProcessorControl control =
+        rule.initStreamProcessor(() -> processor.getState(), e -> processor);
 
     // write event
     final long position = rule.writeEvent(intent, record);

@@ -19,6 +19,7 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.test.util.record.RecordingExporter;
+import java.util.Collections;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -61,6 +62,40 @@ public class WorkflowTest {
         .name("test")
         .open();
 
-    testRule.waitUntilWorkflowInstanceCompleted(workflowInstance.getWorkflowInstanceKey());
+    ZeebeTestRule.assertThat(workflowInstance)
+        .isEnded()
+        .hasPassed("start", "task", "end")
+        .hasEntered("task")
+        .hasCompleted("task");
+  }
+
+  @Test
+  public void shouldCompleteWorkflowInstanceWithPayload() {
+    final WorkflowInstanceEvent workflowInstance =
+        client
+            .workflowClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId("process")
+            .latestVersion()
+            .send()
+            .join();
+
+    client
+        .jobClient()
+        .newWorker()
+        .jobType("task")
+        .handler(
+            (c, j) ->
+                c.newCompleteCommand(j.getKey())
+                    .payload(Collections.singletonMap("result", 123))
+                    .send()
+                    .join())
+        .name("test")
+        .open();
+
+    ZeebeTestRule.assertThat(workflowInstance)
+        .isEnded()
+        .hasPayload("result", 123)
+        .hasElementPayload("task", "result", 123);
   }
 }

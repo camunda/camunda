@@ -17,43 +17,51 @@
  */
 package io.zeebe.broker.workflow.processor.servicetask;
 
-import io.zeebe.broker.logstreams.processor.TypedBatchWriter;
+import io.zeebe.broker.incident.processor.IncidentState;
+import io.zeebe.broker.job.JobState;
+import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
-import io.zeebe.broker.workflow.processor.flownode.TerminateElementHandler;
+import io.zeebe.broker.workflow.processor.activity.TerminateActivityHandler;
 import io.zeebe.broker.workflow.state.ElementInstance;
+import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.JobIntent;
-import org.agrona.concurrent.UnsafeBuffer;
 
-public class TerminateServiceTaskHandler extends TerminateElementHandler {
+public class TerminateServiceTaskHandler extends TerminateActivityHandler {
+  private final JobState jobState;
 
-  private static final UnsafeBuffer EMPTY_JOB_TYPE = new UnsafeBuffer("".getBytes());
-
-  private final JobRecord jobRecord = new JobRecord();
+  public TerminateServiceTaskHandler(ZeebeState zeebeState) {
+    super(zeebeState.getIncidentState());
+    jobState = zeebeState.getJobState();
+  }
 
   @Override
-  protected void addTerminatingRecords(
-      BpmnStepContext<ExecutableFlowNode> context, TypedBatchWriter batch) {
+  protected void terminate(BpmnStepContext<ExecutableFlowNode> context) {
+    super.terminate(context);
 
     final ElementInstance elementInstance = context.getElementInstance();
-
     final long jobKey = elementInstance.getJobKey();
     if (jobKey > 0) {
-      final WorkflowInstanceRecord elementInstanceEvent = context.getValue();
+      final JobRecord job = jobState.getJob(jobKey);
 
-      jobRecord.reset();
-      jobRecord
-          .setType(EMPTY_JOB_TYPE)
-          .getHeaders()
-          .setBpmnProcessId(elementInstanceEvent.getBpmnProcessId())
-          .setWorkflowDefinitionVersion(elementInstanceEvent.getVersion())
-          .setWorkflowInstanceKey(elementInstanceEvent.getWorkflowInstanceKey())
-          .setElementId(elementInstanceEvent.getElementId())
-          .setElementInstanceKey(elementInstance.getKey());
+      if (job == null) {
+        throw new IllegalStateException(
+            String.format("Expected to find job with key %d, but no job found", jobKey));
+      }
 
-      batch.addFollowUpCommand(jobKey, JobIntent.CANCEL, jobRecord);
+      context.getOutput().getStreamWriter().appendFollowUpCommand(jobKey, JobIntent.CANCEL, job);
+      resolveExistingJobIncident(jobKey, context);
+    }
+  }
+
+  public void resolveExistingJobIncident(long jobKey, BpmnStepContext<ExecutableFlowNode> context) {
+    final long jobIncidentKey = incidentState.getJobIncidentKey(jobKey);
+
+    final boolean hasIncident = jobIncidentKey != IncidentState.MISSING_INCIDENT;
+    if (hasIncident) {
+      final IncidentRecord incidentRecord = incidentState.getIncidentRecord(jobIncidentKey);
+      context.getOutput().appendResolvedIncidentEvent(jobIncidentKey, incidentRecord);
     }
   }
 }

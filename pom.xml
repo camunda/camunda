@@ -9,7 +9,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zb-parent</artifactId>
-    <version>0.14.0-SNAPSHOT</version>
+    <version>0.15.0-SNAPSHOT</version>
     <relativePath>parent/</relativePath>
   </parent>
 
@@ -31,14 +31,12 @@
     <module>test</module>
     <module>util</module>
     <module>test-util</module>
-    <module>zb-map</module>
     <module>dispatcher</module>
     <module>msgpack-core</module>
     <module>msgpack-value</module>
     <module>json-el</module>
     <module>json-path</module>
     <module>build-tools</module>
-    <module>githooks-plugin</module>
     <module>gateway-protocol</module>
     <module>gateway</module>
     <module>clients/java</module>

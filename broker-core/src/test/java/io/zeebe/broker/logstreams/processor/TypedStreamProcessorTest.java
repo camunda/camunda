@@ -21,6 +21,7 @@ import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.util.Records;
 import io.zeebe.broker.util.StreamProcessorControl;
 import io.zeebe.broker.util.TestStreams;
@@ -35,6 +36,7 @@ import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -82,14 +84,16 @@ public class TypedStreamProcessorTest {
     final TypedStreamEnvironment env =
         new TypedStreamEnvironment(streams.getLogStream(STREAM_NAME), output);
 
+    final AtomicLong key = new AtomicLong();
     final TypedStreamProcessor streamProcessor =
         env.newStreamProcessor()
-            .keyGenerator(new KeyGenerator(env.getStream().getPartitionId(), 0, 1))
+            .keyGenerator(() -> key.getAndIncrement())
             .onCommand(ValueType.DEPLOYMENT, DeploymentIntent.CREATE, new BatchProcessor())
             .build();
 
     final StreamProcessorControl streamProcessorControl =
-        streams.initStreamProcessor(STREAM_NAME, STREAM_PROCESSOR_ID, () -> streamProcessor);
+        streams.initStreamProcessor(
+            STREAM_NAME, STREAM_PROCESSOR_ID, new ZeebeState(), () -> streamProcessor);
     streamProcessorControl.start();
     final long firstEventPosition =
         streams
@@ -137,7 +141,7 @@ public class TypedStreamProcessorTest {
         final TypedRecord<DeploymentRecord> record,
         final TypedResponseWriter responseWriter,
         final TypedStreamWriter streamWriter) {
-      streamWriter.newBatch().addNewEvent(DeploymentIntent.CREATED, record.getValue());
+      streamWriter.appendNewEvent(DeploymentIntent.CREATED, record.getValue());
       streamWriter.flush();
     }
   }

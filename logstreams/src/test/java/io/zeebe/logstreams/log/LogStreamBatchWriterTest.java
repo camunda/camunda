@@ -72,7 +72,7 @@ public class LogStreamBatchWriterTest {
     logStreamRule.setCommitPosition(Long.MAX_VALUE);
   }
 
-  private List<LoggedEvent> getWrittenEvents(long position) {
+  private List<LoggedEvent> getWrittenEvents(final long position) {
     final List<LoggedEvent> events = new ArrayList<>();
 
     assertThat(position).isGreaterThan(0);
@@ -100,7 +100,7 @@ public class LogStreamBatchWriterTest {
     return events;
   }
 
-  private DirectBuffer getValueBuffer(LoggedEvent event) {
+  private DirectBuffer getValueBuffer(final LoggedEvent event) {
     final DirectBuffer buffer = event.getValueBuffer();
     final int offset = event.getValueOffset();
     final int length = event.getValueLength();
@@ -108,7 +108,7 @@ public class LogStreamBatchWriterTest {
     return new UnsafeBuffer(buffer, offset, length);
   }
 
-  private DirectBuffer getMetadataBuffer(LoggedEvent event) {
+  private DirectBuffer getMetadataBuffer(final LoggedEvent event) {
     final DirectBuffer buffer = event.getMetadata();
     final int offset = event.getMetadataOffset();
     final int length = event.getMetadataLength();
@@ -478,22 +478,21 @@ public class LogStreamBatchWriterTest {
   }
 
   @Test
-  public void shouldFailToWriteEventWithoutKey() {
+  public void shouldNotFailToWriteEventWithoutKey() {
     // when
-    assertThatThrownBy(
-            () -> {
-              writer
-                  .event()
-                  .positionAsKey()
-                  .value(EVENT_VALUE_1)
-                  .done()
-                  .event()
-                  .value(EVENT_VALUE_2)
-                  .done()
-                  .tryWrite();
-            })
-        .isInstanceOf(RuntimeException.class)
-        .hasMessage("key must be greater than or equal to 0");
+    final long position =
+        writer
+            .event()
+            .positionAsKey()
+            .value(EVENT_VALUE_1)
+            .done()
+            .event()
+            .value(EVENT_VALUE_2)
+            .done()
+            .tryWrite();
+
+    // then
+    assertThat(getWrittenEvents(position)).extracting(LoggedEvent::getKey).contains(-1L);
   }
 
   @Test
@@ -516,13 +515,11 @@ public class LogStreamBatchWriterTest {
   }
 
   @Test
-  public void shouldFailToWriteBatchWithoutEvents() {
+  public void shouldNotFailToWriteBatchWithoutEvents() {
     // when
-    assertThatThrownBy(
-            () -> {
-              writer.tryWrite();
-            })
-        .isInstanceOf(RuntimeException.class)
-        .hasMessage("event count must be greater than 0");
+    final long pos = writer.tryWrite();
+
+    // then
+    assertThat(pos).isEqualTo(0);
   }
 }

@@ -17,8 +17,6 @@
  */
 package io.zeebe.broker.exporter;
 
-import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.EXPORTER_PROCESSOR_ID;
-
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.exporter.jar.ExporterJarLoadException;
 import io.zeebe.broker.exporter.repo.ExporterLoadException;
@@ -36,8 +34,9 @@ import io.zeebe.servicecontainer.ServiceStartContext;
 import java.util.List;
 
 public class ExporterManagerService implements Service<ExporterManagerService> {
-
+  public static final int EXPORTER_PROCESSOR_ID = 1003;
   public static final String PROCESSOR_NAME = "exporter";
+
   private final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector =
       new Injector<>();
 

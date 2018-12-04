@@ -17,8 +17,6 @@ package io.zeebe.protocol.impl.encoding;
 
 import static io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder.keyNullValue;
 import static io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder.partitionIdNullValue;
-import static io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder.positionNullValue;
-import static io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder.sourceRecordPositionNullValue;
 
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestDecoder;
@@ -42,8 +40,6 @@ public class ExecuteCommandRequest implements BufferReader, BufferWriter {
   private final ExecuteCommandRequestDecoder bodyDecoder = new ExecuteCommandRequestDecoder();
 
   private int partitionId;
-  private long position;
-  private long sourceRecordPosition;
   private long key;
   private ValueType valueType;
   private Intent intent;
@@ -55,8 +51,6 @@ public class ExecuteCommandRequest implements BufferReader, BufferWriter {
 
   public ExecuteCommandRequest reset() {
     partitionId = partitionIdNullValue();
-    position = positionNullValue();
-    sourceRecordPosition = sourceRecordPositionNullValue();
     key = keyNullValue();
     valueType = ValueType.NULL_VAL;
     intent = Intent.UNKNOWN;
@@ -71,24 +65,6 @@ public class ExecuteCommandRequest implements BufferReader, BufferWriter {
 
   public ExecuteCommandRequest setPartitionId(int partitionId) {
     this.partitionId = partitionId;
-    return this;
-  }
-
-  public long getPosition() {
-    return position;
-  }
-
-  public ExecuteCommandRequest setPosition(long position) {
-    this.position = position;
-    return this;
-  }
-
-  public long getSourceRecordPosition() {
-    return sourceRecordPosition;
-  }
-
-  public ExecuteCommandRequest setSourceRecordPosition(long sourceRecordPosition) {
-    this.sourceRecordPosition = sourceRecordPosition;
     return this;
   }
 
@@ -143,8 +119,6 @@ public class ExecuteCommandRequest implements BufferReader, BufferWriter {
     bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
     partitionId = bodyDecoder.partitionId();
-    position = bodyDecoder.position();
-    sourceRecordPosition = bodyDecoder.sourceRecordPosition();
     key = bodyDecoder.key();
     valueType = bodyDecoder.valueType();
     intent = Intent.fromProtocolValue(valueType, bodyDecoder.intent());
@@ -189,8 +163,6 @@ public class ExecuteCommandRequest implements BufferReader, BufferWriter {
     bodyEncoder
         .wrap(buffer, offset)
         .partitionId(partitionId)
-        .position(position)
-        .sourceRecordPosition(sourceRecordPosition)
         .key(key)
         .valueType(valueType)
         .intent(intent.value())

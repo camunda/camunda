@@ -31,7 +31,6 @@ import io.zeebe.broker.exporter.record.value.deployment.DeployedWorkflowImpl;
 import io.zeebe.broker.exporter.record.value.deployment.DeploymentResourceImpl;
 import io.zeebe.broker.exporter.record.value.job.HeadersImpl;
 import io.zeebe.broker.exporter.record.value.raft.RaftMemberImpl;
-import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.workflow.data.TimerRecord;
@@ -55,6 +54,7 @@ import io.zeebe.msgpack.value.LongValue;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.Workflow;
+import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobHeaders;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -185,7 +185,8 @@ public class ExporterRecordMapper {
         deadline,
         headers,
         asMsgPackMap(record.getCustomHeaders()),
-        record.getRetries());
+        record.getRetries(),
+        asString(record.getErrorMessage()));
   }
 
   private DeploymentRecordValue ofDeploymentRecord(final LoggedEvent event) {
@@ -223,7 +224,6 @@ public class ExporterRecordMapper {
 
     return new IncidentRecordValueImpl(
         objectMapper,
-        asJson(record.getPayload()),
         record.getErrorType().name(),
         asString(record.getErrorMessage()),
         asString(record.getBpmnProcessId()),
@@ -315,7 +315,10 @@ public class ExporterRecordMapper {
     event.readValue(record);
 
     return new TimerRecordValueImpl(
-        objectMapper, record.getElementInstanceKey(), record.getDueDate());
+        objectMapper,
+        record.getElementInstanceKey(),
+        record.getDueDate(),
+        asString(record.getHandlerNodeId()));
   }
 
   // UTILS

@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.workflow.processor;
 
+import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
@@ -33,7 +34,7 @@ public class WorkflowInstanceCommandContext {
   private TypedResponseWriter responseWriter;
   private TypedStreamWriter streamWriter;
 
-  public WorkflowInstanceCommandContext(EventOutput eventOutput) {
+  public WorkflowInstanceCommandContext(final EventOutput eventOutput) {
     this.eventOutput = eventOutput;
   }
 
@@ -45,7 +46,7 @@ public class WorkflowInstanceCommandContext {
     return record;
   }
 
-  public void setRecord(TypedRecord<WorkflowInstanceRecord> record) {
+  public void setRecord(final TypedRecord<WorkflowInstanceRecord> record) {
     this.record = record;
   }
 
@@ -57,7 +58,7 @@ public class WorkflowInstanceCommandContext {
     return elementInstance;
   }
 
-  public void setElementInstance(ElementInstance elementInstance) {
+  public void setElementInstance(final ElementInstance elementInstance) {
     this.elementInstance = elementInstance;
   }
 
@@ -65,17 +66,21 @@ public class WorkflowInstanceCommandContext {
     return responseWriter;
   }
 
-  public void setResponseWriter(TypedResponseWriter responseWriter) {
+  public void setResponseWriter(final TypedResponseWriter responseWriter) {
     this.responseWriter = responseWriter;
   }
 
-  public void setStreamWriter(TypedStreamWriter writer) {
+  public KeyGenerator getKeyGenerator() {
+    return streamWriter.getKeyGenerator();
+  }
+
+  public void setStreamWriter(final TypedStreamWriter writer) {
     this.streamWriter = writer;
     this.eventOutput.setStreamWriter(writer);
   }
 
-  public void reject(RejectionType rejectionType, String reason) {
-    streamWriter.writeRejection(record, rejectionType, reason);
+  public void reject(final RejectionType rejectionType, final String reason) {
+    streamWriter.appendRejection(record, rejectionType, reason);
     responseWriter.writeRejectionOnCommand(record, rejectionType, reason);
   }
 }

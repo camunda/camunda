@@ -19,13 +19,11 @@ import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.commands.ActivateJobsCommandStep1;
 import io.zeebe.client.api.commands.CompleteJobCommandStep1;
-import io.zeebe.client.api.commands.CreateJobCommandStep1;
 import io.zeebe.client.api.commands.FailJobCommandStep1;
 import io.zeebe.client.api.commands.UpdateRetriesJobCommandStep1;
 import io.zeebe.client.api.subscription.JobWorkerBuilderStep1;
 import io.zeebe.client.impl.job.ActivateJobsCommandImpl;
 import io.zeebe.client.impl.job.CompleteJobCommandImpl;
-import io.zeebe.client.impl.job.CreateJobCommandImpl;
 import io.zeebe.client.impl.job.FailJobCommandImpl;
 import io.zeebe.client.impl.job.JobUpdateRetriesCommandImpl;
 import io.zeebe.client.impl.subscription.JobWorkerBuilderImpl;
@@ -53,11 +51,6 @@ public class JobClientImpl implements JobClient {
     this.objectMapper = objectMapper;
     this.executorService = executorService;
     this.closeables = closeables;
-  }
-
-  @Override
-  public CreateJobCommandStep1 newCreateCommand() {
-    return new CreateJobCommandImpl(asyncStub, objectMapper);
   }
 
   @Override

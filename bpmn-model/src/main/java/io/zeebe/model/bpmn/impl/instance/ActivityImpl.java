@@ -22,8 +22,11 @@ import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_IS_FOR_
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_START_QUANTITY;
 import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_ACTIVITY;
 
+import io.zeebe.model.bpmn.Query;
 import io.zeebe.model.bpmn.impl.BpmnModelConstants;
+import io.zeebe.model.bpmn.impl.QueryImpl;
 import io.zeebe.model.bpmn.instance.Activity;
+import io.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.zeebe.model.bpmn.instance.DataInputAssociation;
 import io.zeebe.model.bpmn.instance.DataOutputAssociation;
 import io.zeebe.model.bpmn.instance.FlowNode;
@@ -33,6 +36,7 @@ import io.zeebe.model.bpmn.instance.Property;
 import io.zeebe.model.bpmn.instance.ResourceRole;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
 import java.util.Collection;
+import java.util.stream.Collectors;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
@@ -187,5 +191,17 @@ public abstract class ActivityImpl extends FlowNodeImpl implements Activity {
   @Override
   public void setLoopCharacteristics(LoopCharacteristics loopCharacteristics) {
     loopCharacteristicsChild.setChild(this, loopCharacteristics);
+  }
+
+  @Override
+  public Query<BoundaryEvent> getBoundaryEvents() {
+    final Collection<BoundaryEvent> queryElements =
+        getParentElement()
+            .getChildElementsByType(BoundaryEvent.class)
+            .stream()
+            .filter(event -> event.getAttachedTo().equals(this))
+            .collect(Collectors.toSet());
+
+    return new QueryImpl<>(queryElements);
   }
 }

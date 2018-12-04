@@ -17,12 +17,17 @@
  */
 package io.zeebe.broker.workflow.processor.subprocess;
 
+import io.zeebe.broker.incident.processor.IncidentState;
+import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElementContainer;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.broker.workflow.processor.EventOutput;
 import io.zeebe.broker.workflow.state.ElementInstance;
+import io.zeebe.broker.workflow.state.ElementInstanceState;
+import io.zeebe.broker.workflow.state.IndexedRecord;
 import io.zeebe.broker.workflow.state.WorkflowState;
+import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.List;
 
@@ -30,38 +35,61 @@ public class TerminateContainedElementsHandler
     implements BpmnStepHandler<ExecutableFlowElementContainer> {
 
   private final WorkflowState workflowState;
+  private final IncidentState incidentState;
+  private BpmnStepContext<ExecutableFlowElementContainer> context;
 
-  public TerminateContainedElementsHandler(WorkflowState workflowState) {
-    this.workflowState = workflowState;
+  public TerminateContainedElementsHandler(final ZeebeState zeebeState) {
+    incidentState = zeebeState.getIncidentState();
+    this.workflowState = zeebeState.getWorkflowState();
   }
 
   @Override
   public void handle(BpmnStepContext<ExecutableFlowElementContainer> context) {
-    final ElementInstance subProcessInstance = context.getElementInstance();
+    this.context = context;
+    final ElementInstance elementInstance = context.getElementInstance();
+    final EventOutput output = context.getOutput();
+    final ElementInstanceState elementInstanceState = workflowState.getElementInstanceState();
+
+    context.getCatchEventOutput().unsubscribeFromCatchEvents(elementInstance.getKey(), context);
+
+    final List<IndexedRecord> deferredTokens =
+        elementInstanceState.getDeferredTokens(elementInstance.getKey());
+    for (IndexedRecord deferedToken : deferredTokens) {
+      context.getCatchEventOutput().unsubscribeFromCatchEvents(deferedToken.getKey(), context);
+      output.consumeDeferredEvent(elementInstance.getKey(), deferedToken.getKey());
+    }
 
     final List<ElementInstance> children =
-        workflowState.getElementInstanceState().getChildren(subProcessInstance.getKey());
-    final EventOutput streamWriter = context.getOutput();
-
+        elementInstanceState.getChildren(elementInstance.getKey());
     if (children.isEmpty()) {
-      streamWriter.writeFollowUpEvent(
+      if (elementInstance.isInterrupted()) {
+        context
+            .getCatchEventOutput()
+            .triggerBoundaryEventFromInterruptedElement(elementInstance, output.getStreamWriter());
+      }
+
+      elementInstanceState.visitFailedTokens(
+          elementInstance.getKey(),
+          (token) -> {
+            incidentState.forExistingWorkflowIncident(
+                token.getKey(), this::resolveExistingIncident);
+          });
+
+      output.appendFollowUpEvent(
           context.getRecord().getKey(),
           WorkflowInstanceIntent.ELEMENT_TERMINATED,
           context.getValue());
     } else {
-
-      streamWriter.newBatch();
-
-      for (int i = 0; i < children.size(); i++) {
-        final ElementInstance child = children.get(i);
-
+      for (final ElementInstance child : children) {
         if (child.canTerminate()) {
-          context
-              .getOutput()
-              .writeFollowUpEvent(
-                  child.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING, child.getValue());
+          output.appendFollowUpEvent(
+              child.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING, child.getValue());
         }
       }
     }
+  }
+
+  private void resolveExistingIncident(IncidentRecord incidentRecord, long workflowIncidentKey) {
+    context.getOutput().appendResolvedIncidentEvent(workflowIncidentKey, incidentRecord);
   }
 }

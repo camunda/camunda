@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.workflow.processor;
 
+import io.zeebe.broker.logstreams.processor.TypedEventImpl;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.Intent;
@@ -79,12 +80,12 @@ public class WorkflowInstanceAssert
           "Assumption not met: there is not ELEMENT_TERMINATING record for element %s", elementId);
     }
 
-    final TypedRecord<WorkflowInstanceRecord> terminatingRecord = terminatingRecordOptional.get();
+    final TypedEventImpl terminatingRecord = (TypedEventImpl) terminatingRecordOptional.get();
     final long instanceKey = terminatingRecord.getKey();
 
     final Long2ObjectHashMap<TypedRecord<WorkflowInstanceRecord>> recordsByPosition =
         new Long2ObjectHashMap<>();
-    actual.forEach(r -> recordsByPosition.put(r.getPosition(), r));
+    actual.forEach(r -> recordsByPosition.put(((TypedEventImpl) r).getPosition(), r));
 
     // - once a terminating record is written, there shall be no record with a greater getPosition
     // that
@@ -94,8 +95,10 @@ public class WorkflowInstanceAssert
     final Optional<TypedRecord<WorkflowInstanceRecord>> firstViolatingRecord =
         actual
             .stream()
-            .filter(r -> r.getSourcePosition() > terminatingRecord.getPosition())
-            .map(r -> recordsByPosition.get(r.getSourcePosition()))
+            .filter(
+                r ->
+                    ((TypedEventImpl) r).getSourceEventPosition() > terminatingRecord.getPosition())
+            .map(r -> recordsByPosition.get(((TypedEventImpl) r).getSourceEventPosition()))
             .filter(r -> r.getValue().getScopeInstanceKey() == instanceKey)
             .filter(r -> isFlowEvaluatingState(r.getMetadata().getIntent()))
             .findFirst();

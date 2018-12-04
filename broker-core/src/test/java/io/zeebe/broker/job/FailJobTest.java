@@ -71,9 +71,7 @@ public class FailJobTest {
     final ExecuteCommandResponse response = client.failJob(jobEvent.getKey(), retries);
 
     // then
-    final Record failCommand = apiRule.partitionClient().receiveFirstJobCommand(JobIntent.FAIL);
     final JobRecordValue jobEventValue = jobEvent.getValue();
-    assertThat(response.getSourceRecordPosition()).isEqualTo(failCommand.getPosition());
     assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
     assertThat(response.getIntent()).isEqualTo(FAILED);
     assertThat(response.getValue())
@@ -89,6 +87,36 @@ public class FailJobTest {
   }
 
   @Test
+  public void shouldFailWithMessage() {
+    // given
+    client.createJob(JOB_TYPE);
+    apiRule.activateJobs(JOB_TYPE).await();
+    final Record<JobRecordValue> jobEvent = client.receiveFirstJobEvent(ACTIVATED);
+    final int retries = 23;
+
+    // when
+    final ExecuteCommandResponse response =
+        client.failJobWithMessage(jobEvent.getKey(), retries, "failed job");
+
+    // then
+    final JobRecordValue jobEventValue = jobEvent.getValue();
+    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.getIntent()).isEqualTo(FAILED);
+    assertThat(response.getValue())
+        .contains(
+            entry("worker", jobEventValue.getWorker()),
+            entry("type", jobEventValue.getType()),
+            entry("retries", (long) retries),
+            entry("deadline", jobEventValue.getDeadline().toEpochMilli()),
+            entry("errorMessage", "failed job"));
+
+    final Record<JobRecordValue> loggedEvent = RecordingExporter.jobRecords(FAILED).getFirst();
+
+    assertThat(loggedEvent.getValue().getType()).isEqualTo(JOB_TYPE);
+    assertThat(loggedEvent.getValue().getErrorMessage()).isEqualTo("failed job");
+  }
+
+  @Test
   public void shouldFailJobAndRetry() {
     // given
     client.createJob(JOB_TYPE);
@@ -101,7 +129,6 @@ public class FailJobTest {
     apiRule.activateJobs(JOB_TYPE).await();
 
     // then
-    assertThat(response.getSourceRecordPosition()).isGreaterThan(0L);
     assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
     assertThat(response.getIntent()).isEqualTo(FAILED);
 
@@ -180,10 +207,10 @@ public class FailJobTest {
   @Test
   public void shouldRejectFailIfJobCreated() {
     // given
-    final ExecuteCommandResponse createResponse = client.createJob(JOB_TYPE);
+    final long jobKey = client.createJob(JOB_TYPE);
 
     // when
-    final ExecuteCommandResponse response = client.failJob(createResponse.getKey(), 3);
+    final ExecuteCommandResponse response = client.failJob(jobKey, 3);
 
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);

@@ -19,8 +19,11 @@ func (cmd *DeployCommand) AddResourceFile(path string) *DeployCommand {
 	if err != nil {
 		log.Fatal(err)
 	}
+	return cmd.AddResource(b, path, pb.WorkflowRequestObject_FILE)
+}
 
-	cmd.request.Workflows = append(cmd.request.Workflows, &pb.WorkflowRequestObject{Definition: b, Name: path, Type: pb.WorkflowRequestObject_FILE})
+func (cmd *DeployCommand) AddResource(definition []byte, name string, resourceType pb.WorkflowRequestObject_ResourceType) *DeployCommand {
+	cmd.request.Workflows = append(cmd.request.Workflows, &pb.WorkflowRequestObject{Definition: definition, Name: name, Type: resourceType})
 	return cmd
 }
 

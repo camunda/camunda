@@ -61,20 +61,8 @@ public class ExecuteCommandResponse implements BufferReader {
     return buf;
   }
 
-  public long getPosition() {
-    return responseDecoder.position();
-  }
-
-  public long getSourceRecordPosition() {
-    return responseDecoder.sourceRecordPosition();
-  }
-
   public long getKey() {
     return responseDecoder.key();
-  }
-
-  public long getTimestamp() {
-    return responseDecoder.timestamp();
   }
 
   public int getPartitionId() {

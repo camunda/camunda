@@ -162,23 +162,28 @@ public class SubscriptionCommandSender {
   public boolean closeMessageSubscription(
       final int subscriptionPartitionId,
       final long workflowInstanceKey,
-      final long elementInstanceKey) {
+      final long elementInstanceKey,
+      final DirectBuffer messageName) {
 
     closeMessageSubscriptionCommand.setSubscriptionPartitionId(subscriptionPartitionId);
     closeMessageSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
     closeMessageSubscriptionCommand.setElementInstanceKey(elementInstanceKey);
+    closeMessageSubscriptionCommand.setMessageName(messageName);
 
     return sendSubscriptionCommand(subscriptionPartitionId, closeMessageSubscriptionCommand);
   }
 
   public boolean closeWorkflowInstanceSubscription(
-      final long workflowInstanceKey, final long elementInstanceKey) {
+      final long workflowInstanceKey,
+      final long elementInstanceKey,
+      final DirectBuffer messageName) {
 
     final int workflowInstancePartitionId = Protocol.decodePartitionId(workflowInstanceKey);
 
     closeWorkflowInstanceSubscriptionCommand.setSubscriptionPartitionId(partitionId);
     closeWorkflowInstanceSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
     closeWorkflowInstanceSubscriptionCommand.setElementInstanceKey(elementInstanceKey);
+    closeWorkflowInstanceSubscriptionCommand.setMessageName(messageName);
 
     return sendSubscriptionCommand(
         workflowInstancePartitionId, closeWorkflowInstanceSubscriptionCommand);

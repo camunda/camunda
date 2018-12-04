@@ -17,24 +17,30 @@
  */
 package io.zeebe.broker.workflow.processor.timer;
 
-import io.zeebe.broker.logstreams.processor.TypedBatchWriter;
+import static io.zeebe.msgpack.value.DocumentValue.EMPTY_DOCUMENT;
+
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.workflow.data.TimerRecord;
+import io.zeebe.broker.workflow.processor.boundary.BoundaryEventHelper;
 import io.zeebe.broker.workflow.state.ElementInstance;
+import io.zeebe.broker.workflow.state.ElementInstanceState;
+import io.zeebe.broker.workflow.state.StoredRecord;
+import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
 import io.zeebe.broker.workflow.state.TimerInstance;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> {
-
+  private final BoundaryEventHelper boundaryEventHelper = new BoundaryEventHelper();
   private final WorkflowState workflowState;
 
-  public TriggerTimerProcessor(WorkflowState workflowState) {
+  public TriggerTimerProcessor(final WorkflowState workflowState) {
     this.workflowState = workflowState;
   }
 
@@ -43,35 +49,61 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
       TypedRecord<TimerRecord> record,
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter) {
-
     final TimerRecord timer = record.getValue();
     final long elementInstanceKey = timer.getElementInstanceKey();
 
-    final TimerInstance timerInstance = workflowState.getTimerState().get(elementInstanceKey);
+    final TimerInstance timerInstance =
+        workflowState.getTimerState().get(elementInstanceKey, record.getKey());
     if (timerInstance == null) {
-      streamWriter.writeRejection(
+      streamWriter.appendRejection(
           record, RejectionType.NOT_APPLICABLE, "timer is already triggered or canceled");
       return;
     }
 
-    final TypedBatchWriter batchWriter = streamWriter.newBatch();
-    batchWriter.addFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
+    final ElementInstanceState elementInstanceState = workflowState.getElementInstanceState();
+    final ElementInstance elementInstance = elementInstanceState.getInstance(elementInstanceKey);
+    final TimerRecord timerRecord = record.getValue();
 
-    final ElementInstance elementInstance =
-        workflowState.getElementInstanceState().getInstance(elementInstanceKey);
+    streamWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
+
+    // TODO handler trigger events in a uniform way - #1699
 
     if (elementInstance != null
         && elementInstance.getState() == WorkflowInstanceIntent.ELEMENT_ACTIVATED) {
+      if (boundaryEventHelper.shouldTriggerBoundaryEvent(
+          elementInstance, timerRecord.getHandlerNodeId())) {
+        boundaryEventHelper.triggerBoundaryEvent(
+            workflowState,
+            elementInstance,
+            timerRecord.getHandlerNodeId(),
+            EMPTY_DOCUMENT,
+            streamWriter);
+      } else {
+        completeActivatedNode(elementInstanceKey, streamWriter, elementInstance);
+      }
 
-      batchWriter.addFollowUpEvent(
-          elementInstanceKey,
-          WorkflowInstanceIntent.ELEMENT_COMPLETING,
-          elementInstance.getValue());
+      elementInstanceState.flushDirtyState();
 
-      elementInstance.setState(WorkflowInstanceIntent.ELEMENT_COMPLETING);
-      workflowState.getElementInstanceState().flushDirtyState();
+    } else {
+      final StoredRecord tokenEvent = elementInstanceState.getTokenEvent(elementInstanceKey);
+
+      if (tokenEvent != null && tokenEvent.getPurpose() == Purpose.DEFERRED_TOKEN) {
+        // continue at an event-based gateway
+        final WorkflowInstanceRecord deferedRecord = tokenEvent.getRecord().getValue();
+        deferedRecord.setPayload(EMPTY_DOCUMENT).setElementId(timerRecord.getHandlerNodeId());
+
+        streamWriter.appendFollowUpEvent(
+            tokenEvent.getKey(), WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING, deferedRecord);
+      }
     }
 
     workflowState.getTimerState().remove(timerInstance);
+  }
+
+  private void completeActivatedNode(
+      long activityInstanceKey, TypedStreamWriter writer, ElementInstance elementInstance) {
+    writer.appendFollowUpEvent(
+        activityInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETING, elementInstance.getValue());
+    elementInstance.setState(WorkflowInstanceIntent.ELEMENT_COMPLETING);
   }
 }

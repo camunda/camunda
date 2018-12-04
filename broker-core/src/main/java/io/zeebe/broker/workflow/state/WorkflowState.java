@@ -17,9 +17,8 @@
  */
 package io.zeebe.broker.workflow.state;
 
-import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
-import io.zeebe.broker.subscription.message.state.SubscriptionState;
-import io.zeebe.broker.util.KeyStateController;
+import io.zeebe.logstreams.state.StateController;
+import io.zeebe.logstreams.state.StateLifecycleListener;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import java.io.File;
 import java.util.Collection;
@@ -28,53 +27,37 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 import org.rocksdb.ColumnFamilyHandle;
-import org.rocksdb.RocksDB;
 
-public class WorkflowState extends KeyStateController {
-  private static final byte[] WORKFLOW_KEY_FAMILY_NAME = "workflowKey".getBytes();
-  private static final byte[] WORKFLOW_VERSION_FAMILY_NAME = "workflowVersion".getBytes();
-  public static final byte[][] COLUMN_FAMILY_NAMES = {
-    WORKFLOW_KEY_FAMILY_NAME, WORKFLOW_VERSION_FAMILY_NAME
-  };
+public class WorkflowState implements StateLifecycleListener {
 
-  private static final byte[] LATEST_WORKFLOW_KEY = "latestWorkflowKey".getBytes();
+  private static final byte[] WORKFLOW_VERSION_FAMILY_NAME =
+      "workflowStateWorkflowVersion".getBytes();
+  public static final byte[][] COLUMN_FAMILY_NAMES = {WORKFLOW_VERSION_FAMILY_NAME};
 
-  private ColumnFamilyHandle workflowKeyHandle;
+  public static List<byte[]> getColumnFamilyNames() {
+    return Stream.of(
+            COLUMN_FAMILY_NAMES,
+            WorkflowPersistenceCache.COLUMN_FAMILY_NAMES,
+            ElementInstanceState.COLUMN_FAMILY_NAMES,
+            TimerInstanceState.COLUMN_FAMILY_NAMES)
+        .flatMap(Stream::of)
+        .collect(Collectors.toList());
+  }
+
   private ColumnFamilyHandle workflowVersionHandle;
   private NextValueManager nextValueManager;
   private WorkflowPersistenceCache workflowPersistenceCache;
-  private SubscriptionState<WorkflowSubscription> subscriptionState;
   private TimerInstanceState timerInstanceState;
   private ElementInstanceState elementInstanceState;
 
   @Override
-  public RocksDB open(final File dbDirectory, final boolean reopen) throws Exception {
-    final List<byte[]> columnFamilyNames =
-        Stream.of(
-                COLUMN_FAMILY_NAMES,
-                WorkflowPersistenceCache.COLUMN_FAMILY_NAMES,
-                ElementInstanceState.COLUMN_FAMILY_NAMES,
-                SubscriptionState.COLUMN_FAMILY_NAMES,
-                TimerInstanceState.COLUMN_FAMILY_NAMES)
-            .flatMap(Stream::of)
-            .collect(Collectors.toList());
+  public void onOpened(StateController stateController) {
+    workflowVersionHandle = stateController.getColumnFamilyHandle(WORKFLOW_VERSION_FAMILY_NAME);
 
-    final RocksDB rocksDB = super.open(dbDirectory, reopen, columnFamilyNames);
-
-    workflowKeyHandle = this.getColumnFamilyHandle(WORKFLOW_KEY_FAMILY_NAME);
-    workflowVersionHandle = this.getColumnFamilyHandle(WORKFLOW_VERSION_FAMILY_NAME);
-
-    nextValueManager = new NextValueManager(this);
-    workflowPersistenceCache = new WorkflowPersistenceCache(this);
-    subscriptionState = new SubscriptionState<>(this, WorkflowSubscription.class);
-    timerInstanceState = new TimerInstanceState(this);
-    elementInstanceState = new ElementInstanceState(this);
-
-    return rocksDB;
-  }
-
-  public long getNextWorkflowKey() {
-    return nextValueManager.getNextValue(workflowKeyHandle, LATEST_WORKFLOW_KEY);
+    nextValueManager = new NextValueManager(stateController);
+    workflowPersistenceCache = new WorkflowPersistenceCache(stateController);
+    timerInstanceState = new TimerInstanceState(stateController);
+    elementInstanceState = new ElementInstanceState(stateController);
   }
 
   public int getNextWorkflowVersion(String bpmnProcessId) {
@@ -104,42 +87,6 @@ public class WorkflowState extends KeyStateController {
 
   public Collection<DeployedWorkflow> getWorkflowsByBpmnProcessId(DirectBuffer processId) {
     return workflowPersistenceCache.getWorkflowsByBpmnProcessId(processId);
-  }
-
-  public void put(WorkflowSubscription workflowSubscription) {
-    subscriptionState.put(workflowSubscription);
-  }
-
-  public void updateCommandSendTime(WorkflowSubscription workflowSubscription) {
-    subscriptionState.updateCommandSentTime(workflowSubscription);
-  }
-
-  public WorkflowSubscription findSubscription(WorkflowInstanceSubscriptionRecord record) {
-    return findSubscription(record.getWorkflowInstanceKey(), record.getElementInstanceKey());
-  }
-
-  public WorkflowSubscription findSubscription(long workflowInstanceKey, long elementInstanceKey) {
-    final WorkflowSubscription workflowSubscription =
-        new WorkflowSubscription(workflowInstanceKey, elementInstanceKey);
-    return subscriptionState.getSubscription(workflowSubscription);
-  }
-
-  public List<WorkflowSubscription> findSubscriptionsBefore(long time) {
-    return subscriptionState.findSubscriptionBefore(time);
-  }
-
-  public boolean remove(WorkflowInstanceSubscriptionRecord record) {
-    final WorkflowSubscription persistedSubscription = findSubscription(record);
-
-    final boolean exist = persistedSubscription != null;
-    if (exist) {
-      subscriptionState.remove(persistedSubscription);
-    }
-    return exist;
-  }
-
-  public void remove(WorkflowSubscription workflowSubscription) {
-    subscriptionState.remove(workflowSubscription);
   }
 
   public TimerInstanceState getTimerState() {

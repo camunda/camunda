@@ -22,39 +22,42 @@ import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
-import io.zeebe.broker.workflow.state.WorkflowState;
-import io.zeebe.broker.workflow.state.WorkflowSubscription;
+import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionState;
+import io.zeebe.broker.workflow.state.WorkflowInstanceSubscription;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 
 public class OpenWorkflowInstanceSubscriptionProcessor
     implements TypedRecordProcessor<WorkflowInstanceSubscriptionRecord> {
 
-  private final WorkflowState workflowState;
+  private final WorkflowInstanceSubscriptionState subscriptionState;
 
-  public OpenWorkflowInstanceSubscriptionProcessor(WorkflowState workflowState) {
-    this.workflowState = workflowState;
+  public OpenWorkflowInstanceSubscriptionProcessor(
+      final WorkflowInstanceSubscriptionState subscriptionState) {
+    this.subscriptionState = subscriptionState;
   }
 
   @Override
   public void processRecord(
-      TypedRecord<WorkflowInstanceSubscriptionRecord> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter) {
+      final TypedRecord<WorkflowInstanceSubscriptionRecord> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter) {
 
     final WorkflowInstanceSubscriptionRecord subscriptionRecord = record.getValue();
 
-    final WorkflowSubscription subscription = workflowState.findSubscription(subscriptionRecord);
+    final WorkflowInstanceSubscription subscription =
+        subscriptionState.getSubscription(
+            subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageName());
     if (subscription != null && subscription.isOpening()) {
-      subscription.setOpened();
-      subscription.setSubscriptionPartitionId(subscriptionRecord.getSubscriptionPartitionId());
-      workflowState.put(subscription);
 
-      streamWriter.writeFollowUpEvent(
+      subscriptionState.updateToOpenedState(
+          subscription, subscription.getSubscriptionPartitionId());
+
+      streamWriter.appendFollowUpEvent(
           record.getKey(), WorkflowInstanceSubscriptionIntent.OPENED, subscriptionRecord);
 
     } else {
-      streamWriter.writeRejection(
+      streamWriter.appendRejection(
           record, RejectionType.NOT_APPLICABLE, "subscription is already open");
     }
   }

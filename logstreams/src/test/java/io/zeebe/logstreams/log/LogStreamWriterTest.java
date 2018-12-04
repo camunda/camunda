@@ -17,7 +17,6 @@ package io.zeebe.logstreams.log;
 
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.logstreams.impl.LogEntryDescriptor;
 import io.zeebe.logstreams.util.LogStreamReaderRule;
@@ -68,7 +67,7 @@ public class LogStreamWriterTest {
     logStreamRule.setCommitPosition(Long.MAX_VALUE);
   }
 
-  private LoggedEvent getWrittenEvent(long position) {
+  private LoggedEvent getWrittenEvent(final long position) {
     assertThat(position).isGreaterThan(0);
 
     writerRule.waitForPositionToBeAppended(position);
@@ -298,11 +297,9 @@ public class LogStreamWriterTest {
   @Test
   public void shouldFailToWriteEventWithoutValue() {
     // when
-    assertThatThrownBy(
-            () -> {
-              writer.keyNull().tryWrite();
-            })
-        .isInstanceOf(RuntimeException.class)
-        .hasMessage("value must not be null");
+    final long pos = writer.keyNull().tryWrite();
+
+    // then
+    assertThat(pos).isEqualTo(0);
   }
 }

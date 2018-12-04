@@ -109,10 +109,6 @@ public class CancelWorkflowInstanceTest {
     final ExecuteCommandResponse response = cancelWorkflowInstance(workflowInstanceKey);
 
     // then
-    final Record<WorkflowInstanceRecordValue> cancelWorkflow =
-        testClient.receiveFirstWorkflowInstanceCommand(WorkflowInstanceIntent.CANCEL);
-
-    assertThat(response.getSourceRecordPosition()).isEqualTo(cancelWorkflow.getPosition());
     assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_TERMINATING);
 
     final Record<WorkflowInstanceRecordValue> workflowInstanceCanceledEvent =
@@ -125,10 +121,11 @@ public class CancelWorkflowInstanceTest {
         testClient
             .receiveWorkflowInstances()
             .skipUntil(r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.CANCEL)
-            .limit(6)
+            .limit(5)
             .collect(Collectors.toList());
 
     assertThat(workflowEvents)
+        .hasSize(5)
         .extracting(e -> e.getValue().getElementId(), e -> e.getMetadata().getIntent())
         .containsSequence(
             tuple("", WorkflowInstanceIntent.CANCEL),
@@ -153,10 +150,11 @@ public class CancelWorkflowInstanceTest {
         testClient
             .receiveWorkflowInstances()
             .skipUntil(r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.CANCEL)
-            .limit(8)
+            .limit(7)
             .collect(Collectors.toList());
 
     assertThat(workflowEvents)
+        .hasSize(7)
         .extracting(e -> e.getValue().getElementId(), e -> e.getMetadata().getIntent())
         .containsSequence(
             tuple("", WorkflowInstanceIntent.CANCEL),

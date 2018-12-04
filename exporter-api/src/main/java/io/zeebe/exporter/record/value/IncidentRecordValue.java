@@ -15,14 +15,14 @@
  */
 package io.zeebe.exporter.record.value;
 
-import io.zeebe.exporter.record.RecordValueWithPayload;
+import io.zeebe.exporter.record.RecordValue;
 
 /**
  * Represents a workflow incident.
  *
  * <p>See {@link io.zeebe.protocol.intent.IncidentIntent} for intents.
  */
-public interface IncidentRecordValue extends RecordValueWithPayload {
+public interface IncidentRecordValue extends RecordValue {
   /** @return the type of error this incident is caused by. */
   String getErrorType();
 

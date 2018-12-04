@@ -16,11 +16,14 @@
 package io.zeebe.broker.it.incident;
 
 import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertIncidentCreated;
-import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertIncidentDeleted;
 import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertIncidentResolved;
 import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertJobCreated;
+import static io.zeebe.protocol.intent.IncidentIntent.CREATED;
+import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.GrpcClientRule;
+import io.zeebe.broker.it.util.ZeebeAssertHelper;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.clients.WorkflowClient;
@@ -28,6 +31,7 @@ import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.subscription.JobHandler;
+import io.zeebe.client.cmd.ClientException;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.IncidentRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
@@ -35,6 +39,8 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -64,6 +70,16 @@ public class IncidentTest {
   }
 
   @Test
+  public void shouldRejectResolveOnNonExistingIncident() {
+    // given
+
+    // when
+    Assertions.assertThatThrownBy(() -> workflowClient.newResolveIncidentCommand(1).send().join())
+        .isInstanceOf(ClientException.class)
+        .hasMessageContaining("Expected to resolve an incident with key 1, but no incident found");
+  }
+
+  @Test
   public void shouldCreateAndResolveInputMappingIncident() {
     // given
     deploy();
@@ -76,7 +92,7 @@ public class IncidentTest {
         .join();
 
     final Record<IncidentRecordValue> incident =
-        RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();
+        RecordingExporter.incidentRecords(CREATED).getFirst();
 
     // when
     workflowClient
@@ -84,10 +100,46 @@ public class IncidentTest {
         .payload(PAYLOAD)
         .send()
         .join();
+    workflowClient.newResolveIncidentCommand(incident.getKey()).send();
 
     // then
     assertJobCreated("test");
     assertIncidentResolved();
+  }
+
+  @Test
+  public void shouldRejectDuplicateResolving() {
+    // given
+    deploy();
+
+    workflowClient
+        .newCreateInstanceCommand()
+        .bpmnProcessId("process")
+        .latestVersion()
+        .send()
+        .join();
+
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(CREATED).getFirst();
+
+    // when
+    workflowClient
+        .newUpdatePayloadCommand(incident.getValue().getElementInstanceKey())
+        .payload(PAYLOAD)
+        .send()
+        .join();
+    workflowClient.newResolveIncidentCommand(incident.getKey()).send();
+
+    // then
+    assertJobCreated("test");
+    assertIncidentResolved();
+    Assertions.assertThatThrownBy(
+            () -> workflowClient.newResolveIncidentCommand(incident.getKey()).send().join())
+        .isInstanceOf(ClientException.class)
+        .hasMessageContaining(
+            "Expected to resolve an incident with key "
+                + incident.getKey()
+                + ", but no incident found");
   }
 
   @Test
@@ -112,7 +164,7 @@ public class IncidentTest {
         .join();
 
     // then
-    assertIncidentDeleted();
+    ZeebeAssertHelper.assertIncidentResolved();
   }
 
   @Test
@@ -142,7 +194,8 @@ public class IncidentTest {
         .open();
 
     // then an incident is created
-    assertIncidentCreated();
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords().withIntent(CREATED).getFirst();
 
     // when the job retries are increased
     jobHandler.failJob = false;
@@ -151,8 +204,85 @@ public class IncidentTest {
 
     jobClient.newUpdateRetriesCommand(job.getKey()).retries(3).send().join();
 
-    // then the incident is deleted
-    assertIncidentDeleted();
+    // and incident resolve command is send
+    workflowClient.newResolveIncidentCommand(incident.getKey()).send();
+
+    // then the incident is resolved
+    ZeebeAssertHelper.assertIncidentResolved();
+    waitUntil(() -> jobHandler.jobCompleteCount.get() == 1);
+  }
+
+  @Test
+  public void shouldCreateJobIncidentWithErrorMessage() {
+    // given a workflow instance with an open job
+    deploy();
+
+    workflowClient
+        .newCreateInstanceCommand()
+        .bpmnProcessId("process")
+        .latestVersion()
+        .payload(PAYLOAD)
+        .send()
+        .join();
+
+    // when the job fails until it has no more retries left
+    final JobHandler jobHandler =
+        (client, job) ->
+            client.newFailCommand(job.getKey()).retries(0).errorMessage("failed message").send();
+
+    clientRule
+        .getJobClient()
+        .newWorker()
+        .jobType("test")
+        .handler(jobHandler)
+        .name("owner")
+        .timeout(Duration.ofMinutes(5))
+        .open();
+
+    // then an incident is created
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();
+    assertThat(incident.getValue().getErrorMessage()).isEqualTo("failed message");
+  }
+
+  @Test
+  public void shouldIncidentContainLastJobErrorMessage() {
+    // given a workflow instance with an open job
+    deploy();
+
+    workflowClient
+        .newCreateInstanceCommand()
+        .bpmnProcessId("process")
+        .latestVersion()
+        .payload(PAYLOAD)
+        .send()
+        .join();
+
+    // when the job fails until it has no more retries left
+    final AtomicInteger retries = new AtomicInteger(1);
+    final JobHandler jobHandler =
+        (client, job) -> {
+          final int retryCount = retries.getAndDecrement();
+          client
+              .newFailCommand(job.getKey())
+              .retries(retryCount)
+              .errorMessage(retryCount + " message")
+              .send();
+        };
+
+    clientRule
+        .getJobClient()
+        .newWorker()
+        .jobType("test")
+        .handler(jobHandler)
+        .name("owner")
+        .timeout(Duration.ofMinutes(5))
+        .open();
+
+    // then an incident is created
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();
+    assertThat(incident.getValue().getErrorMessage()).isEqualTo("0 message");
   }
 
   private void deploy() {
@@ -163,6 +293,7 @@ public class IncidentTest {
   }
 
   private static final class ControllableJobHandler implements JobHandler {
+    AtomicInteger jobCompleteCount = new AtomicInteger(0);
     boolean failJob = false;
     ActivatedJob job;
 
@@ -174,6 +305,7 @@ public class IncidentTest {
         throw new RuntimeException("expected failure");
       } else {
         client.newCompleteCommand(job.getKey()).payload("{}").send().join();
+        jobCompleteCount.incrementAndGet();
       }
     }
   }

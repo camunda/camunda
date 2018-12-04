@@ -29,19 +29,17 @@ import java.util.List;
 public class ParallelSplitHandler implements BpmnStepHandler<ExecutableFlowNode> {
 
   @Override
-  public void handle(BpmnStepContext<ExecutableFlowNode> context) {
+  public void handle(final BpmnStepContext<ExecutableFlowNode> context) {
     final ExecutableFlowNode element = context.getElement();
     final WorkflowInstanceRecord value = context.getValue();
 
     final List<ExecutableSequenceFlow> outgoingFlows = element.getOutgoing();
-    final EventOutput streamWriter = context.getOutput();
-    streamWriter.newBatch();
 
-    for (int i = 0; i < outgoingFlows.size(); i++) {
-      final ExecutableSequenceFlow flow = outgoingFlows.get(i);
+    final EventOutput eventOutput = context.getOutput();
 
+    for (final ExecutableSequenceFlow flow : outgoingFlows) {
       value.setElementId(flow.getId());
-      streamWriter.writeNewEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, value);
+      eventOutput.appendNewEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, value);
     }
   }
 }

@@ -67,24 +67,6 @@ public class FsSnapshotStorage implements SnapshotStorage {
   }
 
   @Override
-  public boolean purgeSnapshot(String name) {
-    final File rootFile = new File(cfg.getRootPath());
-    final List<File> snapshotFiles =
-        Arrays.asList(rootFile.listFiles(file -> cfg.matchesSnapshotFileNamePattern(file, name)));
-
-    boolean deletionSuccessful = false;
-    if (snapshotFiles.size() > 0) {
-      for (File snapshotFile : snapshotFiles) {
-        FileUtil.deleteFile(getChecksumFile(snapshotFile, name));
-        FileUtil.deleteFile(snapshotFile);
-      }
-
-      deletionSuccessful = true;
-    }
-    return deletionSuccessful;
-  }
-
-  @Override
   public FsSnapshotWriter createSnapshot(String name, long logPosition) throws Exception {
     final FsReadableSnapshot lastSnapshot = getLastSnapshot(name);
 
@@ -136,25 +118,6 @@ public class FsSnapshotStorage implements SnapshotStorage {
     }
 
     return snapshots;
-  }
-
-  @Override
-  public FsTemporarySnapshotWriter createTemporarySnapshot(
-      final String name, final long logPosition) throws Exception {
-    final String snapshotName = cfg.snapshotFileName(name, logPosition);
-
-    if (snapshotExists(name, logPosition)) {
-      throw new RuntimeException(String.format("snapshot %s-%d already exists", name, logPosition));
-    }
-
-    final FsReadableSnapshot lastSnapshot = getLastSnapshot(name);
-    final File destinationFile = new File(snapshotName);
-    final File checksumFile = new File(cfg.checksumFileName(name, logPosition));
-    final File temporaryFile = File.createTempFile(snapshotName, null, new File(cfg.getRootPath()));
-    temporaryFile.deleteOnExit();
-
-    return new FsTemporarySnapshotWriter(
-        cfg, temporaryFile, checksumFile, destinationFile, lastSnapshot);
   }
 
   @Override

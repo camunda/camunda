@@ -17,7 +17,6 @@ package io.zeebe.logstreams.processor;
 
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
-import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotController;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.DisabledLogStreamWriter;
 import io.zeebe.logstreams.log.LogStream;
@@ -25,7 +24,6 @@ import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.logstreams.spi.SnapshotController;
-import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.servicecontainer.ServiceBuilder;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
@@ -46,7 +44,6 @@ public class StreamProcessorBuilder {
   protected ActorScheduler actorScheduler;
 
   protected Duration snapshotPeriod;
-  protected SnapshotStorage snapshotStorage;
   protected SnapshotController snapshotController;
 
   protected LogStreamReader logStreamReader;
@@ -83,11 +80,6 @@ public class StreamProcessorBuilder {
 
   public StreamProcessorBuilder snapshotPeriod(Duration snapshotPeriod) {
     this.snapshotPeriod = snapshotPeriod;
-    return this;
-  }
-
-  public StreamProcessorBuilder snapshotStorage(SnapshotStorage snapshotStorage) {
-    this.snapshotStorage = snapshotStorage;
     return this;
   }
 
@@ -144,13 +136,7 @@ public class StreamProcessorBuilder {
     Objects.requireNonNull(logStream, "No log stream provided.");
     Objects.requireNonNull(actorScheduler, "No task scheduler provided.");
     Objects.requireNonNull(serviceContainer, "No service container provided.");
-
-    // TODO: collapse once we get rid of snapshot storage
-    if (snapshotStorage == null) {
-      Objects.requireNonNull(snapshotController, "No snapshot controller provided.");
-    } else if (snapshotController == null) {
-      Objects.requireNonNull(snapshotStorage, "No snapshot storage provided.");
-    }
+    Objects.requireNonNull(snapshotController, "No snapshot controller provided.");
   }
 
   private StreamProcessorContext createContext() {
@@ -169,12 +155,8 @@ public class StreamProcessorBuilder {
     if (snapshotPeriod == null) {
       snapshotPeriod = Duration.ofMinutes(1);
     }
-    ctx.setSnapshotPeriod(snapshotPeriod);
 
-    if (snapshotController == null && snapshotStorage != null) {
-      snapshotController =
-          new FsSnapshotController(snapshotStorage, name, streamProcessor.getStateResource());
-    }
+    ctx.setSnapshotPeriod(snapshotPeriod);
     ctx.setSnapshotController(snapshotController);
 
     logStreamReader = new BufferedLogStreamReader();

@@ -107,21 +107,4 @@ public class FsSnapshotStorageConfiguration {
 
     return parts[0];
   }
-
-  public String getSnapshotFileNameTemplate() {
-    return SNAPSHOT_FILE_PATH_TEMPLATE;
-  }
-
-  public String getChecksumFileNameTemplate() {
-    return CHECKSUM_FILE_NAME_TEMPLATE;
-  }
-
-  public static String getChecksumContentTemplate() {
-    return CHECKSUM_CONTENT_TEMPLATE;
-  }
-
-  // TODO: make this not terrible
-  public boolean isReplicable(final String snapshotName) {
-    return !snapshotName.matches(".*blockIdx.*");
-  }
 }

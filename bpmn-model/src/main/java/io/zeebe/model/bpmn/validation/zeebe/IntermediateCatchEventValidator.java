@@ -17,18 +17,18 @@ package io.zeebe.model.bpmn.validation.zeebe;
 
 import io.zeebe.model.bpmn.instance.EventDefinition;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
-import io.zeebe.model.bpmn.instance.Message;
 import io.zeebe.model.bpmn.instance.MessageEventDefinition;
-import io.zeebe.model.bpmn.instance.TimeDuration;
 import io.zeebe.model.bpmn.instance.TimerEventDefinition;
-import java.time.Duration;
-import java.time.format.DateTimeParseException;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
 public class IntermediateCatchEventValidator
     implements ModelElementValidator<IntermediateCatchEvent> {
+  private static final List<Class<? extends EventDefinition>> SUPPORTED_EVENTS =
+      Arrays.asList(MessageEventDefinition.class, TimerEventDefinition.class);
 
   @Override
   public Class<IntermediateCatchEvent> getElementType() {
@@ -38,51 +38,23 @@ public class IntermediateCatchEventValidator
   @Override
   public void validate(
       IntermediateCatchEvent element, ValidationResultCollector validationResultCollector) {
-
     final Collection<EventDefinition> eventDefinitions = element.getEventDefinitions();
 
     if (eventDefinitions.size() != 1) {
       validationResultCollector.addError(0, "Must have exactly one event definition");
-
     } else {
       final EventDefinition eventDefinition = eventDefinitions.iterator().next();
+      final Class<? extends EventDefinition> type = eventDefinition.getClass();
 
-      if (eventDefinition instanceof MessageEventDefinition) {
-        validateMessageEventDefinition(
-            (MessageEventDefinition) eventDefinition, validationResultCollector);
+      if (SUPPORTED_EVENTS.stream().noneMatch(c -> c.isAssignableFrom(type))) {
+        validationResultCollector.addError(0, "Event definition must be one of: message, timer");
 
       } else if (eventDefinition instanceof TimerEventDefinition) {
-        validateTimerEventDefinition(
-            validationResultCollector, (TimerEventDefinition) eventDefinition);
-
-      } else {
-        validationResultCollector.addError(0, "Must have a message or timer event definition");
-      }
-    }
-  }
-
-  private static void validateMessageEventDefinition(
-      final MessageEventDefinition messageEventDefinition,
-      ValidationResultCollector validationResultCollector) {
-
-    final Message message = messageEventDefinition.getMessage();
-    if (message == null) {
-      validationResultCollector.addError(0, "Must reference a message");
-    }
-  }
-
-  private void validateTimerEventDefinition(
-      ValidationResultCollector validationResultCollector,
-      final TimerEventDefinition timerEventDefinition) {
-
-    final TimeDuration timeDuration = timerEventDefinition.getTimeDuration();
-    if (timeDuration == null) {
-      validationResultCollector.addError(0, "Must have a time duration");
-    } else {
-      try {
-        Duration.parse(timeDuration.getTextContent());
-      } catch (DateTimeParseException e) {
-        validationResultCollector.addError(0, "Time duration is invalid");
+        final TimerEventDefinition timerEventDefinition = (TimerEventDefinition) eventDefinition;
+        if (timerEventDefinition.getTimeDuration() == null) {
+          validationResultCollector.addError(
+              0, "Intermediate timer catch event must have a time duration.");
+        }
       }
     }
   }
