@@ -18,8 +18,8 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <version.zeebe>0.13.1</version.zeebe>
-    <version.elasticsearch>6.4.3</version.elasticsearch>
+    <version.zeebe>0.14.0</version.zeebe>
+    <version.elasticsearch>6.5.1</version.elasticsearch>
     <version.spring.boot>2.1.0.RELEASE</version.spring.boot>
 
     <version.swagger>2.9.2</version.swagger>
@@ -65,6 +65,12 @@
       <dependency>
         <groupId>org.elasticsearch.client</groupId>
         <artifactId>transport</artifactId>
+        <version>${version.elasticsearch}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.elasticsearch.client</groupId>
+        <artifactId>elasticsearch-rest-high-level-client</artifactId>
         <version>${version.elasticsearch}</version>
       </dependency>
 

@@ -32,6 +32,7 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   private HeadersImpl headers;
   private Map<String, Object> customHeaders;
   private int retries;
+  private String errorMessage;
 
   public JobRecordValueImpl() {
   }
@@ -66,6 +67,11 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
     return deadline;
   }
 
+  @Override
+  public String getErrorMessage() {
+    return errorMessage;
+  }
+
   public void setType(String type) {
     this.type = type;
   }
@@ -88,6 +94,10 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
 
   public void setRetries(int retries) {
     this.retries = retries;
+  }
+
+  public void setErrorMessage(String errorMessage) {
+    this.errorMessage = errorMessage;
   }
 
   @Override

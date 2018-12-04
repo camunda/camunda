@@ -5,8 +5,7 @@ import io.zeebe.protocol.intent.IncidentIntent;
 public enum IncidentState {
 
   ACTIVE,
-  RESOLVED,
-  DELETED;
+  RESOLVED;
 
   public static IncidentState fromZeebeIncidentIntent(String zeebeIncidentIntent) {
     switch (zeebeIncidentIntent) {
@@ -15,8 +14,6 @@ public enum IncidentState {
       return ACTIVE;
     case "RESOLVED":
       return RESOLVED;
-    case "DELETED":
-      return DELETED;
     default:
       return ACTIVE;
     }

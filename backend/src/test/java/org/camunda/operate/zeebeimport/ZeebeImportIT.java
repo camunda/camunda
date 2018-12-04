@@ -16,6 +16,7 @@ import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.zeebeimport.cache.WorkflowCache;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -89,7 +90,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     //create an incident
-    ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3);
+    ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //when
@@ -124,6 +125,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
+  @Ignore("OPE-343")
   public void testIncidentDeletedAfterActivityCompleted() {
     // having
     String activityId = "taskA";
@@ -140,10 +142,10 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //create an incident
-    final Long jobKey = ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3);
+    final Long jobKey = ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
 
     //when update retries
-    ZeebeTestUtil.resolveIncident(zeebeClient, jobKey);
+    //TODO ZeebeTestUtil.resolveIncident(zeebeClient, jobKey);
 
     setJobWorker(ZeebeTestUtil.completeTask(getClient(), activityId, getWorkerName(), "{}"));
 
@@ -154,7 +156,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
     assertThat(workflowInstanceEntity.getIncidents().size()).isEqualTo(1);
     IncidentEntity incidentEntity = workflowInstanceEntity.getIncidents().get(0);
-    assertThat(incidentEntity.getState()).isEqualTo(IncidentState.DELETED);
+    assertThat(incidentEntity.getState()).isEqualTo(IncidentState.RESOLVED);
     assertThat(workflowInstanceEntity.getActivities()).filteredOn(ai -> ai.getId().equals(incidentEntity.getActivityInstanceId()))
       .hasSize(1)
       .extracting(WorkflowInstanceType.STATE).containsOnly(ActivityState.COMPLETED);
@@ -162,6 +164,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
+  @Ignore("OPE-343")
   public void testIncidentDeletedAfterActivityTerminated() {
     // having
     String activityId = "taskA";
@@ -178,10 +181,10 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //create an incident
-    final Long jobKey = ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3);
+    final Long jobKey = ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
 
     //when update retries
-    ZeebeTestUtil.resolveIncident(zeebeClient, jobKey);
+    //TODO ZeebeTestUtil.resolveIncident(zeebeClient, jobKey);
 
     ZeebeTestUtil.cancelWorkflowInstance(getClient(), workflowInstanceKey);
 
@@ -192,7 +195,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
     assertThat(workflowInstanceEntity.getIncidents().size()).isEqualTo(1);
     IncidentEntity incidentEntity = workflowInstanceEntity.getIncidents().get(0);
-    assertThat(incidentEntity.getState()).isEqualTo(IncidentState.DELETED);
+    assertThat(incidentEntity.getState()).isEqualTo(IncidentState.RESOLVED);
     assertThat(workflowInstanceEntity.getActivities()).filteredOn(ai -> ai.getId().equals(incidentEntity.getActivityInstanceId()))
       .hasSize(1)
       .extracting(WorkflowInstanceType.STATE).containsOnly(ActivityState.TERMINATED);

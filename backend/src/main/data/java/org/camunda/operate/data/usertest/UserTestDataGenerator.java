@@ -32,6 +32,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import io.zeebe.client.api.clients.JobClient;
+import io.zeebe.client.api.commands.FailJobCommandStep1;
+import io.zeebe.client.api.commands.FinalCommandStep;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.subscription.JobHandler;
 import io.zeebe.client.api.subscription.JobWorker;
@@ -90,7 +92,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
     final long instanceKey2 = startLoanProcess();
     completeTask(instanceKey2, "reviewLoanRequest", null);
-    failTask(instanceKey2, "checkSchufa");
+    failTask(instanceKey2, "checkSchufa", "Schufa system is not accessible");
     doNotTouchWorkflowInstanceKeys.add(instanceKey2);
 
     final long instanceKey3 = startLoanProcess();
@@ -109,7 +111,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
     final long instanceKey5 = startOrderProcess();
     completeTask(instanceKey5, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
-    failTask(instanceKey5, "shipArticles");
+    failTask(instanceKey5, "shipArticles", "Cannot connect to server delivery05");
     doNotTouchWorkflowInstanceKeys.add(instanceKey5);
 
     final long instanceKey6 = startOrderProcess();
@@ -130,7 +132,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
     final long instanceKey9 = startFlightRegistrationProcess();
     completeTask(instanceKey9, "registerPassenger", null);
-    failTask(instanceKey9, "registerCabinBag");
+    failTask(instanceKey9, "registerCabinBag", "No more sticker available");
     doNotTouchWorkflowInstanceKeys.add(instanceKey9);
 
     final long instanceKey10 = startFlightRegistrationProcess();
@@ -155,25 +157,25 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
     final long instanceKey5 = startOrderProcess();
     completeTask(instanceKey5, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
-    failTask(instanceKey5, "checkItems");
+    failTask(instanceKey5, "checkItems", "Order information is not complete");
     doNotTouchWorkflowInstanceKeys.add(instanceKey5);
 
     final long instanceKey3 = startOrderProcess();
     completeTask(instanceKey3, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
     completeTask(instanceKey3, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
-    failTask(instanceKey3, "shipArticles");
+    failTask(instanceKey3, "shipArticles", "Cannot connect to server delivery05");
     doNotTouchWorkflowInstanceKeys.add(instanceKey3);
 
     final long instanceKey2 = startOrderProcess();
     completeTask(instanceKey2, "checkPayment", "{\"paid\":true,\"paidAmount\":400.0,\"orderStatus\": \"PAID\"}");
     completeTask(instanceKey2, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
-    failTask(instanceKey2, "shipArticles");
+    failTask(instanceKey2, "shipArticles", "Order information is not complete");
     doNotTouchWorkflowInstanceKeys.add(instanceKey2);
 
     final long instanceKey1 = startOrderProcess();
     completeTask(instanceKey1, "checkPayment", "{\"paid\":true,\"paidAmount\":400.0,\"orderStatus\": \"PAID\"}");
     completeTask(instanceKey1, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
-    failTask(instanceKey1, "shipArticles");
+    failTask(instanceKey1, "shipArticles", "Cannot connect to server delivery05");
     doNotTouchWorkflowInstanceKeys.add(instanceKey1);
 
     final long instanceKey7 = startOrderProcess();
@@ -195,7 +197,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
     final long instanceKey9 = startFlightRegistrationProcess();
     completeTask(instanceKey9, "registerPassenger", null);
-    failTask(instanceKey9, "registerCabinBag");
+    failTask(instanceKey9, "registerCabinBag", "Cannot connect to server fly-host");
     doNotTouchWorkflowInstanceKeys.add(instanceKey9);
 
     final long instanceKey10 = startFlightRegistrationProcess();
@@ -238,8 +240,8 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     jobWorker.close();
   }
 
-  public void failTask(long workflowInstanceKey, String jobType) {
-    final FailJobHandler failJobHandler = new FailJobHandler(workflowInstanceKey);
+  public void failTask(long workflowInstanceKey, String jobType, String errorMessage) {
+    final FailJobHandler failJobHandler = new FailJobHandler(workflowInstanceKey, errorMessage);
     JobWorker jobWorker = client.jobClient().newWorker()
       .jobType(jobType)
       .handler(failJobHandler)
@@ -415,7 +417,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
           jobClient.newCompleteCommand(job.getKey()).payload("{\"orderStatus\":\"SHIPPED\"}").send().join();
           break;
         case 1:
-          jobClient.newFailCommand(job.getKey()).retries(0).send().join();
+          jobClient.newFailCommand(job.getKey()).retries(0).errorMessage("Cannot connect to server delivery05").send().join();
           break;
         }
       })
@@ -504,7 +506,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
           break;
         case 2:
           //fail task -> create incident
-          jobClient.newFailCommand(job.getKey()).retries(0).send().join();
+          jobClient.newFailCommand(job.getKey()).retries(0).errorMessage("Loan request does not contain all the required data").send().join();
           break;
         }
       })
@@ -530,7 +532,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
           break;
         case 2:
           //fail task -> create incident
-          jobClient.newFailCommand(job.getKey()).retries(0).send().join();
+          jobClient.newFailCommand(job.getKey()).retries(0).errorMessage("Schufa system is not accessible").send().join();
           break;
         }
       })
@@ -669,16 +671,22 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
   private static class FailJobHandler implements JobHandler {
     private final long workflowInstanceKey;
+    private final String errorMessage;
     private boolean taskFailed = false;
 
-    public FailJobHandler(long workflowInstanceKey) {
+    public FailJobHandler(long workflowInstanceKey, String errorMessage) {
       this.workflowInstanceKey = workflowInstanceKey;
+      this.errorMessage = errorMessage;
     }
 
     @Override
     public void handle(JobClient jobClient, ActivatedJob job) {
       if (!taskFailed && workflowInstanceKey == job.getHeaders().getWorkflowInstanceKey()) {
-        jobClient.newFailCommand(job.getKey()).retries(0).send().join();
+        FinalCommandStep failCmd = jobClient.newFailCommand(job.getKey()).retries(0);
+        if (errorMessage != null) {
+          failCmd = ((FailJobCommandStep1.FailJobCommandStep2) failCmd).errorMessage(errorMessage);
+        }
+        failCmd.send().join();
         taskFailed = true;
       }
     }

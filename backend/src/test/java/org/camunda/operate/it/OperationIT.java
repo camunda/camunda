@@ -132,7 +132,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   public void testUpdateRetriesExecutedOnOneInstance() throws Exception {
     // given
     final long workflowInstanceKey = startDemoWorkflowInstance();
-    failTaskWithNoRetriesLeft("taskA", workflowInstanceKey);
+    failTaskWithNoRetriesLeft("taskA", workflowInstanceKey, "Some error");
 
     //when
     //we call UPDATE_RETRIES operation on instance
@@ -168,7 +168,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     //assert that incident is resolved
     assertThat(workflowInstances.getWorkflowInstances().get(0).getIncidents()).hasSize(1);
     final IncidentDto incident = workflowInstances.getWorkflowInstances().get(0).getIncidents().get(0);
-    assertThat(incident.getState()).isEqualTo(IncidentState.DELETED);
+    assertThat(incident.getState()).isEqualTo(IncidentState.RESOLVED);
   }
 
   @Test
@@ -216,7 +216,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   public void testTwoOperationsOnOneInstance() throws Exception {
     // given
     final long workflowInstanceId = startDemoWorkflowInstance();
-    failTaskWithNoRetriesLeft("taskA", workflowInstanceId);
+    failTaskWithNoRetriesLeft("taskA", workflowInstanceId, "Some error");
 
     //when we call UPDATE_RETRIES operation two times on one instance
     final WorkflowInstanceQueryDto workflowInstanceQuery = createAllRunningQuery();
@@ -242,7 +242,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   public void testTwoDifferentOperationsOnOneInstance() throws Exception {
     // given
     final long workflowInstanceKey = startDemoWorkflowInstance();
-    failTaskWithNoRetriesLeft("taskA", workflowInstanceKey);
+    failTaskWithNoRetriesLeft("taskA", workflowInstanceKey, "Some error");
 
     //when we call CANCEL and then UPDATE_RETRIES operation on one instance
     final WorkflowInstanceQueryDto workflowInstanceQuery = createAllQuery();

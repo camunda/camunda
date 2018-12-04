@@ -6,6 +6,7 @@ import java.util.function.Predicate;
 import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.EventSourceType;
 import org.camunda.operate.entities.EventType;
+import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.es.reader.EventReader;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.rest.dto.EventQueryDto;
@@ -50,19 +51,21 @@ public class EventIT extends OperateZeebeIntegrationTest {
   @Test
   public void testEventsForFinishedWorkflow() {
     // having
-    String processId = "processWithGateway";
-    String taskA = "taskA";
-    String taskC = "taskC";
+    final String processId = "processWithGateway";
+    final String taskA = "taskA";
+    final String taskC = "taskC";
+    final String errorMessage = "Some error";
     final String workflowId = deployWorkflow("processWithGateway.bpmn");
 
     final String initialPayload = "{\"a\": \"b\"}";
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(super.getClient(), processId, initialPayload);
 
     //create an incident
-    final Long jobKey = failTaskWithNoRetriesLeft(taskA, workflowInstanceKey);
+    final Long jobKey = failTaskWithNoRetriesLeft(taskA, workflowInstanceKey, errorMessage);
 
     //update retries to delete the incident
-    ZeebeTestUtil.resolveIncident(super.getClient(), jobKey);
+    final WorkflowInstanceEntity workflowInstanceById = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
+    ZeebeTestUtil.resolveIncident(super.getClient(), jobKey, workflowInstanceById.getIncidents().get(0).getKey());
     elasticsearchTestRule.processAllEvents(10);
 
     //complete task A
@@ -105,10 +108,10 @@ public class EventIT extends OperateZeebeIntegrationTest {
     assertEvent(eventEntities, EventSourceType.JOB, EventType.ACTIVATED, 4, processId, workflowId, workflowInstanceKey, initialPayload, "taskA");
     assertEvent(eventEntities, EventSourceType.JOB, EventType.FAILED, 3, processId, workflowId, workflowInstanceKey, initialPayload, "taskA");
     //INCIDENT events do not have workflowId for some reason
-    assertEvent(eventEntities, EventSourceType.INCIDENT, EventType.CREATED, 1, processId, null, workflowInstanceKey, null, "taskA");
+    assertEvent(eventEntities, EventSourceType.INCIDENT, EventType.CREATED, 1, processId, null, workflowInstanceKey, null, "taskA", errorMessage);
     assertEvent(eventEntities, EventSourceType.JOB, EventType.RETRIES_UPDATED, 1, processId, workflowId, workflowInstanceKey, initialPayload, "taskA");
     //INCIDENT events do not have workflowId for some reason
-    assertEvent(eventEntities, EventSourceType.INCIDENT, EventType.DELETED, 1, processId, null, workflowInstanceKey, null, "taskA");
+    assertEvent(eventEntities, EventSourceType.INCIDENT, EventType.RESOLVED, 1, processId, null, workflowInstanceKey, null, "taskA", errorMessage);
 
     assertEvent(eventEntities, EventSourceType.JOB, EventType.COMPLETED, 1, processId, workflowId, workflowInstanceKey, taskAPayload, "taskA");
     String afterTaskAJoinedPayload = "{\"a\":\"b\",\"goToTaskC\":true}";
@@ -166,6 +169,11 @@ public class EventIT extends OperateZeebeIntegrationTest {
 
   public void assertEvent(List<EventEntity> eventEntities, EventSourceType eventSourceType, EventType eventType,
     int count, String processId, String workflowId, long workflowInstanceKey, String payload, String activityId) {
+    assertEvent(eventEntities, eventSourceType, eventType, count, processId, workflowId, workflowInstanceKey, payload, activityId, null);
+  }
+
+  public void assertEvent(List<EventEntity> eventEntities, EventSourceType eventSourceType, EventType eventType,
+    int count, String processId, String workflowId, long workflowInstanceKey, String payload, String activityId, String errorMessage) {
     String assertionName = String.format("%s.%s", eventSourceType, eventType);
     final Predicate<EventEntity> eventEntityFilterCriteria = eventEntity -> {
       boolean b = true;
@@ -197,7 +205,11 @@ public class EventIT extends OperateZeebeIntegrationTest {
           }
         }
         if (eventSourceType.equals(EventSourceType.INCIDENT)) {
-          assertThat(eventEntity.getMetadata().getIncidentErrorMessage()).as(assertionName + ".incidentErrorMessage").isNotEmpty();
+          if (errorMessage != null) {
+            assertThat(eventEntity.getMetadata().getIncidentErrorMessage()).as(assertionName + ".incidentErrorMessage").isEqualTo(errorMessage);
+          } else {
+            assertThat(eventEntity.getMetadata().getIncidentErrorMessage()).as(assertionName + ".incidentErrorMessage").isNotEmpty();
+          }
           assertThat(eventEntity.getMetadata().getIncidentErrorType()).as(assertionName + ".incidentErrorType").isNotEmpty();
         }
       });

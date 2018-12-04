@@ -58,6 +58,7 @@ public class UpdateRetriesHandler extends AbstractOperationHandler implements Op
     for (IncidentEntity incident : incidentsToResolve) {
       try {
         zeebeClient.jobClient().newUpdateRetriesCommand(incident.getJobId()).retries(1).send().join();
+        zeebeClient.workflowClient().newResolveIncidentCommand(incident.getKey()).send().join();
         //mark operation as sent
         markAsSentOperationsOfCurrentType(workflowInstance);
       } catch (ClientException ex) {

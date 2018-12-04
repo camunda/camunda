@@ -7,6 +7,8 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.commands.CreateWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.commands.DeployWorkflowCommandStep1;
+import io.zeebe.client.api.commands.FailJobCommandStep1;
+import io.zeebe.client.api.commands.FinalCommandStep;
 import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.response.ActivatedJob;
@@ -124,8 +126,8 @@ public abstract class ZeebeTestUtil {
    * @param numberOfFailures
    * @return
    */
-  public static Long failTask(ZeebeClient client, String jobType, String workerName, int numberOfFailures) {
-    final FailJobHandler jobHandler = new FailJobHandler(numberOfFailures);
+  public static Long failTask(ZeebeClient client, String jobType, String workerName, int numberOfFailures, String errorMessage) {
+    final FailJobHandler jobHandler = new FailJobHandler(numberOfFailures, errorMessage);
     JobWorker jobWorker = client.jobClient().newWorker()
       .jobType(jobType)
       .handler(jobHandler)
@@ -152,15 +154,22 @@ public abstract class ZeebeTestUtil {
 
     private Long jobKey;
 
-    public FailJobHandler(int numberOfFailures) {
+    private String errorMessage;
+
+    public FailJobHandler(int numberOfFailures, String errorMessage) {
       this.numberOfFailures = numberOfFailures;
+      this.errorMessage = errorMessage;
     }
 
     @Override
     public void handle(JobClient client, ActivatedJob job) {
       this.jobKey = job.getKey();
       if (failuresCount < numberOfFailures) {
-        client.newFailCommand(job.getKey()).retries(job.getRetries() - 1).send().join();
+        FinalCommandStep failCmd = client.newFailCommand(job.getKey()).retries(job.getRetries() - 1);
+        if (errorMessage != null) {
+          failCmd = ((FailJobCommandStep1.FailJobCommandStep2)failCmd).errorMessage(errorMessage);
+        }
+        failCmd.send().join();
         failuresCount++;
       }
     }
@@ -174,8 +183,9 @@ public abstract class ZeebeTestUtil {
     }
   }
 
-  public static void resolveIncident(ZeebeClient client, long jobKey) {
+  public static void resolveIncident(ZeebeClient client, long jobKey, long incidentKey) {
     client.jobClient().newUpdateRetriesCommand(jobKey).retries(3).send().join();
+    client.workflowClient().newResolveIncidentCommand(incidentKey).send().join();
   }
 
 //  public static void updatePayload(ZeebeClient client, Long key, String workflowInstanceId, String newPayload, String bpmnProcessId, String workflowId) {

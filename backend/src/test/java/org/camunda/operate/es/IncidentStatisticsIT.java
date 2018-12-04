@@ -180,7 +180,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
    * Demo process   v2 -    2 finished instances, 7 running:            2 active in 1 inst,   0 resolved
    * Order process  v1 -                          5 running instances:  no incidents
    * Order process  v2 -                          4 running instances:  2 active in 1 inst,   1 resolved
-   * Loan process   v1 -                          5 running instances:  0 active,             3 resolved,       3 deleted
+   * Loan process   v1 -                          5 running instances:  0 active,             6 resolved
    */
   private void createData() {
     List<WorkflowEntity> workflowVersions = createWorkflowVersions(DEMO_BPMN_PROCESS_ID, DEMO_PROCESS_NAME, 2);
@@ -192,15 +192,15 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     String workflowId = workflowVersions.get(0).getId();
     //instance #1
     WorkflowInstanceEntity workflowInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
-    createIncidents(workflowInstance, 1, 1, 0);
+    createIncidents(workflowInstance, 1, 1);
     instances.add(workflowInstance);
     //instance #2
     workflowInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
-    createIncidents(workflowInstance, 1, 1, 0, true);
+    createIncidents(workflowInstance, 1, 1, true);
     instances.add(workflowInstance);
     //instance #3
     workflowInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
-    createIncidents(workflowInstance, 1, 0, 0);
+    createIncidents(workflowInstance, 1, 0);
     instances.add(workflowInstance);
     //instances #4,5,6
     for (int i = 4; i<=6; i++) {
@@ -211,7 +211,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     workflowId = workflowVersions.get(1).getId();
     //instance #1
     workflowInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
-    createIncidents(workflowInstance, 2, 0, 0, true);
+    createIncidents(workflowInstance, 2, 0, true);
     instances.add(workflowInstance);
     //instances #2-7
     for (int i = 2; i<=7; i++) {
@@ -236,11 +236,11 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     workflowId = workflowVersions.get(1).getId();
     //instance #1
     workflowInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
-    createIncidents(workflowInstance, 0, 1, 0);
+    createIncidents(workflowInstance, 0, 1);
     instances.add(workflowInstance);
     //instance #2
     workflowInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
-    createIncidents(workflowInstance, 2, 0, 0);
+    createIncidents(workflowInstance, 2, 0);
     instances.add(workflowInstance);
     //instances #3,4
     for (int i = 3; i<=4; i++) {
@@ -254,7 +254,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     //instances #1-3
     for (int i = 1; i<=3; i++) {
       workflowInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
-      createIncidents(workflowInstance, 0, 1, 1);
+      createIncidents(workflowInstance, 0, 2);
       instances.add(workflowInstance);
     }
     //instances #4-5
@@ -265,20 +265,17 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     elasticsearchTestRule.persist(instances.toArray(new OperateEntity[instances.size()]));
   }
 
-  private void createIncidents(WorkflowInstanceEntity workflowInstance, int activeIncidentsCount, int resolvedIncidentsCount, int deletedIncidentsCount) {
-    createIncidents(workflowInstance, activeIncidentsCount, resolvedIncidentsCount, deletedIncidentsCount, false);
+  private void createIncidents(WorkflowInstanceEntity workflowInstance, int activeIncidentsCount, int resolvedIncidentsCount) {
+    createIncidents(workflowInstance, activeIncidentsCount, resolvedIncidentsCount, false);
   }
 
-  private void createIncidents(WorkflowInstanceEntity workflowInstance, int activeIncidentsCount, int resolvedIncidentsCount, int deletedIncidentsCount,
+  private void createIncidents(WorkflowInstanceEntity workflowInstance, int activeIncidentsCount, int resolvedIncidentsCount,
     boolean withOtherMsg) {
     for (int i = 0; i < activeIncidentsCount; i++) {
       workflowInstance.getIncidents().add(createIncident(IncidentState.ACTIVE, withOtherMsg ? ERRMSG_OTHER : null));
     }
     for (int i = 0; i < resolvedIncidentsCount; i++) {
       workflowInstance.getIncidents().add(createIncident(IncidentState.RESOLVED, ERRMSG_OTHER));
-    }
-    for (int i = 0; i < deletedIncidentsCount; i++) {
-      workflowInstance.getIncidents().add(createIncident(IncidentState.DELETED, ERRMSG_OTHER));
     }
   }
 

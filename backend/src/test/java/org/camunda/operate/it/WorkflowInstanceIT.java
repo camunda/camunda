@@ -43,6 +43,10 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
   private WorkflowCache workflowCache;
 
   @Autowired
+  @Qualifier("activityIsTerminatedCheck")
+  private Predicate<Object[]> activityIsTerminatedCheck;
+
+  @Autowired
   @Qualifier("activityIsActiveCheck")
   private Predicate<Object[]> activityIsActiveCheck;
 
@@ -300,20 +304,20 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //create an incident
-    failTaskWithNoRetriesLeft(activityId, workflowInstanceKey);
+    failTaskWithNoRetriesLeft(activityId, workflowInstanceKey, "Some error");
 
     //when update retries
     final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
     final WorkflowInstanceEntity workflowInstance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
     assertThat(workflowInstance.getIncidents().size()).isEqualTo(1);
-    ZeebeTestUtil.resolveIncident(zeebeClient, workflowInstance.getIncidents().get(0).getJobId());
+    ZeebeTestUtil.resolveIncident(zeebeClient, workflowInstance.getIncidents().get(0).getJobId(), workflowInstance.getIncidents().get(0).getKey());
     elasticsearchTestRule.processAllEvents(19);
 
     //then
     final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
     assertThat(workflowInstanceEntity.getIncidents().size()).isEqualTo(1);
     IncidentEntity incidentEntity = workflowInstanceEntity.getIncidents().get(0);
-    assertThat(incidentEntity.getState()).isEqualTo(IncidentState.DELETED);
+    assertThat(incidentEntity.getState()).isEqualTo(IncidentState.RESOLVED);
     assertThat(workflowInstanceEntity.getActivities()).filteredOn(ai -> ai.getId().equals(incidentEntity.getActivityInstanceId())).extracting(
       WorkflowInstanceType.STATE).containsOnly(ActivityState.ACTIVE);
 
@@ -323,7 +327,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
   public void testWorkflowInstanceWithIncidentCreated() {
     // having
     String activityId = "taskA";
-
+    final String errorMessage = "Error occurred when working on the job";
 
     String processId = "demoProcess";
     final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
@@ -331,7 +335,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
 
     //when
     //create an incident
-    failTaskWithNoRetriesLeft(activityId, workflowInstanceKey);
+    failTaskWithNoRetriesLeft(activityId, workflowInstanceKey, errorMessage);
 
     //then
     final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
@@ -339,7 +343,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     IncidentEntity incidentEntity = workflowInstanceEntity.getIncidents().get(0);
     assertThat(incidentEntity.getActivityId()).isEqualTo(activityId);
     assertThat(incidentEntity.getActivityInstanceId()).isNotEmpty();
-    assertThat(incidentEntity.getErrorMessage()).isNotEmpty();
+    assertThat(incidentEntity.getErrorMessage()).isEqualTo(errorMessage);
     assertThat(incidentEntity.getErrorType()).isNotEmpty();
     assertThat(incidentEntity.getState()).isEqualTo(IncidentState.ACTIVE);
 
@@ -449,7 +453,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     assertThat(workflowInstanceEntity.getIncidents().size()).isEqualTo(1);
     incidentEntity = workflowInstanceEntity.getIncidents().get(0);
     assertThat(incidentEntity.getActivityId()).isEqualTo(activityId);
-    assertThat(incidentEntity.getState()).isEqualTo(IncidentState.DELETED);
+    assertThat(incidentEntity.getState()).isEqualTo(IncidentState.RESOLVED);
 
     //assert activity fields
     final ActivityInstanceEntity xorActivity = workflowInstanceEntity.getActivities().stream().filter(a -> a.getActivityId().equals("xor"))

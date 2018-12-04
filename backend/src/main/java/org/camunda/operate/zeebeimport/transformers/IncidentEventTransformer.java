@@ -39,7 +39,6 @@ public class IncidentEventTransformer implements AbstractRecordTransformer {
   static {
     EVENTS.add(IncidentIntent.CREATED.name());
     EVENTS.add(IncidentIntent.RESOLVED.name());
-    EVENTS.add(IncidentIntent.DELETED.name());
   }
 
   @Override
