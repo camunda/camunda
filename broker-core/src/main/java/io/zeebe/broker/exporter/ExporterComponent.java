@@ -23,7 +23,9 @@ import static io.zeebe.broker.logstreams.LogStreamServiceNames.STREAM_PROCESSOR_
 
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
+import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.servicecontainer.ServiceContainer;
+import java.util.List;
 
 public class ExporterComponent implements Component {
 
@@ -31,16 +33,19 @@ public class ExporterComponent implements Component {
   public void init(SystemContext context) {
     final ServiceContainer serviceContainer = context.getServiceContainer();
 
-    final ExporterManagerService exporterManagerService =
-        new ExporterManagerService(context.getBrokerConfiguration().getExporters());
+    final List<ExporterCfg> exporters = context.getBrokerConfiguration().getExporters();
 
-    serviceContainer
-        .createService(EXPORTER_MANAGER, exporterManagerService)
-        .dependency(
-            STREAM_PROCESSOR_SERVICE_FACTORY,
-            exporterManagerService.getStreamProcessorServiceFactoryInjector())
-        .groupReference(
-            LEADER_PARTITION_GROUP_NAME, exporterManagerService.getPartitionsGroupReference())
-        .install();
+    if (!exporters.isEmpty()) {
+      final ExporterManagerService exporterManagerService = new ExporterManagerService(exporters);
+
+      serviceContainer
+          .createService(EXPORTER_MANAGER, exporterManagerService)
+          .dependency(
+              STREAM_PROCESSOR_SERVICE_FACTORY,
+              exporterManagerService.getStreamProcessorServiceFactoryInjector())
+          .groupReference(
+              LEADER_PARTITION_GROUP_NAME, exporterManagerService.getPartitionsGroupReference())
+          .install();
+    }
   }
 }
