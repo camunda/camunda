@@ -175,7 +175,7 @@ public class SingleReportHandlingIT {
     Response updateReportResponse = getUpdateReportResponse(id, updatedReport);
 
     //then
-    assertThat(updateReportResponse.getStatus(), is(500));
+    assertThat(updateReportResponse.getStatus(), is(204));
 
     //when
     ProcessReportDataDto data = new ProcessReportDataDto();
@@ -184,7 +184,7 @@ public class SingleReportHandlingIT {
     updateReportResponse = getUpdateReportResponse(id, updatedReport);
 
     //then
-    assertThat(updateReportResponse.getStatus(), is(500));
+    assertThat(updateReportResponse.getStatus(), is(204));
 
     //when
     data = new ProcessReportDataDto();
@@ -193,7 +193,7 @@ public class SingleReportHandlingIT {
     updateReportResponse = getUpdateReportResponse(id, updatedReport);
 
     //then
-    assertThat(updateReportResponse.getStatus(), is(500));
+    assertThat(updateReportResponse.getStatus(), is(204));
 
     //when
     data = new ProcessReportDataDto();

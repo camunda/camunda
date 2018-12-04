@@ -142,7 +142,7 @@ public class ReportService {
                                                                 CombinedReportDefinitionDto updatedReport,
                                                                 String userId,
                                                                 boolean force) throws OptimizeException {
-    ValidationHelper.validateDefinitionData(updatedReport.getData());
+    ValidationHelper.ensureNotNull("data", updatedReport.getData());
     ReportDefinitionDto currentReportVersion = getReportWithAuthorizationCheck(reportId, userId);
     ReportDefinitionUpdateDto<CombinedReportDataDto> reportUpdate =
       convertToReportUpdate(reportId, updatedReport, userId);
@@ -178,7 +178,7 @@ public class ReportService {
                                                               SingleReportDefinitionDto<SingleReportDataDto> updatedReport,
                                                               String userId,
                                                               boolean force) throws OptimizeException {
-    ValidationHelper.validateDefinitionData(updatedReport.getData());
+    ValidationHelper.ensureNotNull("data", updatedReport.getData());
     ReportDefinitionDto currentReportVersion = getReportWithAuthorizationCheck(reportId, userId);
     ReportDefinitionUpdateDto reportUpdate = convertToReportUpdate(reportId, updatedReport, userId);
 

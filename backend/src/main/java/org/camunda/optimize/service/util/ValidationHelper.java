@@ -55,7 +55,7 @@ public class ValidationHelper {
     }
   }
 
-  public static void validateDefinitionData(ReportDataDto data) {
+  private static void validateDefinitionData(ReportDataDto data) {
 
     if (data instanceof ProcessReportDataDto) {
       ProcessReportDataDto singleReportData = (ProcessReportDataDto) data;
