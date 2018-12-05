@@ -138,6 +138,7 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   private void cleanEngine() {
+    logger.info("Start cleaning engine");
     CloseableHttpClient client = getHttpClient();
     HttpGet getRequest = new HttpGet(properties.get("camunda.optimize.test.purge").toString());
     try {
@@ -147,8 +148,9 @@ public class EngineIntegrationRule extends TestWatcher {
                                      "please check tomcat logs of engine-purge servlet");
       }
       response.close();
+      logger.info("Finished cleaning engine");
     } catch (IOException e) {
-      logger.error("Error during purge request", e);
+      logger.error("Error cleaning engine with purge request", e);
     }
   }
 

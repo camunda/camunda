@@ -25,7 +25,9 @@ public class AlertRestServiceIT extends AbstractAlertIT {
 
   @Rule
   public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchRule)
+    .around(engineRule)
+    .around(embeddedOptimizeRule);
 
   @Test
   public void createNewAlertWithoutAuthentication() {
