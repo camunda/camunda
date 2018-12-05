@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.workflow.model.element;
 
-public class ExecutableBoundaryEvent extends ExecutableIntermediateCatchElement {
+public class ExecutableBoundaryEvent extends ExecutableCatchEventElement {
   private boolean cancelActivity;
 
   public ExecutableBoundaryEvent(String id) {

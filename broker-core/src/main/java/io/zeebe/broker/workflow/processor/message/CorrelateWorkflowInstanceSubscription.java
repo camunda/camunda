@@ -27,7 +27,7 @@ import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionState;
-import io.zeebe.broker.workflow.processor.boundary.BoundaryEventHelper;
+import io.zeebe.broker.workflow.processor.boundary.BoundaryEventActivator;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.StoredRecord;
 import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
@@ -48,7 +48,7 @@ public final class CorrelateWorkflowInstanceSubscription
   public static final Duration SUBSCRIPTION_TIMEOUT = Duration.ofSeconds(10);
   public static final Duration SUBSCRIPTION_CHECK_INTERVAL = Duration.ofSeconds(30);
 
-  private final BoundaryEventHelper boundaryEventHelper = new BoundaryEventHelper();
+  private final BoundaryEventActivator boundaryEventActivator;
   private final TopologyManager topologyManager;
   private final WorkflowState workflowState;
   private final WorkflowInstanceSubscriptionState subscriptionState;
@@ -60,11 +60,13 @@ public final class CorrelateWorkflowInstanceSubscription
       final TopologyManager topologyManager,
       final WorkflowState workflowState,
       final WorkflowInstanceSubscriptionState subscriptionState,
-      final SubscriptionCommandSender subscriptionCommandSender) {
+      final SubscriptionCommandSender subscriptionCommandSender,
+      final BoundaryEventActivator boundaryEventActivator) {
     this.topologyManager = topologyManager;
     this.workflowState = workflowState;
     this.subscriptionState = subscriptionState;
     this.subscriptionCommandSender = subscriptionCommandSender;
+    this.boundaryEventActivator = boundaryEventActivator;
   }
 
   @Override
@@ -131,9 +133,9 @@ public final class CorrelateWorkflowInstanceSubscription
       streamWriter.appendFollowUpEvent(
           record.getKey(), WorkflowInstanceSubscriptionIntent.CORRELATED, subscriptionRecord);
 
-      if (boundaryEventHelper.shouldTriggerBoundaryEvent(
+      if (boundaryEventActivator.shouldActivateBoundaryEvent(
           elementInstance, subscription.getHandlerNodeId())) {
-        boundaryEventHelper.triggerBoundaryEvent(
+        boundaryEventActivator.activateBoundaryEvent(
             workflowState,
             elementInstance,
             subscription.getHandlerNodeId(),

@@ -18,13 +18,14 @@
 package io.zeebe.broker.workflow.processor.boundary;
 
 import static io.zeebe.msgpack.value.DocumentValue.EMPTY_DOCUMENT;
-import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -32,6 +33,7 @@ import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.BpmnTransformer;
+import io.zeebe.broker.workflow.processor.CatchEventOutput;
 import io.zeebe.broker.workflow.state.DeployedWorkflow;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.WorkflowState;
@@ -41,7 +43,6 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceReco
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.List;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -50,20 +51,20 @@ import org.junit.rules.TemporaryFolder;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
-public class BoundaryEventHelperTest {
+public class BoundaryEventActivatorTest {
   @Rule public final TemporaryFolder folder = new TemporaryFolder();
-  private final BoundaryEventHelper helper = new BoundaryEventHelper();
+  private final CatchEventOutput mockCatchEventOutput = mock(CatchEventOutput.class);
+  private final TypedStreamWriter writer = mock(TypedStreamWriter.class);
+  private final BoundaryEventActivator helper = new BoundaryEventActivator(mockCatchEventOutput);
   private final BpmnTransformer bpmnTransformer = new BpmnTransformer();
 
   private final ZeebeState state = new ZeebeState();
-  private TypedStreamWriter writer;
   private WorkflowState workflowState;
 
   @Before
   public void setUp() throws Exception {
     state.open(folder.newFolder("state"), false);
     workflowState = spy(state.getWorkflowState());
-    writer = mock(TypedStreamWriter.class);
   }
 
   @After
@@ -72,7 +73,7 @@ public class BoundaryEventHelperTest {
   }
 
   @Test
-  public void shouldNotTriggerBoundaryEventIfAttachedToActivityNotActivated() {
+  public void shouldNotActivateBoundaryEventIfAttachedToActivityNotActivated() {
     // given
     final DirectBuffer handlerNodeId = wrapString("event");
     final WorkflowInstanceIntent[] states =
@@ -91,12 +92,12 @@ public class BoundaryEventHelperTest {
           workflowState.getElementInstanceState().newInstance(1, record, state);
 
       // then
-      assertThat(helper.shouldTriggerBoundaryEvent(attachedTo, handlerNodeId)).isFalse();
+      assertThat(helper.shouldActivateBoundaryEvent(attachedTo, handlerNodeId)).isFalse();
     }
   }
 
   @Test
-  public void shouldNotTriggerBoundaryEventIfTriggerIsSameAsAttachedTo() {
+  public void shouldNotActivateBoundaryEventIfTriggerIsSameAsAttachedTo() {
     // given
     final DirectBuffer handlerNodeId = wrapString("activity");
     final WorkflowInstanceRecord record = new WorkflowInstanceRecord().setElementId("activity");
@@ -108,11 +109,11 @@ public class BoundaryEventHelperTest {
             .newInstance(1, record, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // then
-    assertThat(helper.shouldTriggerBoundaryEvent(attachedTo, handlerNodeId)).isFalse();
+    assertThat(helper.shouldActivateBoundaryEvent(attachedTo, handlerNodeId)).isFalse();
   }
 
   @Test
-  public void shouldTriggerBoundaryEvent() {
+  public void shouldReportBoundaryEventAsActivatable() {
     // given
     final DirectBuffer handlerNodeId = wrapString("event");
     final WorkflowInstanceRecord record = new WorkflowInstanceRecord().setElementId("activity");
@@ -124,7 +125,7 @@ public class BoundaryEventHelperTest {
             .newInstance(1, record, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // then
-    assertThat(helper.shouldTriggerBoundaryEvent(attachedTo, handlerNodeId)).isTrue();
+    assertThat(helper.shouldActivateBoundaryEvent(attachedTo, handlerNodeId)).isTrue();
   }
 
   @Test
@@ -139,7 +140,7 @@ public class BoundaryEventHelperTest {
 
     // when
     createWorkflowFor("activity", "event", false);
-    helper.triggerBoundaryEvent(workflowState, attachedTo, handlerNodeId, EMPTY_DOCUMENT, writer);
+    helper.activateBoundaryEvent(workflowState, attachedTo, handlerNodeId, EMPTY_DOCUMENT, writer);
 
     // then
     assertThat(attachedTo.getState()).isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
@@ -159,11 +160,11 @@ public class BoundaryEventHelperTest {
 
     // when
     createWorkflowFor("activity", "event", true);
-    helper.triggerBoundaryEvent(workflowState, attachedTo, handlerNodeId, EMPTY_DOCUMENT, writer);
+    helper.activateBoundaryEvent(workflowState, attachedTo, handlerNodeId, EMPTY_DOCUMENT, writer);
 
     // then
     assertThat(attachedTo.getState()).isEqualTo(WorkflowInstanceIntent.ELEMENT_TERMINATING);
-    verify(writer, Mockito.times(1))
+    verify(writer, times(1))
         .appendFollowUpEvent(
             attachedTo.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING, attachedTo.getValue());
   }
@@ -180,7 +181,7 @@ public class BoundaryEventHelperTest {
 
     // when
     createWorkflowFor("activity", "event", true);
-    helper.triggerBoundaryEvent(workflowState, attachedTo, handlerNodeId, EMPTY_DOCUMENT, writer);
+    helper.activateBoundaryEvent(workflowState, attachedTo, handlerNodeId, EMPTY_DOCUMENT, writer);
 
     // then
     final ArgumentCaptor<WorkflowInstanceRecord> argRecord =
@@ -188,7 +189,7 @@ public class BoundaryEventHelperTest {
     final ArgumentCaptor<WorkflowInstanceIntent> argIntent =
         ArgumentCaptor.forClass(WorkflowInstanceIntent.class);
     assertThat(attachedTo.getState()).isEqualTo(WorkflowInstanceIntent.ELEMENT_TERMINATING);
-    verify(writer, Mockito.times(1))
+    verify(writer, times(1))
         .appendFollowUpEvent(anyLong(), argIntent.capture(), argRecord.capture());
     assertThat(argIntent.getValue()).isEqualTo(WorkflowInstanceIntent.ELEMENT_TERMINATING);
     assertThat(argRecord.getValue())
@@ -207,39 +208,23 @@ public class BoundaryEventHelperTest {
   }
 
   @Test
-  public void shouldTriggerCatchEvent() {
+  public void shouldActivateNonInterruptingBoundaryEvent() {
     // given
     final DirectBuffer handlerNodeId = wrapString("event");
-    final WorkflowInstanceRecord record =
-        new WorkflowInstanceRecord()
-            .setPayload(new UnsafeBuffer(asMsgPack("{ \"foo\": 1 }")))
-            .setScopeInstanceKey(1)
-            .setWorkflowKey(1)
-            .setWorkflowInstanceKey(1)
-            .setVersion(1)
-            .setBpmnProcessId("process")
-            .setElementId("activity");
+    final WorkflowInstanceRecord record = new WorkflowInstanceRecord().setElementId("activity");
+    final ElementInstance attachedTo =
+        workflowState
+            .getElementInstanceState()
+            .newInstance(1, record, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
-    helper.triggerCatchEvent(record, handlerNodeId, EMPTY_DOCUMENT, writer);
+    createWorkflowFor("activity", "event", false);
+    helper.activateBoundaryEvent(workflowState, attachedTo, handlerNodeId, EMPTY_DOCUMENT, writer);
 
     // then
-    final ArgumentCaptor<WorkflowInstanceRecord> argRecord =
-        ArgumentCaptor.forClass(WorkflowInstanceRecord.class);
-    final ArgumentCaptor<WorkflowInstanceIntent> argIntent =
-        ArgumentCaptor.forClass(WorkflowInstanceIntent.class);
-    verify(writer, Mockito.times(1)).appendNewEvent(argIntent.capture(), argRecord.capture());
-    assertThat(argIntent.getValue()).isEqualTo(WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING);
-    assertThat(argRecord.getValue())
-        .isEqualToComparingOnlyGivenFields(
-            record,
-            "bpmnProcessId",
-            "workflowKey",
-            "scopeInstanceKey",
-            "version",
-            "workflowInstanceKey");
-    assertThat(argRecord.getValue().getElementId()).isEqualTo(handlerNodeId);
-    assertThat(argRecord.getValue().getPayload()).isEqualTo(EMPTY_DOCUMENT);
+    verify(mockCatchEventOutput, times(1))
+        .triggerCatchEvent(
+            eq(attachedTo.getValue()), eq(handlerNodeId), eq(EMPTY_DOCUMENT), eq(writer));
   }
 
   private void createWorkflowFor(

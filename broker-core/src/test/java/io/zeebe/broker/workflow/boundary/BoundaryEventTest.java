@@ -17,18 +17,22 @@
  */
 package io.zeebe.broker.workflow.boundary;
 
+import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.exporter.record.value.TimerRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
+import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import java.time.Duration;
@@ -37,7 +41,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -56,6 +59,16 @@ public class BoundaryEventTest {
           .moveToNode("timer")
           .endEvent("end2")
           .moveToActivity("task")
+          .endEvent()
+          .done();
+
+  private static final BpmnModelInstance NON_INTERRUPTING_WORKFLOW =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent()
+          .serviceTask("task", b -> b.zeebeTaskType("type"))
+          .boundaryEvent("event")
+          .cancelActivity(false)
+          .timerWithCycle("R/PT1S")
           .endEvent()
           .done();
 
@@ -90,25 +103,7 @@ public class BoundaryEventTest {
   }
 
   @Test
-  public void shouldCreateTimerWhenActivityReady() {
-    // given
-    testClient.deploy(MULTIPLE_SEQUENCE_FLOWS);
-    testClient.createWorkflowInstance(PROCESS_ID);
-
-    // when
-    final Record<WorkflowInstanceRecordValue> activityReady =
-        testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_READY);
-    final Record<TimerRecordValue> timerTriggered =
-        testClient.receiveTimerRecord("timer", TimerIntent.CREATE);
-    final Record<WorkflowInstanceRecordValue> activityActivated =
-        testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-
-    // then
-    assertRecordsPublishedInOrder(activityReady, timerTriggered, activityActivated);
-  }
-
-  @Test
-  public void shouldTriggerBoundaryEventWhenTimerTriggered() {
+  public void shouldActivateBoundaryEventWhenEventTriggered() {
     // given
     testClient.deploy(MULTIPLE_SEQUENCE_FLOWS);
     testClient.createWorkflowInstance(PROCESS_ID);
@@ -134,15 +129,14 @@ public class BoundaryEventTest {
   }
 
   @Test
-  @Ignore // since timers have no payload, ignore this for now, but will be reenabled with messages
   public void shouldApplyOutputMappingOnTriggering() {
     // given
     final BpmnModelInstance workflow =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .serviceTask("task", b -> b.zeebeTaskType("type"))
-            .boundaryEvent("timer")
-            .timerWithDuration("PT1S")
+            .boundaryEvent("event")
+            .message(m -> m.name("message").zeebeCorrelationKey("$.key"))
             .zeebeOutput("$.foo", "$.bar")
             .zeebeOutputBehavior(ZeebeOutputBehavior.merge)
             .endEvent("endTimer")
@@ -150,18 +144,24 @@ public class BoundaryEventTest {
             .endEvent()
             .done();
     testClient.deploy(workflow);
-    testClient.createWorkflowInstance(PROCESS_ID, "{\"foo\": 1, \"oof\": 2}");
+    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "123"));
 
     // when
-    testClient.receiveTimerRecord("timer", TimerIntent.CREATED);
-    brokerRule.getClock().addTime(Duration.ofMinutes(1));
+    assertThat(
+            testClient
+                .receiveWorkflowInstanceSubscriptions()
+                .withMessageName("message")
+                .withIntent(WorkflowInstanceSubscriptionIntent.OPENED)
+                .exists())
+        .isTrue();
+    testClient.publishMessage("message", "123", asMsgPack("foo", 3));
     awaitProcessCompleted();
 
     // then
     final Record<WorkflowInstanceRecordValue> boundaryTriggered =
-        testClient.receiveElementInState("timer", WorkflowInstanceIntent.CATCH_EVENT_TRIGGERED);
+        testClient.receiveElementInState("event", WorkflowInstanceIntent.CATCH_EVENT_TRIGGERED);
     assertThat(boundaryTriggered.getValue().getPayloadAsMap())
-        .contains(entry("bar", 1), entry("oof", 2));
+        .containsExactly(entry("key", "123"), entry("bar", 3));
   }
 
   @Test
@@ -239,6 +239,30 @@ public class BoundaryEventTest {
         boundaryTriggering,
         subProcessTerminated,
         boundaryTriggered);
+  }
+
+  @Test
+  public void shouldNotTerminateActivityForNonInterruptingBoundaryEvents() {
+    // given
+    testClient.deploy(NON_INTERRUPTING_WORKFLOW);
+    brokerRule.getClock().pinCurrentTime();
+    testClient.createWorkflowInstance(PROCESS_ID);
+
+    // when
+    testClient.receiveTimerRecord("event", TimerIntent.CREATED);
+    brokerRule.getClock().addTime(Duration.ofSeconds(1));
+    testClient.completeJobOfType("type");
+    awaitProcessCompleted();
+
+    // then
+    final Record<TimerRecordValue> timerTriggered =
+        testClient.receiveTimerRecord("event", TimerIntent.TRIGGERED);
+    final Record<JobRecordValue> jobCompleted =
+        testClient.receiveFirstJobEvent(JobIntent.COMPLETED);
+    final Record<WorkflowInstanceRecordValue> activityCompleted =
+        testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_COMPLETED);
+
+    assertRecordsPublishedInOrder(timerTriggered, jobCompleted, activityCompleted);
   }
 
   private void awaitProcessCompleted() {

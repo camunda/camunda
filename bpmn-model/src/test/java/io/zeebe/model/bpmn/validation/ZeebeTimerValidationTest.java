@@ -41,6 +41,14 @@ public class ZeebeTimerValidationTest extends AbstractZeebeValidationTest {
       {
         Bpmn.createExecutableProcess("process")
             .startEvent()
+            .intermediateCatchEvent("catch", c -> c.timerWithDuration("R/PT01S"))
+            .endEvent()
+            .done(),
+        singletonList(expect(TimerEventDefinition.class, "Time duration is invalid"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
             .intermediateCatchEvent("catch", c -> c.timerWithCycle("R5/PT05S"))
             .endEvent()
             .done(),

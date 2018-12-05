@@ -17,20 +17,24 @@
  */
 package io.zeebe.broker.workflow.model.element;
 
-import java.time.Duration;
+import io.zeebe.model.bpmn.util.time.RepeatingInterval;
 import java.util.Collections;
 import java.util.List;
 
-public class ExecutableIntermediateCatchElement extends ExecutableFlowNode
+public class ExecutableCatchEventElement extends ExecutableFlowNode
     implements ExecutableCatchEvent, ExecutableCatchEventSupplier {
-
   private final List<ExecutableCatchEvent> events = Collections.singletonList(this);
 
   private ExecutableMessage message;
-  private Duration duration;
+  private RepeatingInterval timer;
 
-  public ExecutableIntermediateCatchElement(String id) {
+  public ExecutableCatchEventElement(String id) {
     super(id);
+  }
+
+  @Override
+  public boolean isMessage() {
+    return message != null;
   }
 
   @Override
@@ -43,22 +47,17 @@ public class ExecutableIntermediateCatchElement extends ExecutableFlowNode
   }
 
   @Override
-  public Duration getDuration() {
-    return duration;
-  }
-
-  public void setDuration(Duration duration) {
-    this.duration = duration;
-  }
-
-  @Override
   public boolean isTimer() {
-    return duration != null;
+    return timer != null;
   }
 
   @Override
-  public boolean isMessage() {
-    return message != null;
+  public RepeatingInterval getTimer() {
+    return timer;
+  }
+
+  public void setTimer(RepeatingInterval timer) {
+    this.timer = timer;
   }
 
   @Override

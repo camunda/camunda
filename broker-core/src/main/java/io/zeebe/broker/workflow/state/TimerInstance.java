@@ -32,6 +32,7 @@ public class TimerInstance implements Persistable {
   private long key;
   private long elementInstanceKey;
   private long dueDate;
+  private int repetitions;
 
   public long getElementInstanceKey() {
     return elementInstanceKey;
@@ -65,9 +66,17 @@ public class TimerInstance implements Persistable {
     this.handlerNodeId.wrap(handlerNodeId);
   }
 
+  public int getRepetitions() {
+    return repetitions;
+  }
+
+  public void setRepetitions(int repetitions) {
+    this.repetitions = repetitions;
+  }
+
   @Override
   public int getLength() {
-    return 3 * Long.BYTES + Integer.BYTES + handlerNodeId.capacity();
+    return 3 * Long.BYTES + 2 * Integer.BYTES + handlerNodeId.capacity();
   }
 
   @Override
@@ -80,6 +89,9 @@ public class TimerInstance implements Persistable {
 
     buffer.putLong(offset, key, STATE_BYTE_ORDER);
     offset += Long.BYTES;
+
+    buffer.putInt(offset, repetitions, STATE_BYTE_ORDER);
+    offset += Integer.BYTES;
 
     offset = writeIntoBuffer(buffer, offset, handlerNodeId);
     assert offset == getLength() : "End offset differs from getLength()";
@@ -95,6 +107,9 @@ public class TimerInstance implements Persistable {
 
     key = buffer.getLong(offset, STATE_BYTE_ORDER);
     offset += Long.BYTES;
+
+    repetitions = buffer.getInt(offset, STATE_BYTE_ORDER);
+    offset += Integer.BYTES;
 
     offset = readIntoBuffer(buffer, offset, handlerNodeId);
     assert offset == length : "End offset differs from length";

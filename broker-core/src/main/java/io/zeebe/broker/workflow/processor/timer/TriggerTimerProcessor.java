@@ -24,24 +24,29 @@ import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.workflow.data.TimerRecord;
-import io.zeebe.broker.workflow.processor.boundary.BoundaryEventHelper;
+import io.zeebe.broker.workflow.model.element.ExecutableBoundaryEvent;
+import io.zeebe.broker.workflow.processor.boundary.BoundaryEventActivator;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.ElementInstanceState;
 import io.zeebe.broker.workflow.state.StoredRecord;
 import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
 import io.zeebe.broker.workflow.state.TimerInstance;
 import io.zeebe.broker.workflow.state.WorkflowState;
+import io.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.util.buffer.BufferUtil;
 
 public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> {
-  private final BoundaryEventHelper boundaryEventHelper = new BoundaryEventHelper();
+  private final BoundaryEventActivator boundaryEventActivator;
   private final WorkflowState workflowState;
 
-  public TriggerTimerProcessor(final WorkflowState workflowState) {
+  public TriggerTimerProcessor(
+      final WorkflowState workflowState, BoundaryEventActivator boundaryEventActivator) {
     this.workflowState = workflowState;
+    this.boundaryEventActivator = boundaryEventActivator;
   }
 
   @Override
@@ -62,22 +67,33 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
 
     final ElementInstanceState elementInstanceState = workflowState.getElementInstanceState();
     final ElementInstance elementInstance = elementInstanceState.getInstance(elementInstanceKey);
-    final TimerRecord timerRecord = record.getValue();
 
+    workflowState.getTimerState().remove(timerInstance);
     streamWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
 
     // TODO handler trigger events in a uniform way - #1699
 
     if (elementInstance != null
         && elementInstance.getState() == WorkflowInstanceIntent.ELEMENT_ACTIVATED) {
-      if (boundaryEventHelper.shouldTriggerBoundaryEvent(
-          elementInstance, timerRecord.getHandlerNodeId())) {
-        boundaryEventHelper.triggerBoundaryEvent(
+      if (boundaryEventActivator.shouldActivateBoundaryEvent(
+          elementInstance, timer.getHandlerNodeId())) {
+        final ExecutableBoundaryEvent event =
+            boundaryEventActivator.getBoundaryEventById(
+                workflowState,
+                elementInstance.getValue().getWorkflowKey(),
+                timer.getHandlerNodeId());
+
+        boundaryEventActivator.activateBoundaryEvent(
             workflowState,
             elementInstance,
-            timerRecord.getHandlerNodeId(),
+            timer.getHandlerNodeId(),
             EMPTY_DOCUMENT,
-            streamWriter);
+            streamWriter,
+            event);
+
+        if (shouldReschedule(timer)) {
+          rescheduleTimer(timer, streamWriter, event);
+        }
       } else {
         completeActivatedNode(elementInstanceKey, streamWriter, elementInstance);
       }
@@ -89,15 +105,17 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
 
       if (tokenEvent != null && tokenEvent.getPurpose() == Purpose.DEFERRED_TOKEN) {
         // continue at an event-based gateway
-        final WorkflowInstanceRecord deferedRecord = tokenEvent.getRecord().getValue();
-        deferedRecord.setPayload(EMPTY_DOCUMENT).setElementId(timerRecord.getHandlerNodeId());
+        final WorkflowInstanceRecord deferredRecord = tokenEvent.getRecord().getValue();
+        deferredRecord.setPayload(EMPTY_DOCUMENT).setElementId(timer.getHandlerNodeId());
 
         streamWriter.appendFollowUpEvent(
-            tokenEvent.getKey(), WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING, deferedRecord);
+            tokenEvent.getKey(), WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING, deferredRecord);
       }
     }
+  }
 
-    workflowState.getTimerState().remove(timerInstance);
+  private boolean shouldReschedule(TimerRecord timer) {
+    return timer.getRepetitions() == RepeatingInterval.INFINITE || timer.getRepetitions() > 1;
   }
 
   private void completeActivatedNode(
@@ -105,5 +123,27 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
     writer.appendFollowUpEvent(
         activityInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETING, elementInstance.getValue());
     elementInstance.setState(WorkflowInstanceIntent.ELEMENT_COMPLETING);
+  }
+
+  private void rescheduleTimer(
+      TimerRecord record, TypedStreamWriter writer, ExecutableBoundaryEvent event) {
+    if (event.getTimer() == null) {
+      final String message =
+          String.format(
+              "Missing time cycle from repeating timer's associated boundary event %s",
+              BufferUtil.bufferAsString(event.getId()));
+      throw new IllegalStateException(message);
+    }
+
+    int repetitions = record.getRepetitions();
+    if (repetitions != RepeatingInterval.INFINITE) {
+      repetitions--;
+    }
+
+    final RepeatingInterval timer =
+        new RepeatingInterval(repetitions, event.getTimer().getInterval());
+    boundaryEventActivator
+        .getCatchEventOutput()
+        .subscribeToTimerEvent(record.getElementInstanceKey(), event.getId(), timer, writer);
   }
 }

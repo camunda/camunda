@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.workflow.model.element;
 
-import java.time.Duration;
+import io.zeebe.model.bpmn.util.time.RepeatingInterval;
 import java.util.Collections;
 import java.util.List;
 
@@ -52,7 +52,7 @@ public class ExecutableReceiveTask extends ExecutableActivity
   }
 
   @Override
-  public Duration getDuration() {
+  public RepeatingInterval getTimer() {
     return null;
   }
 
