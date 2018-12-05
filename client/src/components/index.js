@@ -1,10 +1,9 @@
-export {Alerts} from './Alerts';
 export {Analysis} from './Analysis';
 export {Footer} from './Footer';
 export {Header} from './Header';
-export {Home} from './Home';
 export {Login} from './Login';
 export {PrivateRoute} from './PrivateRoute';
-export {Dashboards, Dashboard} from './Dashboards';
-export {Reports, Report} from './Reports';
+export {Dashboard} from './Dashboards';
+export {Report} from './Reports';
 export {Sharing} from './Sharing';
+export {Overview} from './Overview';

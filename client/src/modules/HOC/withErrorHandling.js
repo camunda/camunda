@@ -16,7 +16,7 @@ export default Component => {
       try {
         const response = await retriever;
         if (this.mounted) {
-          return cb(response);
+          return cb && cb(response);
         }
       } catch (error) {
         if (this.mounted) {

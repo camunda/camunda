@@ -16,10 +16,7 @@ export async function loadEntity(api, numResults, sortBy) {
   return await response.json();
 }
 
-export async function checkDeleteConflict(id, api) {
-  if (api === 'report') {
-    const response = await get(`api/report/${id}/delete-conflicts`);
-    return await response.json();
-  }
-  return null;
+export async function checkDeleteConflict(id) {
+  const response = await get(`api/report/${id}/delete-conflicts`);
+  return await response.json();
 }

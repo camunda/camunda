@@ -11,7 +11,6 @@ export {incompatibleFilters} from './incompatibleFilters';
 export {loadEntity, checkDeleteConflict} from './entityServices';
 
 export {getDiagramElementsBetween} from './diagramServices';
-export {getCustomReportInfo, getCustomDashboardInfo} from './customEntityListServices';
 
 // unfortunately, there is no syntax like "export * as formatters from './formatters'"
 export const formatters = formattersImport;

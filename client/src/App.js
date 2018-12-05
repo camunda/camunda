@@ -6,13 +6,10 @@ import {
   Header,
   Footer,
   Login,
-  Home,
-  Dashboards,
-  Reports,
+  Overview,
   Report,
   Dashboard,
   Analysis,
-  Alerts,
   Sharing
 } from './components';
 
@@ -34,11 +31,11 @@ const App = () => (
               <main>
                 <ErrorBoundary>
                   <Route exact path="/login" component={Login} />
-                  <PrivateRoute exact path="/" component={Home} />
-                  <PrivateRoute exact path="/dashboards" component={Dashboards} />
-                  <PrivateRoute exact path="/reports" component={Reports} />
+                  <PrivateRoute exact path="/" component={Overview.Home} />
+                  <PrivateRoute exact path="/dashboards" component={Overview.Dashboards} />
+                  <PrivateRoute exact path="/reports" component={Overview.Reports} />
                   <PrivateRoute exact path="/analysis" component={Analysis} />
-                  <PrivateRoute exact path="/alerts" component={Alerts} />
+                  <PrivateRoute exact path="/alerts" component={Overview.Alerts} />
                   <Route exact path="/share/:type/:id" component={Sharing} />
                   <PrivateRoute path="/report/:id/:viewMode?" component={Report} />
                   <PrivateRoute path="/dashboard/:id/:viewMode?" component={Dashboard} />
