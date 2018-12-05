@@ -468,7 +468,12 @@ class Instances extends Component {
     const instances = await fetchWorkflowInstances({
       queries: [
         {
-          ...parseFilterForRequest(this.state.filter)
+          ...parseFilterForRequest(
+            getFilterWithWorkflowIds(
+              this.state.filter,
+              this.state.groupedWorkflowInstances
+            )
+          )
         }
       ],
       sorting,
