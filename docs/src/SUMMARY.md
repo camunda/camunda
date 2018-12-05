@@ -43,6 +43,7 @@
     * [Partitions](reference/partitions.md)
     * [Job Handling](reference/job-handling.md)
     * [Message Correlation](reference/message-correlation.md)
+    * [Incidents](reference/incidents.md)
     * [JSON](reference/json.md)
     * [JSONPath](reference/json-path.md)
     * [JSON Conditions](reference/json-conditions.md)
