@@ -33,8 +33,14 @@ if [ -z "$OPTIMIZE_JAVA_OPTS" ]; then
   OPTIMIZE_JAVA_OPTS="-Xms1024m -Xmx1024m -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m"
 fi
 
+# check if debug mode should be enabled
+if [ "$1" == "debug" ]; then
+  DEBUG_PORT=9999
+  DEBUG_JAVA_OPTS="-Xdebug -agentlib:jdwp=transport=dt_socket,address=$DEBUG_PORT,server=y,suspend=n"
+fi
+
 # Set up the optimize classpaths, i.e. add the environment folder, all jars in the
 # plugin directory and the optimize jar
 OPTIMIZE_CLASSPATH=$BASEDIR/environment:$BASEDIR/plugin/*:$BASEDIR/optimize-backend-${project.version}.jar
 
-exec $JAVA ${OPTIMIZE_JAVA_OPTS} -cp $OPTIMIZE_CLASSPATH -Dfile.encoding=UTF-8 org.camunda.optimize.Main
+exec $JAVA ${OPTIMIZE_JAVA_OPTS} -cp $OPTIMIZE_CLASSPATH ${DEBUG_JAVA_OPTS} -Dfile.encoding=UTF-8 org.camunda.optimize.Main

@@ -52,7 +52,7 @@ echo Starting Optimize ...
 echo.
 set LOG_FILE=%BASEDIR%log\optimize.log
 set OPTIMIZE_OUTPUT=echo Optimize has been started. Use CTRL + C to stop Optimize!
-start "Camunda Optimize" cmd /c ^( %OPTIMIZE_OUTPUT% ^&^& "optimize-startup.bat" ^> %LOG_FILE% ^2^>^&^1 ^)
+start "Camunda Optimize" cmd /c ^( %OPTIMIZE_OUTPUT% ^&^& "optimize-startup.bat" %* ^> %LOG_FILE% ^2^>^&^1 ^)
 
 
 :: command to query optimize

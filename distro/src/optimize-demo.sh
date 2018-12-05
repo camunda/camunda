@@ -52,7 +52,11 @@ echo "Starting Camunda Optimize...";
 echo
 SCRIPT_PATH="./optimize-startup.sh"
 LOG_FILE=$BASEDIR/log/optimize.log
-nohup bash "$SCRIPT_PATH" </dev/null > $LOG_FILE 2>&1 &
+nohup bash "$SCRIPT_PATH" $@ </dev/null > $LOG_FILE 2>&1 &
+
+# Check if Optimize has been started
+URL="http://localhost:8090"
+checkStartup $URL "Camunda Optimize"
 
 # Open Optimize in the browser
 BROWSERS="gnome-www-browser x-www-browser firefox chromium chromium-browser google-chrome"
@@ -67,14 +71,10 @@ if [ -z "$BROWSER" ]; then
 fi
 
 if [ -z "$BROWSER" ]; then
-  (sleep 15; echo -e "Sorry for the inconvenience, but it wasn't possible to locate your default browser... \nIf you want to see our default website please open your browser and insert this URL:\nhttp://localhost:8090/login";) &
+  (sleep 10; echo -e "Sorry for the inconvenience, but it wasn't possible to locate your default browser... \nIf you want to see our default website please open your browser and insert this URL:\nhttp://localhost:8090/login";) &
 else
-  (sleep 5; $BROWSER "http://localhost:8090/#/login";) &
+  (sleep 2; $BROWSER "http://localhost:8090/#/login";) &
 fi
-
-# Check if Optimize has been started
-URL="http://localhost:8090"
-checkStartup $URL "Camunda Optimize"
 
 # print some info for the user
 echo
