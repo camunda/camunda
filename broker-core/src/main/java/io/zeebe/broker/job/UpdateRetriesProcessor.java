@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.job;
 
-import io.zeebe.broker.job.JobState.State;
 import io.zeebe.broker.logstreams.processor.CommandProcessor;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.protocol.clientapi.RejectionType;
@@ -29,7 +28,6 @@ public class UpdateRetriesProcessor implements CommandProcessor<JobRecord> {
   private static final String ERROR_MSG_JOB_NOT_FOUND =
       "Expected to find job with key %d, but no job with given key exist.";
   private static final String ERROR_MSG_NEGATIVE_RETRIES = "Job retries must be positive";
-  private static final String ERROR_MSG_JOB_NOT_FAILED = "Job is not failed";
 
   private final JobState state;
 
@@ -42,20 +40,16 @@ public class UpdateRetriesProcessor implements CommandProcessor<JobRecord> {
     final long key = command.getKey();
     final int retries = command.getValue().getRetries();
 
-    if (state.isInState(key, State.FAILED)) {
-      if (retries > 0) {
-        final JobRecord updatedJob = state.updateJobRetries(key, retries);
-        if (updatedJob != null) {
-          commandControl.accept(JobIntent.RETRIES_UPDATED, updatedJob);
-        } else {
-          commandControl.reject(
-              RejectionType.NOT_APPLICABLE, String.format(ERROR_MSG_JOB_NOT_FOUND, key));
-        }
+    if (retries > 0) {
+      final JobRecord updatedJob = state.updateJobRetries(key, retries);
+      if (updatedJob != null) {
+        commandControl.accept(JobIntent.RETRIES_UPDATED, updatedJob);
       } else {
-        commandControl.reject(RejectionType.BAD_VALUE, ERROR_MSG_NEGATIVE_RETRIES);
+        commandControl.reject(
+            RejectionType.NOT_APPLICABLE, String.format(ERROR_MSG_JOB_NOT_FOUND, key));
       }
     } else {
-      commandControl.reject(RejectionType.NOT_APPLICABLE, ERROR_MSG_JOB_NOT_FAILED);
+      commandControl.reject(RejectionType.BAD_VALUE, ERROR_MSG_NEGATIVE_RETRIES);
     }
   }
 }
