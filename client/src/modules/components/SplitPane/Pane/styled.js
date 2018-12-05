@@ -11,7 +11,7 @@ export const Pane = styled(
   withStrippedProps([
     'onAddToOpenSelection',
     'onAddNewSelection',
-    'onAddToSpecificSelection',
+    'onAddToSelectionById',
     'onUpdateSelection',
     'onFlowNodesDetailsReady',
     'onActivityInstanceSelected',

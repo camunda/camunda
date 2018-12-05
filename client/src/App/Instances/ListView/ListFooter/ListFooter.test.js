@@ -13,7 +13,7 @@ describe('ListFooter', () => {
       <ListFooter
         onFirstElementChange={jest.fn()}
         onAddNewSelection={jest.fn()}
-        onAddToSpecificSelection={jest.fn()}
+        onAddToSelectionById={jest.fn()}
         onAddToOpenSelection={jest.fn()}
         perPage={10}
         firstElement={0}

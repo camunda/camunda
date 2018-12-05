@@ -15,14 +15,14 @@ describe('AddSelection', () => {
   let node;
   let onAddNewSelectionSpy,
     onAddToOpenSelectionSpy,
-    onAddToSpecificSelectionSpy,
+    onAddToSelectionByIdSpy,
     toggleSelectionsSpy;
 
   beforeEach(() => {
     node = shallow(
       <AddSelection
         onAddNewSelection={jest.fn()}
-        onAddToSpecificSelection={jest.fn()}
+        onAddToSelectionById={jest.fn()}
         onAddToOpenSelection={jest.fn()}
         selection={{ids: [], excludeIds: []}}
         selections={[{selectionId: 0}, {selectionId: 1}]}
@@ -39,9 +39,9 @@ describe('AddSelection', () => {
       node.instance().props,
       'onAddToOpenSelection'
     );
-    onAddToSpecificSelectionSpy = jest.spyOn(
+    onAddToSelectionByIdSpy = jest.spyOn(
       node.instance().props,
-      'onAddToSpecificSelection'
+      'onAddToSelectionById'
     );
     toggleSelectionsSpy = jest.spyOn(node.instance().props, 'toggleSelections');
   });
@@ -49,7 +49,7 @@ describe('AddSelection', () => {
   afterEach(() => {
     onAddNewSelectionSpy.mockRestore();
     onAddToOpenSelectionSpy.mockRestore();
-    onAddToSpecificSelectionSpy.mockRestore();
+    onAddToSelectionByIdSpy.mockRestore();
     toggleSelectionsSpy.mockRestore();
   });
 
@@ -113,13 +113,13 @@ describe('AddSelection', () => {
 
     it('should add instances to specific selection', () => {
       // given
-      const onAddToSpecificSelectionOption = node.find('SubMenu').childAt(0);
+      const onAddToSelectionByIdOption = node.find('SubMenu').childAt(0);
 
       // when
-      onAddToSpecificSelectionOption.simulate('click');
+      onAddToSelectionByIdOption.simulate('click');
 
       // then
-      expect(onAddToSpecificSelectionSpy).toHaveBeenCalledWith(0);
+      expect(onAddToSelectionByIdSpy).toHaveBeenCalledWith(0);
     });
   });
 });

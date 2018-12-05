@@ -5,11 +5,11 @@ import CollapsablePanel from 'modules/components/CollapsablePanel';
 import Badge from 'modules/components/Badge';
 import ComboBadge from 'modules/components/ComboBadge';
 import {CollapsablePanelConsumer} from 'modules/contexts/CollapsablePanelContext';
+import {withSelection} from 'modules/contexts/SelectionContext';
 
 import {applyOperation} from 'modules/api/instances';
 
 import {getSelectionById} from 'modules/utils/selection';
-import {serializeInstancesMaps} from 'modules/utils/selection/selection';
 
 import {
   DIRECTION,
@@ -22,16 +22,14 @@ import SelectionList from './SelectionList';
 
 import * as Styled from './styled';
 
-export default class Selections extends React.Component {
+class Selections extends React.Component {
   static propTypes = {
     openSelection: PropTypes.number,
     selections: PropTypes.array,
-    rollingSelectionIndex: PropTypes.number,
     selectionCount: PropTypes.number,
     instancesInSelectionsCount: PropTypes.number,
-    onStateChange: PropTypes.func.isRequired,
-    storeStateLocally: PropTypes.func.isRequired,
-    filter: PropTypes.object
+    onToggleSelection: PropTypes.func.isRequired,
+    onDeleteSelection: PropTypes.func.isRequired
   };
 
   executeBatchOperation = async (openSelectionId, operation) => {
@@ -43,33 +41,6 @@ export default class Selections extends React.Component {
     } catch (e) {
       console.log(e);
     }
-  };
-
-  handleToggleSelection = selectionId => {
-    this.props.onStateChange({
-      openSelection:
-        selectionId !== this.props.openSelection ? selectionId : null
-    });
-  };
-
-  handleDeleteSelection = async selectionId => {
-    const {selections, instancesInSelectionsCount, selectionCount} = this.props;
-
-    const selectionToRemove = getSelectionById(selections, selectionId);
-    // remove the selection
-    selections.splice(selectionToRemove.index, 1);
-
-    await this.props.onStateChange({
-      selections,
-      instancesInSelectionsCount:
-        instancesInSelectionsCount - selectionToRemove.totalCount,
-      selectionCount: selectionCount - 1 || 0
-    });
-    this.props.storeStateLocally({
-      selections: serializeInstancesMaps(selections),
-      instancesInSelectionsCount: this.props.instancesInSelectionsCount,
-      selectionCount: this.props.selectionCount
-    });
   };
 
   handleRetrySelection = openSelectionId => {
@@ -118,8 +89,8 @@ export default class Selections extends React.Component {
                 <SelectionList
                   selections={this.props.selections}
                   openSelection={this.props.openSelection}
-                  onToggleSelection={this.handleToggleSelection}
-                  onDeleteSelection={this.handleDeleteSelection}
+                  onToggleSelection={this.props.onToggleSelection}
+                  onDeleteSelection={this.props.onDeleteSelection}
                   onRetrySelection={this.handleRetrySelection}
                   onCancelSelection={this.handleCancelSelection}
                 />
@@ -132,3 +103,5 @@ export default class Selections extends React.Component {
     );
   }
 }
+
+export default withSelection(Selections);

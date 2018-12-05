@@ -16,7 +16,7 @@ const filterCount = 27;
 const selections = [];
 
 const onUpdateSelection = jest.fn();
-const onAddToSpecificSelection = jest.fn();
+const onAddToSelectionById = jest.fn();
 const onAddToOpenSelection = jest.fn();
 const onAddNewSelection = jest.fn();
 const onFirstElementChange = jest.fn();
@@ -31,7 +31,7 @@ const mockProps = {
   selections: selections,
   openSelection: 0,
   onUpdateSelection: onUpdateSelection,
-  onAddToSpecificSelection: onAddToSpecificSelection,
+  onAddToSelectionById: onAddToSelectionById,
   onAddToOpenSelection: onAddToOpenSelection,
   onAddNewSelection: onAddNewSelection,
   onFirstElementChange: onFirstElementChange,

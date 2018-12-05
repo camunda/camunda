@@ -4,22 +4,23 @@ import * as Styled from './styled';
 
 import Dropdown from 'modules/components/Dropdown';
 import ContextualMessage from 'modules/components/ContextualMessage';
-import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
 import {DROPDOWN_PLACEMENT, CONTEXTUAL_MESSAGE_TYPE} from 'modules/constants';
+import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
+import {withSelection} from 'modules/contexts/SelectionContext';
 
 import {isAnyInstanceSelected} from '../service';
 
 class AddSelection extends React.Component {
   static propTypes = {
-    selections: PropTypes.array.isRequired,
     onAddNewSelection: PropTypes.func.isRequired,
+    onAddToSelectionById: PropTypes.func.isRequired,
+    onAddToOpenSelection: PropTypes.func.isRequired,
+    toggleSelections: PropTypes.func,
+    selections: PropTypes.array.isRequired,
     selection: PropTypes.object,
     openSelection: PropTypes.number,
-    onAddToSpecificSelection: PropTypes.func,
-    onAddToOpenSelection: PropTypes.func,
     //from withCollapsablePanel
-    isSelectionsCollapsed: PropTypes.bool,
-    toggleSelections: PropTypes.func
+    isSelectionsCollapsed: PropTypes.bool
   };
 
   openSelectionsPanel = () => {
@@ -31,14 +32,6 @@ class AddSelection extends React.Component {
   handleAddNewSelection = () => {
     this.props.onAddNewSelection();
     this.openSelectionsPanel();
-  };
-
-  handleAddToOpenSelection = () => {
-    this.props.onAddToOpenSelection();
-  };
-
-  handleAddToSpecificSelection = selectionId => {
-    this.props.onAddToSpecificSelection(selectionId);
   };
 
   renderButton = () => {
@@ -79,14 +72,14 @@ class AddSelection extends React.Component {
         )}
         <Dropdown.Option
           disabled={!this.props.openSelection}
-          onClick={this.handleAddToOpenSelection}
+          onClick={this.props.onAddToOpenSelection}
           label="Add to current Selection"
         />
         <Styled.DropdownOption>
           <Dropdown.SubMenu label={'Add to Selection...'}>
             {selections.map(({selectionId}) => (
               <Dropdown.SubOption
-                onClick={() => this.handleAddToSpecificSelection(selectionId)}
+                onClick={() => this.props.onAddToSelectionById(selectionId)}
                 key={selectionId}
               >
                 {selectionId}
@@ -109,5 +102,5 @@ class AddSelection extends React.Component {
   }
 }
 
-export default withCollapsablePanel(AddSelection);
+export default withSelection(withCollapsablePanel(AddSelection));
 export {AddSelection};

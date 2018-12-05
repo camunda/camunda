@@ -1,4 +1,4 @@
-import React, {Component, Fragment} from 'react';
+import React, {Component} from 'react';
 import PropTypes from 'prop-types';
 
 import {isEqual, sortBy, isEmpty} from 'lodash';
@@ -15,7 +15,6 @@ import {
 } from 'modules/constants';
 
 import {
-  fetchWorkflowInstanceBySelection,
   fetchWorkflowInstances,
   fetchGroupedWorkflowInstances,
   fetchWorkflowInstancesStatistics
@@ -30,12 +29,7 @@ import {
 } from 'modules/utils/filter';
 
 import {getNodesFromXML} from 'modules/utils/bpmn';
-
-import {
-  getSelectionById,
-  serializeInstancesMaps,
-  deserializeInstancesMaps
-} from 'modules/utils/selection/selection';
+import {SelectionProvider} from 'modules/contexts/SelectionContext';
 
 import Header from '../Header';
 import ListView from './ListView';
@@ -45,11 +39,9 @@ import Selections from './Selections';
 import {
   parseQueryString,
   getPayload,
-  getPayloadtoFetchInstancesById,
   decodeFields,
   getEmptyDiagramMessage,
-  getActivityIds,
-  createMapOfInstances
+  getActivityIds
 } from './service';
 import * as Styled from './styled.js';
 
@@ -63,26 +55,13 @@ class Instances extends Component {
 
   constructor(props) {
     super(props);
-    const {
-      filterCount,
-      instancesInSelectionsCount,
-      rollingSelectionIndex,
-      selectionCount,
-      selections
-    } = props.getStateLocally();
+    const {filterCount} = props.getStateLocally();
 
     this.state = {
       activityIds: [],
       filter: {},
       filterCount: filterCount || 0,
-      instancesInSelectionsCount: instancesInSelectionsCount || 0,
-      openSelection: null,
-      rollingSelectionIndex: rollingSelectionIndex || 0,
-      selection: {all: false, ids: [], excludeIds: []},
-      selectionCount: selectionCount || 0,
-      selections: deserializeInstancesMaps(selections) || [],
       diagramWorkflow: {},
-      IdsOfInstancesInSelections: [],
       groupedWorkflowInstances: {},
       statistics: [],
       workflowInstances: [],
@@ -99,11 +78,6 @@ class Instances extends Component {
     await this.validateAndSetUrlFilter();
     await this.setFilterAndRelatedState();
     this.updateLocalStorageFilter();
-
-    if (this.state.selectionCount) {
-      this.getIdsOfInstancesInSelections();
-      this.updateInstancesInSelections();
-    }
   }
 
   async componentDidUpdate(prevProps, prevState) {
@@ -169,43 +143,6 @@ class Instances extends Component {
     // write current filter selection to local storage
     this.props.storeStateLocally({filter: this.state.filter});
   };
-
-  getIdsOfInstancesInSelections() {
-    let ids = new Set();
-    this.state.selections.map(
-      selection =>
-        (ids = new Set([...ids, ...[...selection.instancesMap.keys()]]))
-    );
-    this.setState({IdsOfInstancesInSelections: ids});
-  }
-
-  async updateInstancesInSelections() {
-    const workflowInstances = await this.fetchInstancesInSelection();
-    const updatedInstanceMap = createMapOfInstances(workflowInstances);
-    this.updateSelections(updatedInstanceMap);
-  }
-
-  async fetchInstancesInSelection() {
-    const {IdsOfInstancesInSelections: IdsOfInstances} = this.state;
-    const payload = getPayloadtoFetchInstancesById(IdsOfInstances);
-    const options = {
-      firstResult: 0,
-      maxResults: IdsOfInstances.size,
-      ...payload
-    };
-    const {workflowInstances} = await fetchWorkflowInstances(options);
-    return workflowInstances;
-  }
-
-  updateSelections(updatedInstanceMap) {
-    const {selections} = this.state;
-    selections.map(selection =>
-      selection.instancesMap.forEach(function(value, key) {
-        const newValue = updatedInstanceMap.get(key);
-        !isEqual(value, newValue) && selection.instancesMap.set(key, newValue);
-      })
-    );
-  }
 
   fetchDiagramStatistics = async () => {
     let filter = Object.assign({}, this.state.filter);
@@ -351,116 +288,6 @@ class Instances extends Component {
     this.setState({groupedWorkflowInstances});
   };
 
-  handleStateChange = change => {
-    this.setState(change);
-  };
-
-  addSelectionToList = selection => {
-    const {
-      rollingSelectionIndex,
-      instancesInSelectionsCount,
-      selectionCount
-    } = this.state;
-
-    const currentSelectionIndex = rollingSelectionIndex + 1;
-    const newCount = instancesInSelectionsCount + selection.totalCount;
-
-    // Add Id for each selection
-    this.setState(
-      prevState => ({
-        selections: [
-          {
-            selectionId: currentSelectionIndex,
-            ...selection
-          },
-          ...prevState.selections
-        ],
-        rollingSelectionIndex: currentSelectionIndex,
-        instancesInSelectionsCount: newCount,
-        selectionCount: selectionCount + 1,
-        openSelection: currentSelectionIndex,
-        selection: {all: false, ids: [], excludeIds: []}
-      }),
-      () => {
-        const {
-          selections,
-          rollingSelectionIndex,
-          instancesInSelectionsCount,
-          selectionCount
-        } = this.state;
-
-        this.props.storeStateLocally({
-          selections: serializeInstancesMaps(selections),
-          rollingSelectionIndex,
-          instancesInSelectionsCount,
-          selectionCount
-        });
-      }
-    );
-  };
-
-  handleAddNewSelection = async () => {
-    const payload = getPayload({state: this.state});
-    const instancesDetails = await fetchWorkflowInstanceBySelection(payload);
-
-    this.addNewSelection(payload, instancesDetails);
-  };
-
-  addNewSelection = (payload, instancesDetails) => {
-    const {workflowInstances, ...rest} = instancesDetails;
-    const instancesMap = createMapOfInstances(workflowInstances);
-
-    this.addSelectionToList({
-      instancesMap,
-      ...payload,
-      ...rest
-    });
-  };
-
-  handleAddToSelectionById = async selectionId => {
-    const payload = getPayload({state: this.state, selectionId});
-    const instancesDetails = await fetchWorkflowInstanceBySelection(payload);
-    this.addToSelectionById(instancesDetails, payload, selectionId);
-  };
-
-  addToSelectionById = (instancesDetails, payload, selectionId) => {
-    const {workflowInstances, ...rest} = instancesDetails;
-    const {selections, instancesInSelectionsCount} = this.state;
-
-    const newInstancesMap = createMapOfInstances(workflowInstances);
-    const {index: selectionIndex} = getSelectionById(selections, selectionId);
-
-    const {totalCount} = selections[selectionIndex];
-
-    const newSelection = {
-      ...selections[selectionIndex],
-      instancesMap: newInstancesMap,
-      ...payload,
-      ...rest
-    };
-
-    selections[selectionIndex] = newSelection;
-
-    const newCount =
-      instancesInSelectionsCount - totalCount + newSelection.totalCount;
-
-    this.setState(
-      {
-        selections,
-        instancesInSelectionsCount: newCount,
-        selection: {all: false, ids: [], excludeIds: []},
-        openSelection: selectionId
-      },
-      () => {
-        const {instancesInSelectionsCount, selections} = this.state;
-        this.props.storeStateLocally({
-          instancesInSelectionsCount,
-          selections: serializeInstancesMaps(selections)
-        });
-      }
-    );
-  };
-
   fetchWorkflowInstances = async (
     sorting = DEFAULT_SORTING,
     firstElement = 0
@@ -498,7 +325,8 @@ class Instances extends Component {
     if (hasNewValue) {
       const filter = {...this.state.filter, ...newFilter};
       this.setFilterInURL(filter);
-      this.resetSelections();
+      // TODO: Once filter gets moved to context, this logic should move to selecitons context.
+      // this.resetSelections();
     }
   };
 
@@ -511,15 +339,16 @@ class Instances extends Component {
 
   handleFilterReset = () => {
     this.setFilterInURL(DEFAULT_FILTER);
-    this.resetSelections();
-  };
-
-  resetSelections = () => {
-    this.setState({selection: {all: false, ids: [], excludeIds: []}});
+    // TODO: Once filter gets moved to context, this logic should move to selecitons context.
+    // this.resetSelections();
   };
 
   handleFlowNodeSelection = flowNodeId => {
     this.handleFilterChange({activityId: flowNodeId});
+  };
+
+  getSelectionPayload = ({selectionState, selectionId}) => {
+    return getPayload({state: {...this.state, ...selectionState}, selectionId});
   };
 
   render() {
@@ -529,14 +358,11 @@ class Instances extends Component {
       : 'Workflow';
 
     return (
-      <Fragment>
-        {/* Header performs two workflowInstances count fetches  on first render*/}
+      <SelectionProvider getSelectionPayload={this.getSelectionPayload}>
         <Header
           active="instances"
           filter={this.state.filter}
           filterCount={this.state.filterCount}
-          instancesInSelectionsCount={this.state.instancesInSelectionsCount}
-          selectionCount={this.state.selectionCount}
         />
         <Styled.Instances>
           <VisuallyHiddenH1>Camunda Operate Instances</VisuallyHiddenH1>
@@ -597,17 +423,6 @@ To see a diagram, select a Workflow in the Filters panel.`}
                   this.state.groupedWorkflowInstances
                 )}
                 filterCount={this.state.filterCount}
-                onUpdateSelection={change => {
-                  this.handleStateChange({selection: {...change}});
-                }}
-                onAddNewSelection={this.handleAddNewSelection}
-                onAddToSpecificSelection={this.handleAddToSelectionById}
-                onAddToOpenSelection={() =>
-                  this.handleAddToSelectionById(this.state.openSelection)
-                }
-                openSelection={this.state.openSelection}
-                selection={this.state.selection}
-                selections={this.state.selections}
                 onSort={this.handleSorting}
                 sorting={this.state.sorting}
                 firstElement={this.state.firstElement}
@@ -615,21 +430,9 @@ To see a diagram, select a Workflow in the Filters panel.`}
               />
             </Styled.Center>
           </Styled.Content>
-          <Selections
-            filter={getFilterWithWorkflowIds(
-              this.state.filter,
-              this.state.groupedWorkflowInstances
-            )}
-            instancesInSelectionsCount={this.state.instancesInSelectionsCount}
-            onStateChange={this.handleStateChange}
-            openSelection={this.state.openSelection}
-            rollingSelectionIndex={this.state.rollingSelectionIndex}
-            selections={this.state.selections}
-            selectionCount={this.state.selectionCount}
-            storeStateLocally={this.props.storeStateLocally}
-          />
+          <Selections />
         </Styled.Instances>
-      </Fragment>
+      </SelectionProvider>
     );
   }
 }

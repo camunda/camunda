@@ -15,6 +15,8 @@ import {
   COMBO_BADGE_TYPE
 } from 'modules/constants';
 import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
+import {withSelection} from 'modules/contexts/SelectionContext';
+
 import {isEqual} from 'lodash';
 
 import {filtersMap, localStateKeys, apiKeys} from './constants';
@@ -238,4 +240,4 @@ class Header extends React.Component {
   }
 }
 
-export default withCollapsablePanel(withSharedState(Header));
+export default withSelection(withCollapsablePanel(withSharedState(Header)));

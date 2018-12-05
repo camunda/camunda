@@ -12,12 +12,13 @@ import {EXPAND_STATE} from 'modules/constants';
 
 import {getWorkflowName} from 'modules/utils/instance';
 import {formatDate} from 'modules/utils/date';
+import {withSelection} from 'modules/contexts/SelectionContext';
 
 import ColumnHeader from './ColumnHeader';
 import * as Styled from './styled';
 
 const {THead, TBody, TH, TR, TD} = Table;
-export default class List extends React.Component {
+class List extends React.Component {
   static propTypes = {
     data: PropTypes.arrayOf(PropTypes.object).isRequired,
     onUpdateSelection: PropTypes.func.isRequired,
@@ -313,3 +314,5 @@ export default class List extends React.Component {
     );
   }
 }
+
+export default withSelection(List);
