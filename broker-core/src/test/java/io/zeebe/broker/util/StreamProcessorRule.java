@@ -30,6 +30,7 @@ import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.util.function.BiFunction;
@@ -117,13 +118,17 @@ public class StreamProcessorRule implements TestRule {
               streamEnvironment
                   .newStreamProcessor()
                   .keyGenerator(zeebeState.getKeyGenerator())
-                  .withStateController(zeebeState);
+                  .stateController(zeebeState);
           return factory.apply(processorBuilder, zeebeState);
         });
   }
 
   public ControlledActorClock getClock() {
     return clock;
+  }
+
+  public ActorScheduler getActorScheduler() {
+    return actorSchedulerRule.get();
   }
 
   public RecordStream events() {

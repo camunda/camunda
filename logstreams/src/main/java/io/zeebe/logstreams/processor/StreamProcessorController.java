@@ -21,6 +21,7 @@ import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.SnapshotController;
+import io.zeebe.logstreams.state.StateController;
 import io.zeebe.logstreams.state.StateSnapshotMetadata;
 import io.zeebe.util.LangUtil;
 import io.zeebe.util.metrics.MetricsManager;
@@ -442,8 +443,14 @@ public class StreamProcessorController extends Actor {
     metrics.close();
 
     if (!isFailed()) {
-      createSnapshot();
-      streamProcessor.onClose();
+      actor.run(
+          () -> {
+            createSnapshot();
+            final StateController stateController = streamProcessor.getStateController();
+            if (stateController != null) {
+              stateController.close();
+            }
+          });
     }
 
     streamProcessorContext.getLogStreamReader().close();
@@ -451,6 +458,13 @@ public class StreamProcessorController extends Actor {
     streamProcessorContext.logStream.removeOnCommitPositionUpdatedCondition(
         onCommitPositionUpdatedCondition);
     onCommitPositionUpdatedCondition = null;
+  }
+
+  @Override
+  protected void onActorCloseRequested() {
+    if (!isFailed()) {
+      streamProcessor.onClose();
+    }
   }
 
   private void onFailure() {

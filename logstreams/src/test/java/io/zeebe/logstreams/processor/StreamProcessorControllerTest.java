@@ -115,8 +115,9 @@ public class StreamProcessorControllerTest {
     inOrder.verify(eventProcessor, times(1)).writeEvent(any());
     inOrder.verify(eventProcessor, times(1)).updateState();
 
-    inOrder.verify(snapshotController, times(1)).takeSnapshot(any());
     inOrder.verify(streamProcessor, times(1)).onClose();
+    inOrder.verify(snapshotController, times(1)).takeSnapshot(any());
+    inOrder.verify(streamProcessor, times(1)).getStateController();
 
     inOrder.verifyNoMoreInteractions();
   }

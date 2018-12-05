@@ -35,6 +35,7 @@ public class TypedEventStreamProcessorBuilder {
   protected List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
 
   private KeyGenerator keyGenerator;
+  private StateController stateController;
 
   public TypedEventStreamProcessorBuilder(TypedStreamEnvironment environment) {
     this.environment = environment;
@@ -99,15 +100,8 @@ public class TypedEventStreamProcessorBuilder {
     return this;
   }
 
-  public TypedEventStreamProcessorBuilder withStateController(
-      final StateController stateController) {
-    withListener(
-        new StreamProcessorLifecycleAware() {
-          @Override
-          public void onClose() {
-            stateController.close();
-          }
-        });
+  public TypedEventStreamProcessorBuilder stateController(StateController stateController) {
+    this.stateController = stateController;
     return this;
   }
 
@@ -119,7 +113,8 @@ public class TypedEventStreamProcessorBuilder {
         lifecycleListeners,
         environment.getEventRegistry(),
         keyGenerator,
-        environment);
+        environment,
+        stateController);
   }
 
   private static class DelegatingEventProcessor<T extends UnpackedObject>

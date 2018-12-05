@@ -129,7 +129,7 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
         streamEnvironment
             .newStreamProcessor()
             .keyGenerator(zeebeState.getKeyGenerator())
-            .withStateController(zeebeState);
+            .stateController(zeebeState);
 
     addDistributeDeploymentProcessors(zeebeState, streamEnvironment, typedProcessorBuilder);
     final BpmnStepProcessor stepProcessor =

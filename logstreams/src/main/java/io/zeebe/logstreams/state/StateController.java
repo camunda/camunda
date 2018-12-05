@@ -20,9 +20,11 @@ import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.rocksdb.ZbRocksDb;
 import io.zeebe.util.ByteValue;
+import io.zeebe.util.FileUtil;
 import io.zeebe.util.LangUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -270,6 +272,15 @@ public class StateController implements AutoCloseable {
 
     try (Options options = createOptions()) {
       RocksDB.destroyDB(dbDirectory.toString(), options);
+
+      // on Windows, destroyDB does not remove the directory but simply clears the contents
+      if (dbDirectory.exists()) {
+        try {
+          FileUtil.deleteFolder(dbDirectory.getAbsolutePath());
+        } catch (IOException e) {
+          LOG.trace("Couldn't delete DB directory");
+        }
+      }
     }
   }
 

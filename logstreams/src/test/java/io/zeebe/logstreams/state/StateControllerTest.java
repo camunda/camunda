@@ -134,4 +134,20 @@ public class StateControllerTest {
     assertThat(controller.isOpened()).isFalse();
     assertThat(openedDB.isOwningHandle()).isFalse();
   }
+
+  @Test
+  public void shouldDeleteDatabase() throws Exception {
+    // given
+    final File dbDir = storage.getRuntimeDirectory();
+    controller.open(dbDir, false);
+
+    assertThat(controller.isOpened()).isTrue();
+
+    // when
+    controller.delete();
+
+    /// then
+    assertThat(dbDir.exists()).isFalse();
+    assertThat(controller.isOpened()).isFalse();
+  }
 }
