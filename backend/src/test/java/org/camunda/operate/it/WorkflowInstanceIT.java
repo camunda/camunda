@@ -199,6 +199,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
 
     //when activity with input mapping is activated
     completeTask(workflowInstanceKey, "task1", null);
+    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceKey, "task2");
 
     //then
     workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);

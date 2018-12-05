@@ -50,7 +50,18 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     jobWorkers.add(progressSimpleTask("lowerTask"));
     jobWorkers.add(progressSimpleTask("subprocessTask"));
 
+    //eventBasedGatewayProcess
+    jobWorkers.add(progressSimpleTask("messageTask"));
+    jobWorkers.add(progressSimpleTask("afterMessageTask"));
+    jobWorkers.add(progressSimpleTask("messageTaskInterrupted"));
+    jobWorkers.add(progressSimpleTask("timerTask"));
+    jobWorkers.add(progressSimpleTask("afterTimerTask"));
+    jobWorkers.add(progressSimpleTask("timerTaskInterrupted"));
+    jobWorkers.add(progressSimpleTask("lastTask"));
+
     sendMessages("clientMessage", "{\"messageVar\": \"someValue\"}", 50);
+    sendMessages("interruptMessageTask", "{\"messageVar2\": \"someValue2\"}", 50);
+    sendMessages("dataReceived", "{\"messageVar3\": \"someValue3\"}", 50);
 
   }
 
@@ -147,18 +158,27 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
     ZeebeTestUtil.deployWorkflow(client, "develop/complexProcess_v_1.bpmn");
 
+    ZeebeTestUtil.deployWorkflow(client, "develop/eventBasedGatewayProcess_v_1.bpmn");
+
   }
 
   @Override
   protected void startWorkflowInstances(int version) {
     super.startWorkflowInstances(version);
-    final int instancesCount = random.nextInt(50) + 50;
+    final int instancesCount = random.nextInt(30) + 30;
     for (int i = 0; i < instancesCount; i++) {
       long instanceKey = ZeebeTestUtil.startWorkflowInstance(client, "demoProcess", "{\"a\": \"b\"}");
       workflowInstanceKeys.add(instanceKey);
+
       if (version < 2) {
-        instanceKey = ZeebeTestUtil.startWorkflowInstance(client, "complexProcess",
+        instanceKey = ZeebeTestUtil.startWorkflowInstance(client, "eventBasedGatewayProcess",
           "{\"clientId\": \"" + random.nextInt(10) + "\"\n}");
+        workflowInstanceKeys.add(instanceKey);
+      }
+
+      if (version < 3) {
+        instanceKey = ZeebeTestUtil.startWorkflowInstance(client, "complexProcess",
+        "{\"clientId\": \"" + random.nextInt(10) + "\"\n}");
         workflowInstanceKeys.add(instanceKey);
       }
     }
@@ -169,6 +189,9 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     super.deployVersion2();
     //deploy workflows v.2
     ZeebeTestUtil.deployWorkflow(client, "develop/demoProcess_v_2.bpmn");
+
+    ZeebeTestUtil.deployWorkflow(client, "develop/complexProcess_v_2.bpmn");
+
 
   }
 

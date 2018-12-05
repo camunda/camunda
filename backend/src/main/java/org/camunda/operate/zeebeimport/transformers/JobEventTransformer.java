@@ -14,7 +14,9 @@ package org.camunda.operate.zeebeimport.transformers;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.EventMetadataEntity;
 import org.camunda.operate.entities.OperateZeebeEntity;
@@ -24,16 +26,35 @@ import org.camunda.operate.zeebeimport.record.value.JobRecordValueImpl;
 import org.springframework.stereotype.Component;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.job.Headers;
+import io.zeebe.protocol.intent.JobIntent;
 
 @Component
 public class JobEventTransformer implements AbstractRecordTransformer {
+
+  private final static Set<String> EVENTS = new HashSet<>();
+
+  static {
+    EVENTS.add(JobIntent.CREATED.name());
+    EVENTS.add(JobIntent.ACTIVATED.name());
+    EVENTS.add(JobIntent.COMPLETED.name());
+    EVENTS.add(JobIntent.TIMED_OUT.name());
+    EVENTS.add(JobIntent.FAILED.name());
+    EVENTS.add(JobIntent.RETRIES_UPDATED.name());
+    EVENTS.add(JobIntent.CANCELED.name());
+  }
+
 
   @Override
   public List<OperateZeebeEntity> convert(Record record) {
 
 //    ZeebeUtil.ALL_EVENTS_LOGGER.debug(event.toJson());
-
     List<OperateZeebeEntity> result = new ArrayList<>();
+
+    final String intentStr = record.getMetadata().getIntent().name();
+
+    if (!EVENTS.contains(intentStr)) {
+      return result;
+    }
 
     EventEntity eventEntity = new EventEntity();
 

@@ -132,7 +132,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
     final long instanceKey9 = startFlightRegistrationProcess();
     completeTask(instanceKey9, "registerPassenger", null);
-    failTask(instanceKey9, "registerCabinBag", "No more sticker available");
+    failTask(instanceKey9, "registerCabinBag", "No more stickers available");
     doNotTouchWorkflowInstanceKeys.add(instanceKey9);
 
     final long instanceKey10 = startFlightRegistrationProcess();

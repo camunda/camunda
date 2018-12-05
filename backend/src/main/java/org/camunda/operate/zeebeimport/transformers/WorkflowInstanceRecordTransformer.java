@@ -45,6 +45,7 @@ import static io.zeebe.protocol.intent.WorkflowInstanceIntent.END_EVENT_OCCURRED
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.GATEWAY_ACTIVATED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.START_EVENT_OCCURRED;
+import static io.zeebe.protocol.intent.WorkflowInstanceIntent.CATCH_EVENT_TRIGGERED;
 
 @Component
 public class WorkflowInstanceRecordTransformer implements AbstractRecordTransformer {
@@ -79,6 +80,7 @@ public class WorkflowInstanceRecordTransformer implements AbstractRecordTransfor
     AI_START_END_STATES.add(START_EVENT_OCCURRED.name());
     AI_START_END_STATES.add(END_EVENT_OCCURRED.name());
     AI_START_END_STATES.add(GATEWAY_ACTIVATED.name());
+    AI_START_END_STATES.add(CATCH_EVENT_TRIGGERED.name());
 
     AI_STATES.add(ELEMENT_READY.name());
     AI_STATES.add(ELEMENT_ACTIVATED.name());
@@ -103,12 +105,12 @@ public class WorkflowInstanceRecordTransformer implements AbstractRecordTransfor
 
     final String intentStr = record.getMetadata().getIntent().name();
 
-//    if (WI_STATES.contains(intentStr) || AI_STATES.contains(intentStr)) {
+    if (WI_STATES.contains(intentStr) || AI_STATES.contains(intentStr)) {
       final OperateZeebeEntity event = convertEvent(record);
       if (event != null) {
         entitiesToPersist.add(event);
       }
-//    }
+    }
 
     WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
 

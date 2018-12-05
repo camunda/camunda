@@ -47,14 +47,12 @@ public class IncidentEventTransformer implements AbstractRecordTransformer {
 //    ZeebeUtil.ALL_EVENTS_LOGGER.debug(event.toJson());
 
     List<OperateZeebeEntity> result = new ArrayList<>();
-
-    result.add(convertEvent(record));
-
     final String intentStr = record.getMetadata().getIntent().name();
 
     if (EVENTS.contains(intentStr)) {
 
-//      logger.debug(event.toJson());
+      //      logger.debug(event.toJson());
+      result.add(convertEvent(record));
 
       IncidentEntity incidentEntity = new IncidentEntity();
 

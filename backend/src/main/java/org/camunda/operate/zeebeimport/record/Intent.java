@@ -2,18 +2,9 @@ package org.camunda.operate.zeebeimport.record;
 
 public enum Intent implements io.zeebe.protocol.intent.Intent {
 
-  CREATE,
   CREATED,
 
-  DISTRIBUTE,
-  DISTRIBUTED,
-
-  RESOLVE,
   RESOLVED,
-  RESOLVE_FAILED,
-
-  DELETE,
-  DELETED,
 
   START_EVENT_OCCURRED,
   END_EVENT_OCCURRED,
@@ -27,26 +18,19 @@ public enum Intent implements io.zeebe.protocol.intent.Intent {
   ELEMENT_TERMINATING,
   ELEMENT_TERMINATED,
 
-  CANCEL,
-  CANCELING,
-
-  UPDATE_PAYLOAD,
   PAYLOAD_UPDATED,
 
+  CATCH_EVENT_TRIGGERED,
+
   //JOB
-  ACTIVATE,
   ACTIVATED,
 
-  COMPLETE,
   COMPLETED,
 
-  TIME_OUT,
   TIMED_OUT,
 
-  FAIL,
   FAILED,
 
-  UPDATE_RETRIES,
   RETRIES_UPDATED,
 
   CANCELED,

@@ -17,6 +17,8 @@
  */
 package org.camunda.operate.zeebeimport.record;
 
+import org.camunda.operate.zeebeimport.StringToIntentSerializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.zeebe.exporter.record.RecordMetadata;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
@@ -24,6 +26,7 @@ import io.zeebe.protocol.clientapi.ValueType;
 
 public class RecordMetadataImpl implements RecordMetadata {
   private int partitionId;
+  @JsonDeserialize(using = StringToIntentSerializer.class)
   private Intent intent;
   private RecordType recordType;
   private RejectionType rejectionType;
