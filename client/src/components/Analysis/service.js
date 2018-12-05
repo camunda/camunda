@@ -11,7 +11,7 @@ export async function loadProcessDefinitionXml(processDefinitionKey, processDefi
 
 export async function loadFrequencyData(processDefinitionKey, processDefinitionVersion, filter) {
   const response = await post(
-    'api/report/evaluate/single',
+    'api/report/evaluate',
     createFlowNodeFrequencyReport(processDefinitionKey, processDefinitionVersion, filter)
   );
 
@@ -20,19 +20,23 @@ export async function loadFrequencyData(processDefinitionKey, processDefinitionV
 
 function createFlowNodeFrequencyReport(processDefinitionKey, processDefinitionVersion, filter) {
   return {
-    processDefinitionKey,
-    processDefinitionVersion,
-    filter,
-    view: {
-      operation: 'count',
-      entity: 'flowNode',
-      property: 'frequency'
-    },
-    groupBy: {
-      type: 'flowNodes',
-      unit: null
-    },
-    visualization: 'heat'
+    combined: false,
+    reportType: 'process',
+    data: {
+      processDefinitionKey,
+      processDefinitionVersion,
+      filter,
+      view: {
+        operation: 'count',
+        entity: 'flowNode',
+        property: 'frequency'
+      },
+      groupBy: {
+        type: 'flowNodes',
+        unit: null
+      },
+      visualization: 'heat'
+    }
   };
 }
 
