@@ -59,11 +59,11 @@ public class DecisionInstanceImportService {
       .collect(Collectors.toList());
   }
 
-  private ElasticsearchImportJob<DecisionInstanceDto> createElasticsearchImportJob(List<DecisionInstanceDto> processInstances) {
+  private ElasticsearchImportJob<DecisionInstanceDto> createElasticsearchImportJob(List<DecisionInstanceDto> decisionInstanceDtos) {
     final DecisionInstanceElasticsearchImportJob importJob = new DecisionInstanceElasticsearchImportJob(
       decisionInstanceWriter
     );
-    importJob.setEntitiesToImport(processInstances);
+    importJob.setEntitiesToImport(decisionInstanceDtos);
     return importJob;
   }
 

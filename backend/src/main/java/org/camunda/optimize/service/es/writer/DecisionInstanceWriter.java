@@ -30,13 +30,13 @@ public class DecisionInstanceWriter {
     this.objectMapper = objectMapper;
   }
 
-  public void importProcessInstances(List<DecisionInstanceDto> decisionInstanceDtos) throws Exception {
+  public void importDecisionInstances(List<DecisionInstanceDto> decisionInstanceDtos) throws Exception {
     logger.debug("Writing [{}] decision instances to elasticsearch", decisionInstanceDtos.size());
 
     BulkRequestBuilder processInstanceBulkRequest = esClient.prepareBulk();
 
-    for (DecisionInstanceDto procInst : decisionInstanceDtos) {
-      addImportDecisionInstanceRequest(processInstanceBulkRequest, procInst);
+    for (DecisionInstanceDto decisionInstanceDto : decisionInstanceDtos) {
+      addImportDecisionInstanceRequest(processInstanceBulkRequest, decisionInstanceDto);
     }
     BulkResponse response = processInstanceBulkRequest.get();
     if (response.hasFailures()) {
@@ -49,7 +49,7 @@ public class DecisionInstanceWriter {
   private void addImportDecisionInstanceRequest(final BulkRequestBuilder bulkRequest,
                                                 final DecisionInstanceDto decisionInstanceDto
   ) throws JsonProcessingException {
-    final String decisionInstanceId = decisionInstanceDto.getDecisionDefinitionId();
+    final String decisionInstanceId = decisionInstanceDto.getId();
     final String source = objectMapper.writeValueAsString(decisionInstanceDto);
     bulkRequest.add(
       esClient

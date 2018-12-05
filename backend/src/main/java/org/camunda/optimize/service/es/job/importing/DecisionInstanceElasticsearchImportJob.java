@@ -18,7 +18,7 @@ public class DecisionInstanceElasticsearchImportJob extends ElasticsearchImportJ
   @Override
   protected void executeImport() {
     try {
-      decisionInstanceWriter.importProcessInstances(newOptimizeEntities);
+      decisionInstanceWriter.importDecisionInstances(newOptimizeEntities);
     } catch (Exception e) {
       logger.error("error while writing decision instances to elasticsearch", e);
     }

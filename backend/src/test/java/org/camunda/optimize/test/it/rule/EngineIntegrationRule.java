@@ -430,6 +430,14 @@ public class EngineIntegrationRule extends TestWatcher {
     return deployment;
   }
 
+  public void startDecisionInstance(String decisionDefinitionId) {
+    CloseableHttpClient client = getHttpClient();
+    startDecisionInstance(decisionDefinitionId, client, new HashMap<String, Object>() {{
+      put("amount", 200);
+      put("invoiceCategory", "Misc");
+    }});
+  }
+
   public void startDecisionInstance(String decisionDefinitionId, Map<String, Object> variables) {
     CloseableHttpClient client = getHttpClient();
     startDecisionInstance(decisionDefinitionId, client, variables);
@@ -839,13 +847,7 @@ public class EngineIntegrationRule extends TestWatcher {
 
   public DecisionDefinitionEngineDto deployAndStartDecisionDefinition() {
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto = deployDecisionDefinition();
-    startDecisionInstance(
-      decisionDefinitionEngineDto.getId(),
-      new HashMap<String, Object>() {{
-        put("amount", 200);
-        put("invoiceCategory", "Misc");
-      }}
-    );
+    startDecisionInstance(decisionDefinitionEngineDto.getId());
     return decisionDefinitionEngineDto;
   }
 

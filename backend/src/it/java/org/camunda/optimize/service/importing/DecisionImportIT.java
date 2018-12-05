@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.importing;
 
+import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
@@ -57,7 +58,7 @@ public class DecisionImportIT {
   }
 
   @Test
-  public void directlyExecutedDecisionInstanceFieldDataOfImportIsAvailable() throws IOException {
+  public void directlyExecutedDecisionInstanceFieldDataOfImportIsAvailable() {
     //given
     engineRule.deployAndStartDecisionDefinition();
 
@@ -69,40 +70,26 @@ public class DecisionImportIT {
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(DECISION_INSTANCE_TYPE);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
 
-    final DecisionInstanceDto dto = parseToDto(idsResp.getHits().getHits()[0], DecisionInstanceDto.class);
-    assertThat(dto.getProcessDefinitionId(), is(nullValue()));
-    assertThat(dto.getProcessDefinitionKey(), is(nullValue()));
-    assertThat(dto.getDecisionDefinitionId(), is(notNullValue()));
-    assertThat(dto.getDecisionDefinitionKey(), is(notNullValue()));
-    assertThat(dto.getEvaluationTime(), is(notNullValue()));
-    assertThat(dto.getProcessInstanceId(), is(nullValue()));
-    assertThat(dto.getRootProcessInstanceId(), is(nullValue()));
-    assertThat(dto.getActivityId(), is(nullValue()));
-    assertThat(dto.getCollectResultValue(), is(nullValue()));
-    assertThat(dto.getRootDecisionInstanceId(), is(nullValue()));
-    assertThat(dto.getInputs().size(), is(2));
-    dto.getInputs().forEach(inputInstanceDto -> {
-      assertThat(inputInstanceDto.getId(), is(notNullValue()));
-      assertThat(inputInstanceDto.getClauseId(), is(notNullValue()));
-      assertThat(inputInstanceDto.getClauseName(), is(notNullValue()));
-      assertThat(inputInstanceDto.getType(), is(notNullValue()));
-      assertThat(inputInstanceDto.getValue(), is(notNullValue()));
-    });
-    assertThat(dto.getOutputs().size(), is(2));
-    dto.getOutputs().forEach(outputInstanceDto -> {
-      assertThat(outputInstanceDto.getId(), is(notNullValue()));
-      assertThat(outputInstanceDto.getClauseId(), is(notNullValue()));
-      assertThat(outputInstanceDto.getClauseName(), is(notNullValue()));
-      assertThat(outputInstanceDto.getType(), is(notNullValue()));
-      assertThat(outputInstanceDto.getValue(), is(notNullValue()));
-      assertThat(outputInstanceDto.getRuleId(), is(notNullValue()));
-      assertThat(outputInstanceDto.getRuleOrder(), is(notNullValue()));
-    });
-    assertThat(dto.getEngine(), is(notNullValue()));
+    final SearchHit hit = idsResp.getHits().getHits()[0];
+    assertDecisionInstanceFieldSetAsExpected(hit);
   }
 
   @Test
-  public void decisionImportIndexesAreStored() throws Exception {
+  public void multipleDecisionInstancesAreImported() {
+    //given
+    DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineRule.deployAndStartDecisionDefinition();
+    engineRule.startDecisionInstance(decisionDefinitionEngineDto.getId());
+
+    //when
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    //then
+    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_TYPE, 2L);
+  }
+
+  @Test
+  public void decisionImportIndexesAreStored() {
     // given
     engineRule.deployAndStartDecisionDefinition();
     engineRule.deployAndStartDecisionDefinition();
@@ -152,8 +139,12 @@ public class DecisionImportIT {
   }
 
 
-  private <T> T parseToDto(final SearchHit searchHit, Class<T> dtoClass) throws IOException {
-    return elasticSearchRule.getObjectMapper().readValue(searchHit.getSourceAsString(), dtoClass);
+  private <T> T parseToDto(final SearchHit searchHit, Class<T> dtoClass) {
+    try {
+      return elasticSearchRule.getObjectMapper().readValue(searchHit.getSourceAsString(), dtoClass);
+    } catch (IOException e) {
+      throw new RuntimeException("Failed parsing dto: " + dtoClass.getSimpleName());
+    }
   }
 
   private void allEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchType,
@@ -162,14 +153,55 @@ public class DecisionImportIT {
 
     assertThat(idsResp.getHits().getTotalHits(), is(count));
     for (SearchHit searchHit : idsResp.getHits().getHits()) {
-      for (Entry searchHitField : searchHit.getSourceAsMap().entrySet()) {
-        String errorMessage = "Something went wrong during fetching of field: " + searchHitField.getKey() +
-          ". Should actually have a value!";
-        assertThat(errorMessage, searchHitField.getValue(), is(notNullValue()));
-        if (searchHitField.getValue() instanceof String) {
-          String value = (String) searchHitField.getValue();
-          assertThat(errorMessage, value.isEmpty(), is(false));
-        }
+      if (DECISION_INSTANCE_TYPE.equals(elasticsearchType)) {
+        assertDecisionInstanceFieldSetAsExpected(searchHit);
+      } else {
+        assertAllFieldsSet(searchHit);
+      }
+    }
+  }
+
+  private void assertDecisionInstanceFieldSetAsExpected(final SearchHit hit) {
+    final DecisionInstanceDto dto = parseToDto(hit, DecisionInstanceDto.class);
+    assertThat(dto.getProcessDefinitionId(), is(nullValue()));
+    assertThat(dto.getProcessDefinitionKey(), is(nullValue()));
+    assertThat(dto.getDecisionDefinitionId(), is(notNullValue()));
+    assertThat(dto.getDecisionDefinitionKey(), is(notNullValue()));
+    assertThat(dto.getEvaluationTime(), is(notNullValue()));
+    assertThat(dto.getProcessInstanceId(), is(nullValue()));
+    assertThat(dto.getRootProcessInstanceId(), is(nullValue()));
+    assertThat(dto.getActivityId(), is(nullValue()));
+    assertThat(dto.getCollectResultValue(), is(nullValue()));
+    assertThat(dto.getRootDecisionInstanceId(), is(nullValue()));
+    assertThat(dto.getInputs().size(), is(2));
+    dto.getInputs().forEach(inputInstanceDto -> {
+      assertThat(inputInstanceDto.getId(), is(notNullValue()));
+      assertThat(inputInstanceDto.getClauseId(), is(notNullValue()));
+      assertThat(inputInstanceDto.getClauseName(), is(notNullValue()));
+      assertThat(inputInstanceDto.getType(), is(notNullValue()));
+      assertThat(inputInstanceDto.getValue(), is(notNullValue()));
+    });
+    assertThat(dto.getOutputs().size(), is(2));
+    dto.getOutputs().forEach(outputInstanceDto -> {
+      assertThat(outputInstanceDto.getId(), is(notNullValue()));
+      assertThat(outputInstanceDto.getClauseId(), is(notNullValue()));
+      assertThat(outputInstanceDto.getClauseName(), is(notNullValue()));
+      assertThat(outputInstanceDto.getType(), is(notNullValue()));
+      assertThat(outputInstanceDto.getValue(), is(notNullValue()));
+      assertThat(outputInstanceDto.getRuleId(), is(notNullValue()));
+      assertThat(outputInstanceDto.getRuleOrder(), is(notNullValue()));
+    });
+    assertThat(dto.getEngine(), is(notNullValue()));
+  }
+
+  private void assertAllFieldsSet(final SearchHit searchHit) {
+    for (Entry searchHitField : searchHit.getSourceAsMap().entrySet()) {
+      String errorMessage = "Something went wrong during fetching of field: " + searchHitField.getKey() +
+        ". Should actually have a value!";
+      assertThat(errorMessage, searchHitField.getValue(), is(notNullValue()));
+      if (searchHitField.getValue() instanceof String) {
+        String value = (String) searchHitField.getValue();
+        assertThat(errorMessage, value.isEmpty(), is(false));
       }
     }
   }
