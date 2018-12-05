@@ -36,7 +36,6 @@ public class MyTest {
   	client = testRule.getClient();
 
     client
-        .workflowClient()
         .newDeployCommand()
         .addResourceFromClasspath("process.bpmn")
         .send()
@@ -44,7 +43,6 @@ public class MyTest {
   
     final WorkflowInstanceEvent workflowInstance =
         client
-            .workflowClient()
             .newCreateInstanceCommand()
             .bpmnProcessId("process")
             .latestVersion()
