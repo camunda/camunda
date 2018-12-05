@@ -3,11 +3,11 @@
   margin-bottom: 24px;
   display: flex;
   flex-direction: column;
-  position: relative;
 
   .Configuration {
-    align-self: flex-end;
+    right: 30px;
     list-style: none;
+    position: absolute;
   }
 
   .TargetValueComparison {
@@ -17,10 +17,10 @@
   }
 
   .TypeaheadMultipleSelection {
+    padding: 35px 10px 0 10px;
     height: 100%;
     min-width: 200px;
-    border: 1px solid #f2f3f4;
-    border-radius: 8px;
+    border-left: 1px solid #f2f3f4;
 
     .TypeaheadMultipleSelection__labeled-input {
       width: 100%;

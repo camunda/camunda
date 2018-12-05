@@ -1,17 +1,15 @@
 import React from 'react';
 import {shallow} from 'enzyme';
-import ChartConfig from './ChartConfig';
+import BarChartConfig from './BarChartConfig';
 
-const getReportByVis = visualization => ({data: {visualization, view: {property: 'frequency'}}});
-
-const lineReport = getReportByVis('line');
-const barReport = getReportByVis('bar');
-const pieReport = getReportByVis('pie');
+const barReport = {
+  combined: false,
+  data: {visualization: 'bar', view: {property: 'frequency'}}
+};
 
 const configuration = {
   showInstanceCount: false,
   color: '#1991c8',
-  pointMarkers: true,
   hideRelativeValue: false,
   hideAbsoluteValue: false,
   xLabel: '',
@@ -19,62 +17,84 @@ const configuration = {
   targetValue: {active: false}
 };
 
-it('it should display correct configuration for linechart', () => {
-  const node = shallow(<ChartConfig {...{report: lineReport, configuration}} />);
-  expect(node).toMatchSnapshot();
-});
-
 it('it should display correct configuration for barchart', () => {
-  const node = shallow(<ChartConfig {...{report: barReport, configuration}} />);
-  expect(node).toMatchSnapshot();
-});
-
-it('it should display correct configuration for piechart', () => {
-  const node = shallow(<ChartConfig {...{report: pieReport, configuration}} />);
+  const node = shallow(<BarChartConfig {...{report: barReport, configuration}} />);
   expect(node).toMatchSnapshot();
 });
 
 it('should reset to defaults when the property changes', () => {
   expect(
-    ChartConfig.onUpdate(
+    BarChartConfig.onUpdate(
       {report: {data: {view: {property: 'prev'}}}},
       {report: {data: {view: {property: 'new'}}}}
     )
   ).toEqual({
-    ...ChartConfig.defaults,
+    ...BarChartConfig.defaults,
     targetValue: null
   });
 });
 
 it('should reset to defaults when the entity changes', () => {
   expect(
-    ChartConfig.onUpdate(
+    BarChartConfig.onUpdate(
       {report: {data: {view: {entity: 'prev'}}}},
       {report: {data: {view: {entity: 'new'}}}}
     )
   ).toEqual({
-    ...ChartConfig.defaults,
+    ...BarChartConfig.defaults,
     targetValue: null
   });
 });
 
 it('should reset to defaults when visualization type changes', () => {
   expect(
-    ChartConfig.onUpdate(
+    BarChartConfig.onUpdate(
       {type: 'prev', report: {data: {view: {entity: 'test'}}}},
       {type: 'new', report: {data: {view: {entity: 'test'}}}}
     )
   ).toEqual({
-    ...ChartConfig.defaults,
+    ...BarChartConfig.defaults,
     targetValue: null
   });
 });
 
 it('should not reset to defaults when visualization type changes from line to bar or reverse', () => {
   expect(
-    ChartConfig.onUpdate(
+    BarChartConfig.onUpdate(
       {type: 'bar', report: {data: {view: {entity: 'test'}}}},
       {type: 'line', report: {data: {view: {entity: 'test'}}}}
     )
   ).toEqual(undefined);
+});
+
+it('should reset to defaults when updating combined report type', () => {
+  expect(
+    BarChartConfig.onUpdate(
+      {
+        report: {
+          combined: true
+        }
+      },
+      {
+        report: {
+          combined: true
+        },
+        type: 'bar'
+      }
+    )
+  ).toEqual(BarChartConfig.defaults);
+});
+
+it('should not display show instance count and color picker for combined reports', () => {
+  const node = shallow(
+    <BarChartConfig
+      {...{
+        report: {combined: true, result: {test: {data: {view: {property: 'frequency'}}}}},
+        configuration
+      }}
+    />
+  );
+
+  expect(node.find('ShowInstanceCount')).not.toBePresent();
+  expect(node.find('ColorPicker')).not.toBePresent();
 });

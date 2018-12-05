@@ -3,7 +3,7 @@ import {shallow} from 'enzyme';
 
 import RelativeAbsoluteSelection from './RelativeAbsoluteSelection';
 
-it('should match snapshot - RelativeAbsoluteSelection', () => {
+it('should match snapshot', () => {
   const node = shallow(<RelativeAbsoluteSelection configuration={{}} />);
 
   expect(node).toMatchSnapshot();

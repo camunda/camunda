@@ -42,6 +42,13 @@ const reportsList = [
     data: {
       configuration: {},
       reportIds: ['10d5cd05-6f7c-4f74-970c-f31e065f646b']
+    },
+    result: {
+      '10d5cd05-6f7c-4f74-970c-f31e065f646b': {
+        data: {
+          visualization: ''
+        }
+      }
     }
   },
   {

@@ -3,26 +3,24 @@ import React from 'react';
 import {Switch} from 'components';
 
 export default function RelativeAbsoluteSelection({relativeDisabled, configuration, onChange}) {
-  const disabledMarkers = configuration.pointMarkers === false;
   return (
     <div className="RelativeAbsoluteSelection">
       <div className="entry">
         <Switch
-          disabled={disabledMarkers}
-          checked={!configuration.hideAbsoluteValue && !disabledMarkers}
+          checked={!configuration.hideAbsoluteValue}
           onChange={({target: {checked}}) => onChange('hideAbsoluteValue', !checked)}
         />
         Show Absolute Value
       </div>
       <div className="entry">
         <Switch
-          disabled={relativeDisabled || disabledMarkers}
+          disabled={relativeDisabled}
           title={
             relativeDisabled
               ? 'Relative values are only possible on reports with "count frequency" view'
               : undefined
           }
-          checked={!configuration.hideRelativeValue && !relativeDisabled && !disabledMarkers}
+          checked={!configuration.hideRelativeValue && !relativeDisabled}
           onChange={({target: {checked}}) => onChange('hideRelativeValue', !checked)}
         />
         Show Relative Value

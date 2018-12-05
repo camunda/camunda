@@ -6,6 +6,7 @@ exports[`should include an error message when invalid target value is typed 1`] 
 >
   <ButtonGroup
     className="buttonGroup"
+    disabled={false}
   >
     <ForwardRef(Button)
       className=""
@@ -22,6 +23,7 @@ exports[`should include an error message when invalid target value is typed 1`] 
   </ButtonGroup>
   <ForwardRef(Input)
     className="targetInput"
+    disabled={false}
     isInvalid={true}
     onChange={[Function]}
     placeholder="Goal value"
@@ -35,6 +37,7 @@ exports[`should include an error message when invalid target value is typed 1`] 
   </ErrorMessage>
   <Select
     className="dataUnitSelect"
+    disabled={false}
     onChange={[Function]}
     value=""
   >

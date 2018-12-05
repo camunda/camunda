@@ -5,7 +5,11 @@ import ShowInstanceCount from './subComponents/ShowInstanceCount';
 
 export default function TableConfig({report, configuration, onChange}) {
   let typeSpecificComponent = null;
-  switch (report.data.view.operation) {
+  const viewType = !report.combined
+    ? report.data.view.operation
+    : Object.values(report.result)[0].data.view.operation;
+
+  switch (viewType) {
     case 'rawData':
       typeSpecificComponent = <ColumnSelection report={report} onChange={onChange} />;
       break;
@@ -20,7 +24,7 @@ export default function TableConfig({report, configuration, onChange}) {
 
   return (
     <>
-      <ShowInstanceCount configuration={configuration} onChange={onChange} />
+      {!report.combined && <ShowInstanceCount configuration={configuration} onChange={onChange} />}
       {typeSpecificComponent}
     </>
   );
@@ -34,6 +38,7 @@ TableConfig.defaults = {
 };
 
 TableConfig.onUpdate = (prevProps, props) => {
+  if (props.report.combined) return prevProps.type !== props.type && TableConfig.defaults;
   // if the view operation or report visualization changes, we need to reset to defaults
   if (
     (prevProps.report.data.view &&
@@ -43,4 +48,14 @@ TableConfig.onUpdate = (prevProps, props) => {
   ) {
     return TableConfig.defaults;
   }
+};
+
+// disable popover for duration tables since they currently have no configuration
+TableConfig.isDisabled = report => {
+  return (
+    report.combined &&
+    report.data.reportIds &&
+    report.data.reportIds.length &&
+    Object.values(report.result)[0].data.view.property === 'duration'
+  );
 };

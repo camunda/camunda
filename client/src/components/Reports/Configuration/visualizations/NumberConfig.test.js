@@ -65,3 +65,23 @@ it('should reset to defaults when visualization type changes', () => {
     )
   ).toEqual(NumberConfig.defaults(props));
 });
+
+it('should reset to defaults when updating combined report type', () => {
+  expect(
+    NumberConfig.onUpdate(
+      {
+        report: {
+          combined: true,
+          data: {view: {property: 'test'}}
+        }
+      },
+      {
+        report: {
+          combined: true,
+          data: {view: {property: 'test'}}
+        },
+        type: 'number'
+      }
+    )
+  ).toEqual(NumberConfig.defaults(props));
+});

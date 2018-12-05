@@ -175,11 +175,11 @@ it('should return red color for all bars below a target value', () => {
   expect(value).toEqual(['testColor', '#A62A31']);
 });
 
-it('should set LineAt option to 0 if the target value is not active', () => {
+it('should set LineAt option to undefined if the target value is not active', () => {
   const data = {foo: 123, bar: 5};
   const node = shallow(<Chart configuration={{}} data={data} />);
   const value = node.instance().getFormattedTargetValue({active: false, values: {}});
-  expect(value).toBe(0);
+  expect(value).toBe(undefined);
 });
 
 it('should set LineAt option to target value if it is active', () => {

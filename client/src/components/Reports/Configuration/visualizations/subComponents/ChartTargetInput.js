@@ -7,7 +7,8 @@ import {numberParser} from 'services';
 
 export default function ChartTargetInput({configuration: {targetValue}, onChange, report}) {
   const definedTarget = targetValue && targetValue.active && targetValue.values;
-  const invalidTarget = definedTarget && !numberParser.isPositiveNumber(targetValue.values.target);
+  const invalidTarget =
+    definedTarget && !numberParser.isNonNegativeNumber(targetValue.values.target);
 
   function setValues(prop, value) {
     onChange('targetValue', {
@@ -21,7 +22,7 @@ export default function ChartTargetInput({configuration: {targetValue}, onChange
 
   return (
     <div className="ChartTargetInput">
-      <ButtonGroup className="buttonGroup">
+      <ButtonGroup className="buttonGroup" disabled={!definedTarget}>
         <Button
           onClick={() => setValues('isBelow', false)}
           className={classnames({'is-active': !definedTarget || !targetValue.values.isBelow})}
@@ -42,6 +43,7 @@ export default function ChartTargetInput({configuration: {targetValue}, onChange
         value={definedTarget && !invalidTarget ? targetValue.values.target : ''}
         onChange={({target: {value}}) => setValues('target', value)}
         isInvalid={invalidTarget}
+        disabled={!definedTarget}
       />
       {invalidTarget && (
         <ErrorMessage className="InvalidTargetError">Must be a non-negative number</ErrorMessage>
@@ -51,6 +53,7 @@ export default function ChartTargetInput({configuration: {targetValue}, onChange
           className="dataUnitSelect"
           value={targetValue ? targetValue.values.dateFormat : ''}
           onChange={({target: {value}}) => setValues('dateFormat', value)}
+          disabled={!definedTarget}
         >
           <Select.Option value="millis">Milliseconds</Select.Option>
           <Select.Option value="seconds">Seconds</Select.Option>

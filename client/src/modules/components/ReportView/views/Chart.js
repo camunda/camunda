@@ -156,7 +156,7 @@ export default themed(
     };
 
     drawHorizentalLine = chart => {
-      if (chart.options.lineAt) {
+      if (chart.options.lineAt >= 0) {
         const ctx = chart.chart.ctx;
         const xAxe = chart.scales[chart.options.scales.xAxes[0].id];
         const lineAt = calculateLinePosition(chart);
@@ -294,7 +294,8 @@ export default themed(
 
     createBarOptions = (data, targetValue) => {
       const isCombined = this.props.combined;
-      const targetLine = targetValue ? this.getFormattedTargetValue(targetValue) : 0;
+      const targetLine =
+        targetValue && targetValue.active ? this.getFormattedTargetValue(targetValue) : undefined;
       return {
         ...(this.props.configuration.pointMarkers === false
           ? {elements: {point: {radius: 0}}}
@@ -348,8 +349,7 @@ export default themed(
       };
     };
 
-    getFormattedTargetValue = ({active, values}) => {
-      if (!active) return 0;
+    getFormattedTargetValue = ({values}) => {
       if (!values.dateFormat) return values.target;
       return convertToMilliseconds(values.target, values.dateFormat);
     };

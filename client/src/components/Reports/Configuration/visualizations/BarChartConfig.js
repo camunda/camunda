@@ -1,26 +1,33 @@
 import React from 'react';
 import {ColorPicker, Switch, LabeledInput} from 'components';
-import RelativeAbsoluteSelection from './RelativeAbsoluteSelection';
-import ChartTargetInput from './ChartTargetInput';
-import './SharedChartConfig.scss';
+import RelativeAbsoluteSelection from './subComponents/RelativeAbsoluteSelection';
+import ChartTargetInput from './subComponents/ChartTargetInput';
+import ShowInstanceCount from './subComponents/ShowInstanceCount';
 
-export default function SharedChartConfig({configuration, onChange, report, hideTooltipOptions}) {
+export default function BarChartConfig({configuration, onChange, report}) {
   const enabledTarget = configuration.targetValue ? configuration.targetValue.active : false;
   const defaultValues = {target: '', dateFormat: '', isBelow: false};
   const isSingleReport = !report.combined;
+
   const isFrequency = isSingleReport
     ? report.data.view.property === 'frequency'
     : Object.values(report.result)[0].data.view.property === 'frequency';
 
+  const isCombinedNumber =
+    !isSingleReport && Object.values(report.result)[0].data.visualization === 'number';
+
   return (
-    <div className="SharedChartConfig">
+    <div className="BarChartConfig">
       {isSingleReport && (
-        <fieldset className="ColorSection">
-          <legend>Select visualization color</legend>
-          <ColorPicker selectedColor={configuration.color} onChange={onChange} />
-        </fieldset>
+        <>
+          <ShowInstanceCount configuration={configuration} onChange={onChange} />
+          <fieldset className="ColorSection">
+            <legend>Select visualization color</legend>
+            <ColorPicker selectedColor={configuration.color} onChange={onChange} />
+          </fieldset>
+        </>
       )}
-      {!hideTooltipOptions && (
+      {!isCombinedNumber && (
         <fieldset className="tooltipOptions">
           <legend>Tooltips options</legend>
           <RelativeAbsoluteSelection
@@ -45,7 +52,7 @@ export default function SharedChartConfig({configuration, onChange, report, hide
           onChange={({target: {value}}) => onChange('yLabel', value)}
         />
       </fieldset>
-      <fieldset className="goalLine" disabled={!enabledTarget}>
+      <fieldset className="goalLine">
         <legend>
           <Switch
             checked={enabledTarget}
@@ -63,4 +70,32 @@ export default function SharedChartConfig({configuration, onChange, report, hide
       </fieldset>
     </div>
   );
+}
+
+BarChartConfig.defaults = {
+  showInstanceCount: false,
+  color: ColorPicker.dark.steelBlue,
+  hideRelativeValue: false,
+  hideAbsoluteValue: false,
+  xLabel: '',
+  yLabel: '',
+  targetValue: null
+};
+
+BarChartConfig.onUpdate = (prevProps, props) => {
+  if (props.report.combined) return prevProps.type !== props.type && BarChartConfig.defaults;
+  const currentView = props.report.data.view;
+  const prevView = prevProps.report.data.view;
+  if (
+    currentView.property !== prevView.property ||
+    currentView.entity !== prevView.entity ||
+    (prevProps.type !== props.type && !isBarOrLine(prevProps.type, props.type))
+  ) {
+    return BarChartConfig.defaults;
+  }
+};
+
+function isBarOrLine(currentVis, nextVis) {
+  const barOrLine = ['bar', 'line'];
+  return barOrLine.includes(currentVis) && barOrLine.includes(nextVis);
 }

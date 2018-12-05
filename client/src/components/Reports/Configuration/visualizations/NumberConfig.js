@@ -8,11 +8,13 @@ import DurationTargetInput from './subComponents/DurationTargetInput';
 import './NumberConfig.scss';
 
 export default function NumberConfig({report, configuration, onChange}) {
-  const {active} = configuration.targetValue;
+  const targetValue = configuration.targetValue
+    ? configuration.targetValue
+    : NumberConfig.defaults({report}).targetValue;
 
   const precisionSet = typeof configuration.precision === 'number';
   const countOperation = report.data.view.operation === 'count';
-  const goalSet = active;
+  const goalSet = targetValue.active;
 
   return (
     <div className="NumberConfig">
@@ -45,7 +47,7 @@ export default function NumberConfig({report, configuration, onChange}) {
             checked={goalSet}
             onChange={evt =>
               onChange('targetValue', {
-                ...configuration.targetValue,
+                ...targetValue,
                 active: evt.target.checked
               })
             }
@@ -53,28 +55,28 @@ export default function NumberConfig({report, configuration, onChange}) {
         </legend>
         {countOperation ? (
           <CountTargetInput
-            baseline={configuration.targetValue.values.baseline}
-            target={configuration.targetValue.values.target}
+            baseline={targetValue.values.baseline}
+            target={targetValue.values.target}
             disabled={!goalSet}
             onChange={(type, value) =>
               onChange('targetValue', {
-                ...configuration.targetValue,
-                values: {...configuration.targetValue.values, [type]: value}
+                ...targetValue,
+                values: {...targetValue.values, [type]: value}
               })
             }
           />
         ) : (
           <DurationTargetInput
-            baseline={configuration.targetValue.values.baseline}
-            target={configuration.targetValue.values.target}
+            baseline={targetValue.values.baseline}
+            target={targetValue.values.target}
             disabled={!goalSet}
             onChange={(type, subType, value) =>
               onChange('targetValue', {
-                ...configuration.targetValue,
+                ...targetValue,
                 values: {
-                  ...configuration.targetValue.values,
+                  ...targetValue.values,
                   [type]: {
-                    ...configuration.targetValue.values[type],
+                    ...targetValue.values[type],
                     [subType]: value
                   }
                 }
@@ -115,6 +117,7 @@ NumberConfig.defaults = ({report}) => {
 };
 
 NumberConfig.onUpdate = (prevProps, props) => {
+  if (props.report.combined) return prevProps.type !== props.type && NumberConfig.defaults(props);
   if (
     props.report.data.view.property !== prevProps.report.data.view.property ||
     prevProps.type !== props.type

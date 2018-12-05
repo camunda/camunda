@@ -112,22 +112,30 @@ export default class CombinedReportPanel extends React.Component {
 
   render() {
     const {reports, selectedReports, searchQuery} = this.state;
-    const selectedReportsList = selectedReports;
+    const {reportResult, configuration, updateReport} = this.props;
+
     const combinableReportList = reports.filter(
       report => this.search(searchQuery, report.name) && this.isCompatible(report)
     );
 
+    let configurationType;
+    if (reportResult.data.reportIds && reportResult.data.reportIds.length) {
+      configurationType = Object.values(reportResult.result)[0].data.visualization;
+      // combined number reports have bar chart visualization
+      if (configurationType === 'number') configurationType = 'bar';
+    }
+
     return (
       <div className="CombinedReportPanel">
         <Configuration
-          type="combined"
-          report={this.props.reportResult}
-          configuration={this.props.configuration}
-          onChange={this.props.updateReport}
+          type={configurationType}
+          report={reportResult}
+          configuration={configuration}
+          onChange={updateReport}
         />
         <TypeaheadMultipleSelection
           availableValues={combinableReportList}
-          selectedValues={selectedReportsList}
+          selectedValues={selectedReports}
           setFilter={evt => this.setState({searchQuery: evt.target.value})}
           toggleValue={this.update}
           label="reports"

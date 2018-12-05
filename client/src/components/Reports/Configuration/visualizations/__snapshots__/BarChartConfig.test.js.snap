@@ -1,9 +1,24 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`it should match snapshot - SharedChartConfig 1`] = `
+exports[`it should display correct configuration for barchart 1`] = `
 <div
-  className="SharedChartConfig"
+  className="BarChartConfig"
 >
+  <ShowInstanceCount
+    configuration={
+      Object {
+        "color": "#1991c8",
+        "hideAbsoluteValue": false,
+        "hideRelativeValue": false,
+        "showInstanceCount": false,
+        "targetValue": Object {
+          "active": false,
+        },
+        "xLabel": "",
+        "yLabel": "",
+      }
+    }
+  />
   <fieldset
     className="ColorSection"
   >
@@ -11,26 +26,6 @@ exports[`it should match snapshot - SharedChartConfig 1`] = `
       Select visualization color
     </legend>
     <ColorPicker
-      colors={
-        Array [
-          "#B80000",
-          "#DB3E00",
-          "#FCCB00",
-          "#008B02",
-          "#006B76",
-          "#1991c8",
-          "#004DCF",
-          "#5300EB",
-          "#EB9694",
-          "#FAD0C3",
-          "#FEF3BD",
-          "#C1E1C5",
-          "#BEDADC",
-          "#C4DEF6",
-          "#BED3F3",
-          "#D4C4FB",
-        ]
-      }
       selectedColor="#1991c8"
     />
   </fieldset>
@@ -46,7 +41,6 @@ exports[`it should match snapshot - SharedChartConfig 1`] = `
           "color": "#1991c8",
           "hideAbsoluteValue": false,
           "hideRelativeValue": false,
-          "pointMarkers": true,
           "showInstanceCount": false,
           "targetValue": Object {
             "active": false,
@@ -79,7 +73,6 @@ exports[`it should match snapshot - SharedChartConfig 1`] = `
   </fieldset>
   <fieldset
     className="goalLine"
-    disabled={true}
   >
     <legend>
       <Switch
@@ -94,7 +87,6 @@ exports[`it should match snapshot - SharedChartConfig 1`] = `
           "color": "#1991c8",
           "hideAbsoluteValue": false,
           "hideRelativeValue": false,
-          "pointMarkers": true,
           "showInstanceCount": false,
           "targetValue": Object {
             "active": false,
@@ -110,6 +102,7 @@ exports[`it should match snapshot - SharedChartConfig 1`] = `
             "view": Object {
               "property": "frequency",
             },
+            "visualization": "bar",
           },
         }
       }

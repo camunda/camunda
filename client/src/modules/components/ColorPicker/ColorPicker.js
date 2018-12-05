@@ -3,8 +3,9 @@ import classnames from 'classnames';
 
 import './ColorPicker.scss';
 
-export const ColorPicker = ({colors, onChange, className, selectedColor}) => {
+export const ColorPicker = ({onChange, className, selectedColor = ColorPicker.dark.steelBlue}) => {
   const handleChange = ({target}) => onChange('color', target.getAttribute('color'));
+  const colors = [...Object.values(ColorPicker.dark), ...Object.values(ColorPicker.light)];
 
   return (
     <div className={classnames('ColorPicker', className)}>
@@ -23,26 +24,26 @@ export const ColorPicker = ({colors, onChange, className, selectedColor}) => {
   );
 };
 
-ColorPicker.defaultProps = {
-  colors: [
-    '#B80000',
-    '#DB3E00',
-    '#FCCB00',
-    '#008B02',
-    '#006B76',
-    '#1991c8',
-    '#004DCF',
-    '#5300EB',
-    '#EB9694',
-    '#FAD0C3',
-    '#FEF3BD',
-    '#C1E1C5',
-    '#BEDADC',
-    '#C4DEF6',
-    '#BED3F3',
-    '#D4C4FB'
-  ],
-  selectedColor: '#1991c8'
+ColorPicker.dark = {
+  cherry: '#B80000',
+  red: '#DB3E00',
+  yellow: '#FCCB00',
+  green: '#008B02',
+  teal: '#006B76',
+  steelBlue: '#1991c8',
+  blue: '#004DCF',
+  purple: '#5300EB'
+};
+
+ColorPicker.light = {
+  cherry: '#EB9694',
+  red: '#FAD0C3',
+  yellow: '#FEF3BD',
+  green: '#C1E1C5',
+  teal: '#BEDADC',
+  steelBlue: '#C4DEF6',
+  blue: '#BED3F3',
+  purple: '#D4C4FB'
 };
 
 export default ColorPicker;

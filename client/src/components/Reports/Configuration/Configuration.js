@@ -36,6 +36,7 @@ export default class Configuration extends React.Component {
 
     if (Component && Component.onUpdate) {
       const updates = Component.onUpdate(prevProps, this.props);
+
       if (updates) {
         this.props.onChange({
           configuration: {
@@ -48,19 +49,19 @@ export default class Configuration extends React.Component {
   }
 
   render() {
-    const Component = visualizations[this.props.type];
-    const report = this.props.report;
-    const isEmptyCombined =
-      report.combined && (!report.data.reportIds || !report.data.reportIds.length);
+    const {report, type, configuration} = this.props;
+    const Component = visualizations[type];
+
+    const disabledComponent = Component && Component.isDisabled && Component.isDisabled(report);
 
     return (
       <li className="Configuration">
-        <Popover title={<Icon type="settings" />} disabled={!this.props.type || isEmptyCombined}>
+        <Popover title={<Icon type="settings" />} disabled={!type || disabledComponent}>
           <div className="content">
             {Component && (
               <Component
-                configuration={this.props.configuration}
-                report={this.props.report}
+                configuration={configuration}
+                report={report}
                 onChange={this.updateConfiguration}
               />
             )}

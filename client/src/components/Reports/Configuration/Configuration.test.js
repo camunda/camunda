@@ -30,9 +30,15 @@ it('should be disabled if no type is set', () => {
   expect(node.find('Popover')).toBeDisabled();
 });
 
-it('should be disabled if combined report is empty', () => {
+it('should be disabled if the report is combined with a duration view', () => {
   const node = shallow(
-    <Configuration type="combined" report={{combined: true, data: {reportIds: null}}} />
+    <Configuration
+      report={{
+        combined: true,
+        data: {reportIds: ['test']},
+        result: {test: {data: {view: {property: 'duration'}}}}
+      }}
+    />
   );
 
   expect(node.find('Popover')).toBeDisabled();
@@ -75,10 +81,15 @@ it('should call a potential component defaults method to determine defaults', ()
 it('should call the onUpdate method of the component and propagate changes', () => {
   const spy = jest.fn();
   const node = shallow(
-    <Configuration report={{}} type="typeA" onChange={spy} configuration={{}} />
+    <Configuration
+      report={{combined: false, data: {}}}
+      type="typeA"
+      onChange={spy}
+      configuration={{}}
+    />
   );
 
-  node.setProps({report: 'some new report'});
+  node.setProps({report: {combined: false}});
 
   expect(typeA.onUpdate).toHaveBeenCalled();
   expect(spy).toHaveBeenCalledWith({configuration: {prop: 'updateValue'}});

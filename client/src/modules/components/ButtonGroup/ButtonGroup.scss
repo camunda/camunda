@@ -2,6 +2,11 @@
   display: flex;
 }
 
+.ButtonGroup.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
 .ButtonGroup .Button,
 .ButtonGroup a.Button {
   flex: 1 0 auto;
