@@ -210,7 +210,7 @@ public class CatchEventOutput {
       }
 
       if (result.isLong()) {
-        return result.getLongAsBuffer();
+        return result.getLongAsString();
       }
 
       errorMessage = "the value must be either a string or a number";

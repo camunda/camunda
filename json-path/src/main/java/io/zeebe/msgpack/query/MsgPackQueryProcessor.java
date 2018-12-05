@@ -19,7 +19,6 @@ import io.zeebe.msgpack.jsonpath.JsonPathQuery;
 import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackToken;
 import io.zeebe.msgpack.spec.MsgPackType;
-import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -78,7 +77,7 @@ public class MsgPackQueryProcessor {
 
   public class QueryResult {
 
-    private final UnsafeBuffer longResultBuffer = new UnsafeBuffer(new byte[BitUtil.SIZE_OF_LONG]);
+    private final UnsafeBuffer longResultBuffer = new UnsafeBuffer();
 
     private MsgPackToken token;
 
@@ -102,11 +101,14 @@ public class MsgPackQueryProcessor {
       return token.getValueBuffer();
     }
 
-    public DirectBuffer getLongAsBuffer() {
+    public DirectBuffer getLongAsString() {
       if (!isLong()) {
         throw new RuntimeException(String.format("expected Long but found '%s'", token.getType()));
       }
-      longResultBuffer.putLong(0, token.getIntegerValue());
+
+      final long key = token.getIntegerValue();
+      final String converted = String.valueOf(key);
+      longResultBuffer.wrap(converted.getBytes());
       return longResultBuffer;
     }
   }

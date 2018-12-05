@@ -144,6 +144,24 @@ public class MessageCorrelationTest {
   }
 
   @Test
+  public void shouldCorrelateMessageIfCorrelationKeyIsANumber() {
+    // given
+    testClient.deploy(SINGLE_MESSAGE_WORKFLOW);
+
+    testClient.publishMessage("message", "123", asMsgPack("foo", "bar"));
+
+    // when
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", 123));
+
+    // then
+    final Record<WorkflowInstanceRecordValue> event =
+        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
+    assertWorkflowInstanceRecord(workflowInstanceKey, "receive-message", event);
+    assertWorkflowInstancePayload(event, "{'key':123, 'foo':'bar'}");
+  }
+
+  @Test
   public void shouldCorrelateFirstPublishedMessage() {
     // given
     testClient.deploy(SINGLE_MESSAGE_WORKFLOW);

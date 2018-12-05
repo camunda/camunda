@@ -1,6 +1,6 @@
 # Receive Tasks
 
-Receive tasks are tasks which references a message. They can be used to wait until a proper message is received.
+Receive tasks are tasks which references a message. They can be used to wait until a proper message is received. 
 
 ## Messages
 
@@ -9,7 +9,7 @@ A message can be referenced by one or more receive tasks. It holds the informati
 * the name of the message
 * the correlation key
 
-The correlation key is specified as [JSON Path](reference/json-conditions.html) expression. It is evaluated when the receive task is entered and extracts the value from the workflow instance payload. The value must be a string.
+The correlation key is specified as [JSON Path](reference/json-conditions.html) expression. It is evaluated when the receive task is entered and extracts the value from the workflow instance payload. The value must be either a string or a number.
 
 XML representation:
 
