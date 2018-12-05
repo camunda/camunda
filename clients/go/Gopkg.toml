@@ -38,10 +38,6 @@
   version = "=1.4.3"
 
 [[constraint]]
-  branch = "release-branch.go1.11"
-  name = "golang.org/x/net"
-
-[[constraint]]
   name = "google.golang.org/grpc"
   version = "=1.17.0"
 
