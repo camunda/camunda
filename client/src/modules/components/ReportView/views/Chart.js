@@ -365,7 +365,7 @@ export default themed(
       } else {
         dataMinStep = Math.max(...Object.values(data)) / 10;
       }
-      const targetLineMinStep = targetLine / 10;
+      const targetLineMinStep = targetLine ? targetLine / 10 : 0;
       const minimumStepSize = Math.max(targetLineMinStep, dataMinStep);
 
       const steps = [
