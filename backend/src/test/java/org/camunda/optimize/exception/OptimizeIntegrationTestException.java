@@ -13,4 +13,8 @@ public class OptimizeIntegrationTestException extends RuntimeException {
   public OptimizeIntegrationTestException(String message) {
     super(message);
   }
+
+  public OptimizeIntegrationTestException(String message, Exception e) {
+    super(message, e);
+  }
 }

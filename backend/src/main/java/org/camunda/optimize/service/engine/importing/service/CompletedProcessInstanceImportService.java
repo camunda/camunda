@@ -5,8 +5,8 @@ import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
-import org.camunda.optimize.service.es.job.importing.FinishedProcessInstanceElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.FinishedProcessInstanceWriter;
+import org.camunda.optimize.service.es.job.importing.CompletedProcessInstanceElasticsearchImportJob;
+import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,21 +14,21 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class FinishedProcessInstanceImportService {
+public class CompletedProcessInstanceImportService {
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   protected EngineContext engineContext;
-  private FinishedProcessInstanceWriter finishedProcessInstanceWriter;
+  private CompletedProcessInstanceWriter completedProcessInstanceWriter;
 
-  public FinishedProcessInstanceImportService(FinishedProcessInstanceWriter finishedProcessInstanceWriter,
-                                              ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-                                              EngineContext engineContext
+  public CompletedProcessInstanceImportService(CompletedProcessInstanceWriter completedProcessInstanceWriter,
+                                               ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+                                               EngineContext engineContext
                                                 ) {
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.engineContext = engineContext;
-    this.finishedProcessInstanceWriter = finishedProcessInstanceWriter;
+    this.completedProcessInstanceWriter = completedProcessInstanceWriter;
   }
 
   public void executeImport(List<HistoricProcessInstanceDto> pageOfEngineEntities) {
@@ -58,7 +58,8 @@ public class FinishedProcessInstanceImportService {
   }
 
   private ElasticsearchImportJob<ProcessInstanceDto> createElasticsearchImportJob(List<ProcessInstanceDto> processInstances) {
-    FinishedProcessInstanceElasticsearchImportJob importJob = new FinishedProcessInstanceElasticsearchImportJob(finishedProcessInstanceWriter);
+    CompletedProcessInstanceElasticsearchImportJob importJob = new CompletedProcessInstanceElasticsearchImportJob(
+      completedProcessInstanceWriter);
     importJob.setEntitiesToImport(processInstances);
     return importJob;
   }

@@ -200,7 +200,7 @@ public class VariableImportIT {
   }
 
   @Test
-  public void variablesForFinishedProcessInstancesAreFinalResult() {
+  public void variablesForCompletedProcessInstancesAreFinalResult() {
     //given
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .startEvent()

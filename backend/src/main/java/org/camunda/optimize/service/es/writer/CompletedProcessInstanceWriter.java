@@ -32,7 +32,7 @@ import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @Component
-public class FinishedProcessInstanceWriter {
+public class CompletedProcessInstanceWriter {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired
@@ -45,7 +45,7 @@ public class FinishedProcessInstanceWriter {
   private DateTimeFormatter dateTimeFormatter;
 
   public void importProcessInstances(List<ProcessInstanceDto> processInstances) throws Exception {
-    logger.debug("Writing [{}] finished process instances to elasticsearch", processInstances.size());
+    logger.debug("Writing [{}] completed process instances to elasticsearch", processInstances.size());
 
     BulkRequestBuilder processInstanceBulkRequest = esClient.prepareBulk();
 
@@ -107,7 +107,7 @@ public class FinishedProcessInstanceWriter {
     params.put(ProcessInstanceType.START_DATE, dateTimeFormatter.format(procInst.getStartDate()));
     String endDate = (procInst.getEndDate() != null) ? dateTimeFormatter.format(procInst.getEndDate()) : null;
     if (endDate == null) {
-      logger.warn("End date should not be null for finished process instances!");
+      logger.warn("End date should not be null for completed process instances!");
     }
     params.put(ProcessInstanceType.STATE, procInst.getState());
     params.put(ProcessInstanceType.END_DATE, endDate);

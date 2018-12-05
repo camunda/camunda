@@ -20,7 +20,8 @@ public class EngineConstantsUtil {
   public static final String MEMBER = "member";
 
   public static final String VARIABLE_UPDATE_ENDPOINT = "/optimize/variable-update";
-  public static final String ACTIVITY_INSTANCE_ENDPOINT = "/optimize/activity-instance/completed";
+  public static final String COMPLETED_ACTIVITY_INSTANCE_ENDPOINT = "/optimize/activity-instance/completed";
+  public static final String RUNNING_ACTIVITY_INSTANCE_ENDPOINT = "/optimize/activity-instance/running";
   public static final String COMPLETED_PROCESS_INSTANCE_ENDPOINT = "/optimize/process-instance/completed";
   public static final String RUNNING_PROCESS_INSTANCE_ENDPOINT = "/optimize/process-instance/running";
 

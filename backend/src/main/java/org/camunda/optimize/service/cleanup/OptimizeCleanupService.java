@@ -2,7 +2,7 @@ package org.camunda.optimize.service.cleanup;
 
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
-import org.camunda.optimize.service.es.writer.FinishedProcessInstanceWriter;
+import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
 import org.camunda.optimize.service.es.writer.variable.VariableWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -29,7 +29,7 @@ public class OptimizeCleanupService {
 
   private final ConfigurationService configurationService;
   private final ProcessDefinitionReader processDefinitionReader;
-  private final FinishedProcessInstanceWriter processInstanceWriter;
+  private final CompletedProcessInstanceWriter processInstanceWriter;
   private final VariableWriter variableWriter;
 
   private TaskScheduler taskScheduler;
@@ -38,7 +38,7 @@ public class OptimizeCleanupService {
   @Autowired
   public OptimizeCleanupService(final ConfigurationService configurationService,
                                 final ProcessDefinitionReader processDefinitionReader,
-                                final FinishedProcessInstanceWriter processInstanceWriter,
+                                final CompletedProcessInstanceWriter processInstanceWriter,
                                 final VariableWriter variableWriter) {
     this.configurationService = configurationService;
     this.processDefinitionReader = processDefinitionReader;

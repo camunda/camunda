@@ -3,14 +3,15 @@ package org.camunda.optimize.service.engine.importing;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
-import org.camunda.optimize.service.engine.importing.service.mediator.ActivityInstanceEngineImportMediator;
+import org.camunda.optimize.service.engine.importing.service.mediator.CompletedActivityInstanceEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.DecisionDefinitionEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.DecisionDefinitionXmlEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.DecisionInstanceEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.EngineImportMediator;
-import org.camunda.optimize.service.engine.importing.service.mediator.FinishedProcessInstanceEngineImportMediator;
+import org.camunda.optimize.service.engine.importing.service.mediator.CompletedProcessInstanceEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.ProcessDefinitionEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.ProcessDefinitionXmlEngineImportMediator;
+import org.camunda.optimize.service.engine.importing.service.mediator.RunningActivityInstanceEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.RunningProcessInstanceEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.StoreIndexesEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.VariableUpdateEngineImportMediator;
@@ -64,9 +65,11 @@ public class EngineImportSchedulerFactory implements ConfigurationReloadable {
     importIndexHandlerProvider.init(engineContext);
 
     mediators.add(
-      beanHelper.getInstance(ActivityInstanceEngineImportMediator.class, engineContext));
+      beanHelper.getInstance(CompletedActivityInstanceEngineImportMediator.class, engineContext));
     mediators.add(
-      beanHelper.getInstance(FinishedProcessInstanceEngineImportMediator.class, engineContext));
+      beanHelper.getInstance(RunningActivityInstanceEngineImportMediator.class, engineContext));
+    mediators.add(
+      beanHelper.getInstance(CompletedProcessInstanceEngineImportMediator.class, engineContext));
     mediators.add(
       beanHelper.getInstance(ProcessDefinitionEngineImportMediator.class, engineContext));
     mediators.add(

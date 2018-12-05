@@ -2,6 +2,7 @@ package org.camunda.optimize.test.it.rule;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.OptimizeRequestExecutor;
+import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
@@ -14,11 +15,13 @@ import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHa
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
 import org.camunda.optimize.service.engine.importing.index.handler.TimestampBasedImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.page.TimestampBasedImportPage;
+import org.camunda.optimize.service.engine.importing.service.RunningActivityInstanceImportService;
 import org.camunda.optimize.service.engine.importing.service.mediator.EngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.StoreIndexesEngineImportMediator;
 import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.es.writer.RunningActivityInstanceWriter;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.BeanHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -88,6 +91,17 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   }
 
+  public void importRunningActivityInstance(List<HistoricActivityInstanceEngineDto> activities) {
+    RunningActivityInstanceWriter writer = getApplicationContext().getBean(RunningActivityInstanceWriter.class);
+
+    for (EngineContext configuredEngine : getConfiguredEngines()) {
+      RunningActivityInstanceImportService service =
+        new RunningActivityInstanceImportService(writer, getElasticsearchImportJobExecutor(), configuredEngine);
+      service.executeImport(activities);
+    }
+    makeSureAllScheduledJobsAreFinished();
+  }
+
   private void resetImportBackoff() {
     for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
       scheduler
@@ -103,7 +117,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   public void storeImportIndexesToElasticsearch() {
-    for (EngineContext engineContext : getApplicationContext().getBean(EngineContextFactory.class).getConfiguredEngines()) {
+    for (EngineContext engineContext : getConfiguredEngines()) {
       StoreIndexesEngineImportMediator storeIndexesEngineImportJobFactory = (StoreIndexesEngineImportMediator)
           getApplicationContext().getBean(
               BeanHelper.getBeanName(StoreIndexesEngineImportMediator.class),
@@ -116,6 +130,10 @@ public class EmbeddedOptimizeRule extends TestWatcher {
       makeSureAllScheduledJobsAreFinished();
     }
 
+  }
+
+  private List<EngineContext> getConfiguredEngines() {
+    return getApplicationContext().getBean(EngineContextFactory.class).getConfiguredEngines();
   }
 
   private void makeSureAllScheduledJobsAreFinished() {

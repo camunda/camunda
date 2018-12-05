@@ -20,7 +20,7 @@ public class RunningProcessInstanceElasticsearchImportJob extends ElasticsearchI
     try {
       runningProcessInstanceWriter.importProcessInstances(newOptimizeEntities);
     } catch (Exception e) {
-      logger.error("error while writing unfinished process instances to elasticsearch", e);
+      logger.error("error while writing running process instances to elasticsearch", e);
     }
   }
 }

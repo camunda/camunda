@@ -148,7 +148,6 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
 
   @Test
   public void reportEvaluationForOneProcess() {
-
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
@@ -173,6 +172,26 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     Map<String, Long> flowNodeIdToExecutionFrequency = result.getResult();
     assertThat(flowNodeIdToExecutionFrequency.size(), is(3));
     assertThat(flowNodeIdToExecutionFrequency.get(TEST_ACTIVITY ), is(1L));
+  }
+
+  @Test
+  public void runningActivitiesAreConsideredAsWell() {
+    // given
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleUserTaskProcess();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
+        processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
+    );
+    MapProcessReportResultDto result = evaluateReport(reportData);
+
+    // then
+    assertThat(result.getProcessInstanceCount(), is(1L));
+    Map<String, Long> mapResult = result.getResult();
+    assertThat(mapResult.get("startEvent"), is(1L));
+    assertThat(mapResult.get("userTask"), is(1L));
   }
 
   @Test
@@ -414,6 +433,15 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
         .serviceTask(activityId)
         .camundaExpression("${true}")
       .endEvent("end")
+      .done();
+    return engineRule.deployAndStartProcess(processModel);
+  }
+
+  private ProcessInstanceEngineDto deployAndStartSimpleUserTaskProcess() {
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
+      .startEvent("startEvent")
+      .userTask("userTask")
+      .endEvent()
       .done();
     return engineRule.deployAndStartProcess(processModel);
   }

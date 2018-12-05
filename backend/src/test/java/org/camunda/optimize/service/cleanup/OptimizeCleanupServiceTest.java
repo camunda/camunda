@@ -3,7 +3,7 @@ package org.camunda.optimize.service.cleanup;
 import org.apache.commons.collections.ListUtils;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
-import org.camunda.optimize.service.es.writer.FinishedProcessInstanceWriter;
+import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
 import org.camunda.optimize.service.es.writer.variable.VariableWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.CleanupMode;
@@ -45,7 +45,7 @@ public class  OptimizeCleanupServiceTest {
   @Mock
   private ProcessDefinitionReader processDefinitionReader;
   @Mock
-  private FinishedProcessInstanceWriter processInstanceWriter;
+  private CompletedProcessInstanceWriter processInstanceWriter;
   @Mock
   private VariableWriter variableWriter;
 

@@ -26,6 +26,7 @@ import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
+import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
@@ -322,6 +323,18 @@ public class EngineIntegrationRule extends TestWatcher {
     return processInstanceDto;
   }
 
+  public List<HistoricActivityInstanceEngineDto> getHistoricActivityInstances() {
+    CloseableHttpClient client = getHttpClient();
+    HttpRequestBase get = new HttpGet(getHistoricGetActivityInstanceUri());
+    try (CloseableHttpResponse response = client.execute(get)) {
+      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+      return objectMapper.readValue(responseString, new TypeReference<List<HistoricActivityInstanceEngineDto>>() {
+      });
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException("Could not fetch historic activity instances", e);
+    }
+  }
+
   public void deleteHistoricProcessInstance(String processInstanceId) {
     CloseableHttpClient client = getHttpClient();
     HttpDelete delete = new HttpDelete(getHistoricGetProcessInstanceUri(processInstanceId));
@@ -476,6 +489,10 @@ public class EngineIntegrationRule extends TestWatcher {
 
   private String getHistoricGetProcessInstanceUri(String processInstanceId) {
     return getEngineUrl() + "/history/process-instance/" + processInstanceId;
+  }
+
+  private String getHistoricGetActivityInstanceUri() {
+    return getEngineUrl() + "/history/activity-instance/";
   }
 
   private String getGetProcessInstanceUri(String processInstanceId) {

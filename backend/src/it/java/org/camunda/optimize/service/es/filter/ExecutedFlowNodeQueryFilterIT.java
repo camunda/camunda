@@ -42,6 +42,7 @@ public class ExecutedFlowNodeQueryFilterIT {
 
   private final static String USER_TASK_ACTIVITY_ID = "User-Task";
   private final static String USER_TASK_ACTIVITY_ID_2 = "User-Task2";
+  private final static String END_EVENT_ACTIVITY_ID = "endEvent";
 
   private RawDataProcessReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition, List<ProcessFilterDto> filter) {
     ProcessReportDataDto reportData =
@@ -56,8 +57,8 @@ public class ExecutedFlowNodeQueryFilterIT {
     return response.readEntity(RawDataProcessReportResultDto.class);
   }
 
-  private Response evaluateReportAndReturnResponse(String processDefinitionKey, ExecutedFlowNodeFilterDto filterDto) {
-    ProcessReportDataDto reportData = createReportDataViewRawAsTable(processDefinitionKey, "1");
+  private Response evaluateReportAndReturnResponse(ExecutedFlowNodeFilterDto filterDto) {
+    ProcessReportDataDto reportData = createReportDataViewRawAsTable(ExecutedFlowNodeQueryFilterIT.TEST_DEFINITION, "1");
     List<ProcessFilterDto> filter = new ArrayList<>();
     filter.add(filterDto);
     reportData.setFilter(filter);
@@ -83,7 +84,7 @@ public class ExecutedFlowNodeQueryFilterIT {
 
     // when
     List<ExecutedFlowNodeFilterDto> executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
-          .id(USER_TASK_ACTIVITY_ID)
+          .id(END_EVENT_ACTIVITY_ID)
           .inOperator()
           .build();
 
@@ -104,7 +105,7 @@ public class ExecutedFlowNodeQueryFilterIT {
 
     // when
     List<ExecutedFlowNodeFilterDto> executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
-          .id(USER_TASK_ACTIVITY_ID)
+          .id(END_EVENT_ACTIVITY_ID)
           .notInOperator()
           .build();
 
@@ -130,7 +131,7 @@ public class ExecutedFlowNodeQueryFilterIT {
 
     // when
     List<ExecutedFlowNodeFilterDto> executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
-          .id(USER_TASK_ACTIVITY_ID)
+          .id(END_EVENT_ACTIVITY_ID)
           .inOperator()
           .build();
     RawDataProcessReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
@@ -156,7 +157,7 @@ public class ExecutedFlowNodeQueryFilterIT {
 
     // when
     List<ExecutedFlowNodeFilterDto> executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
-          .id(USER_TASK_ACTIVITY_ID)
+          .id(END_EVENT_ACTIVITY_ID)
           .notInOperator()
           .build();
     RawDataProcessReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
@@ -183,9 +184,9 @@ public class ExecutedFlowNodeQueryFilterIT {
 
     // when
     List<ExecutedFlowNodeFilterDto> executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
-          .id(USER_TASK_ACTIVITY_ID)
-          .and()
           .id(USER_TASK_ACTIVITY_ID_2)
+          .and()
+          .id(END_EVENT_ACTIVITY_ID)
           .build();
     RawDataProcessReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
@@ -212,10 +213,10 @@ public class ExecutedFlowNodeQueryFilterIT {
 
     // when
     List<ExecutedFlowNodeFilterDto> executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
-          .id(USER_TASK_ACTIVITY_ID)
+          .id(USER_TASK_ACTIVITY_ID_2)
           .inOperator()
           .and()
-          .id(USER_TASK_ACTIVITY_ID_2)
+          .id(END_EVENT_ACTIVITY_ID)
           .notInOperator()
           .build();
     RawDataProcessReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
@@ -225,10 +226,10 @@ public class ExecutedFlowNodeQueryFilterIT {
 
     // when
     executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
-          .id(USER_TASK_ACTIVITY_ID)
+          .id(USER_TASK_ACTIVITY_ID_2)
           .notInOperator()
           .and()
-          .id(USER_TASK_ACTIVITY_ID_2)
+          .id(END_EVENT_ACTIVITY_ID)
           .notInOperator()
           .build();
     result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
@@ -261,7 +262,7 @@ public class ExecutedFlowNodeQueryFilterIT {
 
     // when
     List<ExecutedFlowNodeFilterDto> executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
-          .ids(USER_TASK_ACTIVITY_ID, USER_TASK_ACTIVITY_ID_2)
+          .ids(USER_TASK_ACTIVITY_ID_2, END_EVENT_ACTIVITY_ID)
           .inOperator()
           .build();
     RawDataProcessReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
@@ -302,7 +303,7 @@ public class ExecutedFlowNodeQueryFilterIT {
     RawDataProcessReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
-    assertResults(result, 3);
+    assertResults(result, 1);
   }
 
   @Test
@@ -341,7 +342,7 @@ public class ExecutedFlowNodeQueryFilterIT {
             .ids("UserTask-PathA", "UserTask-PathB")
             .inOperator()
           .and()
-            .id("FinalUserTask")
+            .id(END_EVENT_ACTIVITY_ID)
           .build();
     RawDataProcessReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
@@ -397,7 +398,7 @@ public class ExecutedFlowNodeQueryFilterIT {
           .userTask("UserTask-PathA")
           .exclusiveGateway("mergeExclusiveGateway")
           .userTask("FinalUserTask")
-          .endEvent()
+          .endEvent(END_EVENT_ACTIVITY_ID)
         .moveToLastGateway()
         .moveToLastGateway()
           .condition("Take path B", "${!takePathA}")
@@ -423,7 +424,7 @@ public class ExecutedFlowNodeQueryFilterIT {
 
     // when
     List<ExecutedFlowNodeFilterDto> executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
-          .id(USER_TASK_ACTIVITY_ID)
+          .id(END_EVENT_ACTIVITY_ID)
           .build();
     RawDataProcessReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
@@ -440,7 +441,7 @@ public class ExecutedFlowNodeQueryFilterIT {
     executedFlowNodeFilter.setData(flowNodeFilter);
 
     // when
-    Response response = evaluateReportAndReturnResponse(TEST_DEFINITION, executedFlowNodeFilter);
+    Response response = evaluateReportAndReturnResponse(executedFlowNodeFilter);
 
     // then
     assertThat(response.getStatus(),is(500));
@@ -456,7 +457,7 @@ public class ExecutedFlowNodeQueryFilterIT {
 
 
     // when
-    Response response = evaluateReportAndReturnResponse(TEST_DEFINITION, executedFlowNodeFilter);
+    Response response = evaluateReportAndReturnResponse(executedFlowNodeFilter);
 
     // then
     assertThat(response.getStatus(),is(500));
@@ -472,7 +473,7 @@ public class ExecutedFlowNodeQueryFilterIT {
         .startEvent()
           .userTask(USER_TASK_ACTIVITY_ID)
           .userTask(USER_TASK_ACTIVITY_ID_2)
-        .endEvent()
+        .endEvent(END_EVENT_ACTIVITY_ID)
       .done();
     return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
@@ -485,7 +486,7 @@ public class ExecutedFlowNodeQueryFilterIT {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("ASimpleUserTaskProcess" + System.currentTimeMillis())
         .startEvent()
           .userTask(userTaskActivityId)
-        .endEvent()
+        .endEvent(END_EVENT_ACTIVITY_ID)
       .done();
     return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }

@@ -8,17 +8,15 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ActivityImportIndexHandler extends TimestampBasedImportIndexHandler {
+public class CompletedProcessInstanceImportIndexHandler extends TimestampBasedImportIndexHandler {
 
-  public static final String ACTIVITY_IMPORT_INDEX_DOC_ID = "activityImportIndex";
-
-  public ActivityImportIndexHandler(EngineContext engineContext) {
+  public CompletedProcessInstanceImportIndexHandler(EngineContext engineContext) {
     super(engineContext);
   }
 
   @Override
   protected String getElasticsearchDocID() {
-    return ACTIVITY_IMPORT_INDEX_DOC_ID;
+    return configurationService.getProcessInstanceType();
   }
 
 }

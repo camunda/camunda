@@ -4,14 +4,13 @@ import org.camunda.optimize.dto.optimize.OptimizeDto;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
-import java.util.Date;
 
 public class SimpleEventDto implements Serializable,OptimizeDto {
 
   protected String id;
   protected String activityId;
   protected String activityType;
-  protected long durationInMs;
+  protected Long durationInMs;
   protected OffsetDateTime startDate;
   protected OffsetDateTime endDate;
 
@@ -39,11 +38,11 @@ public class SimpleEventDto implements Serializable,OptimizeDto {
     this.activityType = activityType;
   }
 
-  public long getDurationInMs() {
+  public Long getDurationInMs() {
     return durationInMs;
   }
 
-  public void setDurationInMs(long durationInMs) {
+  public void setDurationInMs(Long durationInMs) {
     this.durationInMs = durationInMs;
   }
 

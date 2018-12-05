@@ -5,33 +5,33 @@ import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
-import org.camunda.optimize.service.es.job.importing.EventElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.EventsWriter;
+import org.camunda.optimize.service.es.job.importing.RunningActivityInstanceElasticsearchImportJob;
+import org.camunda.optimize.service.es.writer.RunningActivityInstanceWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ActivityInstanceImportService {
+public class RunningActivityInstanceImportService {
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   protected EngineContext engineContext;
-  private EventsWriter eventsWriter;
+  private RunningActivityInstanceWriter runningActivityInstanceWriter;
 
-  public ActivityInstanceImportService(EventsWriter eventsWriter,
-                                       ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-                                       EngineContext engineContext
+  public RunningActivityInstanceImportService(RunningActivityInstanceWriter runningActivityInstanceWriter,
+                                              ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+                                              EngineContext engineContext
   ) {
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.engineContext = engineContext;
-    this.eventsWriter = eventsWriter;
+    this.runningActivityInstanceWriter = runningActivityInstanceWriter;
   }
 
   public void executeImport(List<HistoricActivityInstanceEngineDto> pageOfEngineEntities) {
-    logger.trace("Importing entities from engine...");
+    logger.trace("Importing running activity instances from engine...");
 
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
@@ -57,9 +57,10 @@ public class ActivityInstanceImportService {
   }
 
   private ElasticsearchImportJob<FlowNodeEventDto> createElasticsearchImportJob(List<FlowNodeEventDto> events) {
-    EventElasticsearchImportJob eventImportJob = new EventElasticsearchImportJob(eventsWriter);
-    eventImportJob.setEntitiesToImport(events);
-    return eventImportJob;
+    RunningActivityInstanceElasticsearchImportJob activityImportJob =
+      new RunningActivityInstanceElasticsearchImportJob(runningActivityInstanceWriter);
+    activityImportJob.setEntitiesToImport(events);
+    return activityImportJob;
   }
 
   private FlowNodeEventDto mapEngineEntityToOptimizeEntity(HistoricActivityInstanceEngineDto engineEntity) {
@@ -72,9 +73,9 @@ public class ActivityInstanceImportService {
     flowNodeEventDto.setProcessDefinitionId(engineEntity.getProcessDefinitionId());
     flowNodeEventDto.setProcessInstanceId(engineEntity.getProcessInstanceId());
     flowNodeEventDto.setStartDate(engineEntity.getStartTime());
-    flowNodeEventDto.setEndDate(engineEntity.getEndTime());
+    flowNodeEventDto.setEndDate(null);
     flowNodeEventDto.setActivityType(engineEntity.getActivityType());
-    flowNodeEventDto.setDurationInMs(engineEntity.getDurationInMillis());
+    flowNodeEventDto.setDurationInMs(null);
     flowNodeEventDto.setEngineAlias(engineContext.getEngineAlias());
     return flowNodeEventDto;
   }

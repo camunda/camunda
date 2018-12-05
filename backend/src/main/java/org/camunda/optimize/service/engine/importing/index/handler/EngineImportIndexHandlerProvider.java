@@ -1,13 +1,14 @@
 package org.camunda.optimize.service.engine.importing.index.handler;
 
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.engine.importing.index.handler.impl.ActivityImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.index.handler.impl.CompletedActivityInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.DecisionDefinitionImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.DecisionDefinitionXmlImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.DecisionInstanceImportIndexHandler;
-import org.camunda.optimize.service.engine.importing.index.handler.impl.FinishedProcessInstanceImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.index.handler.impl.CompletedProcessInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessDefinitionImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessDefinitionXmlImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.index.handler.impl.RunningActivityInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.RunningProcessInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.VariableUpdateInstanceImportIndexHandler;
 import org.camunda.optimize.service.util.BeanHelper;
@@ -51,11 +52,12 @@ public class EngineImportIndexHandlerProvider {
     scrollBasedHandlers.add(getProcessDefinitionXmlImportIndexHandler());
     scrollBasedHandlers.add(getDecisionDefinitionXmlImportIndexHandler());
 
-    timestampBasedHandlers.add(getUnfinishedProcessInstanceImportIndexHandler());
-    timestampBasedHandlers.add(getActivityImportIndexHandler());
-    timestampBasedHandlers.add(getFinishedProcessInstanceImportIndexHandler());
+    timestampBasedHandlers.add(getRunningProcessInstanceImportIndexHandler());
+    timestampBasedHandlers.add(getCompletedActivityImportIndexHandler());
+    timestampBasedHandlers.add(getCompletedProcessInstanceImportIndexHandler());
     timestampBasedHandlers.add(getVariableUpdateInstanceImportIndexHandler());
     timestampBasedHandlers.add(getDecisionInstanceImportIndexHandler());
+    timestampBasedHandlers.add(getRunningActivityImportIndexHandler());
 
     allEntitiesBasedHandlers.add(getProcessDefinitionImportIndexHandler());
     allEntitiesBasedHandlers.add(getDecisionDefinitionImportIndexHandler());
@@ -110,12 +112,16 @@ public class EngineImportIndexHandlerProvider {
     return allHandlers.get(handlerClass.getSimpleName()) != null;
   }
 
-  public ActivityImportIndexHandler getActivityImportIndexHandler() {
-    return getImportIndexHandlerInstance(engineContext, ActivityImportIndexHandler.class);
+  public CompletedActivityInstanceImportIndexHandler getCompletedActivityImportIndexHandler() {
+    return getImportIndexHandlerInstance(engineContext, CompletedActivityInstanceImportIndexHandler.class);
   }
 
-  public FinishedProcessInstanceImportIndexHandler getFinishedProcessInstanceImportIndexHandler() {
-    return getImportIndexHandlerInstance(engineContext, FinishedProcessInstanceImportIndexHandler.class);
+  public RunningActivityInstanceImportIndexHandler getRunningActivityImportIndexHandler() {
+    return getImportIndexHandlerInstance(engineContext, RunningActivityInstanceImportIndexHandler.class);
+  }
+
+  public CompletedProcessInstanceImportIndexHandler getCompletedProcessInstanceImportIndexHandler() {
+    return getImportIndexHandlerInstance(engineContext, CompletedProcessInstanceImportIndexHandler.class);
   }
 
   public ProcessDefinitionImportIndexHandler getProcessDefinitionImportIndexHandler() {
@@ -126,7 +132,7 @@ public class EngineImportIndexHandlerProvider {
     return getImportIndexHandlerInstance(engineContext, ProcessDefinitionXmlImportIndexHandler.class);
   }
 
-  public RunningProcessInstanceImportIndexHandler getUnfinishedProcessInstanceImportIndexHandler() {
+  public RunningProcessInstanceImportIndexHandler getRunningProcessInstanceImportIndexHandler() {
     return getImportIndexHandlerInstance(engineContext, RunningProcessInstanceImportIndexHandler.class);
   }
 

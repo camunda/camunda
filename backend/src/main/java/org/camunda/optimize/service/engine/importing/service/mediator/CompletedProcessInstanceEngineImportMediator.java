@@ -3,11 +3,11 @@ package org.camunda.optimize.service.engine.importing.service.mediator;
 import org.apache.commons.collections.ListUtils;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.engine.importing.fetcher.instance.FinishedProcessInstanceFetcher;
-import org.camunda.optimize.service.engine.importing.index.handler.impl.FinishedProcessInstanceImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.fetcher.instance.CompletedProcessInstanceFetcher;
+import org.camunda.optimize.service.engine.importing.index.handler.impl.CompletedProcessInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.page.TimestampBasedImportPage;
-import org.camunda.optimize.service.engine.importing.service.FinishedProcessInstanceImportService;
-import org.camunda.optimize.service.es.writer.FinishedProcessInstanceWriter;
+import org.camunda.optimize.service.engine.importing.service.CompletedProcessInstanceImportService;
+import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -19,35 +19,35 @@ import java.util.List;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class FinishedProcessInstanceEngineImportMediator
-  extends BackoffImportMediator<FinishedProcessInstanceImportIndexHandler> {
+public class CompletedProcessInstanceEngineImportMediator
+  extends BackoffImportMediator<CompletedProcessInstanceImportIndexHandler> {
 
-  private FinishedProcessInstanceFetcher engineEntityFetcher;
-  private FinishedProcessInstanceImportService finishedProcessInstanceImportService;
+  private CompletedProcessInstanceFetcher engineEntityFetcher;
+  private CompletedProcessInstanceImportService completedProcessInstanceImportService;
   @Autowired
-  private FinishedProcessInstanceWriter finishedProcessInstanceWriter;
+  private CompletedProcessInstanceWriter completedProcessInstanceWriter;
 
-  public FinishedProcessInstanceEngineImportMediator(EngineContext engineContext) {
+  public CompletedProcessInstanceEngineImportMediator(EngineContext engineContext) {
     super(engineContext);
   }
 
   @PostConstruct
   public void init() {
-    importIndexHandler = provider.getFinishedProcessInstanceImportIndexHandler(engineContext.getEngineAlias());
-    engineEntityFetcher = beanHelper.getInstance(FinishedProcessInstanceFetcher.class, engineContext);
-    finishedProcessInstanceImportService = new FinishedProcessInstanceImportService(
-      finishedProcessInstanceWriter, elasticsearchImportJobExecutor, engineContext
+    importIndexHandler = provider.getCompletedProcessInstanceImportIndexHandler(engineContext.getEngineAlias());
+    engineEntityFetcher = beanHelper.getInstance(CompletedProcessInstanceFetcher.class, engineContext);
+    completedProcessInstanceImportService = new CompletedProcessInstanceImportService(
+      completedProcessInstanceWriter, elasticsearchImportJobExecutor, engineContext
     );
   }
 
   @Override
   public boolean importNextEnginePage() {
     final List<HistoricProcessInstanceDto> entitiesOfLastTimestamp = engineEntityFetcher
-      .fetchHistoricFinishedProcessInstances(importIndexHandler.getTimestampOfLastEntity());
+      .fetchCompletedProcessInstances(importIndexHandler.getTimestampOfLastEntity());
 
     final TimestampBasedImportPage page = importIndexHandler.getNextPage();
     final List<HistoricProcessInstanceDto> nextPageEntities = engineEntityFetcher
-      .fetchHistoricFinishedProcessInstances(page);
+      .fetchCompletedProcessInstances(page);
 
     if (!nextPageEntities.isEmpty()) {
       OffsetDateTime timestamp = nextPageEntities.get(nextPageEntities.size() - 1).getEndTime();
@@ -56,7 +56,7 @@ public class FinishedProcessInstanceEngineImportMediator
 
     if (!entitiesOfLastTimestamp.isEmpty() || !nextPageEntities.isEmpty()) {
       final List<HistoricProcessInstanceDto> allEntities = ListUtils.union(entitiesOfLastTimestamp, nextPageEntities);
-      finishedProcessInstanceImportService.executeImport(allEntities);
+      completedProcessInstanceImportService.executeImport(allEntities);
     }
 
     return nextPageEntities.size() >= configurationService.getEngineImportProcessInstanceMaxPageSize();

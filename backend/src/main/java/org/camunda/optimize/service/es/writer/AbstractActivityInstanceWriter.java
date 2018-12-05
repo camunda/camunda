@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.SimpleEventDto;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -23,11 +24,12 @@ import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 
 
 @Component
-public class EventsWriter {
-  private final Logger logger = LoggerFactory.getLogger(EventsWriter.class);
+public abstract class AbstractActivityInstanceWriter {
+  protected final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired
   private Client esclient;
@@ -36,8 +38,8 @@ public class EventsWriter {
   @Autowired
   private ObjectMapper objectMapper;
 
-  public void importEvents(List<FlowNodeEventDto> events) throws Exception {
-    logger.debug("Writing [{}] events to elasticsearch", events.size());
+  public void importActivityInstances(List<FlowNodeEventDto> events) throws Exception {
+    logger.debug("Writing [{}] activity instances to elasticsearch", events.size());
 
     BulkRequestBuilder addEventToProcessInstanceBulkRequest = esclient.prepareBulk();
     Map<String, List<FlowNodeEventDto>> processInstanceToEvents = new HashMap<>();
@@ -49,26 +51,35 @@ public class EventsWriter {
     }
 
     for (Map.Entry<String, List<FlowNodeEventDto>> entry : processInstanceToEvents.entrySet()) {
-        addEventsToProcessInstanceRequest(addEventToProcessInstanceBulkRequest, entry.getValue(), entry.getKey());
+      addActivityInstancesToProcessInstanceRequest(
+        addEventToProcessInstanceBulkRequest,
+        entry.getValue(),
+        entry.getKey()
+      );
     }
+
     BulkResponse response = addEventToProcessInstanceBulkRequest.get();
     if (response.hasFailures()) {
-      logger.warn("There were failures while writing events with message: {}", response.buildFailureMessage());
+      String errorMessage = String.format(
+        "There were failures while writing activity instance with message: %s",
+        response.buildFailureMessage()
+      );
+      throw new OptimizeRuntimeException(errorMessage);
     }
   }
 
-  private void addEventsToProcessInstanceRequest(
-    BulkRequestBuilder addEventToProcessInstanceBulkRequest,
-    List<FlowNodeEventDto> processEvents, String processInstanceId) throws IOException {
+  private void addActivityInstancesToProcessInstanceRequest(
+      BulkRequestBuilder addEventToProcessInstanceBulkRequest,
+      List<FlowNodeEventDto> processEvents, String processInstanceId) throws IOException {
 
     List<SimpleEventDto> simpleEvents = getSimpleEventDtos(processEvents);
     Map<String, Object> params = new HashMap<>();
     // see https://discuss.elastic.co/t/how-to-update-nested-objects-in-elasticsearch-2-2-script-via-java-api/43135
     List jsonMap = objectMapper.readValue(
-        objectMapper.writeValueAsString(simpleEvents),
-        List.class
+      objectMapper.writeValueAsString(simpleEvents),
+      List.class
     );
-    params.put("events", jsonMap);
+    params.put(EVENTS, jsonMap);
 
     Script updateScript = new Script(
       ScriptType.INLINE,
@@ -98,14 +109,7 @@ public class EventsWriter {
     );
   }
 
-  private String createInlineUpdateScript() {
-    String builder =
-      "for (def newEvent : params.events) {" +
-        "ctx._source.events.removeIf(item -> item.id.equals(newEvent.id)) ;" +
-      "}" +
-      "ctx._source.events.addAll(params.events)";
-    return builder;
-  }
+  protected abstract String createInlineUpdateScript();
 
   private FlowNodeEventDto getFirst(List<FlowNodeEventDto> processEvents) {
     return processEvents.get(0);

@@ -14,39 +14,39 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ACTIVITY_INSTANCE_ENDPOINT;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.FINISHED_AFTER;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.FINISHED_AT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.MAX_RESULTS_TO_RETURN;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RUNNING_ACTIVITY_INSTANCE_ENDPOINT;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.STARTED_AFTER;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.STARTED_AT;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ActivityInstanceFetcher
+public class RunningActivityInstanceFetcher
   extends RetryBackoffEngineEntityFetcher<HistoricActivityInstanceEngineDto> {
 
   @Autowired
   private DateTimeFormatter dateTimeFormatter;
 
-  public ActivityInstanceFetcher(EngineContext engineContext) {
+  public RunningActivityInstanceFetcher(EngineContext engineContext) {
     super(engineContext);
   }
 
-  public List<HistoricActivityInstanceEngineDto> fetchHistoricActivityInstances(TimestampBasedImportPage page) {
-    return fetchHistoricActivityInstances(
+  public List<HistoricActivityInstanceEngineDto> fetchRunningActivityInstances(TimestampBasedImportPage page) {
+    return fetchRunningActivityInstances(
       page.getTimestampOfLastEntity(),
       configurationService.getEngineImportActivityInstanceMaxPageSize()
     );
   }
 
-  private List<HistoricActivityInstanceEngineDto> fetchHistoricActivityInstances(OffsetDateTime timeStamp,
-                                                                                 long pageSize) {
+  private List<HistoricActivityInstanceEngineDto> fetchRunningActivityInstances(OffsetDateTime timeStamp,
+                                                                                long pageSize) {
     logger.debug("Fetching historic activity instances ...");
     long requestStart = System.currentTimeMillis();
     List<HistoricActivityInstanceEngineDto> entries =
-      fetchWithRetry(() -> performHistoricActivityInstanceRequest(timeStamp, pageSize));
+      fetchWithRetry(() -> performRunningActivityInstanceRequest(timeStamp, pageSize));
     long requestEnd = System.currentTimeMillis();
     logger.debug(
-      "Fetched [{}] historic activity instances which ended after set timestamp with page size [{}] within [{}] ms",
+      "Fetched [{}] running activity instances which started after set timestamp with page size [{}] within [{}] ms",
       entries.size(),
       pageSize,
       requestEnd - requestStart
@@ -55,11 +55,11 @@ public class ActivityInstanceFetcher
     return entries;
   }
 
-  private List<HistoricActivityInstanceEngineDto> performHistoricActivityInstanceRequest(OffsetDateTime timeStamp, long pageSize) {
+  private List<HistoricActivityInstanceEngineDto> performRunningActivityInstanceRequest(OffsetDateTime timeStamp, long pageSize) {
     return getEngineClient()
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-      .path(ACTIVITY_INSTANCE_ENDPOINT)
-      .queryParam(FINISHED_AFTER, dateTimeFormatter.format(timeStamp))
+      .path(RUNNING_ACTIVITY_INSTANCE_ENDPOINT)
+      .queryParam(STARTED_AFTER, dateTimeFormatter.format(timeStamp))
       .queryParam(MAX_RESULTS_TO_RETURN, pageSize)
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
@@ -67,26 +67,26 @@ public class ActivityInstanceFetcher
       });
   }
 
-  public List<HistoricActivityInstanceEngineDto> fetchHistoricActivityInstancesForTimestamp(
-    OffsetDateTime endTimeOfLastInstance) {
-    logger.debug("Fetching historic activity instances ...");
+  public List<HistoricActivityInstanceEngineDto> fetchRunningActivityInstancesForTimestamp(
+    OffsetDateTime startTimeOfLastInstance) {
+    logger.debug("Fetching running activity instances ...");
     long requestStart = System.currentTimeMillis();
     List<HistoricActivityInstanceEngineDto> secondEntries =
-      fetchWithRetry(() -> performHistoricActivityInstanceRequest(endTimeOfLastInstance));
+      fetchWithRetry(() -> performRunningActivityInstanceRequest(startTimeOfLastInstance));
     long requestEnd = System.currentTimeMillis();
     logger.debug(
-      "Fetched [{}] historic activity instances for set end time within [{}] ms",
+      "Fetched [{}] running activity instances for set end time within [{}] ms",
       secondEntries.size(),
       requestEnd - requestStart
     );
     return secondEntries;
   }
 
-  private List<HistoricActivityInstanceEngineDto> performHistoricActivityInstanceRequest(OffsetDateTime endTimeOfLastInstance) {
+  private List<HistoricActivityInstanceEngineDto> performRunningActivityInstanceRequest(OffsetDateTime startTimeOfLastInstance) {
     return getEngineClient()
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-      .path(ACTIVITY_INSTANCE_ENDPOINT)
-      .queryParam(FINISHED_AT, dateTimeFormatter.format(endTimeOfLastInstance))
+      .path(RUNNING_ACTIVITY_INSTANCE_ENDPOINT)
+      .queryParam(STARTED_AT, dateTimeFormatter.format(startTimeOfLastInstance))
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
       .get(new GenericType<List<HistoricActivityInstanceEngineDto>>() {

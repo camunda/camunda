@@ -38,7 +38,7 @@ public class RunningProcessInstanceWriter {
   private DateTimeFormatter dateTimeFormatter;
 
   public void importProcessInstances(List<ProcessInstanceDto> processInstances) throws Exception {
-    logger.debug("Writing [{}] unfinished process instances to elasticsearch", processInstances.size());
+    logger.debug("Writing [{}] running process instances to elasticsearch", processInstances.size());
 
     BulkRequestBuilder processInstanceBulkRequest = esclient.prepareBulk();
 
@@ -47,7 +47,7 @@ public class RunningProcessInstanceWriter {
     }
     BulkResponse response = processInstanceBulkRequest.get();
     if (response.hasFailures()) {
-      logger.warn("There were failures while writing process instances with message: {}",
+      logger.warn("There were failures while writing running process instances with message: {}",
         response.buildFailureMessage()
       );
     }

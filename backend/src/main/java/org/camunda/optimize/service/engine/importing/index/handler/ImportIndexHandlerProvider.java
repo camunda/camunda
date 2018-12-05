@@ -1,13 +1,14 @@
 package org.camunda.optimize.service.engine.importing.index.handler;
 
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.engine.importing.index.handler.impl.ActivityImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.index.handler.impl.CompletedActivityInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.DecisionDefinitionImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.DecisionDefinitionXmlImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.DecisionInstanceImportIndexHandler;
-import org.camunda.optimize.service.engine.importing.index.handler.impl.FinishedProcessInstanceImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.index.handler.impl.CompletedProcessInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessDefinitionImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessDefinitionXmlImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.index.handler.impl.RunningActivityInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.RunningProcessInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.VariableUpdateInstanceImportIndexHandler;
 import org.camunda.optimize.service.util.BeanHelper;
@@ -66,29 +67,38 @@ public class ImportIndexHandlerProvider {
     return result;
   }
 
-  public FinishedProcessInstanceImportIndexHandler getFinishedProcessInstanceImportIndexHandler(String engineAlias) {
-    FinishedProcessInstanceImportIndexHandler result = null;
+  public CompletedProcessInstanceImportIndexHandler getCompletedProcessInstanceImportIndexHandler(String engineAlias) {
+    CompletedProcessInstanceImportIndexHandler result = null;
     EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(engineAlias);
     if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getFinishedProcessInstanceImportIndexHandler();
+      result = engineImportIndexHandlerProvider.getCompletedProcessInstanceImportIndexHandler();
     }
     return result;
   }
 
-  public ActivityImportIndexHandler getActivityImportIndexHandler(String engineAlias) {
-    ActivityImportIndexHandler result = null;
+  public CompletedActivityInstanceImportIndexHandler getCompletedActivityInstanceImportIndexHandler(String engineAlias) {
+    CompletedActivityInstanceImportIndexHandler result = null;
     EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(engineAlias);
     if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getActivityImportIndexHandler();
+      result = engineImportIndexHandlerProvider.getCompletedActivityImportIndexHandler();
     }
     return result;
   }
 
-  public RunningProcessInstanceImportIndexHandler getUnfinishedProcessInstanceImportIndexHandler(String engineAlias) {
+  public RunningActivityInstanceImportIndexHandler getRunningActivityInstanceImportIndexHandler(String engineAlias) {
+    RunningActivityInstanceImportIndexHandler result = null;
+    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(engineAlias);
+    if (engineImportIndexHandlerProvider != null) {
+      result = engineImportIndexHandlerProvider.getRunningActivityImportIndexHandler();
+    }
+    return result;
+  }
+
+  public RunningProcessInstanceImportIndexHandler getRunningProcessInstanceImportIndexHandler(String engineAlias) {
     RunningProcessInstanceImportIndexHandler result = null;
     EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(engineAlias);
     if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getUnfinishedProcessInstanceImportIndexHandler();
+      result = engineImportIndexHandlerProvider.getRunningProcessInstanceImportIndexHandler();
     }
     return result;
   }

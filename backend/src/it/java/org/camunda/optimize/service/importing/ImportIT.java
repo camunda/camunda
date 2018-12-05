@@ -2,6 +2,7 @@ package org.camunda.optimize.service.importing;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.filter.CanceledInstancesOnlyQueryFilter;
@@ -25,6 +26,7 @@ import org.junit.rules.RuleChain;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +44,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.Assert.assertTrue;
 
 
 public class ImportIT  {
@@ -109,7 +112,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void unfinishedActivitiesAreNotSkippedDuringImport() {
+  public void runningActivitiesAreNotSkippedDuringImport() {
     // given
     deployAndStartUserTaskProcess();
     deployAndStartSimpleServiceTask();
@@ -158,7 +161,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void unfinishedProcessesIndexedAfterFinish() {
+  public void runningProcessesIndexedAfterFinish() {
     // given
     deployAndStartUserTaskProcess();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
@@ -167,7 +170,7 @@ public class ImportIT  {
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
     for (SearchHit searchHitFields : idsResp.getHits()) {
       List events = (List) searchHitFields.getSourceAsMap().get(EVENTS);
-      assertThat(events.size(), is(1));
+      assertThat(events.size(), is(2));
       Object date = searchHitFields.getSourceAsMap().get(END_DATE);
       assertThat(date, is(nullValue()));
     }
@@ -226,7 +229,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void importOnlyFinishedHistoricActivityInstances() {
+  public void importRunningAndCompletedHistoricActivityInstances() {
     //given
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
@@ -240,12 +243,69 @@ public class ImportIT  {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    //then only the start event should be imported as the user task is not finished yet
+    //then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     SearchHit hit = idsResp.getHits().getAt(0);
     List events = (List) hit.getSourceAsMap().get(EVENTS);
-    assertThat(events.size(), is(1));
+    assertThat(events.size(), is(2));
+  }
+
+  @Test
+  public void completedActivitiesOverwriteRunningActivities() {
+    //given
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
+        .startEvent()
+        .userTask()
+        .endEvent()
+      .done();
+    engineRule.deployAndStartProcess(processModel);
+
+    //when
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    engineRule.finishAllUserTasks();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    //then
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
+    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    SearchHit hit = idsResp.getHits().getAt(0);
+    List<Map> events = (List) hit.getSourceAsMap().get(EVENTS);
+    boolean allEventsHaveEndDate = events.stream().allMatch(e -> e.get("endDate") != null);
+    assertTrue("All end events should have an end date", allEventsHaveEndDate);
+  }
+
+  @Test
+  public void runningActivitiesDoNotOverwriteCompletedActivities() {
+    //given
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
+        .startEvent()
+          .name("startEvent")
+        .endEvent()
+      .done();
+    engineRule.deployAndStartProcess(processModel);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+
+    //when
+    HistoricActivityInstanceEngineDto startEvent =
+      engineRule.getHistoricActivityInstances()
+        .stream()
+        .filter(a -> a.getActivityName().equals("startEvent"))
+        .findFirst()
+        .get();
+    startEvent.setEndTime(null);
+    startEvent.setDurationInMillis(null);
+    embeddedOptimizeRule.importRunningActivityInstance(Collections.singletonList(startEvent));
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    //then
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
+    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    SearchHit hit = idsResp.getHits().getAt(0);
+    List<Map> events = (List) hit.getSourceAsMap().get(EVENTS);
+    boolean allEventsHaveEndDate = events.stream().allMatch(e -> e.get("endDate") != null);
+    assertTrue("All end events should have an end date", allEventsHaveEndDate);
   }
 
   @Test
