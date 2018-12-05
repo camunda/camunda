@@ -78,14 +78,35 @@ public class JsonConditionTest {
   }
 
   @Test
-  public void shouldFailIfJsonPathDoesntMatch() {
+  public void shouldFailIfMissingPropertyComparedRelatively() {
     final CompiledJsonCondition condition = JsonConditionFactory.createCondition("$.foo > 3");
     assertThat(condition.isValid()).isTrue();
 
     thrown.expect(JsonConditionException.class);
-    thrown.expectMessage("JSON path '$.foo' has no result");
+    thrown.expectMessage("Cannot compare values of different types: NIL and INTEGER");
 
     interpreter.eval(condition.getCondition(), asMsgPack("bar", 4));
+  }
+
+  @Test
+  public void shouldEqualToNullIfJsonPathDoesntMatch() {
+    final CompiledJsonCondition condition = JsonConditionFactory.createCondition("$.foo == null");
+    assertThat(condition.isValid()).isTrue();
+
+    final boolean result = interpreter.eval(condition.getCondition(), asMsgPack("bar", 4));
+
+    assertThat(result).isTrue();
+  }
+
+  @Test
+  public void shouldEqualToNullIfAnySegmentInJsonPathDoesntMatch() {
+    final CompiledJsonCondition condition =
+        JsonConditionFactory.createCondition("$.foo.baz == null");
+    assertThat(condition.isValid()).isTrue();
+
+    final boolean result = interpreter.eval(condition.getCondition(), asMsgPack("bar", 4));
+
+    assertThat(result).isTrue();
   }
 
   @Test
