@@ -91,11 +91,10 @@ public class UnsupportedReportExportServiceIT {
     assertThat(response.getStatus(), is(204));
   }
 
-
   protected String createNewReportHelper() {
     return embeddedOptimizeRule
             .getRequestExecutor()
-            .buildCreateSingleReportRequest()
+            .buildCreateSingleProcessReportRequest()
             .execute(IdDto.class, 200)
             .getId();
   }

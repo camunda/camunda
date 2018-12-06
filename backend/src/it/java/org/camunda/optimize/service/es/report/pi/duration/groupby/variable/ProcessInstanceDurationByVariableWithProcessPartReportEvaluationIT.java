@@ -732,7 +732,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
   }
 
   private String createAndStoreDefaultReportDefinition(ProcessReportDataDto reportData) {
-    String id = createNewReport();
+    String id = createNewProcessReport();
 
     SingleReportDefinitionDto<ProcessReportDataDto> report = new SingleReportDefinitionDto<>();
     report.setData(reportData);
@@ -762,10 +762,10 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     assertThat(response.getStatus(), is(204));
   }
 
-  private String createNewReport() {
+  private String createNewProcessReport() {
     return embeddedOptimizeRule
             .getRequestExecutor()
-            .buildCreateSingleReportRequest()
+            .buildCreateSingleProcessReportRequest()
             .execute(IdDto.class, 200)
             .getId();
   }

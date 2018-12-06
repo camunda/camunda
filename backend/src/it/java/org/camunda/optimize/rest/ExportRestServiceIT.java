@@ -132,7 +132,7 @@ public class ExportRestServiceIT {
 
   private String createAndStoreDefaultValidReportDefinition(String processDefinitionKey, String processDefinitionVersion) {
     ProcessReportDataDto reportData = ReportDataBuilderHelper
-            .createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+            .createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
 
     return createAndStoreDefaultReportDefinition(reportData);
   }
@@ -145,7 +145,7 @@ public class ExportRestServiceIT {
   }
 
   private String createAndStoreDefaultReportDefinition(ProcessReportDataDto reportData) {
-    String id = createNewReportHelper();
+    String id = createNewProcessReport();
 
     SingleReportDefinitionDto<ProcessReportDataDto> report = new SingleReportDefinitionDto<>();
     report.setData(reportData);
@@ -169,10 +169,10 @@ public class ExportRestServiceIT {
   }
 
 
-  protected String createNewReportHelper() {
+  protected String createNewProcessReport() {
     return embeddedOptimizeRule
             .getRequestExecutor()
-            .buildCreateSingleReportRequest()
+            .buildCreateSingleProcessReportRequest()
             .execute(IdDto.class, 200)
             .getId();
   }

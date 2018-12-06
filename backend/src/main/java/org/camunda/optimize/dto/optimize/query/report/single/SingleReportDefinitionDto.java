@@ -5,9 +5,11 @@ import com.fasterxml.jackson.annotation.JsonTypeId;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportType;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.PROCESS_REPORT_TYPE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.DECISION_REPORT_TYPE;
 
 public class SingleReportDefinitionDto<T extends SingleReportDataDto> extends ReportDefinitionDto<T> {
 
@@ -28,7 +30,8 @@ public class SingleReportDefinitionDto<T extends SingleReportDataDto> extends Re
     property = REPORT_DEFINITION_FIELD_REPORT_TYPE
   )
   @JsonSubTypes({
-    @JsonSubTypes.Type(value = ProcessReportDataDto.class, name = PROCESS_REPORT_TYPE)
+    @JsonSubTypes.Type(value = ProcessReportDataDto.class, name = PROCESS_REPORT_TYPE),
+    @JsonSubTypes.Type(value = DecisionReportDataDto.class, name = DECISION_REPORT_TYPE)
   })
   @Override
   public T getData() {

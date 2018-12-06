@@ -41,7 +41,7 @@ import static org.camunda.optimize.service.util.VariableHelper.DOUBLE_TYPE;
 import static org.camunda.optimize.service.util.VariableHelper.INTEGER_TYPE;
 import static org.camunda.optimize.service.util.VariableHelper.LONG_TYPE;
 import static org.camunda.optimize.service.util.VariableHelper.SHORT_TYPE;
-import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createReportDataViewRawAsTable;
+import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -70,7 +70,7 @@ public class VariableQueryFilterIT {
     List<ProcessFilterDto> filterList = new ArrayList<>();
     filterList.add(dto);
 
-    ProcessReportDataDto reportData = createReportDataViewRawAsTable(processDefinitionKey, "1");
+    ProcessReportDataDto reportData = createProcessReportDataViewRawAsTable(processDefinitionKey, "1");
     reportData.setFilter(filterList);
     return evaluateReportAndReturnResponse(reportData);
   }
@@ -93,7 +93,7 @@ public class VariableQueryFilterIT {
                                                                  String processDefinitionVersion,
                                                                  List<ProcessFilterDto> filter) {
     ProcessReportDataDto reportData =
-      createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+      createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
     reportData.setFilter(filter);
     return evaluateReport(reportData);
   }

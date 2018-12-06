@@ -694,7 +694,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
   private String createNewReport() {
     return embeddedOptimizeRule
             .getRequestExecutor()
-            .buildCreateSingleReportRequest()
+            .buildCreateSingleProcessReportRequest()
             .execute(IdDto.class, 200)
             .getId();
   }

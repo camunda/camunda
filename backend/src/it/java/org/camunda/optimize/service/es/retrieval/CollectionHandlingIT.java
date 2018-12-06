@@ -225,7 +225,7 @@ public class CollectionHandlingIT {
   private String createNewSingleReport() {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleReportRequest()
+      .buildCreateSingleProcessReportRequest()
       .execute(IdDto.class, 200)
       .getId();
   }

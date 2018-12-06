@@ -2,7 +2,7 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.filter;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.FilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 
 /**
  * Abstract class that contains a hidden "type" field to distinguish, which
@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = StartDateFilterDto.class, name = "startDate"),
+    @JsonSubTypes.Type(value = StartDateFilterDto.class, name = "date"),
     @JsonSubTypes.Type(value = EndDateFilterDto.class, name = "endDate"),
     @JsonSubTypes.Type(value = DurationFilterDto.class, name = "processInstanceDuration"),
     @JsonSubTypes.Type(value = VariableFilterDto.class, name = "variable"),
@@ -33,6 +33,6 @@ public abstract class ProcessFilterDto<DATA extends FilterDataDto> {
 
   @Override
   public String toString() {
-    return "Filter=" + getClass().getSimpleName();
+    return "ProcessFilter=" + getClass().getSimpleName();
   }
 }

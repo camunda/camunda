@@ -2,7 +2,7 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.group.valu
 
 import java.util.Objects;
 
-public class VariableGroupByValueDto implements GroupByValueDto {
+public class VariableGroupByValueDto implements ProcessGroupByValueDto {
 
   protected String name;
   protected String type;

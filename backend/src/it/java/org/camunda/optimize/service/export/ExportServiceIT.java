@@ -47,7 +47,7 @@ public class ExportServiceIT {
   public static Collection<Object[]> data() {
     return Arrays.asList(new Object[][]{
       {
-        ReportDataBuilderHelper.createReportDataViewRawAsTable(
+        ReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
           FAKE,
           FAKE
         ),
@@ -55,7 +55,7 @@ public class ExportServiceIT {
         "Raw Data Grouped By None"
       },
       {
-        ReportDataBuilderHelper.createReportDataViewRawAsTable(
+        ReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
           FAKE,
           FAKE
         ),
@@ -63,7 +63,7 @@ public class ExportServiceIT {
         "Raw Data Grouped By Flow Nodes"
       },
       {
-        ReportDataBuilderHelper.createReportDataViewRawAsTable(
+        ReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
           FAKE,
           FAKE
         ),
@@ -199,11 +199,10 @@ public class ExportServiceIT {
     assertThat(response.getStatus(), is(204));
   }
 
-
   private String createNewReportHelper() {
     return embeddedOptimizeRule
             .getRequestExecutor()
-            .buildCreateSingleReportRequest()
+            .buildCreateSingleProcessReportRequest()
             .execute(IdDto.class, 200)
             .getId();
   }

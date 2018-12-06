@@ -50,7 +50,7 @@ public class CompletedInstancesOnlyFilterIT {
 
     // when
     ProcessReportDataDto reportData =
-      ReportDataBuilderHelper.createReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
+      ReportDataBuilderHelper.createProcessReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
     reportData.setFilter(Collections.singletonList(new CompletedInstancesOnlyFilterDto()));
     RawDataProcessReportResultDto result = evaluateReport(reportData);
 

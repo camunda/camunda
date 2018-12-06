@@ -56,7 +56,7 @@ public abstract class AbstractSharingIT {
 
     String reportId = this.createNewReport();
     ProcessReportDataDto reportData =
-      ReportDataBuilderHelper.createReportDataViewRawAsTable(
+      ReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion());
     SingleReportDefinitionDto<ProcessReportDataDto> report = new SingleReportDefinitionDto<>();
@@ -97,7 +97,7 @@ public abstract class AbstractSharingIT {
   protected String createNewReport() {
     return embeddedOptimizeRule
             .getRequestExecutor()
-            .buildCreateSingleReportRequest()
+            .buildCreateSingleProcessReportRequest()
             .execute(IdDto.class, 200)
             .getId();
   }

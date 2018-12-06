@@ -8,7 +8,8 @@ public class ElasticsearchConstants {
   public static final String DECISION_DEFINITION_TYPE = "decision-definition";
   public static final String DECISION_INSTANCE_TYPE = "decision-instance";
 
-  public static final String SINGLE_REPORT_TYPE = "single-report";
+  public static final String SINGLE_PROCESS_REPORT_TYPE = "single-process-report";
+  public static final String SINGLE_DECISION_REPORT_TYPE = "single-decision-report";
   public static final String COMBINED_REPORT_TYPE = "combined-report";
   public static final String DASHBOARD_TYPE = "dashboard";
 

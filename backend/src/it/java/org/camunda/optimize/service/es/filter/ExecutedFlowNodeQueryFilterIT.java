@@ -25,7 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createReportDataViewRawAsTable;
+import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -46,7 +46,7 @@ public class ExecutedFlowNodeQueryFilterIT {
 
   private RawDataProcessReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition, List<ProcessFilterDto> filter) {
     ProcessReportDataDto reportData =
-      createReportDataViewRawAsTable(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
+      createProcessReportDataViewRawAsTable(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
     reportData.setFilter(filter);
     return evaluateReport(reportData);
   }
@@ -58,7 +58,7 @@ public class ExecutedFlowNodeQueryFilterIT {
   }
 
   private Response evaluateReportAndReturnResponse(ExecutedFlowNodeFilterDto filterDto) {
-    ProcessReportDataDto reportData = createReportDataViewRawAsTable(ExecutedFlowNodeQueryFilterIT.TEST_DEFINITION, "1");
+    ProcessReportDataDto reportData = createProcessReportDataViewRawAsTable(ExecutedFlowNodeQueryFilterIT.TEST_DEFINITION, "1");
     List<ProcessFilterDto> filter = new ArrayList<>();
     filter.add(filterDto);
     reportData.setFilter(filter);

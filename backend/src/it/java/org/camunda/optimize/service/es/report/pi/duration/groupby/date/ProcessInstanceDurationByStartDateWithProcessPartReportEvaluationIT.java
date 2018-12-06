@@ -960,6 +960,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
   }
 
   private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess() {
+    // @formatter:off
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
       .startEvent(START_EVENT)
@@ -967,10 +968,12 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
         .camundaExpression("${true}")
       .endEvent(END_EVENT)
       .done();
+    // @formatter:on
     return engineRule.deployProcessAndGetProcessDefinition(processModel);
   }
 
   private ProcessInstanceEngineDto deployAndStartLoopingProcess() {
+    // @formatter:off
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
     .startEvent("startEvent")
     .exclusiveGateway(START_LOOP)
@@ -990,12 +993,14 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
         .scriptText("sleep(10)")
       .connectTo("mergeExclusiveGateway")
     .done();
+    // @formatter:on
     Map<String, Object> variables = new HashMap<>();
     variables.put("anotherRound", true);
     return engineRule.deployAndStartProcessWithVariables(modelInstance, variables);
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcessWithVariables(Map<String, Object> variables) {
+    // @formatter:off
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
       .startEvent(START_EVENT)
@@ -1003,6 +1008,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
         .camundaExpression("${true}")
       .endEvent(END_EVENT)
       .done();
+    // @formatter:on
     return engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
 
@@ -1015,13 +1021,13 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
 
   private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildEvaluateSingleUnsavedReportRequest(reportData)
-            .execute();
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      .execute();
   }
 
   private String createAndStoreDefaultReportDefinition(ProcessReportDataDto reportData) {
-    String id = createNewReport();
+    String id = createNewProcessReport();
 
     SingleReportDefinitionDto<ProcessReportDataDto> report = new SingleReportDefinitionDto<>();
     report.setData(reportData);
@@ -1037,26 +1043,26 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
 
   private void updateReport(String id, ReportDefinitionDto updatedReport) {
     Response response = embeddedOptimizeRule
-          .getRequestExecutor()
-          .buildUpdateReportRequest(id, updatedReport)
-          .execute();
+      .getRequestExecutor()
+      .buildUpdateReportRequest(id, updatedReport)
+      .execute();
 
-  assertThat(response.getStatus(), is(204));
-}
+    assertThat(response.getStatus(), is(204));
+  }
 
-  private String createNewReport() {
+  private String createNewProcessReport() {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateSingleReportRequest()
-            .execute(IdDto.class, 200)
-            .getId();
+      .getRequestExecutor()
+      .buildCreateSingleProcessReportRequest()
+      .execute(IdDto.class, 200)
+      .getId();
   }
 
   private MapProcessReportResultDto evaluateReportById(String reportId) {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildEvaluateSavedReportRequest(reportId)
-            .execute(MapProcessReportResultDto.class, 200);
+      .getRequestExecutor()
+      .buildEvaluateSavedReportRequest(reportId)
+      .execute(MapProcessReportResultDto.class, 200);
   }
 
   public static class ReportDataTypeProvider {

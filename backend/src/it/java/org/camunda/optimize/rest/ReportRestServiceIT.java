@@ -1,10 +1,13 @@
 package org.camunda.optimize.rest;
 
 import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.exceptions.ReportEvaluationException;
 import org.camunda.optimize.service.sharing.AbstractSharingIT;
@@ -19,14 +22,20 @@ import org.junit.runner.RunWith;
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 
 
 @RunWith(JUnitParamsRunner.class)
 public class ReportRestServiceIT {
+
+  private static final Object[] processAndDecisionReportType() {
+    return new Object[]{ReportType.PROCESS, ReportType.DECISION};
+  }
 
   private static final String RANDOM_KEY = "someRandomKey";
   private static final String RANDOM_VERSION = "someRandomVersion";
@@ -42,7 +51,7 @@ public class ReportRestServiceIT {
     // when
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleReportRequest()
+      .buildCreateSingleProcessReportRequest()
       .withoutAuthentication()
       .execute();
 
@@ -51,14 +60,12 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void createNewReport() {
+  @Parameters(method = "processAndDecisionReportType")
+  public void createNewSingleReport(final ReportType reportType) {
     // when
-    IdDto idDto = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildCreateSingleReportRequest()
-      .execute(IdDto.class, 200);
+    String id = addEmptyReportToOptimize(reportType);
     // then
-    assertThat(idDto, is(notNullValue()));
+    assertThat(id, is(notNullValue()));
   }
 
   @Test
@@ -75,7 +82,7 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void createCombinedReport() {
+  public void createNewCombinedReport() {
     // when
     IdDto idDto = embeddedOptimizeRule
       .getRequestExecutor()
@@ -111,18 +118,23 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void updateReport() {
+  @Parameters(method = "processAndDecisionReportType")
+  public void updateReport(final ReportType reportType) {
     //given
-    String id = addEmptyReportToOptimize();
+    String id = addEmptyReportToOptimize(reportType);
 
     // when
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdateReportRequest(id, constructProcessReportWithFakePD())
+      .buildUpdateReportRequest(id, constructReportWithFakeDefinition(reportType))
       .execute();
 
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
+  }
+
+  private ReportDefinitionDto constructReportWithFakeDefinition(final ReportType reportType) {
+    return ReportType.PROCESS.equals(reportType) ? constructProcessReportWithFakePD() : constructDecisionReportWithFakeDD();
   }
 
   private SingleReportDefinitionDto<ProcessReportDataDto> constructProcessReportWithFakePD() {
@@ -130,6 +142,15 @@ public class ReportRestServiceIT {
     ProcessReportDataDto data = new ProcessReportDataDto();
     data.setProcessDefinitionVersion("FAKE");
     data.setProcessDefinitionKey("FAKE");
+    reportDefinitionDto.setData(data);
+    return reportDefinitionDto;
+  }
+
+  private SingleReportDefinitionDto<DecisionReportDataDto> constructDecisionReportWithFakeDD() {
+    SingleReportDefinitionDto<DecisionReportDataDto> reportDefinitionDto = new SingleReportDefinitionDto<>();
+    DecisionReportDataDto data = new DecisionReportDataDto();
+    data.setDecisionDefinitionVersion("FAKE");
+    data.setDecisionDefinitionKey("FAKE");
     reportDefinitionDto.setData(data);
     return reportDefinitionDto;
   }
@@ -150,14 +171,18 @@ public class ReportRestServiceIT {
   @Test
   public void getStoredReports() {
     //given
-    String id = addEmptyReportToOptimize();
+    String idProcessReport = addEmptyProcessReportToOptimize();
+    String idDecisionReport = addEmptyDecisionReportToOptimize();
 
     // when
     List<ReportDefinitionDto> reports = getAllReports();
 
     // then
-    assertThat(reports.size(), is(1));
-    assertThat(reports.get(0).getId(), is(id));
+    assertThat(reports.size(), is(2));
+    assertThat(
+      reports.stream().map(ReportDefinitionDto::getId).collect(Collectors.toList()),
+      containsInAnyOrder(idDecisionReport, idProcessReport)
+    );
   }
 
   @Test
@@ -174,15 +199,17 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void getReport() {
+  @Parameters(method = "processAndDecisionReportType")
+  public void getReport(final ReportType reportType) {
     //given
-    String id = addEmptyReportToOptimize();
+    String id = addEmptyReportToOptimize(reportType);
 
     // when
     ReportDefinitionDto report = getReport(id);
 
     // then the status code is okay
     assertThat(report, is(notNullValue()));
+    assertThat(report.getReportType(), is(reportType));
     assertThat(report.getId(), is(id));
   }
 
@@ -212,9 +239,10 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void deleteNewReport() {
+  @Parameters(method = "processAndDecisionReportType")
+  public void deleteReport(final ReportType reportType) {
     //given
-    String id = addEmptyReportToOptimize();
+    String id = addEmptyReportToOptimize(reportType);
 
     // when
     Response response = embeddedOptimizeRule
@@ -255,8 +283,8 @@ public class ReportRestServiceIT {
   @Test
   public void evaluateReportById() {
     //given
-    String id = createAndStoreDefaultReportDefinition(
-      ReportDataBuilderHelper.createReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION)
+    String id = createAndStoreDefaultProcessReportDefinition(
+      ReportDataBuilderHelper.createProcessReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION)
     );
 
     // then
@@ -272,7 +300,7 @@ public class ReportRestServiceIT {
   @Test
   public void evaluateInvalidReportById() {
     //given
-    String id = createAndStoreDefaultReportDefinition(
+    String id = createAndStoreDefaultProcessReportDefinition(
       ReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNodeNumber(RANDOM_KEY, RANDOM_VERSION)
     );
 
@@ -302,7 +330,7 @@ public class ReportRestServiceIT {
   @Test
   public void evaluateUnsavedReport() {
     //given
-    ProcessReportDataDto reportDataDto = ReportDataBuilderHelper.createReportDataViewRawAsTable(
+    ProcessReportDataDto reportDataDto = ReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
       RANDOM_KEY,
       RANDOM_VERSION
     );
@@ -386,7 +414,7 @@ public class ReportRestServiceIT {
     ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNoneNumber =
       ReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNodeNumber(RANDOM_KEY, RANDOM_VERSION);
     countFlowNodeFrequencyGroupByFlowNoneNumber.setView(null);
-    String id = createAndStoreDefaultReportDefinition(
+    String id = createAndStoreDefaultProcessReportDefinition(
       countFlowNodeFrequencyGroupByFlowNoneNumber
     );
 
@@ -400,6 +428,12 @@ public class ReportRestServiceIT {
     AbstractSharingIT.assertErrorFields(response);
   }
 
+  private String addEmptyReportToOptimize(final ReportType reportType) {
+    return ReportType.PROCESS.equals(reportType)
+      ? addEmptyProcessReportToOptimize()
+      : addEmptyDecisionReportToOptimize();
+  }
+
   private ReportDefinitionDto getReport(String id) {
     return embeddedOptimizeRule
       .getRequestExecutor()
@@ -407,8 +441,8 @@ public class ReportRestServiceIT {
       .execute(ReportDefinitionDto.class, 200);
   }
 
-  private String createAndStoreDefaultReportDefinition(ProcessReportDataDto reportDataViewRawAsTable) {
-    String id = addEmptyReportToOptimize();
+  private String createAndStoreDefaultProcessReportDefinition(ProcessReportDataDto reportDataViewRawAsTable) {
+    String id = addEmptyProcessReportToOptimize();
     SingleReportDefinitionDto<ProcessReportDataDto> report = new SingleReportDefinitionDto<>();
     report.setData(reportDataViewRawAsTable);
     report.setId(RANDOM_STRING);
@@ -431,10 +465,18 @@ public class ReportRestServiceIT {
     assertThat(response.getStatus(), is(204));
   }
 
-  private String addEmptyReportToOptimize() {
+  private String addEmptyProcessReportToOptimize() {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleReportRequest()
+      .buildCreateSingleProcessReportRequest()
+      .execute(IdDto.class, 200)
+      .getId();
+  }
+
+  private String addEmptyDecisionReportToOptimize() {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateSingleDecisionReportRequest()
       .execute(IdDto.class, 200)
       .getId();
   }

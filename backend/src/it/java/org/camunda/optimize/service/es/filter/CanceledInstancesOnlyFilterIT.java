@@ -55,7 +55,7 @@ public class CanceledInstancesOnlyFilterIT {
 
     // when
     ProcessReportDataDto reportData =
-            ReportDataBuilderHelper.createReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
+            ReportDataBuilderHelper.createProcessReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
     reportData.setFilter(Collections.singletonList(new CanceledInstancesOnlyFilterDto()));
     RawDataProcessReportResultDto result = evaluateReport(reportData);
 
@@ -92,7 +92,7 @@ public class CanceledInstancesOnlyFilterIT {
 
     // when
     ProcessReportDataDto reportData =
-            ReportDataBuilderHelper.createReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
+            ReportDataBuilderHelper.createProcessReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
     reportData.setFilter(Collections.singletonList(new CanceledInstancesOnlyFilterDto()));
     RawDataProcessReportResultDto result = evaluateReport(reportData);
 
@@ -123,7 +123,7 @@ public class CanceledInstancesOnlyFilterIT {
 
     // when
     ProcessReportDataDto reportData =
-            ReportDataBuilderHelper.createReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
+            ReportDataBuilderHelper.createProcessReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
     reportData.setFilter(Collections.singletonList(new CanceledInstancesOnlyFilterDto()));
     RawDataProcessReportResultDto result = evaluateReport(reportData);
 

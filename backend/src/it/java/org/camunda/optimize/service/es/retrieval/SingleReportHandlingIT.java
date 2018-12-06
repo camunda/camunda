@@ -34,7 +34,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createReportDataViewRawAsTable;
+import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -66,8 +66,8 @@ public class SingleReportHandlingIT {
     GetResponse response =
       elasticSearchRule.getClient()
         .prepareGet(
-          elasticSearchRule.getOptimizeIndex(ElasticsearchConstants.SINGLE_REPORT_TYPE),
-          ElasticsearchConstants.SINGLE_REPORT_TYPE,
+          elasticSearchRule.getOptimizeIndex(ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE),
+          ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE,
           id
         )
         .get();
@@ -281,7 +281,7 @@ public class SingleReportHandlingIT {
     // given
     String reportId = createNewReport();
     ProcessReportDataDto reportData =
-      createReportDataViewRawAsTable(FOO_PROCESS_DEFINITION_KEY, FOO_PROCESS_DEFINITION_VERSION);
+      createProcessReportDataViewRawAsTable(FOO_PROCESS_DEFINITION_KEY, FOO_PROCESS_DEFINITION_VERSION);
     SingleReportDefinitionDto<ProcessReportDataDto> report = new SingleReportDefinitionDto<>();
     report.setData(reportData);
     report.setName("name");
@@ -481,7 +481,7 @@ public class SingleReportHandlingIT {
   private String createNewReport() {
     return embeddedOptimizeRule
             .getRequestExecutor()
-            .buildCreateSingleReportRequest()
+            .buildCreateSingleProcessReportRequest()
             .execute(IdDto.class, 200)
             .getId();
   }

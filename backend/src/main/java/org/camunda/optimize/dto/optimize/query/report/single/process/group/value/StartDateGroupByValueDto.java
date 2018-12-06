@@ -2,7 +2,7 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.group.valu
 
 import java.util.Objects;
 
-public class StartDateGroupByValueDto implements GroupByValueDto {
+public class StartDateGroupByValueDto implements ProcessGroupByValueDto {
 
   protected GroupByDateUnit unit;
 

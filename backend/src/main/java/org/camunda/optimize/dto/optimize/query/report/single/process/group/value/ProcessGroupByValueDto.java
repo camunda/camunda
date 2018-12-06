@@ -2,5 +2,5 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.group.valu
 
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 
-public interface GroupByValueDto extends Combinable {
+public interface ProcessGroupByValueDto extends Combinable {
 }

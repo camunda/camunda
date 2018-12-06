@@ -28,7 +28,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createCombinedReport;
 import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode;
-import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createReportDataViewRawAsTable;
+import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -276,7 +276,7 @@ public class ReportAuthorizationIT {
   public String createNewReport() {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleReportRequest()
+      .buildCreateSingleProcessReportRequest()
       .execute(IdDto.class, 200)
       .getId();
   }
@@ -288,7 +288,7 @@ public class ReportAuthorizationIT {
 
   private SingleReportDefinitionDto<ProcessReportDataDto> constructReportWithDefinition(String processDefinitionKey) {
     SingleReportDefinitionDto<ProcessReportDataDto> reportDefinitionDto = new SingleReportDefinitionDto<>();
-    ProcessReportDataDto data = createReportDataViewRawAsTable(processDefinitionKey, "1");
+    ProcessReportDataDto data = createProcessReportDataViewRawAsTable(processDefinitionKey, "1");
     reportDefinitionDto.setData(data);
     return reportDefinitionDto;
   }

@@ -31,7 +31,7 @@ import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator
 
 public class ReportDataBuilderHelper {
 
-  public static ProcessReportDataDto createReportDataViewRawAsTable(
+  public static ProcessReportDataDto createProcessReportDataViewRawAsTable(
       String processDefinitionKey,
       String processDefinitionVersion
   ) {

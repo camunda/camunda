@@ -39,7 +39,7 @@ import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createMinPr
 import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createMinProcessInstanceDurationGroupByVariableWithProcessPart;
 import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createMinProcessInstanceDurationHeatMapGroupByNone;
 import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createPiFrequencyCountGroupedByNone;
-import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createReportDataViewRawAsTable;
+import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
 
 public class ReportDataBuilder {
 
@@ -63,7 +63,7 @@ public class ReportDataBuilder {
     ProcessReportDataDto reportData = new ProcessReportDataDto();
     switch (reportDataType) {
       case RAW_DATA:
-        reportData = createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+        reportData = createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
         break;
       case AVG_PROC_INST_DUR_GROUP_BY_NONE:
         reportData = createAvgPiDurationHeatMapGroupByNone(

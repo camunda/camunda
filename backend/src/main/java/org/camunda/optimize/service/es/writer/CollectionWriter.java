@@ -40,7 +40,8 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CREATE_SUCCESSFUL_RESPONSE_RESULT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DELETE_SUCCESSFUL_RESPONSE_RESULT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_REPORT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE;
 
 
 @Component
@@ -146,7 +147,8 @@ public class CollectionWriter {
       logger.debug("Checking that the given report ids [{}] for a collection exist", reportIds);
       SearchResponse searchResponse = esclient.prepareSearch()
         .setIndices(
-          getOptimizeIndexAliasForType(SINGLE_REPORT_TYPE),
+          getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE),
+          getOptimizeIndexAliasForType(SINGLE_DECISION_REPORT_TYPE),
           getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE)
         )
         .setQuery(QueryBuilders.idsQuery().addIds(reportIds.toArray(new String[0])))

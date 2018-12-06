@@ -77,7 +77,7 @@ public abstract class AbstractRollingDateFilterIT {
       String unit,
       boolean newToken
   ) {
-    ProcessReportDataDto reportData = ReportDataBuilderHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+    ProcessReportDataDto reportData = ReportDataBuilderHelper.createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
     List<ProcessFilterDto> rollingDateFilter = DateUtilHelper.createRollingStartDateFilter(1L, unit);
     reportData.setFilter(rollingDateFilter);
     return evaluateReport(reportData, newToken);
@@ -89,7 +89,7 @@ public abstract class AbstractRollingDateFilterIT {
           String unit,
           boolean newToken
   ) {
-    ProcessReportDataDto reportData = ReportDataBuilderHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+    ProcessReportDataDto reportData = ReportDataBuilderHelper.createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
     List<ProcessFilterDto> rollingDateFilter = DateUtilHelper.createRollingEndDateFilter(1L, unit);
     reportData.setFilter(rollingDateFilter);
     return evaluateReport(reportData, newToken);

@@ -17,7 +17,7 @@ import org.junit.rules.RuleChain;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
 
-import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createReportDataViewRawAsTable;
+import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -48,7 +48,7 @@ public class RunningInstancesOnlyFilterIT {
 
     // when
     ProcessReportDataDto reportData =
-      createReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
+      createProcessReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
     reportData.setFilter(Collections.singletonList(new RunningInstancesOnlyFilterDto()));
     RawDataProcessReportResultDto result = evaluateReport(reportData);
 

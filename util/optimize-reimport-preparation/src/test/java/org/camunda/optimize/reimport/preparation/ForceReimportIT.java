@@ -166,7 +166,7 @@ public class ForceReimportIT {
   private String createNewReportHelper() {
     return embeddedOptimizeRule
             .getRequestExecutor()
-            .buildCreateSingleReportRequest()
+            .buildCreateSingleProcessReportRequest()
             .execute(IdDto.class, 200)
             .getId();
   }

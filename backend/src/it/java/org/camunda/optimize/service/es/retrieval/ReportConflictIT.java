@@ -60,10 +60,10 @@ public class ReportConflictIT {
   public void updateSingleReportFailsWithConflictIfUsedInCombinedReportAndNotCombinableAnymoreWhenForceSet(Boolean force) {
     // given
     String firstSingleReportId = createAndStoreDefaultReportDefinition(
-      ReportDataBuilderHelper.createReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION)
+      ReportDataBuilderHelper.createProcessReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION)
     );
     String secondSingleReportId = createAndStoreDefaultReportDefinition(
-      ReportDataBuilderHelper.createReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION)
+      ReportDataBuilderHelper.createProcessReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION)
     );
     String combinedReportId = createNewCombinedReport(firstSingleReportId, secondSingleReportId);
     String[] expectedReportIds = new String[]{firstSingleReportId, secondSingleReportId, combinedReportId};
@@ -450,7 +450,7 @@ public class ReportConflictIT {
   private String addEmptyReportToOptimize() {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleReportRequest()
+      .buildCreateSingleProcessReportRequest()
       .execute(IdDto.class, 200)
       .getId();
   }

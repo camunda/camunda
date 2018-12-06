@@ -26,7 +26,7 @@ import java.util.Map;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_REPORT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
 
 
@@ -34,6 +34,7 @@ public class UpgradeFrom22To23 implements Upgrade {
 
   private static final String FROM_VERSION = "2.2.0";
   private static final String TO_VERSION = "2.3.0";
+  public static final String SINGLE_REPORT = "single-report";
 
   private Logger logger = LoggerFactory.getLogger(getClass());
   private ConfigurationService configurationService = new ConfigurationService();
@@ -82,10 +83,14 @@ public class UpgradeFrom22To23 implements Upgrade {
           new CreateIndexAliasForExistingIndexStep(configurationService.getReportShareType(), TO_VERSION)
         )
         .addUpgradeStep(
-          new CreateIndexAliasForExistingIndexStep(COMBINED_REPORT_TYPE, TO_VERSION, getNewCombinedReportMapping())
+          new CreateIndexAliasForExistingIndexStep(
+            COMBINED_REPORT_TYPE, COMBINED_REPORT_TYPE, TO_VERSION, getNewCombinedReportMapping()
+          )
         )
         .addUpgradeStep(
-          new CreateIndexAliasForExistingIndexStep(SINGLE_REPORT_TYPE, TO_VERSION)
+          new CreateIndexAliasForExistingIndexStep(
+            SINGLE_REPORT, SINGLE_PROCESS_REPORT_TYPE, TO_VERSION, getNewSingleProcessReportMapping()
+          )
         )
         .addUpgradeStep(
           new CreateIndexAliasForExistingIndexStep(DASHBOARD_TYPE, TO_VERSION)
@@ -105,6 +110,11 @@ public class UpgradeFrom22To23 implements Upgrade {
 
   private String getNewCombinedReportMapping() {
     String pathToMapping = "upgrade/main/UpgradeFrom22To23/add_visualization_to_combined_report_index_mapping.json";
+    return SchemaUpgradeUtil.readClasspathFileAsString(pathToMapping);
+  }
+
+  private String getNewSingleProcessReportMapping() {
+    String pathToMapping = "upgrade/main/UpgradeFrom22To23/single-process-report-mapping.json";
     return SchemaUpgradeUtil.readClasspathFileAsString(pathToMapping);
   }
 
@@ -133,7 +143,7 @@ public class UpgradeFrom22To23 implements Upgrade {
     RestClient build = ElasticsearchRestClientBuilder.build(configurationService);
     try {
       Response response =
-        build.performRequest("GET", getOptimizeIndexAliasForType(SINGLE_REPORT_TYPE) + "/_search");
+        build.performRequest("GET", getOptimizeIndexAliasForType(SINGLE_REPORT) + "/_search");
       String json = EntityUtils.toString(response.getEntity());
       List<Map> hits = JsonPath.read(json, "$.hits.hits.*");
       Map<String, String> reportIdToVisualization = new HashMap<>();
@@ -154,7 +164,7 @@ public class UpgradeFrom22To23 implements Upgrade {
 
   private UpdateDataStep relocateProcessPart() {
     return new UpdateDataStep(
-      "single-report",
+      SINGLE_PROCESS_REPORT_TYPE,
       QueryBuilders.matchAllQuery(),
       "ctx._source.data.parameters = [\"processPart\": ctx._source.data.processPart];" +
         "ctx._source.data.remove(\"processPart\");"

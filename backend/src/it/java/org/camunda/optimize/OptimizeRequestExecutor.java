@@ -9,9 +9,11 @@ import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
@@ -228,17 +230,27 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildCreateSingleReportRequest() {
+  public OptimizeRequestExecutor buildCreateSingleProcessReportRequest() {
+    return buildCreateSingleReportRequest(ReportType.PROCESS);
+  }
+
+  public OptimizeRequestExecutor buildCreateSingleDecisionReportRequest() {
+    return buildCreateSingleReportRequest(ReportType.DECISION);
+  }
+
+  private OptimizeRequestExecutor buildCreateSingleReportRequest(final ReportType reportType) {
     this.path = "report";
     this.requestType = POST;
-    this.body = Entity.json("{\"combined\":false,\"reportType\":\"process\"}");
+    this.body = getBody(new SingleReportDefinitionDto<>(
+      reportType == ReportType.PROCESS ? new ProcessReportDataDto() : new DecisionReportDataDto()
+    ));
     return this;
   }
 
   public OptimizeRequestExecutor buildCreateCombinedReportRequest() {
     this.path = "report";
     this.requestType = POST;
-    this.body = Entity.json("{\"combined\":true,\"reportType\":\"process\"}");
+    this.body = getBody(new CombinedReportDefinitionDto());
     return this;
   }
 
@@ -279,7 +291,7 @@ public class OptimizeRequestExecutor {
 
   public OptimizeRequestExecutor buildEvaluateSingleUnsavedReportRequest(ProcessReportDataDto entity) {
     this.path = "report/evaluate";
-    this.body = getBody(new SingleReportDefinitionDto<>(entity));
+    this.body = getBody(new SingleReportDefinitionDto<ProcessReportDataDto>(entity));
     this.requestType = POST;
     return this;
   }

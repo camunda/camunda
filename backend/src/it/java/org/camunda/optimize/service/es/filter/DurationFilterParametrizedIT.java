@@ -11,7 +11,7 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 import java.util.Collection;
 
-import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createReportDataViewRawAsTable;
+import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
 
 
 
@@ -73,7 +73,7 @@ public class DurationFilterParametrizedIT extends AbstractDurationFilterIT {
 
     // when
     ProcessReportDataDto reportData =
-      createReportDataViewRawAsTable(processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
+      createProcessReportDataViewRawAsTable(processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
     reportData.setFilter(DateUtilHelper.createDurationFilter(this.operator, this.duration, this.unit));
     RawDataProcessReportResultDto result = evaluateReport(reportData);
 

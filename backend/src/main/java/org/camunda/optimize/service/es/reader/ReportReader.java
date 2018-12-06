@@ -33,7 +33,8 @@ import java.util.stream.Collectors;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_REPORT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE;
 
 @Component
 public class ReportReader {
@@ -56,7 +57,8 @@ public class ReportReader {
   public ReportDefinitionDto getReport(String reportId) {
     logger.debug("Fetching report with id [{}]", reportId);
     MultiGetResponse multiGetItemResponses = esclient.prepareMultiGet()
-      .add(getOptimizeIndexAliasForType(SINGLE_REPORT_TYPE), SINGLE_REPORT_TYPE, reportId)
+      .add(getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE), SINGLE_PROCESS_REPORT_TYPE, reportId)
+      .add(getOptimizeIndexAliasForType(SINGLE_DECISION_REPORT_TYPE), SINGLE_DECISION_REPORT_TYPE, reportId)
       .add(getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE), COMBINED_REPORT_TYPE, reportId)
       .setRealtime(false)
       .get();
@@ -72,8 +74,8 @@ public class ReportReader {
     }
 
     if (!result.isPresent()) {
-      String reason = "Was not able to retrieve report with id [" + reportId +
-        "] from Elasticsearch. Report does not exist.";
+      String reason = "Was not able to retrieve report with id [" + reportId + "]"
+        + "from Elasticsearch. Report does not exist.";
       logger.error(reason);
       throw new NotFoundException(reason);
     }
@@ -84,7 +86,9 @@ public class ReportReader {
     logger.debug("Fetching all available reports");
     SearchResponse scrollResp = esclient
       .prepareSearch(
-        getOptimizeIndexAliasForType(SINGLE_REPORT_TYPE), getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE)
+        getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE),
+        getOptimizeIndexAliasForType(SINGLE_DECISION_REPORT_TYPE),
+        getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE)
       )
       .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
       .setQuery(QueryBuilders.matchAllQuery())
@@ -105,7 +109,7 @@ public class ReportReader {
 
     String[] reportIdsAsArray = reportIds.toArray(new String[0]);
     SearchResponse response = esclient
-      .prepareSearch(getOptimizeIndexAliasForType(SINGLE_REPORT_TYPE))
+      .prepareSearch(getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE))
       .setQuery(QueryBuilders.idsQuery().addIds(reportIdsAsArray))
       .setSize(reportIds.size())
       .get();
@@ -171,8 +175,8 @@ public class ReportReader {
         ReportDefinitionDto report = objectMapper.readValue(responseAsString, ReportDefinitionDto.class);
         result = Optional.of(report);
       } catch (IOException e) {
-        String reason = "While retrieving report with id [" + reportId +
-          "] could not deserialize report from Elasticsearch!";
+        String reason = "While retrieving report with id [" + reportId + "]"
+          + "could not deserialize report from Elasticsearch!";
         logger.error(reason, e);
         throw new OptimizeRuntimeException(reason);
       }

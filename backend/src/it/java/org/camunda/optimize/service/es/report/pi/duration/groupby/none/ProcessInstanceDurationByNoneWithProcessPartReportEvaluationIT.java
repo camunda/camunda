@@ -258,7 +258,6 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
   @Parameters(source = ReportDataBuilderProvider.class)
   public void activityHasNullDates(ReportDataType reportDataType) {
     // given
-    OffsetDateTime startDate = OffsetDateTime.now().minusHours(1);
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -289,7 +288,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
     Script setActivityStartDatesToNull = new Script(
       ScriptType.INLINE,
       DEFAULT_SCRIPT_LANG,
-      "for (event in ctx._source.events) { event.startDate= null }",
+      "for (event in ctx._source.events) { event.startDate = null }",
       Collections.emptyMap()
     );
     updateByQuery.source(processInstanceIndex)
@@ -630,7 +629,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
   private String createNewReport() {
     return embeddedOptimizeRule
             .getRequestExecutor()
-            .buildCreateSingleReportRequest()
+            .buildCreateSingleProcessReportRequest()
             .execute(IdDto.class, 200)
             .getId();
   }

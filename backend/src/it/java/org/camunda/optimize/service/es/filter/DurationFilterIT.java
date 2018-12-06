@@ -10,7 +10,7 @@ import org.junit.Test;
 
 import java.util.List;
 
-import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createReportDataViewRawAsTable;
+import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 
 
@@ -27,7 +27,7 @@ public class DurationFilterIT extends AbstractDurationFilterIT {
 
     // when
     ProcessReportDataDto reportData =
-      createReportDataViewRawAsTable(processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
+      createProcessReportDataViewRawAsTable(processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
     List<ProcessFilterDto> gte = DateUtilHelper.createDurationFilter(">=", 2, "Seconds");
     List<ProcessFilterDto> lt = DateUtilHelper.createDurationFilter("<", 1, "Days");
     gte.addAll(lt);
@@ -46,7 +46,7 @@ public class DurationFilterIT extends AbstractDurationFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     ProcessReportDataDto reportData =
-      createReportDataViewRawAsTable(processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
+      createProcessReportDataViewRawAsTable(processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
     reportData.setFilter(DateUtilHelper.createDurationFilter(">=", 2, null));
 
 

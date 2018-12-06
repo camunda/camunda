@@ -40,7 +40,7 @@ import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFA
 import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createCombinedReport;
 import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode;
 import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createPiFrequencyCountGroupedByNone;
-import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createReportDataViewRawAsTable;
+import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -568,7 +568,7 @@ public class CombinedReportHandlingIT {
   private String createNewSingleRawReport(ProcessInstanceEngineDto engineDto) {
     String singleReportId = createNewSingleReport();
     ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode =
-      createReportDataViewRawAsTable(engineDto.getProcessDefinitionKey(),engineDto.getProcessDefinitionVersion());
+      createProcessReportDataViewRawAsTable(engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion());
     SingleReportDefinitionDto<ProcessReportDataDto> definitionDto = new SingleReportDefinitionDto<>();
     definitionDto.setData(countFlowNodeFrequencyGroupByFlowNode);
     updateReport(singleReportId, definitionDto);
@@ -618,7 +618,7 @@ public class CombinedReportHandlingIT {
   private String createNewSingleReport() {
     return embeddedOptimizeRule
             .getRequestExecutor()
-            .buildCreateSingleReportRequest()
+            .buildCreateSingleProcessReportRequest()
             .execute(IdDto.class, 200)
             .getId();
   }

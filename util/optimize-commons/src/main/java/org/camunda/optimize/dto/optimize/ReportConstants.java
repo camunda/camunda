@@ -22,6 +22,10 @@ public class ReportConstants {
   public static final String GROUP_BY_START_DATE_TYPE = "startDate";
   public static final String GROUP_BY_VARIABLE_TYPE = "variable";
 
+  public static final String GROUP_BY_EVALUATION_DATE_TYPE = "evaluationDate";
+  public static final String GROUP_BY_INPUT_VARIABLE_TYPE = "inputVariable";
+  public static final String GROUP_BY_OUTPUT_VARIABLE_TYPE = "outputVariable";
+
   public static final String DATE_UNIT_YEAR = "year";
   public static final String DATE_UNIT_MONTH = "month";
   public static final String DATE_UNIT_WEEK = "week";
@@ -42,6 +46,7 @@ public class ReportConstants {
   public static final String RELATIVE_DATE_FILTER = "relative";
 
   public static final String PROCESS_REPORT_TYPE = "process";
+  public static final String DECISION_REPORT_TYPE = "decision";
 
   public static final String RAW_RESULT_TYPE = "raw";
   public static final String MAP_RESULT_TYPE = "map";
