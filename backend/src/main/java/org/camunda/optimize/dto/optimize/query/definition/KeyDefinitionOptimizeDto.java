@@ -4,7 +4,7 @@ import org.camunda.optimize.dto.optimize.OptimizeDto;
 
 import java.io.Serializable;
 
-public class KeyProcessDefinitionOptimizeDto implements Serializable, OptimizeDto {
+public class KeyDefinitionOptimizeDto implements Serializable, OptimizeDto {
 
   protected String key;
 

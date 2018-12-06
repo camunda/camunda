@@ -1,18 +1,13 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
-import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.definition.ProcessDefinitionGroupOptimizeDto;
 import org.camunda.optimize.rest.providers.Secured;
-import org.camunda.optimize.service.es.reader.BranchAnalysisReader;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
-import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
@@ -69,10 +64,9 @@ public class ProcessDefinitionRestService {
    *
    * @param processDefinitionKey The process definition key of the desired process definition xml.
    * @param processDefinitionVersion The process definition version of the desired process definition xml.
-   * @return The process definition xml requested.
+   * @return the process definition xml requested or json error structure on failure
    */
   @GET
-  // xml on success, json on error
   @Produces(value = {MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
   @Path("/xml")
   public String getProcessDefinitionXml(

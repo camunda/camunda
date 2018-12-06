@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-public class ProcessDefinitionGroupOptimizeDto extends KeyProcessDefinitionOptimizeDto implements Serializable, OptimizeDto {
+public class ProcessDefinitionGroupOptimizeDto extends KeyDefinitionOptimizeDto implements Serializable, OptimizeDto {
 
   protected List<ProcessDefinitionOptimizeDto> versions = new ArrayList<>();
 

@@ -522,6 +522,25 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetDecisionDefinitionsRequest() {
+    this.path = "decision-definition";
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetDecisionDefinitionsGroupedByKeyRequest() {
+    this.path = "decision-definition/groupedByKey";
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetDecisionDefinitionXmlRequest(String key, Object version) {
+    this.path = "decision-definition/xml";
+    this.addSingleQueryParam("key", key);
+    this.addSingleQueryParam("version", version);
+    this.requestType = GET;
+    return this;
+  }
 
   private Entity getBody(Object entity) {
     try {
