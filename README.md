@@ -62,8 +62,14 @@ daemon.
 * **test** (adding missing tests, refactoring tests; no production code change)
 * **chore** (updating grunt tasks etc; no production code change)
 
-## Staging enviroment
+## Testing environments
 
-The staging environment is available here: https://stage.operate.camunda.cloud/ . Every commit to master (successfully built) will be published to stage automatically.
+1. The **staging** environment is available here: https://stage.operate.camunda.cloud/ . Every commit to master (successfully built) will be published to stage automatically.
+2. Moreover, every branch that ends with `-deploy` (e.s. `amazing-feature-deploy`) will be deployed online at $branch_name.operate.camunda.cloud (e.s. `amazing-feature.operate.camunda.cloud`).
+3. **public-deploy** is a branch dedicated to user tests. It ends up on public.operate.camunda.cloud (**without** authentication)
 
-Moreover, every branch that ends with `-deploy` (e.s. `amazing-feature-deploy`) will be deployed online at $branch_name.operate.camunda.cloud (e.s. `amazing-feature.operate.camunda.cloud`).
+To re-create the "public" environment (or any other environment):
+* Open https://ci.operate.camunda.cloud/view/all/job/deploy-branch-to-k8s/build
+* Change the BRANCH field to "public"
+* (special) If you're deploying version 1.0.0-RC1, also put INFRASTRUCTURE_BRANCH: operate-public (this will run older Zeebe version: 0.13.1)
+* Click on "Build"
