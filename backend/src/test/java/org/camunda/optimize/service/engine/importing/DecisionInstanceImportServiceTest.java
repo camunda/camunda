@@ -5,6 +5,7 @@ import org.camunda.optimize.dto.engine.HistoricDecisionInstanceDto;
 import org.camunda.optimize.dto.engine.HistoricDecisionOutputInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.engine.importing.service.DecisionDefinitionVersionResolverService;
 import org.camunda.optimize.service.engine.importing.service.DecisionInstanceImportService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
@@ -16,15 +17,18 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.time.OffsetDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class DecisionInstanceImportServiceTest {
 
+  public static final String VERSION_RESULT = "VERSION";
   @Mock
   private DecisionInstanceWriter decisionInstanceWriter;
 
@@ -34,18 +38,25 @@ public class DecisionInstanceImportServiceTest {
   @Mock
   private EngineContext engineContext;
 
+  @Mock
+  private DecisionDefinitionVersionResolverService decisionDefinitionVersionResolverService;
+
+  private DecisionInstanceImportService underTest;
+
   @Before
   public void init() {
     when(engineContext.getEngineAlias()).thenReturn("1");
+    when(decisionDefinitionVersionResolverService.getVersionForDecisionDefinitionId(any()))
+      .thenReturn(Optional.of(VERSION_RESULT));
+
+    this.underTest = new DecisionInstanceImportService(
+      decisionInstanceWriter, elasticsearchImportJobExecutor, engineContext, decisionDefinitionVersionResolverService
+    );
   }
 
   @Test
   public void testMappingOfAllFieldToOptimizeDto() {
     // given
-    DecisionInstanceImportService underTest = new DecisionInstanceImportService(
-      decisionInstanceWriter, elasticsearchImportJobExecutor, engineContext
-    );
-
     HistoricDecisionInstanceDto historicDecisionInstanceDto = new HistoricDecisionInstanceDto();
     historicDecisionInstanceDto.setId(UUID.randomUUID().toString());
     historicDecisionInstanceDto.setDecisionDefinitionId(UUID.randomUUID().toString());
@@ -70,15 +81,16 @@ public class DecisionInstanceImportServiceTest {
     );
 
     // then
+    assertThat(decisionInstanceDto.getId(), is(historicDecisionInstanceDto.getId()));
     assertThat(
       decisionInstanceDto.getDecisionDefinitionId(),
       is(historicDecisionInstanceDto.getDecisionDefinitionId())
     );
-    assertThat(decisionInstanceDto.getId(), is(historicDecisionInstanceDto.getId()));
     assertThat(
       decisionInstanceDto.getDecisionDefinitionKey(),
       is(historicDecisionInstanceDto.getDecisionDefinitionKey())
     );
+    assertThat(decisionInstanceDto.getDecisionDefinitionVersion(), is(VERSION_RESULT));
     assertThat(decisionInstanceDto.getProcessDefinitionId(), is(historicDecisionInstanceDto.getProcessDefinitionId()));
     assertThat(
       decisionInstanceDto.getProcessDefinitionKey(),
@@ -109,10 +121,6 @@ public class DecisionInstanceImportServiceTest {
   @Test
   public void testSkipUnsupportedInputTypesWhenMappingToOptimizeDto() {
     // given
-    DecisionInstanceImportService underTest = new DecisionInstanceImportService(
-      decisionInstanceWriter, elasticsearchImportJobExecutor, engineContext
-    );
-
     HistoricDecisionInstanceDto historicDecisionInstanceDto = new HistoricDecisionInstanceDto();
 
     addAllSupportedInputVariables(historicDecisionInstanceDto);
@@ -147,10 +155,6 @@ public class DecisionInstanceImportServiceTest {
   @Test
   public void testSkipUnsupportedOutputTypesWhenMappingToOptimizeDto() {
     // given
-    DecisionInstanceImportService underTest = new DecisionInstanceImportService(
-      decisionInstanceWriter, elasticsearchImportJobExecutor, engineContext
-    );
-
     HistoricDecisionInstanceDto historicDecisionInstanceDto = new HistoricDecisionInstanceDto();
 
     addAllSupportedOutputVairables(historicDecisionInstanceDto);

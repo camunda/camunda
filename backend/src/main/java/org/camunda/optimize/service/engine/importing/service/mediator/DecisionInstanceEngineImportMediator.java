@@ -6,6 +6,7 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.DecisionInstanceFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.DecisionInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.page.TimestampBasedImportPage;
+import org.camunda.optimize.service.engine.importing.service.DecisionDefinitionVersionResolverService;
 import org.camunda.optimize.service.engine.importing.service.DecisionInstanceImportService;
 import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,8 @@ public class DecisionInstanceEngineImportMediator extends BackoffImportMediator<
 
   @Autowired
   private DecisionInstanceWriter decisionInstanceWriter;
+  @Autowired
+  private DecisionDefinitionVersionResolverService decisionDefinitionVersionResolverService;
 
   public DecisionInstanceEngineImportMediator(final EngineContext engineContext) {
     super(engineContext);
@@ -36,7 +39,7 @@ public class DecisionInstanceEngineImportMediator extends BackoffImportMediator<
     importIndexHandler = provider.getDecisionInstanceImportIndexHandler(engineContext.getEngineAlias());
     decisionInstanceFetcher = beanHelper.getInstance(DecisionInstanceFetcher.class, engineContext);
     decisionInstanceImportService = new DecisionInstanceImportService(
-      decisionInstanceWriter, elasticsearchImportJobExecutor, engineContext
+      decisionInstanceWriter, elasticsearchImportJobExecutor, engineContext, decisionDefinitionVersionResolverService
     );
   }
 
@@ -50,14 +53,14 @@ public class DecisionInstanceEngineImportMediator extends BackoffImportMediator<
       page
     );
 
-    if (!nextPageEntities.isEmpty()) {
-      OffsetDateTime timestamp = nextPageEntities.get(nextPageEntities.size() - 1).getEvaluationTime();
-      importIndexHandler.updateTimestampOfLastEntity(timestamp);
-    }
-
     if (!entitiesOfLastTimestamp.isEmpty() || !nextPageEntities.isEmpty()) {
       final List<HistoricDecisionInstanceDto> allEntities = ListUtils.union(entitiesOfLastTimestamp, nextPageEntities);
       decisionInstanceImportService.executeImport(allEntities);
+
+      if (!nextPageEntities.isEmpty()) {
+        OffsetDateTime timestamp = nextPageEntities.get(nextPageEntities.size() - 1).getEvaluationTime();
+        importIndexHandler.updateTimestampOfLastEntity(timestamp);
+      }
     }
 
     return nextPageEntities.size() >= configurationService.getEngineImportDecisionInstanceMaxPageSize();

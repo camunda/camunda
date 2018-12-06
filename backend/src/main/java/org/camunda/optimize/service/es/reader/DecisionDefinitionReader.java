@@ -52,6 +52,10 @@ public class DecisionDefinitionReader {
     this.sessionService = sessionService;
   }
 
+  public List<DecisionDefinitionOptimizeDto> getDecisionDefinitionsAsService(final boolean withXml) {
+    return getDecisionDefinitions(null, withXml);
+  }
+
   public List<DecisionDefinitionOptimizeDto> getDecisionDefinitions(final String userId, final boolean withXml) {
     logger.debug("Fetching decision definitions");
     QueryBuilder query;
@@ -82,7 +86,8 @@ public class DecisionDefinitionReader {
     return definitionsResult;
   }
 
-  public Optional<String> getDecisionDefinitionXml(final String decisionDefinitionKey, final String decisionDefinitionVersion) {
+  public Optional<String> getDecisionDefinitionXml(final String decisionDefinitionKey,
+                                                   final String decisionDefinitionVersion) {
     return getDecisionDefinition(decisionDefinitionKey, decisionDefinitionVersion)
       .flatMap(
         decisionDefinitionOptimizeDto -> Optional.ofNullable(decisionDefinitionOptimizeDto.getDmn10Xml())
@@ -92,6 +97,17 @@ public class DecisionDefinitionReader {
   public List<DecisionDefinitionGroupOptimizeDto> getDecisionDefinitionsGroupedByKey(String userId) {
     Map<String, DecisionDefinitionGroupOptimizeDto> resultMap = getKeyToDecisionDefinitionMap(userId);
     return new ArrayList<>(resultMap.values());
+  }
+
+  private DecisionDefinitionOptimizeDto parseDecisionDefinition(final String responseAsString) {
+    final DecisionDefinitionOptimizeDto definitionOptimizeDto;
+    try {
+      definitionOptimizeDto = objectMapper.readValue(responseAsString, DecisionDefinitionOptimizeDto.class);
+    } catch (IOException e) {
+      logger.error("Could not read decision definition from Elasticsearch!", e);
+      throw new OptimizeRuntimeException("Failure reading decision definition", e);
+    }
+    return definitionOptimizeDto;
   }
 
   private List<DecisionDefinitionOptimizeDto> getDecisionDefinitions(String userId) {
@@ -131,12 +147,7 @@ public class DecisionDefinitionReader {
     DecisionDefinitionOptimizeDto definitionOptimizeDto = null;
     if (response.getHits().getTotalHits() > 0L) {
       String responseAsString = response.getHits().getAt(0).getSourceAsString();
-      try {
-        definitionOptimizeDto = objectMapper.readValue(responseAsString, DecisionDefinitionOptimizeDto.class);
-      } catch (IOException e) {
-        logger.error("Could not read decision definition from Elasticsearch!", e);
-        throw new OptimizeRuntimeException("Failure reading decision definition", e);
-      }
+      definitionOptimizeDto = parseDecisionDefinition(responseAsString);
     }
     return Optional.ofNullable(definitionOptimizeDto);
   }

@@ -11,6 +11,7 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.DecisionInstanceElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,14 +26,17 @@ public class DecisionInstanceImportService {
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   protected String engineAlias;
   private DecisionInstanceWriter decisionInstanceWriter;
+  private DecisionDefinitionVersionResolverService decisionDefinitionVersionResolverService;
 
   public DecisionInstanceImportService(DecisionInstanceWriter decisionInstanceWriter,
                                        ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-                                       EngineContext engineContext
+                                       EngineContext engineContext,
+                                       DecisionDefinitionVersionResolverService decisionDefinitionVersionResolverService
   ) {
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.engineAlias = engineContext.getEngineAlias();
     this.decisionInstanceWriter = decisionInstanceWriter;
+    this.decisionDefinitionVersionResolverService = decisionDefinitionVersionResolverService;
   }
 
   public void executeImport(List<HistoricDecisionInstanceDto> engineDtoList) {
@@ -40,7 +44,8 @@ public class DecisionInstanceImportService {
     boolean newDataIsAvailable = !engineDtoList.isEmpty();
     if (newDataIsAvailable) {
       final List<DecisionInstanceDto> optimizeDtos = mapEngineEntitiesToOptimizeEntities(engineDtoList);
-      final ElasticsearchImportJob<DecisionInstanceDto> elasticsearchImportJob = createElasticsearchImportJob(optimizeDtos);
+      final ElasticsearchImportJob<DecisionInstanceDto> elasticsearchImportJob = createElasticsearchImportJob(
+        optimizeDtos);
       addElasticsearchImportJobToQueue(elasticsearchImportJob);
     }
   }
@@ -74,6 +79,7 @@ public class DecisionInstanceImportService {
     decisionInstanceDto.setProcessDefinitionId(engineEntity.getProcessDefinitionId());
     decisionInstanceDto.setDecisionDefinitionId(engineEntity.getDecisionDefinitionId());
     decisionInstanceDto.setDecisionDefinitionKey(engineEntity.getDecisionDefinitionKey());
+    decisionInstanceDto.setDecisionDefinitionVersion(resolveDecisionDefinitionVersion(engineEntity));
     decisionInstanceDto.setEvaluationTime(engineEntity.getEvaluationTime());
     decisionInstanceDto.setProcessInstanceId(engineEntity.getProcessInstanceId());
     decisionInstanceDto.setRootProcessInstanceId(engineEntity.getRootProcessInstanceId());
@@ -97,6 +103,18 @@ public class DecisionInstanceImportService {
 
     decisionInstanceDto.setEngine(engineAlias);
     return decisionInstanceDto;
+  }
+
+  private String resolveDecisionDefinitionVersion(final HistoricDecisionInstanceDto engineEntity) {
+    return decisionDefinitionVersionResolverService
+      .getVersionForDecisionDefinitionId(engineEntity.getDecisionDefinitionId())
+      .orElseThrow(() -> {
+        final String message = String.format(
+          "Couldn't obtain version for processDefinitionId %s, decisionDefinition wasn't imported yet",
+          engineEntity.getDecisionDefinitionId()
+        );
+        return new OptimizeRuntimeException(message);
+      });
   }
 
   private InputInstanceDto mapEngineInputDtoToOptimizeInputDto(final HistoricDecisionInputInstanceDto engineInputDto) {

@@ -14,6 +14,7 @@ public class DecisionInstanceDto implements OptimizeDto {
 
   private String decisionDefinitionId;
   private String decisionDefinitionKey;
+  private String decisionDefinitionVersion;
 
   private OffsetDateTime evaluationTime;
 
@@ -69,6 +70,14 @@ public class DecisionInstanceDto implements OptimizeDto {
 
   public void setDecisionDefinitionKey(final String decisionDefinitionKey) {
     this.decisionDefinitionKey = decisionDefinitionKey;
+  }
+
+  public String getDecisionDefinitionVersion() {
+    return decisionDefinitionVersion;
+  }
+
+  public void setDecisionDefinitionVersion(final String decisionDefinitionVersion) {
+    this.decisionDefinitionVersion = decisionDefinitionVersion;
   }
 
   public OffsetDateTime getEvaluationTime() {

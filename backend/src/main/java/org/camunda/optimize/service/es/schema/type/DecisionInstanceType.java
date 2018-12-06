@@ -16,6 +16,7 @@ public class DecisionInstanceType extends StrictTypeMappingCreator {
 
   public static final String DECISION_DEFINITION_ID = "decisionDefinitionId";
   public static final String DECISION_DEFINITION_KEY = "decisionDefinitionKey";
+  public static final String DECISION_DEFINITION_VERSION = "decisionDefinitionVersion";
 
   public static final String EVALUATION_TIME = "evaluationTime";
 
@@ -63,6 +64,9 @@ public class DecisionInstanceType extends StrictTypeMappingCreator {
               .field("type", "keyword")
             .endObject()
             .startObject(DECISION_DEFINITION_KEY)
+              .field("type", "keyword")
+            .endObject()
+              .startObject(DECISION_DEFINITION_VERSION)
               .field("type", "keyword")
             .endObject()
             .startObject(PROCESS_DEFINITION_ID)

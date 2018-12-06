@@ -12,6 +12,19 @@ public class DecisionDefinitionOptimizeDto implements Serializable, OptimizeDto 
   private String dmn10Xml;
   private String engine;
 
+  public DecisionDefinitionOptimizeDto() {
+  }
+
+  public DecisionDefinitionOptimizeDto(final String id, final String key, final String version, final String name,
+                                       final String dmn10Xml, final String engine) {
+    this.id = id;
+    this.key = key;
+    this.version = version;
+    this.name = name;
+    this.dmn10Xml = dmn10Xml;
+    this.engine = engine;
+  }
+
   public String getId() {
     return id;
   }

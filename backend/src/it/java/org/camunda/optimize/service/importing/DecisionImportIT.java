@@ -31,7 +31,6 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
 
-
 public class DecisionImportIT {
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
@@ -167,6 +166,7 @@ public class DecisionImportIT {
     assertThat(dto.getProcessDefinitionKey(), is(nullValue()));
     assertThat(dto.getDecisionDefinitionId(), is(notNullValue()));
     assertThat(dto.getDecisionDefinitionKey(), is(notNullValue()));
+    assertThat(dto.getDecisionDefinitionVersion(), is(notNullValue()));
     assertThat(dto.getEvaluationTime(), is(notNullValue()));
     assertThat(dto.getProcessInstanceId(), is(nullValue()));
     assertThat(dto.getRootProcessInstanceId(), is(nullValue()));
