@@ -159,7 +159,7 @@ public class BrokerReprocessingTest {
     reprocessingTrigger.accept(this);
 
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId(PROCESS_ID)
         .latestVersion()
@@ -176,7 +176,7 @@ public class BrokerReprocessingTest {
     deploy(WORKFLOW, "workflow.bpmn");
 
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId(PROCESS_ID)
         .latestVersion()
@@ -189,7 +189,7 @@ public class BrokerReprocessingTest {
     reprocessingTrigger.accept(this);
 
     clientRule
-        .getJobClient()
+        .getClient()
         .newWorker()
         .jobType("foo")
         .handler(
@@ -208,7 +208,7 @@ public class BrokerReprocessingTest {
     deploy(WORKFLOW, "workflow.bpmn");
 
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId(PROCESS_ID)
         .latestVersion()
@@ -216,7 +216,7 @@ public class BrokerReprocessingTest {
         .join();
 
     final RecordingJobHandler recordingJobHandler = new RecordingJobHandler();
-    clientRule.getJobClient().newWorker().jobType("foo").handler(recordingJobHandler).open();
+    clientRule.getClient().newWorker().jobType("foo").handler(recordingJobHandler).open();
 
     waitUntil(() -> !recordingJobHandler.getHandledJobs().isEmpty());
 
@@ -225,7 +225,7 @@ public class BrokerReprocessingTest {
 
     final ActivatedJob jobEvent = recordingJobHandler.getHandledJobs().get(0);
 
-    clientRule.getJobClient().newCompleteCommand(jobEvent.getKey()).send().join();
+    clientRule.getClient().newCompleteCommand(jobEvent.getKey()).send().join();
 
     // then
     assertJobCompleted();
@@ -239,7 +239,7 @@ public class BrokerReprocessingTest {
     deploy(WORKFLOW_TWO_TASKS, "two-tasks.bpmn");
 
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId(PROCESS_ID)
         .latestVersion()
@@ -247,7 +247,7 @@ public class BrokerReprocessingTest {
         .join();
 
     clientRule
-        .getJobClient()
+        .getClient()
         .newWorker()
         .jobType("foo")
         .handler(
@@ -256,7 +256,7 @@ public class BrokerReprocessingTest {
 
     final CountDownLatch latch = new CountDownLatch(1);
     clientRule
-        .getJobClient()
+        .getClient()
         .newWorker()
         .jobType("bar")
         .handler((client, job) -> latch.countDown())
@@ -267,7 +267,7 @@ public class BrokerReprocessingTest {
     reprocessingTrigger.accept(this);
 
     clientRule
-        .getJobClient()
+        .getClient()
         .newWorker()
         .jobType("bar")
         .handler(
@@ -290,7 +290,7 @@ public class BrokerReprocessingTest {
 
     final DeploymentEvent deploymentResult =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newDeployCommand()
             .addWorkflowModel(WORKFLOW, "workflow.bpmn")
             .send()
@@ -301,7 +301,7 @@ public class BrokerReprocessingTest {
 
     final WorkflowInstanceEvent workflowInstanceV1 =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newCreateInstanceCommand()
             .bpmnProcessId(PROCESS_ID)
             .version(1)
@@ -310,7 +310,7 @@ public class BrokerReprocessingTest {
 
     final WorkflowInstanceEvent workflowInstanceV2 =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newCreateInstanceCommand()
             .bpmnProcessId(PROCESS_ID)
             .latestVersion()
@@ -329,7 +329,7 @@ public class BrokerReprocessingTest {
     clientRule.createSingleJob("foo");
 
     final RecordingJobHandler jobHandler = new RecordingJobHandler();
-    clientRule.getJobClient().newWorker().jobType("foo").handler(jobHandler).open();
+    clientRule.getClient().newWorker().jobType("foo").handler(jobHandler).open();
 
     waitUntil(() -> !jobHandler.getHandledJobs().isEmpty());
 
@@ -338,7 +338,7 @@ public class BrokerReprocessingTest {
 
     jobHandler.clear();
 
-    clientRule.getJobClient().newWorker().jobType("foo").handler(jobHandler).open();
+    clientRule.getClient().newWorker().jobType("foo").handler(jobHandler).open();
 
     // then
     TestUtil.doRepeatedly(() -> null)
@@ -355,7 +355,7 @@ public class BrokerReprocessingTest {
 
     final RecordingJobHandler jobHandler = new RecordingJobHandler();
     final JobWorker subscription =
-        clientRule.getJobClient().newWorker().jobType("foo").handler(jobHandler).open();
+        clientRule.getClient().newWorker().jobType("foo").handler(jobHandler).open();
 
     waitUntil(() -> !jobHandler.getHandledJobs().isEmpty());
     subscription.close();
@@ -368,13 +368,13 @@ public class BrokerReprocessingTest {
 
     jobHandler.clear();
 
-    clientRule.getJobClient().newWorker().jobType("foo").handler(jobHandler).open();
+    clientRule.getClient().newWorker().jobType("foo").handler(jobHandler).open();
 
     // then
     waitUntil(() -> !jobHandler.getHandledJobs().isEmpty());
 
     final ActivatedJob jobEvent = jobHandler.getHandledJobs().get(0);
-    clientRule.getJobClient().newCompleteCommand(jobEvent.getKey()).send().join();
+    clientRule.getClient().newCompleteCommand(jobEvent.getKey()).send().join();
 
     assertJobCompleted();
   }
@@ -387,7 +387,7 @@ public class BrokerReprocessingTest {
 
     final WorkflowInstanceEvent instance =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newCreateInstanceCommand()
             .bpmnProcessId(PROCESS_ID)
             .latestVersion()
@@ -401,7 +401,7 @@ public class BrokerReprocessingTest {
     reprocessingTrigger.accept(this);
 
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newUpdatePayloadCommand(instance.getWorkflowInstanceKey())
         .payload("{\"foo\":\"bar\"}")
         .send()
@@ -420,7 +420,7 @@ public class BrokerReprocessingTest {
 
     final WorkflowInstanceEvent instanceEvent =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newCreateInstanceCommand()
             .bpmnProcessId(PROCESS_ID)
             .latestVersion()
@@ -431,7 +431,7 @@ public class BrokerReprocessingTest {
     assertElementReady("task");
 
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newUpdatePayloadCommand(instanceEvent.getWorkflowInstanceKey())
         .payload("{\"x\":\"y\"}")
         .send()
@@ -443,7 +443,7 @@ public class BrokerReprocessingTest {
     reprocessingTrigger.accept(this);
 
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newUpdatePayloadCommand(instanceEvent.getWorkflowInstanceKey())
         .payload("{\"foo\":\"bar\"}")
         .send()
@@ -550,7 +550,7 @@ public class BrokerReprocessingTest {
     // given
     final long deployment1Key =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newDeployCommand()
             .addWorkflowModel(WORKFLOW_INCIDENT, "incident.bpmn")
             .send()
@@ -563,7 +563,7 @@ public class BrokerReprocessingTest {
 
     final long deployment2Key =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newDeployCommand()
             .addWorkflowModel(WORKFLOW_INCIDENT, "incident.bpmn")
             .send()
@@ -649,7 +649,7 @@ public class BrokerReprocessingTest {
 
   private WorkflowInstanceEvent startWorkflowInstance(final String bpmnProcessId) {
     return clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId(bpmnProcessId)
         .latestVersion()
@@ -660,7 +660,7 @@ public class BrokerReprocessingTest {
   protected WorkflowInstanceEvent startWorkflowInstance(
       final String bpmnProcessId, final Map<String, Object> payload) {
     return clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId(bpmnProcessId)
         .latestVersion()
@@ -672,7 +672,7 @@ public class BrokerReprocessingTest {
   protected void publishMessage(
       final String messageName, final String correlationKey, final Map<String, Object> payload) {
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newPublishMessageCommand()
         .messageName(messageName)
         .correlationKey(correlationKey)
@@ -710,7 +710,7 @@ public class BrokerReprocessingTest {
   private void deploy(final BpmnModelInstance workflowTwoTasks, final String s) {
     final DeploymentEvent deploymentEvent =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newDeployCommand()
             .addWorkflowModel(workflowTwoTasks, s)
             .send()

@@ -16,6 +16,7 @@
 package io.zeebe.exporter;
 
 import static io.zeebe.test.util.record.RecordingExporter.workflowInstanceRecords;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.carrotsearch.hppc.cursors.ObjectCursor;
@@ -90,7 +91,6 @@ public class ElasticsearchExporterIT {
 
     // deploy workflow
     zeebeClient
-        .workflowClient()
         .newDeployCommand()
         .addWorkflowModel(WORKFLOW, "workflow.bpmn")
         .addWorkflowModel(SECOND_WORKFLOW, "secondWorkflow.bpmn")
@@ -99,7 +99,6 @@ public class ElasticsearchExporterIT {
 
     // start instance
     zeebeClient
-        .workflowClient()
         .newCreateInstanceCommand()
         .bpmnProcessId("testProcess")
         .latestVersion()
@@ -111,7 +110,6 @@ public class ElasticsearchExporterIT {
     final AtomicBoolean fail = new AtomicBoolean(true);
 
     zeebeClient
-        .jobClient()
         .newWorker()
         .jobType("work")
         .handler(
@@ -127,7 +125,6 @@ public class ElasticsearchExporterIT {
 
     // publish message to trigger message catch event
     zeebeClient
-        .workflowClient()
         .newPublishMessageCommand()
         .messageName("catch")
         .correlationKey(orderId)
@@ -138,13 +135,8 @@ public class ElasticsearchExporterIT {
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();
     // update retries to resolve incident
-    zeebeClient
-        .jobClient()
-        .newUpdateRetriesCommand(incident.getValue().getJobKey())
-        .retries(3)
-        .send()
-        .join();
-    zeebeClient.workflowClient().newResolveIncidentCommand(incident.getKey()).send().join();
+    zeebeClient.newUpdateRetriesCommand(incident.getValue().getJobKey()).retries(3).send().join();
+    zeebeClient.newResolveIncidentCommand(incident.getKey()).send().join();
 
     // wait until workflow instance is completed
     TestUtil.waitUntil(

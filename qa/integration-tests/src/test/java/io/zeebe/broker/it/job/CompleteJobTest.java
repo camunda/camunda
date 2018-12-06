@@ -54,7 +54,7 @@ public class CompleteJobTest {
     clientRule.createSingleJob("test");
 
     final RecordingJobHandler jobHandler = new RecordingJobHandler();
-    clientRule.getJobClient().newWorker().jobType("test").handler(jobHandler).open();
+    clientRule.getClient().newWorker().jobType("test").handler(jobHandler).open();
 
     waitUntil(() -> !jobHandler.getHandledJobs().isEmpty());
     jobEvent = jobHandler.getHandledJobs().get(0);
@@ -64,7 +64,7 @@ public class CompleteJobTest {
   @Test
   public void shouldCompleteJobWithoutPayload() {
     // when
-    clientRule.getJobClient().newCompleteCommand(jobKey).send().join();
+    clientRule.getClient().newCompleteCommand(jobKey).send().join();
 
     // then
     ZeebeAssertHelper.assertJobCompleted(
@@ -78,7 +78,7 @@ public class CompleteJobTest {
   @Test
   public void shouldCompleteJobNullPayload() {
     // when
-    clientRule.getJobClient().newCompleteCommand(jobKey).payload("null").send().join();
+    clientRule.getClient().newCompleteCommand(jobKey).payload("null").send().join();
 
     // then
     ZeebeAssertHelper.assertJobCompleted(
@@ -92,7 +92,7 @@ public class CompleteJobTest {
   @Test
   public void shouldCompleteJobWithPayload() {
     // when
-    clientRule.getJobClient().newCompleteCommand(jobKey).payload("{\"foo\":\"bar\"}").send().join();
+    clientRule.getClient().newCompleteCommand(jobKey).payload("{\"foo\":\"bar\"}").send().join();
 
     // then
     ZeebeAssertHelper.assertJobCompleted(
@@ -108,7 +108,7 @@ public class CompleteJobTest {
     // when
     final Throwable throwable =
         catchThrowable(
-            () -> clientRule.getJobClient().newCompleteCommand(jobKey).payload("[]").send().join());
+            () -> clientRule.getClient().newCompleteCommand(jobKey).payload("[]").send().join());
 
     // then
     assertThat(throwable).isInstanceOf(ClientException.class);
@@ -120,7 +120,7 @@ public class CompleteJobTest {
   public void shouldCompleteJobWithPayloadAsMap() {
     // when
     clientRule
-        .getJobClient()
+        .getClient()
         .newCompleteCommand(jobKey)
         .payload(Collections.singletonMap("foo", "bar"))
         .send()
@@ -141,7 +141,7 @@ public class CompleteJobTest {
     payload.foo = "bar";
 
     // when
-    clientRule.getJobClient().newCompleteCommand(jobKey).payload(payload).send().join();
+    clientRule.getClient().newCompleteCommand(jobKey).payload(payload).send().join();
 
     // then
     ZeebeAssertHelper.assertJobCompleted(
@@ -155,7 +155,7 @@ public class CompleteJobTest {
   @Test
   public void shouldProvideReasonInExceptionMessageOnRejection() {
     // given
-    final JobClient jobClient = clientRule.getClient().jobClient();
+    final JobClient jobClient = clientRule.getClient();
     final long jobKey = clientRule.createSingleJob("bar");
     jobClient.newCompleteCommand(jobKey).send().join();
 

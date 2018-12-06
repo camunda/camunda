@@ -30,7 +30,7 @@ public class JobUpdateRetriesTest extends ClientTest {
     final int newRetries = 23;
 
     // when
-    client.jobClient().newUpdateRetriesCommand(jobKey).retries(newRetries).send().join();
+    client.newUpdateRetriesCommand(jobKey).retries(newRetries).send().join();
 
     // then
     final UpdateJobRetriesRequest request = gatewayService.getLastRequest();

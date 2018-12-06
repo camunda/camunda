@@ -35,7 +35,6 @@ public class PublishMessageTest extends ClientTest {
   public void shouldPublishMessage() {
     // when
     client
-        .workflowClient()
         .newPublishMessageCommand()
         .messageName("name")
         .correlationKey("key")
@@ -56,7 +55,6 @@ public class PublishMessageTest extends ClientTest {
   public void shouldPublishMessageWithStringPayload() {
     // when
     client
-        .workflowClient()
         .newPublishMessageCommand()
         .messageName("name")
         .correlationKey("key")
@@ -77,7 +75,6 @@ public class PublishMessageTest extends ClientTest {
 
     // when
     client
-        .workflowClient()
         .newPublishMessageCommand()
         .messageName("name")
         .correlationKey("key")
@@ -98,7 +95,6 @@ public class PublishMessageTest extends ClientTest {
 
     // when
     client
-        .workflowClient()
         .newPublishMessageCommand()
         .messageName("name")
         .correlationKey("key")
@@ -115,7 +111,6 @@ public class PublishMessageTest extends ClientTest {
   public void shouldPublishMessageWithObjectPayload() {
     // when
     client
-        .workflowClient()
         .newPublishMessageCommand()
         .messageName("name")
         .correlationKey("key")
@@ -138,7 +133,6 @@ public class PublishMessageTest extends ClientTest {
     assertThatThrownBy(
             () ->
                 client
-                    .workflowClient()
                     .newPublishMessageCommand()
                     .messageName("name")
                     .correlationKey("key")

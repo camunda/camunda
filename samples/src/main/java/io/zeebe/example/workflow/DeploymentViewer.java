@@ -17,7 +17,6 @@ package io.zeebe.example.workflow;
 
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
-import io.zeebe.client.api.clients.WorkflowClient;
 import io.zeebe.client.api.commands.WorkflowResource;
 import io.zeebe.client.api.commands.Workflows;
 
@@ -31,9 +30,8 @@ public class DeploymentViewer {
         ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
     try (ZeebeClient client = clientBuilder.build()) {
-      final WorkflowClient workflowClient = client.workflowClient();
 
-      final Workflows workflows = workflowClient.newWorkflowRequest().send().join();
+      final Workflows workflows = client.newWorkflowRequest().send().join();
 
       System.out.println("Printing all deployed workflows:");
 
@@ -44,11 +42,7 @@ public class DeploymentViewer {
                 System.out.println("Workflow resource for " + wf + ":");
 
                 final WorkflowResource resource =
-                    workflowClient
-                        .newResourceRequest()
-                        .workflowKey(wf.getWorkflowKey())
-                        .send()
-                        .join();
+                    client.newResourceRequest().workflowKey(wf.getWorkflowKey()).send().join();
 
                 System.out.println(resource);
               });

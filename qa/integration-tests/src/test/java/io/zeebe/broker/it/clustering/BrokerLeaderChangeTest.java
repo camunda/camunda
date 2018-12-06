@@ -97,7 +97,7 @@ public class BrokerLeaderChangeTest {
 
       jobWorker =
           clientRule
-              .getJobClient()
+              .getClient()
               .newWorker()
               .jobType(JOB_TYPE)
               .handler(

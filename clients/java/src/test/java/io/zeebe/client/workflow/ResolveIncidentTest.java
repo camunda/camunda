@@ -26,7 +26,7 @@ public class ResolveIncidentTest extends ClientTest {
   @Test
   public void shouldSendCommand() {
     // when
-    client.workflowClient().newResolveIncidentCommand(123).send().join();
+    client.newResolveIncidentCommand(123).send().join();
 
     // then
     final ResolveIncidentRequest request = gatewayService.getLastRequest();

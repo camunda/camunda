@@ -47,7 +47,7 @@ public class CreateWorkflowInstanceTest {
   public void deployProcess() {
     firstDeployment =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newDeployCommand()
             .addWorkflowModel(
                 Bpmn.createExecutableProcess("anId").startEvent().endEvent().done(),
@@ -57,7 +57,7 @@ public class CreateWorkflowInstanceTest {
 
     final DeploymentEvent secondDeployment =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newDeployCommand()
             .addWorkflowModel(
                 Bpmn.createExecutableProcess("anId").startEvent().endEvent().done(),
@@ -73,7 +73,7 @@ public class CreateWorkflowInstanceTest {
     // when
     final WorkflowInstanceEvent workflowInstance =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newCreateInstanceCommand()
             .bpmnProcessId("anId")
             .latestVersion()
@@ -93,7 +93,7 @@ public class CreateWorkflowInstanceTest {
     // when
     final WorkflowInstanceEvent workflowInstance =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newCreateInstanceCommand()
             .bpmnProcessId("anId")
             .version(1)
@@ -114,12 +114,7 @@ public class CreateWorkflowInstanceTest {
 
     // when
     final WorkflowInstanceEvent workflowInstance =
-        clientRule
-            .getWorkflowClient()
-            .newCreateInstanceCommand()
-            .workflowKey(workflowKey)
-            .send()
-            .join();
+        clientRule.getClient().newCreateInstanceCommand().workflowKey(workflowKey).send().join();
 
     // then
     assertThat(workflowInstance.getBpmnProcessId()).isEqualTo("anId");
@@ -133,7 +128,7 @@ public class CreateWorkflowInstanceTest {
   public void shouldCreateWithPayload() {
     // when
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId("anId")
         .latestVersion()
@@ -153,7 +148,7 @@ public class CreateWorkflowInstanceTest {
   public void shouldCreateWithoutPayload() {
     // when
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId("anId")
         .latestVersion()
@@ -172,7 +167,7 @@ public class CreateWorkflowInstanceTest {
   public void shouldCreateWithNullPayload() {
     // when
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId("anId")
         .latestVersion()
@@ -197,7 +192,7 @@ public class CreateWorkflowInstanceTest {
         catchThrowable(
             () ->
                 clientRule
-                    .getWorkflowClient()
+                    .getClient()
                     .newCreateInstanceCommand()
                     .bpmnProcessId("anId")
                     .latestVersion()
@@ -215,7 +210,7 @@ public class CreateWorkflowInstanceTest {
   public void shouldCreateWithPayloadAsMap() {
     // when
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId("anId")
         .latestVersion()
@@ -238,7 +233,7 @@ public class CreateWorkflowInstanceTest {
 
     // when
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId("anId")
         .latestVersion()
@@ -262,7 +257,7 @@ public class CreateWorkflowInstanceTest {
 
     // when
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId("illegal")
         .latestVersion()
@@ -277,7 +272,7 @@ public class CreateWorkflowInstanceTest {
     exception.expectMessage("Command (CREATE) was rejected");
 
     // when
-    clientRule.getWorkflowClient().newCreateInstanceCommand().workflowKey(99L).send().join();
+    clientRule.getClient().newCreateInstanceCommand().workflowKey(99L).send().join();
   }
 
   public static class PayloadObject {

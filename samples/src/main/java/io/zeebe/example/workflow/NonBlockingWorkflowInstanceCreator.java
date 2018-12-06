@@ -18,7 +18,6 @@ package io.zeebe.example.workflow;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.api.ZeebeFuture;
-import io.zeebe.client.api.clients.WorkflowClient;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 
 public class NonBlockingWorkflowInstanceCreator {
@@ -30,8 +29,6 @@ public class NonBlockingWorkflowInstanceCreator {
     final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
     try (ZeebeClient client = builder.build()) {
-      final WorkflowClient workflowClient = client.workflowClient();
-
       System.out.println("Creating " + numberOfInstances + " workflow instances");
 
       final long startTime = System.currentTimeMillis();
@@ -41,11 +38,7 @@ public class NonBlockingWorkflowInstanceCreator {
       while (instancesCreating < numberOfInstances) {
         // this is non-blocking/async => returns a future
         final ZeebeFuture<WorkflowInstanceEvent> future =
-            workflowClient
-                .newCreateInstanceCommand()
-                .bpmnProcessId(bpmnProcessId)
-                .latestVersion()
-                .send();
+            client.newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion().send();
 
         // could put the future somewhere and eventually wait for its completion
 
@@ -54,12 +47,7 @@ public class NonBlockingWorkflowInstanceCreator {
 
       // creating one more instance; joining on this future ensures
       // that all the other create commands were handled
-      workflowClient
-          .newCreateInstanceCommand()
-          .bpmnProcessId(bpmnProcessId)
-          .latestVersion()
-          .send()
-          .join();
+      client.newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion().send().join();
 
       System.out.println("Took: " + (System.currentTimeMillis() - startTime));
     }

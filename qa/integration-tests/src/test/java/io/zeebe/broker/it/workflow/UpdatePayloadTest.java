@@ -59,7 +59,7 @@ public class UpdatePayloadTest {
   public void init() {
     final DeploymentEvent deploymentEvent =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newDeployCommand()
             .addWorkflowModel(WORKFLOW, "workflow.bpmn")
             .send()
@@ -68,7 +68,7 @@ public class UpdatePayloadTest {
     clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
 
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId("process")
         .latestVersion()
@@ -89,7 +89,7 @@ public class UpdatePayloadTest {
 
     // when
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newUpdatePayloadCommand(workflowInstanceKey)
         .payload(PAYLOAD)
         .send()
@@ -116,7 +116,7 @@ public class UpdatePayloadTest {
 
     // when
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newUpdatePayloadCommand(workflowInstanceKey)
         .payload("null")
         .send()
@@ -144,7 +144,7 @@ public class UpdatePayloadTest {
         catchThrowable(
             () ->
                 clientRule
-                    .getWorkflowClient()
+                    .getClient()
                     .newUpdatePayloadCommand(
                         workflowInstanceRecordValueRecord.getValue().getWorkflowInstanceKey())
                     .payload("[]")
@@ -167,7 +167,7 @@ public class UpdatePayloadTest {
             .get();
 
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newUpdatePayloadCommand(
             workflowInstanceRecordValueRecord.getValue().getWorkflowInstanceKey())
         .payload(PAYLOAD)
@@ -177,7 +177,7 @@ public class UpdatePayloadTest {
 
     // when
     clientRule
-        .getJobClient()
+        .getClient()
         .newWorker()
         .jobType("task-1")
         .handler(
@@ -211,7 +211,7 @@ public class UpdatePayloadTest {
 
     // when
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newUpdatePayloadCommand(workflowInstanceKey)
         .payload(Collections.singletonMap("foo", "bar"))
         .send()
@@ -241,7 +241,7 @@ public class UpdatePayloadTest {
 
     // when
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newUpdatePayloadCommand(workflowInstanceKey)
         .payload(newPayload)
         .send()
@@ -259,7 +259,7 @@ public class UpdatePayloadTest {
   public void shouldFailUpdatePayloadIfWorkflowInstanceIsCompleted() {
     // given
     clientRule
-        .getJobClient()
+        .getClient()
         .newWorker()
         .jobType("task-1")
         .handler(
@@ -283,7 +283,7 @@ public class UpdatePayloadTest {
 
     // when
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newUpdatePayloadCommand(workflowInstanceKey)
         .payload(PAYLOAD)
         .send()

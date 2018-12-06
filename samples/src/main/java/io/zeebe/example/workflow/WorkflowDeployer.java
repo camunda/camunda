@@ -17,7 +17,6 @@ package io.zeebe.example.workflow;
 
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
-import io.zeebe.client.api.clients.WorkflowClient;
 import io.zeebe.client.api.events.DeploymentEvent;
 
 public class WorkflowDeployer {
@@ -29,14 +28,9 @@ public class WorkflowDeployer {
         ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
     try (ZeebeClient client = clientBuilder.build()) {
-      final WorkflowClient workflowClient = client.workflowClient();
 
       final DeploymentEvent deploymentEvent =
-          workflowClient
-              .newDeployCommand()
-              .addResourceFromClasspath("demoProcess.bpmn")
-              .send()
-              .join();
+          client.newDeployCommand().addResourceFromClasspath("demoProcess.bpmn").send().join();
 
       System.out.println("Deployment created with key: " + deploymentEvent.getKey());
     }

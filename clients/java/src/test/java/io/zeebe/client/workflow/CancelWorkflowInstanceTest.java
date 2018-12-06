@@ -28,7 +28,7 @@ public class CancelWorkflowInstanceTest extends ClientTest {
   @Test
   public void shouldSendCancelCommand() {
     // when
-    client.workflowClient().newCancelInstanceCommand(123).send().join();
+    client.newCancelInstanceCommand(123).send().join();
 
     // then
     final CancelWorkflowInstanceRequest request = gatewayService.getLastRequest();
@@ -41,7 +41,7 @@ public class CancelWorkflowInstanceTest extends ClientTest {
     gatewayService.errorOnRequest(
         CancelWorkflowInstanceRequest.class, () -> new ClientException("Invalid request"));
 
-    assertThatThrownBy(() -> client.workflowClient().newCancelInstanceCommand(123).send().join())
+    assertThatThrownBy(() -> client.newCancelInstanceCommand(123).send().join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("Invalid request");
   }

@@ -41,7 +41,7 @@ public class GetWorkflowTest extends ClientTest {
 
     // when
     final WorkflowResource response =
-        client.workflowClient().newResourceRequest().workflowKey(workflowKey).send().join();
+        client.newResourceRequest().workflowKey(workflowKey).send().join();
 
     // then
     assertThat(response.getWorkflowKey()).isEqualTo(workflowKey);
@@ -63,13 +63,7 @@ public class GetWorkflowTest extends ClientTest {
     final int version = 435;
 
     // when
-    client
-        .workflowClient()
-        .newResourceRequest()
-        .bpmnProcessId(bpmnProcessId)
-        .version(version)
-        .send()
-        .join();
+    client.newResourceRequest().bpmnProcessId(bpmnProcessId).version(version).send().join();
 
     // then
     final GetWorkflowRequest request = gatewayService.getLastRequest();
@@ -84,13 +78,7 @@ public class GetWorkflowTest extends ClientTest {
     final String bpmnProcessId = "testProcess";
 
     // when
-    client
-        .workflowClient()
-        .newResourceRequest()
-        .bpmnProcessId(bpmnProcessId)
-        .latestVersion()
-        .send()
-        .join();
+    client.newResourceRequest().bpmnProcessId(bpmnProcessId).latestVersion().send().join();
 
     // then
     final GetWorkflowRequest request = gatewayService.getLastRequest();

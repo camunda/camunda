@@ -60,7 +60,7 @@ public class MessageCorrelationMultiplePartitionsTest {
   public void init() {
     final DeploymentEvent deploymentEvent =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newDeployCommand()
             .addWorkflowModel(WORKFLOW, "wf.bpmn")
             .send()
@@ -174,7 +174,7 @@ public class MessageCorrelationMultiplePartitionsTest {
 
   private void createWorkflowInstance(Object payload) {
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId(PROCESS_ID)
         .latestVersion()
@@ -185,7 +185,7 @@ public class MessageCorrelationMultiplePartitionsTest {
 
   private void publishMessage(String correlationKey, Object payload) {
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newPublishMessageCommand()
         .messageName("message")
         .correlationKey(correlationKey)
