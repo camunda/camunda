@@ -99,6 +99,8 @@ public class UpgradeFrom22To23 implements Upgrade {
           new CreateIndexAliasForExistingIndexStep(TIMESTAMP_BASED_IMPORT_INDEX_TYPE, TO_VERSION)
         )
         .addUpgradeStep(relocateProcessPart())
+        .addUpgradeStep(migrateSingleReportType())
+        .addUpgradeStep(migrateCombinedReportType())
         .addUpgradeStep(buildFillVisualizationFieldOfCombinedReportWithDataStep())
         .build();
       upgradePlan.execute();
@@ -168,6 +170,24 @@ public class UpgradeFrom22To23 implements Upgrade {
       QueryBuilders.matchAllQuery(),
       "ctx._source.data.parameters = [\"processPart\": ctx._source.data.processPart];" +
         "ctx._source.data.remove(\"processPart\");"
+    );
+  }
+
+  private UpdateDataStep migrateSingleReportType() {
+    return new UpdateDataStep(
+      SINGLE_PROCESS_REPORT_TYPE,
+      QueryBuilders.matchAllQuery(),
+      "ctx._source.reportType = \"process\";" +
+        "ctx._source.combined = false;"
+    );
+  }
+
+  private UpdateDataStep migrateCombinedReportType() {
+    return new UpdateDataStep(
+      COMBINED_REPORT_TYPE,
+      QueryBuilders.matchAllQuery(),
+      "ctx._source.reportType = \"process\";" +
+        "ctx._source.combined = true;"
     );
   }
 }
