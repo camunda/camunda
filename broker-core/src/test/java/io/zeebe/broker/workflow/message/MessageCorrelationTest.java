@@ -397,9 +397,8 @@ public class MessageCorrelationTest {
     testClient.publishMessage("msg1", "123", asMsgPack("foo", 1));
 
     // then
-    assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_ACTIVATED)
-                .limitToWorkflowInstanceCompleted())
+    assertThat(RecordingExporter.workflowInstanceRecords().limitToWorkflowInstanceCompleted())
+        .filteredOn(r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.EVENT_ACTIVATED)
         .extracting(Record::getValue)
         .extracting(WorkflowInstanceRecordValue::getElementId)
         .contains("msg1End")
@@ -417,9 +416,8 @@ public class MessageCorrelationTest {
     testClient.publishMessage("taskMsg", "123", asMsgPack("foo", 1));
 
     // then
-    assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_ACTIVATED)
-                .limitToWorkflowInstanceCompleted())
+    assertThat(RecordingExporter.workflowInstanceRecords().limitToWorkflowInstanceCompleted())
+        .filteredOn(r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.EVENT_ACTIVATED)
         .extracting(Record::getValue)
         .extracting(WorkflowInstanceRecordValue::getElementId)
         .contains("taskEnd")
@@ -437,9 +435,8 @@ public class MessageCorrelationTest {
     testClient.publishMessage("msg2", "123", asMsgPack("foo", 1));
 
     // then
-    assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_ACTIVATED)
-                .limitToWorkflowInstanceCompleted())
+    assertThat(RecordingExporter.workflowInstanceRecords().limitToWorkflowInstanceCompleted())
+        .filteredOn(r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.EVENT_ACTIVATED)
         .extracting(Record::getValue)
         .extracting(WorkflowInstanceRecordValue::getElementId)
         .contains("msg2End")
@@ -466,6 +463,7 @@ public class MessageCorrelationTest {
         .containsExactly(
             WorkflowInstanceIntent.EVENT_ACTIVATING,
             WorkflowInstanceIntent.EVENT_ACTIVATED,
+            WorkflowInstanceIntent.EVENT_OCCURRED,
             WorkflowInstanceIntent.EVENT_TRIGGERING,
             WorkflowInstanceIntent.EVENT_TRIGGERED);
   }
@@ -490,6 +488,7 @@ public class MessageCorrelationTest {
         .containsExactly(
             WorkflowInstanceIntent.ELEMENT_READY,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+            WorkflowInstanceIntent.EVENT_OCCURRED,
             WorkflowInstanceIntent.ELEMENT_COMPLETING,
             WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
@@ -512,9 +511,10 @@ public class MessageCorrelationTest {
         .containsSequence(
             tuple("task", WorkflowInstanceIntent.ELEMENT_READY),
             tuple("task", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("msg1", WorkflowInstanceIntent.EVENT_OCCURRED),
             tuple("task", WorkflowInstanceIntent.ELEMENT_TERMINATING),
-            tuple("msg1", WorkflowInstanceIntent.EVENT_TRIGGERING),
             tuple("task", WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple("msg1", WorkflowInstanceIntent.EVENT_TRIGGERING),
             tuple("msg1", WorkflowInstanceIntent.EVENT_TRIGGERED));
   }
 

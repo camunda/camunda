@@ -52,5 +52,7 @@ public class ReceiveTaskTransformer implements ModelElementTransformer<ReceiveTa
       TransformContext context, final ExecutableReceiveTask executableElement) {
     executableElement.bindLifecycleState(
         WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.SUBSCRIBE_RECEIVE_TASK);
+    executableElement.bindLifecycleState(
+        WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.TRIGGER_RECEIVE_TASK);
   }
 }

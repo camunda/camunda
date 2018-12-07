@@ -27,6 +27,6 @@ public class SubscribeReceiveTaskHandler implements BpmnStepHandler<ExecutableRe
   public void handle(final BpmnStepContext<ExecutableReceiveTask> context) {
     final ExecutableReceiveTask receiveTask = context.getElement();
 
-    context.getCatchEventOutput().subscribeToCatchEvents(context, receiveTask.getEvents());
+    context.getCatchEventBehavior().subscribeToEvents(context, receiveTask.getEvents());
   }
 }

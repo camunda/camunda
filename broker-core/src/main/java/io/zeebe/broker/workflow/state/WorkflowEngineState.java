@@ -113,6 +113,7 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
 
   public void onEventProduced(
       long key, WorkflowInstanceIntent state, WorkflowInstanceRecord value) {
+
     if (WorkflowInstanceLifecycle.isElementInstanceState(state)) {
       onElementInstanceEventProduced(key, state, value);
     } else if (state == WorkflowInstanceIntent.PAYLOAD_UPDATED) {

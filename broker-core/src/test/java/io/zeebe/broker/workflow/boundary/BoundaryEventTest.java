@@ -97,7 +97,9 @@ public class BoundaryEventTest {
     awaitProcessCompleted();
 
     // then
-    assertThat(RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_ACTIVATED))
+    assertThat(
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_ACTIVATED)
+                .limit(2))
         .extracting(Record::getValue)
         .extracting(WorkflowInstanceRecordValue::getElementId)
         .contains("end1", "end2");
@@ -220,6 +222,7 @@ public class BoundaryEventTest {
     // when
     testClient.receiveTimerRecord("timer", TimerIntent.CREATED);
     brokerRule.getClock().addTime(Duration.ofMinutes(1));
+
     awaitProcessCompleted();
 
     // then
@@ -237,8 +240,8 @@ public class BoundaryEventTest {
     assertRecordsPublishedInOrder(
         timerTriggered,
         subProcessTerminating,
-        boundaryTriggering,
         subProcessTerminated,
+        boundaryTriggering,
         boundaryTriggered);
   }
 

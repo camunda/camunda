@@ -27,16 +27,10 @@ import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionState;
-import io.zeebe.broker.workflow.processor.boundary.BoundaryEventActivator;
-import io.zeebe.broker.workflow.state.ElementInstance;
-import io.zeebe.broker.workflow.state.StoredRecord;
-import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
+import io.zeebe.broker.workflow.processor.CatchEventBehavior;
 import io.zeebe.broker.workflow.state.WorkflowInstanceSubscription;
-import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.clientapi.RejectionType;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.util.sched.ActorControl;
 import java.time.Duration;
@@ -48,9 +42,8 @@ public final class CorrelateWorkflowInstanceSubscription
   public static final Duration SUBSCRIPTION_TIMEOUT = Duration.ofSeconds(10);
   public static final Duration SUBSCRIPTION_CHECK_INTERVAL = Duration.ofSeconds(30);
 
-  private final BoundaryEventActivator boundaryEventActivator;
+  private final CatchEventBehavior catchEventBehavior;
   private final TopologyManager topologyManager;
-  private final WorkflowState workflowState;
   private final WorkflowInstanceSubscriptionState subscriptionState;
   private final SubscriptionCommandSender subscriptionCommandSender;
 
@@ -58,15 +51,13 @@ public final class CorrelateWorkflowInstanceSubscription
 
   public CorrelateWorkflowInstanceSubscription(
       final TopologyManager topologyManager,
-      final WorkflowState workflowState,
       final WorkflowInstanceSubscriptionState subscriptionState,
       final SubscriptionCommandSender subscriptionCommandSender,
-      final BoundaryEventActivator boundaryEventActivator) {
+      final CatchEventBehavior catchEventBehavior) {
     this.topologyManager = topologyManager;
-    this.workflowState = workflowState;
     this.subscriptionState = subscriptionState;
     this.subscriptionCommandSender = subscriptionCommandSender;
-    this.boundaryEventActivator = boundaryEventActivator;
+    this.catchEventBehavior = catchEventBehavior;
   }
 
   @Override
@@ -110,68 +101,19 @@ public final class CorrelateWorkflowInstanceSubscription
 
     sideEffect.accept(this::sendAcknowledgeCommand);
 
-    correlateMessageToWorkflowInstance(record, streamWriter, elementInstanceKey, subscription);
-  }
+    final boolean isOccurred =
+        catchEventBehavior.occurEventForElement(
+            elementInstanceKey,
+            subscription.getHandlerNodeId(),
+            record.getValue().getPayload(),
+            streamWriter);
 
-  private void correlateMessageToWorkflowInstance(
-      final TypedRecord<WorkflowInstanceSubscriptionRecord> record,
-      final TypedStreamWriter streamWriter,
-      final long elementInstanceKey,
-      final WorkflowInstanceSubscription subscription) {
-
-    // TODO handler trigger events in a uniform way - #1699
-
-    final ElementInstance elementInstance =
-        workflowState.getElementInstanceState().getInstance(elementInstanceKey);
-
-    if (elementInstance != null
-        && elementInstance.getState() == WorkflowInstanceIntent.ELEMENT_ACTIVATED) {
-
-      final WorkflowInstanceRecord value = elementInstance.getValue();
-      value.setPayload(subscriptionRecord.getPayload());
-
+    if (isOccurred) {
       streamWriter.appendFollowUpEvent(
           record.getKey(), WorkflowInstanceSubscriptionIntent.CORRELATED, subscriptionRecord);
-
-      if (boundaryEventActivator.shouldActivateBoundaryEvent(
-          elementInstance, subscription.getHandlerNodeId())) {
-        boundaryEventActivator.activateBoundaryEvent(
-            workflowState,
-            elementInstance,
-            subscription.getHandlerNodeId(),
-            subscriptionRecord.getPayload(),
-            streamWriter);
-      } else {
-        streamWriter.appendFollowUpEvent(
-            elementInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETING, value);
-        elementInstance.setState(WorkflowInstanceIntent.ELEMENT_COMPLETING);
-        elementInstance.setValue(value);
-      }
-
-      workflowState.getElementInstanceState().flushDirtyState();
-
     } else {
-
-      final StoredRecord tokenEvent =
-          workflowState.getElementInstanceState().getTokenEvent(elementInstanceKey);
-
-      if (tokenEvent != null && tokenEvent.getPurpose() == Purpose.DEFERRED_TOKEN) {
-        // continue at an event-based gateway
-        final WorkflowInstanceRecord deferedRecord = tokenEvent.getRecord().getValue();
-        deferedRecord
-            .setPayload(subscriptionRecord.getPayload())
-            .setElementId(subscription.getHandlerNodeId());
-
-        streamWriter.appendFollowUpEvent(
-            record.getKey(), WorkflowInstanceSubscriptionIntent.CORRELATED, subscriptionRecord);
-
-        streamWriter.appendFollowUpEvent(
-            tokenEvent.getKey(), WorkflowInstanceIntent.EVENT_TRIGGERING, deferedRecord);
-
-      } else {
-        streamWriter.appendRejection(
-            record, RejectionType.NOT_APPLICABLE, "activity is not active anymore");
-      }
+      streamWriter.appendRejection(
+          record, RejectionType.NOT_APPLICABLE, "activity is not active anymore");
     }
   }
 

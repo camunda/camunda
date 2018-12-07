@@ -36,7 +36,8 @@ public enum WorkflowInstanceIntent implements Intent {
   EVENT_ACTIVATING((short) 12),
   EVENT_ACTIVATED((short) 13),
   EVENT_TRIGGERING((short) 14),
-  EVENT_TRIGGERED((short) 15);
+  EVENT_TRIGGERED((short) 15),
+  EVENT_OCCURRED((short) 16);
 
   private final short value;
 
@@ -82,6 +83,8 @@ public enum WorkflowInstanceIntent implements Intent {
         return EVENT_TRIGGERING;
       case 15:
         return EVENT_TRIGGERED;
+      case 16:
+        return EVENT_OCCURRED;
       default:
         return Intent.UNKNOWN;
     }

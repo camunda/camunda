@@ -23,6 +23,7 @@ import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.timeout;
@@ -35,6 +36,7 @@ import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.JobIntent;
@@ -46,7 +48,6 @@ import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -108,11 +109,6 @@ public class WorkflowInstanceStreamProcessorTest {
   @Before
   public void setUp() {
     streamProcessor = streamProcessorRule.getStreamProcessor();
-  }
-
-  @After
-  public void foo() {
-    envRule.printAllRecords();
   }
 
   @Test
@@ -565,6 +561,8 @@ public class WorkflowInstanceStreamProcessorTest {
     streamProcessor.blockAfterJobEvent(r -> r.getMetadata().getIntent() == JobIntent.CREATED);
     streamProcessorRule.createWorkflowInstance(PROCESS_ID);
 
+    waitUntil(() -> streamProcessor.isBlocked());
+
     // when
     final TypedRecord<TimerRecord> timerRecord =
         streamProcessorRule.awaitTimerInState("timer1", TimerIntent.CREATED);
@@ -578,12 +576,14 @@ public class WorkflowInstanceStreamProcessorTest {
 
     // then
 
-    // will still output the events since the trigger was written before the task was completed,
-    // but it will not do anything.
     assertThat(envRule.events().onlyTimerRecords().collect(Collectors.toList()))
-        .extracting(r -> r.getMetadata().getIntent())
+        .extracting(TypedRecord::getMetadata)
+        .extracting(m -> tuple(m.getRecordType(), m.getIntent()))
         .containsExactly(
-            TimerIntent.CREATE, TimerIntent.CREATED, TimerIntent.TRIGGER, TimerIntent.TRIGGERED);
+            tuple(RecordType.COMMAND, TimerIntent.CREATE),
+            tuple(RecordType.EVENT, TimerIntent.CREATED),
+            tuple(RecordType.COMMAND, TimerIntent.TRIGGER),
+            tuple(RecordType.COMMAND_REJECTION, TimerIntent.TRIGGER));
     // ensures timer1 node never exists as far as execution goes
     assertThat(
             envRule
@@ -616,6 +616,8 @@ public class WorkflowInstanceStreamProcessorTest {
             r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED
                 && r.getValue().getElementId().equals(wrapString("task")));
     streamProcessorRule.createWorkflowInstance(PROCESS_ID);
+
+    waitUntil(() -> streamProcessor.isBlocked());
 
     // when
     final TypedRecord<TimerRecord> timer1Record =

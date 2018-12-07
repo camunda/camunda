@@ -45,12 +45,6 @@ public class TerminateFlowNodeHandler implements BpmnStepHandler<ExecutableFlowN
     final long elementInstanceKey = elementInstance.getKey();
     incidentState.forExistingWorkflowIncident(elementInstanceKey, this::resolveExistingIncident);
 
-    if (elementInstance.isInterrupted()) {
-      context
-          .getCatchEventOutput()
-          .triggerInterruptedElement(elementInstance, context.getOutput().getStreamWriter());
-    }
-
     output.appendFollowUpEvent(
         context.getRecord().getKey(),
         WorkflowInstanceIntent.ELEMENT_TERMINATED,

@@ -50,23 +50,19 @@ public class TerminateContainedElementsHandler
     final EventOutput output = context.getOutput();
     final ElementInstanceState elementInstanceState = workflowState.getElementInstanceState();
 
-    context.getCatchEventOutput().unsubscribeFromCatchEvents(elementInstance.getKey(), context);
+    context.getCatchEventBehavior().unsubscribeFromEvents(elementInstance.getKey(), context);
 
     final List<IndexedRecord> deferredTokens =
         elementInstanceState.getDeferredTokens(elementInstance.getKey());
     for (IndexedRecord deferedToken : deferredTokens) {
-      context.getCatchEventOutput().unsubscribeFromCatchEvents(deferedToken.getKey(), context);
+      context.getCatchEventBehavior().unsubscribeFromEvents(deferedToken.getKey(), context);
       output.consumeDeferredEvent(elementInstance.getKey(), deferedToken.getKey());
     }
 
     final List<ElementInstance> children =
         elementInstanceState.getChildren(elementInstance.getKey());
+
     if (children.isEmpty()) {
-      if (elementInstance.isInterrupted()) {
-        context
-            .getCatchEventOutput()
-            .triggerInterruptedElement(elementInstance, output.getStreamWriter());
-      }
 
       elementInstanceState.visitFailedTokens(
           elementInstance.getKey(),
@@ -79,6 +75,7 @@ public class TerminateContainedElementsHandler
           context.getRecord().getKey(),
           WorkflowInstanceIntent.ELEMENT_TERMINATED,
           context.getValue());
+
     } else {
       for (final ElementInstance child : children) {
         if (child.canTerminate()) {

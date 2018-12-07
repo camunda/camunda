@@ -123,6 +123,7 @@ public class EventbasedGatewayTest {
         .extracting(r -> tuple(r.getValue().getElementId(), r.getMetadata().getIntent()))
         .containsExactly(
             tuple("gateway", WorkflowInstanceIntent.GATEWAY_ACTIVATED),
+            tuple("timer-1", WorkflowInstanceIntent.EVENT_OCCURRED),
             tuple("timer-1", WorkflowInstanceIntent.EVENT_TRIGGERING),
             tuple("timer-1", WorkflowInstanceIntent.EVENT_TRIGGERED),
             tuple("to-end1", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),

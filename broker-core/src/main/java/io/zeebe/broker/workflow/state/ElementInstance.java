@@ -31,8 +31,6 @@ public class ElementInstance implements Persistable {
 
   private final IndexedRecord elementRecord;
 
-  private final EventTrigger interruptingEventTrigger = new EventTrigger();
-
   private long parentKey = -1;
   private int childCount;
   private long jobKey;
@@ -112,14 +110,6 @@ public class ElementInstance implements Persistable {
     return activeTokens + getNumberOfActiveElementInstances();
   }
 
-  public EventTrigger getInterruptingEventTrigger() {
-    return interruptingEventTrigger;
-  }
-
-  public boolean isInterrupted() {
-    return interruptingEventTrigger.isValid();
-  }
-
   @Override
   public void wrap(DirectBuffer buffer, int offset, int length) {
     final int startOffset = offset;
@@ -135,7 +125,6 @@ public class ElementInstance implements Persistable {
     parentKey = buffer.getLong(offset, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
-    offset = readIntoBuffer(buffer, offset, interruptingEventTrigger);
     offset = readIntoBuffer(buffer, offset, elementRecord);
 
     assert (offset - startOffset) == length : "End offset differs from length";
@@ -143,10 +132,7 @@ public class ElementInstance implements Persistable {
 
   @Override
   public int getLength() {
-    return 2 * Long.BYTES
-        + 4 * Integer.BYTES
-        + elementRecord.getLength()
-        + interruptingEventTrigger.getLength();
+    return 2 * Long.BYTES + 3 * Integer.BYTES + elementRecord.getLength();
   }
 
   @Override
@@ -165,7 +151,6 @@ public class ElementInstance implements Persistable {
     buffer.putLong(offset, parentKey, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
-    offset = writeIntoBuffer(buffer, offset, interruptingEventTrigger);
     offset = writeIntoBuffer(buffer, offset, elementRecord);
 
     assert (offset - startOffset) == getLength() : "End offset differs from getLength()";

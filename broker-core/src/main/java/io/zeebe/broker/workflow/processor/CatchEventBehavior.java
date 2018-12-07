@@ -20,6 +20,7 @@ package io.zeebe.broker.workflow.processor;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
+import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
@@ -27,7 +28,10 @@ import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.broker.workflow.model.element.ExecutableCatchEvent;
 import io.zeebe.broker.workflow.model.element.ExecutableMessage;
 import io.zeebe.broker.workflow.state.ElementInstance;
-import io.zeebe.broker.workflow.state.EventTrigger;
+import io.zeebe.broker.workflow.state.ElementInstanceState;
+import io.zeebe.broker.workflow.state.IndexedRecord;
+import io.zeebe.broker.workflow.state.StoredRecord;
+import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
 import io.zeebe.broker.workflow.state.TimerInstance;
 import io.zeebe.broker.workflow.state.WorkflowInstanceSubscription;
 import io.zeebe.model.bpmn.util.time.RepeatingInterval;
@@ -42,24 +46,32 @@ import io.zeebe.util.sched.clock.ActorClock;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
-/** Split into multiple files once we have a reasonable amount of event triggers. */
-public class CatchEventOutput {
+public class CatchEventBehavior {
+
   private final ZeebeState state;
   private final SubscriptionCommandSender subscriptionCommandSender;
 
-  public CatchEventOutput(ZeebeState state, SubscriptionCommandSender subscriptionCommandSender) {
+  /** Split into multiple files once we have a reasonable amount of event triggers. */
+  private final WorkflowInstanceRecord workflowInstanceRecord = new WorkflowInstanceRecord();
+
+  private final TimerRecord timerRecord = new TimerRecord();
+
+  private final MsgPackQueryProcessor queryProcessor = new MsgPackQueryProcessor();
+  private final WorkflowInstanceSubscription subscription = new WorkflowInstanceSubscription();
+
+  public CatchEventBehavior(ZeebeState state, SubscriptionCommandSender subscriptionCommandSender) {
     this.state = state;
     this.subscriptionCommandSender = subscriptionCommandSender;
   }
 
-  public void unsubscribeFromCatchEvents(long elementInstanceKey, BpmnStepContext<?> context) {
+  public void unsubscribeFromEvents(long elementInstanceKey, BpmnStepContext<?> context) {
     // at the moment, the way the state is handled we don't need specific event information to
     // unsubscribe from an event trigger, but once messages are supported it will be necessary.
     unsubscribeFromTimerEvents(elementInstanceKey, context.getOutput().getStreamWriter());
     unsubscribeFromMessageEvents(elementInstanceKey, context);
   }
 
-  public void subscribeToCatchEvents(
+  public void subscribeToEvents(
       BpmnStepContext<?> context, final List<? extends ExecutableCatchEvent> events) {
     for (final ExecutableCatchEvent event : events) {
       if (event.isTimer()) {
@@ -74,33 +86,82 @@ public class CatchEventOutput {
     }
   }
 
-  // CATCH EVENTS
-  private final WorkflowInstanceRecord workflowInstanceRecord = new WorkflowInstanceRecord();
+  public boolean occurEventForElement(
+      long elementInstanceKey,
+      DirectBuffer eventHandlerId,
+      DirectBuffer eventPayload,
+      TypedStreamWriter streamWriter) {
 
-  public void triggerCatchEvent(
-      WorkflowInstanceRecord source,
-      DirectBuffer elementId,
-      DirectBuffer payload,
-      TypedStreamWriter writer) {
-    workflowInstanceRecord.wrap(source);
-    workflowInstanceRecord.setPayload(payload);
-    workflowInstanceRecord.setElementId(elementId);
+    final ElementInstanceState elementInstanceState =
+        state.getWorkflowState().getElementInstanceState();
+    final StoredRecord tokenEvent = elementInstanceState.getTokenEvent(elementInstanceKey);
+    final ElementInstance elementInstance = elementInstanceState.getInstance(elementInstanceKey);
 
-    writer.appendNewEvent(WorkflowInstanceIntent.EVENT_TRIGGERING, workflowInstanceRecord);
+    if (tokenEvent != null && tokenEvent.getPurpose() == Purpose.DEFERRED_TOKEN) {
+      // if the event belongs to an intermediate catch event
+
+      final WorkflowInstanceRecord deferredRecord = tokenEvent.getRecord().getValue();
+      deferredRecord.setPayload(eventPayload).setElementId(eventHandlerId);
+
+      streamWriter.appendFollowUpEvent(
+          elementInstanceKey, WorkflowInstanceIntent.EVENT_OCCURRED, deferredRecord);
+
+      return true;
+
+    } else if (elementInstance != null
+        && elementInstance.getState() == WorkflowInstanceIntent.ELEMENT_ACTIVATED) {
+      // if the event belongs to a boundary event
+
+      final WorkflowInstanceRecord source = elementInstance.getValue();
+
+      workflowInstanceRecord.wrap(source);
+      workflowInstanceRecord.setPayload(eventPayload);
+      workflowInstanceRecord.setElementId(eventHandlerId);
+
+      streamWriter.appendFollowUpEvent(
+          elementInstanceKey, WorkflowInstanceIntent.EVENT_OCCURRED, workflowInstanceRecord);
+
+      // TODO (phil): while processing the event a token is consumed, so I need to spawn a new one
+      // here explicitly - see #1767
+      elementInstanceState.getInstance(elementInstance.getParentKey()).spawnToken();
+      elementInstanceState.flushDirtyState();
+
+      return true;
+
+    } else {
+      // ignore the event if the element is left
+      return false;
+    }
   }
 
-  public void triggerInterruptedElement(ElementInstance element, TypedStreamWriter writer) {
-    final EventTrigger interruptingEventTrigger = element.getInterruptingEventTrigger();
+  public void deferEvent(BpmnStepContext<?> context) {
+    if (context.getState() != WorkflowInstanceIntent.EVENT_OCCURRED) {
+      throw new IllegalStateException(
+          "defer event must be of intent EVENT_OCCURRED but was " + context.getState());
+    }
 
-    triggerCatchEvent(
-        element.getValue(),
-        interruptingEventTrigger.getHandlerNodeId(),
-        interruptingEventTrigger.getPayload(),
-        writer);
+    context.getOutput().deferEvent(context.getRecord());
   }
 
-  // TIMERS
-  private final TimerRecord timerRecord = new TimerRecord();
+  public void triggerDeferredEvent(BpmnStepContext<?> context) {
+    final TypedRecord<WorkflowInstanceRecord> record = context.getRecord();
+    final long elementInstanceKey = record.getKey();
+    final long scopeInstanceKey = record.getValue().getScopeInstanceKey();
+    final List<IndexedRecord> deferredTokens =
+        state.getWorkflowState().getElementInstanceState().getDeferredTokens(scopeInstanceKey);
+
+    for (IndexedRecord token : deferredTokens) {
+      if (token.getKey() == elementInstanceKey
+          && token.getState() == WorkflowInstanceIntent.EVENT_OCCURRED) {
+
+        context
+            .getOutput()
+            .appendNewEvent(WorkflowInstanceIntent.EVENT_TRIGGERING, token.getValue());
+
+        context.getOutput().consumeDeferredEvent(scopeInstanceKey, elementInstanceKey);
+      }
+    }
+  }
 
   public void subscribeToTimerEvent(
       long elementInstanceKey,
@@ -118,7 +179,15 @@ public class CatchEventOutput {
     writer.appendNewCommand(TimerIntent.CREATE, timerRecord);
   }
 
-  public void unsubscribeFromTimerEvent(TimerInstance timer, TypedStreamWriter writer) {
+  private void unsubscribeFromTimerEvents(long elementInstanceKey, TypedStreamWriter writer) {
+    state
+        .getWorkflowState()
+        .getTimerState()
+        .forEachTimerForElementInstance(
+            elementInstanceKey, t -> unsubscribeFromTimerEvent(t, writer));
+  }
+
+  private void unsubscribeFromTimerEvent(TimerInstance timer, TypedStreamWriter writer) {
     timerRecord
         .setElementInstanceKey(timer.getElementInstanceKey())
         .setDueDate(timer.getDueDate())
@@ -127,19 +196,7 @@ public class CatchEventOutput {
     writer.appendFollowUpCommand(timer.getKey(), TimerIntent.CANCEL, timerRecord);
   }
 
-  public void unsubscribeFromTimerEvents(long elementInstanceKey, TypedStreamWriter writer) {
-    state
-        .getWorkflowState()
-        .getTimerState()
-        .forEachTimerForElementInstance(
-            elementInstanceKey, t -> unsubscribeFromTimerEvent(t, writer));
-  }
-
-  // MESSAGES
-  private final MsgPackQueryProcessor queryProcessor = new MsgPackQueryProcessor();
-  private WorkflowInstanceSubscription subscription = new WorkflowInstanceSubscription();
-
-  public void subscribeToMessageEvent(BpmnStepContext<?> context, ExecutableCatchEvent handler) {
+  private void subscribeToMessageEvent(BpmnStepContext<?> context, ExecutableCatchEvent handler) {
     final ExecutableMessage message = handler.getMessage();
     final DirectBuffer extractedKey = extractCorrelationKey(context, message);
 
@@ -169,7 +226,7 @@ public class CatchEventOutput {
                     workflowInstanceKey, elementInstanceKey, messageName, correlationKey));
   }
 
-  public void unsubscribeFromMessageEvents(long elementInstanceKey, BpmnStepContext<?> context) {
+  private void unsubscribeFromMessageEvents(long elementInstanceKey, BpmnStepContext<?> context) {
     state
         .getWorkflowInstanceSubscriptionState()
         .visitElementSubscriptions(

@@ -17,22 +17,21 @@
  */
 package io.zeebe.broker.workflow.processor.event;
 
-import io.zeebe.broker.workflow.model.element.ExecutableCatchEventSupplier;
+import io.zeebe.broker.workflow.model.element.ExecutableCatchEventElement;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class SubscribeEventHandler implements BpmnStepHandler<ExecutableCatchEventSupplier> {
+public class TriggerReceiveTaskHandler implements BpmnStepHandler<ExecutableCatchEventElement> {
 
   @Override
-  public void handle(final BpmnStepContext<ExecutableCatchEventSupplier> context) {
-    final ExecutableCatchEventSupplier supplier = context.getElement();
+  public void handle(BpmnStepContext<ExecutableCatchEventElement> context) {
 
-    try {
-      context.getCatchEventBehavior().subscribeToEvents(context, supplier.getEvents());
-
-      context.getOutput().deferEvent(context.getRecord());
-    } catch (Exception e) {
-      // TODO (Phil): improve incident handling #1736
-    }
+    context
+        .getOutput()
+        .appendFollowUpEvent(
+            context.getRecord().getKey(),
+            WorkflowInstanceIntent.ELEMENT_COMPLETING,
+            context.getValue());
   }
 }

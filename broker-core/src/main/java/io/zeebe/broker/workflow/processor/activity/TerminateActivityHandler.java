@@ -31,6 +31,6 @@ public class TerminateActivityHandler extends TerminateFlowNodeHandler {
   @Override
   protected void terminate(BpmnStepContext<ExecutableFlowNode> context) {
     super.terminate(context);
-    context.getCatchEventOutput().unsubscribeFromCatchEvents(context.getRecord().getKey(), context);
+    context.getCatchEventBehavior().unsubscribeFromEvents(context.getRecord().getKey(), context);
   }
 }

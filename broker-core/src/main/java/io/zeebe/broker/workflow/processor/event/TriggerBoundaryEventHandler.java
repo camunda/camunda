@@ -15,34 +15,39 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.processor.flownode;
+package io.zeebe.broker.workflow.processor.event;
 
-import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
+import io.zeebe.broker.workflow.model.element.ExecutableBoundaryEvent;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.broker.workflow.state.ElementInstance;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class ConsumeTokenHandler implements BpmnStepHandler<ExecutableFlowNode> {
+public class TriggerBoundaryEventHandler implements BpmnStepHandler<ExecutableBoundaryEvent> {
 
   @Override
-  public void handle(BpmnStepContext<ExecutableFlowNode> context) {
-    final WorkflowInstanceRecord value = context.getValue();
+  public void handle(BpmnStepContext<ExecutableBoundaryEvent> context) {
+    final ExecutableBoundaryEvent element = context.getElement();
 
-    final long scopeInstanceKey = value.getScopeInstanceKey();
-    final ElementInstance scopeInstance = context.getFlowScopeInstance();
-    final WorkflowInstanceRecord scopeInstanceValue = scopeInstance.getValue();
+    if (element.cancelActivity()) {
+      final ElementInstance elementInstance = context.getElementInstance();
 
-    if (scopeInstance.getNumberOfActiveExecutionPaths() == 0) {
-      scopeInstanceValue.setPayload(value.getPayload());
+      if (elementInstance != null
+          && elementInstance.getState() == WorkflowInstanceIntent.ELEMENT_ACTIVATED) {
 
+        context.getCatchEventBehavior().deferEvent(context);
+
+        context
+            .getOutput()
+            .appendFollowUpEvent(
+                context.getRecord().getKey(),
+                WorkflowInstanceIntent.ELEMENT_TERMINATING,
+                context.getElementInstance().getValue());
+      }
+    } else {
       context
           .getOutput()
-          .appendFollowUpEvent(
-              scopeInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETING, scopeInstanceValue);
-    } else if (scopeInstance.getNumberOfActiveExecutionPaths() < 0) {
-      throw new IllegalStateException("number of active execution paths is negative");
+          .appendNewEvent(WorkflowInstanceIntent.EVENT_TRIGGERING, context.getRecord().getValue());
     }
   }
 }

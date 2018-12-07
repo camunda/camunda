@@ -25,6 +25,6 @@ public class CompleteActivityHandler extends CompleteFlowNodeHandler {
   @Override
   public void complete(BpmnStepContext<ExecutableFlowNode> context) {
     super.complete(context);
-    context.getCatchEventOutput().unsubscribeFromCatchEvents(context.getRecord().getKey(), context);
+    context.getCatchEventBehavior().unsubscribeFromEvents(context.getRecord().getKey(), context);
   }
 }
