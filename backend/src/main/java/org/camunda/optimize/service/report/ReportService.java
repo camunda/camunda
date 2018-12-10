@@ -14,7 +14,6 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDef
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
@@ -314,7 +313,7 @@ public class ReportService {
     }
   }
 
-  public ProcessReportResultDto evaluateSingleReport(String userId,
+  public ReportResultDto evaluateSingleReport(String userId,
                                                      SingleReportDefinitionDto reportDefinition) {
     return reportEvaluator.evaluateSingleReport(userId, reportDefinition);
   }

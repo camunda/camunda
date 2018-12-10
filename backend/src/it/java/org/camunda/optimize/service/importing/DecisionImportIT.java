@@ -167,7 +167,7 @@ public class DecisionImportIT {
     assertThat(dto.getDecisionDefinitionId(), is(notNullValue()));
     assertThat(dto.getDecisionDefinitionKey(), is(notNullValue()));
     assertThat(dto.getDecisionDefinitionVersion(), is(notNullValue()));
-    assertThat(dto.getEvaluationTime(), is(notNullValue()));
+    assertThat(dto.getEvaluationDateTime(), is(notNullValue()));
     assertThat(dto.getProcessInstanceId(), is(nullValue()));
     assertThat(dto.getRootProcessInstanceId(), is(nullValue()));
     assertThat(dto.getActivityId(), is(nullValue()));

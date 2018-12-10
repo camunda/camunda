@@ -8,7 +8,7 @@ import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisOutcomeDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
-import org.camunda.optimize.service.es.filter.QueryFilterEnhancer;
+import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -51,7 +51,7 @@ public class BranchAnalysisReader {
   private ProcessDefinitionReader processDefinitionReader;
 
   @Autowired
-  private QueryFilterEnhancer queryFilterEnhancer;
+  private ProcessQueryFilterEnhancer queryFilterEnhancer;
 
   public BranchAnalysisDto branchAnalysis(BranchAnalysisQueryDto request) {
     ValidationHelper.validate(request);

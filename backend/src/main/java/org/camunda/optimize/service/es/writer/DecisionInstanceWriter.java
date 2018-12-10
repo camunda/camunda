@@ -49,7 +49,7 @@ public class DecisionInstanceWriter {
   private void addImportDecisionInstanceRequest(final BulkRequestBuilder bulkRequest,
                                                 final DecisionInstanceDto decisionInstanceDto
   ) throws JsonProcessingException {
-    final String decisionInstanceId = decisionInstanceDto.getId();
+    final String decisionInstanceId = decisionInstanceDto.getDecisionInstanceId();
     final String source = objectMapper.writeValueAsString(decisionInstanceDto);
     bulkRequest.add(
       esClient

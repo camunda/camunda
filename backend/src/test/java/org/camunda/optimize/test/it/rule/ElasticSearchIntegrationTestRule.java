@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.CustomDeserializer;
 import org.camunda.optimize.service.util.CustomSerializer;
-import org.camunda.optimize.service.util.VariableHelper;
+import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -253,7 +253,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
       .setSize(0)
       .setFetchSource(false);
 
-    for (String variableTypeFieldLabel : VariableHelper.allVariableTypeFieldLabels) {
+    for (String variableTypeFieldLabel : ProcessVariableHelper.allVariableTypeFieldLabels) {
       searchRequestBuilder.addAggregation(
         nested(variableTypeFieldLabel, variableTypeFieldLabel)
           .subAggregation(
@@ -266,7 +266,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     SearchResponse response = searchRequestBuilder.get();
 
     long totalVariableCount = 0L;
-    for (String variableTypeFieldLabel : VariableHelper.allVariableTypeFieldLabels) {
+    for (String variableTypeFieldLabel : ProcessVariableHelper.allVariableTypeFieldLabels) {
       Nested nestedAgg = response.getAggregations().get(variableTypeFieldLabel);
       ValueCount countAggregator = nestedAgg.getAggregations()
         .get(variableTypeFieldLabel + "_count");

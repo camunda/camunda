@@ -1,27 +1,32 @@
 package org.camunda.optimize.service.es.report.command.pi.frequency;
 
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.NumberProcessReportResultDto;
-import org.camunda.optimize.service.es.report.command.ReportCommand;
+import org.camunda.optimize.service.es.report.command.ProcessReportCommand;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 
-public class CountProcessInstanceFrequencyGroupByNoneCommand extends ReportCommand<NumberProcessReportResultDto> {
+public class CountProcessInstanceFrequencyGroupByNoneCommand
+  extends ProcessReportCommand<NumberProcessReportResultDto> {
 
   @Override
   protected NumberProcessReportResultDto evaluate() {
 
-    logger.debug("Evaluating count process instance frequency grouped by none report " +
-      "for process definition key [{}] and version [{}]",
-      reportData.getProcessDefinitionKey(),
-      reportData.getProcessDefinitionVersion());
+    final ProcessReportDataDto processReportData = getProcessReportData();
+    logger.debug(
+      "Evaluating count process instance frequency grouped by none report " +
+        "for process definition key [{}] and version [{}]",
+      processReportData.getProcessDefinitionKey(),
+      processReportData.getProcessDefinitionVersion()
+    );
 
     BoolQueryBuilder query = setupBaseQuery(
-        reportData.getProcessDefinitionKey(),
-        reportData.getProcessDefinitionVersion()
+      processReportData.getProcessDefinitionKey(),
+      processReportData.getProcessDefinitionVersion()
     );
-    queryFilterEnhancer.addFilterToQuery(query, reportData.getFilter());
+    queryFilterEnhancer.addFilterToQuery(query, processReportData.getFilter());
 
     SearchResponse response = esclient
       .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))

@@ -1,10 +1,13 @@
 package org.camunda.optimize.service.es.report;
 
+import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.MapProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.NumberProcessReportResultDto;
@@ -48,8 +51,7 @@ public abstract class ReportEvaluationHandler {
   protected ReportResultDto evaluateReport(String userId, ReportDefinitionDto reportDefinition) {
     final ReportResultDto result;
     if (!reportDefinition.getCombined()) {
-      SingleReportDefinitionDto singleReportDefinition =
-        (SingleReportDefinitionDto) reportDefinition;
+      SingleReportDefinitionDto singleReportDefinition = (SingleReportDefinitionDto) reportDefinition;
       result = evaluateSingleReport(userId, singleReportDefinition);
     } else {
       CombinedReportDefinitionDto combinedReportDefinition =
@@ -63,7 +65,7 @@ public abstract class ReportEvaluationHandler {
                                                                CombinedReportDefinitionDto combinedReportDefinition) {
 
     ValidationHelper.validateCombinedReportDefinition(combinedReportDefinition);
-    List<ProcessReportResultDto> resultList = evaluateListOfReportIds(
+    List<ReportResultDto> resultList = evaluateListOfReportIds(
       userId, combinedReportDefinition.getData().getReportIds()
     );
     return transformToCombinedReportResult(combinedReportDefinition, resultList);
@@ -71,9 +73,9 @@ public abstract class ReportEvaluationHandler {
 
   private CombinedProcessReportResultDto transformToCombinedReportResult(
     CombinedReportDefinitionDto combinedReportDefinition,
-    List<ProcessReportResultDto> singleReportResultList) {
+    List<ReportResultDto> singleReportResultList) {
     final AtomicReference<Class> singleReportType = new AtomicReference<>();
-    final Map<String, ProcessReportResultDto> reportIdToMapResult = singleReportResultList
+    final Map<String, ReportResultDto> reportIdToMapResult = singleReportResultList
       .stream()
       .filter(t -> t instanceof NumberProcessReportResultDto || t instanceof MapProcessReportResultDto)
       .filter(singleReportResult -> singleReportResult.getClass().equals(singleReportType.get())
@@ -92,13 +94,13 @@ public abstract class ReportEvaluationHandler {
     return combinedReportResult;
   }
 
-  private List<ProcessReportResultDto> evaluateListOfReportIds(String userId, List<String> singleReportIds) {
-    List<ProcessReportResultDto> resultList = new ArrayList<>();
+  private List<ReportResultDto> evaluateListOfReportIds(String userId, List<String> singleReportIds) {
+    List<ReportResultDto> resultList = new ArrayList<>();
     for (String reportId : singleReportIds) {
       ReportDefinitionDto subReportDefinition = reportReader.getReport(reportId);
       if (subReportDefinition instanceof SingleReportDefinitionDto) {
         SingleReportDefinitionDto<?> singleReportDefinition = (SingleReportDefinitionDto) subReportDefinition;
-        Optional<ProcessReportResultDto> singleReportResult = evaluateReportForCombinedReport(
+        Optional<ReportResultDto> singleReportResult = evaluateReportForCombinedReport(
           userId, singleReportDefinition
         );
         singleReportResult.ifPresent(resultList::add);
@@ -111,15 +113,14 @@ public abstract class ReportEvaluationHandler {
     return resultList;
   }
 
-  private Optional<ProcessReportResultDto> evaluateReportForCombinedReport(String userId,
-                                                                           SingleReportDefinitionDto<?> reportDefinition) {
-    Optional<ProcessReportResultDto> result = Optional.empty();
+  private Optional<ReportResultDto> evaluateReportForCombinedReport(String userId,
+                                                                    SingleReportDefinitionDto<?> reportDefinition) {
+    Optional<ReportResultDto> result = Optional.empty();
     if (isAuthorizedToSeeReport(userId, reportDefinition)) {
       if (reportDefinition.getData() instanceof ProcessReportDataDto) {
         try {
-          ProcessReportResultDto singleResult =
-            reportEvaluator.evaluate((ProcessReportDataDto) reportDefinition.getData());
-          ReportUtil.copyMetaData(reportDefinition, singleResult);
+          ReportResultDto singleResult = reportEvaluator.evaluate(reportDefinition.getData());
+          ReportUtil.copyMetaData(reportDefinition, (ReportDefinitionDto) singleResult);
           result = Optional.of(singleResult);
         } catch (OptimizeException | OptimizeValidationException ignored) {
           // we just ignore reports that cannot be evaluated in
@@ -135,20 +136,49 @@ public abstract class ReportEvaluationHandler {
    */
   protected abstract boolean isAuthorizedToSeeReport(String userId, ReportDefinitionDto report);
 
-  public ProcessReportResultDto evaluateSingleReport(String userId,
-                                                     SingleReportDefinitionDto<ProcessReportDataDto> reportDefinition) {
-    if (!isAuthorizedToSeeReport(userId, reportDefinition)) {
-      ProcessReportDataDto reportData = reportDefinition.getData();
-      throw new ForbiddenException("User [" + userId + "] is not authorized to evaluate report [" +
-                                     reportDefinition.getName() + "] with process definition [" + reportData.getProcessDefinitionKey() + "].");
+  public ReportResultDto evaluateSingleReport(final String userId,
+                                              final SingleReportDefinitionDto<?> reportDefinition) {
+
+    switch (reportDefinition.getReportType()) {
+      case PROCESS:
+        final SingleReportDefinitionDto<ProcessReportDataDto> processReportDefinition =
+          (SingleReportDefinitionDto<ProcessReportDataDto>) reportDefinition;
+        if (!isAuthorizedToSeeReport(userId, processReportDefinition)) {
+          ProcessReportDataDto reportData = processReportDefinition.getData();
+          throw new ForbiddenException(
+            "User [" + userId + "] is not authorized to evaluate report ["
+              + processReportDefinition.getName() + "] with process definition [" + reportData.getProcessDefinitionKey() + "]."
+          );
+        }
+        break;
+      case DECISION:
+        final SingleReportDefinitionDto<DecisionReportDataDto> decisionReportDefinition =
+          (SingleReportDefinitionDto<DecisionReportDataDto>) reportDefinition;
+        if (!isAuthorizedToSeeReport(userId, decisionReportDefinition)) {
+          DecisionReportDataDto reportData = decisionReportDefinition.getData();
+          throw new ForbiddenException(
+            "User [" + userId + "] is not authorized to evaluate report ["
+              + decisionReportDefinition.getName() + "] with decision definition [" + reportData.getDecisionDefinitionKey() + "]."
+          );
+        }
+        break;
+      default:
+        throw new IllegalStateException("Unsupported reportType: " + reportDefinition.getReportType());
     }
-    ProcessReportResultDto result = evaluateSingleReportWithErrorCheck(reportDefinition);
-    ReportUtil.copyMetaData(reportDefinition, result);
+
+    ReportResultDto result = evaluateSingleReportWithErrorCheck(reportDefinition);
+
+    if (result instanceof ProcessReportResultDto) {
+      ReportUtil.copyMetaData(reportDefinition, (ProcessReportResultDto) result);
+    } else {
+      ReportUtil.copyMetaData(reportDefinition, (DecisionReportResultDto) result);
+    }
+
     return result;
   }
 
-  private ProcessReportResultDto evaluateSingleReportWithErrorCheck(SingleReportDefinitionDto<ProcessReportDataDto> reportDefinition) {
-    ProcessReportDataDto reportData = reportDefinition.getData();
+  private ReportResultDto evaluateSingleReportWithErrorCheck(SingleReportDefinitionDto reportDefinition) {
+    ReportDataDto reportData = reportDefinition.getData();
     try {
       return reportEvaluator.evaluate(reportData);
     } catch (OptimizeException | OptimizeValidationException e) {

@@ -1,9 +1,10 @@
 package org.camunda.optimize.service.es.report.command.pi.duration.groupby.variable;
 
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.MapProcessReportResultDto;
-import org.camunda.optimize.service.es.report.command.ReportCommand;
+import org.camunda.optimize.service.es.report.command.ProcessReportCommand;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -19,16 +20,17 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
-import static org.camunda.optimize.service.util.VariableHelper.getNestedVariableNameFieldLabelForType;
-import static org.camunda.optimize.service.util.VariableHelper.getNestedVariableValueFieldLabelForType;
-import static org.camunda.optimize.service.util.VariableHelper.isDateType;
-import static org.camunda.optimize.service.util.VariableHelper.variableTypeToFieldLabel;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameFieldLabelForType;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldLabelForType;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.isDateType;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.variableTypeToFieldLabel;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
-public abstract class AbstractProcessInstanceDurationByVariableCommand extends ReportCommand<MapProcessReportResultDto> {
+public abstract class AbstractProcessInstanceDurationByVariableCommand
+  extends ProcessReportCommand<MapProcessReportResultDto> {
 
   private static final String NESTED_AGGREGATION = "nested";
   private static final String VARIABLES_AGGREGATION = "variables";
@@ -39,18 +41,21 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand extends R
   @Override
   protected MapProcessReportResultDto evaluate() {
 
-    logger.debug("Evaluating average process instance duration grouped by variable report " +
-      "for process definition key [{}] and version [{}]",
-      reportData.getProcessDefinitionKey(),
-      reportData.getProcessDefinitionVersion());
+    final ProcessReportDataDto processReportData = getProcessReportData();
+    logger.debug(
+      "Evaluating average process instance duration grouped by variable report " +
+        "for process definition key [{}] and version [{}]",
+      processReportData.getProcessDefinitionKey(),
+      processReportData.getProcessDefinitionVersion()
+    );
 
     BoolQueryBuilder query = setupBaseQuery(
-        reportData.getProcessDefinitionKey(),
-        reportData.getProcessDefinitionVersion()
+      processReportData.getProcessDefinitionKey(),
+      processReportData.getProcessDefinitionVersion()
     );
-    queryFilterEnhancer.addFilterToQuery(query, reportData.getFilter());
+    queryFilterEnhancer.addFilterToQuery(query, processReportData.getFilter());
 
-    VariableGroupByValueDto groupByVariable = ((VariableGroupByDto) reportData.getGroupBy()).getValue();
+    VariableGroupByValueDto groupByVariable = ((VariableGroupByDto) processReportData.getGroupBy()).getValue();
 
     SearchResponse response = esclient
       .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
@@ -91,7 +96,7 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand extends R
           .subAggregation(
             collectVariableValueCount
               .subAggregation(
-                 AggregationBuilders.reverseNested(REVERSE_NESTED_AGGREGATION)
+                AggregationBuilders.reverseNested(REVERSE_NESTED_AGGREGATION)
                   .subAggregation(
                     createAggregationOperation()
                   )

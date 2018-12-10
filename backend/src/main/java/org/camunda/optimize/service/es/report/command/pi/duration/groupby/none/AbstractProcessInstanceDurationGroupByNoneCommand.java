@@ -1,7 +1,8 @@
 package org.camunda.optimize.service.es.report.command.pi.duration.groupby.none;
 
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.NumberProcessReportResultDto;
-import org.camunda.optimize.service.es.report.command.ReportCommand;
+import org.camunda.optimize.service.es.report.command.ProcessReportCommand;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -11,7 +12,7 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 
 public abstract class AbstractProcessInstanceDurationGroupByNoneCommand
-    extends ReportCommand<NumberProcessReportResultDto> {
+  extends ProcessReportCommand<NumberProcessReportResultDto> {
 
 
   public static final String DURATION_AGGREGATION = "durationAggregation";
@@ -19,16 +20,19 @@ public abstract class AbstractProcessInstanceDurationGroupByNoneCommand
   @Override
   protected NumberProcessReportResultDto evaluate() {
 
-    logger.debug("Evaluating process instance duration grouped by none report " +
-      "for process definition key [{}] and version [{}]",
-      reportData.getProcessDefinitionKey(),
-      reportData.getProcessDefinitionVersion());
+    final ProcessReportDataDto processReportData = getProcessReportData();
+    logger.debug(
+      "Evaluating process instance duration grouped by none report " +
+        "for process definition key [{}] and version [{}]",
+      processReportData.getProcessDefinitionKey(),
+      processReportData.getProcessDefinitionVersion()
+    );
 
     BoolQueryBuilder query = setupBaseQuery(
-        reportData.getProcessDefinitionKey(),
-        reportData.getProcessDefinitionVersion()
+      processReportData.getProcessDefinitionKey(),
+      processReportData.getProcessDefinitionVersion()
     );
-    queryFilterEnhancer.addFilterToQuery(query, reportData.getFilter());
+    queryFilterEnhancer.addFilterToQuery(query, processReportData.getFilter());
 
     SearchResponse response = esclient
       .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))

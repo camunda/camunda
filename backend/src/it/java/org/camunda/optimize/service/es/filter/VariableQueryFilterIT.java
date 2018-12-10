@@ -3,19 +3,19 @@ package org.camunda.optimize.service.es.filter;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DateVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.LongVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.OperatorMultipleValuesVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.StringVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.variable.BooleanVariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.variable.DateVariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.variable.LongVariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.variable.OperatorMultipleValuesVariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.variable.StringVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.VariableFilterUtilHelper;
+import org.camunda.optimize.test.util.ProcessVariableFilterUtilHelper;
 import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,11 +37,11 @@ import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.IN;
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN;
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN_EQUALS;
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.NOT_IN;
-import static org.camunda.optimize.service.util.VariableHelper.DOUBLE_TYPE;
-import static org.camunda.optimize.service.util.VariableHelper.INTEGER_TYPE;
-import static org.camunda.optimize.service.util.VariableHelper.LONG_TYPE;
-import static org.camunda.optimize.service.util.VariableHelper.SHORT_TYPE;
-import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.DOUBLE_TYPE;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.INTEGER_TYPE;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.LONG_TYPE;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.SHORT_TYPE;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -111,7 +111,7 @@ public class VariableQueryFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = VariableFilterUtilHelper.createStringVariableFilter("var", IN, "value");
+    VariableFilterDto filter = ProcessVariableFilterUtilHelper.createStringVariableFilter("var", IN, "value");
     RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
@@ -133,7 +133,7 @@ public class VariableQueryFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = VariableFilterUtilHelper.createStringVariableFilter("stringVar", NOT_IN, "aStringValue");
+    VariableFilterDto filter = ProcessVariableFilterUtilHelper.createStringVariableFilter("stringVar", NOT_IN, "aStringValue");
     RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
@@ -153,7 +153,7 @@ public class VariableQueryFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = VariableFilterUtilHelper.createStringVariableFilter("stringVar", IN, "aStringValue");
+    VariableFilterDto filter = ProcessVariableFilterUtilHelper.createStringVariableFilter("stringVar", IN, "aStringValue");
     RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
@@ -175,7 +175,7 @@ public class VariableQueryFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = VariableFilterUtilHelper.createStringVariableFilter("anotherStringVar", NOT_IN, "aStringValue");
+    VariableFilterDto filter = ProcessVariableFilterUtilHelper.createStringVariableFilter("anotherStringVar", NOT_IN, "aStringValue");
     RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
@@ -196,7 +196,7 @@ public class VariableQueryFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = VariableFilterUtilHelper.createStringVariableFilter("stringVar", IN, "aStringValue");
+    VariableFilterDto filter = ProcessVariableFilterUtilHelper.createStringVariableFilter("stringVar", IN, "aStringValue");
     StringVariableFilterDataDto filterData = (StringVariableFilterDataDto) filter.getData();
     filterData.getData().getValues().add("anotherValue");
     RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
@@ -217,7 +217,7 @@ public class VariableQueryFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = VariableFilterUtilHelper.createStringVariableFilter("stringVar", IN, "value");
+    VariableFilterDto filter = ProcessVariableFilterUtilHelper.createStringVariableFilter("stringVar", IN, "value");
     RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
@@ -237,7 +237,7 @@ public class VariableQueryFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = VariableFilterUtilHelper.createStringVariableFilter("var", IN, "1");
+    VariableFilterDto filter = ProcessVariableFilterUtilHelper.createStringVariableFilter("var", IN, "1");
     RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
@@ -259,7 +259,7 @@ public class VariableQueryFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = VariableFilterUtilHelper.createStringVariableFilter("var", NOT_IN, "value");
+    VariableFilterDto filter = ProcessVariableFilterUtilHelper.createStringVariableFilter("var", NOT_IN, "value");
     RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
@@ -281,7 +281,7 @@ public class VariableQueryFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = VariableFilterUtilHelper.createStringVariableFilter("var", NOT_IN, "1");
+    VariableFilterDto filter = ProcessVariableFilterUtilHelper.createStringVariableFilter("var", NOT_IN, "1");
     StringVariableFilterDataDto filterData = (StringVariableFilterDataDto) filter.getData();
     filterData.getData().getValues().add("2");
     RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
@@ -305,7 +305,7 @@ public class VariableQueryFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = VariableFilterUtilHelper.createBooleanVariableFilter("var", "false");
+    VariableFilterDto filter = ProcessVariableFilterUtilHelper.createBooleanVariableFilter("var", "false");
     RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
@@ -327,7 +327,7 @@ public class VariableQueryFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = VariableFilterUtilHelper.createBooleanVariableFilter("var", "true");
+    VariableFilterDto filter = ProcessVariableFilterUtilHelper.createBooleanVariableFilter("var", "true");
     RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
@@ -638,7 +638,7 @@ public class VariableQueryFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = VariableFilterUtilHelper.createDateVariableFilter("var", null, now);
+    VariableFilterDto filter = ProcessVariableFilterUtilHelper.createDateVariableFilter("var", null, now);
     RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
@@ -662,7 +662,7 @@ public class VariableQueryFilterIT {
 
     // when
     VariableFilterDto filter =
-        VariableFilterUtilHelper.createDateVariableFilter("var", now.minusSeconds(1), null);
+        ProcessVariableFilterUtilHelper.createDateVariableFilter("var", now.minusSeconds(1), null);
     RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
@@ -685,7 +685,7 @@ public class VariableQueryFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = VariableFilterUtilHelper.createDateVariableFilter("var", now, now);
+    VariableFilterDto filter = ProcessVariableFilterUtilHelper.createDateVariableFilter("var", now, now);
     RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
@@ -707,7 +707,7 @@ public class VariableQueryFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = VariableFilterUtilHelper.createDateVariableFilter("var", now.minusSeconds(1L), now.plusSeconds(10L));
+    VariableFilterDto filter = ProcessVariableFilterUtilHelper.createDateVariableFilter("var", now.minusSeconds(1L), now.plusSeconds(10L));
     RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
@@ -730,8 +730,8 @@ public class VariableQueryFilterIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = VariableFilterUtilHelper.createDateVariableFilter("var", now.minusSeconds(2L), now.minusSeconds(1L));
-    VariableFilterDto filter2 = VariableFilterUtilHelper.createDateVariableFilter("var", now.plusSeconds(1L), now.plusSeconds(2L));
+    VariableFilterDto filter = ProcessVariableFilterUtilHelper.createDateVariableFilter("var", now.minusSeconds(2L), now.minusSeconds(1L));
+    VariableFilterDto filter2 = ProcessVariableFilterUtilHelper.createDateVariableFilter("var", now.plusSeconds(1L), now.plusSeconds(2L));
     List<ProcessFilterDto> filters = Stream.of(filter, filter2).collect(Collectors.toList());
     RawDataProcessReportResultDto result =
       evaluateReportWithFilter(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), filters);
@@ -813,13 +813,13 @@ public class VariableQueryFilterIT {
   private VariableFilterDto createNumericVariableFilter(String operator, String variableName, String variableType, String variableValue) {
     switch (variableType.toLowerCase()) {
       case "integer":
-        return VariableFilterUtilHelper.createIntegerVariableFilter(variableName, operator, variableValue);
+        return ProcessVariableFilterUtilHelper.createIntegerVariableFilter(variableName, operator, variableValue);
       case "long":
-        return VariableFilterUtilHelper.createLongVariableFilter(variableName, operator, variableValue);
+        return ProcessVariableFilterUtilHelper.createLongVariableFilter(variableName, operator, variableValue);
       case "double":
-        return VariableFilterUtilHelper.createDoubleVariableFilter(variableName, operator, variableValue);
+        return ProcessVariableFilterUtilHelper.createDoubleVariableFilter(variableName, operator, variableValue);
       case "short":
-        return VariableFilterUtilHelper.createShortVariableFilter(variableName, operator, variableValue);
+        return ProcessVariableFilterUtilHelper.createShortVariableFilter(variableName, operator, variableValue);
     }
     return null;
   }

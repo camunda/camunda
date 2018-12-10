@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.report.command.flownode.duration;
 
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.MapProcessReportResultDto;
 import org.camunda.optimize.service.es.report.command.FlowNodeGroupingCommand;
 import org.camunda.optimize.service.util.ValidationHelper;
@@ -37,17 +38,18 @@ public abstract class AbstractFlowNodeDurationByFlowNodeCommand<T extends Aggreg
   @Override
   protected MapProcessReportResultDto evaluate() {
 
+    final ProcessReportDataDto processReportData = getProcessReportData();
     logger.debug("Evaluating flow node duration grouped by flow node report " +
       "for process definition key [{}] and version [{}]",
-      reportData.getProcessDefinitionKey(),
-      reportData.getProcessDefinitionVersion());
+                 processReportData.getProcessDefinitionKey(),
+                 processReportData.getProcessDefinitionVersion());
 
     BoolQueryBuilder query = setupBaseQuery(
-        reportData.getProcessDefinitionKey(),
-        reportData.getProcessDefinitionVersion()
+      processReportData.getProcessDefinitionKey(),
+      processReportData.getProcessDefinitionVersion()
     );
 
-    queryFilterEnhancer.addFilterToQuery(query, reportData.getFilter());
+    queryFilterEnhancer.addFilterToQuery(query, processReportData.getFilter());
 
     SearchResponse response = esclient
       .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))

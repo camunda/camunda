@@ -1,6 +1,6 @@
 package org.camunda.optimize.dto.optimize.query.variable.value;
 
-import static org.camunda.optimize.service.util.VariableHelper.STRING_TYPE;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.STRING_TYPE;
 
 public class StringVariableDto extends VariableInstanceDto {
 

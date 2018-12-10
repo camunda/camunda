@@ -3,7 +3,6 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
@@ -68,12 +67,9 @@ public class ReportRestService {
                            ReportDefinitionDto updatedReport) throws OptimizeException {
     String userId = getRequestUser(requestContext);
     if (updatedReport instanceof SingleReportDefinitionDto) {
-      SingleReportDefinitionDto foo = (SingleReportDefinitionDto) updatedReport;
-      if (updatedReport.getReportType().equals(ReportType.PROCESS)) {
-        final SingleReportDefinitionDto<SingleReportDataDto> singleReportUpdate =
-          (SingleReportDefinitionDto<SingleReportDataDto>) updatedReport;
-        reportService.updateSingleProcessReportWithAuthorizationCheck(reportId, singleReportUpdate, userId, force);
-      }
+      final SingleReportDefinitionDto<SingleReportDataDto> singleReportUpdate =
+        (SingleReportDefinitionDto<SingleReportDataDto>) updatedReport;
+      reportService.updateSingleProcessReportWithAuthorizationCheck(reportId, singleReportUpdate, userId, force);
     } else {
       final CombinedReportDefinitionDto combinedReportUpdate = (CombinedReportDefinitionDto) updatedReport;
       reportService.updateCombinedProcessReportWithAuthorizationCheck(reportId, combinedReportUpdate, userId, force);

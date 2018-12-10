@@ -7,7 +7,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
-import org.camunda.optimize.service.util.VariableHelper;
+import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.camunda.optimize.service.util.configuration.CleanupMode;
 import org.camunda.optimize.service.util.configuration.OptimizeCleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.ProcessDefinitionCleanupConfiguration;
@@ -205,7 +205,7 @@ public class OptimizeCleanupServiceIT {
 
     assertThat(idsResp.getHits().getTotalHits(), is(Long.valueOf(processIds.size())));
     for (SearchHit searchHit : idsResp.getHits().getHits()) {
-      for (String variableFieldName : VariableHelper.getAllVariableTypeFieldLabels()) {
+      for (String variableFieldName : ProcessVariableHelper.getAllVariableTypeFieldLabels()) {
         assertThat(
           variableFieldName + "is empty",
           searchHit.getSourceAsMap().get(variableFieldName),
@@ -229,7 +229,7 @@ public class OptimizeCleanupServiceIT {
     assertThat(idsResp.getHits().getTotalHits(), is(Long.valueOf(processIds.size())));
 
     for (SearchHit searchHit : idsResp.getHits().getHits()) {
-      for (String variableFieldName : VariableHelper.getAllVariableTypeFieldLabels()) {
+      for (String variableFieldName : ProcessVariableHelper.getAllVariableTypeFieldLabels()) {
         assertThat(
           variableFieldName + "is not empty",
           ((Collection) searchHit.getSourceAsMap().get(variableFieldName)).size(),

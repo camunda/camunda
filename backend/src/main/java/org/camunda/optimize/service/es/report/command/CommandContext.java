@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.es.report.command;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.service.es.filter.QueryFilterEnhancer;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.client.Client;
@@ -12,7 +12,7 @@ public class CommandContext {
   private ConfigurationService configurationService;
   private ObjectMapper objectMapper;
   private QueryFilterEnhancer queryFilterEnhancer;
-  private ProcessReportDataDto reportData;
+  private ReportDataDto reportData;
 
   public Client getEsclient() {
     return esclient;
@@ -46,11 +46,11 @@ public class CommandContext {
     this.queryFilterEnhancer = queryFilterEnhancer;
   }
 
-  public ProcessReportDataDto getReportData() {
+  public ReportDataDto getReportData() {
     return reportData;
   }
 
-  public void setReportData(ProcessReportDataDto reportData) {
+  public void setReportData(ReportDataDto reportData) {
     this.reportData = reportData;
   }
 }

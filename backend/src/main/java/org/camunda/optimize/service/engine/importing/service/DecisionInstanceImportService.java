@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.isVariableTypeSupported;
 
 public class DecisionInstanceImportService {
   private static final Logger logger = LoggerFactory.getLogger(DecisionInstanceImportService.class);
@@ -74,13 +74,13 @@ public class DecisionInstanceImportService {
 
   public DecisionInstanceDto mapEngineEntityToOptimizeEntity(HistoricDecisionInstanceDto engineEntity) {
     DecisionInstanceDto decisionInstanceDto = new DecisionInstanceDto();
-    decisionInstanceDto.setId(engineEntity.getId());
+    decisionInstanceDto.setDecisionInstanceId(engineEntity.getId());
     decisionInstanceDto.setProcessDefinitionKey(engineEntity.getProcessDefinitionKey());
     decisionInstanceDto.setProcessDefinitionId(engineEntity.getProcessDefinitionId());
     decisionInstanceDto.setDecisionDefinitionId(engineEntity.getDecisionDefinitionId());
     decisionInstanceDto.setDecisionDefinitionKey(engineEntity.getDecisionDefinitionKey());
     decisionInstanceDto.setDecisionDefinitionVersion(resolveDecisionDefinitionVersion(engineEntity));
-    decisionInstanceDto.setEvaluationTime(engineEntity.getEvaluationTime());
+    decisionInstanceDto.setEvaluationDateTime(engineEntity.getEvaluationTime());
     decisionInstanceDto.setProcessInstanceId(engineEntity.getProcessInstanceId());
     decisionInstanceDto.setRootProcessInstanceId(engineEntity.getRootProcessInstanceId());
     decisionInstanceDto.setActivityId(engineEntity.getActivityId());

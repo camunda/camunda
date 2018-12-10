@@ -6,14 +6,14 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.GroupByDateUnit;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.ReportDataBuilderHelper;
+import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -47,7 +47,7 @@ public class ExportServiceIT {
   public static Collection<Object[]> data() {
     return Arrays.asList(new Object[][]{
       {
-        ReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
+        ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
           FAKE,
           FAKE
         ),
@@ -55,7 +55,7 @@ public class ExportServiceIT {
         "Raw Data Grouped By None"
       },
       {
-        ReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
+        ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
           FAKE,
           FAKE
         ),
@@ -63,7 +63,7 @@ public class ExportServiceIT {
         "Raw Data Grouped By Flow Nodes"
       },
       {
-        ReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
+        ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
           FAKE,
           FAKE
         ),
@@ -71,7 +71,7 @@ public class ExportServiceIT {
         "Raw Data Grouped By PI Start Date"
       },
       {
-        ReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByStartDate(
+        ProcessReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByStartDate(
           FAKE,
           FAKE,
           GroupByDateUnit.DAY
@@ -80,7 +80,7 @@ public class ExportServiceIT {
         "Count PI Grouped By PI Start Date"
       },
       {
-        ReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode(
+        ProcessReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode(
           FAKE,
           FAKE
         ),
@@ -88,7 +88,7 @@ public class ExportServiceIT {
         "Count Flow Nodes Grouped By Flow Node"
       },
       {
-        ReportDataBuilderHelper.createAverageProcessInstanceDurationGroupByStartDateReport(
+        ProcessReportDataBuilderHelper.createAverageProcessInstanceDurationGroupByStartDateReport(
           FAKE,
           FAKE,
           GroupByDateUnit.DAY
@@ -97,7 +97,7 @@ public class ExportServiceIT {
         "Avg PI Duration Grouped By PI Start Date"
       },
       {
-        ReportDataBuilderHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
+        ProcessReportDataBuilderHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
           FAKE,
           FAKE
         ),

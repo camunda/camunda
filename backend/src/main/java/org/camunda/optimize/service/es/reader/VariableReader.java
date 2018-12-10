@@ -3,7 +3,7 @@ package org.camunda.optimize.service.es.reader;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
-import org.camunda.optimize.service.util.VariableHelper;
+import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
@@ -33,9 +33,9 @@ import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DA
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_VERSION;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.STRING_VARIABLES;
-import static org.camunda.optimize.service.util.VariableHelper.getAllVariableTypeFieldLabels;
-import static org.camunda.optimize.service.util.VariableHelper.getNestedVariableNameFieldLabel;
-import static org.camunda.optimize.service.util.VariableHelper.getNestedVariableValueFieldLabel;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getAllVariableTypeFieldLabels;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameFieldLabel;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldLabel;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.prefixQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -100,7 +100,7 @@ public class VariableReader {
 
   private List<VariableRetrievalDto> extractVariables(Aggregations aggregations) {
     List<VariableRetrievalDto> getVariablesResponseList = new ArrayList<>();
-    for (String variableFieldLabel : VariableHelper.getAllVariableTypeFieldLabels()) {
+    for (String variableFieldLabel : ProcessVariableHelper.getAllVariableTypeFieldLabels()) {
       getVariablesResponseList.addAll(extractVariablesFromType(aggregations, variableFieldLabel));
     }
     return getVariablesResponseList;
@@ -114,7 +114,7 @@ public class VariableReader {
     for (Terms.Bucket nameBucket : nameTerms.getBuckets()) {
       VariableRetrievalDto response = new VariableRetrievalDto();
       response.setName(nameBucket.getKeyAsString());
-      response.setType(VariableHelper.fieldLabelToVariableType(variableFieldLabel));
+      response.setType(ProcessVariableHelper.fieldLabelToVariableType(variableFieldLabel));
       responseDtoList.add(response);
     }
     return responseDtoList;
@@ -155,7 +155,7 @@ public class VariableReader {
       processDefinitionKey,
       processDefinitionVersion);
 
-    String variableFieldLabel = VariableHelper.variableTypeToFieldLabel(type);
+    String variableFieldLabel = ProcessVariableHelper.variableTypeToFieldLabel(type);
 
     BoolQueryBuilder query = buildProcessDefinitionBaseQuery(processDefinitionKey, processDefinitionVersion);
 

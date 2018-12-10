@@ -11,4 +11,5 @@ import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto
   @JsonSubTypes.Type(value = SingleReportDataDto.class),
 })
 public interface ReportDataDto {
+  String createCommandKey();
 }

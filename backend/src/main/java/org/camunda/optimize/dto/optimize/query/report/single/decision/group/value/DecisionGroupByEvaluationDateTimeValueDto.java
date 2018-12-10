@@ -1,16 +1,18 @@
 package org.camunda.optimize.dto.optimize.query.report.single.decision.group.value;
 
+import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+
 import java.util.Objects;
 
 public class DecisionGroupByEvaluationDateTimeValueDto implements DecisionGroupByValueDto {
 
-  protected String unit;
+  protected GroupByDateUnit unit;
 
-  public String getUnit() {
+  public GroupByDateUnit getUnit() {
     return unit;
   }
 
-  public void setUnit(String unit) {
+  public void setUnit(GroupByDateUnit unit) {
     this.unit = unit;
   }
 

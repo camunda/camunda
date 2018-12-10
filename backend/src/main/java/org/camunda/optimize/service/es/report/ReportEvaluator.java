@@ -1,13 +1,17 @@
 package org.camunda.optimize.service.es.report;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
-import org.camunda.optimize.service.es.filter.QueryFilterEnhancer;
+import org.camunda.optimize.service.es.filter.DecisionQueryFilterEnhancer;
+import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.NotSupportedCommand;
-import org.camunda.optimize.service.es.report.command.RawDataCommand;
+import org.camunda.optimize.service.es.report.command.RawDecisionDataCommand;
+import org.camunda.optimize.service.es.report.command.RawProcessDataCommand;
 import org.camunda.optimize.service.es.report.command.flownode.duration.AverageFlowNodeDurationByFlowNodeCommand;
 import org.camunda.optimize.service.es.report.command.flownode.duration.MaxFlowNodeDurationByFlowNodeCommand;
 import org.camunda.optimize.service.es.report.command.flownode.duration.MedianFlowNodeDurationByFlowNodeCommand;
@@ -51,39 +55,40 @@ import org.springframework.stereotype.Component;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createAverageFlowNodeDurationGroupByFlowNodeReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createAverageProcessInstanceDurationGroupByNoneReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createAverageProcessInstanceDurationGroupByNoneWithProcessPartReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createAverageProcessInstanceDurationGroupByStartDateReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createAverageProcessInstanceDurationGroupByStartDateWithProcessPartReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createAverageProcessInstanceDurationGroupByVariableReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createAverageProcessInstanceDurationGroupByVariableWithProcessPartReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createCountFlowNodeFrequencyGroupByFlowNodeReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createCountProcessInstanceFrequencyGroupByNoneReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createCountProcessInstanceFrequencyGroupByStartDateReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createCountProcessInstanceFrequencyGroupByVariableReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMaxFlowNodeDurationGroupByFlowNodeReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMaxProcessInstanceDurationGroupByNoneReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMaxProcessInstanceDurationGroupByNoneWithProcessPartReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMaxProcessInstanceDurationGroupByStartDateReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMaxProcessInstanceDurationGroupByStartDateWithProcessPartReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMaxProcessInstanceDurationGroupByVariableReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMaxProcessInstanceDurationGroupByVariableWithProcessPartReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMedianFlowNodeDurationGroupByFlowNodeReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMedianProcessInstanceDurationGroupByNoneReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMedianProcessInstanceDurationGroupByNoneWithProcessPartReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMedianProcessInstanceDurationGroupByStartDateReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMedianProcessInstanceDurationGroupByStartDateWithProcessPartReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMedianProcessInstanceDurationGroupByVariableReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMedianProcessInstanceDurationGroupByVariableWithProcessPartReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMinFlowNodeDurationGroupByFlowNodeReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMinProcessInstanceDurationGroupByNoneReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMinProcessInstanceDurationGroupByNoneWithProcessPartReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMinProcessInstanceDurationGroupByStartDateReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMinProcessInstanceDurationGroupByStartDateWithProcessPartReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMinProcessInstanceDurationGroupByVariableReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMinProcessInstanceDurationGroupByVariableWithProcessPartReport;
-import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createRawDataReport;
+import static org.camunda.optimize.service.es.report.command.util.DecisionReportDataCreator.createRawDecisionDataReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createAverageFlowNodeDurationGroupByFlowNodeReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createAverageProcessInstanceDurationGroupByNoneReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createAverageProcessInstanceDurationGroupByNoneWithProcessPartReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createAverageProcessInstanceDurationGroupByStartDateReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createAverageProcessInstanceDurationGroupByStartDateWithProcessPartReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createAverageProcessInstanceDurationGroupByVariableReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createAverageProcessInstanceDurationGroupByVariableWithProcessPartReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createCountFlowNodeFrequencyGroupByFlowNodeReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createCountProcessInstanceFrequencyGroupByNoneReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createCountProcessInstanceFrequencyGroupByStartDateReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createCountProcessInstanceFrequencyGroupByVariableReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createMaxFlowNodeDurationGroupByFlowNodeReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createMaxProcessInstanceDurationGroupByNoneReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createMaxProcessInstanceDurationGroupByNoneWithProcessPartReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createMaxProcessInstanceDurationGroupByStartDateReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createMaxProcessInstanceDurationGroupByStartDateWithProcessPartReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createMaxProcessInstanceDurationGroupByVariableReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createMaxProcessInstanceDurationGroupByVariableWithProcessPartReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createMedianFlowNodeDurationGroupByFlowNodeReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createMedianProcessInstanceDurationGroupByNoneReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createMedianProcessInstanceDurationGroupByNoneWithProcessPartReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createMedianProcessInstanceDurationGroupByStartDateReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createMedianProcessInstanceDurationGroupByStartDateWithProcessPartReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createMedianProcessInstanceDurationGroupByVariableReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createMedianProcessInstanceDurationGroupByVariableWithProcessPartReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createMinFlowNodeDurationGroupByFlowNodeReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createMinProcessInstanceDurationGroupByNoneReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createMinProcessInstanceDurationGroupByNoneWithProcessPartReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createMinProcessInstanceDurationGroupByStartDateReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createMinProcessInstanceDurationGroupByStartDateWithProcessPartReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createMinProcessInstanceDurationGroupByVariableReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createMinProcessInstanceDurationGroupByVariableWithProcessPartReport;
+import static org.camunda.optimize.service.es.report.command.util.ProcessReportDataCreator.createRawDataReport;
 
 @Component
 public class ReportEvaluator {
@@ -91,7 +96,8 @@ public class ReportEvaluator {
   private static Map<String, Command> possibleCommands = new HashMap<>();
 
   static {
-    possibleCommands.put(createRawDataReport().createCommandKey(), new RawDataCommand());
+    possibleCommands.put(createRawDataReport().createCommandKey(), new RawProcessDataCommand());
+    possibleCommands.put(createRawDecisionDataReport().createCommandKey(), new RawDecisionDataCommand());
 
     addCountProcessInstanceFrequencyReports();
     addCountFlowNodeFrequencyReports();
@@ -109,7 +115,9 @@ public class ReportEvaluator {
   @Autowired
   private ObjectMapper objectMapper;
   @Autowired
-  private QueryFilterEnhancer queryFilterEnhancer;
+  private ProcessQueryFilterEnhancer processQueryFilterEnhancer;
+  @Autowired
+  private DecisionQueryFilterEnhancer decisionQueryFilterEnhancer;
   @Autowired
   private Client esclient;
 
@@ -262,25 +270,29 @@ public class ReportEvaluator {
     );
   }
 
-  public ProcessReportResultDto evaluate(ProcessReportDataDto reportData) throws OptimizeException {
+  public ReportResultDto evaluate(ReportDataDto reportData) throws OptimizeException {
     CommandContext commandContext = createCommandContext(reportData);
     Command evaluationCommand = extractCommand(reportData);
-    ProcessReportResultDto result = evaluationCommand.evaluate(commandContext);
+    ReportResultDto result = evaluationCommand.evaluate(commandContext);
     ReportUtil.copyReportData(reportData, result);
     return result;
   }
 
-  private Command extractCommand(ProcessReportDataDto reportData) {
+  private Command extractCommand(ReportDataDto reportData) {
     ValidationHelper.validate(reportData);
     return possibleCommands.getOrDefault(reportData.createCommandKey(), new NotSupportedCommand());
   }
 
-  private CommandContext createCommandContext(ProcessReportDataDto reportData) {
+  private CommandContext createCommandContext(ReportDataDto reportData) {
     CommandContext commandContext = new CommandContext();
     commandContext.setConfigurationService(configurationService);
     commandContext.setEsclient(esclient);
     commandContext.setObjectMapper(objectMapper);
-    commandContext.setQueryFilterEnhancer(queryFilterEnhancer);
+    if (reportData instanceof ProcessReportDataDto) {
+      commandContext.setQueryFilterEnhancer(processQueryFilterEnhancer);
+    } else if (reportData instanceof DecisionReportDataDto) {
+      commandContext.setQueryFilterEnhancer(decisionQueryFilterEnhancer);
+    }
     commandContext.setReportData(reportData);
     return commandContext;
   }

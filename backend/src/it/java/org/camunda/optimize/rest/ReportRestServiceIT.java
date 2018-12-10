@@ -6,6 +6,7 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -13,7 +14,8 @@ import org.camunda.optimize.service.exceptions.ReportEvaluationException;
 import org.camunda.optimize.service.sharing.AbstractSharingIT;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.util.ReportDataBuilderHelper;
+import org.camunda.optimize.test.util.DecisionReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -281,11 +283,24 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void evaluateReportById() {
+  @Parameters(method = "processAndDecisionReportType")
+  public void evaluateReportById(ReportType reportType) {
     //given
-    String id = createAndStoreDefaultProcessReportDefinition(
-      ReportDataBuilderHelper.createProcessReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION)
-    );
+    final String id;
+    switch (reportType) {
+      case PROCESS:
+        id = createAndStoreDefaultProcessReportDefinition(
+          ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION)
+        );
+        break;
+      case DECISION:
+        id = createAndStoreDefaultDecisionReportDefinition(
+          DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION)
+        );
+        break;
+      default:
+        throw new IllegalStateException("Uncovered type: " + reportType);
+    }
 
     // then
     Response response = embeddedOptimizeRule
@@ -301,7 +316,7 @@ public class ReportRestServiceIT {
   public void evaluateInvalidReportById() {
     //given
     String id = createAndStoreDefaultProcessReportDefinition(
-      ReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNodeNumber(RANDOM_KEY, RANDOM_VERSION)
+      ProcessReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNodeNumber(RANDOM_KEY, RANDOM_VERSION)
     );
 
     // then
@@ -328,12 +343,23 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void evaluateUnsavedReport() {
+  @Parameters(method = "processAndDecisionReportType")
+  public void evaluateUnsavedReport(ReportType reportType) {
     //given
-    ProcessReportDataDto reportDataDto = ReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
-      RANDOM_KEY,
-      RANDOM_VERSION
-    );
+    final SingleReportDataDto reportDataDto;
+    switch (reportType) {
+      case PROCESS:
+        reportDataDto = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
+          RANDOM_KEY,
+          RANDOM_VERSION
+        );
+        break;
+      case DECISION:
+        reportDataDto = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION);
+        break;
+      default:
+        throw new IllegalStateException("Uncovered type: " + reportType);
+    }
 
     // then
     Response response = embeddedOptimizeRule
@@ -361,7 +387,7 @@ public class ReportRestServiceIT {
   @Test
   public void evaluateCombinedUnsavedReport() {
     // then
-    CombinedReportDataDto combinedReport = ReportDataBuilderHelper.createCombinedReport();
+    CombinedReportDataDto combinedReport = ProcessReportDataBuilderHelper.createCombinedReport();
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateCombinedUnsavedReportRequest(combinedReport)
@@ -395,7 +421,7 @@ public class ReportRestServiceIT {
   @Test
   public void nullReportIdsThrowsReportEvaluationException() {
     // then
-    CombinedReportDataDto combinedReport = ReportDataBuilderHelper.createCombinedReport();
+    CombinedReportDataDto combinedReport = ProcessReportDataBuilderHelper.createCombinedReport();
     combinedReport.setReportIds(null);
 
     ReportEvaluationException errorMessage = embeddedOptimizeRule
@@ -409,14 +435,26 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void evaluateReportWithoutViewById() {
+  @Parameters(method = "processAndDecisionReportType")
+  public void evaluateReportWithoutViewById(ReportType reportType) {
     //given
-    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNoneNumber =
-      ReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNodeNumber(RANDOM_KEY, RANDOM_VERSION);
-    countFlowNodeFrequencyGroupByFlowNoneNumber.setView(null);
-    String id = createAndStoreDefaultProcessReportDefinition(
-      countFlowNodeFrequencyGroupByFlowNoneNumber
-    );
+    String id;
+    switch (reportType) {
+      case PROCESS:
+        ProcessReportDataDto processReportDataDto =
+          ProcessReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNodeNumber(RANDOM_KEY, RANDOM_VERSION);
+        processReportDataDto.setView(null);
+        id = createAndStoreDefaultProcessReportDefinition(processReportDataDto);
+        break;
+      case DECISION:
+        DecisionReportDataDto decisionReportDataDto = DecisionReportDataBuilder
+          .createDecisionReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION);
+        decisionReportDataDto.setView(null);
+        id = createAndStoreDefaultDecisionReportDefinition(decisionReportDataDto);
+        break;
+      default:
+        throw new IllegalStateException("Uncovered reportType: " + reportType);
+    }
 
     // then
     ReportEvaluationException response = embeddedOptimizeRule
@@ -441,11 +479,26 @@ public class ReportRestServiceIT {
       .execute(ReportDefinitionDto.class, 200);
   }
 
-  private String createAndStoreDefaultProcessReportDefinition(ProcessReportDataDto reportDataViewRawAsTable) {
+  private String createAndStoreDefaultProcessReportDefinition(ProcessReportDataDto processReportDataDto) {
     String id = addEmptyProcessReportToOptimize();
     SingleReportDefinitionDto<ProcessReportDataDto> report = new SingleReportDefinitionDto<>();
-    report.setData(reportDataViewRawAsTable);
-    report.setId(RANDOM_STRING);
+    report.setData(processReportDataDto);
+    report.setId(id);
+    report.setLastModifier(RANDOM_STRING);
+    report.setName(RANDOM_STRING);
+    OffsetDateTime someDate = OffsetDateTime.now().plusHours(1);
+    report.setCreated(someDate);
+    report.setLastModified(someDate);
+    report.setOwner(RANDOM_STRING);
+    updateReport(id, report);
+    return id;
+  }
+
+  private String createAndStoreDefaultDecisionReportDefinition(DecisionReportDataDto decisionReportDataDto) {
+    String id = addEmptyDecisionReportToOptimize();
+    SingleReportDefinitionDto<DecisionReportDataDto> report = new SingleReportDefinitionDto<>();
+    report.setData(decisionReportDataDto);
+    report.setId(id);
     report.setLastModifier(RANDOM_STRING);
     report.setName(RANDOM_STRING);
     OffsetDateTime someDate = OffsetDateTime.now().plusHours(1);

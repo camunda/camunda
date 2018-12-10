@@ -1,10 +1,11 @@
 package org.camunda.optimize.service.es.report.command.pi.duration.groupby.date;
 
+import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.StartDateGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.MapProcessReportResultDto;
-import org.camunda.optimize.service.es.report.command.ReportCommand;
+import org.camunda.optimize.service.es.report.command.ProcessReportCommand;
 import org.camunda.optimize.service.es.report.command.util.ReportUtil;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeException;
@@ -24,7 +25,7 @@ import java.util.Map;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 
 public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
-    extends ReportCommand<MapProcessReportResultDto> {
+  extends ProcessReportCommand<MapProcessReportResultDto> {
 
   protected static final String DURATION_AGGREGATION = "durationAggregation";
   private static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
@@ -32,19 +33,22 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
   @Override
   protected MapProcessReportResultDto evaluate() throws OptimizeException {
 
-    logger.debug("Evaluating process instance duration grouped by start date report " +
-      "for process definition key [{}] and version [{}]",
-      reportData.getProcessDefinitionKey(),
-      reportData.getProcessDefinitionVersion());
-
-    BoolQueryBuilder query = setupBaseQuery(
-        reportData.getProcessDefinitionKey(),
-        reportData.getProcessDefinitionVersion()
+    final ProcessReportDataDto processReportData = getProcessReportData();
+    logger.debug(
+      "Evaluating process instance duration grouped by start date report " +
+        "for process definition key [{}] and version [{}]",
+      processReportData.getProcessDefinitionKey(),
+      processReportData.getProcessDefinitionVersion()
     );
 
-    queryFilterEnhancer.addFilterToQuery(query, reportData.getFilter());
+    BoolQueryBuilder query = setupBaseQuery(
+      processReportData.getProcessDefinitionKey(),
+      processReportData.getProcessDefinitionVersion()
+    );
 
-    StartDateGroupByValueDto groupByStartDate = ((StartDateGroupByDto) reportData.getGroupBy()).getValue();
+    queryFilterEnhancer.addFilterToQuery(query, processReportData.getFilter());
+
+    StartDateGroupByValueDto groupByStartDate = ((StartDateGroupByDto) processReportData.getGroupBy()).getValue();
 
     SearchResponse response = esclient
       .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))

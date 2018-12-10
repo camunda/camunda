@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.isVariableTypeSupported;
 
 public class VariableUpdateInstanceImportService {
 

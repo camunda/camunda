@@ -83,6 +83,7 @@ public class EngineIntegrationRule extends TestWatcher {
   private static final String COUNT = "count";
   private static final String DEFAULT_PROPERTIES_PATH = "integration-rules.properties";
   private static final CloseableHttpClient closeableHttpClient = HttpClientBuilder.create().build();
+  public static final String DEFAULT_DMN_DEFINITION_PATH = "dmn/invoiceBusinessDecision.xml";
 
   private Properties properties;
   private Logger logger = LoggerFactory.getLogger(EngineIntegrationRule.class);
@@ -846,14 +847,24 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public DecisionDefinitionEngineDto deployAndStartDecisionDefinition() {
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = deployDecisionDefinition();
-    startDecisionInstance(decisionDefinitionEngineDto.getId());
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = deployDecisionDefinition(DEFAULT_DMN_DEFINITION_PATH);
+    startDecisionInstance(
+      decisionDefinitionEngineDto.getId(),
+      new HashMap<String, Object>() {{
+        put("amount", 200);
+        put("invoiceCategory", "Misc");
+      }}
+    );
     return decisionDefinitionEngineDto;
   }
 
   public DecisionDefinitionEngineDto deployDecisionDefinition() {
+    return deployDecisionDefinition(DEFAULT_DMN_DEFINITION_PATH);
+  }
+
+  public DecisionDefinitionEngineDto deployDecisionDefinition(String dmnPath) {
     final DmnModelInstance dmnModelInstance = Dmn.readModelFromStream(
-      getClass().getClassLoader().getResourceAsStream("dmn/invoiceBusinessDecision.xml")
+      getClass().getClassLoader().getResourceAsStream(dmnPath)
     );
 
     final DeploymentDto deploymentDto = deployDecisionDefinition(dmnModelInstance);

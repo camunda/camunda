@@ -34,4 +34,9 @@ public class CombinedReportDataDto implements ReportDataDto {
   public void setReportIds(List<String> reportIds) {
     this.reportIds = reportIds;
   }
+
+  @Override
+  public String createCommandKey() {
+    return "combined";
+  }
 }

@@ -4,7 +4,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
-import org.camunda.optimize.service.util.VariableHelper;
+import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -21,7 +21,7 @@ import java.util.stream.IntStream;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.rest.VariableRestService.NAME_PREFIX;
-import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.isVariableTypeSupported;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -130,7 +130,7 @@ public class VariableRetrievalIT {
     // then
     assertThat(variableResponse.size(), is(1));
     assertThat(variableResponse.get(0).getName(), is("var1"));
-    assertThat(variableResponse.get(0).getType(), is(VariableHelper.STRING_TYPE));
+    assertThat(variableResponse.get(0).getType(), is(ProcessVariableHelper.STRING_TYPE));
   }
 
   @Test

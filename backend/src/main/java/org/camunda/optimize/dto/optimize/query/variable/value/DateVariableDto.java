@@ -2,7 +2,7 @@ package org.camunda.optimize.dto.optimize.query.variable.value;
 
 import java.time.OffsetDateTime;
 
-import static org.camunda.optimize.service.util.VariableHelper.DATE_TYPE;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.DATE_TYPE;
 
 public class DateVariableDto extends VariableInstanceDto {
 

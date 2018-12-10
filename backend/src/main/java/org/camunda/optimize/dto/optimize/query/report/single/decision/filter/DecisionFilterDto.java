@@ -6,13 +6,20 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterD
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = EvaluationDateFilterDto.class, name = "evaluationDate"),
+    @JsonSubTypes.Type(value = EvaluationDateFilterDto.class, name = "evaluationDateTime"),
     @JsonSubTypes.Type(value = InputVariableFilterDto.class, name = "inputVariable"),
     @JsonSubTypes.Type(value = OutputVariableFilterDto.class, name = "outputVariable"),
 }
 )
 public abstract class DecisionFilterDto<DATA extends FilterDataDto> {
   protected DATA data;
+
+  public DecisionFilterDto() {
+  }
+
+  public DecisionFilterDto(final DATA data) {
+    this.data = data;
+  }
 
   public DATA getData() {
     return data;

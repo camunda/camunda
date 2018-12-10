@@ -2,13 +2,19 @@ package org.camunda.optimize.dto.optimize.query.report.single.decision;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
+import static org.camunda.optimize.dto.optimize.ReportConstants.BAR_VISUALIZATION;
 import static org.camunda.optimize.dto.optimize.ReportConstants.HEAT_VISUALIZATION;
+import static org.camunda.optimize.dto.optimize.ReportConstants.LINE_VISUALIZATION;
+import static org.camunda.optimize.dto.optimize.ReportConstants.PIE_VISUALIZATION;
 import static org.camunda.optimize.dto.optimize.ReportConstants.SINGLE_NUMBER_VISUALIZATION;
 import static org.camunda.optimize.dto.optimize.ReportConstants.TABLE_VISUALIZATION;
 
 public enum DecisionVisualization {
   NUMBER(SINGLE_NUMBER_VISUALIZATION),
   TABLE(TABLE_VISUALIZATION),
+  BAR(BAR_VISUALIZATION),
+  LINE(LINE_VISUALIZATION),
+  PIE(PIE_VISUALIZATION),
   HEAT(HEAT_VISUALIZATION),
   ;
 

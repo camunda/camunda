@@ -14,6 +14,9 @@ public class ReportConstants {
   public static final String VIEW_FLOW_NODE_ENTITY = "flowNode";
   public static final String VIEW_PROCESS_INSTANCE_ENTITY = "processInstance";
 
+  public static final String VIEW_DECISION_MATCHED_RULE_ENTITY = "matchedRule";
+  public static final String VIEW_DECISION_INSTANCE_ENTITY = "decisionInstance";
+
   public static final String VIEW_FREQUENCY_PROPERTY = "frequency";
   public static final String VIEW_DURATION_PROPERTY = "duration";
 

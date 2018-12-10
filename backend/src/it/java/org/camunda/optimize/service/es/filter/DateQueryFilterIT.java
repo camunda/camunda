@@ -11,7 +11,7 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.DateUtilHelper;
-import org.camunda.optimize.test.util.ReportDataBuilderHelper;
+import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -51,7 +51,7 @@ public class DateQueryFilterIT {
     startAndImportSimpleProcess();
 
     //when
-    ProcessReportDataDto reportData = ReportDataBuilderHelper.createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
     List<ProcessFilterDto> fixedStartDateFilter =
         DateUtilHelper.createFixedStartDateFilter(start.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS), OffsetDateTime.now());
     reportData.setFilter(fixedStartDateFilter);
@@ -79,7 +79,7 @@ public class DateQueryFilterIT {
     startAndImportSimpleProcess();
 
     //when
-    ProcessReportDataDto reportData = ReportDataBuilderHelper.createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
     reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(null, start.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
     RawDataProcessReportResultDto result = evaluateReport(reportData);
 
@@ -105,7 +105,7 @@ public class DateQueryFilterIT {
     startAndImportSimpleProcess();
 
     //when
-    ProcessReportDataDto reportData = ReportDataBuilderHelper.createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
     reportData.setFilter(DateUtilHelper.createFixedEndDateFilter(null, end.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
     RawDataProcessReportResultDto result = evaluateReport(reportData);
 
@@ -131,7 +131,7 @@ public class DateQueryFilterIT {
     startAndImportSimpleProcess();
 
     //when
-    ProcessReportDataDto reportData = ReportDataBuilderHelper.createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
     reportData.setFilter(DateUtilHelper.createFixedEndDateFilter(end.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS), null));
     RawDataProcessReportResultDto result = evaluateReport(reportData);
 
@@ -150,7 +150,7 @@ public class DateQueryFilterIT {
     //given
     startAndImportSimpleProcess();
 
-    ProcessReportDataDto reportData = ReportDataBuilderHelper.createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
     reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(start.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS), null));
 
     //when

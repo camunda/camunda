@@ -6,7 +6,7 @@ import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.parameters.ParametersDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.parameters.ProcessParametersDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.parameters.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.service.es.report.command.util.ReportUtil;
@@ -26,7 +26,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   protected ProcessViewDto view;
   protected ProcessGroupByDto groupBy;
   protected ProcessVisualization visualization;
-  protected ParametersDto parameters = new ParametersDto();
+  protected ProcessParametersDto parameters = new ProcessParametersDto();
 
   public String getProcessDefinitionKey() {
     return processDefinitionKey;
@@ -90,19 +90,20 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     if (getParameters() != null) {
       getParameters().setProcessPart(processPart);
     } else {
-      setParameters(new ParametersDto(processPart));
+      setParameters(new ProcessParametersDto(processPart));
     }
   }
 
-  public ParametersDto getParameters() {
+  public ProcessParametersDto getParameters() {
     return parameters;
   }
 
-  public void setParameters(ParametersDto parameters) {
+  public void setParameters(ProcessParametersDto parameters) {
     this.parameters = parameters;
   }
 
   @JsonIgnore
+  @Override
   public String createCommandKey() {
     String viewCommandKey = view == null ? "null" : view.createCommandKey();
     String groupByCommandKey = groupBy == null ? "null" : groupBy.createCommandKey();

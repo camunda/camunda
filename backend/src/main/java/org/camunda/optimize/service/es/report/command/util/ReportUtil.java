@@ -1,10 +1,14 @@
 package org.camunda.optimize.service.es.report.command.util;
 
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
+import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
@@ -15,17 +19,16 @@ public class ReportUtil {
 
   private static Logger logger = LoggerFactory.getLogger(ReportUtil.class);
 
-  public static void copyReportData(ProcessReportDataDto from, ProcessReportResultDto to) {
-    ProcessReportDataDto reportDataDto = new ProcessReportDataDto();
-    reportDataDto.setProcessDefinitionKey(from.getProcessDefinitionKey());
-    reportDataDto.setProcessDefinitionVersion(from.getProcessDefinitionVersion());
-    reportDataDto.setView(from.getView());
-    reportDataDto.setGroupBy(from.getGroupBy());
-    reportDataDto.setFilter(from.getFilter());
-    reportDataDto.setParameters(from.getParameters());
-    reportDataDto.setVisualization(from.getVisualization());
-    reportDataDto.setConfiguration(from.getConfiguration());
-    to.setData(reportDataDto);
+  public static void copyReportData(ReportDataDto from, ReportResultDto to) {
+    if (to instanceof ProcessReportResultDto) {
+      final ProcessReportResultDto processReportResultDto = (ProcessReportResultDto) to;
+      processReportResultDto.setData((ProcessReportDataDto) from);
+    } else if (to instanceof DecisionReportResultDto) {
+      final DecisionReportResultDto decisionReportResultDto = (DecisionReportResultDto) to;
+      decisionReportResultDto.setData((DecisionReportDataDto) from);
+    } else {
+      throw new IllegalStateException("Unsupported result dto: " + to.getClass().getSimpleName());
+    }
   }
 
   public static DateHistogramInterval getDateHistogramInterval(GroupByDateUnit interval) throws OptimizeException {

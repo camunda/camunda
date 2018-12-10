@@ -1,7 +1,7 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process.result.raw;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ResultType;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 
 import java.util.List;
 

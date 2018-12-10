@@ -12,7 +12,7 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.DateUtilHelper;
-import org.camunda.optimize.test.util.ReportDataBuilderHelper;
+import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 
@@ -77,7 +77,7 @@ public abstract class AbstractRollingDateFilterIT {
       String unit,
       boolean newToken
   ) {
-    ProcessReportDataDto reportData = ReportDataBuilderHelper.createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
     List<ProcessFilterDto> rollingDateFilter = DateUtilHelper.createRollingStartDateFilter(1L, unit);
     reportData.setFilter(rollingDateFilter);
     return evaluateReport(reportData, newToken);
@@ -89,7 +89,7 @@ public abstract class AbstractRollingDateFilterIT {
           String unit,
           boolean newToken
   ) {
-    ProcessReportDataDto reportData = ReportDataBuilderHelper.createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
     List<ProcessFilterDto> rollingDateFilter = DateUtilHelper.createRollingEndDateFilter(1L, unit);
     reportData.setFilter(rollingDateFilter);
     return evaluateReport(reportData, newToken);

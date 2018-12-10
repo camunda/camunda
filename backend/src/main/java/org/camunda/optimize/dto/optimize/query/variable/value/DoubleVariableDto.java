@@ -1,6 +1,6 @@
 package org.camunda.optimize.dto.optimize.query.variable.value;
 
-import static org.camunda.optimize.service.util.VariableHelper.DOUBLE_TYPE;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.DOUBLE_TYPE;
 
 public class DoubleVariableDto extends VariableInstanceDto {
 

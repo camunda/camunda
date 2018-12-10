@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.exceptions.ReportEvaluationException;
-import org.camunda.optimize.test.util.ReportDataBuilderHelper;
+import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -637,7 +637,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     String reportId = this.createNewReport();
-    ProcessReportDataDto reportData = ReportDataBuilderHelper
+    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper
       .createCountFlowNodeFrequencyGroupByFlowNodeNumber(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion()

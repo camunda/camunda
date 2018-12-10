@@ -15,13 +15,13 @@ public abstract class AbstractProcessInstanceDurationGroupByVariableWithProcessP
   @Override
   protected BoolQueryBuilder setupBaseQuery(String processDefinitionKey, String processDefinitionVersion) {
     BoolQueryBuilder boolQueryBuilder = super.setupBaseQuery(processDefinitionKey, processDefinitionVersion);
-    ProcessPartDto processPart = reportData.getParameters().getProcessPart();
+    ProcessPartDto processPart = getProcessReportData().getParameters().getProcessPart();
     return addProcessPartQuery(boolQueryBuilder, processPart.getStart(), processPart.getEnd());
   }
 
   @Override
   protected AggregationBuilder createAggregationOperation() {
-    ProcessPartDto processPart = reportData.getParameters().getProcessPart();
+    ProcessPartDto processPart = getProcessReportData().getParameters().getProcessPart();
     return createProcessPartAggregation(processPart.getStart(), processPart.getEnd());
   }
 }

@@ -14,7 +14,7 @@ import org.camunda.optimize.dto.optimize.query.variable.value.StringVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.value.VariableInstanceDto;
 import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
-import org.camunda.optimize.service.util.VariableHelper;
+import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -42,15 +42,15 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
-import static org.camunda.optimize.service.util.VariableHelper.isBooleanType;
-import static org.camunda.optimize.service.util.VariableHelper.isDateType;
-import static org.camunda.optimize.service.util.VariableHelper.isDoubleType;
-import static org.camunda.optimize.service.util.VariableHelper.isIntegerType;
-import static org.camunda.optimize.service.util.VariableHelper.isLongType;
-import static org.camunda.optimize.service.util.VariableHelper.isShortType;
-import static org.camunda.optimize.service.util.VariableHelper.isStringType;
-import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
-import static org.camunda.optimize.service.util.VariableHelper.variableTypeToFieldLabel;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.isBooleanType;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.isDateType;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.isDoubleType;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.isIntegerType;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.isLongType;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.isShortType;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.isStringType;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.isVariableTypeSupported;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.variableTypeToFieldLabel;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
@@ -122,7 +122,7 @@ public abstract class VariableWriter {
 
       final BulkByScrollResponse response = UpdateByQueryAction.INSTANCE.newRequestBuilder(esClient)
         .source(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
-        .script(createVariableClearScript(VariableHelper.getAllVariableTypeFieldLabels()))
+        .script(createVariableClearScript(ProcessVariableHelper.getAllVariableTypeFieldLabels()))
         .abortOnVersionConflict(false)
         .filter(filterQuery)
         .get();
@@ -145,7 +145,7 @@ public abstract class VariableWriter {
     final BoolQueryBuilder innerBoolQuery = boolQuery();
     innerBoolQuery.minimumShouldMatch(1);
 
-    Arrays.stream(VariableHelper.getAllVariableTypeFieldLabels())
+    Arrays.stream(ProcessVariableHelper.getAllVariableTypeFieldLabels())
       .forEach(variableName -> innerBoolQuery.should(
         nestedQuery(
           variableName,
@@ -188,7 +188,7 @@ public abstract class VariableWriter {
 
   private Map<String, List<VariableDto>> newTypeMap() {
     Map<String, List<VariableDto>> result = new HashMap<>();
-    for (String type : VariableHelper.allVariableTypeFieldLabels) {
+    for (String type : ProcessVariableHelper.allVariableTypeFieldLabels) {
       result.put(type, new ArrayList<>());
     }
     return result;

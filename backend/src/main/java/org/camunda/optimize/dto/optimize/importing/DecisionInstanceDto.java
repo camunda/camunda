@@ -8,7 +8,7 @@ import java.util.List;
 
 public class DecisionInstanceDto implements OptimizeDto {
 
-  private String id;
+  private String decisionInstanceId;
   private String processDefinitionId;
   private String processDefinitionKey;
 
@@ -16,7 +16,7 @@ public class DecisionInstanceDto implements OptimizeDto {
   private String decisionDefinitionKey;
   private String decisionDefinitionVersion;
 
-  private OffsetDateTime evaluationTime;
+  private OffsetDateTime evaluationDateTime;
 
   private String processInstanceId;
   private String rootProcessInstanceId;
@@ -32,12 +32,12 @@ public class DecisionInstanceDto implements OptimizeDto {
 
   private String engine;
 
-  public String getId() {
-    return id;
+  public String getDecisionInstanceId() {
+    return decisionInstanceId;
   }
 
-  public void setId(final String id) {
-    this.id = id;
+  public void setDecisionInstanceId(final String decisionInstanceId) {
+    this.decisionInstanceId = decisionInstanceId;
   }
 
   public String getProcessDefinitionId() {
@@ -80,12 +80,12 @@ public class DecisionInstanceDto implements OptimizeDto {
     this.decisionDefinitionVersion = decisionDefinitionVersion;
   }
 
-  public OffsetDateTime getEvaluationTime() {
-    return evaluationTime;
+  public OffsetDateTime getEvaluationDateTime() {
+    return evaluationDateTime;
   }
 
-  public void setEvaluationTime(final OffsetDateTime evaluationTime) {
-    this.evaluationTime = evaluationTime;
+  public void setEvaluationDateTime(final OffsetDateTime evaluationDateTime) {
+    this.evaluationDateTime = evaluationDateTime;
   }
 
   public String getProcessInstanceId() {

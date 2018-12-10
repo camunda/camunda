@@ -1,5 +1,7 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process.result;
 
+import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
+
 import java.util.HashMap;
 import java.util.Map;
 

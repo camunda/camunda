@@ -16,14 +16,14 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDat
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.util.ReportDataBuilderHelper;
+import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -60,10 +60,10 @@ public class ReportConflictIT {
   public void updateSingleReportFailsWithConflictIfUsedInCombinedReportAndNotCombinableAnymoreWhenForceSet(Boolean force) {
     // given
     String firstSingleReportId = createAndStoreDefaultReportDefinition(
-      ReportDataBuilderHelper.createProcessReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION)
+      ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION)
     );
     String secondSingleReportId = createAndStoreDefaultReportDefinition(
-      ReportDataBuilderHelper.createProcessReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION)
+      ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION)
     );
     String combinedReportId = createNewCombinedReport(firstSingleReportId, secondSingleReportId);
     String[] expectedReportIds = new String[]{firstSingleReportId, secondSingleReportId, combinedReportId};
@@ -73,7 +73,7 @@ public class ReportConflictIT {
     final SingleReportDefinitionDto<ProcessReportDataDto> firstSingleReport =
       (SingleReportDefinitionDto) getReport(firstSingleReportId);
     final SingleReportDefinitionDto<ProcessReportDataDto> reportUpdate = new SingleReportDefinitionDto<>();
-    reportUpdate.setData(ReportDataBuilderHelper.createAverageProcessInstanceDurationGroupByStartDateReport(
+    reportUpdate.setData(ProcessReportDataBuilderHelper.createAverageProcessInstanceDurationGroupByStartDateReport(
       firstSingleReport.getData().getProcessDefinitionKey(),
       firstSingleReport.getData().getProcessDefinitionVersion(),
       GroupByDateUnit.DAY
@@ -91,7 +91,7 @@ public class ReportConflictIT {
   public void updateSingleReportFailsWithConflictIfUsedInAlertAndSuitableforAklertAnymoreWhenForceSet(Boolean force) {
     // given
     String reportId = createAndStoreDefaultReportDefinition(
-      ReportDataBuilderHelper.createPiFrequencyCountGroupedByNoneAsNumber(RANDOM_KEY, RANDOM_VERSION)
+      ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNoneAsNumber(RANDOM_KEY, RANDOM_VERSION)
     );
     String alertForReport = createNewAlertForReport(reportId);
     String[] expectedReportIds = new String[]{reportId};
@@ -101,7 +101,7 @@ public class ReportConflictIT {
     final SingleReportDefinitionDto<ProcessReportDataDto> singleReport =
       (SingleReportDefinitionDto) getReport(reportId);
     final SingleReportDefinitionDto<ProcessReportDataDto> reportUpdate = new SingleReportDefinitionDto<>();
-    reportUpdate.setData(ReportDataBuilderHelper.createAverageProcessInstanceDurationGroupByStartDateReport(
+    reportUpdate.setData(ProcessReportDataBuilderHelper.createAverageProcessInstanceDurationGroupByStartDateReport(
       singleReport.getData().getProcessDefinitionKey(),
       singleReport.getData().getProcessDefinitionVersion(),
       GroupByDateUnit.DAY

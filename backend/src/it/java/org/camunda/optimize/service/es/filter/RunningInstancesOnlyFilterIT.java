@@ -17,7 +17,7 @@ import org.junit.rules.RuleChain;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
 
-import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 

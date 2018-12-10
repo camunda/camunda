@@ -1,6 +1,6 @@
 package org.camunda.optimize.dto.optimize.query.variable.value;
 
-import static org.camunda.optimize.service.util.VariableHelper.BOOLEAN_TYPE;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.BOOLEAN_TYPE;
 
 public class BooleanVariableDto extends VariableInstanceDto {
 

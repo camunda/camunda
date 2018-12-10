@@ -9,19 +9,19 @@ import org.camunda.bpm.model.bpmn.instance.StartEvent;
 import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
+import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.parameters.ProcessPartDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.DateUtilHelper;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.PropertyUtil;
-import org.camunda.optimize.test.util.ReportDataBuilder;
-import org.camunda.optimize.test.util.ReportDataType;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -47,8 +47,8 @@ import java.util.concurrent.TimeoutException;
 
 import static java.time.temporal.ChronoUnit.YEARS;
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN;
-import static org.camunda.optimize.service.util.VariableHelper.DOUBLE_TYPE;
-import static org.camunda.optimize.test.util.VariableFilterUtilHelper.createBooleanVariableFilter;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.DOUBLE_TYPE;
+import static org.camunda.optimize.test.util.ProcessVariableFilterUtilHelper.createBooleanVariableFilter;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
@@ -101,8 +101,8 @@ public class QueryPerformanceTest {
     String variableName = "doubleVar";
     List<ProcessReportDataDto> reports = new ArrayList<>();
     ProcessPartDto processPart = createProcessPart(definition);
-    for (ReportDataType reportDataType : ReportDataType.values()) {
-      ReportDataBuilder reportDataBuilder = ReportDataBuilder.createReportData()
+    for (ProcessReportDataType reportDataType : ProcessReportDataType.values()) {
+      ProcessReportDataBuilder reportDataBuilder = ProcessReportDataBuilder.createReportData()
         .setReportDataType(reportDataType)
         .setProcessDefinitionKey(definition.getKey())
         .setProcessDefinitionVersion(definition.getVersionAsString())

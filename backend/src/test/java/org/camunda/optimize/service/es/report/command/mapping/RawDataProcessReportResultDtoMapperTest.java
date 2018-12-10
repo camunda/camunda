@@ -23,7 +23,7 @@ public class RawDataProcessReportResultDtoMapperTest {
     // given
     Long rawDataLimit = 2L;
     Long actualInstanceCount = 3L;
-    final RawDataSingleReportResultDtoMapper mapper = new RawDataSingleReportResultDtoMapper(rawDataLimit);
+    final RawProcessDataResultDtoMapper mapper = new RawProcessDataResultDtoMapper(rawDataLimit);
     final SearchResponse searchResponse = createSearchResponseMock(rawDataLimit.intValue(), actualInstanceCount);
 
     // when

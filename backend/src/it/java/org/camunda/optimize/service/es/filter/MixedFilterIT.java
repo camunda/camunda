@@ -14,7 +14,7 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.DateUtilHelper;
-import org.camunda.optimize.test.util.VariableFilterUtilHelper;
+import org.camunda.optimize.test.util.ProcessVariableFilterUtilHelper;
 import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.IN;
-import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -99,7 +99,7 @@ public class MixedFilterIT {
     // when
     List<ProcessFilterDto> filterList = new ArrayList<>();
 
-    VariableFilterDto filter = VariableFilterUtilHelper.createStringVariableFilter("var", IN, "value");
+    VariableFilterDto filter = ProcessVariableFilterUtilHelper.createStringVariableFilter("var", IN, "value");
     filterList.add(filter);
 
     List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()

@@ -21,8 +21,8 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.ReportDataBuilder;
-import org.camunda.optimize.test.util.ReportDataType;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -35,7 +35,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.test.util.VariableFilterUtilHelper.createBooleanVariableFilter;
+import static org.camunda.optimize.test.util.ProcessVariableFilterUtilHelper.createBooleanVariableFilter;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -61,7 +61,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
   @Test
   @Parameters
-  public void reportEvaluationForOneProcess(ReportDataType reportDataType, ProcessViewOperation operation) throws Exception {
+  public void reportEvaluationForOneProcess(ProcessReportDataType reportDataType, ProcessViewOperation operation) throws Exception {
 
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
@@ -73,7 +73,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ProcessReportDataDto reportData = ReportDataBuilder
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
             .createReportData()
             .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
             .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
@@ -99,16 +99,16 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
   private Object[] parametersForReportEvaluationForOneProcess() {
     return new Object[]{
-      new Object[]{ReportDataType.AVG_PROC_INST_DUR_GROUP_BY_NONE, ProcessViewOperation.AVG},
-      new Object[]{ReportDataType.MIN_PROC_INST_DUR_GROUP_BY_NONE, ProcessViewOperation.MIN},
-      new Object[]{ReportDataType.MAX_PROC_INST_DUR_GROUP_BY_NONE, ProcessViewOperation.MAX},
-      new Object[]{ReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_NONE, ProcessViewOperation.MEDIAN}
+      new Object[]{ProcessReportDataType.AVG_PROC_INST_DUR_GROUP_BY_NONE, ProcessViewOperation.AVG},
+      new Object[]{ProcessReportDataType.MIN_PROC_INST_DUR_GROUP_BY_NONE, ProcessViewOperation.MIN},
+      new Object[]{ProcessReportDataType.MAX_PROC_INST_DUR_GROUP_BY_NONE, ProcessViewOperation.MAX},
+      new Object[]{ProcessReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_NONE, ProcessViewOperation.MEDIAN}
     };
   }
 
   @Test
   @Parameters
-  public void reportEvaluationById(ReportDataType reportDataType, ProcessViewOperation operation) throws Exception {
+  public void reportEvaluationById(ProcessReportDataType reportDataType, ProcessViewOperation operation) throws Exception {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -117,7 +117,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    ProcessReportDataDto reportDataDto = ReportDataBuilder
+    ProcessReportDataDto reportDataDto = ProcessReportDataBuilder
             .createReportData()
             .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
             .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
@@ -145,16 +145,16 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
   private Object[] parametersForReportEvaluationById() {
     return new Object[]{
-      new Object[]{ReportDataType.AVG_PROC_INST_DUR_GROUP_BY_NONE, ProcessViewOperation.AVG},
-      new Object[]{ReportDataType.MIN_PROC_INST_DUR_GROUP_BY_NONE, ProcessViewOperation.MIN},
-      new Object[]{ReportDataType.MAX_PROC_INST_DUR_GROUP_BY_NONE, ProcessViewOperation.MAX},
-      new Object[]{ReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_NONE, ProcessViewOperation.MEDIAN}
+      new Object[]{ProcessReportDataType.AVG_PROC_INST_DUR_GROUP_BY_NONE, ProcessViewOperation.AVG},
+      new Object[]{ProcessReportDataType.MIN_PROC_INST_DUR_GROUP_BY_NONE, ProcessViewOperation.MIN},
+      new Object[]{ProcessReportDataType.MAX_PROC_INST_DUR_GROUP_BY_NONE, ProcessViewOperation.MAX},
+      new Object[]{ProcessReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_NONE, ProcessViewOperation.MEDIAN}
     };
   }
 
   @Test
   @Parameters
-  public void evaluateReportForMultipleEvents(ReportDataType reportDataType, Long expectedDuration) throws Exception {
+  public void evaluateReportForMultipleEvents(ProcessReportDataType reportDataType, Long expectedDuration) throws Exception {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -176,7 +176,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ProcessReportDataDto reportDataDto = ReportDataBuilder
+    ProcessReportDataDto reportDataDto = ProcessReportDataBuilder
             .createReportData()
             .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
             .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
@@ -191,18 +191,18 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
   private Object[] parametersForEvaluateReportForMultipleEvents() {
     return new Object[]{
-      new Object[]{ReportDataType.AVG_PROC_INST_DUR_GROUP_BY_NONE, 4000L},
-      new Object[]{ReportDataType.MIN_PROC_INST_DUR_GROUP_BY_NONE, 1000L},
-      new Object[]{ReportDataType.MAX_PROC_INST_DUR_GROUP_BY_NONE, 9000L},
-      new Object[]{ReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_NONE, 2000L}
+      new Object[]{ProcessReportDataType.AVG_PROC_INST_DUR_GROUP_BY_NONE, 4000L},
+      new Object[]{ProcessReportDataType.MIN_PROC_INST_DUR_GROUP_BY_NONE, 1000L},
+      new Object[]{ProcessReportDataType.MAX_PROC_INST_DUR_GROUP_BY_NONE, 9000L},
+      new Object[]{ProcessReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_NONE, 2000L}
     };
   }
 
   @Test
   @Parameters(source = ReportDataBuilderProvider.class)
-  public void noAvailableProcessInstancesReturnsZero(ReportDataType reportDataType) {
+  public void noAvailableProcessInstancesReturnsZero(ProcessReportDataType reportDataType) {
     // when
-    ProcessReportDataDto reportData = ReportDataBuilder
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
             .createReportData()
             .setProcessDefinitionKey("fooProcDef")
             .setProcessDefinitionVersion("1")
@@ -218,7 +218,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
   @Test
   @Parameters
-  public void reportAcrossAllVersions(ReportDataType reportDataType, Long expectedDuration) throws Exception {
+  public void reportAcrossAllVersions(ProcessReportDataType reportDataType, Long expectedDuration) throws Exception {
     //given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -236,7 +236,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
 
     // when
-    ProcessReportDataDto reportDataDto = ReportDataBuilder
+    ProcessReportDataDto reportDataDto = ProcessReportDataBuilder
             .createReportData()
             .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
             .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
@@ -252,16 +252,16 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
   private Object[] parametersForReportAcrossAllVersions() {
     return new Object[]{
-      new Object[]{ReportDataType.AVG_PROC_INST_DUR_GROUP_BY_NONE, 4000L},
-      new Object[]{ReportDataType.MIN_PROC_INST_DUR_GROUP_BY_NONE, 1000L},
-      new Object[]{ReportDataType.MAX_PROC_INST_DUR_GROUP_BY_NONE, 9000L},
-      new Object[]{ReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_NONE, 2000L}
+      new Object[]{ProcessReportDataType.AVG_PROC_INST_DUR_GROUP_BY_NONE, 4000L},
+      new Object[]{ProcessReportDataType.MIN_PROC_INST_DUR_GROUP_BY_NONE, 1000L},
+      new Object[]{ProcessReportDataType.MAX_PROC_INST_DUR_GROUP_BY_NONE, 9000L},
+      new Object[]{ProcessReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_NONE, 2000L}
     };
   }
 
   @Test
   @Parameters
-  public void otherProcessDefinitionsDoNoAffectResult(ReportDataType reportDataType, Long expectedDuration) throws Exception {
+  public void otherProcessDefinitionsDoNoAffectResult(ProcessReportDataType reportDataType, Long expectedDuration) throws Exception {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -282,7 +282,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ProcessReportDataDto reportDataDto = ReportDataBuilder
+    ProcessReportDataDto reportDataDto = ProcessReportDataBuilder
             .createReportData()
             .setProcessDefinitionKey(processDefinitionKey)
             .setProcessDefinitionVersion(processDefinitionVersion)
@@ -298,16 +298,16 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
   private Object[] parametersForOtherProcessDefinitionsDoNoAffectResult() {
     return new Object[]{
-      new Object[]{ReportDataType.AVG_PROC_INST_DUR_GROUP_BY_NONE, 4000L},
-      new Object[]{ReportDataType.MIN_PROC_INST_DUR_GROUP_BY_NONE, 1000L},
-      new Object[]{ReportDataType.MAX_PROC_INST_DUR_GROUP_BY_NONE, 9000L},
-      new Object[]{ReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_NONE, 2000L}
+      new Object[]{ProcessReportDataType.AVG_PROC_INST_DUR_GROUP_BY_NONE, 4000L},
+      new Object[]{ProcessReportDataType.MIN_PROC_INST_DUR_GROUP_BY_NONE, 1000L},
+      new Object[]{ProcessReportDataType.MAX_PROC_INST_DUR_GROUP_BY_NONE, 9000L},
+      new Object[]{ProcessReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_NONE, 2000L}
     };
   }
 
   @Test
   @Parameters(source = ReportDataBuilderProvider.class)
-  public void filterInReportWorks(ReportDataType reportDataType) throws Exception {
+  public void filterInReportWorks(ProcessReportDataType reportDataType) throws Exception {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", true);
@@ -321,7 +321,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ProcessReportDataDto reportData = ReportDataBuilder
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
             .createReportData()
             .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
             .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
@@ -349,9 +349,9 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
   @Test
   @Parameters(source = ReportDataBuilderProvider.class)
-  public void optimizeExceptionOnViewPropertyIsNull(ReportDataType reportDataType) {
+  public void optimizeExceptionOnViewPropertyIsNull(ProcessReportDataType reportDataType) {
     // given
-    ProcessReportDataDto dataDto = ReportDataBuilder
+    ProcessReportDataDto dataDto = ProcessReportDataBuilder
             .createReportData()
             .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
             .setProcessDefinitionVersion("1")
@@ -369,9 +369,9 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
   @Test
   @Parameters(source = ReportDataBuilderProvider.class)
-  public void optimizeExceptionOnGroupByTypeIsNull(ReportDataType reportDataType) {
+  public void optimizeExceptionOnGroupByTypeIsNull(ProcessReportDataType reportDataType) {
     // given
-    ProcessReportDataDto dataDto = ReportDataBuilder
+    ProcessReportDataDto dataDto = ProcessReportDataBuilder
             .createReportData()
             .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
             .setProcessDefinitionVersion("1")
@@ -474,10 +474,10 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
   public static class ReportDataBuilderProvider {
     public static Object[] provideReportDataCreator() {
       return new Object[]{
-        new Object[]{ReportDataType.AVG_PROC_INST_DUR_GROUP_BY_NONE},
-        new Object[]{ReportDataType.MIN_PROC_INST_DUR_GROUP_BY_NONE},
-        new Object[]{ReportDataType.MAX_PROC_INST_DUR_GROUP_BY_NONE},
-        new Object[]{ReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_NONE}
+        new Object[]{ProcessReportDataType.AVG_PROC_INST_DUR_GROUP_BY_NONE},
+        new Object[]{ProcessReportDataType.MIN_PROC_INST_DUR_GROUP_BY_NONE},
+        new Object[]{ProcessReportDataType.MAX_PROC_INST_DUR_GROUP_BY_NONE},
+        new Object[]{ProcessReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_NONE}
       };
     }
   }

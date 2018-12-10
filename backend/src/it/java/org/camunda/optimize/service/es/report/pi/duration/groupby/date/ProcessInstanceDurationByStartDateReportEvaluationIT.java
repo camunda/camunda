@@ -9,12 +9,12 @@ import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.MapProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewOperation;
@@ -24,8 +24,8 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.ReportDataBuilder;
-import org.camunda.optimize.test.util.ReportDataType;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -50,7 +50,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.camunda.optimize.test.util.VariableFilterUtilHelper.createBooleanVariableFilter;
+import static org.camunda.optimize.test.util.ProcessVariableFilterUtilHelper.createBooleanVariableFilter;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -76,7 +76,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
   @Test
   @Parameters(method = "reportDataTypeAndViewOperationProvider")
-  public void simpleReportEvaluation(ReportDataType reportDataType, ProcessViewOperation operation) throws Exception {
+  public void simpleReportEvaluation(ProcessReportDataType reportDataType, ProcessViewOperation operation) throws Exception {
     // given
     OffsetDateTime startDate = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC);
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -85,7 +85,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ProcessReportDataDto reportData = ReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
             .setDateInterval(GroupByDateUnit.DAY)
             .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
             .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
@@ -116,16 +116,16 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
   private Object[] reportDataTypeAndViewOperationProvider() {
     return new Object[]{
-      new Object[]{ReportDataType.AVG_PROC_INST_DUR_GROUP_BY_START_DATE, ProcessViewOperation.AVG},
-      new Object[]{ReportDataType.MIN_PROC_INST_DUR_GROUP_BY_START_DATE, ProcessViewOperation.MIN},
-      new Object[]{ReportDataType.MAX_PROC_INST_DUR_GROUP_BY_START_DATE, ProcessViewOperation.MAX},
-      new Object[]{ReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_START_DATE, ProcessViewOperation.MEDIAN}
+      new Object[]{ProcessReportDataType.AVG_PROC_INST_DUR_GROUP_BY_START_DATE, ProcessViewOperation.AVG},
+      new Object[]{ProcessReportDataType.MIN_PROC_INST_DUR_GROUP_BY_START_DATE, ProcessViewOperation.MIN},
+      new Object[]{ProcessReportDataType.MAX_PROC_INST_DUR_GROUP_BY_START_DATE, ProcessViewOperation.MAX},
+      new Object[]{ProcessReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_START_DATE, ProcessViewOperation.MEDIAN}
     };
   }
 
   @Test
   @Parameters(method = "reportDataTypeAndViewOperationProvider")
-  public void simpleReportEvaluationById(ReportDataType reportDataType, ProcessViewOperation operation) throws Exception {
+  public void simpleReportEvaluationById(ProcessReportDataType reportDataType, ProcessViewOperation operation) throws Exception {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -133,7 +133,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    ProcessReportDataDto reportData = ReportDataBuilder
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
             .createReportData()
             .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
             .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
@@ -168,7 +168,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
   @Test
   @Parameters
-  public void processInstancesStartedAtSameIntervalAreGroupedTogether(ReportDataType reportDataType,
+  public void processInstancesStartedAtSameIntervalAreGroupedTogether(ProcessReportDataType reportDataType,
                                                                       long expectedToday,
                                                                       long expectedYesterday) throws Exception {
     // given
@@ -190,7 +190,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ProcessReportDataDto reportData = ReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
             .setReportDataType(reportDataType)
             .setProcessDefinitionKey(processDefinitionKey)
             .setProcessDefinitionVersion(processDefinitionVersion)
@@ -213,16 +213,16 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
   private Object[] parametersForProcessInstancesStartedAtSameIntervalAreGroupedTogether() {
     return new Object[]{
-      new Object[]{ReportDataType.AVG_PROC_INST_DUR_GROUP_BY_START_DATE, 4000L, 1000L},
-      new Object[]{ReportDataType.MIN_PROC_INST_DUR_GROUP_BY_START_DATE, 1000L, 1000L},
-      new Object[]{ReportDataType.MAX_PROC_INST_DUR_GROUP_BY_START_DATE, 9000L, 1000L},
-      new Object[]{ReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_START_DATE, 2000L, 1000L}
+      new Object[]{ProcessReportDataType.AVG_PROC_INST_DUR_GROUP_BY_START_DATE, 4000L, 1000L},
+      new Object[]{ProcessReportDataType.MIN_PROC_INST_DUR_GROUP_BY_START_DATE, 1000L, 1000L},
+      new Object[]{ProcessReportDataType.MAX_PROC_INST_DUR_GROUP_BY_START_DATE, 9000L, 1000L},
+      new Object[]{ProcessReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_START_DATE, 2000L, 1000L}
     };
   }
 
   @Test
   @Parameters(source = ReportDataTypeProvider.class)
-  public void resultIsSortedInDescendingOrder(ReportDataType reportDataType) throws Exception {
+  public void resultIsSortedInDescendingOrder(ProcessReportDataType reportDataType) throws Exception {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -241,7 +241,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ProcessReportDataDto reportData = ReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
             .setDateInterval(GroupByDateUnit.DAY)
             .setProcessDefinitionKey(processDefinitionKey)
             .setProcessDefinitionVersion(processDefinitionVersion)
@@ -287,7 +287,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
   @Test
   @Parameters
-  public void emptyIntervalBetweenTwoProcessInstances(ReportDataType reportDataType,
+  public void emptyIntervalBetweenTwoProcessInstances(ProcessReportDataType reportDataType,
                                                       long expectedTodayDuration) throws Exception {
     // given
     OffsetDateTime startDate = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC);
@@ -308,7 +308,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ProcessReportDataDto reportData = ReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
             .setReportDataType(reportDataType)
             .setProcessDefinitionVersion(processDefinitionVersion)
             .setProcessDefinitionKey(processDefinitionKey)
@@ -335,16 +335,16 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
   private Object[] parametersForEmptyIntervalBetweenTwoProcessInstances() {
     return new Object[]{
-      new Object[]{ReportDataType.AVG_PROC_INST_DUR_GROUP_BY_START_DATE, 4000L},
-      new Object[]{ReportDataType.MIN_PROC_INST_DUR_GROUP_BY_START_DATE, 1000L},
-      new Object[]{ReportDataType.MAX_PROC_INST_DUR_GROUP_BY_START_DATE, 9000L},
-      new Object[]{ReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_START_DATE, 2000L}
+      new Object[]{ProcessReportDataType.AVG_PROC_INST_DUR_GROUP_BY_START_DATE, 4000L},
+      new Object[]{ProcessReportDataType.MIN_PROC_INST_DUR_GROUP_BY_START_DATE, 1000L},
+      new Object[]{ProcessReportDataType.MAX_PROC_INST_DUR_GROUP_BY_START_DATE, 9000L},
+      new Object[]{ProcessReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_START_DATE, 2000L}
     };
   }
 
   @Test
   @Parameters(source = ReportDataTypeProvider.class)
-  public void groupedByHour(ReportDataType reportDataType) throws Exception {
+  public void groupedByHour(ProcessReportDataType reportDataType) throws Exception {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(5);
     OffsetDateTime now = OffsetDateTime.now();
@@ -354,7 +354,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
     // when
     ProcessInstanceEngineDto dto = processInstanceDtos.get(0);
-    ProcessReportDataDto reportData = ReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
             .setDateInterval(GroupByDateUnit.HOUR)
             .setProcessDefinitionKey(dto.getProcessDefinitionKey())
             .setProcessDefinitionVersion(dto.getProcessDefinitionVersion())
@@ -413,7 +413,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
   @Test
   @Parameters(source = ReportDataTypeProvider.class)
-  public void groupedByDay(ReportDataType reportDataType) throws Exception {
+  public void groupedByDay(ProcessReportDataType reportDataType) throws Exception {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
     OffsetDateTime now = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC);
@@ -423,7 +423,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
     // when
     ProcessInstanceEngineDto processInstanceEngineDto = processInstanceDtos.get(0);
-    ProcessReportDataDto reportData = ReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
             .setReportDataType(reportDataType)
             .setProcessDefinitionVersion(processInstanceEngineDto.getProcessDefinitionVersion())
             .setProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
@@ -439,7 +439,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
   @Test
   @Parameters(source = ReportDataTypeProvider.class)
-  public void groupedByWeek(ReportDataType reportDataType) throws Exception {
+  public void groupedByWeek(ProcessReportDataType reportDataType) throws Exception {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
     OffsetDateTime now = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC);
@@ -449,7 +449,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
     // when
     ProcessInstanceEngineDto dto = processInstanceDtos.get(0);
-    ProcessReportDataDto reportData = ReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
             .setProcessDefinitionKey(dto.getProcessDefinitionKey())
             .setProcessDefinitionVersion(dto.getProcessDefinitionVersion())
             .setDateInterval(GroupByDateUnit.WEEK)
@@ -466,7 +466,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
   @Test
   @Parameters(source = ReportDataTypeProvider.class)
-  public void groupedByMonth(ReportDataType reportDataType) throws Exception {
+  public void groupedByMonth(ProcessReportDataType reportDataType) throws Exception {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
     OffsetDateTime now = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC);
@@ -476,7 +476,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
     // when
     ProcessInstanceEngineDto dto = processInstanceDtos.get(0);
-    ProcessReportDataDto reportData = ReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
             .setDateInterval(GroupByDateUnit.MONTH)
             .setProcessDefinitionKey(dto.getProcessDefinitionKey())
             .setProcessDefinitionVersion(dto.getProcessDefinitionVersion())
@@ -493,7 +493,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
   @Test
   @Parameters(source = ReportDataTypeProvider.class)
-  public void groupedByYear(ReportDataType reportDataType) throws Exception {
+  public void groupedByYear(ProcessReportDataType reportDataType) throws Exception {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
     OffsetDateTime now = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC);
@@ -503,7 +503,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
     // when
     ProcessInstanceEngineDto dto = processInstanceDtos.get(0);
-    ProcessReportDataDto reportData = ReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
             .setReportDataType(reportDataType)
             .setProcessDefinitionVersion(dto.getProcessDefinitionVersion())
             .setProcessDefinitionKey(dto.getProcessDefinitionKey())
@@ -520,7 +520,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
   @Test
   @Parameters
-  public void reportAcrossAllVersions(ReportDataType reportDataType,
+  public void reportAcrossAllVersions(ProcessReportDataType reportDataType,
                                       long expectedDuration) throws Exception {
     //given
     OffsetDateTime startDate = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC).minusDays(2);
@@ -533,7 +533,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
     //when
     // when
-    ProcessReportDataDto reportData = ReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
             .setDateInterval(GroupByDateUnit.DAY)
             .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
             .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
@@ -553,15 +553,15 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
   private Object[] parametersForReportAcrossAllVersions() {
     return new Object[]{
-      new Object[]{ReportDataType.AVG_PROC_INST_DUR_GROUP_BY_START_DATE, 1500L},
-      new Object[]{ReportDataType.MIN_PROC_INST_DUR_GROUP_BY_START_DATE, 1000L},
-      new Object[]{ReportDataType.MAX_PROC_INST_DUR_GROUP_BY_START_DATE, 2000L}
+      new Object[]{ProcessReportDataType.AVG_PROC_INST_DUR_GROUP_BY_START_DATE, 1500L},
+      new Object[]{ProcessReportDataType.MIN_PROC_INST_DUR_GROUP_BY_START_DATE, 1000L},
+      new Object[]{ProcessReportDataType.MAX_PROC_INST_DUR_GROUP_BY_START_DATE, 2000L}
     };
   }
 
   @Test
   @Parameters
-  public void otherProcessDefinitionsDoNoAffectResult(ReportDataType reportDataType,
+  public void otherProcessDefinitionsDoNoAffectResult(ProcessReportDataType reportDataType,
                                                       long expectedDuration) throws Exception {
     // given
     OffsetDateTime startDate = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC).minusDays(2);
@@ -572,7 +572,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ProcessReportDataDto reportData = ReportDataBuilder.createReportData()
+    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
             .setReportDataType(reportDataType)
             .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
             .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
@@ -592,15 +592,15 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
   private Object[] parametersForOtherProcessDefinitionsDoNoAffectResult() {
     return new Object[]{
-            new Object[]{ReportDataType.AVG_PROC_INST_DUR_GROUP_BY_START_DATE, 1000L},
-            new Object[]{ReportDataType.MIN_PROC_INST_DUR_GROUP_BY_START_DATE, 1000L},
-            new Object[]{ReportDataType.MAX_PROC_INST_DUR_GROUP_BY_START_DATE, 1000L}
+            new Object[]{ProcessReportDataType.AVG_PROC_INST_DUR_GROUP_BY_START_DATE, 1000L},
+            new Object[]{ProcessReportDataType.MIN_PROC_INST_DUR_GROUP_BY_START_DATE, 1000L},
+            new Object[]{ProcessReportDataType.MAX_PROC_INST_DUR_GROUP_BY_START_DATE, 1000L}
     };
   }
 
   @Test
   @Parameters(source = ReportDataTypeProvider.class)
-  public void filterInReportWorks(ReportDataType reportDataType) throws Exception {
+  public void filterInReportWorks(ProcessReportDataType reportDataType) throws Exception {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", true);
@@ -613,7 +613,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ProcessReportDataDto reportData = ReportDataBuilder
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
             .createReportData()
             .setDateInterval(GroupByDateUnit.DAY)
             .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
@@ -629,7 +629,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     assertThat(result.getResult().size(), is(1));
 
     // when
-    reportData = ReportDataBuilder
+    reportData = ProcessReportDataBuilder
             .createReportData()
             .setDateInterval(GroupByDateUnit.DAY)
             .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
@@ -652,9 +652,9 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
   @Test
   @Parameters(source = ReportDataTypeProvider.class)
-  public void optimizeExceptionOnGroupByTypeIsNull(ReportDataType reportDataType) {
+  public void optimizeExceptionOnGroupByTypeIsNull(ProcessReportDataType reportDataType) {
     // given
-    ProcessReportDataDto dataDto = ReportDataBuilder
+    ProcessReportDataDto dataDto = ProcessReportDataBuilder
             .createReportData()
             .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
             .setProcessDefinitionVersion("1")
@@ -673,9 +673,9 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
   @Test
   @Parameters(source = ReportDataTypeProvider.class)
-  public void optimizeExceptionOnGroupByValueIsNull(ReportDataType reportDataType) {
+  public void optimizeExceptionOnGroupByValueIsNull(ProcessReportDataType reportDataType) {
     // given
-    ProcessReportDataDto dataDto = ReportDataBuilder
+    ProcessReportDataDto dataDto = ProcessReportDataBuilder
             .createReportData()
             .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
             .setProcessDefinitionVersion("1")
@@ -695,9 +695,9 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
   @Test
   @Parameters(source = ReportDataTypeProvider.class)
-  public void optimizeExceptionOnGroupByUnitIsNull(ReportDataType reportDataType) {
+  public void optimizeExceptionOnGroupByUnitIsNull(ProcessReportDataType reportDataType) {
     // given
-    ProcessReportDataDto dataDto = ReportDataBuilder.createReportData()
+    ProcessReportDataDto dataDto = ProcessReportDataBuilder.createReportData()
             .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
             .setProcessDefinitionVersion("1")
             .setDateInterval(GroupByDateUnit.DAY)
@@ -818,10 +818,10 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
   public static class ReportDataTypeProvider {
     public static Object[] provideReportDataType() {
       return new Object[]{
-        new Object[]{ReportDataType.AVG_PROC_INST_DUR_GROUP_BY_START_DATE},
-        new Object[]{ReportDataType.MIN_PROC_INST_DUR_GROUP_BY_START_DATE},
-        new Object[]{ReportDataType.MAX_PROC_INST_DUR_GROUP_BY_START_DATE},
-        new Object[]{ReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_START_DATE}
+        new Object[]{ProcessReportDataType.AVG_PROC_INST_DUR_GROUP_BY_START_DATE},
+        new Object[]{ProcessReportDataType.MIN_PROC_INST_DUR_GROUP_BY_START_DATE},
+        new Object[]{ProcessReportDataType.MAX_PROC_INST_DUR_GROUP_BY_START_DATE},
+        new Object[]{ProcessReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_START_DATE}
       };
     }
   }

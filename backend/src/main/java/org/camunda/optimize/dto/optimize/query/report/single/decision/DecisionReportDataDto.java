@@ -5,7 +5,7 @@ import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewDto;
 import org.camunda.optimize.service.es.report.command.util.ReportUtil;
 
 import java.util.ArrayList;
@@ -16,10 +16,11 @@ public class DecisionReportDataDto extends SingleReportDataDto implements Combin
 
   protected String decisionDefinitionKey;
   protected String decisionDefinitionVersion;
-  protected List<DecisionFilterDto<?>> filter = new ArrayList<>();
-  protected ProcessViewDto view;
+  protected List<DecisionFilterDto> filter = new ArrayList<>();
+  protected DecisionViewDto view;
   protected DecisionGroupByDto groupBy;
   protected DecisionVisualization visualization;
+  protected DecisionParametersDto parameters = new DecisionParametersDto();
 
   public String getDecisionDefinitionKey() {
     return decisionDefinitionKey;
@@ -37,19 +38,19 @@ public class DecisionReportDataDto extends SingleReportDataDto implements Combin
     this.decisionDefinitionVersion = decisionDefinitionVersion;
   }
 
-  public List<DecisionFilterDto<?>> getFilter() {
+  public List<DecisionFilterDto> getFilter() {
     return filter;
   }
 
-  public void setFilter(List<DecisionFilterDto<?>> filter) {
+  public void setFilter(List<DecisionFilterDto> filter) {
     this.filter = filter;
   }
 
-  public ProcessViewDto getView() {
+  public DecisionViewDto getView() {
     return view;
   }
 
-  public void setView(ProcessViewDto view) {
+  public void setView(DecisionViewDto view) {
     this.view = view;
   }
 
@@ -69,8 +70,16 @@ public class DecisionReportDataDto extends SingleReportDataDto implements Combin
     this.visualization = visualization;
   }
 
+  public DecisionParametersDto getParameters() {
+    return parameters;
+  }
+
+  public void setParameters(final DecisionParametersDto parameters) {
+    this.parameters = parameters;
+  }
 
   @JsonIgnore
+  @Override
   public String createCommandKey() {
     String viewCommandKey = view == null ? "null" : view.createCommandKey();
     String groupByCommandKey = groupBy == null ? "null" : groupBy.createCommandKey();
@@ -100,6 +109,7 @@ public class DecisionReportDataDto extends SingleReportDataDto implements Combin
       ", view=" + view +
       ", groupBy=" + groupBy +
       ", visualization=" + visualization +
+      ", parameters=" + parameters +
       '}';
   }
 }

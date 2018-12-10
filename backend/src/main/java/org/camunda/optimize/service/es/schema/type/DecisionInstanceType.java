@@ -10,7 +10,6 @@ import java.io.IOException;
 @Component
 public class DecisionInstanceType extends StrictTypeMappingCreator {
 
-  public static final String DECISION_INSTANCE_ID = "id";
   public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
   public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
 
@@ -18,7 +17,9 @@ public class DecisionInstanceType extends StrictTypeMappingCreator {
   public static final String DECISION_DEFINITION_KEY = "decisionDefinitionKey";
   public static final String DECISION_DEFINITION_VERSION = "decisionDefinitionVersion";
 
-  public static final String EVALUATION_TIME = "evaluationTime";
+  public static final String DECISION_INSTANCE_ID = "decisionInstanceId";
+
+  public static final String EVALUATION_DATE_TIME = "evaluationDateTime";
 
   public static final String PROCESS_INSTANCE_ID = "processInstanceId";
   public static final String ROOT_PROCESS_INSTANCE_ID = "rootProcessInstanceId";
@@ -30,23 +31,22 @@ public class DecisionInstanceType extends StrictTypeMappingCreator {
   public static final String ROOT_DECISION_INSTANCE_ID = "rootDecisionInstanceId";
 
   public static final String INPUTS = "inputs";
-  public static final String INPUT_ID = "id";
-  public static final String INPUT_CLAUSE_ID = "clauseId";
-  public static final String INPUT_CLAUSE_NAME = "clauseName";
-  public static final String INPUT_VALUE_TYPE = "type";
-  public static final String INPUT_VALUE = "value";
+  public static final String VARIABLE_ID = "id";
+  public static final String VARIABLE_CLAUSE_ID = "clauseId";
+  public static final String VARIABLE_CLAUSE_NAME = "clauseName";
+  public static final String VARIABLE_VALUE_TYPE = "type";
+  public static final String VARIABLE_VALUE = "value";
 
   public static final String OUTPUTS = "outputs";
-  public static final String OUTPUT_ID = "id";
-  public static final String OUTPUT_CLAUSE_ID = "clauseId";
-  public static final String OUTPUT_CLAUSE_NAME = "clauseName";
-  public static final String OUTPUT_VALUE_TYPE = "type";
-  public static final String OUTPUT_VALUE = "value";
-  public static final String OUTPUT_RULE_ID = "ruleId";
-  public static final String OUTPUT_RULE_ORDER = "ruleOrder";
+  public static final String OUTPUT_VARIABLE_RULE_ID = "ruleId";
+  public static final String OUTPUT_VARIABLE_RULE_ORDER = "ruleOrder";
   public static final String OUTPUT_VARIABLE_NAME = "variableName";
 
   public static final String ENGINE = "engine";
+
+  public static final String MULTIVALUE_FIELD_DATE = "date";
+  public static final String MULTIVALUE_FIELD_LONG = "long";
+  public static final String MULTIVALUE_FIELD_DOUBLE = "double";
 
   @Override
   public String getType() {
@@ -81,7 +81,7 @@ public class DecisionInstanceType extends StrictTypeMappingCreator {
             .startObject(ROOT_PROCESS_INSTANCE_ID)
               .field("type", "keyword")
             .endObject()
-            .startObject(EVALUATION_TIME)
+            .startObject(EVALUATION_DATE_TIME)
               .field("type", "date")
               .field("format", configurationService.getOptimizeDateFormat())
             .endObject()
@@ -118,19 +118,19 @@ public class DecisionInstanceType extends StrictTypeMappingCreator {
   private XContentBuilder addNestedInputField(XContentBuilder builder) throws IOException {
     // @formatter:off
     builder
-      .startObject(INPUT_ID)
+      .startObject(VARIABLE_ID)
         .field("type", "keyword")
       .endObject()
-      .startObject(INPUT_CLAUSE_ID)
+      .startObject(VARIABLE_CLAUSE_ID)
         .field("type", "keyword")
       .endObject()
-      .startObject(INPUT_CLAUSE_NAME)
+      .startObject(VARIABLE_CLAUSE_NAME)
         .field("type", "keyword")
       .endObject()
-      .startObject(INPUT_VALUE_TYPE)
+      .startObject(VARIABLE_VALUE_TYPE)
         .field("type", "keyword")
       .endObject()
-      .startObject(INPUT_VALUE)
+      .startObject(VARIABLE_VALUE)
         .field("type", "keyword")
         .startObject("fields");
           addTypedValueFields(builder)
@@ -143,28 +143,28 @@ public class DecisionInstanceType extends StrictTypeMappingCreator {
   private XContentBuilder addNestedOutputField(XContentBuilder builder) throws IOException {
     // @formatter:off
     builder
-      .startObject(OUTPUT_ID)
+      .startObject(VARIABLE_ID)
         .field("type", "keyword")
       .endObject()
-      .startObject(OUTPUT_CLAUSE_ID)
+      .startObject(VARIABLE_CLAUSE_ID)
         .field("type", "keyword")
       .endObject()
-      .startObject(OUTPUT_CLAUSE_NAME)
+      .startObject(VARIABLE_CLAUSE_NAME)
         .field("type", "keyword")
       .endObject()
-      .startObject(OUTPUT_VALUE_TYPE)
+      .startObject(VARIABLE_VALUE_TYPE)
         .field("type", "keyword")
       .endObject()
-      .startObject(OUTPUT_VALUE)
+      .startObject(VARIABLE_VALUE)
         .field("type", "keyword")
         .startObject("fields");
           addTypedValueFields(builder)
         .endObject()
       .endObject()
-      .startObject(OUTPUT_RULE_ID)
+      .startObject(OUTPUT_VARIABLE_RULE_ID)
         .field("type", "keyword")
       .endObject()
-      .startObject(OUTPUT_RULE_ORDER)
+      .startObject(OUTPUT_VARIABLE_RULE_ORDER)
         .field("type", "long")
       .endObject()
       .startObject(OUTPUT_VARIABLE_NAME)
@@ -177,16 +177,16 @@ public class DecisionInstanceType extends StrictTypeMappingCreator {
   private XContentBuilder addTypedValueFields(XContentBuilder builder) throws IOException {
     // @formatter:off
     return builder
-      .startObject("date")
+      .startObject(MULTIVALUE_FIELD_DATE)
         .field("type", "date")
         .field("format", configurationService.getOptimizeDateFormat())
         .field("ignore_malformed", true)
       .endObject()
-      .startObject("long")
+      .startObject(MULTIVALUE_FIELD_LONG)
         .field("type", "long")
         .field("ignore_malformed", true)
       .endObject()
-      .startObject("double")
+      .startObject(MULTIVALUE_FIELD_DOUBLE)
         .field("type", "double")
         .field("ignore_malformed", true)
       .endObject()

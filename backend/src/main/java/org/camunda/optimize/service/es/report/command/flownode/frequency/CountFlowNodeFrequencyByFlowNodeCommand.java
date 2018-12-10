@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.report.command.flownode.frequency;
 
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.MapProcessReportResultDto;
 import org.camunda.optimize.service.es.report.command.FlowNodeGroupingCommand;
 import org.camunda.optimize.service.util.ValidationHelper;
@@ -28,16 +29,17 @@ public class CountFlowNodeFrequencyByFlowNodeCommand extends FlowNodeGroupingCom
   @Override
   protected MapProcessReportResultDto evaluate() {
 
+    final ProcessReportDataDto processReportData = getProcessReportData();
     logger.debug("Evaluating count flow node frequency grouped by flow node report " +
       "for process definition key [{}] and version [{}]",
-      reportData.getProcessDefinitionKey(),
-      reportData.getProcessDefinitionVersion());
+                 processReportData.getProcessDefinitionKey(),
+                 processReportData.getProcessDefinitionVersion());
 
     BoolQueryBuilder query = setupBaseQuery(
-        reportData.getProcessDefinitionKey(),
-        reportData.getProcessDefinitionVersion()
+      processReportData.getProcessDefinitionKey(),
+      processReportData.getProcessDefinitionVersion()
     );
-    queryFilterEnhancer.addFilterToQuery(query, reportData.getFilter());
+    queryFilterEnhancer.addFilterToQuery(query, processReportData.getFilter());
 
     SearchResponse response = esclient
       .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))

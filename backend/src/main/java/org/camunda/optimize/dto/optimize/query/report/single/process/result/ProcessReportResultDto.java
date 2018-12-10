@@ -6,6 +6,7 @@ import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.MAP_RESULT_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.NUMBER_RESULT_TYPE;

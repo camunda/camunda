@@ -1,6 +1,6 @@
 package org.camunda.optimize.dto.optimize.query.variable.value;
 
-import static org.camunda.optimize.service.util.VariableHelper.INTEGER_TYPE;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.INTEGER_TYPE;
 
 public class IntegerVariableDto extends VariableInstanceDto {
 

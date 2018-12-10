@@ -1,5 +1,7 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process.result;
 
+import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
+
 public class NumberProcessReportResultDto extends ProcessReportResultDto {
 
   private long result;

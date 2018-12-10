@@ -6,7 +6,7 @@ import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class NotSupportedCommand extends ReportCommand <ProcessReportResultDto> {
+public class NotSupportedCommand extends ProcessReportCommand<ProcessReportResultDto> {
 
   private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -15,8 +15,8 @@ public class NotSupportedCommand extends ReportCommand <ProcessReportResultDto> 
     // Error should contain the report Name
     try {
       logger.warn("The following settings combination of the report data is not supported in Optimize: \n" +
-        "{} \n " +
-        "Therefore returning error result.", objectMapper.writeValueAsString(reportData));
+                    "{} \n " +
+                    "Therefore returning error result.", objectMapper.writeValueAsString(reportData));
     } catch (JsonProcessingException e) {
       logger.error("can't serialize report data", e);
     }

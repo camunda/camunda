@@ -9,7 +9,7 @@ import org.camunda.optimize.service.engine.importing.service.DecisionDefinitionV
 import org.camunda.optimize.service.engine.importing.service.DecisionInstanceImportService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
-import org.camunda.optimize.service.util.VariableHelper;
+import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -81,11 +81,11 @@ public class DecisionInstanceImportServiceTest {
     );
 
     // then
-    assertThat(decisionInstanceDto.getId(), is(historicDecisionInstanceDto.getId()));
     assertThat(
       decisionInstanceDto.getDecisionDefinitionId(),
       is(historicDecisionInstanceDto.getDecisionDefinitionId())
     );
+    assertThat(decisionInstanceDto.getDecisionInstanceId(), is(historicDecisionInstanceDto.getId()));
     assertThat(
       decisionInstanceDto.getDecisionDefinitionKey(),
       is(historicDecisionInstanceDto.getDecisionDefinitionKey())
@@ -96,7 +96,7 @@ public class DecisionInstanceImportServiceTest {
       decisionInstanceDto.getProcessDefinitionKey(),
       is(historicDecisionInstanceDto.getProcessDefinitionKey())
     );
-    assertThat(decisionInstanceDto.getEvaluationTime(), is(historicDecisionInstanceDto.getEvaluationTime()));
+    assertThat(decisionInstanceDto.getEvaluationDateTime(), is(historicDecisionInstanceDto.getEvaluationTime()));
     assertThat(decisionInstanceDto.getProcessInstanceId(), is(historicDecisionInstanceDto.getProcessInstanceId()));
     assertThat(
       decisionInstanceDto.getRootProcessInstanceId(),
@@ -228,7 +228,7 @@ public class DecisionInstanceImportServiceTest {
   }
 
   private void addAllSupportedInputVariables(final HistoricDecisionInstanceDto historicDecisionInstanceDto) {
-    for (String type : VariableHelper.ALL_SUPPORTED_VARIABLE_TYPES) {
+    for (String type : ProcessVariableHelper.ALL_SUPPORTED_VARIABLE_TYPES) {
       HistoricDecisionInputInstanceDto input = new HistoricDecisionInputInstanceDto();
       input.setId(UUID.randomUUID().toString());
       input.setClauseId(UUID.randomUUID().toString());
@@ -240,7 +240,7 @@ public class DecisionInstanceImportServiceTest {
   }
 
   private void addAllSupportedOutputVairables(final HistoricDecisionInstanceDto historicDecisionInstanceDto) {
-    for (String type : VariableHelper.ALL_SUPPORTED_VARIABLE_TYPES) {
+    for (String type : ProcessVariableHelper.ALL_SUPPORTED_VARIABLE_TYPES) {
       HistoricDecisionOutputInstanceDto output = new HistoricDecisionOutputInstanceDto();
       output.setId(UUID.randomUUID().toString());
       output.setClauseId(UUID.randomUUID().toString());
