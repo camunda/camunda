@@ -44,7 +44,7 @@ public class PostMigrationTests {
 
     List<Object> objects = response.readEntity(new GenericType<List<Object>>() {
     });
-    assertThat(objects.size(), is(6));
+    assertThat(objects.size(), is(8));
     assertThat(response.getStatus(), is(200));
   }
 
