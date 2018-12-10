@@ -48,7 +48,8 @@ const data = {
   groupBy: {type: 'none', unit: null},
   visualization: 'number',
   filter: null,
-  configuration: {xml: 'fooXml'}
+  configuration: {xml: 'fooXml'},
+  parameters: {}
 };
 
 extractProcessDefinitionName.mockReturnValue('foo');

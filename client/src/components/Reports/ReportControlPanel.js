@@ -160,8 +160,8 @@ export default class ReportControlPanel extends React.Component {
               <ProcessPart
                 flowNodeNames={this.state.flowNodeNames}
                 xml={this.props.configuration.xml}
-                processPart={this.props.processPart}
-                update={newPart => this.update('processPart', newPart)}
+                processPart={this.props.parameters.processPart}
+                update={newPart => this.update('parameters', {processPart: newPart})}
               />
             </li>
           )}

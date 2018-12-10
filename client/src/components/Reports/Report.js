@@ -87,7 +87,6 @@ export default withErrorHandling(
         view: null,
         groupBy: null,
         visualization: null,
-        processPart: null,
         filter: [],
         configuration: {},
         parameters: {}
@@ -168,7 +167,7 @@ export default withErrorHandling(
 
       if (updates.view || processDefinitionWasUpdated) {
         data.configuration.targetValue = null;
-        data.processPart = null;
+        data.parameters = {};
       }
 
       // if combined report has no reports then reset configuration
