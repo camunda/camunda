@@ -407,7 +407,7 @@ Elements marked in orange are currently implemented by Zeebe.
             <path fill="#ffffff" stroke="#333333" d="M7,10L7,20L23,20L23,10ZM7,10L15,16L23,10" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="1" transform="matrix(0.9375,0,0,0.9375,5.9375,5.9375)" style="stroke-linecap: round; stroke-linejoin: round; stroke-opacity: 1;"></path>
           </svg>
       </td>
-      <td>
+      <td class="implemented">
           <svg height="40" version="1.1" width="40" xmlns="http://www.w3.org/2000/svg">
             <circle cx="20" cy="20" r="15" fill="#ffffff" stroke="#333333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="1" stroke-dasharray="3,3" id="svg_1" style="stroke-linecap: round; stroke-linejoin: round; stroke-opacity: 1;"></circle>
             <circle cx="20" cy="20" r="12" fill="none" stroke="#333333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="1" stroke-dasharray="3,3" style="stroke-linecap: round; stroke-linejoin: round; stroke-opacity: 1;"></circle>
@@ -473,7 +473,7 @@ Elements marked in orange are currently implemented by Zeebe.
             <path fill="#ffffff" stroke="#333333" d="M15,5L15,8M20,6L18.5,9M24,10L21,11.5M25,15L22,15M24,20L21,18.5M20,24L18.5,21M15,25L15,22M10,24L11.5,21M6,20L9,18.5M5,15L8,15M6,10L9,11.5M10,6L11.5,9M17,8L15,15L19,15" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="1" transform="matrix(1,0,0,1,5,5)" style="stroke-linecap: round; stroke-linejoin: round; stroke-opacity: 1;"></path>
           </svg>
       </td>
-      <td>
+      <td class="implemented">
           <svg height="40" version="1.1" width="40" xmlns="http://www.w3.org/2000/svg">
             <circle cx="20" cy="20" r="15" fill="#ffffff" stroke="#333333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="1" stroke-dasharray="3,3" id="svg_1" style="stroke-linecap: round; stroke-linejoin: round; stroke-opacity: 1;"></circle>
             <circle cx="20" cy="20" r="12" fill="none" stroke="#333333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="1" stroke-dasharray="3,3" style="stroke-linecap: round; stroke-linejoin: round; stroke-opacity: 1;"></circle>
