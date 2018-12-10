@@ -39,6 +39,9 @@
         },
         "reportType": {
           "type": "keyword"
+        },
+        "combined": {
+          "type": "boolean"
         }
       }
     }

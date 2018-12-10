@@ -111,7 +111,7 @@ public class UpgradeFrom22To23 implements Upgrade {
   }
 
   private String getNewCombinedReportMapping() {
-    String pathToMapping = "upgrade/main/UpgradeFrom22To23/add_visualization_to_combined_report_index_mapping.json";
+    String pathToMapping = "upgrade/main/UpgradeFrom22To23/combined-process-report-mapping.json";
     return SchemaUpgradeUtil.readClasspathFileAsString(pathToMapping);
   }
 
