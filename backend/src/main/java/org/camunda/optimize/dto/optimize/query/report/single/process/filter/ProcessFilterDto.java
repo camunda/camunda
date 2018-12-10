@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterD
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = StartDateFilterDto.class, name = "date"),
+    @JsonSubTypes.Type(value = StartDateFilterDto.class, name = "startDate"),
     @JsonSubTypes.Type(value = EndDateFilterDto.class, name = "endDate"),
     @JsonSubTypes.Type(value = DurationFilterDto.class, name = "processInstanceDuration"),
     @JsonSubTypes.Type(value = VariableFilterDto.class, name = "variable"),
