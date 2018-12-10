@@ -85,6 +85,17 @@ public class MessageCatchElementTest {
           .endEvent()
           .done();
 
+  private static final BpmnModelInstance NON_INT_BOUNDARY_EVENT_WORKFLOW =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent()
+          .serviceTask("receive-message", b -> b.zeebeTaskType("type"))
+          .boundaryEvent("event")
+          .cancelActivity(false)
+          .message(m -> m.name("order canceled").zeebeCorrelationKey("$.orderId"))
+          .sequenceFlowId("to-end")
+          .endEvent()
+          .done();
+
   @Parameter(0)
   public String elementType;
 
@@ -95,7 +106,10 @@ public class MessageCatchElementTest {
   public WorkflowInstanceIntent enteredState;
 
   @Parameter(3)
-  public WorkflowInstanceIntent leftState;
+  public WorkflowInstanceIntent continueState;
+
+  @Parameter(4)
+  public String continuedElementId;
 
   @Parameters(name = "{0}")
   public static Object[][] parameters() {
@@ -104,19 +118,29 @@ public class MessageCatchElementTest {
         "intermediate message catch event",
         CATCH_EVENT_WORKFLOW,
         WorkflowInstanceIntent.EVENT_ACTIVATED,
-        WorkflowInstanceIntent.EVENT_TRIGGERED
+        WorkflowInstanceIntent.EVENT_TRIGGERED,
+        "receive-message"
       },
       {
         "receive task",
         RECEIVE_TASK_WORKFLOW,
         WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-        WorkflowInstanceIntent.ELEMENT_COMPLETED
+        WorkflowInstanceIntent.ELEMENT_COMPLETED,
+        "receive-message"
       },
       {
-        "boundary event",
+        "int boundary event",
         BOUNDARY_EVENT_WORKFLOW,
         WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-        WorkflowInstanceIntent.ELEMENT_TERMINATED
+        WorkflowInstanceIntent.ELEMENT_TERMINATED,
+        "receive-message"
+      },
+      {
+        "non int boundary event",
+        NON_INT_BOUNDARY_EVENT_WORKFLOW,
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+        WorkflowInstanceIntent.EVENT_TRIGGERED,
+        "event"
       }
     };
   }
@@ -295,8 +319,8 @@ public class MessageCatchElementTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(leftState)
-                .withElementId("receive-message")
+            RecordingExporter.workflowInstanceRecords(continueState)
+                .withElementId(continuedElementId)
                 .exists())
         .isTrue();
 

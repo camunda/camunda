@@ -26,5 +26,9 @@ public interface ExecutableCatchEvent extends ExecutableFlowElement {
 
   ExecutableMessage getMessage();
 
+  default boolean shouldCloseMessageSubscriptionOnCorrelate() {
+    return true;
+  }
+
   RepeatingInterval getTimer();
 }

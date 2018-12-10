@@ -28,6 +28,11 @@ public class ExecutableBoundaryEvent extends ExecutableCatchEventElement {
     return cancelActivity;
   }
 
+  @Override
+  public boolean shouldCloseMessageSubscriptionOnCorrelate() {
+    return cancelActivity;
+  }
+
   public void setCancelActivity(boolean cancelActivity) {
     this.cancelActivity = cancelActivity;
   }

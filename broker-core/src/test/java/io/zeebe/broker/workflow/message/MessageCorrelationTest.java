@@ -518,6 +518,49 @@ public class MessageCorrelationTest {
             tuple("msg1", WorkflowInstanceIntent.EVENT_TRIGGERED));
   }
 
+  @Test
+  public void shouldCorrelateToNonInterruptingBoundaryEvent() {
+    // given
+    final BpmnModelInstance workflow =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask("task", b -> b.zeebeTaskType("type"))
+            .boundaryEvent("msg1")
+            .cancelActivity(false)
+            .message(m -> m.name("msg1").zeebeCorrelationKey("$.key"))
+            .endEvent("msg1End")
+            .moveToActivity("task")
+            .endEvent("taskEnd")
+            .done();
+    testClient.deploy(workflow);
+    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "123"));
+
+    // when
+    testClient.publishMessage("msg1", "123", asMsgPack("foo", "0"));
+    testClient.publishMessage("msg1", "123", asMsgPack("foo", "1"));
+    testClient.publishMessage("msg1", "123", asMsgPack("foo", "2"));
+    assertThat(awaitMessagesCorrelated(3)).hasSize(3);
+
+    // then
+    final List<Record<WorkflowInstanceRecordValue>> msgEndEvents =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_ACTIVATED)
+            .withElementId("msg1End")
+            .limit(3)
+            .asList();
+
+    assertThat(msgEndEvents)
+        .extracting(e -> e.getValue().getPayloadAsMap().get("foo"))
+        .contains("0", "1", "2");
+  }
+
+  private List<Record<WorkflowInstanceSubscriptionRecordValue>> awaitMessagesCorrelated(
+      int messagesCount) {
+    return RecordingExporter.workflowInstanceSubscriptionRecords(
+            WorkflowInstanceSubscriptionIntent.CORRELATED)
+        .limit(messagesCount)
+        .asList();
+  }
+
   private List<Record<WorkflowInstanceSubscriptionRecordValue>> awaitSubscriptionsOpened(
       int subscriptionsCount) {
     return testClient

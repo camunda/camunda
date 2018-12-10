@@ -89,32 +89,6 @@ public class ZeebeBoundaryEventValidationTest extends AbstractZeebeValidationTes
             .endEvent("end")
             .done(),
         singletonList(expect("boundary", "Cannot have incoming sequence flows"))
-      },
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask("task", b -> b.zeebeTaskType("type"))
-            .boundaryEvent("boundary")
-            .cancelActivity(false)
-            .message(m -> m.name("message").zeebeCorrelationKey("$.key"))
-            .endEvent()
-            .moveToActivity("task")
-            .endEvent()
-            .done(),
-        singletonList(expect("boundary", "Non-interrupting events of this type are not supported"))
-      },
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask("task", b -> b.zeebeTaskType("type"))
-            .boundaryEvent("boundary")
-            .cancelActivity(false)
-            .message(m -> m.name("message").zeebeCorrelationKey("$.key"))
-            .endEvent()
-            .moveToActivity("task")
-            .endEvent()
-            .done(),
-        singletonList(expect("boundary", "Non-interrupting events of this type are not supported"))
       }
     };
   }
