@@ -1,9 +1,8 @@
 package org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw;
 
-import com.google.common.base.Objects;
-
 import java.time.OffsetDateTime;
 import java.util.Map;
+import java.util.Objects;
 
 public class RawDataDecisionInstanceDto {
 
@@ -80,18 +79,18 @@ public class RawDataDecisionInstanceDto {
       return false;
     }
     final RawDataDecisionInstanceDto that = (RawDataDecisionInstanceDto) o;
-    return Objects.equal(decisionDefinitionKey, that.decisionDefinitionKey) &&
-      Objects.equal(decisionDefinitionId, that.decisionDefinitionId) &&
-      Objects.equal(decisionInstanceId, that.decisionInstanceId) &&
-      Objects.equal(evaluationDateTime, that.evaluationDateTime) &&
-      Objects.equal(engineName, that.engineName) &&
-      Objects.equal(inputVariables, that.inputVariables) &&
-      Objects.equal(outputVariables, that.outputVariables);
+    return Objects.equals(decisionDefinitionKey, that.decisionDefinitionKey) &&
+      Objects.equals(decisionDefinitionId, that.decisionDefinitionId) &&
+      Objects.equals(decisionInstanceId, that.decisionInstanceId) &&
+      Objects.equals(evaluationDateTime, that.evaluationDateTime) &&
+      Objects.equals(engineName, that.engineName) &&
+      Objects.equals(inputVariables, that.inputVariables) &&
+      Objects.equals(outputVariables, that.outputVariables);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(
+    return Objects.hash(
       decisionDefinitionKey,
       decisionDefinitionId,
       decisionInstanceId,

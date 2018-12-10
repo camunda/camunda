@@ -1,6 +1,6 @@
 package org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw;
 
-import com.google.common.base.Objects;
+import java.util.Objects;
 
 public class VariableEntry {
   private String id;
@@ -49,13 +49,13 @@ public class VariableEntry {
       return false;
     }
     final VariableEntry that = (VariableEntry) o;
-    return Objects.equal(id, that.id) &&
-      Objects.equal(name, that.name) &&
-      Objects.equal(type, that.type);
+    return Objects.equals(id, that.id) &&
+      Objects.equals(name, that.name) &&
+      Objects.equals(type, that.type);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(id, name, type);
+    return Objects.hash(id, name, type);
   }
 }

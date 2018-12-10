@@ -1,11 +1,11 @@
 package org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.base.Objects;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 public class OutputVariableEntry extends VariableEntry {
   private List<Object> values = new ArrayList<>();
@@ -53,11 +53,11 @@ public class OutputVariableEntry extends VariableEntry {
       return false;
     }
     final OutputVariableEntry that = (OutputVariableEntry) o;
-    return Objects.equal(values, that.values);
+    return Objects.equals(values, that.values);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(super.hashCode(), values);
+    return Objects.hash(super.hashCode(), values);
   }
 }

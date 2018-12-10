@@ -1,6 +1,7 @@
 package org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw;
 
-import com.google.common.base.Objects;
+
+import java.util.Objects;
 
 public class InputVariableEntry extends VariableEntry {
   private Object value;
@@ -33,11 +34,11 @@ public class InputVariableEntry extends VariableEntry {
       return false;
     }
     final InputVariableEntry that = (InputVariableEntry) o;
-    return Objects.equal(value, that.value);
+    return Objects.equals(value, that.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(super.hashCode(), value);
+    return Objects.hash(super.hashCode(), value);
   }
 }
