@@ -157,7 +157,7 @@ jest.mock('modules/utils/bpmn', () => ({
 
 jest.mock('bpmn-js', () => ({}));
 
-describe('Instances', () => {
+describe.skip('Instances', () => {
   describe('rendering filters', () => {
     beforeEach(() => {
       api.fetchWorkflowInstancesCount.mockClear();

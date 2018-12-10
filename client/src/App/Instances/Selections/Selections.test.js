@@ -20,7 +20,7 @@ api.applyOperation = mockResolvedAsyncFn();
 
 const mockSelections = [];
 
-describe('Selections', () => {
+describe.skip('Selections', () => {
   let node;
   let mockonStateChange;
   let storeStateLocally;

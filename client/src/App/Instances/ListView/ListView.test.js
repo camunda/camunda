@@ -47,7 +47,7 @@ const mockPropsWithInstances = {
 const Component = <ListView {...mockProps} />;
 const ComponentWithInstances = <ListView {...mockPropsWithInstances} />;
 
-describe('ListView', () => {
+describe.skip('ListView', () => {
   beforeEach(() => {
     mockProps.fetchWorkflowInstances.mockClear();
   });

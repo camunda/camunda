@@ -11,7 +11,7 @@ import {xTimes, createSelection} from 'modules/testUtils';
 const maxSelections = [];
 xTimes(10)(index => maxSelections.push(createSelection(index)));
 
-describe('AddSelection', () => {
+describe.skip('AddSelection', () => {
   let node;
   let onAddNewSelectionSpy,
     onAddToOpenSelectionSpy,
