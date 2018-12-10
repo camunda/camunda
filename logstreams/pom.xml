@@ -97,6 +97,10 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-protocol</artifactId>
+    </dependency>
   </dependencies>
 
 

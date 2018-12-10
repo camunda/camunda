@@ -24,6 +24,7 @@ import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.versionOffset;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.headerLength;
 
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.util.buffer.BufferReader;
 import org.agrona.DirectBuffer;
 
@@ -41,17 +42,17 @@ public class LoggedEventImpl implements ReadableFragment, LoggedEvent {
 
   @Override
   public int getType() {
-    return buffer.getShort(typeOffset(fragmentOffset));
+    return buffer.getShort(typeOffset(fragmentOffset), Protocol.ENDIANNESS);
   }
 
   @Override
   public int getVersion() {
-    return buffer.getShort(versionOffset(fragmentOffset));
+    return buffer.getShort(versionOffset(fragmentOffset), Protocol.ENDIANNESS);
   }
 
   @Override
   public int getMessageLength() {
-    return messageLength(buffer.getInt(lengthOffset(fragmentOffset)));
+    return messageLength(buffer.getInt(lengthOffset(fragmentOffset), Protocol.ENDIANNESS));
   }
 
   @Override
@@ -61,7 +62,7 @@ public class LoggedEventImpl implements ReadableFragment, LoggedEvent {
 
   @Override
   public int getStreamId() {
-    return buffer.getInt(streamIdOffset(fragmentOffset));
+    return buffer.getInt(streamIdOffset(fragmentOffset), Protocol.ENDIANNESS);
   }
 
   @Override
