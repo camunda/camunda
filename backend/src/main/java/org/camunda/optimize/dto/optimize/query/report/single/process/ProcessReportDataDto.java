@@ -1,7 +1,6 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -16,8 +15,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-// TODO OPT-1612 ensures new empty parameters never win over legacy processPart being set
-@JsonPropertyOrder({ "parameters", "processPart" })
 public class ProcessReportDataDto extends SingleReportDataDto implements Combinable {
 
   protected String processDefinitionKey;
@@ -76,24 +73,6 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     this.visualization = visualization;
   }
 
-  // TODO OPT-1612 just here for rest api backwardscompatibility
-  @Deprecated
-  public ProcessPartDto getProcessPart() {
-    return Optional.ofNullable(getParameters())
-      .flatMap(parameters -> Optional.ofNullable(parameters.getProcessPart()))
-      .orElse(null);
-  }
-
-  // TODO OPT-1612 just here for rest api backwardscompatibility
-  @Deprecated
-  public void setProcessPart(ProcessPartDto processPart) {
-    if (getParameters() != null) {
-      getParameters().setProcessPart(processPart);
-    } else {
-      setParameters(new ProcessParametersDto(processPart));
-    }
-  }
-
   public ProcessParametersDto getParameters() {
     return parameters;
   }
@@ -107,7 +86,10 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   public String createCommandKey() {
     String viewCommandKey = view == null ? "null" : view.createCommandKey();
     String groupByCommandKey = groupBy == null ? "null" : groupBy.createCommandKey();
-    String processPartCommandKey = getProcessPart() == null ? "null" : getProcessPart().createCommandKey();
+    String processPartCommandKey = Optional.ofNullable(getParameters())
+      .flatMap(parameters -> Optional.ofNullable(parameters.getProcessPart()))
+      .map(ProcessPartDto::createCommandKey)
+      .orElse("null");
     return viewCommandKey + "_" + groupByCommandKey + "_" + processPartCommandKey;
   }
 
