@@ -42,7 +42,9 @@ public class PostMigrationTests {
       .cookie("X-Optimize-Authorization", authHeader)
       .get();
 
-    response.readEntity(new GenericType<List<SingleReportDefinitionDto>>(){});
+    List<Object> objects = response.readEntity(new GenericType<List<Object>>() {
+    });
+    assertThat(objects.size(), is(6));
     assertThat(response.getStatus(), is(200));
   }
 
@@ -53,7 +55,9 @@ public class PostMigrationTests {
       .cookie("X-Optimize-Authorization", authHeader)
       .get();
 
-    response.readEntity(new GenericType<List<DashboardDefinitionDto>>(){});
+    List<Object> objects = response.readEntity(new GenericType<List<Object>>() {
+    });
+    assertThat(objects.size(), is(2));
     assertThat(response.getStatus(), is(200));
   }
 
@@ -64,7 +68,9 @@ public class PostMigrationTests {
       .cookie("X-Optimize-Authorization", authHeader)
       .get();
 
-    response.readEntity(new GenericType<List<AlertDefinitionDto>>(){});
+    List<Object> objects = response.readEntity(new GenericType<List<Object>>() {
+    });
+    assertThat(objects.size(), is(1));
     assertThat(response.getStatus(), is(200));
   }
 

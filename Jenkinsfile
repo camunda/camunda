@@ -356,7 +356,7 @@ void dataUpgradeTestSteps(String engineVersion = 'latest') {
     sh ("""apt-get update && apt-get install -y jq""")
     setupPermissionsForHostDirs('qa/upgrade-optimize-data')
 
-    runMaven("install -Dskip.docker -DskipTests -Pproduction,it,engine-${engineVersion} -pl backend,upgrade -am -T\$LIMITS_CPU")
+    runMaven("install -Dskip.docker -DskipTests -Pproduction,it,engine-${engineVersion} -pl backend,upgrade,distro -am -T\$LIMITS_CPU")
 
     runMaven("verify -f qa/upgrade-optimize-data/pom.xml -Pupgrade-optimize-data")
   }
