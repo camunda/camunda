@@ -36,11 +36,11 @@ public class MessageValidator implements ModelElementValidator<Message> {
 
   @Override
   public void validate(Message element, ValidationResultCollector validationResultCollector) {
-    if (element.getName() == null || element.getName().isEmpty()) {
-      validationResultCollector.addError(0, "Name must be present and not empty");
-    }
-
     if (isReferedByCatchEvent(element) || isReferedByReceiveTask(element)) {
+      if (element.getName() == null || element.getName().isEmpty()) {
+        validationResultCollector.addError(0, "Name must be present and not empty");
+      }
+
       final ExtensionElements extensionElements = element.getExtensionElements();
 
       if (extensionElements == null
