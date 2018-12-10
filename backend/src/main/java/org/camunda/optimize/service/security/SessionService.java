@@ -3,6 +3,7 @@ package org.camunda.optimize.service.security;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
+import org.apache.commons.collections.ListUtils;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.engine.GroupDto;
 import org.camunda.optimize.rest.engine.EngineContext;
@@ -43,7 +44,7 @@ public class SessionService {
       }
     }
     logger.debug("Error while validating authentication token [{}]. " +
-      "User [{}] is not logged in!", token, username);
+                   "User [{}] is not logged in!", token, username);
     return false;
   }
 
@@ -79,10 +80,18 @@ public class SessionService {
     );
   }
 
-  public boolean isAuthorizedToSeeDefinition(String username, String processDefinitionKey) {
-    if(userSessions.containsKey(username)) {
+  public boolean isAuthorizedToSeeProcessDefinition(String username, String processDefinitionKey) {
+    if (userSessions.containsKey(username)) {
       Session session = userSessions.get(username);
-      return session.isAuthorizedToSeeDefinition(processDefinitionKey);
+      return session.isAuthorizedToSeeProcessDefinition(processDefinitionKey);
+    }
+    return false;
+  }
+
+  public boolean isAuthorizedToSeeDecisionDefinition(String username, String decisionDefinitionKey) {
+    if (userSessions.containsKey(username)) {
+      Session session = userSessions.get(username);
+      return session.isAuthorizedToSeeDecisionDefinition(decisionDefinitionKey);
     }
     return false;
   }
@@ -118,7 +127,10 @@ public class SessionService {
   private DefinitionAuthorizations retrieveDefinitionAuthorizations(String username, EngineContext engineContext) {
 
     List<GroupDto> groups = engineContext.getAllGroupsOfUser(username);
-    List<AuthorizationDto> allDefinitionAuthorizations = engineContext.getAllProcessDefinitionAuthorizations();
+    List<AuthorizationDto> allDefinitionAuthorizations = ListUtils.union(
+      engineContext.getAllProcessDefinitionAuthorizations(),
+      engineContext.getAllDecisionDefinitionAuthorizations()
+    );
     List<AuthorizationDto> groupAuthorizations = extractGroupAuthorizations(groups, allDefinitionAuthorizations);
     List<AuthorizationDto> userAuthorizations = extractUserAuthorizations(username, allDefinitionAuthorizations);
 
@@ -141,7 +153,6 @@ public class SessionService {
       .filter(a -> username.equals(a.getUserId()))
       .collect(Collectors.toList());
   }
-
 
 
   public ConfigurationService getConfigurationService() {

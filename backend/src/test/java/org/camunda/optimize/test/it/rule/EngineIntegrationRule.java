@@ -871,6 +871,13 @@ public class EngineIntegrationRule extends TestWatcher {
     return getDecisionDefinitionByDeployment(deploymentDto);
   }
 
+  public DecisionDefinitionEngineDto deployAndStartDecisionDefinition(DmnModelInstance dmnModelInstance) {
+    final DeploymentDto deploymentDto = deployDecisionDefinition(dmnModelInstance);
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = getDecisionDefinitionByDeployment(deploymentDto);
+    startDecisionInstance(decisionDefinitionEngineDto.getId());
+    return decisionDefinitionEngineDto;
+  }
+
   public DeploymentDto deployDecisionDefinition(DmnModelInstance dmnModelInstance) {
     CloseableHttpClient client = getHttpClient();
     return deployDecisionDefinition(dmnModelInstance, client);

@@ -42,6 +42,8 @@ engines:
       #Toggles basic authentication on or off. When enabling basic
       #authentication, please be aware that you also need to adjust the values
       #of the user and password
+      #Also note, when enabled, it is required that the user has read history permission
+      #on the process/decision definition resources to enable Optimize to import the engine data.
       enabled: false
       #When basic authentication is enabled, this password is used to
       #authenticate against the engine.

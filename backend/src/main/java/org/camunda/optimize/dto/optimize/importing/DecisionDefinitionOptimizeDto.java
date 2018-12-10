@@ -1,12 +1,12 @@
 package org.camunda.optimize.dto.optimize.importing;
 
 import org.camunda.optimize.dto.optimize.OptimizeDto;
+import org.camunda.optimize.dto.optimize.query.definition.KeyDefinitionOptimizeDto;
 
 import java.io.Serializable;
 
-public class DecisionDefinitionOptimizeDto implements Serializable, OptimizeDto {
+public class DecisionDefinitionOptimizeDto extends KeyDefinitionOptimizeDto implements Serializable, OptimizeDto {
   private String id;
-  private String key;
   private String version;
   private String name;
   private String dmn10Xml;
@@ -15,14 +15,15 @@ public class DecisionDefinitionOptimizeDto implements Serializable, OptimizeDto 
   public DecisionDefinitionOptimizeDto() {
   }
 
+
   public DecisionDefinitionOptimizeDto(final String id, final String key, final String version, final String name,
                                        final String dmn10Xml, final String engine) {
     this.id = id;
-    this.key = key;
     this.version = version;
     this.name = name;
     this.dmn10Xml = dmn10Xml;
     this.engine = engine;
+    setKey(key);
   }
 
   public String getId() {

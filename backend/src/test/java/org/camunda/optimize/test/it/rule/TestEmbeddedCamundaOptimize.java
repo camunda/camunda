@@ -41,6 +41,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_RESOURCES_RESOURCE_ID;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_APPLICATION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 
 /**
@@ -207,8 +208,13 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   }
 
   private void grantDemoUserAllDefinitionAuthorizations() {
+    grantDemoUserDefinitionAuthorizations(RESOURCE_TYPE_PROCESS_DEFINITION);
+    grantDemoUserDefinitionAuthorizations(RESOURCE_TYPE_DECISION_DEFINITION);
+  }
+
+  private void grantDemoUserDefinitionAuthorizations(final int resourceType) {
     AuthorizationDto authorizationDto = new AuthorizationDto();
-    authorizationDto.setResourceType(RESOURCE_TYPE_PROCESS_DEFINITION);
+    authorizationDto.setResourceType(resourceType);
     authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
     authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);

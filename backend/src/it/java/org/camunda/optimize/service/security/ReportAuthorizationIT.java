@@ -1,7 +1,10 @@
 package org.camunda.optimize.service.security;
 
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -17,15 +20,19 @@ import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+import org.junit.runner.RunWith;
 
 import javax.ws.rs.core.Response;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.test.util.DmnHelper.createSimpleDmnModel;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
@@ -33,10 +40,20 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 
+@RunWith(JUnitParamsRunner.class)
 public class ReportAuthorizationIT {
+
+  public static final String PROCESS_KEY = "aprocess";
+  public static final String DECISION_KEY = "aDecision";
+  public static final String KERMIT_USER = "kermit";
+
+  private static final Object[] definitionType() {
+    return new Object[]{RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION};
+  }
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
+
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
   @Rule
@@ -44,18 +61,18 @@ public class ReportAuthorizationIT {
     .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   @Test
-  public void evaluateUnauthorizedStoredReport() throws Exception {
+  @Parameters(method = "definitionType")
+  public void evaluateUnauthorizedStoredReport(int definitionResourceType) throws Exception {
     // given
     addKermitUserAndGrantAccessToOptimize();
-    deployAndStartSimpleProcessDefinition("aprocess");
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    String reportId = createReportForDefinition("aprocess");
+    deployStartAndImportDefinition(definitionResourceType);
+
+    String reportId = createReportForDefinition(getDefinitionKey(definitionResourceType));
 
     // when
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .withUserAuthentication("kermit", "kermit")
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildEvaluateSavedReportRequest(reportId)
       .execute();
 
@@ -64,18 +81,18 @@ public class ReportAuthorizationIT {
   }
 
   @Test
-  public void deleteUnauthorizedStoredReport() throws Exception {
+  @Parameters(method = "definitionType")
+  public void deleteUnauthorizedStoredReport(int definitionResourceType) throws Exception {
     // given
     addKermitUserAndGrantAccessToOptimize();
-    deployAndStartSimpleProcessDefinition("aprocess");
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    String reportId = createReportForDefinition("aprocess");
+    deployStartAndImportDefinition(definitionResourceType);
+
+    String reportId = createReportForDefinition(getDefinitionKey(definitionResourceType));
 
     // when
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .withUserAuthentication("kermit", "kermit")
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildDeleteReportRequest(reportId)
       .execute();
 
@@ -84,18 +101,19 @@ public class ReportAuthorizationIT {
   }
 
   @Test
-  public void evaluateUnauthorizedOnTheFlyReport() throws Exception {
+  @Parameters(method = "definitionType")
+  public void evaluateUnauthorizedOnTheFlyReport(int definitionResourceType) throws Exception {
     // given
     addKermitUserAndGrantAccessToOptimize();
-    deployAndStartSimpleProcessDefinition("aprocess");
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    deployStartAndImportDefinition(definitionResourceType);
 
     // when
-    SingleReportDefinitionDto<ProcessReportDataDto> definition = constructReportWithDefinition("aprocess");
+    SingleReportDefinitionDto<ProcessReportDataDto> definition = constructReportWithDefinition(
+      getDefinitionKey(definitionResourceType)
+    );
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .withUserAuthentication("kermit", "kermit")
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildEvaluateSingleUnsavedReportRequest(definition.getData())
       .execute();
 
@@ -104,19 +122,20 @@ public class ReportAuthorizationIT {
   }
 
   @Test
-  public void updateUnauthorizedReport() throws Exception {
+  @Parameters(method = "definitionType")
+  public void updateUnauthorizedReport(int definitionResourceType) throws Exception {
     // given
     addKermitUserAndGrantAccessToOptimize();
-    deployAndStartSimpleProcessDefinition("aprocess");
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    String reportId = createReportForDefinition("aprocess");
+    deployStartAndImportDefinition(definitionResourceType);
+
+    String reportId = createReportForDefinition(getDefinitionKey(definitionResourceType));
+
     ReportDefinitionDto updatedReport = createReportUpdate();
 
     // when
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .withUserAuthentication("kermit", "kermit")
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildUpdateReportRequest(reportId, updatedReport)
       .execute();
 
@@ -125,18 +144,18 @@ public class ReportAuthorizationIT {
   }
 
   @Test
-  public void getUnauthorizedReport() throws Exception {
+  @Parameters(method = "definitionType")
+  public void getUnauthorizedReport(int definitionResourceType) throws Exception {
     // given
     addKermitUserAndGrantAccessToOptimize();
-    deployAndStartSimpleProcessDefinition("aprocess");
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    String reportId = createReportForDefinition("aprocess");
+    deployStartAndImportDefinition(definitionResourceType);
+
+    String reportId = createReportForDefinition(getDefinitionKey(definitionResourceType));
 
     // when
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .withUserAuthentication("kermit", "kermit")
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetReportRequest(reportId)
       .execute();
 
@@ -145,13 +164,13 @@ public class ReportAuthorizationIT {
   }
 
   @Test
-  public void shareUnauthorizedReport() throws Exception {
+  @Parameters(method = "definitionType")
+  public void shareUnauthorizedReport(int definitionResourceType) throws Exception {
     // given
     addKermitUserAndGrantAccessToOptimize();
-    deployAndStartSimpleProcessDefinition("aprocess");
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    String reportId = createReportForDefinition("aprocess");
+    deployStartAndImportDefinition(definitionResourceType);
+
+    String reportId = createReportForDefinition(getDefinitionKey(definitionResourceType));
     ReportShareDto reportShareDto = new ReportShareDto();
     reportShareDto.setReportId(reportId);
 
@@ -159,7 +178,7 @@ public class ReportAuthorizationIT {
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
       .buildShareReportRequest(reportShareDto)
-      .withUserAuthentication("kermit", "kermit")
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .execute();
 
     // then
@@ -167,12 +186,12 @@ public class ReportAuthorizationIT {
   }
 
   @Test
-  public void newReportCanBeAccessedByEveryone() throws Exception {
+  @Parameters(method = "definitionType")
+  public void newReportCanBeAccessedByEveryone(int definitionResourceType) throws Exception {
     // given
     addKermitUserAndGrantAccessToOptimize();
-    deployAndStartSimpleProcessDefinition("aprocess");
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    deployStartAndImportDefinition(definitionResourceType);
+
     String reportId = createNewReport();
 
     // when
@@ -188,7 +207,7 @@ public class ReportAuthorizationIT {
     List<ReportDefinitionDto> reports = embeddedOptimizeRule
       .getRequestExecutor()
       .buildGetReportRequest(reportId)
-      .withUserAuthentication("kermit", "kermit")
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .executeAndReturnList(ReportDefinitionDto.class, 200);
 
     // then
@@ -198,15 +217,17 @@ public class ReportAuthorizationIT {
   @Test
   public void unauthorizedReportInCombinedIsNotEvaluated() {
     // given
+    final String authorizedProcessDefinitionKey = "aprocess";
+    final String notAuthorizedProcessDefinitionKey = "notAuthorizedProcess";
     addKermitUserAndGrantAccessToOptimize();
-    deployAndStartSimpleProcessDefinition("aprocess");
-    grantSingleDefinitionAuthorizationsForUser("kermit", "aprocess");
-    deployAndStartSimpleProcessDefinition("notAuthorizedProcess");
+    deployAndStartSimpleProcessDefinition(authorizedProcessDefinitionKey);
+    grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, authorizedProcessDefinitionKey);
+    deployAndStartSimpleProcessDefinition(notAuthorizedProcessDefinitionKey);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    String authorizedReportId = createNewSingleMapReport("aprocess");
-    String notAuthorizedReportId = createNewSingleMapReport("notAuthorizedProcess");
+    String authorizedReportId = createNewSingleMapReport(authorizedProcessDefinitionKey);
+    String notAuthorizedReportId = createNewSingleMapReport(notAuthorizedProcessDefinitionKey);
 
     // when
     CombinedReportDataDto combinedReport = createCombinedReport(authorizedReportId, notAuthorizedReportId);
@@ -214,7 +235,7 @@ public class ReportAuthorizationIT {
     CombinedProcessReportResultDto result = embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateCombinedUnsavedReportRequest(combinedReport)
-      .withUserAuthentication("kermit", "kermit")
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .execute(CombinedProcessReportResultDto.class, 200);
 
     // then
@@ -224,6 +245,11 @@ public class ReportAuthorizationIT {
     Map<String, Long> flowNodeToCount = resultMap.get(authorizedReportId).getResult();
     assertThat(flowNodeToCount.size(), is(2));
   }
+
+  private String getDefinitionKey(final int definitionResourceType) {
+    return definitionResourceType == RESOURCE_TYPE_PROCESS_DEFINITION ? PROCESS_KEY : DECISION_KEY;
+  }
+
 
   private void grantSingleDefinitionAuthorizationsForUser(String userId, String definitionKey) {
     AuthorizationDto authorizationDto = new AuthorizationDto();
@@ -235,7 +261,6 @@ public class ReportAuthorizationIT {
     engineRule.createAuthorization(authorizationDto);
   }
 
-
   private String createNewSingleMapReport(String processDefinitionKey) {
     String singleReportId = createNewReport();
     ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode =
@@ -246,12 +271,33 @@ public class ReportAuthorizationIT {
     return singleReportId;
   }
 
-  private void deployAndStartSimpleProcessDefinition(String processId) {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(processId)
+  private void deployStartAndImportDefinition(int definitionResourceType) throws IOException {
+    switch (definitionResourceType) {
+      case RESOURCE_TYPE_PROCESS_DEFINITION:
+        deployAndStartSimpleProcessDefinition(PROCESS_KEY);
+        break;
+      case RESOURCE_TYPE_DECISION_DEFINITION:
+        deployAndStartSimpleDecisionDefinition(DECISION_KEY);
+        break;
+      default:
+        throw new IllegalStateException("Uncovered definitionResourceType: " + definitionResourceType);
+    }
+
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+  }
+
+  private void deployAndStartSimpleProcessDefinition(String processKey) {
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(processKey)
       .startEvent()
       .endEvent()
       .done();
     engineRule.deployAndStartProcess(modelInstance);
+  }
+
+  private void deployAndStartSimpleDecisionDefinition(String decisionKey) {
+    final DmnModelInstance modelInstance = createSimpleDmnModel(decisionKey);
+    engineRule.deployAndStartDecisionDefinition(modelInstance);
   }
 
   public ReportDefinitionDto createReportUpdate() {
@@ -300,14 +346,9 @@ public class ReportAuthorizationIT {
       .execute();
   }
 
-  private String createAuthenticationHeaderForKermit() {
-    String token = embeddedOptimizeRule.authenticateUser("kermit", "kermit");
-    return "Bearer " + token;
-  }
-
   private void addKermitUserAndGrantAccessToOptimize() {
-    engineRule.addUser("kermit", "kermit");
-    engineRule.grantUserOptimizeAccess("kermit");
+    engineRule.addUser(KERMIT_USER, KERMIT_USER);
+    engineRule.grantUserOptimizeAccess(KERMIT_USER);
   }
 
 }

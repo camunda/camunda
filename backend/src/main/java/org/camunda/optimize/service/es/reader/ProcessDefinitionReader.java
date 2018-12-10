@@ -94,7 +94,7 @@ public class ProcessDefinitionReader {
                                                                                 final List<ProcessDefinitionOptimizeDto> processDefinitions) {
     return processDefinitions
       .stream()
-      .filter(def -> sessionService.isAuthorizedToSeeDefinition(userId, def.getKey()))
+      .filter(def -> sessionService.isAuthorizedToSeeProcessDefinition(userId, def.getKey()))
       .collect(Collectors.toList());
   }
 

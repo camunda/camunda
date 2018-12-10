@@ -12,6 +12,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_REVOKE;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.READ_HISTORY_PERMISSION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 
 public class Session {
@@ -40,60 +41,94 @@ public class Session {
     return tokenVerifier.hasExpired(token);
   }
 
-  public boolean isAuthorizedToSeeDefinition(String processDefinitionKey) {
+  public boolean isAuthorizedToSeeProcessDefinition(final String processDefinitionKey) {
+    return isAuthorizedToSeeDefinition(processDefinitionKey, RESOURCE_TYPE_PROCESS_DEFINITION);
+  }
 
-    if (processDefinitionKey == null || processDefinitionKey.isEmpty()) {
+  public boolean isAuthorizedToSeeDecisionDefinition(final String decisionDefinitionKey) {
+    return isAuthorizedToSeeDefinition(decisionDefinitionKey, RESOURCE_TYPE_DECISION_DEFINITION);
+  }
+
+  private boolean isAuthorizedToSeeDefinition(final String decisionDefinitionKey, final int resourceType) {
+    if (decisionDefinitionKey == null || decisionDefinitionKey.isEmpty()) {
       return true;
     }
 
-    // NOTE: the order is essential here to make sure that
-    // the revoking of definition permissions works correctly
-    DefinitionAuthorizations definitionDefinitionAuthorizations = new DefinitionAuthorizations();
-    addGloballyAuthorizedDefinitions(this.definitionAuthorizations.getAllDefinitionAuthorizations(), definitionDefinitionAuthorizations);
-    // group authorizations
-    removeAuthorizationsForAllDefinitions(this.definitionAuthorizations.getGroupAuthorizations(), definitionDefinitionAuthorizations);
-    addAuthorizationsForAllDefinitions(this.definitionAuthorizations.getGroupAuthorizations(), definitionDefinitionAuthorizations);
-    removeAuthorizationsForProhibitedDefinition(this.definitionAuthorizations.getGroupAuthorizations(), definitionDefinitionAuthorizations);
-    addAuthorizationsForSingleDefinitions(this.definitionAuthorizations.getGroupAuthorizations(), definitionDefinitionAuthorizations);
-    // user authorizations
-    removeAuthorizationsForAllDefinitions(this.definitionAuthorizations.getUserAuthorizations(), definitionDefinitionAuthorizations);
-    addAuthorizationsForAllDefinitions(this.definitionAuthorizations.getUserAuthorizations(), definitionDefinitionAuthorizations);
-    removeAuthorizationsForProhibitedDefinition(this.definitionAuthorizations.getUserAuthorizations(), definitionDefinitionAuthorizations);
-    addAuthorizationsForSingleDefinitions(this.definitionAuthorizations.getUserAuthorizations(), definitionDefinitionAuthorizations);
-
-    return definitionDefinitionAuthorizations.isAuthorizedToSeeDefinition(processDefinitionKey);
+    final DefinitionAuthorizations definitionDefinitionAuthorizations = buildDefinitionAuthorizations(resourceType);
+    return definitionDefinitionAuthorizations.isAuthorizedToSeeDefinition(decisionDefinitionKey);
   }
 
-  private void addGloballyAuthorizedDefinitions(List<AuthorizationDto> authorizations,
-                                                DefinitionAuthorizations definitionDefinitionAuthorizations) {
-    authorizations.forEach(a -> addGloballyAuthorizedDefinition(a, definitionDefinitionAuthorizations));
+  private DefinitionAuthorizations buildDefinitionAuthorizations(int resourceType) {
+    final DefinitionAuthorizations authorizations = new DefinitionAuthorizations();
+
+    // NOTE: the order is essential here to make sure that
+    // the revoking of definition permissions works correctly
+
+    // global authorizations
+    addGloballyAuthorizedDefinitions(
+      authorizations, definitionAuthorizations.getAllDefinitionAuthorizations(), resourceType
+    );
+
+    // group authorizations
+    addDefinitionAuthorizations(authorizations, definitionAuthorizations.getGroupAuthorizations(), resourceType);
+
+    // user authorizations
+    addDefinitionAuthorizations(authorizations, definitionAuthorizations.getUserAuthorizations(), resourceType);
+
+    return authorizations;
+  }
+
+  private void addDefinitionAuthorizations(final DefinitionAuthorizations definitionDefinitionAuthorizations,
+                                           final List<AuthorizationDto> groupAuthorizations,
+                                           int resourceType) {
+    removeAuthorizationsForAllDefinitions(groupAuthorizations, definitionDefinitionAuthorizations, resourceType);
+    addAuthorizationsForAllDefinitions(groupAuthorizations, definitionDefinitionAuthorizations, resourceType);
+    removeAuthorizationsForProhibitedDefinition(groupAuthorizations, definitionDefinitionAuthorizations, resourceType);
+    addAuthorizationsForSingleDefinitions(groupAuthorizations, definitionDefinitionAuthorizations, resourceType);
+  }
+
+  private void addGloballyAuthorizedDefinitions(DefinitionAuthorizations definitionDefinitionAuthorizations,
+                                                List<AuthorizationDto> authorizations,
+                                                int resourceType) {
+    authorizations.forEach(a -> addGloballyAuthorizedDefinition(a, definitionDefinitionAuthorizations, resourceType));
   }
 
   private void addAuthorizationsForAllDefinitions(List<AuthorizationDto> authorizations,
-                                                  DefinitionAuthorizations definitionDefinitionAuthorizations) {
-    authorizations.forEach(a -> addAuthorizationForAllDefinitions(a, definitionDefinitionAuthorizations));
+                                                  DefinitionAuthorizations definitionDefinitionAuthorizations,
+                                                  int resourceType) {
+    authorizations.forEach(a -> addAuthorizationForAllDefinitions(a, definitionDefinitionAuthorizations, resourceType));
   }
 
   private void addAuthorizationsForSingleDefinitions(List<AuthorizationDto> authorizations,
-                                                     DefinitionAuthorizations definitionDefinitionAuthorizations) {
-    authorizations.forEach(a -> addAuthorizationForDefinition(a, definitionDefinitionAuthorizations));
+                                                     DefinitionAuthorizations definitionDefinitionAuthorizations,
+                                                     int resourceType) {
+    authorizations.forEach(
+      a -> addAuthorizationForDefinition(a, definitionDefinitionAuthorizations, resourceType)
+    );
   }
 
   private void removeAuthorizationsForAllDefinitions(List<AuthorizationDto> authorizations,
-                                                     DefinitionAuthorizations definitionDefinitionAuthorizations) {
-    authorizations.forEach(a -> removeAuthorizationForAllDefinitions(a, definitionDefinitionAuthorizations));
+                                                     DefinitionAuthorizations definitionDefinitionAuthorizations,
+                                                     int resourceType) {
+    authorizations.forEach(
+      a -> removeAuthorizationForAllDefinitions(a, definitionDefinitionAuthorizations, resourceType)
+    );
   }
 
   private void removeAuthorizationsForProhibitedDefinition(List<AuthorizationDto> authorizations,
-                                                           DefinitionAuthorizations definitionDefinitionAuthorizations) {
-    authorizations.forEach(a -> removeAuthorizationForProhibitedDefinition(a, definitionDefinitionAuthorizations));
+                                                           DefinitionAuthorizations definitionDefinitionAuthorizations,
+                                                           int resourceType) {
+    authorizations.forEach(
+      a -> removeAuthorizationForProhibitedDefinition(a, definitionDefinitionAuthorizations, resourceType)
+    );
   }
 
   private void addGloballyAuthorizedDefinition(AuthorizationDto a,
-                                               DefinitionAuthorizations definitionDefinitionAuthorizations) {
+                                               DefinitionAuthorizations definitionDefinitionAuthorizations,
+                                               int resourceType) {
     boolean hasPermissions = hasCorrectPermissions(a);
     boolean globalGrantPermission = a.getType() == AUTHORIZATION_TYPE_GLOBAL;
-    boolean processDefinitionResourceType = a.getResourceType() == RESOURCE_TYPE_PROCESS_DEFINITION;
+    boolean processDefinitionResourceType = a.getResourceType() == resourceType;
     if (hasPermissions && globalGrantPermission && processDefinitionResourceType) {
       String resourceId = a.getResourceId();
       if (resourceId.trim().equals(ALL_RESOURCES_RESOURCE_ID)) {
@@ -110,10 +145,11 @@ public class Session {
   }
 
   private void addAuthorizationForAllDefinitions(AuthorizationDto a,
-                                                 DefinitionAuthorizations definitionDefinitionAuthorizations) {
+                                                 DefinitionAuthorizations definitionDefinitionAuthorizations,
+                                                 int resourceType) {
     boolean hasPermissions = hasCorrectPermissions(a);
     boolean grantPermission = a.getType() == AUTHORIZATION_TYPE_GRANT;
-    boolean processDefinitionResourceType = a.getResourceType() == RESOURCE_TYPE_PROCESS_DEFINITION;
+    boolean processDefinitionResourceType = a.getResourceType() == resourceType;
     if (hasPermissions && grantPermission && processDefinitionResourceType) {
       String resourceId = a.getResourceId();
       if (resourceId.trim().equals(ALL_RESOURCES_RESOURCE_ID)) {
@@ -123,10 +159,11 @@ public class Session {
   }
 
   private void addAuthorizationForDefinition(AuthorizationDto a,
-                                             DefinitionAuthorizations definitionDefinitionAuthorizations) {
+                                             DefinitionAuthorizations definitionDefinitionAuthorizations,
+                                             int resourceType) {
     boolean hasPermissions = hasCorrectPermissions(a);
     boolean grantPermission = a.getType() == AUTHORIZATION_TYPE_GRANT;
-    boolean processDefinitionResourceType = a.getResourceType() == RESOURCE_TYPE_PROCESS_DEFINITION;
+    boolean processDefinitionResourceType = a.getResourceType() == resourceType;
     if (hasPermissions && grantPermission && processDefinitionResourceType) {
       String resourceId = a.getResourceId();
       if (!resourceId.isEmpty()) {
@@ -136,10 +173,11 @@ public class Session {
   }
 
   private void removeAuthorizationForAllDefinitions(AuthorizationDto a,
-                                                    DefinitionAuthorizations definitionDefinitionAuthorizations) {
+                                                    DefinitionAuthorizations definitionDefinitionAuthorizations,
+                                                    int resourceType) {
     boolean hasPermissions = hasCorrectPermissions(a);
     boolean revokePermission = a.getType() == AUTHORIZATION_TYPE_REVOKE;
-    boolean processDefinitionResourceType = a.getResourceType() == RESOURCE_TYPE_PROCESS_DEFINITION;
+    boolean processDefinitionResourceType = a.getResourceType() == resourceType;
     if (hasPermissions && revokePermission && processDefinitionResourceType) {
       String resourceId = a.getResourceId();
       if (resourceId.trim().equals(ALL_RESOURCES_RESOURCE_ID)) {
@@ -149,10 +187,11 @@ public class Session {
   }
 
   private void removeAuthorizationForProhibitedDefinition(AuthorizationDto a,
-                                                          DefinitionAuthorizations definitionDefinitionAuthorizations) {
+                                                          DefinitionAuthorizations definitionDefinitionAuthorizations,
+                                                          int resourceType) {
     boolean hasPermissions = hasCorrectPermissions(a);
     boolean revokePermission = a.getType() == AUTHORIZATION_TYPE_REVOKE;
-    boolean processDefinitionResourceType = a.getResourceType() == RESOURCE_TYPE_PROCESS_DEFINITION;
+    boolean processDefinitionResourceType = a.getResourceType() == resourceType;
     if (hasPermissions && revokePermission && processDefinitionResourceType) {
       String resourceId = a.getResourceId();
       if (!resourceId.isEmpty()) {

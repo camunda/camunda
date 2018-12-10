@@ -18,11 +18,11 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.MEMBER;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_APPLICATION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 
 public class EngineContext {
-
-  private Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger logger = LoggerFactory.getLogger(EngineContext.class);
 
   private String engineAlias;
   private Client engineClient;
@@ -51,8 +51,9 @@ public class EngineContext {
         .request(MediaType.APPLICATION_JSON)
         .get();
       if (response.getStatus() == 200) {
-        return response.readEntity(new GenericType<List<GroupDto>>() {
-        });
+        // @formatter:off
+        return response.readEntity(new GenericType<List<GroupDto>>() {});
+        // @formatter:on
       }
     } catch (Exception e) {
       logger.error("Could not fetch groups for user [{}]", username, e);
@@ -62,15 +63,7 @@ public class EngineContext {
 
   public List<AuthorizationDto> getAllApplicationAuthorizations() {
     try {
-      Response response = getEngineClient()
-        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-        .path(AUTHORIZATION_ENDPOINT)
-        .queryParam(RESOURCE_TYPE, RESOURCE_TYPE_APPLICATION)
-        .request(MediaType.APPLICATION_JSON)
-        .get();
-      if (response.getStatus() == 200) {
-        return response.readEntity(new GenericType<List<AuthorizationDto>>() {});
-      }
+      return getAuthorizationsForType(RESOURCE_TYPE_APPLICATION);
     } catch (Exception e) {
       logger.error("Could not fetch application authorizations from the Engine to check the access permissions.", e);
     }
@@ -79,20 +72,42 @@ public class EngineContext {
 
   public List<AuthorizationDto> getAllProcessDefinitionAuthorizations() {
     try {
-      Response response = getEngineClient()
-        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-        .path(AUTHORIZATION_ENDPOINT)
-        .queryParam(RESOURCE_TYPE, RESOURCE_TYPE_PROCESS_DEFINITION)
-        .request(MediaType.APPLICATION_JSON)
-        .get();
-      if (response.getStatus() == 200) {
-        return response.readEntity(new GenericType<List<AuthorizationDto>>() {});
-      }
+      return getAuthorizationsForType(RESOURCE_TYPE_PROCESS_DEFINITION);
     } catch (Exception e) {
-      logger.error("Could not fetch process definition authorizations from " +
-        "the Engine to check the access permissions.", e);
+      logger.error(
+        "Could not fetch process definition authorizations from the Engine to check the access permissions.",
+        e
+      );
     }
     return new ArrayList<>();
+  }
+
+  public List<AuthorizationDto> getAllDecisionDefinitionAuthorizations() {
+    try {
+      return getAuthorizationsForType(RESOURCE_TYPE_DECISION_DEFINITION);
+    } catch (Exception e) {
+      logger.error(
+        "Could not fetch decision definition authorizations from the Engine to check the access permissions.",
+        e
+      );
+    }
+    return new ArrayList<>();
+  }
+
+  private List<AuthorizationDto> getAuthorizationsForType(final int resourceType) {
+    final Response response = getEngineClient()
+      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+      .path(AUTHORIZATION_ENDPOINT)
+      .queryParam(RESOURCE_TYPE, resourceType)
+      .request(MediaType.APPLICATION_JSON)
+      .get();
+    if (response.getStatus() == 200) {
+      // @formatter:off
+      return response.readEntity(new GenericType<List<AuthorizationDto>>() {});
+      // @formatter:on
+    } else {
+      return new ArrayList<>();
+    }
   }
 
 }

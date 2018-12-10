@@ -118,7 +118,7 @@ public class DecisionDefinitionReader {
                                                                                   final List<DecisionDefinitionOptimizeDto> decisionDefinitions) {
     final List<DecisionDefinitionOptimizeDto> result = decisionDefinitions
       .stream()
-      .filter(def -> sessionService.isAuthorizedToSeeDefinition(userId, def.getKey()))
+      .filter(def -> sessionService.isAuthorizedToSeeDecisionDefinition(userId, def.getKey()))
       .collect(Collectors.toList());
     return result;
   }

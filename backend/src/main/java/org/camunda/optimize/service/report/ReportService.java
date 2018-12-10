@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDat
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
@@ -259,26 +260,6 @@ public class ReportService {
     return reports;
   }
 
-  private List<ReportDefinitionDto> filterAuthorizedReports(String userId, List<ReportDefinitionDto> reports) {
-    reports = reports
-      .stream()
-      .filter(
-        r -> {
-          if (r instanceof SingleReportDefinitionDto) {
-            if (r.getData() instanceof ProcessReportDataDto) {
-              ProcessReportDataDto reportData = (ProcessReportDataDto) r.getData();
-              return sessionService.isAuthorizedToSeeDefinition(userId, reportData.getProcessDefinitionKey());
-            } else {
-              return true;
-            }
-          } else {
-            return true;
-          }
-        })
-      .collect(Collectors.toList());
-    return reports;
-  }
-
   public ReportDefinitionDto getReportWithAuthorizationCheck(String reportId, String userId) {
     ReportDefinitionDto report = reportReader.getReport(reportId);
     if (!isAuthorizedToSeeReport(userId, report)) {
@@ -288,11 +269,22 @@ public class ReportService {
     return report;
   }
 
+  private List<ReportDefinitionDto> filterAuthorizedReports(String userId, List<ReportDefinitionDto> reports) {
+    reports = reports
+      .stream()
+      .filter(report -> isAuthorizedToSeeReport(userId, report))
+      .collect(Collectors.toList());
+    return reports;
+  }
+
   private boolean isAuthorizedToSeeReport(String userId, ReportDefinitionDto reportDefinition) {
     if (reportDefinition instanceof SingleReportDefinitionDto) {
       if (reportDefinition.getData() instanceof ProcessReportDataDto) {
         final ProcessReportDataDto reportData = (ProcessReportDataDto) reportDefinition.getData();
-        return sessionService.isAuthorizedToSeeDefinition(userId, reportData.getProcessDefinitionKey());
+        return sessionService.isAuthorizedToSeeProcessDefinition(userId, reportData.getProcessDefinitionKey());
+      } else if (reportDefinition.getData() instanceof DecisionReportDataDto) {
+        DecisionReportDataDto reportData = (DecisionReportDataDto) reportDefinition.getData();
+        return sessionService.isAuthorizedToSeeDecisionDefinition(userId, reportData.getDecisionDefinitionKey());
       } else {
         return true;
       }
@@ -314,7 +306,7 @@ public class ReportService {
   }
 
   public ReportResultDto evaluateSingleReport(String userId,
-                                                     SingleReportDefinitionDto reportDefinition) {
+                                              SingleReportDefinitionDto reportDefinition) {
     return reportEvaluator.evaluateSingleReport(userId, reportDefinition);
   }
 
