@@ -85,7 +85,7 @@ function getNodesBetween(start, end, viewer) {
 
       graph[current] &&
         graph[current].forEach(({node, via}) => {
-          reachableNodes.push(via);
+          via && reachableNodes.push(via);
           if (!reachableNodes.includes(node) && !unprocessed.includes(node)) {
             unprocessed.push(node);
           }
