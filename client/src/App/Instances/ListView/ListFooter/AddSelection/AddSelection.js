@@ -15,23 +15,15 @@ class AddSelection extends React.Component {
     onAddNewSelection: PropTypes.func.isRequired,
     onAddToSelectionById: PropTypes.func.isRequired,
     onAddToOpenSelection: PropTypes.func.isRequired,
-    toggleSelections: PropTypes.func,
+    expandSelections: PropTypes.func.isRequired,
     selections: PropTypes.array.isRequired,
     selection: PropTypes.object,
-    openSelection: PropTypes.number,
-    //from withCollapsablePanel
-    isSelectionsCollapsed: PropTypes.bool
-  };
-
-  openSelectionsPanel = () => {
-    if (this.props.isSelectionsCollapsed) {
-      this.props.toggleSelections();
-    }
+    openSelection: PropTypes.number
   };
 
   handleAddNewSelection = () => {
     this.props.onAddNewSelection();
-    this.openSelectionsPanel();
+    this.props.expandSelections();
   };
 
   renderButton = () => {
@@ -103,4 +95,3 @@ class AddSelection extends React.Component {
 }
 
 export default withSelection(withCollapsablePanel(AddSelection));
-export {AddSelection};

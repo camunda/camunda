@@ -20,7 +20,7 @@ export default class Menu extends React.Component {
     const {onKeyDown, placement, children} = this.props;
 
     return (
-      <Styled.Ul placement={placement}>
+      <Styled.Ul placement={placement} data-test="menu">
         {React.Children.map(children, (child, index) => (
           <Styled.Li onKeyDown={onKeyDown} placement={placement} key={index}>
             {child}

@@ -73,7 +73,7 @@ export default class SubMenu extends React.Component {
   render() {
     const {isOpen, children, label} = this.props;
     return (
-      <Styled.SubMenu onMouseLeave={this.handleMouseLeave}>
+      <Styled.SubMenu onMouseLeave={this.handleMouseLeave} data-test="sub-menu">
         <Styled.SubMenuButton
           onClick={() => this.handleOnClick()}
           onMouseOver={this.handleButtonMouseOver}

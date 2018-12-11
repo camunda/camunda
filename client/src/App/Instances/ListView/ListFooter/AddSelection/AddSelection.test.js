@@ -1,125 +1,213 @@
 import React from 'react';
-import {shallow} from 'enzyme';
-
-import AddSelection from './AddSelection';
-import Dropdown from 'modules/components/Dropdown';
-import ContextualMessage from 'modules/components/ContextualMessage';
-import {DROPDOWN_PLACEMENT, CONTEXTUAL_MESSAGE_TYPE} from 'modules/constants';
+import {mount} from 'enzyme';
 
 import {xTimes, createSelection} from 'modules/testUtils';
+import {ThemeProvider} from 'modules/contexts/ThemeContext';
+
+import AddSelection from './AddSelection';
 
 const maxSelections = [];
 xTimes(10)(index => maxSelections.push(createSelection(index)));
 
-describe.skip('AddSelection', () => {
-  let node;
-  let onAddNewSelectionSpy,
-    onAddToOpenSelectionSpy,
-    onAddToSelectionByIdSpy,
-    toggleSelectionsSpy;
+const mockFunctions = {
+  onAddNewSelection: jest.fn(),
+  onAddToSelectionById: jest.fn(),
+  onAddToOpenSelection: jest.fn(),
+  expandSelections: jest.fn()
+};
 
-  beforeEach(() => {
-    node = shallow(
-      <AddSelection
-        onAddNewSelection={jest.fn()}
-        onAddToSelectionById={jest.fn()}
-        onAddToOpenSelection={jest.fn()}
-        selection={{ids: [], excludeIds: []}}
-        selections={[{selectionId: 0}, {selectionId: 1}]}
-        isSelectionsCollapsed={true}
-        toggleSelections={jest.fn()}
-      />
+describe('AddSelection', () => {
+  afterEach(() => {
+    Object.values(mockFunctions).forEach(mockFunction =>
+      mockFunction.mockClear()
     );
-
-    onAddNewSelectionSpy = jest.spyOn(
-      node.instance().props,
-      'onAddNewSelection'
-    );
-    onAddToOpenSelectionSpy = jest.spyOn(
-      node.instance().props,
-      'onAddToOpenSelection'
-    );
-    onAddToSelectionByIdSpy = jest.spyOn(
-      node.instance().props,
-      'onAddToSelectionById'
-    );
-    toggleSelectionsSpy = jest.spyOn(node.instance().props, 'toggleSelections');
   });
 
-  afterEach(() => {
-    onAddNewSelectionSpy.mockRestore();
-    onAddToOpenSelectionSpy.mockRestore();
-    onAddToSelectionByIdSpy.mockRestore();
-    toggleSelectionsSpy.mockRestore();
+  describe('Create selection', () => {
+    it('should be disabled if no instance is selected', () => {
+      // given
+      const node = mount(
+        <ThemeProvider>
+          <AddSelection
+            {...mockFunctions}
+            selections={[]}
+            selection={{ids: [], excludeIds: []}}
+          />
+        </ThemeProvider>
+      );
+      const selectionButton = node.find('button');
+
+      // then
+      expect(selectionButton.contains('Create Selection')).toBe(true);
+      expect(selectionButton.prop('disabled')).toBe(true);
+    });
+
+    it('should create new selection', () => {
+      // given
+      const node = mount(
+        <ThemeProvider>
+          <AddSelection
+            {...mockFunctions}
+            selections={[]}
+            selection={{all: true}}
+          />
+        </ThemeProvider>
+      );
+      const selectionButton = node.find('button');
+
+      // when
+      selectionButton.simulate('click');
+
+      // then
+      expect(mockFunctions.onAddNewSelection).toBeCalled();
+      expect(mockFunctions.expandSelections).toBeCalled();
+    });
   });
 
   describe('DropdownMenu', () => {
-    it('should drop "up"', () => {
-      expect(node.find(Dropdown).props().placement).toBe(
-        DROPDOWN_PLACEMENT.TOP
-      );
-    });
-
-    it('should add new selection', () => {
-      const createSelectionOption = node.find('Dropdown').childAt(0);
-      createSelectionOption.simulate('click');
-      expect(onAddNewSelectionSpy).toHaveBeenCalled();
-      expect(toggleSelectionsSpy).toHaveBeenCalled();
-    });
-
-    it('should add instances to open selection', () => {
-      node.setProps({openSelection: 1});
-      const addToOpenSelectionOption = node.find('Dropdown').childAt(1);
-      addToOpenSelectionOption.simulate('click');
-      expect(onAddToOpenSelectionSpy).toHaveBeenCalled();
-    });
-
-    it('should open the selections panel on dropdown click', () => {
-      node.setProps({openSelection: 1});
-      const dropdownNode = node.find('Dropdown');
-      expect(dropdownNode.props().onOpen).toEqual(
-        node.instance().openSelectionsPanel
-      );
-    });
-
-    it('should disable "add to open selection" option if no selection open', () => {
-      const addToOpenSelectionOption = node.find('Dropdown').childAt(1);
-      expect(addToOpenSelectionOption.props().disabled).toBe(true);
-    });
-
-    it('should show contextual message when max number of Selections is reached', () => {
-      //when
-      node.setProps({
-        selections: maxSelections
-      });
-
-      //then
-      const createSelectionOption = node.find('Dropdown').childAt(0);
-      expect(createSelectionOption.props().disabled).toBe(true);
-
-      const ContextualMessageComponent = node.find(ContextualMessage);
-      expect(ContextualMessageComponent.exists()).toBe(true);
-      expect(ContextualMessageComponent.props().type).toBe(
-        CONTEXTUAL_MESSAGE_TYPE.DROP_SELECTION
-      );
-    });
-  });
-
-  describe('SubDropdownMenu', () => {
-    it('should show all selection ids', () => {
-      const noOfSelections = node.instance().props.selections.length;
-      expect(node.find('SubMenu').children().length).toBe(noOfSelections);
-    });
-
-    it('should add instances to specific selection', () => {
+    it('should be disabled if no instance is selected', () => {
       // given
-      const onAddToSelectionByIdOption = node.find('SubMenu').childAt(0);
-
-      // when
-      onAddToSelectionByIdOption.simulate('click');
+      const node = mount(
+        <ThemeProvider>
+          <AddSelection
+            {...mockFunctions}
+            selections={[{selectionId: 1}, {selectionId: 2}]}
+            selection={{ids: [], excludeIds: []}}
+          />
+        </ThemeProvider>
+      );
+      const dropdownButton = node.find('button');
 
       // then
-      expect(onAddToSelectionByIdSpy).toHaveBeenCalledWith(0);
+      expect(dropdownButton.prop('disabled')).toBe(true);
+    });
+
+    it('should drop "up"', () => {
+      // given
+      const node = mount(
+        <ThemeProvider>
+          <AddSelection
+            {...mockFunctions}
+            selections={[{selectionId: 1}, {selectionId: 2}]}
+            selection={{all: true}}
+          />
+        </ThemeProvider>
+      );
+      const dropdownButton = node.find('button');
+
+      // when
+      dropdownButton.simulate('click');
+
+      // then
+      const menuItems = node.find('[data-test="menu"] li button');
+      // create new selection
+      expect(menuItems.at(0).contains('Create New Selection')).toBe(true);
+      expect(menuItems.at(1).contains('Add to current Selection')).toBe(true);
+      expect(menuItems.at(1).prop('disabled')).toBe(true);
+      expect(menuItems.at(2).contains('Add to Selection...')).toBe(true);
+    });
+
+    it('should create new selection', () => {
+      // given
+      const node = mount(
+        <ThemeProvider>
+          <AddSelection
+            {...mockFunctions}
+            selections={[{selectionId: 1}, {selectionId: 2}]}
+            selection={{all: true}}
+          />
+        </ThemeProvider>
+      );
+      const dropdownButton = node.find('button');
+      dropdownButton.simulate('click');
+      const createButton = node.find('[data-test="menu"] li button').at(0);
+
+      // when
+      createButton.simulate('click');
+
+      // then
+      expect(mockFunctions.onAddNewSelection).toBeCalled();
+      expect(mockFunctions.expandSelections).toBeCalled();
+    });
+
+    it('should add to open selection', () => {
+      // given
+      const node = mount(
+        <ThemeProvider>
+          <AddSelection
+            {...mockFunctions}
+            selections={[{selectionId: 1}, {selectionId: 2}]}
+            selection={{all: true}}
+            openSelection={1}
+          />
+        </ThemeProvider>
+      );
+      const dropdownButton = node.find('button');
+      dropdownButton.simulate('click');
+      const addButton = node.find('[data-test="menu"] li button').at(1);
+
+      // when
+      addButton.simulate('click');
+
+      // then
+      expect(addButton.prop('disabled')).toBe(false);
+      expect(mockFunctions.onAddToOpenSelection).toBeCalled();
+    });
+
+    describe('Add to selection', () => {
+      it('should show a submenu on hover', () => {
+        // given
+        const node = mount(
+          <ThemeProvider>
+            <AddSelection
+              {...mockFunctions}
+              selections={[{selectionId: 1}, {selectionId: 2}]}
+              selection={{all: true}}
+            />
+          </ThemeProvider>
+        );
+        const dropdownButton = node.find('button');
+        dropdownButton.simulate('click');
+        const addToSelectionButton = node
+          .find('[data-test="menu"] li button')
+          .at(2);
+
+        // when
+        addToSelectionButton.simulate('mouseover');
+
+        // then
+        const submenuButtons = node.find('[data-test="sub-menu"] li button');
+        expect(submenuButtons.at(0).contains(1)).toBe(true);
+        expect(submenuButtons.at(1).contains(2)).toBe(true);
+      });
+
+      it('should add to selected selection', () => {
+        // given
+        const node = mount(
+          <ThemeProvider>
+            <AddSelection
+              {...mockFunctions}
+              selections={[{selectionId: 1}, {selectionId: 2}]}
+              selection={{all: true}}
+            />
+          </ThemeProvider>
+        );
+        const dropdownButton = node.find('button');
+        dropdownButton.simulate('click');
+        const addToSelectionButton = node
+          .find('[data-test="menu"] li button')
+          .at(2);
+        addToSelectionButton.simulate('mouseover');
+        const firstSubMenuButton = node
+          .find('[data-test="sub-menu"] li button')
+          .at(0);
+
+        // when
+        firstSubMenuButton.simulate('click');
+
+        // then
+        expect(mockFunctions.onAddToSelectionById).toBeCalledWith(1);
+      });
     });
   });
 });
