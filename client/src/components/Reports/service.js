@@ -1,4 +1,7 @@
 import {get, del, put, post} from 'request';
+import {reportConfig, getDataKeys} from 'services';
+
+const {isAllowed, getNext} = reportConfig;
 
 export async function loadSingleReport(id) {
   const response = await get('api/report/' + id);
@@ -88,3 +91,52 @@ export const isRawDataReport = (report, data) => {
     report.result[0]
   );
 };
+
+export async function loadDecisionDefinitions() {
+  const response = await get('api/decision-definition/groupedByKey');
+
+  return await response.json();
+}
+
+export function isChecked(data, current) {
+  return (
+    current &&
+    getDataKeys(data).every(
+      prop =>
+        JSON.stringify(current[prop]) === JSON.stringify(data[prop]) || Array.isArray(data[prop])
+    )
+  );
+}
+
+export function update({type, data, view, groupBy, visualization, callback}) {
+  const update = {
+    [type]: data
+  };
+
+  const config = {
+    view,
+    groupBy,
+    visualization,
+    ...update
+  };
+
+  const nextGroup = getNext(config.view);
+  if (nextGroup) {
+    config.groupBy = nextGroup;
+    update.groupBy = nextGroup;
+  }
+
+  const nextVis = getNext(config.view, config.groupBy);
+  if (nextVis) {
+    config.visualization = nextVis;
+    update.visualization = nextVis;
+  }
+  if (!isAllowed(config.view, config.groupBy)) {
+    update.groupBy = null;
+    update.visualization = null;
+  } else if (!isAllowed(config.view, config.groupBy, config.visualization)) {
+    update.visualization = null;
+  }
+
+  callback(update);
+}

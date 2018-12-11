@@ -20,21 +20,21 @@ const data = [
 ];
 
 it('should transform data to table compatible format', () => {
-  expect(processRawData(data)).toEqual({
+  expect(processRawData({data})).toEqual({
     head: ['Process Instance Id', 'Prop2', {label: 'Variables', columns: ['var1', 'var2']}],
     body: [['foo', 'bar', '12', ''], ['xyz', 'abc', '', 'true']]
   });
 });
 
 it('should not include columns that are hidden', () => {
-  expect(processRawData(data, ['prop2'])).toEqual({
+  expect(processRawData({data, excludedColumns: ['prop2']})).toEqual({
     head: ['Process Instance Id', {label: 'Variables', columns: ['var1', 'var2']}],
     body: [['foo', '12', ''], ['xyz', '', 'true']]
   });
 });
 
 it('should exclude variable columns using the var__ prefix', () => {
-  expect(processRawData(data, ['var__var1'])).toEqual({
+  expect(processRawData({data, excludedColumns: ['var__var1']})).toEqual({
     head: ['Process Instance Id', 'Prop2', {label: 'Variables', columns: ['var2']}],
     body: [['foo', 'bar', ''], ['xyz', 'abc', 'true']]
   });
@@ -42,9 +42,12 @@ it('should exclude variable columns using the var__ prefix', () => {
 
 it('should apply column order', () => {
   expect(
-    processRawData(data, [], {
-      processInstanceProps: ['Prop2', 'Process Instance Id'],
-      variables: ['var1', 'var2']
+    processRawData({
+      data,
+      columnOrder: {
+        instanceProps: ['Prop2', 'Process Instance Id'],
+        variables: ['var1', 'var2']
+      }
     })
   ).toEqual({
     head: ['Prop2', 'Process Instance Id', {label: 'Variables', columns: ['var1', 'var2']}],
@@ -54,7 +57,10 @@ it('should apply column order', () => {
 
 it('should prepend columns without specified column position', () => {
   expect(
-    processRawData(data, [], {processInstanceProps: ['Process Instance Id'], variables: ['var1']})
+    processRawData({
+      data,
+      columnOrder: {instanceProps: ['Process Instance Id'], variables: ['var1']}
+    })
   ).toEqual({
     head: ['Prop2', 'Process Instance Id', {label: 'Variables', columns: ['var2', 'var1']}],
     body: [['bar', 'foo', '', '12'], ['abc', 'xyz', 'true', '']]
@@ -63,9 +69,13 @@ it('should prepend columns without specified column position', () => {
 
 it('should sort and hide simulateously', () => {
   expect(
-    processRawData(data, ['prop2'], {
-      processInstanceProps: ['Prop2', 'Process Instance Id'],
-      variables: ['var2', 'var1']
+    processRawData({
+      data,
+      excludedColumns: ['prop2'],
+      columnOrder: {
+        instanceProps: ['Prop2', 'Process Instance Id'],
+        variables: ['var2', 'var1']
+      }
     })
   ).toEqual({
     head: ['Process Instance Id', {label: 'Variables', columns: ['var2', 'var1']}],
@@ -74,27 +84,70 @@ it('should sort and hide simulateously', () => {
 });
 
 it('should make the process instance id a link', () => {
-  const cell = processRawData(
-    [{processInstanceId: '123', engineName: '1', variables: {}}],
-    undefined,
-    undefined,
-    {1: {endpoint: 'http://camunda.com', engineName: 'a'}}
-  ).body[0][0];
+  const cell = processRawData({
+    data: [{processInstanceId: '123', engineName: '1', variables: {}}],
+    endpoints: {1: {endpoint: 'http://camunda.com', engineName: 'a'}}
+  }).body[0][0];
 
   expect(cell.type).toBe('a');
   expect(cell.props.href).toBe('http://camunda.com/app/cockpit/a/#/process-instance/123');
 });
 
 it('should not make the process instance id a link if no endpoint is specified', () => {
-  const cell = processRawData([{processInstanceId: '123', engineName: '1', variables: {}}])
+  const cell = processRawData({data: [{processInstanceId: '123', engineName: '1', variables: {}}]})
     .body[0][0];
 
   expect(cell).toBe('123');
 });
 
 it('should show no data message when all column are excluded', () => {
-  expect(processRawData(data, ['processInstanceId', 'prop2', 'var__var1', 'var__var2'])).toEqual({
+  expect(
+    processRawData({
+      data,
+      excludedColumns: ['processInstanceId', 'prop2', 'var__var1', 'var__var2']
+    })
+  ).toEqual({
     head: ['No Data'],
     body: [['You need to enable at least one table column']]
+  });
+});
+
+it('should work for decision tables', () => {
+  const data = [
+    {
+      decisionInstanceId: 'foo',
+      prop2: 'bar',
+      inputVariables: {
+        var1: {id: 'var1', value: 12, name: 'Var 1'},
+        var2: {id: 'var2', value: null, name: 'Var 2'}
+      },
+      outputVariables: {
+        result: {id: 'result', values: [1], name: 'Result'}
+      }
+    },
+    {
+      decisionInstanceId: 'xyz',
+      prop2: 'abc',
+      inputVariables: {
+        var1: {id: 'var1', value: null, name: 'Var 1'},
+        var2: {id: 'var2', value: true, name: 'Var 2'}
+      },
+      outputVariables: {
+        result: {id: 'result', values: [8], name: 'Result'}
+      }
+    }
+  ];
+
+  expect(processRawData({data, reportType: 'decision'})).toEqual({
+    head: [
+      'Decision Instance Id',
+      'Prop2',
+      {
+        label: 'Input Variables',
+        columns: [{id: 'var1', label: 'Var 1'}, {id: 'var2', label: 'Var 2'}]
+      },
+      {label: 'Output Variables', columns: [{id: 'result', label: 'Result'}]}
+    ],
+    body: [['foo', 'bar', '12', '', '1'], ['xyz', 'abc', '', 'true', '8']]
   });
 });

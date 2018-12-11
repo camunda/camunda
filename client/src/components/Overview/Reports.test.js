@@ -30,6 +30,7 @@ const report = {
   name: 'Some Report',
   lastModifier: 'Admin',
   lastModified: '2017-11-11T11:11:11.1111+0200',
+  reportType: 'process',
   combined: false
 };
 
@@ -125,7 +126,7 @@ it('should duplicate reports', () => {
     .first()
     .simulate('click', {target: {blur: jest.fn()}});
 
-  expect(createReport).toHaveBeenCalledWith(false, {
+  expect(createReport).toHaveBeenCalledWith(false, 'process', {
     ...report,
     name: report.name + ' - Copy'
   });

@@ -43,8 +43,9 @@ class Reports extends React.Component {
 
   componentDidMount = this.loadReports;
 
-  createCombinedReport = async () => this.setState({redirect: await createReport(true)});
-  createReport = async () => this.setState({redirect: await createReport(false)});
+  createCombinedReport = async () => this.setState({redirect: await createReport(true, 'process')});
+  createReport = async () => this.setState({redirect: await createReport(false, 'process')});
+  createDMNReport = async () => this.setState({redirect: await createReport(false, 'decision')});
 
   duplicateReport = report => async evt => {
     evt.target.blur();
@@ -53,7 +54,7 @@ class Reports extends React.Component {
       ...report,
       name: report.name + ' - Copy'
     };
-    await createReport(report.combined, copy);
+    await createReport(report.combined, report.reportType, copy);
     this.loadReports();
   };
 
@@ -116,6 +117,7 @@ class Reports extends React.Component {
             <Dropdown.Option onClick={this.createCombinedReport}>
               Create Combined BPMN Report
             </Dropdown.Option>
+            <Dropdown.Option onClick={this.createDMNReport}>Create DMN Report</Dropdown.Option>
           </Dropdown>
         </div>
         {error}

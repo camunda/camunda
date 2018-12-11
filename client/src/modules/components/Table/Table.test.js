@@ -37,6 +37,20 @@ it('should correctly format multi-level header', () => {
   ]);
 });
 
+it('should support explicit id for columns', () => {
+  const result = Table.formatColumns([
+    {id: 'column1', label: 'X'},
+    'Y',
+    {id: 'column3', label: 'Z'}
+  ]);
+
+  expect(result).toEqual([
+    {Header: 'X', accessor: 'column1', minWidth: 100},
+    {Header: 'Y', accessor: 'y', minWidth: 100},
+    {Header: 'Z', accessor: 'column3', minWidth: 100}
+  ]);
+});
+
 it('shoud correctly format body', () => {
   const result = Table.formatData(['Header 1', 'Header 2', 'Header 3'], [['a', 'b', 'c']]);
 
@@ -63,10 +77,16 @@ it('should not show pagination if data contains less than or equal to 20 rows', 
   expect(node.find(ReactTable)).toHaveProp('showPagination', false);
 });
 
-it('should make the table sortable if an updateSorting method is defined', () => {
+it('should call the updateSorting method on click on header', () => {
+  const spy = jest.fn();
   const node = shallow(
-    <Table {...{head: ['a'], body: generateData(20), foot: []}} updateSorting={() => {}} />
+    <Table {...{head: ['a'], body: generateData(20), foot: []}} updateSorting={spy} />
   );
 
-  expect(node.find(ReactTable)).toHaveProp('sortable', true);
+  node
+    .find(ReactTable)
+    .prop('getTheadThProps')(0, 0, {id: 'someId'})
+    .onClick({target: 'header'});
+
+  expect(spy).toHaveBeenCalledWith('someId', 'asc');
 });

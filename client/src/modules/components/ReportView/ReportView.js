@@ -32,7 +32,7 @@ export default class ReportView extends React.Component {
   };
 
   componentDidMount() {
-    if (!this.props.report.combined) {
+    if (!this.props.report.combined && this.props.report.reportType === 'process') {
       const {processDefinitionVersion, processDefinitionKey} = this.getDataFromProps(this.props);
       if (processDefinitionKey && processDefinitionVersion) {
         this.loadFlowNodeNames(processDefinitionKey, processDefinitionVersion);
@@ -48,7 +48,7 @@ export default class ReportView extends React.Component {
     const {report} = this.props;
     if (report) {
       return !report.combined
-        ? this.checkProcDefAndRenderReport(report)
+        ? this.checkDefinitionAndRenderReport(report)
         : this.checkCombinedAndRender(report);
     } else {
       return <div className="Message Message--error">{defaultErrorMessage}</div>;
@@ -65,10 +65,21 @@ export default class ReportView extends React.Component {
     return this.buildInstructionMessage('one or more reports from the list', true);
   };
 
-  checkProcDefAndRenderReport = report => {
-    const {data} = report;
-    if (this.isEmpty(data.processDefinitionKey) || this.isEmpty(data.processDefinitionVersion)) {
-      return this.buildInstructionMessage('Process definition');
+  checkDefinitionAndRenderReport = report => {
+    const {data, reportType: type} = report;
+
+    if (
+      type === 'process' &&
+      (this.isEmpty(data.processDefinitionKey) || this.isEmpty(data.processDefinitionVersion))
+    ) {
+      return this.buildInstructionMessage('a Process Definition');
+    } else if (
+      type === 'decision' &&
+      (this.isEmpty(data.decisionDefinitionKey) || this.isEmpty(data.decisionDefinitionVersion))
+    ) {
+      return this.buildInstructionMessage('a Decision Definition');
+    } else if (!type) {
+      return this.buildInstructionMessage('a Definition');
     } else {
       return this.checkViewAndRenderReport(report);
     }
@@ -257,6 +268,8 @@ export default class ReportView extends React.Component {
         };
         break;
     }
+
+    config.props.reportType = this.props.report.reportType;
 
     switch (data.view.property) {
       case 'frequency':

@@ -27,14 +27,15 @@ export default {
           .do(({classList}) => classList.add('ColumnRearrangement__draggedColumn'))
           .usingEvent(evt);
 
-        const {result, data} = this.props.report;
-        const currentHead = processRawData(
-          result,
-          data.configuration.excludedColumns,
-          data.configuration.columnOrder
-        ).head;
+        const {result, data, reportType} = this.props.report;
+        const currentHead = processRawData({
+          data: result,
+          excludedColumns: data.configuration.excludedColumns,
+          columnOrder: data.configuration.columnOrder,
+          reportType
+        }).head;
 
-        this.columnGroups = flatten(currentHead.map(toColumnGroup));
+        this.columnGroups = currentHead.reduce(processRawData.flatten(), []);
         this.dragGroup = this.columnGroups[this.dragIdx];
 
         this.preview = createDragPreview(this.dragIdx, evt);
@@ -108,16 +109,18 @@ export default {
           this.props.change('columnOrder')(
             list.reduce(
               (orders, entry, idx) => {
-                if (this.columnGroups[idx]) {
-                  // if column belongs to group 1, it is a variable column
+                if (this.columnGroups[idx] === 'Input Variables') {
+                  orders.inputVariables.push(entry);
+                } else if (this.columnGroups[idx] === 'Output Variables') {
+                  orders.outputVariables.push(entry);
+                } else if (this.columnGroups[idx] === 'Variables') {
                   orders.variables.push(entry);
                 } else {
-                  // otherwise, it is not a variable column
-                  orders.processInstanceProps.push(entry);
+                  orders.instanceProps.push(entry);
                 }
                 return orders;
               },
-              {processInstanceProps: [], variables: []}
+              {instanceProps: [], variables: [], inputVariables: [], outputVariables: []}
             )
           );
         }
@@ -200,18 +203,4 @@ function createDragPreview(idx, evt) {
   document.body.addEventListener('mouseup', stopDrag);
 
   return preview;
-}
-
-function toColumnGroup(column) {
-  if (column.columns) {
-    // nested column, map entries to column group 1
-    return column.columns.map(() => 1);
-  } else {
-    // non-nested column is in column group 0
-    return 0;
-  }
-}
-
-function flatten(nestedArray) {
-  return [].concat(...nestedArray);
 }

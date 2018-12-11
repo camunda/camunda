@@ -2,6 +2,7 @@ import React from 'react';
 import classnames from 'classnames';
 import ReactTable from 'react-table';
 import {Button} from 'components';
+import {processRawData} from 'services';
 
 import './Table.scss';
 
@@ -45,17 +46,32 @@ export default class Table extends React.Component {
           showPaginationBottom={true}
           showPageSizeOptions={false}
           minRows={0}
-          sortable={!!updateSorting}
-          sorted={sorting ? [{id: sorting.by, desc: sorting.order === 'desc'}] : []}
+          sortable={false}
           multiSort={false}
           className={classnames('-striped', '-highlight', 'Table', {
             'Table__unscrollable-mode': disableReportScrolling
           })}
           noDataText="No data available"
           onResizedChange={this.updateResizedState}
-          onSortedChange={updateSorting || (() => {})}
           PreviousComponent={props => <Button {...props} />}
           NextComponent={props => <Button {...props} />}
+          getTheadThProps={(state, rowInfo, {id}) => ({
+            style: {
+              cursor: updateSorting ? 'pointer' : 'default',
+              boxShadow:
+                id === (sorting && sorting.by)
+                  ? `inset 0 ${sorting.order === 'desc' ? '-' : ''}3px 0 0 rgba(0,0,0,.6)`
+                  : 'none'
+            },
+            onClick: evt => {
+              if (evt.target.className !== 'rt-resizer' && updateSorting) {
+                updateSorting(
+                  id,
+                  sorting && sorting.by === id && sorting.order === 'asc' ? 'desc' : 'asc'
+                );
+              }
+            }
+          })}
         />
       </div>
     );
@@ -110,10 +126,10 @@ export default class Table extends React.Component {
 
   static formatColumns = (head, ctx = '') => {
     return head.map(elem => {
-      if (typeof elem === 'string') {
+      if (typeof elem === 'string' || elem.id) {
         return {
-          Header: elem,
-          accessor: convertHeaderNameToAccessor(ctx + elem),
+          Header: elem.label || elem,
+          accessor: convertHeaderNameToAccessor(ctx + (elem.id || elem)),
           minWidth: 100
         };
       }
@@ -125,7 +141,7 @@ export default class Table extends React.Component {
   };
 
   static formatData = (head, body) => {
-    const flatHead = head.reduce(flatten(), []);
+    const flatHead = head.reduce(processRawData.flatten('', entry => entry.id || entry), []);
     return body.map(row => {
       const newRow = {};
       row.forEach((cell, columnIdx) => {
@@ -135,16 +151,6 @@ export default class Table extends React.Component {
     });
   };
 }
-
-const flatten = (ctx = '') => (flat, entry) => {
-  if (entry.columns) {
-    // nested column, flatten recursivly with augmented context (e.g. for providing a Variable prefix)
-    return flat.concat(entry.columns.reduce(flatten(ctx + entry.label), []));
-  } else {
-    // normal column, return column name prefixed with current context
-    return flat.concat(ctx + entry);
-  }
-};
 
 function convertHeaderNameToAccessor(name) {
   const joined = name

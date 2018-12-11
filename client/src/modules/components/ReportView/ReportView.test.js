@@ -30,6 +30,7 @@ jest.mock('./service', () => {
 it('should display a number if visualization is number', () => {
   const report = {
     combined: false,
+    reportType: 'process',
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
@@ -57,6 +58,7 @@ it('should display a number if visualization is number', () => {
 it('should provide an errorMessage property to the component', () => {
   const report = {
     combined: false,
+    reportType: 'process',
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
@@ -82,6 +84,7 @@ it('should provide an errorMessage property to the component', () => {
 it('should instruct to add a process definition key if not available', () => {
   const report = {
     combined: false,
+    reportType: 'process',
     data: {
       processDefinitionKey: '',
       processDefinitionVersion: '1',
@@ -96,16 +99,17 @@ it('should instruct to add a process definition key if not available', () => {
     result: 1234
   };
 
-  const node = shallow(<ReportView report={report} />);
+  const node = shallow(<ReportView report={report} type="process" />);
   node.setState({
     loaded: true
   });
-  expect(node.find('ReportBlankSlate').prop('message')).toContain('Process definition');
+  expect(node.find('ReportBlankSlate').prop('message')).toContain('Process Definition');
 });
 
 it('should instruct to add a process definition version if not available', () => {
   const report = {
     combined: false,
+    reportType: 'process',
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '',
@@ -120,16 +124,17 @@ it('should instruct to add a process definition version if not available', () =>
     result: 1234
   };
 
-  const node = shallow(<ReportView report={report} />);
+  const node = shallow(<ReportView report={report} type="process" />);
   node.setState({
     loaded: true
   });
-  expect(node.find('ReportBlankSlate').prop('message')).toContain('Process definition');
+  expect(node.find('ReportBlankSlate').prop('message')).toContain('Process Definition');
 });
 
 it('should instruct to add view option if not available', () => {
   const report = {
     combined: false,
+    reportType: 'process',
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
@@ -152,6 +157,7 @@ it('should instruct to add view option if not available', () => {
 it('should instruct to add group by option if not available', () => {
   const report = {
     combined: false,
+    reportType: 'process',
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
@@ -174,6 +180,7 @@ it('should instruct to add group by option if not available', () => {
 it('should instruct to add visualization option if not available', () => {
   const report = {
     combined: false,
+    reportType: 'process',
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
@@ -198,6 +205,7 @@ it('should instruct to add visualization option if not available', () => {
 it('should not add instruction for group by if operation is raw data', () => {
   const report = {
     combined: false,
+    reportType: 'process',
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
@@ -223,6 +231,7 @@ it('should not add instruction for group by if operation is raw data', () => {
 
 const exampleDurationReport = {
   combined: false,
+  reportType: 'process',
   data: {
     processDefinitionKey: 'aKey',
     processDefinitionVersion: '1',
@@ -284,6 +293,7 @@ it('should instruct to select one or more reports if no reports are selected for
 it('should include the instance count if indicated in the config', () => {
   const report = {
     combined: false,
+    reportType: 'process',
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
@@ -321,6 +331,15 @@ it('should pass on custom props if indicated by the visualization', () => {
   });
 
   expect(node.find(Table)).toHaveProp('someInfo', 'very important');
+});
+
+it('should pass the report Type to the visualization component', () => {
+  const node = shallow(<ReportView report={exampleDurationReport} type="process" />);
+  node.setState({
+    loaded: true
+  });
+
+  expect(node.find(Table)).toHaveProp('reportType', 'process');
 });
 
 describe('combined Report View', () => {

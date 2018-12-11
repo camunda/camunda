@@ -27,8 +27,8 @@ export async function deleteDashboard(id) {
 
 // REPORTS
 
-export async function createReport(combined, initialValues) {
-  const response = await post(`api/report/`, {combined: combined, reportType: 'process'});
+export async function createReport(combined, reportType, initialValues) {
+  const response = await post(`api/report/`, {combined: combined, reportType});
   const json = await response.json();
 
   if (initialValues) {

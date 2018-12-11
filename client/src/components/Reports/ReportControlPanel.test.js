@@ -4,7 +4,7 @@ import {shallow} from 'enzyme';
 import ReportControlPanel from './ReportControlPanel';
 import {extractProcessDefinitionName, reportConfig, getFlowNodeNames} from 'services';
 
-import {loadVariables} from './service';
+import * as service from './service';
 
 const flushPromises = () => new Promise(resolve => setImmediate(resolve));
 
@@ -35,11 +35,7 @@ jest.mock('services', () => {
   };
 });
 
-jest.mock('./service', () => {
-  return {
-    loadVariables: jest.fn().mockReturnValue([])
-  };
-});
+service.loadVariables = jest.fn().mockReturnValue([]);
 
 const data = {
   processDefinitionKey: 'aKey',
@@ -125,7 +121,7 @@ it('should load the variables of the process', () => {
 
   node.setProps({processDefinitionKey: 'bar', processDefinitionVersion: 'ALL'});
 
-  expect(loadVariables).toHaveBeenCalledWith('bar', 'ALL');
+  expect(service.loadVariables).toHaveBeenCalledWith('bar', 'ALL');
 });
 
 it('should include variables in the groupby options', () => {

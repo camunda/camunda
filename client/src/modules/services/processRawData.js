@@ -1,18 +1,70 @@
 import React from 'react';
 import {convertCamelToSpaces} from './formatters';
 
-export default function processRawData(
+function processDecisionRawData(data, columnOrder) {
+  const instanceProps = Object.keys(data[0]).filter(
+    entry => entry !== 'inputVariables' && entry !== 'outputVariables'
+  );
+  const inputVariables = Object.keys(data[0].inputVariables);
+  const outputVariables = Object.keys(data[0].outputVariables);
+
+  const body = data.map(instance => {
+    const propertyValues = instanceProps.map(entry => instance[entry]);
+    const inputVariableValues = inputVariables.map(entry => {
+      const value = instance.inputVariables[entry].value;
+      if (value === null) {
+        return '';
+      }
+      return value.toString();
+    });
+    const outputVariableValues = outputVariables.map(entry =>
+      instance.outputVariables[entry].values.join(', ')
+    );
+
+    return [...propertyValues, ...inputVariableValues, ...outputVariableValues];
+  });
+
+  const head = instanceProps.map(convertCamelToSpaces);
+
+  if (inputVariables.length > 0) {
+    head.push({
+      label: 'Input Variables',
+      columns: inputVariables.map(key => {
+        return {label: data[0].inputVariables[key].name, id: key};
+      })
+    });
+  }
+  if (outputVariables.length > 0) {
+    head.push({
+      label: 'Output Variables',
+      columns: outputVariables.map(key => {
+        return {label: data[0].outputVariables[key].name, id: key};
+      })
+    });
+  }
+
+  const {sortedHead, sortedBody} = sortColumns(head, body, columnOrder);
+
+  return {head: sortedHead, body: sortedBody};
+}
+
+export default function processRawData({
   data,
   excludedColumns = [],
-  columnOrder = {processInstanceProps: [], variables: []},
-  endpoints = {}
-) {
+  columnOrder = {instanceProps: [], variables: [], inputVariables: [], outputVariables: []},
+  endpoints = {},
+  reportType
+}) {
+  if (reportType === 'decision') {
+    return processDecisionRawData(data, columnOrder);
+  }
+
   const allColumnsLength = Object.keys(data[0]).length - 1 + Object.keys(data[0].variables).length;
   // If all columns is excluded return a message to enable one
   if (allColumnsLength === excludedColumns.length)
     return {head: ['No Data'], body: [['You need to enable at least one table column']]};
 
-  const processInstanceProps = Object.keys(data[0]).filter(
+  const instanceProps = Object.keys(data[0]).filter(
     entry => entry !== 'variables' && !excludedColumns.includes(entry)
   );
   const variableNames = Object.keys(data[0].variables).filter(
@@ -35,7 +87,7 @@ export default function processRawData(
   }
 
   const body = data.map(instance => {
-    let row = processInstanceProps.map(entry => applyBehavior(entry, instance));
+    let row = instanceProps.map(entry => applyBehavior(entry, instance));
     const variableValues = variableNames.map(entry => {
       const value = instance.variables[entry];
       if (value === null) {
@@ -48,7 +100,7 @@ export default function processRawData(
     return row;
   });
 
-  const head = processInstanceProps.map(convertCamelToSpaces);
+  const head = instanceProps.map(convertCamelToSpaces);
 
   if (variableNames.length > 0) {
     head.push({label: 'Variables', columns: variableNames});
@@ -69,24 +121,41 @@ function sortColumns(head, body, columnOrder) {
 function sortHead(head, columnOrder) {
   const sortedHeadWithoutVariables = head
     .filter(onlyNonNestedColumns)
-    .sort(byOrder(columnOrder.processInstanceProps));
+    .sort(byOrder(columnOrder.instanceProps));
 
-  const sortedHeadVariables = head.filter(onlyNestedColumns).map(entry => {
+  const sortedHeadVariables = sortNested(head, columnOrder, 'Variables', 'variables');
+  const sortedHeadInputVariables = sortNested(
+    head,
+    columnOrder,
+    'Input Variables',
+    'inputVariables'
+  );
+  const sortedHeadOutputVariables = sortNested(
+    head,
+    columnOrder,
+    'Output Variables',
+    'outputVariables'
+  );
+
+  return [
+    ...sortedHeadWithoutVariables,
+    ...sortedHeadVariables,
+    ...sortedHeadInputVariables,
+    ...sortedHeadOutputVariables
+  ];
+}
+
+function sortNested(head, columnOrder, label, accessor) {
+  return head.filter(entry => entry.label === label).map(entry => {
     return {
       ...entry,
-      columns: [...entry.columns].sort(byOrder(columnOrder.variables))
+      columns: [...entry.columns].sort(byOrder(columnOrder[accessor]))
     };
   });
-
-  return sortedHeadWithoutVariables.concat(sortedHeadVariables);
 }
 
 function onlyNonNestedColumns(entry) {
   return !entry.columns;
-}
-
-function onlyNestedColumns(entry) {
-  return entry.columns;
 }
 
 function byOrder(order) {
@@ -104,14 +173,27 @@ function sortRow(row, head, sortedHead) {
     .filter(belongingToNonNestedColumn(head))
     .map(valueForNewColumnPosition(head, sortedHead));
 
-  const sortedRowVariables = row.filter(belongingToNestedColumn(head)).map(
-    valueForNewColumnPosition(
-      getNestedColumnsForLastEntry(head), // nested columns for last head entry are variables
-      getNestedColumnsForLastEntry(sortedHead)
-    )
-  );
+  const sortedRowVariables = sortNestedRow(row, head, sortedHead, 'Variables');
+  const sortedRowInputVariables = sortNestedRow(row, head, sortedHead, 'Input Variables');
+  const sortedRowOutputVariables = sortNestedRow(row, head, sortedHead, 'Output Variables');
 
-  return sortedRowWithoutVariables.concat(sortedRowVariables);
+  return [
+    ...sortedRowWithoutVariables,
+    ...sortedRowVariables,
+    ...sortedRowInputVariables,
+    ...sortedRowOutputVariables
+  ];
+}
+
+function sortNestedRow(row, head, sortedHead, label) {
+  return row
+    .filter(belongingToColumnWithLabel(head, label))
+    .map(
+      valueForNewColumnPosition(
+        getNestedColumnsForEntryWithLabel(head, label),
+        getNestedColumnsForEntryWithLabel(sortedHead, label)
+      )
+    );
 }
 
 function belongingToNonNestedColumn(head) {
@@ -120,9 +202,10 @@ function belongingToNonNestedColumn(head) {
   };
 }
 
-function belongingToNestedColumn(head) {
+function belongingToColumnWithLabel(head, label) {
+  const flatHead = head.reduce(processRawData.flatten(), []);
   return function(_, idx) {
-    return !head[idx] || head[idx].columns;
+    return flatHead[idx] === label;
   };
 }
 
@@ -135,6 +218,17 @@ function valueForNewColumnPosition(head, sortedHead) {
   };
 }
 
-function getNestedColumnsForLastEntry(head) {
-  return head[head.length - 1].columns;
+function getNestedColumnsForEntryWithLabel(head, label) {
+  const column = head.find(column => column.label === label);
+  return column && column.columns;
 }
+
+processRawData.flatten = (ctx = '', suffix = () => '') => (flat, entry) => {
+  if (entry.columns) {
+    // nested column, flatten recursivly with augmented context
+    return flat.concat(entry.columns.reduce(processRawData.flatten(ctx + entry.label, suffix), []));
+  } else {
+    // normal column, return current context with optional suffix
+    return flat.concat(ctx + suffix(entry));
+  }
+};

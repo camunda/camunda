@@ -1,3 +1,5 @@
+import getDataKeys from './getDataKeys';
+
 export const visualization = {
   number: {data: 'number', label: 'Number'},
   table: {data: 'table', label: 'Table'},
@@ -143,10 +145,6 @@ export const view = {
     label: 'Flow Node Duration'
   }
 };
-
-// We need to do explicit Object coercion thanks to IE
-// eslint-disable-next-line no-new-object
-const getDataKeys = data => Object.keys(new Object(data));
 
 /**
  * Retrieves the first level subobject form the configuration that corresponds to the entry. This does not fetch any submenu entries.

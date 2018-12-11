@@ -2,23 +2,25 @@ import React from 'react';
 import {Popover, ProcessDefinitionSelection, Button, Dropdown, Input, Labeled} from 'components';
 
 import {Filter} from './filter';
-import {extractProcessDefinitionName, getFlowNodeNames, reportConfig, formatters} from 'services';
+import {
+  extractProcessDefinitionName,
+  getFlowNodeNames,
+  reportConfig,
+  formatters,
+  getDataKeys
+} from 'services';
 
 import {TargetValueComparison} from './targetValue';
 import {ProcessPart} from './ProcessPart';
 
-import {loadVariables} from './service';
+import {loadVariables, isChecked, update} from './service';
 
 import {Configuration} from './Configuration';
 
 import './ReportControlPanel.scss';
 
-const {view, groupBy, visualization, getLabelFor, isAllowed, getNext} = reportConfig;
+const {view, groupBy, visualization, getLabelFor, isAllowed} = reportConfig;
 const groupByVariablePageSize = 5;
-
-// We need to do explicit Object coercion thanks to IE
-// eslint-disable-next-line no-new-object
-const getDataKeys = data => Object.keys(new Object(data));
 
 export default class ReportControlPanel extends React.Component {
   constructor(props) {
@@ -367,45 +369,13 @@ export default class ReportControlPanel extends React.Component {
   };
 
   update = (type, data) => {
-    const update = {
-      [type]: data
-    };
-
-    const config = {
+    update({
+      type,
+      data,
       view: this.props.view,
       groupBy: this.props.groupBy,
       visualization: this.props.visualization,
-      ...update
-    };
-
-    const nextGroup = getNext(config.view);
-    if (nextGroup) {
-      config.groupBy = nextGroup;
-      update.groupBy = nextGroup;
-    }
-
-    const nextVis = getNext(config.view, config.groupBy);
-    if (nextVis) {
-      config.visualization = nextVis;
-      update.visualization = nextVis;
-    }
-    if (!isAllowed(config.view, config.groupBy)) {
-      update.groupBy = null;
-      update.visualization = null;
-    } else if (!isAllowed(config.view, config.groupBy, config.visualization)) {
-      update.visualization = null;
-    }
-
-    this.props.updateReport(update);
+      callback: this.props.updateReport
+    });
   };
-}
-
-function isChecked(data, current) {
-  return (
-    current &&
-    getDataKeys(data).every(
-      prop =>
-        JSON.stringify(current[prop]) === JSON.stringify(data[prop]) || Array.isArray(data[prop])
-    )
-  );
 }

@@ -106,6 +106,10 @@ jest.mock('./CombinedReportPanel', () => {
   return () => <div>CombinedReportPanel</div>;
 });
 
+jest.mock('./DecisionControlPanel', () => {
+  return () => <div>DecisionControlPanel</div>;
+});
+
 const props = {
   match: {params: {id: '1'}},
   location: {}
@@ -115,6 +119,7 @@ const sampleReport = {
   name: 'name',
   lastModifier: 'lastModifier',
   lastModified: '2017-11-11T11:11:11.1111+0200',
+  reportType: 'process',
   combined: false,
   data: {
     processDefinitionKey: null,
@@ -267,6 +272,20 @@ it('should contain a Control Panel in edit mode for a single report', () => {
   expect(node).toIncludeText('ControlPanel');
 });
 
+it('should contain a decision control panel in edit mode for dmn reports', () => {
+  props.match.params.viewMode = 'edit';
+
+  const report = {
+    ...sampleReport,
+    reportType: 'decision'
+  };
+
+  const node = mount(shallow(<Report {...props} />).get(0));
+  node.setState({loaded: true, reportResult, ...report});
+
+  expect(node).toIncludeText('DecisionControlPanel');
+});
+
 it('should not contain a Control Panel in non-edit mode', () => {
   const node = mount(shallow(<Report {...props} />).get(0));
   node.setState({loaded: true, reportResult, ...sampleReport});
@@ -405,6 +424,13 @@ it('should not show a csv download button when report is not a table', () => {
     },
     ...sampleReport
   });
+
+  expect(node.find('.Report__csv-download-button')).not.toBePresent();
+});
+
+it('should not show a csv download button when report is for decision', () => {
+  const node = mount(shallow(<Report {...props} />).get(0));
+  node.setState({loaded: true, reportResult, ...sampleReport, reportType: 'decision'});
 
   expect(node.find('.Report__csv-download-button')).not.toBePresent();
 });
@@ -801,7 +827,7 @@ describe('edit mode', async () => {
     node
       .find('ReportView')
       .prop('customProps')
-      .table.updateSorting([{id: 'columnId', desc: true}]);
+      .table.updateSorting('columnId', 'desc');
 
     expect(node.state().data.parameters.sorting).toEqual({by: 'columnId', order: 'desc'});
   });

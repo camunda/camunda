@@ -31,6 +31,7 @@ import {
 
 import {loadProcessDefinitions, checkDeleteConflict, incompatibleFilters} from 'services';
 import ReportControlPanel from './ReportControlPanel';
+import DecisionControlPanel from './DecisionControlPanel';
 import CombinedReportPanel from './CombinedReportPanel';
 
 import ColumnRearrangement from './ColumnRearrangement';
@@ -102,7 +103,7 @@ export default withErrorHandling(
       await this.props.mightFail(
         loadSingleReport(this.id),
         async response => {
-          const {name, lastModifier, lastModified, data, combined} = response;
+          const {name, lastModifier, lastModified, data, combined, reportType} = response;
 
           const reportResult = await getReportData(this.id);
           const stateData = data || (await this.initializeReport(combined));
@@ -115,6 +116,7 @@ export default withErrorHandling(
               data: stateData,
               originalData: {...stateData},
               reportResult: reportResult || {combined, data: stateData},
+              reportType,
               originalName: name,
               combined
             },
@@ -194,7 +196,7 @@ export default withErrorHandling(
           this.setState({loadingReportData: false});
         }
         if (!newReportResult) {
-          newReportResult = {combined, data};
+          newReportResult = {combined, reportType, data};
         }
         this.setState(state => ({
           reportResult: {
@@ -203,7 +205,7 @@ export default withErrorHandling(
           }
         }));
       } else {
-        let newReportResult = reportResult || {combined, data};
+        let newReportResult = reportResult || {combined, reportType, data};
         this.setState({
           reportResult: {
             ...newReportResult,
@@ -245,12 +247,13 @@ export default withErrorHandling(
     };
 
     allFieldsAreSelected = data => {
-      const {processDefinitionKey, view, groupBy, visualization} = data;
-      return this.isNotEmpty(processDefinitionKey) && view && groupBy && visualization;
+      const {processDefinitionKey, decisionDefinitionKey, view, groupBy, visualization} = data;
+      const key = processDefinitionKey || decisionDefinitionKey;
+      return this.isNotEmpty(key) && view && groupBy && visualization;
     };
 
     isNotEmpty = str => {
-      return str !== null && str.length > 0;
+      return str && str.length > 0;
     };
 
     save = async evt => {
@@ -260,7 +263,7 @@ export default withErrorHandling(
           {
             name: this.state.name,
             data: this.state.data,
-            reportType: 'process',
+            reportType: this.state.reportType,
             combined: this.state.combined
           },
           this.state.conflict !== null
@@ -328,9 +331,14 @@ export default withErrorHandling(
     };
 
     shouldShowCSVDownload = () => {
-      const {data, result} = this.state.reportResult;
+      const {reportType, reportResult: {data, result}} = this.state;
 
-      return data.visualization === 'table' && result && Object.keys(result).length > 0;
+      return (
+        data.visualization === 'table' &&
+        reportType === 'process' &&
+        result &&
+        Object.keys(result).length > 0
+      );
     };
 
     maxRawDataEntriesExceeded = () => {
@@ -371,6 +379,7 @@ export default withErrorHandling(
         reportResult,
         loadingReportData,
         combined,
+        reportType,
         redirectToReport
       } = this.state;
       return (
@@ -417,14 +426,25 @@ export default withErrorHandling(
             </div>
           </div>
 
-          {!combined && (
-            <ReportControlPanel
-              {...data}
-              reportResult={reportResult}
-              updateReport={this.updateReport}
-              updateConfiguration={this.updateConfiguration}
-            />
-          )}
+          {!combined &&
+            reportType === 'process' && (
+              <ReportControlPanel
+                {...data}
+                reportResult={reportResult}
+                updateReport={this.updateReport}
+                updateConfiguration={this.updateConfiguration}
+              />
+            )}
+
+          {!combined &&
+            reportType === 'decision' && (
+              <DecisionControlPanel
+                {...data}
+                reportResult={reportResult}
+                updateReport={this.updateReport}
+                updateConfiguration={this.updateConfiguration}
+              />
+            )}
 
           {this.maxRawDataEntriesExceeded() && (
             <Message type="warning">
@@ -469,14 +489,14 @@ export default withErrorHandling(
       );
     };
 
-    updateSorting = ([{id, desc}]) => {
+    updateSorting = (by, order) => {
       this.updateReport({
         parameters: {
           processPart:
             (this.state.data.parameters && this.state.data.parameters.processPart) || null,
           sorting: {
-            by: id,
-            order: desc ? 'desc' : 'asc'
+            by,
+            order
           }
         }
       });

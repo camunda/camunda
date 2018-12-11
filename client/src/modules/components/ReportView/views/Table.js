@@ -128,6 +128,7 @@ export default withErrorHandling(
         data,
         sorting,
         combined = false,
+        reportType,
         processInstanceCount,
         updateSorting
       } = this.props;
@@ -137,7 +138,13 @@ export default withErrorHandling(
       // raw data
       if (isRaw(data))
         return {
-          ...processRawData(data, excludedColumns, columnOrder, this.state.camundaEndpoints),
+          ...processRawData({
+            data,
+            excludedColumns,
+            columnOrder,
+            endpoints: this.state.camundaEndpoints,
+            reportType
+          }),
           updateSorting,
           sorting
         };
