@@ -27,6 +27,7 @@ import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.DeploymentRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.model.bpmn.instance.Message;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.clientapi.RecordType;
@@ -44,7 +45,12 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -191,6 +197,33 @@ public class CreateDeploymentTest {
     assertThat(deployedWorkflows)
         .extracting(s -> s.get(WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID))
         .contains("process", "process2");
+  }
+
+  @Test
+  public void shouldCreateDeploymentIfUnusedInvalidMessage() throws IOException {
+    // given
+    final BpmnModelInstance process = Bpmn.createExecutableProcess().startEvent().done();
+    process.getDefinitions().addChildElement(process.newInstance(Message.class));
+
+    // when
+    final ExecuteCommandResponse resp = apiRule.partitionClient().deployWithResponse(process);
+
+    // then
+    assertThat(resp.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATED);
+  }
+
+  @Test
+  public void shouldRejectDeploymentIfUsedInvalidMessage() throws IOException {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess().startEvent().intermediateCatchEvent("invalidmessage").done();
+
+    // when
+    final ExecuteCommandResponse resp = apiRule.partitionClient().deployWithResponse(process);
+
+    // then
+    assertThat(resp.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
   }
 
   @Test
