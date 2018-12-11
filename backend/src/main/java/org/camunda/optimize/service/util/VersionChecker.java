@@ -3,6 +3,8 @@ package org.camunda.optimize.service.util;
 import org.camunda.optimize.dto.engine.EngineVersionDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
@@ -16,6 +18,7 @@ import static org.camunda.optimize.service.metadata.Version.stripToPlainVersion;
 
 public class VersionChecker {
   private static List<String> supportedEngines = new ArrayList<>();
+  private static final Logger logger = LoggerFactory.getLogger(VersionChecker.class);
 
   static {
     supportedEngines.add("7.8.13");
@@ -31,7 +34,10 @@ public class VersionChecker {
         .request()
         .get();
     } catch (Exception e) {
-      throw new OptimizeRuntimeException(buildEngineConnectionRefusedErrorMessage(engineContext.getEngineAlias()));
+      // if we can't connect to the engine, we will just log an error and skip the check
+      String errorMessage = buildEngineConnectionRefusedErrorMessage(engineContext.getEngineAlias());
+      logger.error(errorMessage, e);
+      return;
     }
 
 

@@ -29,8 +29,11 @@ import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EV
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.STRING_VARIABLES;
 import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
 import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_OF_LAST_ENTITY;
+import static org.camunda.optimize.service.security.EngineAuthenticationProvider.CONNECTION_WAS_REFUSED_ERROR;
+import static org.camunda.optimize.service.security.EngineAuthenticationProvider.INVALID_CREDENTIALS_ERROR_MESSAGE;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -220,6 +223,39 @@ public class MultipleEngineSupportIT {
   }
 
   @Test
+  public void userIsAuthenticatedAgainstEachEngineEvenIfOneEngineIsDown() {
+    // given
+    addNonExistingSecondEngineToConfiguration();
+    defaultEngineRule.addUser("kermit", "kermit");
+    defaultEngineRule.grantUserOptimizeAccess("kermit");
+
+    // when
+    Response response = embeddedOptimizeRule.authenticateUserRequest("kermit", "kermit");
+
+    // then
+    assertThat(response.getStatus(), is(200));
+    String responseEntity = response.readEntity(String.class);
+    assertThat(responseEntity, is(notNullValue()));
+  }
+
+  @Test
+  public void userCantBeAuthenticatedAgainstAnyEngine() {
+    // given
+    addNonExistingSecondEngineToConfiguration();
+    defaultEngineRule.addUser("kermit", "kermit");
+    defaultEngineRule.grantUserOptimizeAccess("kermit");
+
+    // when
+    Response response = embeddedOptimizeRule.authenticateUserRequest("kermit", "wrongPassword");
+
+    // then
+    assertThat(response.getStatus(), is(401));
+    String responseEntity = response.readEntity(String.class);
+    assertThat(responseEntity, containsString(INVALID_CREDENTIALS_ERROR_MESSAGE));
+    assertThat(responseEntity, containsString(CONNECTION_WAS_REFUSED_ERROR));
+  }
+
+  @Test
   public void userIsAuthorizedAgainstEachEngine() {
     // given
     addSecondEngineToConfiguration();
@@ -324,12 +360,13 @@ public class MultipleEngineSupportIT {
     embeddedOptimizeRule.reloadConfiguration();
   }
 
-  private void addNonExistingSecondEngineToConfiguration() {
-    addEngineToConfiguration("notExistingEngine");
-  }
-
   private void addEngineToConfiguration(String engineName) {
     addEngineToConfiguration(engineName, REST_ENDPOINT, false, "", "");
+  }
+
+  private void addNonExistingSecondEngineToConfiguration() {
+    addEngineToConfiguration("notExistingEngine", "http://localhost:9999/engine-rest", false, "", "");
+    embeddedOptimizeRule.reloadConfiguration();
   }
 
   private void addSecureEngineToConfiguration() {

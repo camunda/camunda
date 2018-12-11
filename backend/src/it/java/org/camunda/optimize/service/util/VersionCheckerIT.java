@@ -13,9 +13,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
 
 public class VersionCheckerIT {
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule2 = new EmbeddedOptimizeRule("classpath:versionCheckContext.xml");
+  private EngineIntegrationRule engineRule = new EngineIntegrationRule();
+  private ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
+  private EmbeddedOptimizeRule embeddedOptimizeRule2 =
+    new EmbeddedOptimizeRule("classpath:versionCheckContext.xml");
 
   @Rule
   public RuleChain chain = RuleChain
@@ -24,7 +25,7 @@ public class VersionCheckerIT {
     .around(embeddedOptimizeRule2);
 
   @Test
-  public void engineVersionCantBeDetermined () throws Exception {
+  public void engineVersionCantBeDetermined() {
     embeddedOptimizeRule2.stopOptimize();
 
     try {
@@ -37,6 +38,7 @@ public class VersionCheckerIT {
 
     fail("Exception expected");
   }
+
   @After
   public void setContextBack() throws Exception {
     embeddedOptimizeRule2.stopOptimize();

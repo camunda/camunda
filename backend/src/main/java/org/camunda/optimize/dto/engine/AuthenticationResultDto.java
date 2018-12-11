@@ -2,8 +2,10 @@ package org.camunda.optimize.dto.engine;
 
 public class AuthenticationResultDto {
 
-  protected String authenticatedUser;
-  protected boolean isAuthenticated;
+  private String authenticatedUser;
+  private boolean isAuthenticated;
+  private String engineAlias;
+  private String errorMessage;
 
   public String getAuthenticatedUser() {
     return authenticatedUser;
@@ -19,5 +21,21 @@ public class AuthenticationResultDto {
 
   public void setAuthenticated(boolean authenticated) {
     isAuthenticated = authenticated;
+  }
+
+  public String getErrorMessage() {
+    return errorMessage;
+  }
+
+  public void setErrorMessage(String errorMessage) {
+    this.errorMessage = errorMessage;
+  }
+
+  public String getEngineAlias() {
+    return engineAlias;
+  }
+
+  public void setEngineAlias(String engineAlias) {
+    this.engineAlias = engineAlias;
   }
 }

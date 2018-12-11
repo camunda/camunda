@@ -16,8 +16,10 @@ import javax.ws.rs.core.Response;
 import java.io.UnsupportedEncodingException;
 import java.time.OffsetDateTime;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 
 public class AuthenticationServiceIT {
@@ -55,7 +57,9 @@ public class AuthenticationServiceIT {
 //    Response response = embeddedOptimizeRule.authenticateUserRequest("kermit", "kermit");
 //
 //    //then
-//    assertThat(response.getStatus(),is(500));
+//    assertThat(response.getStatus(),is(401));
+//    String errorMessage = response.readEntity(String.class);
+//    assertThat(errorMessage, containsString("The user with id 'kermit' is locked."));
 //  }
 
   @Test

@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.security;
 
+import org.camunda.optimize.dto.engine.AuthenticationResultDto;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
@@ -10,6 +11,9 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotAuthorizedException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class AuthenticationService {
@@ -38,14 +42,14 @@ public class AuthenticationService {
    */
   public String authenticateUser(CredentialsDto credentials) throws ForbiddenException, NotAuthorizedException {
    
-    boolean userAuthenticated = false;
-
+    List<AuthenticationResultDto> authenticationResults = new ArrayList<>();
     for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
 
-      boolean isValidUser = engineAuthenticationProvider.authenticate(credentials, engineContext);
-      userAuthenticated |= isValidUser;
+      AuthenticationResultDto authResult =
+        engineAuthenticationProvider.performAuthenticationCheck(credentials, engineContext);
+      authenticationResults.add(authResult);
 
-      if (isValidUser) {
+      if (authResult.isAuthenticated()) {
         boolean isAuthorized =
           applicationAuthorizationService.isAuthorizedToAccessOptimize(credentials.getUsername(), engineContext);
         if (isAuthorized) {
@@ -54,8 +58,10 @@ public class AuthenticationService {
 
       }
     }
-    
-    if (userAuthenticated) {
+
+    boolean userWasAuthenticated =
+      authenticationResults.stream().anyMatch(AuthenticationResultDto::isAuthenticated);
+    if (userWasAuthenticated) {
       // could not find an engine that grants optimize permission
       String errorMessage = "The user [" + credentials.getUsername() + "] is not authorized to "
           + "access Optimize. Please check the Camunda Admin configuration to change user " 
@@ -64,9 +70,24 @@ public class AuthenticationService {
       throw new ForbiddenException(errorMessage);
     } else {
       // could not find an engine that authenticates user
-      logger.error("Error during user authentication");
-      throw new NotAuthorizedException("Could not log you in. Please check your username and password.", "ignored");
+      String authenticationErrorMessage = createNotAuthenticatedErrorMessage(authenticationResults);
+      logger.error(authenticationErrorMessage);
+      throw new NotAuthorizedException(authenticationErrorMessage, "ignored");
     }
+  }
+
+  private String createNotAuthenticatedErrorMessage(List<AuthenticationResultDto> authenticationResults) {
+    String authenticationErrorMessage = "No engine is configured. Can't authenticate a user.";
+    if (!authenticationResults.isEmpty()) {
+      authenticationErrorMessage =
+        "Could not log you in. \n" +
+          "Error messages from engines: \n";
+      authenticationErrorMessage +=
+        authenticationResults.stream()
+          .map(r -> r.getEngineAlias() + ": " + r.getErrorMessage() + " \n")
+          .collect(Collectors.joining());
+    }
+    return authenticationErrorMessage;
   }
 
   private String createUserSession(CredentialsDto credentials, EngineContext engineContext) {

@@ -3,12 +3,14 @@ package org.camunda.optimize.service.security;
 import org.camunda.optimize.dto.engine.AuthenticationResultDto;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.ProcessingException;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -16,36 +18,66 @@ import javax.ws.rs.core.Response;
 @Component
 public class EngineAuthenticationProvider {
 
+  public static final String INVALID_CREDENTIALS_ERROR_MESSAGE =
+    "The provided credentials are invalid. Please check your username and password.";
+  public static final String CONNECTION_WAS_REFUSED_ERROR =
+    "Connection to engine was refused! Please check if the engine is still running.";
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   @Autowired
   private ConfigurationService configurationService;
 
-  public boolean authenticate(CredentialsDto credentialsDto, EngineContext engineContext) {
-    return performAuthenticationCheck(credentialsDto, engineContext);
-  }
-
-  private boolean performAuthenticationCheck(CredentialsDto credentialsDto, EngineContext engineContext) {
+  public AuthenticationResultDto performAuthenticationCheck(CredentialsDto credentialsDto, EngineContext engineContext) {
+    try {
       Response response = engineContext.getEngineClient()
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine(engineContext.getEngineAlias()))
         .path(configurationService.getUserValidationEndpoint())
         .request(MediaType.APPLICATION_JSON)
         .post(Entity.json(credentialsDto));
 
-      if (response.getStatus() == 200) {
-        AuthenticationResultDto responseEntity = response.readEntity(AuthenticationResultDto.class);
-        return responseEntity.isAuthenticated();
+      if (responseIsSuccessful(response)) {
+        AuthenticationResultDto authResult = response.readEntity(AuthenticationResultDto.class);
+        if (!authResult.isAuthenticated()) {
+          authResult.setEngineAlias(engineContext.getEngineAlias());
+          authResult.setErrorMessage(INVALID_CREDENTIALS_ERROR_MESSAGE);
+        }
+        return authResult;
       } else {
-        logger.error("Could not validate user [{}] against the engine [{}]. " +
+        logger.error(
+          "Could not validate user [{}] against the engine [{}]. " +
             "Maybe you did not provide a user or password or the user is locked",
           credentialsDto.getUsername(),
           engineContext.getEngineAlias()
         );
-
         // read Exception from the engine response
         // and rethrow it to forward the error message to the client
         // e.g when the user is locked, the error message will contain corresponding information
-        throw response.readEntity(RuntimeException.class);
+        Exception runtimeException = response.readEntity(RuntimeException.class);
+        return getAuthenticationResultFromError(credentialsDto, engineContext, runtimeException);
       }
+    } catch (ProcessingException e) {
+      String errorMessage =
+        String.format(
+          "Could not authenticated against engine [%s]. " + CONNECTION_WAS_REFUSED_ERROR,
+          engineContext.getEngineAlias()
+        );
+      OptimizeRuntimeException optimizeEx = new OptimizeRuntimeException(errorMessage, e);
+      return getAuthenticationResultFromError(credentialsDto, engineContext, optimizeEx);
+    }
+  }
+
+  private AuthenticationResultDto getAuthenticationResultFromError(CredentialsDto credentialsDto,
+                                                                   EngineContext engineContext, Exception exception) {
+
+    AuthenticationResultDto authResult = new AuthenticationResultDto();
+    authResult.setAuthenticated(false);
+    authResult.setAuthenticatedUser(credentialsDto.getUsername());
+    authResult.setEngineAlias(engineContext.getEngineAlias());
+    authResult.setErrorMessage(exception.getMessage());
+    return authResult;
+  }
+
+  private boolean responseIsSuccessful(Response response) {
+    return response.getStatus() < 300;
   }
 }
