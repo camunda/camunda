@@ -176,11 +176,9 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
         workflowInstanceKeys.add(instanceKey);
       }
 
-      if (version < 3) {
-        instanceKey = ZeebeTestUtil.startWorkflowInstance(client, "complexProcess",
-        "{\"clientId\": \"" + random.nextInt(10) + "\"\n}");
-        workflowInstanceKeys.add(instanceKey);
-      }
+      instanceKey = ZeebeTestUtil.startWorkflowInstance(client, "complexProcess",
+      "{\"clientId\": \"" + random.nextInt(10) + "\"\n}");
+      workflowInstanceKeys.add(instanceKey);
     }
   }
 
@@ -200,6 +198,9 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     super.deployVersion3();
     //deploy workflows v.3
     ZeebeTestUtil.deployWorkflow(client, "develop/demoProcess_v_3.bpmn");
+
+    ZeebeTestUtil.deployWorkflow(client, "develop/complexProcess_v_3.bpmn");
+
   }
 
   public void setClient(ZeebeClient client) {
