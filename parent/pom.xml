@@ -64,6 +64,7 @@
     <plugin.version.shade>3.2.1</plugin.version.shade>
     <plugin.version.surefire>2.22.1</plugin.version.surefire>
     <plugin.version.versions>2.7</plugin.version.versions>
+    <plugin.version.enforcer>3.0.0-M2</plugin.version.enforcer>
 
     <!-- maven extensions -->
     <extension.version.os-maven-plugin>1.6.1</extension.version.os-maven-plugin>
@@ -552,6 +553,30 @@
           </executions>
         </plugin>
 
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <version>${plugin.version.enforcer}</version>
+         <executions>
+            <execution>
+              <id>enforce-jdk-8</id>
+              <goals>
+                <goal>enforce</goal>
+              </goals>
+              <configuration>
+                <rules>
+                  <requireMavenVersion>
+                    <version>[3.3,)</version>
+                  </requireMavenVersion>
+                  <requireJavaVersion>
+                    <version>[1.8,1.9)</version>
+                  </requireJavaVersion>
+                </rules>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+
       </plugins>
 
     </pluginManagement>
@@ -580,6 +605,11 @@
       <plugin>
         <groupId>com.coveo</groupId>
         <artifactId>fmt-maven-plugin</artifactId>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
       </plugin>
 
       <!-- add jmh test sources to build -->
