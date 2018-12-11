@@ -7,7 +7,7 @@ import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext
 import Authentication from './Authentication';
 import Login from './Login';
 import Dashboard from './Dashboard';
-import Instances from './Instances';
+import InstancesContainer from './Instances/InstancesContainer';
 import Instance from './Instance';
 import GlobalStyles from './GlobalStyles';
 
@@ -25,7 +25,7 @@ export default function App(props) {
             <Route path="/login" component={Login} />
             <Authentication>
               <Route exact path="/" component={Dashboard} />
-              <Route exact path="/instances" component={Instances} />
+              <Route exact path="/instances" component={InstancesContainer} />
               <Route exact path="/instances/:id" component={Instance} />
             </Authentication>
           </Switch>

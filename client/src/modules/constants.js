@@ -64,6 +64,8 @@ export const DEFAULT_SORTING = {
   sortOrder: SORT_ORDER.DESC
 };
 
+export const DEFAULT_MAX_RESULTS = 50;
+
 export const PANE_ID = {
   TOP: 'TOP',
   BOTTOM: 'BOTTOM',

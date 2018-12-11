@@ -91,17 +91,30 @@ export function getEmptyDiagramMessage(name) {
    To see a diagram, select a single version.`;
 }
 
-export function getActivityIds(nodes) {
-  let activityIds = [];
+export function getTaskNodes(nodes) {
+  let taskNodes = [];
 
   for (let node in nodes) {
-    if (nodes[node].$type === 'bpmn:ServiceTask') {
-      activityIds.push({
-        value: nodes[node].id,
-        label: nodes[node].name || 'Unnamed task'
+    if (nodes[node].type === 'bpmn:ServiceTask') {
+      taskNodes.push({
+        id: nodes[node].id,
+        name: nodes[node].name || 'Unnamed task'
       });
     }
   }
 
-  return activityIds;
+  return taskNodes;
+}
+
+export function getWorkflowName(workflow) {
+  return workflow ? workflow.name || workflow.bpmnProcessId : 'Workflow';
+}
+
+export function getDiagramNodes(nodes = {}) {
+  const result = [];
+  for (let node in nodes) {
+    const item = nodes[node];
+    result.push({type: item['$type'], id: item.id, name: item.name});
+  }
+  return result;
 }

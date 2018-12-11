@@ -112,6 +112,7 @@ export function parseFilterForRequest(filter) {
 }
 
 export function getWorkflowByVersion(workflow, version) {
+  if (!workflow || version === 'all') return {};
   return workflow.workflows.find(item => {
     return String(item.version) === String(version);
   });
@@ -134,7 +135,7 @@ function trimmFilter(filter) {
  * @param {Object} filter
  * @param {Object} allWorkflows all the available workflows
  */
-export function getFilterWithWorkflowIds(filter, allWorkflows = {}) {
+export function getFilterWithWorkflowIds(filter = {}, allWorkflows = {}) {
   const {workflow, version, ...otherFields} = filter;
   let workflowIds = [];
   let newFilter = {...otherFields};
