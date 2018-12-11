@@ -47,7 +47,11 @@ public class JobRunnableFactory {
           job.getKey(),
           job.getType(),
           e);
-      jobClient.newFailCommand(job.getKey()).retries(job.getRetries() - 1).send();
+      jobClient
+          .newFailCommand(job.getKey())
+          .retries(job.getRetries() - 1)
+          .errorMessage(e.getMessage())
+          .send();
     } finally {
       doneCallback.run();
     }

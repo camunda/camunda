@@ -261,11 +261,12 @@ public class JobWorkerTest {
   public void shouldMarkJobAsFailedAndRetryIfHandlerThrowsException() {
     // given
     final long jobKey = createJobOfType("foo");
+    final String failureMessage = "expected failure";
 
     final RecordingJobHandler jobHandler =
         new RecordingJobHandler(
             (c, j) -> {
-              throw new RuntimeException("expected failure");
+              throw new RuntimeException(failureMessage);
             },
             (c, j) -> c.newCompleteCommand(j.getKey()).send().join());
 
@@ -284,7 +285,10 @@ public class JobWorkerTest {
     assertThat(jobHandler.getHandledJobs())
         .extracting(ActivatedJob::getKey)
         .containsExactly(jobKey, jobKey);
-    assertThat(jobRecords(JobIntent.FAILED).exists()).isTrue();
+
+    final Record<JobRecordValue> failedJob = jobRecords(JobIntent.FAILED).getFirst();
+    assertThat(failedJob.getValue()).hasErrorMessage(failureMessage);
+
     waitUntil(() -> jobRecords(JobIntent.COMPLETED).exists());
   }
 
