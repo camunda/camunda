@@ -2,6 +2,7 @@
 
 exports[`DropdownMenu should match snapshot 1`] = `
 <Themed(styled.ul)
+  data-test="menu"
   placement="top"
 >
   <Themed(styled.li)
