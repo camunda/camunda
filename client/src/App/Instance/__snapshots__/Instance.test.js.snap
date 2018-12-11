@@ -2,7 +2,7 @@
 
 exports[`Instance rendering should display a Header, DiagramPanel and Copyright 1`] = `
 <Fragment>
-  <HeaderSharedState
+  <WithSelection(HeaderSharedState)
     detail={
       <InstanceDetail
         instance={
@@ -10,43 +10,55 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
             "activities": Array [
               Object {
                 "activityId": "foo",
-                "endDate": "2018-07-16T09:30:56.276Z",
+                "endDate": "2018-10-10T09:20:38.658Z",
                 "id": "foo",
-                "startDate": "2018-07-16T09:30:56.276Z",
+                "startDate": "2018-10-10T09:20:38.658Z",
                 "state": "COMPLETED",
               },
               Object {
                 "activityId": "bar",
-                "endDate": "2018-07-16T09:30:56.276Z",
+                "endDate": "2018-10-10T09:20:38.658Z",
                 "id": "bar",
-                "startDate": "2018-07-16T09:30:56.276Z",
+                "startDate": "2018-10-10T09:20:38.658Z",
                 "state": "COMPLETED",
               },
               Object {
                 "activityId": "taskA",
-                "endDate": null,
+                "endDate": "2018-10-10T09:20:38.658Z",
                 "id": "4294983744",
-                "startDate": "2018-07-16T09:30:56.276Z",
+                "startDate": "2018-10-10T09:20:38.658Z",
                 "state": "INCIDENT",
               },
             ],
-            "bpmnProcessId": "demoProcess",
+            "bpmnProcessId": "someKey",
             "endDate": null,
             "id": "4294980768",
             "incidents": Array [
               Object {
                 "activityId": "taskA",
                 "activityInstanceId": "4294983744",
-                "errorMessage": "Could not apply output mappings: Task was completed without payload",
-                "errorType": "IO_MAPPING_ERROR",
+                "errorMessage": "",
+                "errorType": "",
                 "id": "4295763008",
+                "jobId": "jobId_0",
                 "state": "ACTIVE",
-                "taskId": null,
               },
             ],
-            "startDate": "2018-06-18T08:44:52.240+0000",
+            "operations": Array [
+              Object {
+                "endDate": "2018-10-10T09:20:38.661Z",
+                "errorMessage": "string",
+                "startDate": "2018-10-10T09:20:38.661Z",
+                "state": "SCHEDULED",
+                "type": "UPDATE_RETRIES",
+              },
+            ],
+            "sequenceFlows": Array [],
+            "startDate": "2018-06-21",
             "state": "ACTIVE",
-            "workflowId": "1",
+            "workflowId": "2",
+            "workflowName": "someWorkflowName",
+            "workflowVersion": 1,
           }
         }
       />
@@ -82,43 +94,55 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
             "activities": Array [
               Object {
                 "activityId": "foo",
-                "endDate": "2018-07-16T09:30:56.276Z",
+                "endDate": "2018-10-10T09:20:38.658Z",
                 "id": "foo",
-                "startDate": "2018-07-16T09:30:56.276Z",
+                "startDate": "2018-10-10T09:20:38.658Z",
                 "state": "COMPLETED",
               },
               Object {
                 "activityId": "bar",
-                "endDate": "2018-07-16T09:30:56.276Z",
+                "endDate": "2018-10-10T09:20:38.658Z",
                 "id": "bar",
-                "startDate": "2018-07-16T09:30:56.276Z",
+                "startDate": "2018-10-10T09:20:38.658Z",
                 "state": "COMPLETED",
               },
               Object {
                 "activityId": "taskA",
-                "endDate": null,
+                "endDate": "2018-10-10T09:20:38.658Z",
                 "id": "4294983744",
-                "startDate": "2018-07-16T09:30:56.276Z",
+                "startDate": "2018-10-10T09:20:38.658Z",
                 "state": "INCIDENT",
               },
             ],
-            "bpmnProcessId": "demoProcess",
+            "bpmnProcessId": "someKey",
             "endDate": null,
             "id": "4294980768",
             "incidents": Array [
               Object {
                 "activityId": "taskA",
                 "activityInstanceId": "4294983744",
-                "errorMessage": "Could not apply output mappings: Task was completed without payload",
-                "errorType": "IO_MAPPING_ERROR",
+                "errorMessage": "",
+                "errorType": "",
                 "id": "4295763008",
+                "jobId": "jobId_0",
                 "state": "ACTIVE",
-                "taskId": null,
               },
             ],
-            "startDate": "2018-06-18T08:44:52.240+0000",
+            "operations": Array [
+              Object {
+                "endDate": "2018-10-10T09:20:38.661Z",
+                "errorMessage": "string",
+                "startDate": "2018-10-10T09:20:38.661Z",
+                "state": "SCHEDULED",
+                "type": "UPDATE_RETRIES",
+              },
+            ],
+            "sequenceFlows": Array [],
+            "startDate": "2018-06-21",
             "state": "ACTIVE",
-            "workflowId": "1",
+            "workflowId": "2",
+            "workflowName": "someWorkflowName",
+            "workflowVersion": 1,
           }
         }
         onFlowNodeSelected={[Function]}
@@ -157,43 +181,55 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
             "activities": Array [
               Object {
                 "activityId": "foo",
-                "endDate": "2018-07-16T09:30:56.276Z",
+                "endDate": "2018-10-10T09:20:38.658Z",
                 "id": "foo",
-                "startDate": "2018-07-16T09:30:56.276Z",
+                "startDate": "2018-10-10T09:20:38.658Z",
                 "state": "COMPLETED",
               },
               Object {
                 "activityId": "bar",
-                "endDate": "2018-07-16T09:30:56.276Z",
+                "endDate": "2018-10-10T09:20:38.658Z",
                 "id": "bar",
-                "startDate": "2018-07-16T09:30:56.276Z",
+                "startDate": "2018-10-10T09:20:38.658Z",
                 "state": "COMPLETED",
               },
               Object {
                 "activityId": "taskA",
-                "endDate": null,
+                "endDate": "2018-10-10T09:20:38.658Z",
                 "id": "4294983744",
-                "startDate": "2018-07-16T09:30:56.276Z",
+                "startDate": "2018-10-10T09:20:38.658Z",
                 "state": "INCIDENT",
               },
             ],
-            "bpmnProcessId": "demoProcess",
+            "bpmnProcessId": "someKey",
             "endDate": null,
             "id": "4294980768",
             "incidents": Array [
               Object {
                 "activityId": "taskA",
                 "activityInstanceId": "4294983744",
-                "errorMessage": "Could not apply output mappings: Task was completed without payload",
-                "errorType": "IO_MAPPING_ERROR",
+                "errorMessage": "",
+                "errorType": "",
                 "id": "4295763008",
+                "jobId": "jobId_0",
                 "state": "ACTIVE",
-                "taskId": null,
               },
             ],
-            "startDate": "2018-06-18T08:44:52.240+0000",
+            "operations": Array [
+              Object {
+                "endDate": "2018-10-10T09:20:38.661Z",
+                "errorMessage": "string",
+                "startDate": "2018-10-10T09:20:38.661Z",
+                "state": "SCHEDULED",
+                "type": "UPDATE_RETRIES",
+              },
+            ],
+            "sequenceFlows": Array [],
+            "startDate": "2018-06-21",
             "state": "ACTIVE",
-            "workflowId": "1",
+            "workflowId": "2",
+            "workflowName": "someWorkflowName",
+            "workflowVersion": 1,
           }
         }
         onActivityInstanceSelected={[Function]}

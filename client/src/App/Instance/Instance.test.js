@@ -1,7 +1,14 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
+import {
+  mockResolvedAsyncFn,
+  flushPromises,
+  createInstance,
+  createIncident,
+  createActivity
+} from 'modules/testUtils';
+
 import {
   INSTANCE_STATE,
   ACTIVITY_STATE,
@@ -20,49 +27,33 @@ import InstanceHistory from './InstanceHistory';
 const xmlMock = '<foo />';
 api.fetchWorkflowXML = mockResolvedAsyncFn(xmlMock);
 
-const INSTANCE = {
+const FOO_ACTIVITY = createActivity({
+  id: 'foo',
+  activityId: 'foo',
+  state: ACTIVITY_STATE.COMPLETED
+});
+const BAR_ACTIVITY = createActivity({
+  id: 'bar',
+  activityId: 'bar',
+  state: ACTIVITY_STATE.COMPLETED
+});
+const TASKA_ACTIVITY = createActivity({
+  id: '4294983744',
+  activityId: 'taskA',
+  state: ACTIVITY_STATE.INCIDENT
+});
+
+const INCIDENT = createIncident({
+  id: '4295763008',
+  activityId: 'taskA',
+  activityInstanceId: '4294983744'
+});
+const INSTANCE = createInstance({
   id: '4294980768',
-  workflowId: '1',
-  startDate: '2018-06-18T08:44:52.240+0000',
-  endDate: null,
   state: INSTANCE_STATE.ACTIVE,
-  bpmnProcessId: 'demoProcess',
-  incidents: [
-    {
-      id: '4295763008',
-      errorType: 'IO_MAPPING_ERROR',
-      errorMessage:
-        'Could not apply output mappings: Task was completed without payload',
-      state: INSTANCE_STATE.ACTIVE,
-      activityId: 'taskA',
-      activityInstanceId: '4294983744',
-      taskId: null
-    }
-  ],
-  activities: [
-    {
-      activityId: 'foo',
-      endDate: '2018-07-16T09:30:56.276Z',
-      id: 'foo',
-      startDate: '2018-07-16T09:30:56.276Z',
-      state: ACTIVITY_STATE.COMPLETED
-    },
-    {
-      activityId: 'bar',
-      endDate: '2018-07-16T09:30:56.276Z',
-      id: 'bar',
-      startDate: '2018-07-16T09:30:56.276Z',
-      state: ACTIVITY_STATE.COMPLETED
-    },
-    {
-      activityId: 'taskA',
-      endDate: null,
-      id: '4294983744',
-      startDate: '2018-07-16T09:30:56.276Z',
-      state: ACTIVITY_STATE.INCIDENT
-    }
-  ]
-};
+  incidents: [INCIDENT],
+  activities: [FOO_ACTIVITY, BAR_ACTIVITY, TASKA_ACTIVITY]
+});
 
 // mock api
 api.fetchWorkflowInstance = mockResolvedAsyncFn(INSTANCE);
@@ -82,7 +73,7 @@ const component = (
     match={{params: {id: INSTANCE.id}, isExact: true, path: '', url: ''}}
   />
 );
-describe.skip('Instance', () => {
+describe('Instance', () => {
   beforeEach(() => {
     api.fetchWorkflowInstance.mockClear();
   });
