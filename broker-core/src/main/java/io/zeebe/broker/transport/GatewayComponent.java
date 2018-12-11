@@ -32,7 +32,7 @@ public class GatewayComponent implements Component {
       try {
         final Gateway gateway = new Gateway(config);
         gateway.start();
-        context.addResourceReleasingDelegate(gateway::stop);
+        context.setGatewayResourceReleasingDelegate(gateway::stop);
       } catch (final IOException e) {
         throw new RuntimeException("Gateway was not able to start", e);
       }

@@ -15,57 +15,105 @@
  */
 package io.zeebe.broker.it.shutdown;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.zeebe.broker.Broker;
-import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.transport.TransportServiceNames;
+import io.zeebe.broker.transport.controlmessage.AbstractControlMessageHandler;
+import io.zeebe.broker.transport.controlmessage.ControlMessageHandlerManager;
+import io.zeebe.client.api.ZeebeFuture;
+import io.zeebe.client.api.commands.Workflow;
+import io.zeebe.client.api.commands.Workflows;
+import io.zeebe.client.impl.events.WorkflowImpl;
+import io.zeebe.protocol.clientapi.ControlMessageType;
+import io.zeebe.protocol.impl.data.repository.ListWorkflowsResponse;
+import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.transport.ServerOutput;
+import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.ServerSocketBinding;
-import io.zeebe.util.FileUtil;
+import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import java.io.File;
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import org.assertj.core.util.Files;
-import org.junit.After;
-import org.junit.Before;
+import java.util.concurrent.CyclicBarrier;
+import org.agrona.DirectBuffer;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 
 public class BrokerShutdownTest {
 
   private static final ServiceName<Void> BLOCK_BROKER_SERVICE_NAME =
       ServiceName.newServiceName("blockService", Void.class);
+  private static final ServiceName<ControllableListWorkflowsMessageHandler>
+      CONTROLLABLE_MESSAGE_HANDLER_SERVICE_NAME =
+          ServiceName.newServiceName(
+              "controllableMessageHandlerService", ControllableListWorkflowsMessageHandler.class);
 
-  @Rule public ExpectedException exception = ExpectedException.none();
-  private File brokerBase;
-  private Broker broker;
+  private static final Workflow EXPECTED_WORKFLOW =
+      new WorkflowImpl(123, "test-process", 34, "process.bpmn");
 
-  @Before
-  public void setup() {
-    brokerBase = Files.newTemporaryFolder();
-    broker = startBrokerWithBlockingService(brokerBase);
-  }
+  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
 
-  @After
-  public void tearDown() throws IOException {
-    FileUtil.deleteFolder(brokerBase.getAbsolutePath());
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
+
+  @Rule public Timeout timeout = Timeout.seconds(60);
+
+  @Test
+  public void shouldCompleteRequestBeforeShutdown() {
+    // given
+    final ControllableListWorkflowsMessageHandlerService service =
+        new ControllableListWorkflowsMessageHandlerService();
+    brokerRule.installService(
+        serviceContainer ->
+            serviceContainer
+                .createService(CONTROLLABLE_MESSAGE_HANDLER_SERVICE_NAME, service)
+                .dependency(
+                    TransportServiceNames.serverTransport(
+                        TransportServiceNames.CLIENT_API_SERVER_NAME),
+                    service.getServerTransportInjector())
+                .dependency(
+                    TransportServiceNames.CONTROL_MESSAGE_HANDLER_MANAGER,
+                    service.getHandlerManagerInjector()));
+
+    final ZeebeFuture<Workflows> future = clientRule.getClient().newWorkflowRequest().send();
+    service.get().await();
+
+    // when
+    brokerRule.stopBroker();
+
+    // then
+    assertThat(future.join().getWorkflows()).containsExactly(EXPECTED_WORKFLOW);
   }
 
   @Test
   public void shouldReleaseSockets() {
     // given
+    brokerRule.installService(
+        serviceContainer ->
+            serviceContainer
+                .createService(BLOCK_BROKER_SERVICE_NAME, new BlockingService())
+                .dependency(
+                    TransportServiceNames.bufferingServerTransport(
+                        TransportServiceNames.MANAGEMENT_API_SERVER_NAME))
+                .dependency(
+                    TransportServiceNames.serverTransport(
+                        TransportServiceNames.CLIENT_API_SERVER_NAME))
+                .dependency(
+                    TransportServiceNames.serverTransport(
+                        TransportServiceNames.REPLICATION_API_SERVER_NAME)));
+
+    final Broker broker = brokerRule.getBroker();
     broker.getBrokerContext().setCloseTimeout(Duration.ofSeconds(1));
 
     // when
@@ -86,34 +134,6 @@ public class BrokerShutdownTest {
     binding.close();
   }
 
-  private Broker startBrokerWithBlockingService(final File brokerBase) {
-    final BrokerCfg brokerCfg = new BrokerCfg();
-    EmbeddedBrokerRule.assignSocketAddresses(brokerCfg);
-    final Broker broker = new Broker(brokerCfg, brokerBase.getAbsolutePath(), null);
-
-    final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();
-
-    try {
-      // blocks on shutdown
-      serviceContainer
-          .createService(BLOCK_BROKER_SERVICE_NAME, new BlockingService())
-          .dependency(
-              TransportServiceNames.bufferingServerTransport(
-                  TransportServiceNames.MANAGEMENT_API_SERVER_NAME))
-          .dependency(
-              TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME))
-          .dependency(
-              TransportServiceNames.serverTransport(
-                  TransportServiceNames.REPLICATION_API_SERVER_NAME))
-          .install()
-          .get(25, TimeUnit.SECONDS);
-    } catch (InterruptedException | ExecutionException | TimeoutException e) {
-      throw new RuntimeException(
-          "System partition not installed into the container withing 25 seconds.");
-    }
-    return broker;
-  }
-
   private class BlockingService implements Service<Void> {
     @Override
     public void start(ServiceStartContext startContext) {}
@@ -127,6 +147,80 @@ public class BrokerShutdownTest {
     @Override
     public Void get() {
       return null;
+    }
+  }
+
+  class ControllableListWorkflowsMessageHandlerService
+      implements Service<ControllableListWorkflowsMessageHandler> {
+
+    private Injector<ControlMessageHandlerManager> handlerManagerInjector = new Injector<>();
+    private Injector<ServerTransport> serverTransportInjector = new Injector<>();
+    private ControllableListWorkflowsMessageHandler handler;
+
+    @Override
+    public void start(ServiceStartContext startContext) {
+      handler =
+          new ControllableListWorkflowsMessageHandler(
+              serverTransportInjector.getValue().getOutput());
+      handlerManagerInjector.getValue().registerHandler(handler);
+    }
+
+    @Override
+    public ControllableListWorkflowsMessageHandler get() {
+      return handler;
+    }
+
+    Injector<ControlMessageHandlerManager> getHandlerManagerInjector() {
+      return handlerManagerInjector;
+    }
+
+    Injector<ServerTransport> getServerTransportInjector() {
+      return serverTransportInjector;
+    }
+  }
+
+  class ControllableListWorkflowsMessageHandler extends AbstractControlMessageHandler {
+
+    private CyclicBarrier barrier = new CyclicBarrier(2);
+
+    ControllableListWorkflowsMessageHandler(ServerOutput output) {
+      super(output);
+    }
+
+    @Override
+    public ControlMessageType getMessageType() {
+      return ControlMessageType.LIST_WORKFLOWS;
+    }
+
+    @Override
+    public void handle(
+        ActorControl actor,
+        int partitionId,
+        DirectBuffer requestBuffer,
+        long requestId,
+        int requestStreamId) {
+      await();
+      actor.runDelayed(
+          Duration.ofMillis(250),
+          () -> {
+            final ListWorkflowsResponse response = new ListWorkflowsResponse();
+            response
+                .getWorkflows()
+                .add()
+                .setBpmnProcessId(EXPECTED_WORKFLOW.getBpmnProcessId())
+                .setResourceName(EXPECTED_WORKFLOW.getResourceName())
+                .setVersion(EXPECTED_WORKFLOW.getVersion())
+                .setWorkflowKey(EXPECTED_WORKFLOW.getWorkflowKey());
+            sendResponse(actor, requestStreamId, requestId, response);
+          });
+    }
+
+    void await() {
+      try {
+        barrier.await();
+      } catch (Exception e) {
+        throw new RuntimeException("Failed to wait for barrier", e);
+      }
     }
   }
 }

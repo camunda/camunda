@@ -35,6 +35,7 @@ import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceBuilder;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
@@ -54,6 +55,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.assertj.core.util.Files;
 import org.junit.rules.ExternalResource;
@@ -311,6 +313,18 @@ public class EmbeddedBrokerRule extends ExternalResource {
     serviceContainer.removeService(accessorServiceName);
 
     return injector.getValue();
+  }
+
+  public <T> void installService(
+      Function<ServiceContainer, ServiceBuilder<T>> serviceBuilderFactory) {
+    final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();
+    final ServiceBuilder<T> serviceBuilder = serviceBuilderFactory.apply(serviceContainer);
+
+    try {
+      serviceBuilder.install().get(10, TimeUnit.SECONDS);
+    } catch (InterruptedException | ExecutionException | TimeoutException e) {
+      throw new RuntimeException("Could not install service: " + serviceBuilder.getName(), e);
+    }
   }
 
   public <T> void removeService(final ServiceName<T> name) {
