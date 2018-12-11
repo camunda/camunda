@@ -55,14 +55,15 @@ public class ProcessDefinitionReader {
     return this.getProcessDefinitions(null, false);
   }
 
-  public List<ProcessDefinitionOptimizeDto> getProcessDefinitions(String userId) {
+  private List<ProcessDefinitionOptimizeDto> getProcessDefinitions(String userId) {
     return this.getProcessDefinitions(userId, false);
   }
 
   public List<ProcessDefinitionOptimizeDto> getProcessDefinitions(String userId, boolean withXml) {
     logger.debug("Fetching process definitions");
-    QueryBuilder query;
-    query = QueryBuilders.matchAllQuery();
+    // the front-end needs the xml to work properly. Therefore, we only want to expose definitions
+    // where the import is complete including the xml
+    QueryBuilder query = QueryBuilders.existsQuery(ProcessDefinitionType.PROCESS_DEFINITION_XML);
 
     String[] fieldsToExclude = withXml ? null : new String[]{ProcessDefinitionType.PROCESS_DEFINITION_XML};
 
@@ -91,11 +92,10 @@ public class ProcessDefinitionReader {
 
   private List<ProcessDefinitionOptimizeDto> filterAuthorizedProcessDefinitions(final String userId,
                                                                                 final List<ProcessDefinitionOptimizeDto> processDefinitions) {
-    final List<ProcessDefinitionOptimizeDto> result = processDefinitions
+    return processDefinitions
       .stream()
       .filter(def -> sessionService.isAuthorizedToSeeDefinition(userId, def.getKey()))
       .collect(Collectors.toList());
-    return result;
   }
 
   public String getProcessDefinitionXml(String processDefinitionKey, String processDefinitionVersion) {

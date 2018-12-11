@@ -12,7 +12,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import java.io.IOException;
 import java.util.List;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
@@ -23,15 +22,13 @@ import static org.junit.Assert.assertThat;
 
 public class ProcessDefinitionRetrievalIT {
 
+  private final static String PROCESS_DEFINITION_KEY = "aProcess";
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-
-  private final static String PROCESS_DEFINITION_KEY = "aProcess";
-
   @Rule
   public RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   @Before
   public void setUp() {
@@ -39,7 +36,7 @@ public class ProcessDefinitionRetrievalIT {
 
 
   @Test
-  public void getProcessDefinitionsWithMoreThenTen() throws Exception {
+  public void getProcessDefinitionsWithMoreThenTen() {
     for (int i = 0; i < 11; i++) {
       // given
       deploySimpleServiceTaskProcessDefinition(PROCESS_DEFINITION_KEY + System.currentTimeMillis());
@@ -49,16 +46,16 @@ public class ProcessDefinitionRetrievalIT {
 
     // when
     List<ProcessDefinitionOptimizeDto> definitions =
-        embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildGetProcessDefinitionsRequest()
-            .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildGetProcessDefinitionsRequest()
+        .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
 
     assertThat(definitions.size(), is(11));
   }
 
   @Test
-  public void getProcessDefinitionsWithoutXml() throws Exception {
+  public void getProcessDefinitionsWithoutXml() {
 
     // given
     String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
@@ -68,11 +65,11 @@ public class ProcessDefinitionRetrievalIT {
 
     // when
     List<ProcessDefinitionOptimizeDto> definitions =
-        embeddedOptimizeRule
-                .getRequestExecutor()
-                .buildGetProcessDefinitionsRequest()
-                .addSingleQueryParam("includeXml", false)
-                .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildGetProcessDefinitionsRequest()
+        .addSingleQueryParam("includeXml", false)
+        .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
 
     // then
     assertThat(definitions.size(), is(1));
@@ -82,27 +79,29 @@ public class ProcessDefinitionRetrievalIT {
   }
 
   @Test
-  public void getProcessDefinitionsWithXml() throws Exception {
+  public void getProcessDefinitionsWithXml() {
 
     // given
     String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
+    // @formatter:off
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(processId)
-        .startEvent()
-          .serviceTask()
-            .camundaExpression("${true}")
-        .endEvent()
-        .done();
+      .startEvent()
+      .serviceTask()
+        .camundaExpression("${true}")
+      .endEvent()
+      .done();
+    // @formatter:on
     String processDefinitionId = engineRule.deployProcessAndGetId(modelInstance);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
     List<ProcessDefinitionOptimizeDto> definitions =
-            embeddedOptimizeRule
-                    .getRequestExecutor()
-                    .buildGetProcessDefinitionsRequest()
-                    .addSingleQueryParam("includeXml", true)
-                    .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildGetProcessDefinitionsRequest()
+        .addSingleQueryParam("includeXml", true)
+        .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
 
     // then
     assertThat(definitions.size(), is(1));
@@ -112,7 +111,30 @@ public class ProcessDefinitionRetrievalIT {
   }
 
   @Test
-  public void getProcessDefinitionsWithSeveralEventsForSameDefinitionDeployed() throws Exception {
+  public void getProcessDefinitionsOnlyIncludeTheOnesWhereTheXmlIsImported() {
+
+    // given
+    String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
+    String processDefinitionId = deploySimpleServiceTaskProcessDefinition(processId);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    addProcessDefinitionWithoutXmlToElasticsearch();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    List<ProcessDefinitionOptimizeDto> definitions =
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildGetProcessDefinitionsRequest()
+        .addSingleQueryParam("includeXml", false)
+        .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
+
+    // then
+    assertThat(definitions.size(), is(1));
+    assertThat(definitions.get(0).getId(), is(processDefinitionId));
+  }
+
+  @Test
+  public void getProcessDefinitionsWithSeveralEventsForSameDefinitionDeployed() {
     // given
     String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
     String processDefinitionId = deploySimpleServiceTaskProcessDefinition(processId);
@@ -123,10 +145,10 @@ public class ProcessDefinitionRetrievalIT {
 
     // when
     List<ProcessDefinitionOptimizeDto> definitions =
-            embeddedOptimizeRule
-                    .getRequestExecutor()
-                    .buildGetProcessDefinitionsRequest()
-                    .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildGetProcessDefinitionsRequest()
+        .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
 
     // then
     assertThat(definitions.size(), is(1));
@@ -135,15 +157,17 @@ public class ProcessDefinitionRetrievalIT {
   }
 
   @Test
-  public void getProcessDefinitionXmlByKeyAndVersion() throws Exception {
+  public void getProcessDefinitionXmlByKeyAndVersion() {
     // given
     String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
+    // @formatter:off
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(processId)
-        .startEvent()
-          .serviceTask()
-            .camundaExpression("${true}")
-        .endEvent()
-        .done();
+      .startEvent()
+      .serviceTask()
+        .camundaExpression("${true}")
+      .endEvent()
+      .done();
+    // @formatter:on
     ProcessDefinitionEngineDto processDefinition = engineRule.deployProcessAndGetProcessDefinition(modelInstance);
 
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
@@ -151,33 +175,35 @@ public class ProcessDefinitionRetrievalIT {
 
     // when
     String actualXml =
-        embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildGetProcessDefinitionXmlRequest(processDefinition.getKey(), processDefinition.getVersion())
-            .execute(String.class, 200);
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildGetProcessDefinitionXmlRequest(processDefinition.getKey(), processDefinition.getVersion())
+        .execute(String.class, 200);
 
     // then
     assertThat(actualXml, is(Bpmn.convertToString(modelInstance)));
   }
 
   @Test
-  public void getProcessDefinitionXmlByKeyAndAllVersion() throws Exception {
+  public void getProcessDefinitionXmlByKeyAndAllVersion() {
     // given
     String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
+    // @formatter:off
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(processId)
-        .startEvent()
-          .serviceTask()
-            .camundaExpression("${true}")
-        .endEvent()
-        .done();
+      .startEvent()
+      .serviceTask()
+        .camundaExpression("${true}")
+      .endEvent()
+      .done();
     engineRule.deployProcessAndGetProcessDefinition(modelInstance);
     modelInstance = Bpmn.createExecutableProcess(processId)
-        .startEvent()
-          .name("Add name to ensure that this is the latest version!")
-          .serviceTask()
-            .camundaExpression("${true}")
-        .endEvent()
-        .done();
+      .startEvent()
+        .name("Add name to ensure that this is the latest version!")
+      .serviceTask()
+        .camundaExpression("${true}")
+      .endEvent()
+      .done();
+    // @formatter:on
     ProcessDefinitionEngineDto processDefinition = engineRule.deployProcessAndGetProcessDefinition(modelInstance);
 
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
@@ -185,24 +211,38 @@ public class ProcessDefinitionRetrievalIT {
 
     // when
     String actualXml =
-            embeddedOptimizeRule
-                    .getRequestExecutor()
-                    .buildGetProcessDefinitionXmlRequest(processDefinition.getKey(), ALL_VERSIONS)
-                    .execute(String.class, 200);
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildGetProcessDefinitionXmlRequest(processDefinition.getKey(), ALL_VERSIONS)
+        .execute(String.class, 200);
 
     // then
     assertThat(actualXml, is(Bpmn.convertToString(modelInstance)));
   }
 
-  private String deploySimpleServiceTaskProcessDefinition(String processId) throws IOException {
+  private String deploySimpleServiceTaskProcessDefinition(String processId) {
+    // @formatter:off
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(processId)
-        .startEvent()
-          .serviceTask()
-            .camundaExpression("${true}")
-        .endEvent()
-        .done();
-    String processDefinitionId = engineRule.deployProcessAndGetId(modelInstance);
-    return processDefinitionId;
+      .startEvent()
+      .serviceTask()
+        .camundaExpression("${true}")
+      .endEvent()
+      .done();
+    // @formatter:on
+    return engineRule.deployProcessAndGetId(modelInstance);
+  }
+
+  private void addProcessDefinitionWithoutXmlToElasticsearch() {
+    ProcessDefinitionOptimizeDto processDefinitionWithoutXml = new ProcessDefinitionOptimizeDto();
+    processDefinitionWithoutXml.setBpmn20Xml(null);
+    processDefinitionWithoutXml.setKey("aProcDefKey");
+    processDefinitionWithoutXml.setVersion("aProcDefVersion");
+    processDefinitionWithoutXml.setId("aProcDefId");
+    elasticSearchRule.addEntryToElasticsearch(
+      elasticSearchRule.getProcessDefinitionType(),
+      "fooId",
+      processDefinitionWithoutXml
+    );
   }
 
 }
