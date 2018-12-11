@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.util;
 
-import com.google.common.collect.ImmutableList;
-
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,7 +22,9 @@ public class DecisionVariableHelper {
   public static final String BOOLEAN_TYPE = "boolean";
   public static final String DATE_TYPE = "date";
 
-  private static final List<String> MULTIVALUE_TYPE_FIELDS = ImmutableList.of(DATE_TYPE, DOUBLE_TYPE, LONG_TYPE);
+  private static final List<String> MULTIVALUE_TYPE_FIELDS = Collections.unmodifiableList(Arrays.asList(
+    DATE_TYPE, DOUBLE_TYPE, LONG_TYPE
+  ));
 
   private DecisionVariableHelper() {
   }
