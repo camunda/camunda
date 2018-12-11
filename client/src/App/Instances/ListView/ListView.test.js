@@ -1,57 +1,38 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {flushPromises, createSelection} from 'modules/testUtils';
-import {SORT_ORDER, DEFAULT_SORTING} from 'modules/constants';
+import {flushPromises, createInstance} from 'modules/testUtils';
+import {EXPAND_STATE, DEFAULT_SORTING, DEFAULT_FILTER} from 'modules/constants';
 
 import ListView from './ListView';
 import List from './List';
 import ListFooter from './ListFooter';
-import {DEFAULT_FILTER} from 'modules/constants';
-
-const selection = createSelection();
 
 const defaultFilter = {DEFAULT_FILTER};
 const filterCount = 27;
-const selections = [];
-
-const onUpdateSelection = jest.fn();
-const onAddToSelectionById = jest.fn();
-const onAddToOpenSelection = jest.fn();
-const onAddNewSelection = jest.fn();
 const onFirstElementChange = jest.fn();
+const INSTANCE = createInstance();
 
 const mockProps = {
-  instances: [],
-  instancesLoaded: false,
-  fetchWorkflowInstances: jest.fn(),
-  selection: selection,
+  expandState: EXPAND_STATE.DEFAULT,
   filter: defaultFilter,
   filterCount: filterCount,
-  selections: selections,
-  openSelection: 0,
-  onUpdateSelection: onUpdateSelection,
-  onAddToSelectionById: onAddToSelectionById,
-  onAddToOpenSelection: onAddToOpenSelection,
-  onAddNewSelection: onAddNewSelection,
-  onFirstElementChange: onFirstElementChange,
-  onSort: jest.fn(),
+  instancesLoaded: false,
+  instances: [],
   sorting: DEFAULT_SORTING,
-  firstElement: 0
+  onSort: jest.fn(),
+  firstElement: 0,
+  onFirstElementChange: onFirstElementChange
 };
 const mockPropsWithInstances = {
   ...mockProps,
-  instances: [{id: 1}],
+  instances: [INSTANCE],
   instancesLoaded: true
 };
 const Component = <ListView {...mockProps} />;
 const ComponentWithInstances = <ListView {...mockPropsWithInstances} />;
 
-describe.skip('ListView', () => {
-  beforeEach(() => {
-    mockProps.fetchWorkflowInstances.mockClear();
-  });
-
+describe('ListView', () => {
   it('should have initially default state', () => {
     // given
     const instance = new ListView();
@@ -78,37 +59,6 @@ describe.skip('ListView', () => {
       // then
       expect(node.find(List)).toExist();
       expect(node.find(ListFooter)).toExist();
-    });
-
-    it('should pass properties to the Instances List', async () => {
-      // given
-      const node = shallow(ComponentWithInstances);
-
-      // when data fetched
-      await flushPromises();
-      node.update();
-
-      const list = node.find(List);
-
-      // then
-      expect(list.prop('data')).toEqual([{id: 1}]);
-      expect(list.prop('selection')).toBe(selection);
-      expect(list.prop('filterCount')).toBe(filterCount);
-      expect(list.prop('onUpdateSelection')).toBe(onUpdateSelection);
-    });
-
-    it('should pass the onUpdateSelection prop to the instances list ', async () => {
-      // given
-      const node = shallow(Component);
-
-      // when data fetched
-      await flushPromises();
-      node.update();
-
-      const onUpdateSelection = node.find(List).prop('onUpdateSelection');
-
-      // then
-      expect(onUpdateSelection).toBe(onUpdateSelection);
     });
 
     it('should pass a method to the footer to change the firstElement', async () => {
