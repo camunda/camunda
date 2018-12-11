@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.util.configuration;
 
+import com.jayway.jsonpath.spi.mapper.MappingException;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.junit.Test;
 
@@ -25,6 +26,34 @@ public class ConfigurationServiceTest {
     String[] locations = {"service-config.yaml", "environment-config.yaml", "override-engine-config.yaml"};
     ConfigurationService underTest = new ConfigurationService(locations);
     assertThat(underTest.getConfiguredEngines().size(), is(1));
+  }
+
+  @Test
+  public void certificateAuthorizationCanBeAList() {
+    String[] locations = {"config-samples/certificate-authorities/ca-auth-as-list.yaml"};
+    ConfigurationService underTest = new ConfigurationService(locations);
+    assertThat(underTest.getElasticsearchSecuritySSLCertificateAuthorities().size(), is(2));
+  }
+
+  @Test
+  public void certificateAuthorizationStringIsConvertedToList() {
+    String[] locations = {"config-samples/certificate-authorities/ca-auth-as-string-is-converted.yaml"};
+    ConfigurationService underTest = new ConfigurationService(locations);
+    assertThat(underTest.getElasticsearchSecuritySSLCertificateAuthorities().size(), is(1));
+  }
+
+  @Test(expected = MappingException.class)
+  public void wrongCaAuthFormatThrowsError() {
+    String[] locations = {"config-samples/certificate-authorities/wrong-ca-auth-format-throws-error.yaml"};
+    ConfigurationService underTest = new ConfigurationService(locations);
+    underTest.getElasticsearchSecuritySSLCertificateAuthorities();
+  }
+
+  @Test(expected = MappingException.class)
+  public void wrongCaAuthListFormatThrowsError() {
+    String[] locations = {"config-samples/certificate-authorities/wrong-ca-auth-list-format-throws-error.yaml"};
+    ConfigurationService underTest = new ConfigurationService(locations);
+    underTest.getElasticsearchSecuritySSLCertificateAuthorities();
   }
 
   @Test

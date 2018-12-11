@@ -1,0 +1,11 @@
+es:
+  security:
+    username: ''
+    password: ''
+    ssl:
+      key: ''
+      certificate: ''
+      certificate_authorities:
+        foo: 'bar'
+      verification_mode: ''
+      enabled: true

@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.util.configuration;
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -36,6 +37,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.cutTrailingSlash;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.resolvePathAsAbsoluteUrl;
@@ -93,7 +95,7 @@ public class ConfigurationService {
   private Boolean elasticsearchSecuritySSLEnabled;
   private String elasticsearchSecuritySSLKey;
   private String elasticsearchSecuritySSLCertificate;
-  private String elasticsearchSecuritySSLCertificateAuthorities;
+  private List<String> elasticsearchSecuritySSLCertificateAuthorities;
   private String elasticsearchSecuritySSLVerificationMode;
 
   // elasticsearch cluster settings
@@ -276,7 +278,10 @@ public class ConfigurationService {
     //configure Jackson as provider in order to be able to use TypeRef objects
     //during serialization process
     Configuration.setDefaults(new Configuration.Defaults() {
-      private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+      private final ObjectMapper objectMapper =
+        new ObjectMapper()
+          .registerModule(new JavaTimeModule())
+          .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY);
 
       private final JsonProvider jsonProvider = new JacksonJsonProvider(objectMapper);
       private final MappingProvider mappingProvider = new JacksonMappingProvider(objectMapper);
@@ -915,12 +920,13 @@ public class ConfigurationService {
     return elasticsearchSecuritySSLCertificate;
   }
 
-  public String getElasticsearchSecuritySSLCertificateAuthorities() {
+  public List<String> getElasticsearchSecuritySSLCertificateAuthorities() {
     if (elasticsearchSecuritySSLCertificateAuthorities == null && getElasticsearchSecuritySSLEnabled()) {
+      TypeRef<List<String>> typeRef = new TypeRef<List<String>>() {};
+      List<String> authoritiesAsList =
+        configJsonContext.read(ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES, typeRef);
       elasticsearchSecuritySSLCertificateAuthorities =
-        configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES);
-      elasticsearchSecuritySSLCertificateAuthorities = resolvePathAsAbsoluteUrl(
-        elasticsearchSecuritySSLCertificateAuthorities).getPath();
+        authoritiesAsList.stream().map(a -> resolvePathAsAbsoluteUrl(a).getPath()).collect(Collectors.toList());
     }
     return elasticsearchSecuritySSLCertificateAuthorities;
   }
@@ -1217,7 +1223,7 @@ public class ConfigurationService {
     this.elasticsearchSecuritySSLCertificate = elasticsearchSecuritySSLCertificate;
   }
 
-  public void setElasticsearchSecuritySSLCertificateAuthorities(String elasticsearchSecuritySSLCertificateAuthorities) {
+  public void setElasticsearchSecuritySSLCertificateAuthorities(List<String> elasticsearchSecuritySSLCertificateAuthorities) {
     this.elasticsearchSecuritySSLCertificateAuthorities = elasticsearchSecuritySSLCertificateAuthorities;
   }
 

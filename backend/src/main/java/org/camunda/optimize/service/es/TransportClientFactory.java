@@ -95,7 +95,7 @@ public class TransportClientFactory implements FactoryBean<Client>, DisposableBe
         .put("xpack.security.user", xpackUser)
         .put("xpack.ssl.key", configurationService.getElasticsearchSecuritySSLKey())
         .put("xpack.ssl.certificate", configurationService.getElasticsearchSecuritySSLCertificate())
-        .put(
+        .putArray(
           "xpack.ssl.certificate_authorities",
           configurationService.getElasticsearchSecuritySSLCertificateAuthorities()
         )
