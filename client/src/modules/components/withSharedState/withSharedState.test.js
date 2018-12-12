@@ -4,7 +4,7 @@ import withSharedState from './withSharedState';
 
 const Component = () => {};
 
-describe.skip('withSharedState', () => {
+describe('withSharedState', () => {
   let node;
 
   beforeEach(() => {
