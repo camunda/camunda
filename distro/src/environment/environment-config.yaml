@@ -53,16 +53,26 @@ engines:
       # Enables/disables linking to other Camunda Web Applications
       enabled: true
 
+# everything that is related with configuring Elasticsearch or creating
+# a connection to it.
 es:
-  # A hostname on which the Elasticsearch TCP listener is available.
-  host: localhost
-  # The name of the Elasticsearch cluster Optimize should connect with.
-  clusterName: elasticsearch
-  ports:
-    # A port number used by Elasticsearch to accept TCP connections.
-    tcp: 9300
-    # A port number used by Elasticsearch to accept HTTP connections.
-    http: 9200
+  connection:
+    # The name of the Elasticsearch cluster Optimize should connect with.
+    clusterName: elasticsearch
+    # a list of Elasticsearch nodes Optimize can connect to. If you  have built
+    # an Elasticsearch cluster with several nodes it is recommended to define
+    # several connection points in case one node fails.
+    nodes:
+    # the address/hostname under which the Elasticsearch node is available.
+    - host: 'localhost'
+      # A port number used by Elasticsearch to accept TCP connections. This
+      # port is used for Optimize to communicate with Elasticsearch. Exception
+      # is the communication during the upgrade.
+      tcpPort: 9300
+      # A port number used by Elasticsearch to accept HTTP connections. Currently,
+      # this port is only used in the upgrade jar.
+      httpPort: 9200
+
   # define a secured connection to be able to communicate
   # with an Elasticsearch instance secured with x-pack
   security:

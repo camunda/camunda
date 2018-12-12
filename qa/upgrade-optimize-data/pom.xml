@@ -195,6 +195,14 @@
                       <arg value="pkill -f org.camunda.optimize.Main" />
                     </exec>
 
+                    <echo message="Copying new configuration file into upgrade directory..." />
+
+                    <!-- In case some configurations have been deprecated we need to use the new version of the config file -->
+                    <exec dir="${project.build.directory}/../../../" executable="/bin/bash">
+                      <arg value="-c" />
+                      <arg value="cp distro/src/environment/environment-config.yaml ${project.build.directory}/prevVersion/environment/environment-config.yaml" />
+                    </exec>
+
                     <echo message="Running migration script from ${project.previousVersion} to ${project.version}..." />
 
                     <!-- upgrade-optimize-from-${project.previousVersion}-to-${project.version}.jar must be executed within $OPTIMIZE_HOME/upgrade to reuse existing Optimize configuration -->

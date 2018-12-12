@@ -33,22 +33,28 @@ public class ElasticsearchRestClientBuilder {
 
   private static RestClient buildDefaultRestClient(ConfigurationService configurationService) {
     return RestClient.builder(
-      new HttpHost(
-        configurationService.getElasticSearchHost(),
-        configurationService.getElasticSearchHttpPort(),
-        HTTP
-      )
+      buildElasticsearchConnectionNodes(configurationService, HTTP)
     ).build();
+  }
+
+  private static HttpHost[] buildElasticsearchConnectionNodes(ConfigurationService configurationService,
+                                                              String protocol) {
+    return configurationService.getElasticsearchConnectionNodes()
+      .stream()
+      .map(conf -> new HttpHost(
+             conf.getHost(),
+             conf.getHttpPort(),
+             protocol
+           )
+      )
+      .toArray(HttpHost[]::new);
   }
 
   private static RestClient buildSecuredRestClient(ConfigurationService configurationService) {
     try {
       RestClientBuilder builder = RestClient.builder(
-        new HttpHost(
-          configurationService.getElasticSearchHost(),
-          configurationService.getElasticSearchHttpPort(),
-          HTTPS
-        ));
+        buildElasticsearchConnectionNodes(configurationService, HTTPS)
+      );
 
       // enable encrypted communication
       KeyStore truststore = loadKeystore(configurationService);

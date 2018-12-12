@@ -34,13 +34,11 @@ public interface ConfigurationServiceConstants {
   String VARIABLE_IMPORT_PLUGIN_BASE_PACKAGES = "$.plugin.variableImport.basePackages";
   String ENGINE_REST_FILTER_PLUGIN_BASE_PACKAGES = "$.plugin.engineRestFilter.basePackages";
   String AUTHENTICATION_EXTRACTOR_BASE_PACKAGES = "$.plugin.authenticationExtractor.basePackages";
-  String ELASTIC_SEARCH_HOST = "$.es.host";
-  String ELASTIC_SEARCH_CLUSTER_NAME = "$.es.clusterName";
-  String ELASTIC_SEARCH_TCP_PORT = "$.es.ports.tcp";
-  String ELASTIC_SEARCH_HTTP_PORT = "$.es.ports.http";
+  String ELASTIC_SEARCH_CLUSTER_NAME = "$.es.connection.clusterName";
   String ELASTIC_SEARCH_CONNECTION_TIMEOUT = "$.es.connection.timeout";
   String ELASTIC_SEARCH_SCROLL_TIMEOUT = "$.es.scrollTimeout";
-  String SAMPLER_INTERVAL = "$.es.sampler.interval";
+  String ELASTIC_SEARCH_CONNECTION_NODES = "$.es.connection.nodes";
+  String SAMPLER_INTERVAL = "$.es.connection.samplerInterval";
 
 
   String ELASTIC_SEARCH_SECURITY_USERNAME = "$.es.security.username";
@@ -52,7 +50,6 @@ public interface ConfigurationServiceConstants {
   String ELASTIC_SEARCH_SECURITY_SSL_VERIFICATION_MODE = "$.es.security.ssl.verification_mode";
 
   String PROCESS_INSTANCE_TYPE = "$.import.data.process-instance.elasticsearchType";
-  String DURATION_HEATMAP_TARGET_VALUE_TYPE = "$.es.heatmap.duration.targetValueType";
   String PROCESS_DEFINITION_TYPE = "$.import.data.process-definition.elasticsearchType";
   String IMPORT_INDEX_TYPE = "$.import.indexType";
   String IMPORT_INDEX_AUTO_STORAGE_INTERVAL = "$.import.importIndexStorageIntervalInSec";

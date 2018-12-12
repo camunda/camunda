@@ -66,7 +66,6 @@ public class ConfigurationService {
 
   private String processDefinitionType;
   private String importIndexType;
-  private String durationHeatmapTargetValueType;
   private String processInstanceType;
   private String licenseType;
   private String alertType;
@@ -83,9 +82,7 @@ public class ConfigurationService {
   private Long maximumBackoff;
 
   // elasticsearch connection
-  private String elasticSearchHost;
-  private Integer elasticSearchTcpPort;
-  private Integer elasticSearchHttpPort;
+  private List<ElasticsearchConnectionNodeConfiguration> elasticsearchConnectionNodes;
   private Integer elasticsearchScrollTimeout;
   private Integer elasticsearchConnectionTimeout;
 
@@ -324,11 +321,16 @@ public class ConfigurationService {
     return tokenLifeTime;
   }
 
-  public String getElasticSearchHost() {
-    if (elasticSearchHost == null) {
-      elasticSearchHost = configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_HOST);
+  public List<ElasticsearchConnectionNodeConfiguration> getElasticsearchConnectionNodes() {
+    if (elasticsearchConnectionNodes == null) {
+      // @formatter:off
+      TypeRef<List<ElasticsearchConnectionNodeConfiguration>> typeRef =
+        new TypeRef<List<ElasticsearchConnectionNodeConfiguration>>() {};
+      // @formatter:on
+      elasticsearchConnectionNodes =
+        configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_CONNECTION_NODES, typeRef);
     }
-    return elasticSearchHost;
+    return elasticsearchConnectionNodes;
   }
 
   public String getElasticSearchClusterName() {
@@ -336,20 +338,6 @@ public class ConfigurationService {
       elasticSearchClusterName = configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_CLUSTER_NAME);
     }
     return elasticSearchClusterName;
-  }
-
-  public Integer getElasticSearchTcpPort() {
-    if (elasticSearchTcpPort == null) {
-      elasticSearchTcpPort = configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_TCP_PORT);
-    }
-    return elasticSearchTcpPort;
-  }
-
-  public Integer getElasticSearchHttpPort() {
-    if (elasticSearchHttpPort == null) {
-      elasticSearchHttpPort = configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_HTTP_PORT);
-    }
-    return elasticSearchHttpPort;
   }
 
   public String getUserValidationEndpoint() {
@@ -526,14 +514,6 @@ public class ConfigurationService {
       importIndexType = configJsonContext.read(ConfigurationServiceConstants.IMPORT_INDEX_TYPE);
     }
     return importIndexType;
-  }
-
-  public String getDurationHeatmapTargetValueType() {
-    if (durationHeatmapTargetValueType == null) {
-      durationHeatmapTargetValueType =
-        configJsonContext.read(ConfigurationServiceConstants.DURATION_HEATMAP_TARGET_VALUE_TYPE);
-    }
-    return durationHeatmapTargetValueType;
   }
 
   public String getProcessInstanceType() {
@@ -998,20 +978,8 @@ public class ConfigurationService {
     this.tokenLifeTime = tokenLifeTime;
   }
 
-  public void setElasticSearchHost(String elasticSearchHost) {
-    this.elasticSearchHost = elasticSearchHost;
-  }
-
   public void setElasticSearchClusterName(String elasticSearchClusterName) {
     this.elasticSearchClusterName = elasticSearchClusterName;
-  }
-
-  public void setElasticSearchTcpPort(Integer elasticSearchTcpPort) {
-    this.elasticSearchTcpPort = elasticSearchTcpPort;
-  }
-
-  public void setElasticSearchHttpPort(Integer elasticSearchHttpPort) {
-    this.elasticSearchHttpPort = elasticSearchHttpPort;
   }
 
   public void setUserValidationEndpoint(String userValidationEndpoint) {
@@ -1089,10 +1057,6 @@ public class ConfigurationService {
 
   public void setImportIndexType(String importIndexType) {
     this.importIndexType = importIndexType;
-  }
-
-  public void setDurationHeatmapTargetValueType(String durationHeatmapTargetValueType) {
-    this.durationHeatmapTargetValueType = durationHeatmapTargetValueType;
   }
 
   public void setProcessInstanceType(String processInstanceType) {
@@ -1229,5 +1193,9 @@ public class ConfigurationService {
 
   public void setElasticsearchSecuritySSLVerificationMode(String elasticsearchSecuritySSLVerificationMode) {
     this.elasticsearchSecuritySSLVerificationMode = elasticsearchSecuritySSLVerificationMode;
+  }
+
+  public void setElasticsearchConnectionNodes(List<ElasticsearchConnectionNodeConfiguration> elasticsearchConnectionNodes) {
+    this.elasticsearchConnectionNodes = elasticsearchConnectionNodes;
   }
 }

@@ -13,9 +13,11 @@ import:
 container:
   checkMetadata: false
 es:
-  ports:
-    tcp: 9302
-    http: 9200
+  connection:
+    nodes:
+    - host: 'localhost'
+      tcpPort: 9302
+      httpPort: 9200
   sampler:
     interval: 100
   security:

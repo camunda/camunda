@@ -62,9 +62,6 @@ public class UpgradeFrom22To23 implements Upgrade {
           new CreateIndexAliasForExistingIndexStep(configurationService.getDashboardShareType(), TO_VERSION)
         )
         .addUpgradeStep(
-          new CreateIndexAliasForExistingIndexStep(configurationService.getDurationHeatmapTargetValueType(), TO_VERSION)
-        )
-        .addUpgradeStep(
           new CreateIndexAliasForExistingIndexStep(configurationService.getImportIndexType(), TO_VERSION)
         )
         .addUpgradeStep(

@@ -110,7 +110,7 @@ public class DecisionInstanceImportService {
       .getVersionForDecisionDefinitionId(engineEntity.getDecisionDefinitionId())
       .orElseThrow(() -> {
         final String message = String.format(
-          "Couldn't obtain version for processDefinitionId %s, decisionDefinition wasn't imported yet",
+          "Couldn't obtain version for decisionDefinitionId [%s]. It hasn't been imported yet",
           engineEntity.getDecisionDefinitionId()
         );
         return new OptimizeRuntimeException(message);

@@ -1,1 +1,6 @@
 alerting.email: '/technical-guide/configuration/#email'
+es.clusterName: '/technical-guide/configuration/#connection-settings'
+es.host: '/technical-guide/configuration/#connection-settings'
+es.ports.tcp: '/technical-guide/configuration/#connection-settings'
+es.ports.http: '/technical-guide/configuration/#connection-settings'
+es.sampler.interval: '/technical-guide/configuration/#connection-settings'

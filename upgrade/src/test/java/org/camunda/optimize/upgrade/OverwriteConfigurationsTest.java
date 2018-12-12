@@ -7,8 +7,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static junit.framework.TestCase.fail;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
 
 public class OverwriteConfigurationsTest extends AbstractUpgradeTest {
 
@@ -29,7 +27,11 @@ public class OverwriteConfigurationsTest extends AbstractUpgradeTest {
     // given
     createEnvConfig(
       "es:\n" +
-      "  host: foo"
+      "  connection:\n" +
+        "    nodes:\n" +
+        "    - host: 'foo'\n" +
+        "      tcpPort: 9300\n" +
+        "      httpPort: 9200"
     );
 
     UpgradePlan upgradePlan = UpgradePlanBuilder.createUpgradePlan()

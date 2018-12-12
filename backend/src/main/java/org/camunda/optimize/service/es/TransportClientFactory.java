@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es;
 
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.client.Client;
@@ -76,17 +77,34 @@ public class TransportClientFactory implements FactoryBean<Client>, DisposableBe
     }
   }
 
-  private TransportClient createDefaultTransportClient() throws UnknownHostException {
+  private TransportClient createDefaultTransportClient() {
     return new PreBuiltTransportClient(
       createDefaultSettings()
     )
-      .addTransportAddress(new TransportAddress(
-        InetAddress.getByName(configurationService.getElasticSearchHost()),
-        configurationService.getElasticSearchTcpPort()
-      ));
+      .addTransportAddresses(buildElasticsearchConnectionNodes(configurationService));
   }
 
-  private TransportClient createSecuredTransportClient() throws UnknownHostException {
+  private TransportAddress[] buildElasticsearchConnectionNodes(ConfigurationService configurationService) {
+    return configurationService.getElasticsearchConnectionNodes()
+      .stream()
+      .map(
+        conf -> {
+          try {
+            return new TransportAddress(
+              InetAddress.getByName(conf.getHost()),
+              conf.getTcpPort()
+            );
+          } catch (UnknownHostException e) {
+            String errorMessage =
+              String.format("Could not build the transport client since the host [%s] is unknown", conf.getHost());
+            throw new OptimizeRuntimeException(errorMessage, e);
+          }
+        }
+      )
+      .toArray(TransportAddress[]::new);
+  }
+
+  private TransportClient createSecuredTransportClient() {
     String xpackUser = configurationService.getElasticsearchSecurityUsername() + ":" +
       configurationService.getElasticsearchSecurityPassword();
     return new PreBuiltXPackTransportClient(
@@ -106,10 +124,7 @@ public class TransportClientFactory implements FactoryBean<Client>, DisposableBe
         )
         .build()
     )
-      .addTransportAddress(new TransportAddress(
-        InetAddress.getByName(configurationService.getElasticSearchHost()),
-        configurationService.getElasticSearchTcpPort()
-      ));
+      .addTransportAddresses(buildElasticsearchConnectionNodes(configurationService));
   }
 
   private Settings createDefaultSettings() {
