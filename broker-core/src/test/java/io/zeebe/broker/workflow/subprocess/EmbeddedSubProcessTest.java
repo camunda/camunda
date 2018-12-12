@@ -123,19 +123,31 @@ public class EmbeddedSubProcessTest {
             tuple(WorkflowInstanceIntent.CREATE, ""),
             tuple(WorkflowInstanceIntent.ELEMENT_READY, PROCESS_ID),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, PROCESS_ID),
-            tuple(WorkflowInstanceIntent.START_EVENT_OCCURRED, "start"),
+            tuple(WorkflowInstanceIntent.EVENT_TRIGGERING, "start"),
+            tuple(WorkflowInstanceIntent.EVENT_TRIGGERED, "start"),
             tuple(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, "flow1"),
             tuple(WorkflowInstanceIntent.ELEMENT_READY, "subProcess"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "subProcess"),
-            tuple(WorkflowInstanceIntent.START_EVENT_OCCURRED, "subProcessStart"),
+            tuple(WorkflowInstanceIntent.EVENT_TRIGGERING, "subProcessStart"),
+            tuple(WorkflowInstanceIntent.EVENT_TRIGGERED, "subProcessStart"),
             tuple(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, "subProcessFlow1"),
             tuple(WorkflowInstanceIntent.ELEMENT_READY, "subProcessTask"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "subProcessTask"));
 
-    final Record<WorkflowInstanceRecordValue> subProcessReady = workflowInstanceEvents.get(5);
+    final Record<WorkflowInstanceRecordValue> subProcessReady =
+        testClient
+            .receiveWorkflowInstances()
+            .withElementId("subProcess")
+            .withIntent(WorkflowInstanceIntent.ELEMENT_READY)
+            .getFirst();
     assertThat(subProcessReady.getValue().getScopeInstanceKey()).isEqualTo(workflowInstanceKey);
 
-    final Record<WorkflowInstanceRecordValue> subProcessTaskReady = workflowInstanceEvents.get(9);
+    final Record<WorkflowInstanceRecordValue> subProcessTaskReady =
+        testClient
+            .receiveWorkflowInstances()
+            .withElementId("subProcessTask")
+            .withIntent(WorkflowInstanceIntent.ELEMENT_READY)
+            .getFirst();
     assertThat(subProcessTaskReady.getValue().getScopeInstanceKey())
         .isEqualTo(subProcessReady.getKey());
   }
@@ -162,22 +174,26 @@ public class EmbeddedSubProcessTest {
             tuple(WorkflowInstanceIntent.CREATE, ""),
             tuple(WorkflowInstanceIntent.ELEMENT_READY, PROCESS_ID),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, PROCESS_ID),
-            tuple(WorkflowInstanceIntent.START_EVENT_OCCURRED, "start"),
+            tuple(WorkflowInstanceIntent.EVENT_TRIGGERING, "start"),
+            tuple(WorkflowInstanceIntent.EVENT_TRIGGERED, "start"),
             tuple(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, "flow1"),
             tuple(WorkflowInstanceIntent.ELEMENT_READY, "subProcess"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "subProcess"),
-            tuple(WorkflowInstanceIntent.START_EVENT_OCCURRED, "subProcessStart"),
+            tuple(WorkflowInstanceIntent.EVENT_TRIGGERING, "subProcessStart"),
+            tuple(WorkflowInstanceIntent.EVENT_TRIGGERED, "subProcessStart"),
             tuple(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, "subProcessFlow1"),
             tuple(WorkflowInstanceIntent.ELEMENT_READY, "subProcessTask"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "subProcessTask"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "subProcessTask"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "subProcessTask"),
             tuple(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, "subProcessFlow2"),
-            tuple(WorkflowInstanceIntent.END_EVENT_OCCURRED, "subProcessEnd"),
+            tuple(WorkflowInstanceIntent.EVENT_ACTIVATING, "subProcessEnd"),
+            tuple(WorkflowInstanceIntent.EVENT_ACTIVATED, "subProcessEnd"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "subProcess"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "subProcess"),
             tuple(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, "flow2"),
-            tuple(WorkflowInstanceIntent.END_EVENT_OCCURRED, "end"),
+            tuple(WorkflowInstanceIntent.EVENT_ACTIVATING, "end"),
+            tuple(WorkflowInstanceIntent.EVENT_ACTIVATED, "end"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, PROCESS_ID),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, PROCESS_ID));
   }
@@ -430,8 +446,8 @@ public class EmbeddedSubProcessTest {
             tuple(WorkflowInstanceIntent.ELEMENT_TERMINATING, "task"),
             tuple(WorkflowInstanceIntent.ELEMENT_TERMINATED, "task"),
             tuple(WorkflowInstanceIntent.ELEMENT_TERMINATED, "innerSubProcess"),
-            tuple(WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING, "event"),
+            tuple(WorkflowInstanceIntent.EVENT_TRIGGERING, "event"),
             tuple(WorkflowInstanceIntent.ELEMENT_TERMINATED, "outerSubProcess"),
-            tuple(WorkflowInstanceIntent.CATCH_EVENT_TRIGGERED, "event"));
+            tuple(WorkflowInstanceIntent.EVENT_TRIGGERED, "event"));
   }
 }

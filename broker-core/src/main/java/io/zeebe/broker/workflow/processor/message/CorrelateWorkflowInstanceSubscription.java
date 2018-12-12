@@ -166,7 +166,7 @@ public final class CorrelateWorkflowInstanceSubscription
             record.getKey(), WorkflowInstanceSubscriptionIntent.CORRELATED, subscriptionRecord);
 
         streamWriter.appendFollowUpEvent(
-            tokenEvent.getKey(), WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING, deferedRecord);
+            tokenEvent.getKey(), WorkflowInstanceIntent.EVENT_TRIGGERING, deferedRecord);
 
       } else {
         streamWriter.appendRejection(

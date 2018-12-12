@@ -94,16 +94,13 @@ public class MessageMappingTest {
   @Parameter(1)
   public BpmnModelInstance workflow;
 
-  @Parameter(2)
-  public String completedElementId;
-
   @Parameters(name = "{0}")
   public static Object[][] parameters() {
     return new Object[][] {
-      {"intermediate message catch event", CATCH_EVENT_WORKFLOW, "catch"},
-      {"receive task", RECEIVE_TASK_WORKFLOW, "catch"},
-      {"boundary event", BOUNDARY_EVENT_WORKFLOW, PROCESS_ID},
-      {"event-based gateway", EVENT_BASED_GATEWAY_WORKFLOW, PROCESS_ID},
+      {"intermediate message catch event", CATCH_EVENT_WORKFLOW},
+      {"receive task", RECEIVE_TASK_WORKFLOW},
+      {"boundary event", BOUNDARY_EVENT_WORKFLOW},
+      {"event-based gateway", EVENT_BASED_GATEWAY_WORKFLOW},
     };
   }
 
@@ -205,7 +202,7 @@ public class MessageMappingTest {
   private void assertCompletedPayload(String payload) {
     final Record<WorkflowInstanceRecordValue> competedEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withElementId(completedElementId)
+            .withElementId(PROCESS_ID)
             .getFirst();
 
     assertWorkflowInstancePayload(competedEvent, payload);

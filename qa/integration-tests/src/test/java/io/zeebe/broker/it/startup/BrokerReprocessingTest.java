@@ -15,8 +15,6 @@
  */
 package io.zeebe.broker.it.startup;
 
-import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertElementActivated;
-import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertElementCompleted;
 import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertElementReady;
 import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertIncidentCreated;
 import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertIncidentResolveFailed;
@@ -44,6 +42,7 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.TimerIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftServiceNames;
@@ -583,12 +582,11 @@ public class BrokerReprocessingTest {
         startWorkflowInstance(PROCESS_ID, singletonMap("orderId", "order-123"))
             .getWorkflowInstanceKey();
 
-    assertElementActivated("catch-event");
-
     assertThat(
-        RecordingExporter.workflowInstanceSubscriptionRecords(
-                WorkflowInstanceSubscriptionIntent.OPENED)
-            .exists());
+            RecordingExporter.workflowInstanceSubscriptionRecords(
+                    WorkflowInstanceSubscriptionIntent.OPENED)
+                .exists())
+        .isTrue();
 
     reprocessingTrigger.accept(this);
 
@@ -596,7 +594,12 @@ public class BrokerReprocessingTest {
     publishMessage("order canceled", "order-123", singletonMap("foo", "bar"));
 
     // then
-    assertElementCompleted(PROCESS_ID, "catch-event");
+    assertThat(
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERED)
+                .withElementId("catch-event")
+                .exists())
+        .isTrue();
+
     assertWorkflowInstanceCompleted(
         PROCESS_ID,
         (workflowInstance) -> {
@@ -618,7 +621,11 @@ public class BrokerReprocessingTest {
     final long workflowInstanceKey =
         startWorkflowInstance(PROCESS_ID, singletonMap("orderId", "order-123"))
             .getWorkflowInstanceKey();
-    assertElementCompleted(PROCESS_ID, "catch-event");
+    assertThat(
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERED)
+                .withElementId("catch-event")
+                .exists())
+        .isTrue();
 
     // then
     assertWorkflowInstanceCompleted(
@@ -644,7 +651,11 @@ public class BrokerReprocessingTest {
     reprocessingTrigger.accept(this);
 
     // then
-    assertElementCompleted(PROCESS_ID, "timer");
+    assertThat(
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERED)
+                .withElementId("timer")
+                .exists())
+        .isTrue();
   }
 
   private WorkflowInstanceEvent startWorkflowInstance(final String bpmnProcessId) {

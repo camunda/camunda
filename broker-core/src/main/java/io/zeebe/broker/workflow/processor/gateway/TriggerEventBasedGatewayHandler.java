@@ -41,7 +41,7 @@ public class TriggerEventBasedGatewayHandler
           .getOutput()
           .appendFollowUpEvent(
               context.getRecord().getKey(),
-              WorkflowInstanceIntent.CATCH_EVENT_TRIGGERED,
+              WorkflowInstanceIntent.EVENT_TRIGGERED,
               context.getValue());
     } catch (MappingException e) {
       context.raiseIncident(ErrorType.IO_MAPPING_ERROR, e.getMessage());

@@ -70,8 +70,8 @@ public class EventBasedGatewayTransformer implements ModelElementTransformer<Eve
 
   private void bindLifecycle(ExecutableCatchEventElement event, TransformContext context) {
     event.bindLifecycleState(
-        WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING, BpmnStep.TRIGGER_EVENT_BASED_GATEWAY);
+        WorkflowInstanceIntent.EVENT_TRIGGERING, BpmnStep.TRIGGER_EVENT_BASED_GATEWAY);
     event.bindLifecycleState(
-        WorkflowInstanceIntent.CATCH_EVENT_TRIGGERED, context.getCurrentFlowNodeOutgoingStep());
+        WorkflowInstanceIntent.EVENT_TRIGGERED, context.getCurrentFlowNodeOutgoingStep());
   }
 }

@@ -21,12 +21,11 @@ public enum BpmnStep {
 
   // flow element container (process, sub process)
   TRIGGER_START_EVENT,
-  TRIGGER_END_EVENT,
   COMPLETE_PROCESS,
   TERMINATE_CONTAINED_INSTANCES,
 
   // flow node
-  START_FLOW_NODE,
+  ENTER_FLOW_NODE,
   ACTIVATE_FLOW_NODE,
   COMPLETE_FLOW_NODE,
   TERMINATE_FLOW_NODE,
@@ -40,9 +39,10 @@ public enum BpmnStep {
   COMPLETE_ACTIVITY,
   TERMINATE_ACTIVITY,
 
-  // service task
+  // task
   CREATE_JOB,
   TERMINATE_JOB_TASK,
+  SUBSCRIBE_RECEIVE_TASK,
 
   // exclusive gateway
   ACTIVATE_GATEWAY,
@@ -56,6 +56,8 @@ public enum BpmnStep {
   TRIGGER_EVENT_BASED_GATEWAY,
 
   // events
+  ENTER_EVENT,
+  ACTIVATE_EVENT,
   SUBSCRIBE_TO_EVENTS,
   TRIGGER_EVENT,
 }

@@ -30,7 +30,6 @@ import io.zeebe.exporter.record.value.IncidentRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.value.incident.ErrorType;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -95,10 +94,11 @@ public class ExpressionIncidentTest {
     testClient.createWorkflowInstance("workflow", asMsgPack("foo", 12));
 
     // then incident is created
-    final Record failingEvent =
+    final Record<WorkflowInstanceRecordValue> failingEvent =
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.GATEWAY_ACTIVATED);
 
-    final Record incidentCommand = testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
+    final Record<IncidentRecordValue> incidentCommand =
+        testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
     final Record<IncidentRecordValue> incidentEvent =
         testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
@@ -118,7 +118,8 @@ public class ExpressionIncidentTest {
     testClient.createWorkflowInstance("workflow", asMsgPack("foo", "bar"));
 
     // then incident is created
-    final Record incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
+    final Record<IncidentRecordValue> incidentEvent =
+        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
     assertIncidentRecordValue(
@@ -139,7 +140,7 @@ public class ExpressionIncidentTest {
     final Record<IncidentRecordValue> incidentEvent =
         testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
-    final Record failureEvent =
+    final Record<WorkflowInstanceRecordValue> failureEvent =
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.GATEWAY_ACTIVATED);
 
     // when correct payload is used
@@ -147,49 +148,36 @@ public class ExpressionIncidentTest {
     testClient.resolveIncident(incidentEvent.getKey());
 
     // then
-    final List<Record> incidentRecords =
+    final List<Record<IncidentRecordValue>> incidentRecords =
         testClient
             .receiveIncidents()
             .limit(r -> r.getMetadata().getIntent() == IncidentIntent.RESOLVED)
             .collect(Collectors.toList());
 
-    final List<Record> workflowInstanceRecords =
+    final List<Record<WorkflowInstanceRecordValue>> workflowInstanceRecords =
         testClient
             .receiveWorkflowInstances()
-            .limit(
-                r ->
-                    r.getMetadata().getIntent() == ELEMENT_COMPLETED
-                        && r.getValue().getWorkflowInstanceKey() == r.getKey())
+            .limitToWorkflowInstanceCompleted()
             .collect(Collectors.toList());
 
     // RESOLVE triggers RESOLVED
     assertThat(incidentRecords)
         .extracting(Record::getMetadata)
-        .extracting(
-            RecordMetadata::getRecordType, RecordMetadata::getValueType, RecordMetadata::getIntent)
+        .extracting(RecordMetadata::getRecordType, RecordMetadata::getIntent)
         .containsSubsequence(
-            tuple(RecordType.COMMAND, ValueType.INCIDENT, IncidentIntent.RESOLVE),
-            tuple(RecordType.EVENT, ValueType.INCIDENT, IncidentIntent.RESOLVED));
+            tuple(RecordType.COMMAND, IncidentIntent.RESOLVE),
+            tuple(RecordType.EVENT, IncidentIntent.RESOLVED));
 
     // GATEWAY_ACTIVATED triggers SEQUENCE_FLOW_TAKEN, END_EVENT_OCCURED and COMPLETED
     assertThat(workflowInstanceRecords)
         .extracting(Record::getMetadata)
-        .extracting(
-            RecordMetadata::getRecordType, RecordMetadata::getValueType, RecordMetadata::getIntent)
+        .extracting(RecordMetadata::getIntent)
         .containsSubsequence(
-            tuple(
-                RecordType.EVENT,
-                ValueType.WORKFLOW_INSTANCE,
-                WorkflowInstanceIntent.GATEWAY_ACTIVATED),
-            tuple(
-                RecordType.EVENT,
-                ValueType.WORKFLOW_INSTANCE,
-                WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple(
-                RecordType.EVENT,
-                ValueType.WORKFLOW_INSTANCE,
-                WorkflowInstanceIntent.END_EVENT_OCCURRED),
-            tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, ELEMENT_COMPLETED));
+            WorkflowInstanceIntent.GATEWAY_ACTIVATED,
+            WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
+            WorkflowInstanceIntent.EVENT_ACTIVATING,
+            WorkflowInstanceIntent.EVENT_ACTIVATED,
+            ELEMENT_COMPLETED);
   }
 
   @Test
@@ -238,27 +226,20 @@ public class ExpressionIncidentTest {
     // RESOLVE triggers RESOLVED
     assertThat(incidentRecords)
         .extracting(Record::getMetadata)
-        .extracting(
-            RecordMetadata::getRecordType, RecordMetadata::getValueType, RecordMetadata::getIntent)
+        .extracting(RecordMetadata::getRecordType, RecordMetadata::getIntent)
         .containsSubsequence(
-            tuple(RecordType.COMMAND, ValueType.INCIDENT, IncidentIntent.RESOLVE),
-            tuple(RecordType.EVENT, ValueType.INCIDENT, IncidentIntent.RESOLVED));
+            tuple(RecordType.COMMAND, IncidentIntent.RESOLVE),
+            tuple(RecordType.EVENT, IncidentIntent.RESOLVED));
 
     // SEQUENCE_FLOW_TAKEN triggers the rest of the process
     assertThat(workflowInstanceRecords)
         .extracting(Record::getMetadata)
-        .extracting(
-            RecordMetadata::getRecordType, RecordMetadata::getValueType, RecordMetadata::getIntent)
+        .extracting(RecordMetadata::getIntent)
         .containsSubsequence(
-            tuple(
-                RecordType.EVENT,
-                ValueType.WORKFLOW_INSTANCE,
-                WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple(
-                RecordType.EVENT,
-                ValueType.WORKFLOW_INSTANCE,
-                WorkflowInstanceIntent.END_EVENT_OCCURRED),
-            tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, ELEMENT_COMPLETED));
+            WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
+            WorkflowInstanceIntent.EVENT_ACTIVATING,
+            WorkflowInstanceIntent.EVENT_ACTIVATED,
+            ELEMENT_COMPLETED);
   }
 
   @Test
@@ -272,7 +253,7 @@ public class ExpressionIncidentTest {
     final Record<IncidentRecordValue> incidentEvent =
         testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
-    final Record failureEvent =
+    final Record<WorkflowInstanceRecordValue> failureEvent =
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.GATEWAY_ACTIVATED);
 
     // when
@@ -296,7 +277,8 @@ public class ExpressionIncidentTest {
     testClient.cancelWorkflowInstance(workflowInstance);
 
     // then incident is resolved
-    final Record incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
+    final Record<IncidentRecordValue> incidentEvent =
+        testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
 
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
     assertIncidentRecordValue(

@@ -35,6 +35,7 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
+import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -96,10 +97,10 @@ public class BoundaryEventTest {
     awaitProcessCompleted();
 
     // then
-    assertThat(testClient.receiveElementInState("end1", WorkflowInstanceIntent.END_EVENT_OCCURRED))
-        .isNotNull();
-    assertThat(testClient.receiveElementInState("end2", WorkflowInstanceIntent.END_EVENT_OCCURRED))
-        .isNotNull();
+    assertThat(RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_ACTIVATED))
+        .extracting(Record::getValue)
+        .extracting(WorkflowInstanceRecordValue::getElementId)
+        .contains("end1", "end2");
   }
 
   @Test
@@ -117,9 +118,9 @@ public class BoundaryEventTest {
     final Record<WorkflowInstanceRecordValue> activityTerminating =
         testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_TERMINATING);
     final Record<WorkflowInstanceRecordValue> boundaryTriggering =
-        testClient.receiveElementInState("timer", WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING);
+        testClient.receiveElementInState("timer", WorkflowInstanceIntent.EVENT_TRIGGERING);
     final Record<WorkflowInstanceRecordValue> boundaryTriggered =
-        testClient.receiveElementInState("timer", WorkflowInstanceIntent.CATCH_EVENT_TRIGGERED);
+        testClient.receiveElementInState("timer", WorkflowInstanceIntent.EVENT_TRIGGERED);
 
     awaitProcessCompleted();
 
@@ -159,7 +160,7 @@ public class BoundaryEventTest {
 
     // then
     final Record<WorkflowInstanceRecordValue> boundaryTriggered =
-        testClient.receiveElementInState("event", WorkflowInstanceIntent.CATCH_EVENT_TRIGGERED);
+        testClient.receiveElementInState("event", WorkflowInstanceIntent.EVENT_TRIGGERED);
     assertThat(boundaryTriggered.getValue().getPayloadAsMap())
         .containsExactly(entry("key", "123"), entry("bar", 3));
   }
@@ -189,7 +190,7 @@ public class BoundaryEventTest {
 
     // then
     final Record<WorkflowInstanceRecordValue> boundaryTriggered =
-        testClient.receiveElementInState("timer", WorkflowInstanceIntent.CATCH_EVENT_TRIGGERED);
+        testClient.receiveElementInState("timer", WorkflowInstanceIntent.EVENT_TRIGGERED);
     assertThat(boundaryTriggered.getValue().getPayloadAsMap())
         .contains(entry("foo", 1), entry("oof", 2));
   }
@@ -229,9 +230,9 @@ public class BoundaryEventTest {
     final Record<WorkflowInstanceRecordValue> subProcessTerminated =
         testClient.receiveElementInState("sub", WorkflowInstanceIntent.ELEMENT_TERMINATED);
     final Record<WorkflowInstanceRecordValue> boundaryTriggering =
-        testClient.receiveElementInState("timer", WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING);
+        testClient.receiveElementInState("timer", WorkflowInstanceIntent.EVENT_TRIGGERING);
     final Record<WorkflowInstanceRecordValue> boundaryTriggered =
-        testClient.receiveElementInState("timer", WorkflowInstanceIntent.CATCH_EVENT_TRIGGERED);
+        testClient.receiveElementInState("timer", WorkflowInstanceIntent.EVENT_TRIGGERED);
 
     assertRecordsPublishedInOrder(
         timerTriggered,

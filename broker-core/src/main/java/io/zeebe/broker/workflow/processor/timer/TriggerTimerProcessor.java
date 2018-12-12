@@ -109,7 +109,7 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
         deferredRecord.setPayload(EMPTY_DOCUMENT).setElementId(timer.getHandlerNodeId());
 
         streamWriter.appendFollowUpEvent(
-            tokenEvent.getKey(), WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING, deferredRecord);
+            tokenEvent.getKey(), WorkflowInstanceIntent.EVENT_TRIGGERING, deferredRecord);
       }
     }
   }

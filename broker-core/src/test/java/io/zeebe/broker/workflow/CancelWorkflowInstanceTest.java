@@ -238,23 +238,17 @@ public class CancelWorkflowInstanceTest {
     final long workflowInstanceKey =
         testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("id", "123"));
 
-    final Record<WorkflowInstanceRecordValue> catchEventEntered =
-        testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+    testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.EVENT_ACTIVATED);
 
     final ExecuteCommandResponse response = cancelWorkflowInstance(workflowInstanceKey);
 
     // then
     assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_TERMINATING);
 
-    final Record<WorkflowInstanceRecordValue> activityTerminatingEvent =
-        testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_TERMINATING);
-    final Record<WorkflowInstanceRecordValue> activityTerminatedEvent =
-        testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_TERMINATED);
+    final Record<WorkflowInstanceRecordValue> terminatedEvent =
+        testClient.receiveElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_TERMINATED);
 
-    assertThat(activityTerminatedEvent.getKey()).isEqualTo(catchEventEntered.getKey());
-    assertThat(activityTerminatedEvent.getSourceRecordPosition())
-        .isEqualTo(activityTerminatingEvent.getPosition());
-    assertWorkflowInstanceRecord(workflowInstanceKey, "catch-event", activityTerminatedEvent);
+    assertWorkflowInstanceRecord(workflowInstanceKey, PROCESS_ID, terminatedEvent);
   }
 
   @Test

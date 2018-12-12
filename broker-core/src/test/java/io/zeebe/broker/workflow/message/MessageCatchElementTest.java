@@ -92,6 +92,9 @@ public class MessageCatchElementTest {
   public BpmnModelInstance workflow;
 
   @Parameter(2)
+  public WorkflowInstanceIntent enteredState;
+
+  @Parameter(3)
   public WorkflowInstanceIntent leftState;
 
   @Parameters(name = "{0}")
@@ -100,10 +103,21 @@ public class MessageCatchElementTest {
       {
         "intermediate message catch event",
         CATCH_EVENT_WORKFLOW,
+        WorkflowInstanceIntent.EVENT_ACTIVATED,
+        WorkflowInstanceIntent.EVENT_TRIGGERED
+      },
+      {
+        "receive task",
+        RECEIVE_TASK_WORKFLOW,
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED,
         WorkflowInstanceIntent.ELEMENT_COMPLETED
       },
-      {"receive task", RECEIVE_TASK_WORKFLOW, WorkflowInstanceIntent.ELEMENT_COMPLETED},
-      {"boundary event", BOUNDARY_EVENT_WORKFLOW, WorkflowInstanceIntent.ELEMENT_TERMINATED}
+      {
+        "boundary event",
+        BOUNDARY_EVENT_WORKFLOW,
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+        WorkflowInstanceIntent.ELEMENT_TERMINATED
+      }
     };
   }
 
@@ -126,8 +140,7 @@ public class MessageCatchElementTest {
         testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
     final Record<WorkflowInstanceRecordValue> catchEventEntered =
-        testClient.receiveElementInState(
-            "receive-message", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        testClient.receiveElementInState("receive-message", enteredState);
 
     final Record<MessageSubscriptionRecordValue> messageSubscription =
         RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED).getFirst();
@@ -145,8 +158,7 @@ public class MessageCatchElementTest {
         testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
     final Record<WorkflowInstanceRecordValue> catchEventEntered =
-        testClient.receiveElementInState(
-            "receive-message", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        testClient.receiveElementInState("receive-message", enteredState);
 
     final Record<WorkflowInstanceSubscriptionRecordValue> workflowInstanceSubscription =
         testClient
@@ -170,8 +182,7 @@ public class MessageCatchElementTest {
         testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
     final Record<WorkflowInstanceRecordValue> catchEventEntered =
-        testClient.receiveElementInState(
-            "receive-message", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        testClient.receiveElementInState("receive-message", enteredState);
 
     // when
     final DirectBuffer messagePayload = asMsgPack("foo", "bar");
@@ -199,8 +210,7 @@ public class MessageCatchElementTest {
         testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
     final Record<WorkflowInstanceRecordValue> catchEventEntered =
-        testClient.receiveElementInState(
-            "receive-message", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        testClient.receiveElementInState("receive-message", enteredState);
 
     // when
     testClient.publishMessage("order canceled", "order-123", asMsgPack("foo", "bar"));
@@ -225,8 +235,7 @@ public class MessageCatchElementTest {
         testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
     final Record<WorkflowInstanceRecordValue> catchEventEntered =
-        testClient.receiveElementInState(
-            "receive-message", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        testClient.receiveElementInState("receive-message", enteredState);
 
     testClient.cancelWorkflowInstance(workflowInstanceKey);
 
@@ -249,8 +258,7 @@ public class MessageCatchElementTest {
         testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
     final Record<WorkflowInstanceRecordValue> catchEventEntered =
-        testClient.receiveElementInState(
-            "receive-message", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        testClient.receiveElementInState("receive-message", enteredState);
 
     testClient.cancelWorkflowInstance(workflowInstanceKey);
 

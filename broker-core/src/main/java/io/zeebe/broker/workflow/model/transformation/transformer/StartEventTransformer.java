@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.workflow.model.transformation.transformer;
 
+import io.zeebe.broker.workflow.model.BpmnStep;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElementContainer;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
@@ -54,7 +55,8 @@ public class StartEventTransformer implements ModelElementTransformer<StartEvent
   }
 
   private void bindLifecycle(TransformContext context, final ExecutableFlowNode startEvent) {
+    startEvent.bindLifecycleState(WorkflowInstanceIntent.EVENT_TRIGGERING, BpmnStep.TRIGGER_EVENT);
     startEvent.bindLifecycleState(
-        WorkflowInstanceIntent.START_EVENT_OCCURRED, context.getCurrentFlowNodeOutgoingStep());
+        WorkflowInstanceIntent.EVENT_TRIGGERED, context.getCurrentFlowNodeOutgoingStep());
   }
 }

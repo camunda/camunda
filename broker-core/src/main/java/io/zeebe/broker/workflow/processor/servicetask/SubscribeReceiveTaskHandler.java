@@ -15,24 +15,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.processor.event;
+package io.zeebe.broker.workflow.processor.servicetask;
 
-import io.zeebe.broker.workflow.model.element.ExecutableCatchEventSupplier;
+import io.zeebe.broker.workflow.model.element.ExecutableReceiveTask;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 
-public class SubscribeEventHandler implements BpmnStepHandler<ExecutableCatchEventSupplier> {
+public class SubscribeReceiveTaskHandler implements BpmnStepHandler<ExecutableReceiveTask> {
 
   @Override
-  public void handle(final BpmnStepContext<ExecutableCatchEventSupplier> context) {
-    final ExecutableCatchEventSupplier supplier = context.getElement();
+  public void handle(final BpmnStepContext<ExecutableReceiveTask> context) {
+    final ExecutableReceiveTask receiveTask = context.getElement();
 
-    try {
-      context.getCatchEventOutput().subscribeToCatchEvents(context, supplier.getEvents());
-
-      context.getOutput().deferEvent(context.getRecord());
-    } catch (Exception e) {
-      // TODO (Phil): improve incident handling #1736
-    }
+    context.getCatchEventOutput().subscribeToCatchEvents(context, receiveTask.getEvents());
   }
 }

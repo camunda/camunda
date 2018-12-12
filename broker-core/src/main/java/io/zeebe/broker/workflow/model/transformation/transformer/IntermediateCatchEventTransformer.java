@@ -45,18 +45,13 @@ public class IntermediateCatchEventTransformer
   private void bindLifecycle(
       TransformContext context, ExecutableCatchEventElement executableElement) {
     executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_READY, BpmnStep.ACTIVATE_FLOW_NODE);
+        WorkflowInstanceIntent.EVENT_ACTIVATING, BpmnStep.ACTIVATE_EVENT);
     executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.SUBSCRIBE_TO_EVENTS);
+        WorkflowInstanceIntent.EVENT_ACTIVATED, BpmnStep.SUBSCRIBE_TO_EVENTS);
 
     executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.COMPLETE_FLOW_NODE);
+        WorkflowInstanceIntent.EVENT_TRIGGERING, BpmnStep.TRIGGER_EVENT);
     executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_COMPLETED, context.getCurrentFlowNodeOutgoingStep());
-
-    executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.TERMINATE_ACTIVITY);
-    executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.PROPAGATE_TERMINATION);
+        WorkflowInstanceIntent.EVENT_TRIGGERED, context.getCurrentFlowNodeOutgoingStep());
   }
 }

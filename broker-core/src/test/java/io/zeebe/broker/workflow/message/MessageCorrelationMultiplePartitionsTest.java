@@ -119,8 +119,8 @@ public class MessageCorrelationMultiplePartitionsTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.END_EVENT_OCCURRED)
-                .withElementId("end")
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERED)
+                .withElementId("receive-message")
                 .limit(3))
         .extracting(r -> r.getValue().getPayloadAsMap().get("p"))
         .contains("p0", "p1", "p2");

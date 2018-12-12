@@ -24,23 +24,23 @@ import java.util.function.Predicate;
 
 public class BpmnStepGuards {
 
-  private final Map<WorkflowInstanceIntent, Predicate<BpmnStepContext>> stepGuards =
+  private final Map<WorkflowInstanceIntent, Predicate<BpmnStepContext<?>>> stepGuards =
       new EnumMap<>(WorkflowInstanceIntent.class);
 
   // when element or scope element instance have been completed/terminated already
-  private final Predicate<BpmnStepContext> hasElementInstances =
+  private final Predicate<BpmnStepContext<?>> hasElementInstances =
       c -> c.getElementInstance() != null || c.getFlowScopeInstance() != null;
 
   public BpmnStepGuards() {
 
     // step guards: should a record in a certain state be handled?
-    final Predicate<BpmnStepContext> noConcurrentTransitionGuard =
+    final Predicate<BpmnStepContext<?>> noConcurrentTransitionGuard =
         c -> c.getState() == c.getElementInstance().getState();
-    final Predicate<BpmnStepContext> scopeActiveGuard =
+    final Predicate<BpmnStepContext<?>> scopeActiveGuard =
         c ->
             c.getFlowScopeInstance() != null
                 && c.getFlowScopeInstance().getState() == WorkflowInstanceIntent.ELEMENT_ACTIVATED;
-    final Predicate<BpmnStepContext> scopeTerminatingGuard =
+    final Predicate<BpmnStepContext<?>> scopeTerminatingGuard =
         c ->
             c.getFlowScopeInstance() != null
                 && c.getFlowScopeInstance().getState()
@@ -53,17 +53,22 @@ public class BpmnStepGuards {
     stepGuards.put(WorkflowInstanceIntent.ELEMENT_TERMINATING, c -> true);
     stepGuards.put(WorkflowInstanceIntent.ELEMENT_TERMINATED, scopeTerminatingGuard);
 
-    stepGuards.put(WorkflowInstanceIntent.END_EVENT_OCCURRED, scopeActiveGuard);
-    stepGuards.put(WorkflowInstanceIntent.GATEWAY_ACTIVATED, scopeActiveGuard);
-    stepGuards.put(WorkflowInstanceIntent.START_EVENT_OCCURRED, scopeActiveGuard);
     stepGuards.put(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, scopeActiveGuard);
 
-    stepGuards.put(WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING, scopeActiveGuard);
-    stepGuards.put(WorkflowInstanceIntent.CATCH_EVENT_TRIGGERED, scopeActiveGuard);
+    stepGuards.put(WorkflowInstanceIntent.GATEWAY_ACTIVATED, scopeActiveGuard);
+
+    stepGuards.put(WorkflowInstanceIntent.EVENT_ACTIVATING, scopeActiveGuard);
+    stepGuards.put(WorkflowInstanceIntent.EVENT_ACTIVATED, scopeActiveGuard);
+    stepGuards.put(WorkflowInstanceIntent.EVENT_TRIGGERING, scopeActiveGuard);
+    stepGuards.put(WorkflowInstanceIntent.EVENT_TRIGGERED, scopeActiveGuard);
   }
 
-  public boolean shouldHandle(BpmnStepContext context) {
-    final Predicate<BpmnStepContext> guard = stepGuards.get(context.getState());
+  public boolean shouldHandle(BpmnStepContext<?> context) {
+    final Predicate<BpmnStepContext<?>> guard = stepGuards.get(context.getState());
+    if (guard == null) {
+      throw new RuntimeException("no guard found for state: " + context.getState());
+    }
+
     return hasElementInstances.test(context) && guard.test(context);
   }
 }

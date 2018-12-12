@@ -25,11 +25,10 @@ import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.Activity;
 import io.zeebe.model.bpmn.instance.ConditionExpression;
-import io.zeebe.model.bpmn.instance.EndEvent;
+import io.zeebe.model.bpmn.instance.Event;
 import io.zeebe.model.bpmn.instance.EventBasedGateway;
 import io.zeebe.model.bpmn.instance.ExclusiveGateway;
 import io.zeebe.model.bpmn.instance.FlowNode;
-import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.zeebe.model.bpmn.instance.ParallelGateway;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
 import io.zeebe.msgpack.el.CompiledJsonCondition;
@@ -60,8 +59,11 @@ public class SequenceFlowTransformer implements ModelElementTransformer<Sequence
 
     final BpmnStep step;
 
-    if (target instanceof Activity || target instanceof IntermediateCatchEvent) {
-      step = BpmnStep.START_FLOW_NODE;
+    if (target instanceof Activity) {
+      step = BpmnStep.ENTER_FLOW_NODE;
+
+    } else if (target instanceof Event) {
+      step = BpmnStep.ENTER_EVENT;
 
     } else if (target instanceof ExclusiveGateway || target instanceof EventBasedGateway) {
       step = BpmnStep.ACTIVATE_GATEWAY;
@@ -72,9 +74,6 @@ public class SequenceFlowTransformer implements ModelElementTransformer<Sequence
       } else {
         step = BpmnStep.PARALLEL_MERGE;
       }
-
-    } else if (target instanceof EndEvent) {
-      step = BpmnStep.TRIGGER_END_EVENT;
 
     } else {
       throw new RuntimeException("Unsupported element");

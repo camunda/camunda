@@ -86,7 +86,7 @@ public class CatchEventOutput {
     workflowInstanceRecord.setPayload(payload);
     workflowInstanceRecord.setElementId(elementId);
 
-    writer.appendNewEvent(WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING, workflowInstanceRecord);
+    writer.appendNewEvent(WorkflowInstanceIntent.EVENT_TRIGGERING, workflowInstanceRecord);
   }
 
   public void triggerInterruptedElement(ElementInstance element, TypedStreamWriter writer) {
@@ -144,7 +144,8 @@ public class CatchEventOutput {
     final DirectBuffer extractedKey = extractCorrelationKey(context, message);
 
     if (extractedKey == null) {
-      return;
+      // TODO (Phil): improve incident handling #1736
+      throw new RuntimeException("Failed to extract the message correlation key");
     }
 
     final long workflowInstanceKey = context.getValue().getWorkflowInstanceKey();
