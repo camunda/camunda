@@ -55,7 +55,8 @@ where the `master` branch contains the latest stable release.
 If you want to work on an issue please follow the following steps:
 
 1. Check that a [GitHub issue][issues] exists for the task you want to work on,
-   if not please create one first.
+   if not please create one first and have a look at the [issue
+   guidelines](#github-issue-guidelines).
 1. Checkout the `develop` branch and pull the latest changes.
    ```
    git checkout develop
@@ -113,6 +114,45 @@ If you want to work on an issue please follow the following steps:
        they are caused by its changes and address them. If they are flaky tests
        a merge can be retried with a comment with the content `bors retry`.
 
+## GitHub Issue Guidelines
+
+Every issue should have a meaningful name and a description which either
+describes:
+- a new feature with details about the use case the feature would solve or
+  improve
+- a problem, how we can reproduce it and what would be the expected behavior
+- a change and the intention how this would improve the system
+
+### Labels
+
+Every issue will have up to three types of labels to indicate its status, type
+  and scope. The status label will be normally managed by https://waffle.io/zeebe-io/zeebe.
+
+- [[:mag:]][status] Status:
+  - No status label means it is not planned to work on the issue in the
+    near future
+  - [[:mag:]][planned] **Planned**: We plan to work on the issue in the current quarter
+  - [[:mag:]][ready] **Ready**: We plan to work on the issue in the next weeks
+  - [[:mag:]][in progress] **In Progress**: Someone is currently actively working on the issue
+  - [[:mag:]][needs review] **Needs Review**: The initial work on the issue is finished and it is now
+    subject to the review process
+- [[:mag:]][type] Type:
+  - [[:mag:]][enhancement] **Enhancement**: A user facing feature or improvement, decided if this
+  - [[:mag:]][bug] **Bug**: A user facing bug fix, which will be listed in the changelog
+    issue is something with should be listed in the changelog
+  - [[:mag:]][maintenance] **Maintenance**: A non-user facing code change
+  - [[:mag:]][docs] **Docs**: A addition or change to the docs
+  - [[:mag:]][question] **Question**: A general question which not yet is an actionable issue
+- [[:mag:]][scope] Scope:
+  - No scope label means it is not directly related to a code change in either
+    the broker or client
+  - [[:mag:]][broker] **broker**: Issues related to code changes which involve the server part
+    of the architecture, including gateway and exporters
+  - [[:mag:]][clients/java] **clients/java**: Issues related to code changes which involve the java
+    client
+  - [[:mag:]][clients/go] **clients/go**: Issues related to code changes which involve the go
+    client and zbctl
+
 ## Commit Message Guidelines
 
 The commit message should match the following pattern
@@ -120,13 +160,17 @@ The commit message should match the following pattern
 %{type}(%{scope}): %{description}
 ```
 
-- `type`: Can be one of the following `feat`, `fix`, `docs`, `style`,
-  `refactor`, `perf`, `test`, `chore`, `revert`, `ci`. Please use `feat` and
-  `fix` only for code related changes. And not for docs, test or style fixes or
-  features.
-- `scope`: Should be a component of Zeebe, in general this is for features and
-  fixes the maven module you made the major changes in, i.e. `broker`, `client`,
-  `logstreams`. For other types like docs it might be the chapter you changed.
+- `type` and `scope` should be chosen as follows
+    - `feat`: For user facing features or improvements. `scope` should be either
+      `broker`, `clients/java` or `clients/go`.
+    - `fix`: For user facing bug fixes. `scope` should be either
+      `broker`, `clients/java` or `clients/go`.
+    - `chore`: For code changes which are not user facing, `scope` should be
+      the folder name of the component which contains the main part of the
+      change, e.g. `broker-core` or `exporters`.
+    - `docs`:  For changes on the documentation. `scope` should be the sub folder
+      name in the `docs/src/` directory which contains the main change, e.g.
+      `introduction` or `reference`.
 - `description`: short description of the change to a max length of the whole
   subject line of 120 characters
 
@@ -156,3 +200,20 @@ code-of-conduct@zeebe.io.
 [slack]: https://zeebe-slackin.herokuapp.com/
 [sample]: https://github.com/zeebe-io/zeebe-test-template-java
 
+[status]: https://github.com/zeebe-io/zeebe/labels?q=Type
+[planned]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Enhancement
+[ready]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Maintenance
+[in progress]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Bug
+[needs review]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Docs
+
+[type]: https://github.com/zeebe-io/zeebe/labels?q=Type
+[enhancement]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Enhancement
+[maintenance]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Maintenance
+[bug]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Bug
+[docs]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Docs
+[question]: https://github.com/zeebe-io/zeebe/labels/Type%3A%20Question
+
+[scope]: https://github.com/zeebe-io/zeebe/labels?q=Scope
+[broker]: https://github.com/zeebe-io/zeebe/labels/Scope%3A%20broker
+[clients/java]: https://github.com/zeebe-io/zeebe/labels/Scope%3A%20clients%2Fjava
+[clients/go]: https://github.com/zeebe-io/zeebe/labels/Scope%3A%20clients%2Fgo
