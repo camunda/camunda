@@ -31,10 +31,11 @@ export default class Popover extends React.Component {
 
   toggleOpen = evt => {
     evt.preventDefault();
+    const open = this.state.open;
 
     setTimeout(() => {
       this.setState({
-        open: !this.state.open
+        open: !open
       });
     });
   };
@@ -74,7 +75,7 @@ export default class Popover extends React.Component {
 
   createOverlay = () => {
     return (
-      <div>
+      <div onClick={this.catchClick}>
         <span className="Popover__dialog-arrow-border"> </span>
         <span className="Popover__dialog-arrow" />
         <div
@@ -106,11 +107,7 @@ export default class Popover extends React.Component {
 
   render() {
     return (
-      <div
-        ref={this.storePopoverRootRef}
-        className={classnames('Popover', this.props.className)}
-        onClick={this.catchClick}
-      >
+      <div ref={this.storePopoverRootRef} className={classnames('Popover', this.props.className)}>
         <Button
           active={this.state.open}
           onClick={this.toggleOpen}

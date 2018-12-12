@@ -67,6 +67,27 @@
               cursor: pointer;
               display: block;
             }
+
+            .Popover {
+              .Popover__button {
+                width: 20px;
+                height: 20px;
+                padding: 0px;
+                margin: 5px;
+                border: 0;
+                .colorBox {
+                  display: block;
+                  height: 100%;
+                }
+              }
+
+              .Popover__dialog {
+                padding: 5px;
+                .ColorPicker {
+                  width: 200px;
+                }
+              }
+            }
           }
         }
       }

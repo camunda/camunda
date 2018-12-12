@@ -23,5 +23,11 @@ it('should invoke onChange when a color is selected', () => {
     .first()
     .simulate('click', {target: {getAttribute: () => 'testColor'}});
 
-  expect(spy).toHaveBeenCalledWith('color', 'testColor');
+  expect(spy).toHaveBeenCalledWith('testColor');
+});
+
+it('should generate correct amount of colors', () => {
+  expect(ColorPicker.getColors(5)).toHaveLength(5);
+  const colors = ColorPicker.getColors(18);
+  expect(colors[17]).toEqual(ColorPicker.dark.steelBlue);
 });

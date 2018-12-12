@@ -115,9 +115,7 @@ it('should show nice ticks for duration formats on the y axis', () => {
 
 it('should generate colors', () => {
   const node = shallow(<Chart configuration={{}} data={{foo: 123}} />);
-
   const colors = node.instance().createColors(7);
-
   expect(colors).toHaveLength(7);
   expect(colors[5]).not.toEqual(colors[6]);
 });
@@ -220,7 +218,7 @@ it('should create two datasets for each report in combined line charts with targ
 
 it('should return correct chart data object for a single report', () => {
   const data = {foo: 123, bar: 5};
-  const node = shallow(<Chart configuration={{color: 'testColor'}} data={data} />);
+  const node = shallow(<Chart configuration={{color: ['testColor']}} data={data} />);
 
   const result = node.instance().createChartData(data, 'line');
 
@@ -248,25 +246,25 @@ it('should return correct chart data object for a combined report', () => {
 
   const result = node.instance().createChartData(data, 'line');
   expect(result).toEqual({
-    labels: ['foo', 'bar', 'dar'],
     datasets: [
       {
-        label: 'Report A',
-        data: [123, 5],
-        borderColor: '#1991c8',
-        legendColor: '#1991c8',
         backgroundColor: 'transparent',
-        borderWidth: 2
+        borderColor: '#1991c8',
+        borderWidth: 2,
+        data: [123, 5],
+        label: 'Report A',
+        legendColor: '#1991c8'
       },
       {
-        label: 'Report B',
-        data: [1, 3],
-        legendColor: 'hsl(180, 65%, 50%)',
-        borderColor: 'hsl(180, 65%, 50%)',
         backgroundColor: 'transparent',
-        borderWidth: 2
+        borderColor: 'hsl(50, 65%, 50%)',
+        borderWidth: 2,
+        data: [1, 3],
+        label: 'Report B',
+        legendColor: 'hsl(50, 65%, 50%)'
       }
-    ]
+    ],
+    labels: ['foo', 'bar', 'dar']
   });
 });
 

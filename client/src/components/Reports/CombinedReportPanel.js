@@ -1,6 +1,6 @@
 import React from 'react';
 import {loadEntity} from 'services';
-import {TypeaheadMultipleSelection} from 'components';
+import {TypeaheadMultipleSelection, Popover, ColorPicker} from 'components';
 import {Configuration} from './Configuration';
 
 import './CombinedReportPanel.scss';
@@ -66,21 +66,47 @@ export default class CombinedReportPanel extends React.Component {
       },
       () => {
         const updates = {
-          reportIds: this.state.selectedReports.map(report => report.id)
+          reportIds: this.state.selectedReports.map(report => report.id),
+          configuration: {
+            ...this.props.configuration,
+            ...(selectedReport.data.visualization !== 'table'
+              ? {color: this.getUpdatedColors(selectedReports)}
+              : {})
+          }
         };
         this.props.updateReport(updates);
       }
     );
   };
 
+  getUpdatedColors = prevOrderReports => {
+    const colorsHash = prevOrderReports.reduce((colors, report, i) => {
+      return {...colors, [report.id]: this.props.configuration.color[i]};
+    }, {});
+
+    const colors = ColorPicker.getColors(this.state.selectedReports.length).filter(
+      color => !Object.values(colorsHash).includes(color)
+    );
+    colors[0] = ColorPicker.dark.steelBlue;
+
+    return this.state.selectedReports.map((report, i) => colorsHash[report.id] || colors.pop());
+  };
+
   updateReportsOrder = selectedReports => {
+    const prevOrderReports = this.state.selectedReports;
     this.setState(
       {
         selectedReports
       },
       () => {
         this.props.updateReport({
-          reportIds: this.state.selectedReports.map(report => report.id)
+          reportIds: this.state.selectedReports.map(report => report.id),
+          configuration: {
+            ...this.props.configuration,
+            ...(selectedReports[0].data.visualization !== 'table'
+              ? {color: this.getUpdatedColors(prevOrderReports)}
+              : {})
+          }
         });
       }
     );
@@ -105,6 +131,18 @@ export default class CombinedReportPanel extends React.Component {
         referenceReport.groupBy.value.name === data.groupBy.value.name;
     }
     return data.groupBy.type === referenceReport.groupBy.type && isSameValue;
+  };
+
+  updateColor = idx => color => {
+    const {configuration, updateReport} = this.props;
+    const newColorConfiguration = [...configuration.color];
+    newColorConfiguration[idx] = color;
+    updateReport({
+      configuration: {
+        ...configuration,
+        color: newColorConfiguration
+      }
+    });
   };
 
   search = (searchQuery, name) =>
@@ -142,6 +180,24 @@ export default class CombinedReportPanel extends React.Component {
           loading={false}
           onOrderChange={this.updateReportsOrder}
           format={v => v.name}
+          customItemSettings={(val, idx) => {
+            if (!configurationType || configurationType === 'table') return;
+            const selectedColor = configuration.color && configuration.color[idx];
+            return (
+              <Popover
+                title={
+                  <span
+                    className="colorBox"
+                    style={{
+                      background: selectedColor
+                    }}
+                  />
+                }
+              >
+                <ColorPicker selectedColor={selectedColor} onChange={this.updateColor(idx)} />
+              </Popover>
+            );
+          }}
         />
       </div>
     );

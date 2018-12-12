@@ -7,6 +7,10 @@ const barReport = {
   data: {visualization: 'bar', view: {property: 'frequency'}}
 };
 
+const props = {
+  report: {combined: false}
+};
+
 const configuration = {
   showInstanceCount: false,
   color: '#1991c8',
@@ -29,7 +33,7 @@ it('should reset to defaults when the property changes', () => {
       {report: {data: {view: {property: 'new'}}}}
     )
   ).toEqual({
-    ...BarChartConfig.defaults,
+    ...BarChartConfig.defaults(props),
     targetValue: null
   });
 });
@@ -41,7 +45,7 @@ it('should reset to defaults when the entity changes', () => {
       {report: {data: {view: {entity: 'new'}}}}
     )
   ).toEqual({
-    ...BarChartConfig.defaults,
+    ...BarChartConfig.defaults(props),
     targetValue: null
   });
 });
@@ -53,7 +57,7 @@ it('should reset to defaults when visualization type changes', () => {
       {type: 'new', report: {data: {view: {entity: 'test'}}}}
     )
   ).toEqual({
-    ...BarChartConfig.defaults,
+    ...BarChartConfig.defaults(props),
     targetValue: null
   });
 });
@@ -82,7 +86,7 @@ it('should reset to defaults when updating combined report type', () => {
         type: 'bar'
       }
     )
-  ).toEqual(BarChartConfig.defaults);
+  ).toEqual(BarChartConfig.defaults({report: {combined: true}}));
 });
 
 it('should not display show instance count and color picker for combined reports', () => {

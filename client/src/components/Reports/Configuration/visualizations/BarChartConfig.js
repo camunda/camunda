@@ -23,7 +23,10 @@ export default function BarChartConfig({configuration, onChange, report}) {
           <ShowInstanceCount configuration={configuration} onChange={onChange} />
           <fieldset className="ColorSection">
             <legend>Select visualization color</legend>
-            <ColorPicker selectedColor={configuration.color} onChange={onChange} />
+            <ColorPicker
+              selectedColor={configuration.color[0]}
+              onChange={color => onChange('color', [color])}
+            />
           </fieldset>
         </>
       )}
@@ -72,18 +75,19 @@ export default function BarChartConfig({configuration, onChange, report}) {
   );
 }
 
-BarChartConfig.defaults = {
-  showInstanceCount: false,
-  color: ColorPicker.dark.steelBlue,
-  hideRelativeValue: false,
-  hideAbsoluteValue: false,
-  xLabel: '',
-  yLabel: '',
-  targetValue: null
+BarChartConfig.defaults = ({report}) => {
+  return {
+    ...(report.combined ? {} : {color: [ColorPicker.dark.steelBlue], showInstanceCount: false}),
+    hideRelativeValue: false,
+    hideAbsoluteValue: false,
+    xLabel: '',
+    yLabel: '',
+    targetValue: null
+  };
 };
 
 BarChartConfig.onUpdate = (prevProps, props) => {
-  if (props.report.combined) return prevProps.type !== props.type && BarChartConfig.defaults;
+  if (props.report.combined) return prevProps.type !== props.type && BarChartConfig.defaults(props);
   const currentView = props.report.data.view;
   const prevView = prevProps.report.data.view;
   if (
@@ -91,7 +95,7 @@ BarChartConfig.onUpdate = (prevProps, props) => {
     currentView.entity !== prevView.entity ||
     (prevProps.type !== props.type && !isBarOrLine(prevProps.type, props.type))
   ) {
-    return BarChartConfig.defaults;
+    return BarChartConfig.defaults(props);
   }
 };
 

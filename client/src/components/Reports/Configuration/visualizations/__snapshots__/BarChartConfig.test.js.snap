@@ -26,7 +26,8 @@ exports[`it should display correct configuration for barchart 1`] = `
       Select visualization color
     </legend>
     <ColorPicker
-      selectedColor="#1991c8"
+      onChange={[Function]}
+      selectedColor="#"
     />
   </fieldset>
   <fieldset

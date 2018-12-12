@@ -80,7 +80,10 @@ export default themed(
       if (!isCombined) dataArr = [data];
 
       let datasetsColors = this.createColors(dataArr.length);
-      datasetsColors[0] = this.props.configuration.color || this.getColorFor('bar');
+      datasetsColors = this.props.configuration.color || [
+        this.getColorFor('bar'),
+        ...datasetsColors
+      ];
 
       let labels = Object.keys(Object.assign({}, ...dataArr));
       dataArr = uniteResults(dataArr, labels);
@@ -186,7 +189,7 @@ export default themed(
           };
         case 'line':
           return {
-            borderColor: isCombined ? datasetColor : this.props.configuration.color,
+            borderColor: datasetColor,
             backgroundColor: 'transparent',
             borderWidth: 2,
             legendColor: datasetColor
@@ -217,7 +220,6 @@ export default themed(
       const startValue = offset;
       const stopValue = 360 - offset;
       const stepSize = ~~((stopValue - startValue) / amount);
-
       for (let i = 0; i < amount; i++) {
         colors.push(
           `hsl(${i * stepSize + offset}, 65%, ${this.props.theme === 'dark' ? 40 : 50}%)`

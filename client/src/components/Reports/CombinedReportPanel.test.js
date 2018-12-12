@@ -163,3 +163,32 @@ describe('isCompatible', () => {
     expect(node.instance().isCompatible(reportSameOperation)).toBeFalsy();
   });
 });
+
+it('should update the color of a single report inside a combined report', async () => {
+  const spy = jest.fn();
+  const node = await shallow(
+    <CombinedReportPanel
+      reportResult={reportsList[1]}
+      configuration={{color: ['red', 'yellow']}}
+      updateReport={spy}
+    />
+  );
+
+  node.setState({selectedReports: [{id: 'report1'}, {id: 'report2'}]});
+
+  node.instance().updateColor(1)('blue');
+
+  expect(spy).toHaveBeenCalledWith({configuration: {color: ['red', 'blue']}});
+});
+
+it('should generate new colors or preserve existing ones when selected/deselecting or reordering reports', async () => {
+  const node = await shallow(
+    <CombinedReportPanel reportResult={reportsList[1]} configuration={{color: ['red', 'yellow']}} />
+  );
+
+  node.setState({selectedReports: [{id: 'report1'}, {id: 'report2'}, {id: 'report3'}]});
+
+  const updateColors = node.instance().getUpdatedColors([{id: 'report2'}, {id: 'report1'}]);
+
+  expect(updateColors).toEqual(['yellow', 'red', '#FCCB00']);
+});

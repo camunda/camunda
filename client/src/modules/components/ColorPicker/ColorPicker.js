@@ -3,8 +3,10 @@ import classnames from 'classnames';
 
 import './ColorPicker.scss';
 
+const colorsAmount = 16;
+
 export const ColorPicker = ({onChange, className, selectedColor = ColorPicker.dark.steelBlue}) => {
-  const handleChange = ({target}) => onChange('color', target.getAttribute('color'));
+  const handleChange = ({target}) => onChange(target.getAttribute('color'));
   const colors = [...Object.values(ColorPicker.dark), ...Object.values(ColorPicker.light)];
 
   return (
@@ -44,6 +46,14 @@ ColorPicker.light = {
   steelBlue: '#C4DEF6',
   blue: '#BED3F3',
   purple: '#D4C4FB'
+};
+
+ColorPicker.getColors = amount => {
+  const allColors = [...Object.values(ColorPicker.dark), ...Object.values(ColorPicker.light)];
+  if (amount > colorsAmount)
+    return [...allColors, ...new Array(amount - colorsAmount).fill(ColorPicker.dark.steelBlue)];
+
+  return allColors.slice(0, amount);
 };
 
 export default ColorPicker;

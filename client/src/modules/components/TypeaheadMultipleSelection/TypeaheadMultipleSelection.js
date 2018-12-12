@@ -44,6 +44,7 @@ export default class TypeaheadMultipleSelection extends React.Component {
                     <Input type="checkbox" checked value={idx} onChange={this.toggleSelected} />
                     {this.props.format(value)}
                   </label>
+                  {this.props.customItemSettings && this.props.customItemSettings(value, idx)}
                 </li>
               );
             })}
@@ -61,7 +62,7 @@ export default class TypeaheadMultipleSelection extends React.Component {
 
   dragEnd = evt => {
     if (!this.over) this.over = evt.target;
-    this.dragged.style.display = 'block';
+    this.dragged.style.display = 'flex';
 
     const container = this.dragged.parentNode;
     if (container.contains(this.dragPlaceHolder)) container.removeChild(this.dragPlaceHolder);
