@@ -14,8 +14,8 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.RAW_RESULT_TYPE;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "resultType")
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = MapProcessReportResultDto.class, name = MAP_RESULT_TYPE),
-  @JsonSubTypes.Type(value = NumberProcessReportResultDto.class, name = NUMBER_RESULT_TYPE),
+  @JsonSubTypes.Type(value = ProcessReportMapResultDto.class, name = MAP_RESULT_TYPE),
+  @JsonSubTypes.Type(value = ProcessReportNumberResultDto.class, name = NUMBER_RESULT_TYPE),
   @JsonSubTypes.Type(value = RawDataProcessReportResultDto.class, name = RAW_RESULT_TYPE),
 })
 public abstract class ProcessReportResultDto extends SingleReportDefinitionDto<ProcessReportDataDto> implements ReportResultDto {

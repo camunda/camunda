@@ -3,7 +3,7 @@ package org.camunda.optimize.service.importing;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.MapProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
@@ -353,7 +353,7 @@ public class VariableImportIT {
     ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
       processDefinitionKey, ALL_VERSIONS
     );
-    MapProcessReportResultDto result = evaluateReport(reportData);
+    ProcessReportMapResultDto result = evaluateReport(reportData);
     assertThat(result.getResult(), is(notNullValue()));
     Map<String, Long> flowNodeIdToExecutionFrequency = result.getResult();
     for (Long frequency : flowNodeIdToExecutionFrequency.values()) {
@@ -361,11 +361,11 @@ public class VariableImportIT {
     }
   }
 
-  private MapProcessReportResultDto evaluateReport(ProcessReportDataDto reportData) {
+  private ProcessReportMapResultDto evaluateReport(ProcessReportDataDto reportData) {
     Response response = evaluateReportAndReturnResponse(reportData);
     assertThat(response.getStatus(), is(200));
 
-    return response.readEntity(MapProcessReportResultDto.class);
+    return response.readEntity(ProcessReportMapResultDto.class);
   }
 
   private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {

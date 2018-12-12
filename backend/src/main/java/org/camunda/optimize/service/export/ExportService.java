@@ -3,7 +3,7 @@ package org.camunda.optimize.service.export;
 import com.opencsv.CSVWriter;
 import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.MapProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
@@ -105,8 +105,8 @@ public class ExportService {
           excludedColumns
         );
 
-      } else if (reportResult.getClass().equals(MapProcessReportResultDto.class)) {
-        MapProcessReportResultDto cast = (MapProcessReportResultDto) reportResult;
+      } else if (reportResult.getClass().equals(ProcessReportMapResultDto.class)) {
+        ProcessReportMapResultDto cast = (ProcessReportMapResultDto) reportResult;
         bytes = this.writeRawDataToBytes(
           cast.getResult(),
           cast.getData().getGroupBy(),

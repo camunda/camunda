@@ -2,6 +2,7 @@ package org.camunda.optimize.service.es.report.command;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
+import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

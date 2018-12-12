@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewOperation;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
-import org.camunda.optimize.service.es.report.command.RawDecisionDataCommand;
+import org.camunda.optimize.service.es.report.command.decision.RawDecisionDataCommand;
 import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
 import org.camunda.optimize.test.util.DecisionReportDataBuilder;
 import org.hamcrest.Description;

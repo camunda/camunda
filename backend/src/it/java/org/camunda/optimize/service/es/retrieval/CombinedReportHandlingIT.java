@@ -11,8 +11,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinit
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.MapProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.NumberProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -224,11 +224,11 @@ public class CombinedReportHandlingIT {
 
     // when
     String reportId = createNewCombinedReport(singleReportId, singleReportId2);
-    CombinedProcessReportResultDto<MapProcessReportResultDto> result = evaluateCombinedReportById(reportId);
+    CombinedProcessReportResultDto<ProcessReportMapResultDto> result = evaluateCombinedReportById(reportId);
 
     // then
     assertThat(result.getId(), is(reportId));
-    Map<String, MapProcessReportResultDto> resultMap = result.getResult();
+    Map<String, ProcessReportMapResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(2));
     Map<String, Long> flowNodeToCount = resultMap.get(singleReportId).getResult();
     assertThat(flowNodeToCount.size(), is(3));
@@ -250,7 +250,7 @@ public class CombinedReportHandlingIT {
 
     // then
     assertThat(result.getId(), is(reportId));
-    Map<String, MapProcessReportResultDto> resultMap = result.getResult();
+    Map<String, ProcessReportMapResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(0));
   }
 
@@ -410,7 +410,7 @@ public class CombinedReportHandlingIT {
       evaluateUnsavedCombined(createCombinedReport(singleReportId, singleReportId2));
 
     // then
-    Map<String, MapProcessReportResultDto> resultMap = result.getResult();
+    Map<String, ProcessReportMapResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(2));
     Map<String, Long> flowNodeToCount = resultMap.get(singleReportId).getResult();
     assertThat(flowNodeToCount.size(), is(3));
@@ -431,9 +431,9 @@ public class CombinedReportHandlingIT {
       evaluateUnsavedCombined(createCombinedReport(singleReportId));
 
     // then
-    Map<String, MapProcessReportResultDto> resultMap = result.getResult();
+    Map<String, ProcessReportMapResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(1));
-    MapProcessReportResultDto mapResult = resultMap.get(singleReportId);
+    ProcessReportMapResultDto mapResult = resultMap.get(singleReportId);
     assertThat(mapResult.getName(), is(TEST_REPORT_NAME));
   }
 
@@ -447,12 +447,12 @@ public class CombinedReportHandlingIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    CombinedProcessReportResultDto<NumberProcessReportResultDto> result = evaluateUnsavedCombined(
+    CombinedProcessReportResultDto<ProcessReportNumberResultDto> result = evaluateUnsavedCombined(
       createCombinedReport(singleReportId1, singleReportId2)
     );
 
     // then
-    Map<String, NumberProcessReportResultDto> resultMap = result.getResult();
+    Map<String, ProcessReportNumberResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(2));
     assertThat(resultMap.keySet(), contains(singleReportId1, singleReportId2));
   }
@@ -467,12 +467,12 @@ public class CombinedReportHandlingIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    CombinedProcessReportResultDto<MapProcessReportResultDto> result = evaluateUnsavedCombined(
+    CombinedProcessReportResultDto<ProcessReportMapResultDto> result = evaluateUnsavedCombined(
       createCombinedReport(singleReportId1, singleReportId2)
     );
 
     // then
-    Map<String, MapProcessReportResultDto> resultMap = result.getResult();
+    Map<String, ProcessReportMapResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(2));
     assertThat(resultMap.keySet(), contains(singleReportId1, singleReportId2));
   }
@@ -487,12 +487,12 @@ public class CombinedReportHandlingIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    CombinedProcessReportResultDto<NumberProcessReportResultDto> result = evaluateUnsavedCombined(
+    CombinedProcessReportResultDto<ProcessReportNumberResultDto> result = evaluateUnsavedCombined(
       createCombinedReport(singleReportId, singleReportId2)
     );
 
     // then
-    Map<String, NumberProcessReportResultDto> resultMap = result.getResult();
+    Map<String, ProcessReportNumberResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(1));
     assertThat(resultMap.keySet(), contains(singleReportId));
   }
@@ -511,7 +511,7 @@ public class CombinedReportHandlingIT {
       evaluateUnsavedCombined(createCombinedReport(singleReportId, singleReportId2));
 
     // then
-    Map<String, MapProcessReportResultDto> resultMap = result.getResult();
+    Map<String, ProcessReportMapResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(1));
     assertThat(resultMap.containsKey(singleReportId2), is(true));
   }
@@ -530,7 +530,7 @@ public class CombinedReportHandlingIT {
       evaluateUnsavedCombined(createCombinedReport(combinedReportId, singleReportId2));
 
     // then
-    Map<String, MapProcessReportResultDto> resultMap = result.getResult();
+    Map<String, ProcessReportMapResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(1));
     Map<String, Long> flowNodeToCount = resultMap.get(singleReportId2).getResult();
     assertThat(flowNodeToCount.size(), is(3));

@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessRe
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.MapProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -239,7 +239,7 @@ public class ReportAuthorizationIT {
       .execute(CombinedProcessReportResultDto.class, 200);
 
     // then
-    Map<String, MapProcessReportResultDto> resultMap = result.getResult();
+    Map<String, ProcessReportMapResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(1));
     assertThat(resultMap.containsKey(notAuthorizedReportId), is(false));
     Map<String, Long> flowNodeToCount = resultMap.get(authorizedReportId).getResult();

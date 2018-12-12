@@ -9,8 +9,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinit
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.MapProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.NumberProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.command.util.ReportUtil;
@@ -77,7 +77,7 @@ public abstract class ReportEvaluationHandler {
     final AtomicReference<Class> singleReportType = new AtomicReference<>();
     final Map<String, ReportResultDto> reportIdToMapResult = singleReportResultList
       .stream()
-      .filter(t -> t instanceof NumberProcessReportResultDto || t instanceof MapProcessReportResultDto)
+      .filter(t -> t instanceof ProcessReportNumberResultDto || t instanceof ProcessReportMapResultDto)
       .filter(singleReportResult -> singleReportResult.getClass().equals(singleReportType.get())
         || singleReportType.compareAndSet(null, singleReportResult.getClass()))
       .collect(Collectors.toMap(
@@ -182,7 +182,7 @@ public abstract class ReportEvaluationHandler {
     try {
       return reportEvaluator.evaluate(reportData);
     } catch (OptimizeException | OptimizeValidationException e) {
-      SingleReportDefinitionDto definitionWrapper = new NumberProcessReportResultDto();
+      SingleReportDefinitionDto definitionWrapper = new ProcessReportNumberResultDto();
       definitionWrapper.setData(reportData);
       definitionWrapper.setName(reportDefinition.getName());
       definitionWrapper.setId(reportDefinition.getId());

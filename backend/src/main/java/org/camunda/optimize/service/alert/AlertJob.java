@@ -2,7 +2,7 @@ package org.camunda.optimize.service.alert;
 
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.NumberProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
 import org.camunda.optimize.service.es.reader.AlertReader;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.PlainReportEvaluationHandler;
@@ -50,8 +50,8 @@ public class AlertJob implements Job {
 
     try {
       ReportDefinitionDto reportDefinition = reportReader.getReport(alert.getReportId());
-      NumberProcessReportResultDto result =
-        (NumberProcessReportResultDto) reportEvaluator.evaluateReport(reportDefinition);
+      ProcessReportNumberResultDto result =
+        (ProcessReportNumberResultDto) reportEvaluator.evaluateReport(reportDefinition);
 
       AlertJobResult alertJobResult = null;
       if (thresholdExceeded(alert, result)) {
@@ -85,7 +85,7 @@ public class AlertJob implements Job {
 
   }
 
-  private String composeFixText(AlertDefinitionDto alert, ReportDefinitionDto reportDefinition, NumberProcessReportResultDto result) {
+  private String composeFixText(AlertDefinitionDto alert, ReportDefinitionDto reportDefinition, ProcessReportNumberResultDto result) {
     String statusText = alert.getThresholdOperator().equals(AlertDefinitionDto.LESS)
             ? "has been reached" : "is not exceeded anymore";
     String emailBody = "Camunda Optimize - Report Status\n" +
@@ -110,7 +110,7 @@ public class AlertJob implements Job {
       JobKey key, String alertId,
       AlertDefinitionDto alert,
       ReportDefinitionDto reportDefinition,
-      NumberProcessReportResultDto result
+      ProcessReportNumberResultDto result
   ) {
     boolean triggeredReminder = isReminder(key) && alert.isTriggered();
     boolean haveToNotify = triggeredReminder || !alert.isTriggered();
@@ -142,7 +142,7 @@ public class AlertJob implements Job {
   private String composeAlertText(
       AlertDefinitionDto alert,
       ReportDefinitionDto reportDefinition,
-      NumberProcessReportResultDto result
+      ProcessReportNumberResultDto result
   ) {
     String statusText = alert.getThresholdOperator().equals(AlertDefinitionDto.LESS)
             ? "is not reached" : "was exceeded";
@@ -159,7 +159,7 @@ public class AlertJob implements Job {
     return emailBody;
   }
 
-  private boolean thresholdExceeded(AlertDefinitionDto alert, NumberProcessReportResultDto result) {
+  private boolean thresholdExceeded(AlertDefinitionDto alert, ProcessReportNumberResultDto result) {
     boolean exceeded = false;
     if (AlertDefinitionDto.GREATER.equals(alert.getThresholdOperator())) {
       exceeded = result.getResult() > alert.getThreshold();

@@ -7,8 +7,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.Dec
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.report.command.util.DecisionGroupByDtoCreator.createGroupDecisionByNone;
-import static org.camunda.optimize.service.es.report.command.util.DecisionViewDtoCreator.createDecisionRawDataView;
+import static org.camunda.optimize.service.es.report.command.decision.util.DecisionGroupByDtoCreator.createGroupDecisionByNone;
+import static org.camunda.optimize.service.es.report.command.decision.util.DecisionViewDtoCreator.createDecisionRawDataView;
 
 public class DecisionReportDataBuilder {
 

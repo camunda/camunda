@@ -15,19 +15,19 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 
 import java.util.Arrays;
 
-import static org.camunda.optimize.service.es.report.command.util.ProcessGroupByDtoCreator.createGroupByFlowNode;
-import static org.camunda.optimize.service.es.report.command.util.ProcessGroupByDtoCreator.createGroupByNone;
-import static org.camunda.optimize.service.es.report.command.util.ProcessGroupByDtoCreator.createGroupByStartDateDto;
-import static org.camunda.optimize.service.es.report.command.util.ProcessGroupByDtoCreator.createGroupByVariable;
-import static org.camunda.optimize.service.es.report.command.util.ProcessViewDtoCreator.createAverageFlowNodeDurationView;
-import static org.camunda.optimize.service.es.report.command.util.ProcessViewDtoCreator.createAverageProcessInstanceDurationView;
-import static org.camunda.optimize.service.es.report.command.util.ProcessViewDtoCreator.createCountProcessInstanceFrequencyView;
-import static org.camunda.optimize.service.es.report.command.util.ProcessViewDtoCreator.createMaxFlowNodeDurationView;
-import static org.camunda.optimize.service.es.report.command.util.ProcessViewDtoCreator.createMaxProcessInstanceDurationView;
-import static org.camunda.optimize.service.es.report.command.util.ProcessViewDtoCreator.createMedianFlowNodeDurationView;
-import static org.camunda.optimize.service.es.report.command.util.ProcessViewDtoCreator.createMedianProcessInstanceDurationView;
-import static org.camunda.optimize.service.es.report.command.util.ProcessViewDtoCreator.createMinFlowNodeDurationView;
-import static org.camunda.optimize.service.es.report.command.util.ProcessViewDtoCreator.createMinProcessInstanceDurationView;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByFlowNode;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByNone;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByStartDateDto;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByVariable;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createAverageFlowNodeDurationView;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createAverageProcessInstanceDurationView;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createCountProcessInstanceFrequencyView;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createMaxFlowNodeDurationView;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createMaxProcessInstanceDurationView;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createMedianFlowNodeDurationView;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createMedianProcessInstanceDurationView;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createMinFlowNodeDurationView;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createMinProcessInstanceDurationView;
 
 
 public class ProcessReportDataBuilderHelper {
