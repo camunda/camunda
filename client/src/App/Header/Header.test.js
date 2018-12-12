@@ -12,7 +12,7 @@ import HeaderWrapper from './Header';
 import * as Styled from './styled';
 import {localStateKeys, apiKeys, filtersMap} from './constants';
 
-const {WrappedComponent: Header} = HeaderWrapper;
+const {WrappedComponent: Header} = HeaderWrapper.WrappedComponent;
 
 const USER = {
   user: {
@@ -34,7 +34,7 @@ const mockCollapsablePanelProps = {
   expandSelections: jest.fn()
 };
 
-describe.skip('Header', () => {
+describe('Header', () => {
   beforeEach(() => {
     api.fetchUser.mockClear();
     instancesApi.fetchWorkflowInstancesCount.mockClear();
