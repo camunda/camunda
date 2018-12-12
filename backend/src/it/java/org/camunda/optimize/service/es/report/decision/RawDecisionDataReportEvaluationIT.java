@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.es.report;
+package org.camunda.optimize.service.es.report.decision;
 
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
@@ -11,55 +11,25 @@ import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.service.es.report.command.RawDecisionDataCommand;
 import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.DecisionReportDataBuilder;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
-import javax.ws.rs.core.Response;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.core.IsNull.notNullValue;
 
-public class RawDecisionDataReportEvaluationIT {
-  private static final String INPUT_AMOUNT_ID = "clause1";
-  private static final String INPUT_CATEGORY_ID = "InputClause_15qmk0v";
-  private static final String INPUT_INVOICE_DATE_ID = "InputClause_0qixz9e";
-  private static final String OUTPUT_AUDIT_ID = "OutputClause_1ur6jbl";
-  private static final String OUTPUT_CLASSIFICATION_ID = "clause3";
-
-  private static final String INPUT_VARIABLE_INVOICE_CATEGORY = "invoiceCategory";
-  private static final String INPUT_VARIABLE_AMOUNT = "amount";
-  private static final String INPUT_VARIABLE_INVOICE_DATE = "invoiceDate";
+public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitionIT {
   public static final String OUTPUT_BEVERAGES = "OuputClause_99999";
-
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
-
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule)
-    .around(engineRule)
-    .around(embeddedOptimizeRule)
-    .around(engineDatabaseRule);
 
   @Test
   public void reportEvaluation() {
@@ -80,7 +50,7 @@ public class RawDecisionDataReportEvaluationIT {
     DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
       decisionDefinitionDto.getKey(), decisionDefinitionVersion
     );
-    RawDataDecisionReportResultDto result = evaluateReport(reportData);
+    RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(1L));
@@ -122,7 +92,7 @@ public class RawDecisionDataReportEvaluationIT {
     DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
       decisionDefinitionDto.getKey(), ALL_VERSIONS
     );
-    RawDataDecisionReportResultDto result = evaluateReport(reportData);
+    RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(1L));
@@ -175,7 +145,7 @@ public class RawDecisionDataReportEvaluationIT {
     DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
       decisionDefinitionDto.getKey(), ALL_VERSIONS
     );
-    RawDataDecisionReportResultDto result = evaluateReport(reportData);
+    RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(1L));
@@ -206,7 +176,7 @@ public class RawDecisionDataReportEvaluationIT {
     DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
       decisionDefinitionDto.getKey(), ALL_VERSIONS
     );
-    RawDataDecisionReportResultDto result = evaluateReport(reportData);
+    RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(5L));
@@ -241,7 +211,7 @@ public class RawDecisionDataReportEvaluationIT {
       decisionDefinitionDto.getKey(), ALL_VERSIONS
     );
     reportData.getParameters().setSorting(new SortingDto(DecisionInstanceType.DECISION_INSTANCE_ID, SortOrder.ASC));
-    RawDataDecisionReportResultDto result = evaluateReport(reportData);
+    RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(5L));
@@ -276,7 +246,7 @@ public class RawDecisionDataReportEvaluationIT {
       decisionDefinitionDto.getKey(), ALL_VERSIONS
     );
     reportData.getParameters().setSorting(new SortingDto(DecisionInstanceType.EVALUATION_DATE_TIME, SortOrder.ASC));
-    RawDataDecisionReportResultDto result = evaluateReport(reportData);
+    RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(5L));
@@ -314,7 +284,7 @@ public class RawDecisionDataReportEvaluationIT {
     reportData.getParameters().setSorting(
       new SortingDto(RawDecisionDataCommand.INPUT_VARIABLE_PREFIX + INPUT_AMOUNT_ID, SortOrder.ASC)
     );
-    RawDataDecisionReportResultDto result = evaluateReport(reportData);
+    RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(5L));
@@ -363,7 +333,7 @@ public class RawDecisionDataReportEvaluationIT {
     reportData.getParameters().setSorting(
       new SortingDto(RawDecisionDataCommand.OUTPUT_VARIABLE_PREFIX + OUTPUT_AUDIT_ID, SortOrder.ASC)
     );
-    RawDataDecisionReportResultDto result = evaluateReport(reportData);
+    RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(5L));
@@ -444,41 +414,6 @@ public class RawDecisionDataReportEvaluationIT {
     });
   }
 
-  private void startDecisionInstanceWithInputVars(final String id,
-                                                  final HashMap<String, InputVariableEntry> inputVariables) {
-    engineRule.startDecisionInstance(
-      id,
-      inputVariables.entrySet().stream().collect(toMap(
-        entry -> getInputVariableNameForId(entry.getKey()),
-        entry -> entry.getValue().getValue()
-      ))
-    );
-  }
-
-  private static String getInputVariableNameForId(String inputId) {
-    switch (inputId) {
-      case INPUT_AMOUNT_ID:
-        return INPUT_VARIABLE_AMOUNT;
-      case INPUT_CATEGORY_ID:
-        return INPUT_VARIABLE_INVOICE_CATEGORY;
-      case INPUT_INVOICE_DATE_ID:
-        return INPUT_VARIABLE_INVOICE_DATE;
-      default:
-        throw new IllegalStateException("Unsupported inputVariableId: " + inputId);
-    }
-  }
-
-  private HashMap<String, InputVariableEntry> createInputs(final double amountValue,
-                                                           final String categoryValue) {
-    return new HashMap<String, InputVariableEntry>() {{
-      put(INPUT_AMOUNT_ID, new InputVariableEntry(INPUT_AMOUNT_ID, "Invoice Amount", "Double", amountValue));
-      put(
-        INPUT_CATEGORY_ID,
-        new InputVariableEntry(INPUT_CATEGORY_ID, "Invoice Category", "String", categoryValue)
-      );
-    }};
-  }
-
   private HashMap<String, OutputVariableEntry> createOutputs(final boolean auditValue,
                                                              final String classificationValue) {
     return new HashMap<String, OutputVariableEntry>() {{
@@ -488,21 +423,6 @@ public class RawDecisionDataReportEvaluationIT {
         new OutputVariableEntry(OUTPUT_CLASSIFICATION_ID, "Classification", "String", classificationValue)
       );
     }};
-  }
-
-  private RawDataDecisionReportResultDto evaluateReport(DecisionReportDataDto reportData) {
-    Response response = evaluateReportAndReturnResponse(reportData);
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(RawDataDecisionReportResultDto.class);
-  }
-
-
-  private Response evaluateReportAndReturnResponse(DecisionReportDataDto reportData) {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      .execute();
   }
 
 }

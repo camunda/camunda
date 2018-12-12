@@ -866,21 +866,19 @@ public class EngineIntegrationRule extends TestWatcher {
     final DmnModelInstance dmnModelInstance = Dmn.readModelFromStream(
       getClass().getClassLoader().getResourceAsStream(dmnPath)
     );
-
-    final DeploymentDto deploymentDto = deployDecisionDefinition(dmnModelInstance);
-    return getDecisionDefinitionByDeployment(deploymentDto);
+    return deployDecisionDefinition(dmnModelInstance);
   }
 
   public DecisionDefinitionEngineDto deployAndStartDecisionDefinition(DmnModelInstance dmnModelInstance) {
-    final DeploymentDto deploymentDto = deployDecisionDefinition(dmnModelInstance);
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = getDecisionDefinitionByDeployment(deploymentDto);
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = deployDecisionDefinition(dmnModelInstance);
     startDecisionInstance(decisionDefinitionEngineDto.getId());
     return decisionDefinitionEngineDto;
   }
 
-  public DeploymentDto deployDecisionDefinition(DmnModelInstance dmnModelInstance) {
+  public DecisionDefinitionEngineDto deployDecisionDefinition(DmnModelInstance dmnModelInstance) {
     CloseableHttpClient client = getHttpClient();
-    return deployDecisionDefinition(dmnModelInstance, client);
+    DeploymentDto deploymentDto = deployDecisionDefinition(dmnModelInstance, client);
+    return getDecisionDefinitionByDeployment(deploymentDto);
   }
 
   private DeploymentDto deployDecisionDefinition(DmnModelInstance dmnModelInstance, CloseableHttpClient client) {
