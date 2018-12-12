@@ -2,12 +2,12 @@ package org.camunda.optimize.service.es.report.command;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
-import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
 import org.camunda.optimize.service.exceptions.OptimizeException;
+import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class NotSupportedCommand extends ProcessReportCommand<ProcessReportResultDto> {
+public class NotSupportedCommand extends ReportCommand {
 
   private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -21,6 +21,11 @@ public class NotSupportedCommand extends ProcessReportCommand<ProcessReportResul
     } catch (JsonProcessingException e) {
       logger.error("can't serialize report data", e);
     }
-    throw new OptimizeException("This combination of the settings of the report builder is not supported!");
+    throw new OptimizeValidationException("This combination of the settings of the report builder is not supported!");
+  }
+
+  @Override
+  protected void beforeEvaluate(final CommandContext commandContext) {
+
   }
 }

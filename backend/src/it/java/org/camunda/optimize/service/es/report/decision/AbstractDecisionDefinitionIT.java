@@ -5,6 +5,8 @@ import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportNumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -101,6 +103,20 @@ public abstract class AbstractDecisionDefinitionIT {
         entry -> entry.getValue().getValue()
       ))
     );
+  }
+
+  protected DecisionReportMapResultDto evaluateMapReport(DecisionReportDataDto reportData) {
+    Response response = evaluateReportAndReturnResponse(reportData);
+    assertThat(response.getStatus(), is(200));
+
+    return response.readEntity(DecisionReportMapResultDto.class);
+  }
+
+  protected DecisionReportNumberResultDto evaluateNumberReport(DecisionReportDataDto reportData) {
+    Response response = evaluateReportAndReturnResponse(reportData);
+    assertThat(response.getStatus(), is(200));
+
+    return response.readEntity(DecisionReportNumberResultDto.class);
   }
 
   protected RawDataDecisionReportResultDto evaluateRawReport(DecisionReportDataDto reportData) {

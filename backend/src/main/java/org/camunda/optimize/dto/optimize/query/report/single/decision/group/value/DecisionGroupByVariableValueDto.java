@@ -4,23 +4,14 @@ import java.util.Objects;
 
 public class DecisionGroupByVariableValueDto implements DecisionGroupByValueDto {
 
-  protected String name;
-  protected String type;
+  protected String id;
 
-  public String getName() {
-    return name;
+  public String getId() {
+    return id;
   }
 
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public String getType() {
-    return type;
-  }
-
-  public void setType(String type) {
-    this.type = type;
+  public void setId(final String id) {
+    this.id = id;
   }
 
   @Override
@@ -32,6 +23,6 @@ public class DecisionGroupByVariableValueDto implements DecisionGroupByValueDto 
       return false;
     }
     DecisionGroupByVariableValueDto that = (DecisionGroupByVariableValueDto) o;
-    return Objects.equals(name, that.name) && Objects.equals(type, that.type);
+    return Objects.equals(id, that.id);
   }
 }

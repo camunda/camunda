@@ -11,6 +11,9 @@ import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.NotSupportedCommand;
 import org.camunda.optimize.service.es.report.command.decision.RawDecisionDataCommand;
+import org.camunda.optimize.service.es.report.command.decision.frequency.CountDecisionFrequencyGroupByEvaluationDateTimeCommand;
+import org.camunda.optimize.service.es.report.command.decision.frequency.CountDecisionFrequencyGroupByNoneCommand;
+import org.camunda.optimize.service.es.report.command.decision.frequency.CountDecisionFrequencyGroupByVariableCommand;
 import org.camunda.optimize.service.es.report.command.process.RawProcessDataCommand;
 import org.camunda.optimize.service.es.report.command.process.flownode.duration.AverageFlowNodeDurationByFlowNodeCommand;
 import org.camunda.optimize.service.es.report.command.process.flownode.duration.MaxFlowNodeDurationByFlowNodeCommand;
@@ -55,6 +58,10 @@ import org.springframework.stereotype.Component;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.camunda.optimize.service.es.report.command.decision.util.DecisionReportDataCreator.createCountFrequencyGroupByEvaluationDateTimeReport;
+import static org.camunda.optimize.service.es.report.command.decision.util.DecisionReportDataCreator.createCountFrequencyGroupByInputVariableReport;
+import static org.camunda.optimize.service.es.report.command.decision.util.DecisionReportDataCreator.createCountFrequencyGroupByNoneReport;
+import static org.camunda.optimize.service.es.report.command.decision.util.DecisionReportDataCreator.createCountFrequencyGroupByOutputVariableReport;
 import static org.camunda.optimize.service.es.report.command.decision.util.DecisionReportDataCreator.createRawDecisionDataReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createAverageFlowNodeDurationGroupByFlowNodeReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createAverageProcessInstanceDurationGroupByNoneReport;
@@ -89,6 +96,8 @@ import static org.camunda.optimize.service.es.report.command.process.util.Proces
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createMinProcessInstanceDurationGroupByVariableReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createMinProcessInstanceDurationGroupByVariableWithProcessPartReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createRawDataReport;
+import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.INPUTS;
+import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.OUTPUTS;
 
 @Component
 public class ReportEvaluator {
@@ -96,8 +105,8 @@ public class ReportEvaluator {
   private static Map<String, Command> possibleCommands = new HashMap<>();
 
   static {
+    // process reports
     possibleCommands.put(createRawDataReport().createCommandKey(), new RawProcessDataCommand());
-    possibleCommands.put(createRawDecisionDataReport().createCommandKey(), new RawDecisionDataCommand());
 
     addCountProcessInstanceFrequencyReports();
     addCountFlowNodeFrequencyReports();
@@ -108,6 +117,11 @@ public class ReportEvaluator {
     addMedianProcessInstanceDurationReports();
 
     addFlowNodeDurationReports();
+
+    // decision reports
+    possibleCommands.put(createRawDecisionDataReport().createCommandKey(), new RawDecisionDataCommand());
+
+    addDecisionCountFrequencyReports();
   }
 
   @Autowired
@@ -267,6 +281,25 @@ public class ReportEvaluator {
     possibleCommands.put(
       createMedianProcessInstanceDurationGroupByVariableWithProcessPartReport().createCommandKey(),
       new MedianProcessInstanceDurationGroupByVariableWithProcessPartCommand()
+    );
+  }
+
+  private static void addDecisionCountFrequencyReports() {
+    possibleCommands.put(
+      createCountFrequencyGroupByNoneReport().createCommandKey(),
+      new CountDecisionFrequencyGroupByNoneCommand()
+    );
+    possibleCommands.put(
+      createCountFrequencyGroupByEvaluationDateTimeReport().createCommandKey(),
+      new CountDecisionFrequencyGroupByEvaluationDateTimeCommand()
+    );
+    possibleCommands.put(
+      createCountFrequencyGroupByInputVariableReport().createCommandKey(),
+      new CountDecisionFrequencyGroupByVariableCommand(INPUTS)
+    );
+    possibleCommands.put(
+      createCountFrequencyGroupByOutputVariableReport().createCommandKey(),
+      new CountDecisionFrequencyGroupByVariableCommand(OUTPUTS)
     );
   }
 

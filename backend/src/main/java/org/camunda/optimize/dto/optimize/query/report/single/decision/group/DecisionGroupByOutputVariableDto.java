@@ -10,6 +10,6 @@ public class DecisionGroupByOutputVariableDto extends DecisionGroupByDto<Decisio
 
   @Override
   public String toString() {
-    return super.toString() + "_" + this.getValue().getName() + "_" + getValue().getType();
+    return super.toString() + "_" + this.getValue().getId();
   }
 }

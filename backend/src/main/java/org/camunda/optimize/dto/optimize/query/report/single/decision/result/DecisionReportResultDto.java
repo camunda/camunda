@@ -8,13 +8,18 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 
+import static org.camunda.optimize.dto.optimize.ReportConstants.MAP_RESULT_TYPE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.NUMBER_RESULT_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.RAW_RESULT_TYPE;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "resultType")
 @JsonSubTypes({
   @JsonSubTypes.Type(value = RawDataDecisionReportResultDto.class, name = RAW_RESULT_TYPE),
+  @JsonSubTypes.Type(value = DecisionReportNumberResultDto.class, name = NUMBER_RESULT_TYPE),
+  @JsonSubTypes.Type(value = DecisionReportMapResultDto.class, name = MAP_RESULT_TYPE),
 })
-public abstract class DecisionReportResultDto extends SingleReportDefinitionDto<DecisionReportDataDto> implements ReportResultDto {
+public abstract class DecisionReportResultDto extends SingleReportDefinitionDto<DecisionReportDataDto>
+  implements ReportResultDto {
 
   protected long decisionInstanceCount;
 

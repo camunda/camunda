@@ -39,6 +39,10 @@ public class DecisionVariableHelper {
     return MULTIVALUE_TYPE_FIELDS;
   }
 
+  public static String getVariableStringValueField(final String variablePath) {
+    return getVariableValueFieldForType(variablePath, VariableType.STRING);
+  }
+
   public static String getVariableValueFieldForType(final String variablePath, final VariableType type) {
     switch (Optional.ofNullable(type).orElseThrow(() -> new IllegalArgumentException("No Type provided"))) {
       case BOOLEAN:
