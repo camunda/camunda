@@ -128,7 +128,7 @@ class Reports extends React.Component {
           {this.state.entities
             .filter(({name}) => name.toLowerCase().includes(this.state.search.toLowerCase()))
             .map((itemData, idx) => {
-              const {Icon: ReportIcon, label} = getReportIcon(itemData, this.state.entities);
+              const {Icon: ReportIcon, label} = getReportIcon(itemData);
 
               return (
                 <li key={idx}>

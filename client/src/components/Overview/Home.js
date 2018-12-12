@@ -38,7 +38,7 @@ class Home extends React.Component {
         loadingDashboards: false
       });
     });
-    this.props.mightFail(loadReports(), response => {
+    this.props.mightFail(loadReports(5), response => {
       this.setState({
         reports: response,
         loadingReports: false
@@ -48,7 +48,8 @@ class Home extends React.Component {
 
   createDashboard = async () =>
     this.setState({redirect: `/dashboard/${await createDashboard()}/edit?new`});
-  createReport = async () => this.setState({redirect: `/report/${await createReport(false)}/edit?new`});
+  createReport = async () =>
+    this.setState({redirect: `/report/${await createReport(false)}/edit?new`});
 
   render() {
     if (this.state.redirect) {
@@ -140,7 +141,7 @@ class Home extends React.Component {
         <ul className="entityList">
           {empty}
           {this.state.reports.slice(0, 5).map((itemData, idx) => {
-            const {Icon: ReportIcon, label} = getReportIcon(itemData, this.state.reports);
+            const {Icon: ReportIcon, label} = getReportIcon(itemData);
 
             return (
               <li key={idx}>

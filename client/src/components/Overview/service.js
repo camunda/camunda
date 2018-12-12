@@ -38,8 +38,8 @@ export async function createReport(combined, reportType, initialValues) {
   return json.id;
 }
 
-export async function loadReports() {
-  const response = await get('api/report', {orderBy: 'lastModified'});
+export async function loadReports(numResults) {
+  const response = await get('api/report', {orderBy: 'lastModified', numResults});
   return await response.json();
 }
 
@@ -62,9 +62,9 @@ export function getReportInfo(report) {
   return '';
 }
 
-export function getReportIcon(report, reports) {
+export function getReportIcon(report) {
   const isValidCombined = isValidCombinedReport(report);
-  const iconKey = getIconKey(report, reports, isValidCombined);
+  const iconKey = getIconKey(report);
   const iconData = entityIcons.report[iconKey];
 
   if (isValidCombined) {
@@ -79,8 +79,7 @@ export function getReportIcon(report, reports) {
   };
 }
 
-function getIconKey({data}, reports, isValidCombined) {
-  if (isValidCombined) return reports.find(({id}) => data.reportIds[0] === id).data.visualization;
+function getIconKey({data}) {
   if (data && data.visualization) return data.visualization;
   return 'generic';
 }
