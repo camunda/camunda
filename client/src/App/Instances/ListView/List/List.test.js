@@ -57,28 +57,16 @@ const emptyList = {
   isDataLoaded: true
 };
 
-describe.skip('List', () => {
+describe('List', () => {
   describe('Table', () => {
     it('should have by default rowsToDisplay 9', () => {
-      expect(new List().state.rowsToDisplay).toBe(9);
+      const node = shallow(<List.WrappedComponent {...mockProps} />);
+      expect(node.instance().state.rowsToDisplay).toBe(9);
     });
 
     it('should render table container with innerRef', () => {
       // given
-      const node = shallow(<List {...mockProps} />);
-      //then
-      const TableContainerNode = node.find(Styled.TableContainer);
-
-      expect(TableContainerNode).toHaveLength(1);
-
-      expect(TableContainerNode.dive().props().forwardedRef).toBe(
-        node.instance().myRef
-      );
-    });
-
-    it('should render table head', () => {
-      // given
-      const node = shallow(<List {...mockProps} />);
+      const node = shallow(<List.WrappedComponent {...mockProps} />);
 
       // then
       // Table
@@ -162,7 +150,7 @@ describe.skip('List', () => {
 
     it('should render table body', () => {
       // given
-      const node = shallow(<List {...mockProps} />);
+      const node = shallow(<List.WrappedComponent {...mockProps} />);
 
       // then
       // TBody
@@ -219,7 +207,10 @@ describe.skip('List', () => {
 
     it('should display a message for empty list when filter has no state', async () => {
       const node = shallow(
-        <List {...emptyList} filter={{error: 'mock error message'}} />
+        <List.WrappedComponent
+          {...emptyList}
+          filter={{error: 'mock error message'}}
+        />
       );
 
       expect(
@@ -229,7 +220,7 @@ describe.skip('List', () => {
 
     it('should display a empty list message when filter has at least one state', async () => {
       const node = shallow(
-        <List
+        <List.WrappedComponent
           {...emptyList}
           filter={{error: 'mock error message', active: true}}
         />
@@ -244,10 +235,10 @@ describe.skip('List', () => {
       it('should be called on mount', () => {
         // given
         const recalculateHeightSpy = jest.spyOn(
-          List.prototype,
+          List.WrappedComponent.prototype,
           'recalculateHeight'
         );
-        shallow(<List {...mockProps} />);
+        shallow(<List.WrappedComponent {...mockProps} />);
 
         // then
         expect(recalculateHeightSpy).toBeCalled();
@@ -256,10 +247,10 @@ describe.skip('List', () => {
       it('should only be called when needed', () => {
         // given
         const recalculateHeightSpy = jest.spyOn(
-          List.prototype,
+          List.WrappedComponent.prototype,
           'recalculateHeight'
         );
-        const node = shallow(<List {...mockProps} />);
+        const node = shallow(<List.WrappedComponent {...mockProps} />);
         recalculateHeightSpy.mockClear();
 
         // when component updates but expandState does not change
@@ -280,7 +271,7 @@ describe.skip('List', () => {
 
       it('should set state.rowsToDisplay', () => {
         // given
-        const node = shallow(<List {...mockProps} />);
+        const node = shallow(<List.WrappedComponent {...mockProps} />);
         node.instance().myRef.current = {clientHeight: 38};
         const expectedRows = 0;
 
@@ -302,7 +293,7 @@ describe.skip('List', () => {
 
     beforeEach(() => {
       mockProps.data = instances;
-      node = shallow(<List {...mockProps} />);
+      node = shallow(<List.WrappedComponent {...mockProps} />);
     });
 
     describe('highlight', () => {
