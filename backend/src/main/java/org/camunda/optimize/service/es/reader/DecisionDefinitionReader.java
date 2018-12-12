@@ -58,8 +58,9 @@ public class DecisionDefinitionReader {
 
   public List<DecisionDefinitionOptimizeDto> getDecisionDefinitions(final String userId, final boolean withXml) {
     logger.debug("Fetching decision definitions");
-    QueryBuilder query;
-    query = QueryBuilders.matchAllQuery();
+    // the front-end needs the xml to work properly. Therefore, we only want to expose definitions
+    // where the import is complete including the xml
+    final QueryBuilder query = QueryBuilders.existsQuery(DecisionDefinitionType.DECISION_DEFINITION_XML);
 
     String[] fieldsToExclude = withXml ? null : new String[]{DecisionDefinitionType.DECISION_DEFINITION_XML};
 
