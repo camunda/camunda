@@ -1,47 +1,160 @@
 import {mockResolvedAsyncFn} from 'modules/testUtils';
 import * as wrappers from 'modules/request/wrappers';
-
 import {OPERATION_TYPE} from 'modules/constants';
 
-import {fetchWorkflowInstancesCount, applyOperation} from './instances';
+import {
+  fetchWorkflowInstancesCount,
+  applyOperation,
+  fetchWorkflowInstance,
+  fetchWorkflowInstances,
+  fetchGroupedWorkflowInstances,
+  fetchWorkflowInstancesStatistics,
+  fetchWorkflowInstancesByIds
+} from './instances';
 
-import {post} from 'modules/request';
-
-jest.mock('modules/request');
+const successResponse = {
+  json: mockResolvedAsyncFn({})
+};
 
 describe('instances api', () => {
-  it.skip('should call post with the right url', async () => {
-    // Has been detected to be broken. Ticket is created.
+  wrappers.get = mockResolvedAsyncFn(successResponse);
+  wrappers.post = mockResolvedAsyncFn(successResponse);
 
-    //given
-    const successResponse = {json: mockResolvedAsyncFn({totalCount: '123'})};
-    wrappers.post = mockResolvedAsyncFn(successResponse);
-
-    // when
-    const response = await fetchWorkflowInstancesCount();
-
-    // then
-    expect(wrappers.post.mock.calls[0][0]).toBe(
-      '/api/workflow-instances?firstResult=0&maxResults=1'
-    );
-    expect(successResponse.json).toBeCalled();
-    expect(response).toEqual('123');
+  beforeEach(() => {
+    wrappers.get.mockClear();
+    wrappers.post.mockClear();
   });
-});
 
-describe('instance retry', () => {
-  it('should call post with the right payload', async () => {
-    // given
-    const queries = [{id: 1, incidents: true}];
+  describe('fetchWorkflowInstance', () => {
+    it('should call get with the right url', async () => {
+      // given
+      const id = 1;
+      // when
+      await fetchWorkflowInstance(id);
+      // then
+      expect(wrappers.get.mock.calls[0][0]).toBe('/api/workflow-instances/1');
+      expect(successResponse.json).toBeCalled();
+    });
+  });
 
-    // when
-    await applyOperation(OPERATION_TYPE.UPDATE_RETRIES, queries);
+  describe.only('fetchWorkflowInstances', () => {
+    it('should call post with the right url and the right payload', async () => {
+      // given
+      const options = {
+        firstResult: 0,
+        maxResults: 0,
+        payload: {
+          queries: [{}]
+        }
+      };
 
-    // then
-    expect(post.mock.calls[0][0]).toBe('/api/workflow-instances/operation');
-    expect(post.mock.calls[0][1].operationType).toBe(
-      OPERATION_TYPE.UPDATE_RETRIES
-    );
-    expect(post.mock.calls[0][1].queries).toBe(queries);
+      // when
+      await fetchWorkflowInstances(options);
+      // then
+      expect(wrappers.post.mock.calls[0][0]).toBe(
+        '/api/workflow-instances?firstResult=0&maxResults=0'
+      );
+      expect(wrappers.post.mock.calls[0][1]).toEqual({
+        payload: {
+          queries: [{}]
+        }
+      });
+      expect(successResponse.json).toBeCalled();
+    });
+  });
+
+  describe('fetchGroupedWorkflowInstances', () => {
+    it('should call get the right url', async () => {
+      //when
+      await fetchGroupedWorkflowInstances();
+
+      //then
+      expect(wrappers.get.mock.calls[0][0]).toBe('/api/workflows/grouped');
+      expect(successResponse.json).toBeCalled();
+    });
+  });
+
+  describe('fetchWorkflowInstancesCount', () => {
+    it('should call post with the right url and payload', async () => {
+      //given
+      const payload = {ids: ['1'], incidents: true};
+      // when
+      await fetchWorkflowInstancesCount(payload);
+
+      // then
+      expect(wrappers.post.mock.calls[0][0]).toBe(
+        '/api/workflow-instances?firstResult=0&maxResults=0'
+      );
+      expect(wrappers.post.mock.calls[0][1]).toEqual({queries: [payload]});
+      expect(successResponse.json).toBeCalled();
+    });
+  });
+
+  describe.only('fetchWorkflowInstancesByIds', () => {
+    it('should call post with the right url and payload', async () => {
+      // given
+      const ids = ['1', '2', '3'];
+
+      // when
+      await fetchWorkflowInstancesByIds(ids);
+      // then
+
+      expect(wrappers.post.mock.calls[0][0]).toBe(
+        `/api/workflow-instances?firstResult=0&maxResults=${ids.length}`
+      );
+      expect(wrappers.post.mock.calls[0][1]).toEqual({
+        queries: [
+          {
+            ids,
+            running: true,
+            active: true,
+            canceled: true,
+            completed: true,
+            finished: true,
+            incidents: true
+          }
+        ]
+      });
+    });
+  });
+
+  describe('fetchWorkflowInstancesStatistics', () => {
+    it('should call post with the right url and payload', async () => {
+      //given
+      const payload = {
+        queries: [{}]
+      };
+
+      // when
+      await fetchWorkflowInstancesStatistics(payload);
+
+      // then
+      expect(wrappers.post.mock.calls[0][0]).toBe(
+        '/api/workflow-instances/statistics'
+      );
+      expect(wrappers.post.mock.calls[0][1]).toEqual({
+        queries: [...payload.queries]
+      });
+      expect(successResponse.json).toBeCalled();
+    });
+  });
+
+  describe('applyOperation', () => {
+    it('should call post with the right payload', async () => {
+      // given
+      const queries = [{id: 1, incidents: true}];
+
+      // when
+      await applyOperation(OPERATION_TYPE.UPDATE_RETRIES, queries);
+
+      // then
+      expect(wrappers.post.mock.calls[0][0]).toBe(
+        '/api/workflow-instances/operation'
+      );
+      expect(wrappers.post.mock.calls[0][1].operationType).toBe(
+        OPERATION_TYPE.UPDATE_RETRIES
+      );
+      expect(wrappers.post.mock.calls[0][1].queries).toBe(queries);
+    });
   });
 });
