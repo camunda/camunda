@@ -31,6 +31,7 @@ import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.logstreams.state.StateController;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.protocol.clientapi.RecordType;
@@ -70,6 +71,11 @@ public class ExporterStreamProcessor implements StreamProcessor {
 
   public StateSnapshotController createSnapshotController(final StateStorage storage) {
     return new StateSnapshotController(state, storage);
+  }
+
+  @Override
+  public StateController getStateController() {
+    return state;
   }
 
   @Override
@@ -131,8 +137,6 @@ public class ExporterStreamProcessor implements StreamProcessor {
         container.context.getLogger().error("Error on close", e);
       }
     }
-
-    state.close();
   }
 
   private boolean shouldCommitPositions() {
@@ -257,9 +261,5 @@ public class ExporterStreamProcessor implements StreamProcessor {
 
       return 0;
     }
-  }
-
-  public ExporterStreamProcessorState getState() {
-    return state;
   }
 }

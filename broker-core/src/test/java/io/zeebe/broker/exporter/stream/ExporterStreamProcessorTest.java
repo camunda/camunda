@@ -79,6 +79,7 @@ import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.util.sched.ActorControl;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -90,6 +91,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.agrona.DirectBuffer;
@@ -128,7 +130,7 @@ public class ExporterStreamProcessorTest {
 
     // when
     final StreamProcessorControl control =
-        rule.initStreamProcessor(() -> processor.getState(), e -> processor);
+        rule.initStreamProcessor(processor::getStateController, e -> processor);
     control.start();
     assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
 
@@ -167,7 +169,7 @@ public class ExporterStreamProcessorTest {
     final ExporterStreamProcessor processor =
         new ExporterStreamProcessor(PARTITION_ID, Collections.singletonList(descriptor));
 
-    rule.runStreamProcessor(() -> processor.getState(), e -> processor);
+    rule.runStreamProcessor(processor::getStateController, e -> processor);
 
     // then
     final PojoExporterConfiguration configuration = PojoConfigurationExporter.configuration;
@@ -189,7 +191,7 @@ public class ExporterStreamProcessorTest {
 
     // when
     final StreamProcessorControl control =
-        rule.initStreamProcessor(() -> processor.getState(), e -> processor);
+        rule.initStreamProcessor(processor::getStateController, e -> processor);
     control.start();
 
     // then
@@ -213,7 +215,7 @@ public class ExporterStreamProcessorTest {
 
     // when
     final StreamProcessorControl control =
-        rule.initStreamProcessor(() -> processor.getState(), e -> processor);
+        rule.initStreamProcessor(processor::getStateController, e -> processor);
     final long lowestPosition = writeEvent();
     final long highestPosition = writeEvent();
 
@@ -258,11 +260,12 @@ public class ExporterStreamProcessorTest {
     final List<ExporterDescriptor> descriptors = createMockedExporters(1);
     final ExporterStreamProcessor processor =
         new ExporterStreamProcessor(PARTITION_ID, descriptors);
-    final ExporterStreamProcessorState state = processor.getState();
+    final ExporterStreamProcessorState state =
+        (ExporterStreamProcessorState) processor.getStateController();
 
     // when
     final StreamProcessorControl control =
-        rule.initStreamProcessor(() -> processor.getState(), e -> processor);
+        rule.initStreamProcessor(processor::getStateController, e -> processor);
     final long lowestPosition = writeEvent();
     final long latestPosition = writeExporterEvent(descriptors.get(0).getId(), lowestPosition);
 
@@ -290,7 +293,7 @@ public class ExporterStreamProcessorTest {
 
     // when
     final StreamProcessorControl control =
-        rule.initStreamProcessor(() -> processor.getState(), e -> processor);
+        rule.initStreamProcessor(processor::getStateController, e -> processor);
     final long lowestPosition = writeEvent();
     final long highestPosition = writeEvent();
 
@@ -321,7 +324,7 @@ public class ExporterStreamProcessorTest {
     final long position = writeEvent();
 
     final StreamProcessorControl control =
-        rule.initStreamProcessor(() -> processor.getState(), e -> processor);
+        rule.initStreamProcessor(processor::getStateController, e -> processor);
     control.blockAfterEvent(e -> e.getPosition() == position);
     control.start();
     TestUtil.waitUntil(control::isBlocked);
@@ -343,7 +346,7 @@ public class ExporterStreamProcessorTest {
 
     // when
     final StreamProcessorControl control =
-        rule.initStreamProcessor(() -> processor.getState(), e -> processor);
+        rule.initStreamProcessor(processor::getStateController, e -> processor);
     final long lowestPosition = writeEvent();
     final long latestPosition = writeExporterEvent(descriptors.get(0).getId(), lowestPosition);
 
@@ -682,6 +685,42 @@ public class ExporterStreamProcessorTest {
     assertRecordExported(JobBatchIntent.ACTIVATED, record, recordValue);
   }
 
+  @Test
+  public void shouldUpdateLastExportedPositionOnClose() {
+    // given
+    final List<ExporterDescriptor> descriptors = createMockedExporters(1);
+    final ExporterStreamProcessor processor =
+        new ExporterStreamProcessor(PARTITION_ID, descriptors);
+    final ControlledTestExporter exporter = exporters.get(0);
+    exporter.shouldAutoUpdatePosition(false);
+
+    // when
+    final long firstPosition = writeEvent();
+    final StreamProcessorControl control =
+        rule.initStreamProcessor(processor::getStateController, e -> processor);
+    exporter.onClose(
+        () -> exporter.getController().updateLastExportedRecordPosition(firstPosition));
+    control.start();
+    TestUtil.waitUntil(() -> exporter.getExportedRecords().size() == 1);
+    control.close();
+
+    // then
+    assertThat(exporter.getExportedRecords()).hasSize(1);
+    assertThat(exporter.getExportedRecords().get(0).getPosition()).isEqualTo(firstPosition);
+
+    // when
+    final long secondPosition = writeEvent();
+    control.blockAfterEvent(e -> e.getPosition() == secondPosition);
+    control.start();
+    TestUtil.waitUntil(control::isBlocked);
+
+    // then
+    final List<Record> records = exporter.getExportedRecords();
+    assertThat(records).hasSize(2);
+    assertThat(records.get(0).getPosition()).isEqualTo(firstPosition);
+    assertThat(records.get(1).getPosition()).isEqualTo(secondPosition);
+  }
+
   private ExporterStreamProcessor createStreamProcessor(final int count) {
     return new ExporterStreamProcessor(PARTITION_ID, createMockedExporters(count));
   }
@@ -742,7 +781,7 @@ public class ExporterStreamProcessorTest {
     // setup stream processor
     final ExporterStreamProcessor processor = createStreamProcessor(1);
     final StreamProcessorControl control =
-        rule.initStreamProcessor(() -> processor.getState(), e -> processor);
+        rule.initStreamProcessor(processor::getStateController, e -> processor);
 
     // write event
     final long position = rule.writeEvent(intent, record);
@@ -779,5 +818,14 @@ public class ExporterStreamProcessorTest {
         .hasValueType(metadata.getValueType());
 
     assertThat(actualRecord).hasValue(expectedRecordValue);
+  }
+
+  private class DummyActor implements Consumer<ActorControl> {
+    ActorControl ctrl;
+
+    @Override
+    public void accept(ActorControl actorControl) {
+      ctrl = actorControl;
+    }
   }
 }
