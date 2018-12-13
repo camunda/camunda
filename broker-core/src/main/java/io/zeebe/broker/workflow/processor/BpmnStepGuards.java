@@ -40,18 +40,15 @@ public class BpmnStepGuards {
         c ->
             c.getFlowScopeInstance() != null
                 && c.getFlowScopeInstance().getState() == WorkflowInstanceIntent.ELEMENT_ACTIVATED;
-    final Predicate<BpmnStepContext<?>> scopeTerminatingGuard =
-        c ->
-            c.getFlowScopeInstance() != null
-                && c.getFlowScopeInstance().getState()
-                    == WorkflowInstanceIntent.ELEMENT_TERMINATING;
+    final Predicate<BpmnStepContext<?>> availableFlowScopeGuard =
+        c -> c.getFlowScopeInstance() != null;
 
     stepGuards.put(WorkflowInstanceIntent.ELEMENT_READY, noConcurrentTransitionGuard);
     stepGuards.put(WorkflowInstanceIntent.ELEMENT_ACTIVATED, noConcurrentTransitionGuard);
     stepGuards.put(WorkflowInstanceIntent.ELEMENT_COMPLETING, noConcurrentTransitionGuard);
     stepGuards.put(WorkflowInstanceIntent.ELEMENT_COMPLETED, scopeActiveGuard);
     stepGuards.put(WorkflowInstanceIntent.ELEMENT_TERMINATING, c -> true);
-    stepGuards.put(WorkflowInstanceIntent.ELEMENT_TERMINATED, scopeTerminatingGuard);
+    stepGuards.put(WorkflowInstanceIntent.ELEMENT_TERMINATED, availableFlowScopeGuard);
 
     stepGuards.put(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, scopeActiveGuard);
 
@@ -59,6 +56,7 @@ public class BpmnStepGuards {
 
     stepGuards.put(WorkflowInstanceIntent.EVENT_ACTIVATING, scopeActiveGuard);
     stepGuards.put(WorkflowInstanceIntent.EVENT_ACTIVATED, scopeActiveGuard);
+    stepGuards.put(WorkflowInstanceIntent.EVENT_OCCURRED, scopeActiveGuard);
     stepGuards.put(WorkflowInstanceIntent.EVENT_TRIGGERING, scopeActiveGuard);
     stepGuards.put(WorkflowInstanceIntent.EVENT_TRIGGERED, scopeActiveGuard);
   }

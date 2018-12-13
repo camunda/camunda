@@ -25,6 +25,6 @@ public class UnsubscribeEventHandler implements BpmnStepHandler<ExecutableCatchE
 
   @Override
   public void handle(final BpmnStepContext<ExecutableCatchEventSupplier> context) {
-    context.getCatchEventOutput().unsubscribeFromCatchEvents(context.getRecord().getKey(), context);
+    context.getCatchEventBehavior().unsubscribeFromEvents(context.getRecord().getKey(), context);
   }
 }

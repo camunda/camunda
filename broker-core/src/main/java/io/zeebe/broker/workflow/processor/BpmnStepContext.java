@@ -35,7 +35,7 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
   private final SideEffectQueue sideEffect = new SideEffectQueue();
   private final EventOutput eventOutput;
   private final MsgPackMergeTool mergeTool;
-  private final CatchEventOutput catchEventOutput;
+  private final CatchEventBehavior catchEventBehavior;
 
   private TypedRecord<WorkflowInstanceRecord> record;
   private ExecutableFlowElement element;
@@ -44,10 +44,10 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
   private ElementInstance flowScopeInstance;
   private ElementInstance elementInstance;
 
-  public BpmnStepContext(EventOutput eventOutput, CatchEventOutput catchEventOutput) {
+  public BpmnStepContext(EventOutput eventOutput, CatchEventBehavior catchEventBehavior) {
     this.eventOutput = eventOutput;
     this.mergeTool = new MsgPackMergeTool(4096);
-    this.catchEventOutput = catchEventOutput;
+    this.catchEventBehavior = catchEventBehavior;
   }
 
   public TypedRecord<WorkflowInstanceRecord> getRecord() {
@@ -91,8 +91,8 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
     return commandWriter;
   }
 
-  public CatchEventOutput getCatchEventOutput() {
-    return catchEventOutput;
+  public CatchEventBehavior getCatchEventBehavior() {
+    return catchEventBehavior;
   }
 
   public ElementInstance getFlowScopeInstance() {

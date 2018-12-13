@@ -47,14 +47,14 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
   private ElementInstanceState elementInstanceState;
 
   public BpmnStepProcessor(
-      WorkflowEngineState state, ZeebeState zeebeState, CatchEventOutput catchEventOutput) {
+      WorkflowEngineState state, ZeebeState zeebeState, CatchEventBehavior catchEventBehavior) {
     this.state = state;
     this.workflowState = state.getWorkflowState();
     this.stepHandlers = new BpmnStepHandlers(workflowState, zeebeState);
     this.stepGuards = new BpmnStepGuards();
 
     final EventOutput eventOutput = new EventOutput(state);
-    this.context = new BpmnStepContext<>(eventOutput, catchEventOutput);
+    this.context = new BpmnStepContext<>(eventOutput, catchEventBehavior);
   }
 
   @Override

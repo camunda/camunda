@@ -30,6 +30,7 @@ import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.util.ZbLogger;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
@@ -40,10 +41,14 @@ import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+import org.slf4j.Logger;
 
 public class StreamProcessorRule implements TestRule {
+
+  private static final Logger LOG = new ZbLogger("io.zeebe.broker.test");
 
   public static final int PARTITION_ID = 0;
   // environment
@@ -74,6 +79,7 @@ public class StreamProcessorRule implements TestRule {
             .around(actorSchedulerRule)
             .around(serviceContainerRule)
             .around(closeables)
+            .around(new FailedTestRecordPrinter())
             .around(rule);
   }
 
@@ -219,4 +225,13 @@ public class StreamProcessorRule implements TestRule {
       streamEnvironment = new TypedStreamEnvironment(streams.getLogStream(STREAM_NAME), output);
     }
   }
+
+  private class FailedTestRecordPrinter extends TestWatcher {
+
+    @Override
+    protected void failed(Throwable e, Description description) {
+      LOG.info("Test failed, following records where exported:");
+      printAllRecords();
+    }
+  };
 }

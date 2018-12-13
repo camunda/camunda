@@ -18,35 +18,35 @@
 package io.zeebe.broker.workflow.processor.timer;
 
 import static io.zeebe.msgpack.value.DocumentValue.EMPTY_DOCUMENT;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.workflow.data.TimerRecord;
-import io.zeebe.broker.workflow.model.element.ExecutableBoundaryEvent;
-import io.zeebe.broker.workflow.processor.boundary.BoundaryEventActivator;
+import io.zeebe.broker.workflow.model.element.AbstractFlowElement;
+import io.zeebe.broker.workflow.model.element.ExecutableCatchEventElement;
+import io.zeebe.broker.workflow.processor.CatchEventBehavior;
+import io.zeebe.broker.workflow.state.DeployedWorkflow;
 import io.zeebe.broker.workflow.state.ElementInstance;
-import io.zeebe.broker.workflow.state.ElementInstanceState;
-import io.zeebe.broker.workflow.state.StoredRecord;
-import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
 import io.zeebe.broker.workflow.state.TimerInstance;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.zeebe.protocol.clientapi.RejectionType;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.TimerIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
 
 public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> {
-  private final BoundaryEventActivator boundaryEventActivator;
+
+  private final CatchEventBehavior catchEventBehavior;
   private final WorkflowState workflowState;
 
   public TriggerTimerProcessor(
-      final WorkflowState workflowState, BoundaryEventActivator boundaryEventActivator) {
+      final WorkflowState workflowState, CatchEventBehavior catchEventBehavior) {
     this.workflowState = workflowState;
-    this.boundaryEventActivator = boundaryEventActivator;
+    this.catchEventBehavior = catchEventBehavior;
   }
 
   @Override
@@ -65,52 +65,29 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
       return;
     }
 
-    final ElementInstanceState elementInstanceState = workflowState.getElementInstanceState();
-    final ElementInstance elementInstance = elementInstanceState.getInstance(elementInstanceKey);
-
     workflowState.getTimerState().remove(timerInstance);
-    streamWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
 
-    // TODO handler trigger events in a uniform way - #1699
+    final boolean isOccurred =
+        catchEventBehavior.occurEventForElement(
+            elementInstanceKey, timer.getHandlerNodeId(), EMPTY_DOCUMENT, streamWriter);
+    if (isOccurred) {
+      streamWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
 
-    if (elementInstance != null
-        && elementInstance.getState() == WorkflowInstanceIntent.ELEMENT_ACTIVATED) {
-      if (boundaryEventActivator.shouldActivateBoundaryEvent(
-          elementInstance, timer.getHandlerNodeId())) {
-        final ExecutableBoundaryEvent event =
-            boundaryEventActivator.getBoundaryEventById(
+      final ElementInstance elementInstance =
+          workflowState.getElementInstanceState().getInstance(elementInstanceKey);
+      if (shouldReschedule(timer) && elementInstance != null) {
+
+        final ExecutableCatchEventElement event =
+            getCatchEventById(
                 workflowState,
                 elementInstance.getValue().getWorkflowKey(),
                 timer.getHandlerNodeId());
-
-        boundaryEventActivator.activateBoundaryEvent(
-            workflowState,
-            elementInstance,
-            timer.getHandlerNodeId(),
-            EMPTY_DOCUMENT,
-            streamWriter,
-            event);
-
-        if (shouldReschedule(timer)) {
-          rescheduleTimer(timer, streamWriter, event);
-        }
-      } else {
-        completeActivatedNode(elementInstanceKey, streamWriter, elementInstance);
+        rescheduleTimer(timer, streamWriter, event);
       }
-
-      elementInstanceState.flushDirtyState();
 
     } else {
-      final StoredRecord tokenEvent = elementInstanceState.getTokenEvent(elementInstanceKey);
-
-      if (tokenEvent != null && tokenEvent.getPurpose() == Purpose.DEFERRED_TOKEN) {
-        // continue at an event-based gateway
-        final WorkflowInstanceRecord deferredRecord = tokenEvent.getRecord().getValue();
-        deferredRecord.setPayload(EMPTY_DOCUMENT).setElementId(timer.getHandlerNodeId());
-
-        streamWriter.appendFollowUpEvent(
-            tokenEvent.getKey(), WorkflowInstanceIntent.EVENT_TRIGGERING, deferredRecord);
-      }
+      streamWriter.appendRejection(
+          record, RejectionType.NOT_APPLICABLE, "activity is not active anymore");
     }
   }
 
@@ -118,15 +95,8 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
     return timer.getRepetitions() == RepeatingInterval.INFINITE || timer.getRepetitions() > 1;
   }
 
-  private void completeActivatedNode(
-      long activityInstanceKey, TypedStreamWriter writer, ElementInstance elementInstance) {
-    writer.appendFollowUpEvent(
-        activityInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETING, elementInstance.getValue());
-    elementInstance.setState(WorkflowInstanceIntent.ELEMENT_COMPLETING);
-  }
-
   private void rescheduleTimer(
-      TimerRecord record, TypedStreamWriter writer, ExecutableBoundaryEvent event) {
+      TimerRecord record, TypedStreamWriter writer, ExecutableCatchEventElement event) {
     if (event.getTimer() == null) {
       final String message =
           String.format(
@@ -142,8 +112,27 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
 
     final RepeatingInterval timer =
         new RepeatingInterval(repetitions, event.getTimer().getInterval());
-    boundaryEventActivator
-        .getCatchEventOutput()
-        .subscribeToTimerEvent(record.getElementInstanceKey(), event.getId(), timer, writer);
+    catchEventBehavior.subscribeToTimerEvent(
+        record.getElementInstanceKey(), event.getId(), timer, writer);
+  }
+
+  private ExecutableCatchEventElement getCatchEventById(
+      WorkflowState state, long workflowKey, DirectBuffer id) {
+    final DeployedWorkflow workflow = state.getWorkflowByKey(workflowKey);
+    if (workflow == null) {
+      throw new IllegalStateException("No workflow found with key: " + workflowKey);
+    }
+
+    final AbstractFlowElement element = workflow.getWorkflow().getElementById(id);
+    if (element == null) {
+      throw new IllegalStateException("No element found with id: " + bufferAsString(id));
+    }
+
+    if (!ExecutableCatchEventElement.class.isInstance(element)) {
+      throw new IllegalStateException(
+          "Element with id " + bufferAsString(id) + " is not a message catch event");
+    }
+
+    return (ExecutableCatchEventElement) element;
   }
 }

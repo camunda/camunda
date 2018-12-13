@@ -55,7 +55,7 @@ public class StartEventTransformer implements ModelElementTransformer<StartEvent
   }
 
   private void bindLifecycle(TransformContext context, final ExecutableFlowNode startEvent) {
-    startEvent.bindLifecycleState(WorkflowInstanceIntent.EVENT_TRIGGERING, BpmnStep.TRIGGER_EVENT);
+    startEvent.bindLifecycleState(WorkflowInstanceIntent.EVENT_TRIGGERING, BpmnStep.APPLY_EVENT);
     startEvent.bindLifecycleState(
         WorkflowInstanceIntent.EVENT_TRIGGERED, context.getCurrentFlowNodeOutgoingStep());
   }

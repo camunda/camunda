@@ -26,7 +26,7 @@ public class ActivateActivityHandler extends ActivateFlowNodeHandler<ExecutableA
   protected void activate(BpmnStepContext<ExecutableActivity> context) {
     super.activate(context);
     context
-        .getCatchEventOutput()
-        .subscribeToCatchEvents(context, context.getElement().getBoundaryEvents());
+        .getCatchEventBehavior()
+        .subscribeToEvents(context, context.getElement().getBoundaryEvents());
   }
 }

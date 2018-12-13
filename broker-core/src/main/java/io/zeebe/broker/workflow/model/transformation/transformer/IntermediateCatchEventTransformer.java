@@ -50,7 +50,10 @@ public class IntermediateCatchEventTransformer
         WorkflowInstanceIntent.EVENT_ACTIVATED, BpmnStep.SUBSCRIBE_TO_EVENTS);
 
     executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.EVENT_TRIGGERING, BpmnStep.TRIGGER_EVENT);
+        WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.TRIGGER_EVENT);
+
+    executableElement.bindLifecycleState(
+        WorkflowInstanceIntent.EVENT_TRIGGERING, BpmnStep.APPLY_EVENT);
     executableElement.bindLifecycleState(
         WorkflowInstanceIntent.EVENT_TRIGGERED, context.getCurrentFlowNodeOutgoingStep());
   }
