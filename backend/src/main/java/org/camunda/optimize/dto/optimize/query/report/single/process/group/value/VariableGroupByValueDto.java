@@ -1,11 +1,13 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process.group.value;
 
+import org.camunda.optimize.dto.optimize.query.report.VariableType;
+
 import java.util.Objects;
 
 public class VariableGroupByValueDto implements ProcessGroupByValueDto {
 
   protected String name;
-  protected String type;
+  protected VariableType type;
 
   public String getName() {
     return name;
@@ -15,11 +17,11 @@ public class VariableGroupByValueDto implements ProcessGroupByValueDto {
     this.name = name;
   }
 
-  public String getType() {
+  public VariableType getType() {
     return type;
   }
 
-  public void setType(String type) {
+  public void setType(VariableType type) {
     this.type = type;
   }
 

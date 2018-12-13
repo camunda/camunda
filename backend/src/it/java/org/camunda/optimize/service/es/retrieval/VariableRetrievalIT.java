@@ -3,8 +3,8 @@ package org.camunda.optimize.service.es.retrieval;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
-import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -130,7 +130,7 @@ public class VariableRetrievalIT {
     // then
     assertThat(variableResponse.size(), is(1));
     assertThat(variableResponse.get(0).getName(), is("var1"));
-    assertThat(variableResponse.get(0).getType(), is(ProcessVariableHelper.STRING_TYPE));
+    assertThat(variableResponse.get(0).getType(), is(VariableType.STRING));
   }
 
   @Test

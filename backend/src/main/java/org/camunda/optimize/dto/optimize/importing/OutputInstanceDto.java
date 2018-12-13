@@ -1,5 +1,7 @@
 package org.camunda.optimize.dto.optimize.importing;
 
+import org.camunda.optimize.dto.optimize.query.report.VariableType;
+
 public class OutputInstanceDto {
   private String id;
   private String clauseId;
@@ -7,14 +9,14 @@ public class OutputInstanceDto {
   private String ruleId;
   private Integer ruleOrder;
   private String variableName;
-  private String type;
+  private VariableType type;
   private String value;
 
   protected OutputInstanceDto() {
   }
 
   public OutputInstanceDto(final String id, final String clauseId, final String clauseName, final String ruleId,
-                           final Integer ruleOrder, final String variableName, final String type, final String value) {
+                           final Integer ruleOrder, final String variableName, final VariableType type, final String value) {
     this.id = id;
     this.clauseId = clauseId;
     this.clauseName = clauseName;
@@ -49,7 +51,7 @@ public class OutputInstanceDto {
     return variableName;
   }
 
-  public String getType() {
+  public VariableType getType() {
     return type;
   }
 

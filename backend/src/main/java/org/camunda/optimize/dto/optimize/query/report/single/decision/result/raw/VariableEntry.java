@@ -1,16 +1,18 @@
 package org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw;
 
+import org.camunda.optimize.dto.optimize.query.report.VariableType;
+
 import java.util.Objects;
 
 public class VariableEntry {
   private String id;
   private String name;
-  private String type;
+  private VariableType type;
 
   protected VariableEntry() {
   }
 
-  public VariableEntry(final String id, final String name, final String type) {
+  public VariableEntry(final String id, final String name, final VariableType type) {
     this.id = id;
     this.name = name;
     this.type = type;
@@ -32,11 +34,11 @@ public class VariableEntry {
     this.name = name;
   }
 
-  public String getType() {
+  public VariableType getType() {
     return type;
   }
 
-  public void setType(final String type) {
+  public void setType(final VariableType type) {
     this.type = type;
   }
 

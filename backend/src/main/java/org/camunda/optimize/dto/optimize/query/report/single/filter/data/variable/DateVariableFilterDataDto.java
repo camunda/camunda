@@ -1,19 +1,17 @@
 package org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable;
 
+import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.data.DateVariableFilterSubDataDto;
 
 import java.time.OffsetDateTime;
 
-import static org.camunda.optimize.service.util.ProcessVariableHelper.DATE_TYPE;
-
 public class DateVariableFilterDataDto extends VariableFilterDataDto<DateVariableFilterSubDataDto> {
-
-  public DateVariableFilterDataDto() {
-    this.type = DATE_TYPE;
+  protected DateVariableFilterDataDto() {
+    this(null, null);
   }
 
   public DateVariableFilterDataDto(OffsetDateTime start, OffsetDateTime end) {
-    this.type = DATE_TYPE;
+    this.type = VariableType.DATE;
     DateVariableFilterSubDataDto dataDto = new DateVariableFilterSubDataDto();
     dataDto.setStart(start);
     dataDto.setEnd(end);

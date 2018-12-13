@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.es.filter;
 
 import org.apache.lucene.search.join.ScoreMode;
+import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DateVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.OperatorMultipleValuesVariableFilterDataDto;
@@ -56,23 +57,23 @@ public abstract class DecisionVariableQueryFilter implements QueryFilter<Variabl
   private QueryBuilder createFilterQueryBuilder(VariableFilterDataDto dto) {
     ValidationHelper.ensureNotNull("Variable filter data", dto.getData());
     QueryBuilder queryBuilder = matchAllQuery();
-    switch (dto.getType().toLowerCase()) {
-      case "boolean":
+    switch (dto.getType()) {
+      case BOOLEAN:
         BooleanVariableFilterDataDto booleanVarDto = (BooleanVariableFilterDataDto) dto;
         queryBuilder = createBooleanQueryBuilder(booleanVarDto);
         break;
-      case "string":
+      case STRING:
         StringVariableFilterDataDto stringVarDto = (StringVariableFilterDataDto) dto;
         queryBuilder = createStringQueryBuilder(stringVarDto);
         break;
-      case "integer":
-      case "double":
-      case "short":
-      case "long":
+      case INTEGER:
+      case DOUBLE:
+      case SHORT:
+      case LONG:
         OperatorMultipleValuesVariableFilterDataDto numericVarDto = (OperatorMultipleValuesVariableFilterDataDto) dto;
         queryBuilder = createNumericQueryBuilder(numericVarDto);
         break;
-      case "date":
+      case DATE:
         DateVariableFilterDataDto dateVarDto = (DateVariableFilterDataDto) dto;
         queryBuilder = createDateQueryBuilder(dateVarDto);
         break;
@@ -230,7 +231,7 @@ public abstract class DecisionVariableQueryFilter implements QueryFilter<Variabl
     return queryDate;
   }
 
-  private String getVariableValueFieldForType(final String type) {
+  private String getVariableValueFieldForType(final VariableType type) {
     return DecisionVariableHelper.getVariableValueFieldForType(getVariablePath(), type);
   }
 
@@ -240,21 +241,21 @@ public abstract class DecisionVariableQueryFilter implements QueryFilter<Variabl
 
   private Object retrieveValue(OperatorMultipleValuesVariableFilterDataDto dto) {
     String value = dto.getData().getValues().get(0);
-    switch (dto.getType().toLowerCase()) {
-      case "string":
+    switch (dto.getType()) {
+      default:
+      case STRING:
         return value;
-      case "integer":
+      case INTEGER:
         return Integer.parseInt(value);
-      case "long":
+      case LONG:
         return Long.parseLong(value);
-      case "short":
+      case SHORT:
         return Short.parseShort(value);
-      case "double":
+      case DOUBLE:
         return Double.parseDouble(value);
-      case "date":
+      case DATE:
         return value;
     }
-    return value;
   }
 
 }

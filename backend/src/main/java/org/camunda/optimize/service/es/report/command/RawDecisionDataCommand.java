@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.report.command;
 
+import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
@@ -18,7 +19,6 @@ import java.util.Optional;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.INPUTS;
 import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.OUTPUTS;
-import static org.camunda.optimize.service.util.DecisionVariableHelper.STRING_TYPE;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableIdField;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableMultivalueFields;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueFieldForType;
@@ -95,7 +95,7 @@ public class RawDecisionDataCommand extends DecisionReportCommand<RawDataDecisio
 
     // add default string field as last as it will always be present
     searchRequestBuilder.addSort(
-      createSortByVariable(sortByField, sortOrder, INPUT_VARIABLE_PREFIX, INPUTS, STRING_TYPE)
+      createSortByVariable(sortByField, sortOrder, INPUT_VARIABLE_PREFIX, INPUTS, VariableType.STRING)
     );
   }
 
@@ -109,7 +109,7 @@ public class RawDecisionDataCommand extends DecisionReportCommand<RawDataDecisio
 
     // add default string field as last as it will always be present
     searchRequestBuilder.addSort(
-      createSortByVariable(sortByField, sortOrder, OUTPUT_VARIABLE_PREFIX, OUTPUTS, STRING_TYPE)
+      createSortByVariable(sortByField, sortOrder, OUTPUT_VARIABLE_PREFIX, OUTPUTS, VariableType.STRING)
     );
   }
 
@@ -117,7 +117,7 @@ public class RawDecisionDataCommand extends DecisionReportCommand<RawDataDecisio
                                                 final SortOrder sortOrder,
                                                 final String prefix,
                                                 final String variablePath,
-                                                final String type) {
+                                                final VariableType type) {
     final String inputVariableId = sortByField.substring(prefix.length());
     final String variableValuePath = getVariableValueFieldForType(variablePath, type);
     final String variableIdPath = getVariableIdField(variablePath);

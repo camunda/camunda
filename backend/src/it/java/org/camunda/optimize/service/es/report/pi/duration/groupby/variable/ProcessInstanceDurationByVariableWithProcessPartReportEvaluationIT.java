@@ -7,6 +7,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningInstancesOnlyFilterDto;
@@ -17,7 +18,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewOperation;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
@@ -54,7 +54,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
   private static final String END_LOOP = "splittingGateway";
   private static final String DEFAULT_VARIABLE_NAME = "foo";
   private static final String DEFAULT_VARIABLE_VALUE = "bar";
-  private static final String DEFAULT_VARIABLE_TYPE = "String";
+  private static final VariableType DEFAULT_VARIABLE_TYPE = VariableType.STRING;
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -568,7 +568,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
             .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
             .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
             .setVariableName("foo1")
-            .setVariableType("String")
+            .setVariableType(DEFAULT_VARIABLE_TYPE)
             .setStartFlowNodeId(START_EVENT)
             .setEndFlowNodeId(END_EVENT)
             .build();
@@ -590,7 +590,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     OffsetDateTime endDate = startDate.plusSeconds(1);
-    Map<String, String> varNameToTypeMap = createVarNameToTypeMap();
+    Map<String, VariableType> varNameToTypeMap = createVarNameToTypeMap();
     Map<String, Object> variables = new HashMap<>();
     variables.put("dateVar", OffsetDateTime.now().withOffsetSameLocal(ZoneOffset.UTC));
     variables.put("boolVar", true);
@@ -607,7 +607,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
 
     for (Map.Entry<String, Object> entry : variables.entrySet()) {
       // when
-      String variableType = varNameToTypeMap.get(entry.getKey());
+      VariableType variableType = varNameToTypeMap.get(entry.getKey());
       ProcessReportDataDto reportData = ProcessReportDataBuilder
               .createReportData()
               .setReportDataType(reportDataType)
@@ -624,7 +624,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       assertThat(result.getResult(), is(notNullValue()));
       Map<String, Long> variableValueToCount = result.getResult();
       assertThat(variableValueToCount.size(), is(1));
-      if (ProcessVariableHelper.isDateType(variableType)) {
+      if (VariableType.DATE.equals(variableType)) {
         OffsetDateTime temporal = (OffsetDateTime) variables.get(entry.getKey());
         String dateAsString =
           embeddedOptimizeRule.getDateTimeFormatter().format(temporal.withOffsetSameLocal(ZoneOffset.UTC));
@@ -635,15 +635,15 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     }
   }
 
-  private Map<String, String> createVarNameToTypeMap() {
-    Map<String, String> varToType = new HashMap<>();
-    varToType.put("dateVar", "date");
-    varToType.put("boolVar", "boolean");
-    varToType.put("shortVar", "short");
-    varToType.put("intVar", "integer");
-    varToType.put("longVar", "long");
-    varToType.put("doubleVar", "double");
-    varToType.put("stringVar", "string");
+  private Map<String, VariableType> createVarNameToTypeMap() {
+    Map<String, VariableType> varToType = new HashMap<>();
+    varToType.put("dateVar", VariableType.DATE);
+    varToType.put("boolVar", VariableType.BOOLEAN);
+    varToType.put("shortVar", VariableType.SHORT);
+    varToType.put("intVar", VariableType.INTEGER);
+    varToType.put("longVar", VariableType.LONG);
+    varToType.put("doubleVar", VariableType.DOUBLE);
+    varToType.put("stringVar", VariableType.STRING);
     return varToType;
   }
 

@@ -1,9 +1,11 @@
 package org.camunda.optimize.dto.optimize.query.variable;
 
+import org.camunda.optimize.dto.optimize.query.report.VariableType;
+
 public class VariableRetrievalDto {
 
   protected String name;
-  protected String type;
+  protected VariableType type;
 
   public String getName() {
     return name;
@@ -13,11 +15,11 @@ public class VariableRetrievalDto {
     this.name = name;
   }
 
-  public String getType() {
+  public VariableType getType() {
     return type;
   }
 
-  public void setType(String type) {
+  public void setType(VariableType type) {
     this.type = type;
   }
 

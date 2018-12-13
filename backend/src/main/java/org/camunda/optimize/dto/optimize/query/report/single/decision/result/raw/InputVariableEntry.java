@@ -1,6 +1,8 @@
 package org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw;
 
 
+import org.camunda.optimize.dto.optimize.query.report.VariableType;
+
 import java.util.Objects;
 
 public class InputVariableEntry extends VariableEntry {
@@ -9,7 +11,7 @@ public class InputVariableEntry extends VariableEntry {
   protected InputVariableEntry() {
   }
 
-  public InputVariableEntry(final String id, final String name, final String type, final Object value) {
+  public InputVariableEntry(final String id, final String name, final VariableType type, final Object value) {
     super(id, name, type);
     this.value = value;
   }

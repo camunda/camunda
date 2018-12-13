@@ -8,6 +8,7 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
@@ -17,7 +18,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewOperation;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
@@ -61,7 +61,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
 
   @Test
   @Parameters
-  public void simpleReportEvaluation(ProcessReportDataType reportDataType, ProcessViewOperation operation) throws SQLException {
+  public void simpleReportEvaluation(ProcessReportDataType reportDataType, ProcessViewOperation operation) throws
+                                                                                                           SQLException {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     OffsetDateTime endDate = startDate.plusSeconds(1);
@@ -75,13 +76,13 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
-            .createReportData()
-            .setReportDataType(reportDataType)
-            .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-            .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-            .setVariableName("foo")
-            .setVariableType("String")
-            .build();
+      .createReportData()
+      .setReportDataType(reportDataType)
+      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
+      .setVariableName("foo")
+      .setVariableType(VariableType.STRING)
+      .build();
 
     MapProcessReportResultDto result = evaluateReport(reportData);
 
@@ -97,7 +98,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.VARIABLE));
     VariableGroupByDto variableGroupByDto = (VariableGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(variableGroupByDto.getValue().getName(), is("foo"));
-    assertThat(variableGroupByDto.getValue().getType(), is("String"));
+    assertThat(variableGroupByDto.getValue().getType(), is(VariableType.STRING));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(1));
     Map<String, Long> resultMap = result.getResult();
@@ -115,7 +116,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
 
   @Test
   @Parameters
-  public void simpleReportEvaluationById(ProcessReportDataType reportDataType, ProcessViewOperation operation) throws SQLException {
+  public void simpleReportEvaluationById(ProcessReportDataType reportDataType, ProcessViewOperation operation) throws
+                                                                                                               SQLException {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     OffsetDateTime endDate = startDate.plusSeconds(1);
@@ -127,13 +129,13 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     ProcessReportDataDto reportData = ProcessReportDataBuilder
-            .createReportData()
-            .setReportDataType(reportDataType)
-            .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
-            .setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion())
-            .setVariableName("foo")
-            .setVariableType("String")
-            .build();
+      .createReportData()
+      .setReportDataType(reportDataType)
+      .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion())
+      .setVariableName("foo")
+      .setVariableType(VariableType.STRING)
+      .build();
 
     String reportId = createAndStoreDefaultReportDefinition(reportData);
 
@@ -152,7 +154,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.VARIABLE));
     VariableGroupByDto variableGroupByDto = (VariableGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(variableGroupByDto.getValue().getName(), is("foo"));
-    assertThat(variableGroupByDto.getValue().getType(), is("String"));
+    assertThat(variableGroupByDto.getValue().getType(), is(VariableType.STRING));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(1));
     Map<String, Long> resultMap = result.getResult();
@@ -188,13 +190,13 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
-            .createReportData()
-            .setReportDataType(reportDataType)
-            .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-            .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
-            .setVariableName("foo")
-            .setVariableType("String")
-            .build();
+      .createReportData()
+      .setReportDataType(reportDataType)
+      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
+      .setVariableName("foo")
+      .setVariableType(VariableType.STRING)
+      .build();
     MapProcessReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -228,13 +230,13 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
-            .createReportData()
-            .setReportDataType(reportDataType)
-            .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-            .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-            .setVariableName("foo")
-            .setVariableType("String")
-            .build();
+      .createReportData()
+      .setReportDataType(reportDataType)
+      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
+      .setVariableName("foo")
+      .setVariableType(VariableType.STRING)
+      .build();
     MapProcessReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -268,20 +270,23 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
-            .createReportData()
-            .setReportDataType(reportDataType)
-            .setProcessDefinitionKey(processDefinitionDto.getKey())
-            .setProcessDefinitionVersion(String.valueOf(processDefinitionDto.getVersion()))
-            .setVariableName("foo")
-            .setVariableType("String")
-            .build();
+      .createReportData()
+      .setReportDataType(reportDataType)
+      .setProcessDefinitionKey(processDefinitionDto.getKey())
+      .setProcessDefinitionVersion(String.valueOf(processDefinitionDto.getVersion()))
+      .setVariableName("foo")
+      .setVariableType(VariableType.STRING)
+      .build();
 
     MapProcessReportResultDto result = evaluateReport(reportData);
 
     // then
     ProcessReportDataDto resultReportDataDto = result.getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinitionDto.getKey()));
-    assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(String.valueOf(processDefinitionDto.getVersion())));
+    assertThat(
+      resultReportDataDto.getProcessDefinitionVersion(),
+      is(String.valueOf(processDefinitionDto.getVersion()))
+    );
     assertThat(result.getResult(), is(notNullValue()));
     Map<String, Long> variableValueToCount = result.getResult();
     assertThat(variableValueToCount.size(), is(2));
@@ -316,13 +321,13 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
-            .createReportData()
-            .setReportDataType(reportDataType)
-            .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-            .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-            .setVariableName("foo")
-            .setVariableType("String")
-            .build();
+      .createReportData()
+      .setReportDataType(reportDataType)
+      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
+      .setVariableName("foo")
+      .setVariableType(VariableType.STRING)
+      .build();
     MapProcessReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -351,13 +356,13 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
-            .createReportData()
-            .setReportDataType(reportDataType)
-            .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-            .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-            .setVariableName("foo")
-            .setVariableType("String")
-            .build();
+      .createReportData()
+      .setReportDataType(reportDataType)
+      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
+      .setVariableName("foo")
+      .setVariableType(VariableType.STRING)
+      .build();
     MapProcessReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -391,13 +396,13 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
-            .createReportData()
-            .setReportDataType(reportDataType)
-            .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-            .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-            .setVariableName("foo1")
-            .setVariableType("String")
-            .build();
+      .createReportData()
+      .setReportDataType(reportDataType)
+      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
+      .setVariableName("foo1")
+      .setVariableType(VariableType.STRING)
+      .build();
     MapProcessReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -416,7 +421,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     OffsetDateTime endDate = startDate.plusSeconds(1);
-    Map<String, String> varNameToTypeMap = createVarNameToTypeMap();
+    Map<String, VariableType> varNameToTypeMap = createVarNameToTypeMap();
     Map<String, Object> variables = new HashMap<>();
     variables.put("dateVar", OffsetDateTime.now().withOffsetSameLocal(ZoneOffset.UTC));
     variables.put("boolVar", true);
@@ -433,15 +438,15 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
 
     for (Map.Entry<String, Object> entry : variables.entrySet()) {
       // when
-      String variableType = varNameToTypeMap.get(entry.getKey());
+      VariableType variableType = varNameToTypeMap.get(entry.getKey());
       ProcessReportDataDto reportData = ProcessReportDataBuilder
-              .createReportData()
-              .setReportDataType(reportDataType)
-              .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-              .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-              .setVariableName(entry.getKey())
-              .setVariableType(variableType)
-              .build();
+        .createReportData()
+        .setReportDataType(reportDataType)
+        .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+        .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
+        .setVariableName(entry.getKey())
+        .setVariableType(variableType)
+        .build();
 
       MapProcessReportResultDto result = evaluateReport(reportData);
 
@@ -449,7 +454,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
       assertThat(result.getResult(), is(notNullValue()));
       Map<String, Long> variableValueToCount = result.getResult();
       assertThat(variableValueToCount.size(), is(1));
-      if (ProcessVariableHelper.isDateType(variableType)) {
+      if (VariableType.DATE.equals(variableType)) {
         OffsetDateTime temporal = (OffsetDateTime) variables.get(entry.getKey());
         String dateAsString =
           embeddedOptimizeRule.getDateTimeFormatter().format(temporal.withOffsetSameLocal(ZoneOffset.UTC));
@@ -460,15 +465,15 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     }
   }
 
-  private Map<String, String> createVarNameToTypeMap() {
-    Map<String, String> varToType = new HashMap<>();
-    varToType.put("dateVar", "date");
-    varToType.put("boolVar", "boolean");
-    varToType.put("shortVar", "short");
-    varToType.put("intVar", "integer");
-    varToType.put("longVar", "long");
-    varToType.put("doubleVar", "double");
-    varToType.put("stringVar", "string");
+  private Map<String, VariableType> createVarNameToTypeMap() {
+    Map<String, VariableType> varToType = new HashMap<>();
+    varToType.put("dateVar", VariableType.DATE);
+    varToType.put("boolVar", VariableType.BOOLEAN);
+    varToType.put("shortVar", VariableType.SHORT);
+    varToType.put("intVar", VariableType.INTEGER);
+    varToType.put("longVar", VariableType.LONG);
+    varToType.put("doubleVar", VariableType.DOUBLE);
+    varToType.put("stringVar", VariableType.STRING);
     return varToType;
   }
 
@@ -488,13 +493,13 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
-            .createReportData()
-            .setReportDataType(reportDataType)
-            .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
-            .setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion())
-            .setVariableName("foo")
-            .setVariableType("String")
-            .build();
+      .createReportData()
+      .setReportDataType(reportDataType)
+      .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion())
+      .setVariableName("foo")
+      .setVariableType(VariableType.STRING)
+      .build();
 
     reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(null, startDate.minusSeconds(1L)));
     MapProcessReportResultDto result = evaluateReport(reportData);
@@ -520,13 +525,13 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
   public void optimizeExceptionOnViewEntityIsNull(ProcessReportDataType reportDataType) {
     // given
     ProcessReportDataDto dataDto = ProcessReportDataBuilder
-            .createReportData()
-            .setReportDataType(reportDataType)
-            .setProcessDefinitionKey("123")
-            .setProcessDefinitionVersion("1")
-            .setVariableName("foo")
-            .setVariableType("String")
-            .build();
+      .createReportData()
+      .setReportDataType(reportDataType)
+      .setProcessDefinitionKey("123")
+      .setProcessDefinitionVersion("1")
+      .setVariableName("foo")
+      .setVariableType(VariableType.STRING)
+      .build();
 
     dataDto.getView().setEntity(null);
 
@@ -542,13 +547,13 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
   public void optimizeExceptionOnViewPropertyIsNull(ProcessReportDataType reportDataType) {
     // given
     ProcessReportDataDto dataDto = ProcessReportDataBuilder
-            .createReportData()
-            .setReportDataType(reportDataType)
-            .setProcessDefinitionKey("123")
-            .setProcessDefinitionVersion("1")
-            .setVariableName("foo")
-            .setVariableType("String")
-            .build();
+      .createReportData()
+      .setReportDataType(reportDataType)
+      .setProcessDefinitionKey("123")
+      .setProcessDefinitionVersion("1")
+      .setVariableName("foo")
+      .setVariableType(VariableType.STRING)
+      .build();
 
     dataDto.getView().setProperty(null);
 
@@ -564,13 +569,13 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
   public void optimizeExceptionOnGroupByTypeIsNull(ProcessReportDataType reportDataType) {
     // given
     ProcessReportDataDto dataDto = ProcessReportDataBuilder
-            .createReportData()
-            .setReportDataType(reportDataType)
-            .setProcessDefinitionKey("123")
-            .setProcessDefinitionVersion("1")
-            .setVariableName("foo")
-            .setVariableType("String")
-            .build();
+      .createReportData()
+      .setReportDataType(reportDataType)
+      .setProcessDefinitionKey("123")
+      .setProcessDefinitionVersion("1")
+      .setVariableName("foo")
+      .setVariableType(VariableType.STRING)
+      .build();
 
     dataDto.getGroupBy().setType(null);
 
@@ -586,13 +591,13 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
   public void optimizeExceptionOnGroupByValueNameIsNull(ProcessReportDataType reportDataType) {
     // given
     ProcessReportDataDto dataDto = ProcessReportDataBuilder
-            .createReportData()
-            .setReportDataType(reportDataType)
-            .setProcessDefinitionKey("123")
-            .setProcessDefinitionVersion("1")
-            .setVariableName("foo")
-            .setVariableType("String")
-            .build();
+      .createReportData()
+      .setReportDataType(reportDataType)
+      .setProcessDefinitionKey("123")
+      .setProcessDefinitionVersion("1")
+      .setVariableName("foo")
+      .setVariableType(VariableType.STRING)
+      .build();
 
     VariableGroupByDto groupByDto = (VariableGroupByDto) dataDto.getGroupBy();
     groupByDto.getValue().setName(null);
@@ -609,13 +614,13 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
   public void optimizeExceptionOnGroupByValueTypeIsNull(ProcessReportDataType reportDataType) {
     // given
     ProcessReportDataDto dataDto = ProcessReportDataBuilder
-            .createReportData()
-            .setReportDataType(reportDataType)
-            .setProcessDefinitionKey("123")
-            .setProcessDefinitionVersion("1")
-            .setVariableName("foo")
-            .setVariableType("String")
-            .build();
+      .createReportData()
+      .setReportDataType(reportDataType)
+      .setProcessDefinitionKey("123")
+      .setProcessDefinitionVersion("1")
+      .setVariableName("foo")
+      .setVariableType(VariableType.STRING)
+      .build();
 
     VariableGroupByDto groupByDto = (VariableGroupByDto) dataDto.getGroupBy();
     groupByDto.getValue().setType(null);
@@ -634,7 +639,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
   private List<ProcessInstanceEngineDto> deployAndStartSimpleProcesses(Map<String, Object> variables) {
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
     return IntStream.range(0, 1)
-      .mapToObj( i -> {
+      .mapToObj(i -> {
         ProcessInstanceEngineDto processInstanceEngineDto =
           engineRule.startProcessInstance(processDefinition.getId(), variables);
         processInstanceEngineDto.setProcessDefinitionKey(processDefinition.getKey());
@@ -677,33 +682,33 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
 
   private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildEvaluateSingleUnsavedReportRequest(reportData)
-            .execute();
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      .execute();
   }
 
   private void updateReport(String id, ReportDefinitionDto updatedReport) {
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildUpdateReportRequest(id, updatedReport)
-            .execute();
+      .getRequestExecutor()
+      .buildUpdateReportRequest(id, updatedReport)
+      .execute();
 
     assertThat(response.getStatus(), is(204));
   }
 
   private String createNewReport() {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateSingleProcessReportRequest()
-            .execute(IdDto.class, 200)
-            .getId();
+      .getRequestExecutor()
+      .buildCreateSingleProcessReportRequest()
+      .execute(IdDto.class, 200)
+      .getId();
   }
 
   private MapProcessReportResultDto evaluateReportById(String reportId) {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildEvaluateSavedReportRequest(reportId)
-            .execute(MapProcessReportResultDto.class, 200);
+      .getRequestExecutor()
+      .buildEvaluateSavedReportRequest(reportId)
+      .execute(MapProcessReportResultDto.class, 200);
   }
 
   private String createAndStoreDefaultReportDefinition(ProcessReportDataDto reportData) {

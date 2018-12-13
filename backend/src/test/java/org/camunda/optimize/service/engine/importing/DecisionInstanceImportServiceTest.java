@@ -4,6 +4,7 @@ import org.camunda.optimize.dto.engine.HistoricDecisionInputInstanceDto;
 import org.camunda.optimize.dto.engine.HistoricDecisionInstanceDto;
 import org.camunda.optimize.dto.engine.HistoricDecisionOutputInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.service.DecisionDefinitionVersionResolverService;
 import org.camunda.optimize.service.engine.importing.service.DecisionInstanceImportService;
@@ -203,7 +204,7 @@ public class DecisionInstanceImportServiceTest {
 
       assertThat(inputInstanceDto.getClauseId(), is(historicInput.getClauseId()));
       assertThat(inputInstanceDto.getClauseName(), is(historicInput.getClauseName()));
-      assertThat(inputInstanceDto.getType(), is(historicInput.getType()));
+      assertThat(inputInstanceDto.getType().getId(), is(historicInput.getType()));
       assertThat(inputInstanceDto.getValue(), is(String.valueOf(historicInput.getValue())));
     });
   }
@@ -222,31 +223,31 @@ public class DecisionInstanceImportServiceTest {
       assertThat(outputInstanceDto.getRuleId(), is(historicOutput.getRuleId()));
       assertThat(outputInstanceDto.getRuleOrder(), is(historicOutput.getRuleOrder()));
       assertThat(outputInstanceDto.getVariableName(), is(historicOutput.getVariableName()));
-      assertThat(outputInstanceDto.getType(), is(historicOutput.getType()));
+      assertThat(outputInstanceDto.getType().getId(), is(historicOutput.getType()));
       assertThat(outputInstanceDto.getValue(), is(String.valueOf(historicOutput.getValue())));
     });
   }
 
   private void addAllSupportedInputVariables(final HistoricDecisionInstanceDto historicDecisionInstanceDto) {
-    for (String type : ProcessVariableHelper.ALL_SUPPORTED_VARIABLE_TYPES) {
+    for (VariableType type : ProcessVariableHelper.ALL_SUPPORTED_VARIABLE_TYPES) {
       HistoricDecisionInputInstanceDto input = new HistoricDecisionInputInstanceDto();
       input.setId(UUID.randomUUID().toString());
       input.setClauseId(UUID.randomUUID().toString());
       input.setClauseName("clauseName_" + type);
-      input.setType(type.toLowerCase());
-      input.setValue(getSampleValueForType(type.toLowerCase()));
+      input.setType(type.getId());
+      input.setValue(getSampleValueForType(type));
       historicDecisionInstanceDto.getInputs().add(input);
     }
   }
 
   private void addAllSupportedOutputVairables(final HistoricDecisionInstanceDto historicDecisionInstanceDto) {
-    for (String type : ProcessVariableHelper.ALL_SUPPORTED_VARIABLE_TYPES) {
+    for (VariableType type : ProcessVariableHelper.ALL_SUPPORTED_VARIABLE_TYPES) {
       HistoricDecisionOutputInstanceDto output = new HistoricDecisionOutputInstanceDto();
       output.setId(UUID.randomUUID().toString());
       output.setClauseId(UUID.randomUUID().toString());
       output.setClauseName("clauseName_" + type);
-      output.setType(type.toLowerCase());
-      output.setValue(getSampleValueForType(type.toLowerCase()));
+      output.setType(type.getId());
+      output.setValue(getSampleValueForType(type));
       output.setRuleId(UUID.randomUUID().toString());
       output.setRuleOrder(1);
       output.setVariableName("varName_" + type);
@@ -255,21 +256,21 @@ public class DecisionInstanceImportServiceTest {
     }
   }
 
-  private Object getSampleValueForType(final String type) {
+  private Object getSampleValueForType(final VariableType type) {
     switch (type) {
-      case "string":
+      case STRING:
         return "test";
-      case "integer":
+      case INTEGER:
         return 5;
-      case "short":
+      case SHORT:
         return Short.valueOf("1");
-      case "long":
+      case LONG:
         return 6L;
-      case "double":
+      case DOUBLE:
         return 7.0D;
-      case "boolean":
+      case BOOLEAN:
         return true;
-      case "date":
+      case DATE:
         return OffsetDateTime.now();
       default:
         throw new IllegalStateException("Unhandled type: " + type);

@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.report.command.pi.duration.groupby.variable;
 
+import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
@@ -22,7 +23,6 @@ import java.util.Map;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameFieldLabelForType;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldLabelForType;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.isDateType;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.variableTypeToFieldLabel;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -72,7 +72,7 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
     return mapResult;
   }
 
-  private AggregationBuilder createAggregation(String variableName, String variableType) {
+  private AggregationBuilder createAggregation(String variableName, VariableType variableType) {
 
     String path = variableTypeToFieldLabel(variableType);
     String nestedVariableNameFieldLabel = getNestedVariableNameFieldLabelForType(variableType);
@@ -81,9 +81,11 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
       .terms(VARIABLES_AGGREGATION)
       .size(Integer.MAX_VALUE)
       .field(nestedVariableValueFieldLabel);
-    if (isDateType(variableType)) {
+
+    if (VariableType.DATE.equals(variableType)) {
       collectVariableValueCount.format(configurationService.getOptimizeDateFormat());
     }
+
     return nested(NESTED_AGGREGATION, path)
       .subAggregation(
         filter(

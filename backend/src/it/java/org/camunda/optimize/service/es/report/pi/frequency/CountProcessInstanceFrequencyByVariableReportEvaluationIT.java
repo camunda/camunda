@@ -5,6 +5,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
@@ -14,7 +15,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewOperation;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
@@ -66,7 +66,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
         processInstanceDto.getProcessDefinitionKey(),
       processInstanceDto.getProcessDefinitionVersion(),
       "foo",
-      "String"
+        VariableType.STRING
     );
     MapProcessReportResultDto result = evaluateReport(reportData);
 
@@ -82,7 +82,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.VARIABLE));
     VariableGroupByDto variableGroupByDto = (VariableGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(variableGroupByDto.getValue().getName(), is("foo"));
-    assertThat(variableGroupByDto.getValue().getType(), is("String"));
+    assertThat(variableGroupByDto.getValue().getType(), is(VariableType.STRING));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(1));
     Map<String, Long> resultMap = result.getResult();
@@ -92,7 +92,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
   private String createAndStoreDefaultReportDefinition(String processDefinitionKey,
                                                        String processDefinitionVersion,
                                                        String variableName,
-                                                       String variableType) {
+                                                       VariableType variableType) {
     String id = createNewReport();
     ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
         processDefinitionKey, processDefinitionVersion, variableName, variableType
@@ -145,7 +145,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
         processInstance.getProcessDefinitionKey(),
       processInstance.getProcessDefinitionVersion(),
       "foo",
-      "String"
+        VariableType.STRING
     );
 
     // when
@@ -163,7 +163,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.VARIABLE));
     VariableGroupByDto variableGroupByDto = (VariableGroupByDto) resultReportDataDto.getGroupBy();
     assertThat(variableGroupByDto.getValue().getName(), is("foo"));
-    assertThat(variableGroupByDto.getValue().getType(), is("String"));
+    assertThat(variableGroupByDto.getValue().getType(), is(VariableType.STRING));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult().size(), is(1));
     Map<String, Long> resultMap = result.getResult();
@@ -186,7 +186,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
         processInstanceDto.getProcessDefinitionKey(),
         ALL_VERSIONS,
       "foo",
-      "String"
+        VariableType.STRING
     );
     MapProcessReportResultDto result = evaluateReport(reportData);
 
@@ -217,7 +217,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
         processInstanceDto.getProcessDefinitionKey(),
         processInstanceDto.getProcessDefinitionVersion(),
       "foo",
-      "String"
+        VariableType.STRING
     );
     MapProcessReportResultDto result = evaluateReport(reportData);
 
@@ -248,7 +248,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
         processInstanceDto.getProcessDefinitionKey(),
         processInstanceDto.getProcessDefinitionVersion(),
       "foo",
-      "String"
+        VariableType.STRING
     );
     MapProcessReportResultDto result = evaluateReport(reportData);
 
@@ -279,7 +279,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
         processInstanceDto.getProcessDefinitionKey(),
         processInstanceDto.getProcessDefinitionVersion(),
       "foo",
-      "String"
+        VariableType.STRING
     );
     MapProcessReportResultDto result = evaluateReport(reportData);
 
@@ -309,7 +309,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
         processInstanceDto.getProcessDefinitionKey(),
         processInstanceDto.getProcessDefinitionVersion(),
       "foo1",
-      "String"
+        VariableType.STRING
     );
     MapProcessReportResultDto result = evaluateReport(reportData);
 
@@ -326,7 +326,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
   @Test
   public void worksWithAllVariableTypes() {
     // given
-    Map<String, String> varNameToTypeMap = createVarNameToTypeMap();
+    Map<String, VariableType> varNameToTypeMap = createVarNameToTypeMap();
     Map<String, Object> variables = new HashMap<>();
     variables.put("dateVar", OffsetDateTime.now().withOffsetSameLocal(ZoneOffset.UTC));
     variables.put("boolVar", true);
@@ -341,7 +341,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
 
     for (Map.Entry<String, Object> entry : variables.entrySet()) {
       // when
-      String variableType = varNameToTypeMap.get(entry.getKey());
+      VariableType variableType = varNameToTypeMap.get(entry.getKey());
       ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
         processInstanceDto.getProcessDefinitionKey(),
         processInstanceDto.getProcessDefinitionVersion(),
@@ -354,7 +354,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
       assertThat(result.getResult(), is(notNullValue()));
       Map<String, Long> variableValueToCount = result.getResult();
       assertThat(variableValueToCount.size(), is(1));
-      if (ProcessVariableHelper.isDateType(variableType)) {
+      if (VariableType.DATE.equals(variableType)) {
         OffsetDateTime temporal = (OffsetDateTime) variables.get(entry.getKey());
         String dateAsString =
           embeddedOptimizeRule.getDateTimeFormatter().format(temporal.withOffsetSameLocal(ZoneOffset.UTC));
@@ -365,15 +365,15 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     }
   }
 
-  private Map<String, String> createVarNameToTypeMap() {
-    Map<String, String> varToType = new HashMap<>();
-    varToType.put("dateVar", "date");
-    varToType.put("boolVar", "boolean");
-    varToType.put("shortVar", "short");
-    varToType.put("intVar", "integer");
-    varToType.put("longVar", "long");
-    varToType.put("doubleVar", "double");
-    varToType.put("stringVar", "string");
+  private Map<String, VariableType> createVarNameToTypeMap() {
+    Map<String, VariableType> varToType = new HashMap<>();
+    varToType.put("dateVar", VariableType.DATE);
+    varToType.put("boolVar", VariableType.BOOLEAN);
+    varToType.put("shortVar", VariableType.SHORT);
+    varToType.put("intVar", VariableType.INTEGER);
+    varToType.put("longVar", VariableType.LONG);
+    varToType.put("doubleVar", VariableType.DOUBLE);
+    varToType.put("stringVar", VariableType.STRING);
     return varToType;
   }
 
@@ -392,7 +392,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion(),
       "foo",
-      "String"
+        VariableType.STRING
     );
     reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(null, past.minusSeconds(1L)));
     MapProcessReportResultDto result = evaluateReport(reportData);
@@ -420,7 +420,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
         "123",
         "1",
       "foo",
-      "String"
+        VariableType.STRING
     );
     dataDto.getView().setEntity(null);
 
@@ -438,7 +438,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
         "123",
         "1",
       "foo",
-      "String"
+        VariableType.STRING
     );
     dataDto.getView().setProperty(null);
 
@@ -456,7 +456,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
         "123",
         "1",
       "foo",
-      "String"
+        VariableType.STRING
     );
     dataDto.getGroupBy().setType(null);
 
@@ -474,7 +474,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
         "123",
         "1",
       "foo",
-      "String"
+        VariableType.STRING
     );
     VariableGroupByDto groupByDto = (VariableGroupByDto) dataDto.getGroupBy();
     groupByDto.getValue().setName(null);
@@ -493,7 +493,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
         "123",
         "1",
       "foo",
-      "String"
+        VariableType.STRING
     );
     VariableGroupByDto groupByDto = (VariableGroupByDto) dataDto.getGroupBy();
     groupByDto.getValue().setType(null);

@@ -3,6 +3,7 @@ package org.camunda.optimize.service.es.writer.variable;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.lucene.search.join.ScoreMode;
+import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.dto.optimize.query.variable.VariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.value.BooleanVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.value.DateVariableDto;
@@ -42,13 +43,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.isBooleanType;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.isDateType;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.isDoubleType;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.isIntegerType;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.isLongType;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.isShortType;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.isStringType;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.isVariableTypeSupported;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.variableTypeToFieldLabel;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -137,7 +131,7 @@ public abstract class VariableWriter {
         endDate
       );
     } finally {
-        progressReporter.stop();
+      progressReporter.stop();
     }
   }
 
@@ -286,48 +280,60 @@ public abstract class VariableWriter {
   }
 
   private VariableInstanceDto parseValueWithException(VariableDto var) {
-    VariableInstanceDto variableInstanceDto;
-    if (isStringType(var.getType())) {
-      StringVariableDto stringVariableDto = new StringVariableDto();
-      stringVariableDto.setValue(var.getValue());
-      variableInstanceDto = stringVariableDto;
-    } else if (isIntegerType(var.getType())) {
-      IntegerVariableDto integerVariableDto = new IntegerVariableDto();
-      integerVariableDto.setValue(parseInteger(var));
-      variableInstanceDto = integerVariableDto;
-    } else if (isLongType(var.getType())) {
-      LongVariableDto longVariableDto = new LongVariableDto();
-      longVariableDto.setValue(parseLong(var));
-      variableInstanceDto = longVariableDto;
-    } else if (isShortType(var.getType())) {
-      ShortVariableDto shortVariableDto = new ShortVariableDto();
-      shortVariableDto.setValue(parseShort(var));
-      variableInstanceDto = shortVariableDto;
-    } else if (isDoubleType(var.getType())) {
-      DoubleVariableDto doubleVariableDto = new DoubleVariableDto();
-      doubleVariableDto.setValue(parseDouble(var));
-      variableInstanceDto = doubleVariableDto;
-    } else if (isBooleanType(var.getType())) {
-      BooleanVariableDto booleanVariableDto = new BooleanVariableDto();
-      booleanVariableDto.setValue(parseBoolean(var));
-      variableInstanceDto = booleanVariableDto;
-    } else if (isDateType(var.getType())) {
-      DateVariableDto dateVariableDto = new DateVariableDto();
-      try {
-        OffsetDateTime offsetDateTime = objectMapper.readerFor(OffsetDateTime.class)
-          .readValue("\"" + var.getValue() + "\"");
-        dateVariableDto.setValue(offsetDateTime);
-      } catch (IOException error) {
-        logger.debug("Could not deserialize date variable out of [{}]! Reason: {}", var.getValue(), error.getMessage());
-      }
-      variableInstanceDto = dateVariableDto;
-    } else {
-      logger.warn("Unsupported variable type [{}] if variable {}! " +
-                    "Interpreting this as string type instead.", var.getType(), var.getName());
-      StringVariableDto stringVariableDto = new StringVariableDto();
-      stringVariableDto.setValue(var.getValue());
-      variableInstanceDto = stringVariableDto;
+    final VariableInstanceDto variableInstanceDto;
+    switch (VariableType.getTypeForId(var.getType())) {
+      default:
+        logger.warn(
+          "Unsupported variable type [{}] if variable {}! Interpreting this as string type instead.",
+          var.getType(), var.getName()
+        );
+      case STRING:
+        StringVariableDto stringVariableDto = new StringVariableDto();
+        stringVariableDto.setValue(var.getValue());
+        variableInstanceDto = stringVariableDto;
+        break;
+      case INTEGER:
+        IntegerVariableDto integerVariableDto = new IntegerVariableDto();
+        integerVariableDto.setValue(parseInteger(var));
+        variableInstanceDto = integerVariableDto;
+        break;
+      case LONG:
+        LongVariableDto longVariableDto = new LongVariableDto();
+        longVariableDto.setValue(parseLong(var));
+        variableInstanceDto = longVariableDto;
+        break;
+      case SHORT:
+        ShortVariableDto shortVariableDto = new ShortVariableDto();
+        shortVariableDto.setValue(parseShort(var));
+        variableInstanceDto = shortVariableDto;
+        break;
+      case DOUBLE:
+        DoubleVariableDto doubleVariableDto = new DoubleVariableDto();
+        doubleVariableDto.setValue(parseDouble(var));
+        variableInstanceDto = doubleVariableDto;
+        break;
+      case BOOLEAN:
+        BooleanVariableDto booleanVariableDto = new BooleanVariableDto();
+        booleanVariableDto.setValue(parseBoolean(var));
+        variableInstanceDto = booleanVariableDto;
+        break;
+      case DATE:
+        DateVariableDto dateVariableDto = new DateVariableDto();
+        try {
+          OffsetDateTime offsetDateTime = objectMapper.readerFor(OffsetDateTime.class)
+            .readValue("\"" + var.getValue() + "\"");
+          dateVariableDto.setValue(offsetDateTime);
+        } catch (IOException error) {
+          logger.debug(
+            "Could not deserialize date variable out of [{}]! Reason: {}",
+            var.getValue(),
+            error.getMessage()
+          );
+        }
+        variableInstanceDto = dateVariableDto;
+        break;
     }
+
     variableInstanceDto.setType(var.getType());
     variableInstanceDto.setId(var.getId());
     variableInstanceDto.setName(var.getName());

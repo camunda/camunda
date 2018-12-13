@@ -1,16 +1,18 @@
 package org.camunda.optimize.dto.optimize.importing;
 
+import org.camunda.optimize.dto.optimize.query.report.VariableType;
+
 public class InputInstanceDto {
   private String id;
   private String clauseId;
   private String clauseName;
-  private String type;
+  private VariableType type;
   private String value;
 
   protected InputInstanceDto() {
   }
 
-  public InputInstanceDto(final String id, final String clauseId, final String clauseName, final String type,
+  public InputInstanceDto(final String id, final String clauseId, final String clauseName, final VariableType type,
                           final String value) {
     this.id = id;
     this.clauseId = clauseId;
@@ -43,11 +45,11 @@ public class InputInstanceDto {
     this.clauseName = clauseName;
   }
 
-  public String getType() {
+  public VariableType getType() {
     return type;
   }
 
-  public void setType(final String type) {
+  public void setType(final VariableType type) {
     this.type = type;
   }
 

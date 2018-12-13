@@ -6,6 +6,7 @@ import org.camunda.optimize.dto.engine.HistoricDecisionOutputInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.InputInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.OutputInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
@@ -122,7 +123,7 @@ public class DecisionInstanceImportService {
       engineInputDto.getId(),
       engineInputDto.getClauseId(),
       engineInputDto.getClauseName(),
-      engineInputDto.getType(),
+      VariableType.getTypeForId(engineInputDto.getType()),
       String.valueOf(engineInputDto.getValue())
     );
   }
@@ -135,7 +136,7 @@ public class DecisionInstanceImportService {
       engineOutputDto.getRuleId(),
       engineOutputDto.getRuleOrder(),
       engineOutputDto.getVariableName(),
-      engineOutputDto.getType(),
+      VariableType.getTypeForId(engineOutputDto.getType()),
       String.valueOf(engineOutputDto.getValue())
     );
   }

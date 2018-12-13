@@ -3,6 +3,7 @@ package org.camunda.optimize.plugin.adapter.variable;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.plugin.ImportAdapterProvider;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -221,7 +222,7 @@ public class VariableImportAdapterPluginIT {
     //then only half the variables are added to Optimize
     assertThat(variablesResponseDtos.size(), is(1));
     assertThat(variablesResponseDtos.get(0).getName(), is("personsName"));
-    assertThat(variablesResponseDtos.get(0).getType(), is("String"));
+    assertThat(variablesResponseDtos.get(0).getType(), is(VariableType.STRING));
   }
 
   private List<VariableRetrievalDto> getVariables(ProcessInstanceEngineDto processDefinition) {

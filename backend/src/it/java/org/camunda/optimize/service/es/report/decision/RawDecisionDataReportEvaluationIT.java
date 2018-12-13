@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.es.report.decision;
 
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
@@ -133,7 +134,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
         OUTPUT_BEVERAGES,
         new OutputVariableEntry(
           // very good beer choice!
-          OUTPUT_BEVERAGES, "Beverages", "String", "Aecht Schlenkerla Rauchbier", "Apple Juice"
+          OUTPUT_BEVERAGES, "Beverages", VariableType.STRING, "Aecht Schlenkerla Rauchbier", "Apple Juice"
         )
       );
     }};
@@ -417,10 +418,10 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
   private HashMap<String, OutputVariableEntry> createOutputs(final boolean auditValue,
                                                              final String classificationValue) {
     return new HashMap<String, OutputVariableEntry>() {{
-      put(OUTPUT_AUDIT_ID, new OutputVariableEntry(OUTPUT_AUDIT_ID, "Audit", "Boolean", auditValue));
+      put(OUTPUT_AUDIT_ID, new OutputVariableEntry(OUTPUT_AUDIT_ID, "Audit", VariableType.BOOLEAN, auditValue));
       put(
         OUTPUT_CLASSIFICATION_ID,
-        new OutputVariableEntry(OUTPUT_CLASSIFICATION_ID, "Classification", "String", classificationValue)
+        new OutputVariableEntry(OUTPUT_CLASSIFICATION_ID, "Classification", VariableType.STRING, classificationValue)
       );
     }};
   }

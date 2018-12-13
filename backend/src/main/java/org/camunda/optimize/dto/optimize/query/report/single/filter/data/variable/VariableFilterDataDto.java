@@ -4,6 +4,7 @@ package org.camunda.optimize.dto.optimize.query.report.single.filter.data.variab
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 
 import static org.camunda.optimize.service.util.ProcessVariableHelper.BOOLEAN_TYPE;
@@ -27,16 +28,16 @@ import static org.camunda.optimize.service.util.ProcessVariableHelper.STRING_TYP
 
 public abstract class VariableFilterDataDto<DATA> implements FilterDataDto {
   @JsonProperty
-  protected String type;
+  protected VariableType type;
 
   protected String name;
   protected DATA data;
 
-  public String getType() {
+  public VariableType getType() {
     return type;
   }
 
-  public void setType(String type) {
+  public void setType(VariableType type) {
     this.type = type;
   }
 

@@ -1,5 +1,6 @@
 package org.camunda.optimize.test.util;
 
+import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -48,7 +49,7 @@ public class ProcessReportDataBuilder {
   private String processDefinitionKey;
   private String processDefinitionVersion;
   private String variableName;
-  private String variableType;
+  private VariableType variableType;
   private GroupByDateUnit dateInterval;
   private String startFlowNodeId;
   private String endFlowNodeId;
@@ -333,7 +334,7 @@ public class ProcessReportDataBuilder {
     return this;
   }
 
-  public ProcessReportDataBuilder setVariableType(String variableType) {
+  public ProcessReportDataBuilder setVariableType(VariableType variableType) {
     this.variableType = variableType;
     return this;
   }

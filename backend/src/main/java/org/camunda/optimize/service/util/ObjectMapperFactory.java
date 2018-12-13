@@ -2,6 +2,7 @@ package org.camunda.optimize.service.util;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -60,7 +61,8 @@ public class ObjectMapperFactory {
       .featuresToEnable(
         JsonParser.Feature.ALLOW_COMMENTS,
         SerializationFeature.INDENT_OUTPUT,
-        DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY
+        DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY,
+        MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS
       )
       .build();
   }

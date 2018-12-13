@@ -1,5 +1,6 @@
 package org.camunda.optimize.test.util;
 
+import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -286,7 +287,7 @@ public class ProcessReportDataBuilderHelper {
     String processDefinitionKey,
     String processDefinitionVersion,
     String variableName,
-    String variableType
+    VariableType variableType
   ) {
 
     ProcessViewDto view = createCountProcessInstanceFrequencyView();
@@ -305,7 +306,7 @@ public class ProcessReportDataBuilderHelper {
     String processDefinitionKey,
     String processDefinitionVersion,
     String variableName,
-    String variableType
+    VariableType variableType
   ) {
 
     ProcessViewDto view = createAverageProcessInstanceDurationView();
@@ -324,7 +325,7 @@ public class ProcessReportDataBuilderHelper {
     String processDefinitionKey,
     String processDefinitionVersion,
     String variableName,
-    String variableType,
+    VariableType variableType,
     String startFlowNodeId,
     String endFlowNodeId
   ) {
@@ -343,7 +344,7 @@ public class ProcessReportDataBuilderHelper {
     String processDefinitionKey,
     String processDefinitionVersion,
     String variableName,
-    String variableType
+    VariableType variableType
   ) {
 
     ProcessViewDto view = createMinProcessInstanceDurationView();
@@ -362,7 +363,7 @@ public class ProcessReportDataBuilderHelper {
     String processDefinitionKey,
     String processDefinitionVersion,
     String variableName,
-    String variableType,
+    VariableType variableType,
     String startFlowNodeId,
     String endFlowNodeId
   ) {
@@ -381,7 +382,7 @@ public class ProcessReportDataBuilderHelper {
     String processDefinitionKey,
     String processDefinitionVersion,
     String variableName,
-    String variableType
+    VariableType variableType
   ) {
 
     ProcessViewDto view = createMaxProcessInstanceDurationView();
@@ -400,7 +401,7 @@ public class ProcessReportDataBuilderHelper {
     String processDefinitionKey,
     String processDefinitionVersion,
     String variableName,
-    String variableType,
+    VariableType variableType,
     String startFlowNodeId,
     String endFlowNodeId
   ) {
@@ -419,7 +420,7 @@ public class ProcessReportDataBuilderHelper {
     String processDefinitionKey,
     String processDefinitionVersion,
     String variableName,
-    String variableType
+    VariableType variableType
   ) {
 
     ProcessViewDto view = createMedianProcessInstanceDurationView();
@@ -438,7 +439,7 @@ public class ProcessReportDataBuilderHelper {
     String processDefinitionKey,
     String processDefinitionVersion,
     String variableName,
-    String variableType,
+    VariableType variableType,
     String startFlowNodeId,
     String endFlowNodeId
   ) {

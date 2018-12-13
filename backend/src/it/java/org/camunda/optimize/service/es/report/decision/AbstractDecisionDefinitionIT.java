@@ -3,6 +3,7 @@ package org.camunda.optimize.service.es.report.decision;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
@@ -74,10 +75,10 @@ public abstract class AbstractDecisionDefinitionIT {
   protected HashMap<String, InputVariableEntry> createInputs(final double amountValue,
                                                              final String category) {
     return new HashMap<String, InputVariableEntry>() {{
-      put(INPUT_AMOUNT_ID, new InputVariableEntry(INPUT_AMOUNT_ID, "Invoice Amount", "Double", amountValue));
+      put(INPUT_AMOUNT_ID, new InputVariableEntry(INPUT_AMOUNT_ID, "Invoice Amount", VariableType.DOUBLE, amountValue));
       put(
         INPUT_CATEGORY_ID,
-        new InputVariableEntry(INPUT_CATEGORY_ID, "Invoice Category", "String", category)
+        new InputVariableEntry(INPUT_CATEGORY_ID, "Invoice Category", VariableType.STRING, category)
       );
     }};
   }
@@ -86,7 +87,7 @@ public abstract class AbstractDecisionDefinitionIT {
     final HashMap<String, InputVariableEntry> inputs = createInputs(amountValue, "Misc");
     inputs.put(
       INPUT_INVOICE_DATE_ID,
-      new InputVariableEntry(INPUT_INVOICE_DATE_ID, "Invoice Date", "Date", invoiceDateTime)
+      new InputVariableEntry(INPUT_INVOICE_DATE_ID, "Invoice Date", VariableType.DATE, invoiceDateTime)
     );
     return inputs;
   }

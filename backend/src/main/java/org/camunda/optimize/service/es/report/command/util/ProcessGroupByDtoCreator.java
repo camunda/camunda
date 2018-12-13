@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.report.command.util;
 
+import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
@@ -33,7 +34,7 @@ public class ProcessGroupByDtoCreator {
     return new NoneGroupByDto();
   }
 
-  public static ProcessGroupByDto createGroupByVariable(String variableName, String variableType) {
+  public static ProcessGroupByDto createGroupByVariable(String variableName, VariableType variableType) {
     VariableGroupByValueDto groupByValueDto = new VariableGroupByValueDto();
     groupByValueDto.setName(variableName);
     groupByValueDto.setType(variableType);

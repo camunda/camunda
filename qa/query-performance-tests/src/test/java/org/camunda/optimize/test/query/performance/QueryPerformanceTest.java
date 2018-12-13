@@ -9,6 +9,7 @@ import org.camunda.bpm.model.bpmn.instance.StartEvent;
 import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
+import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
@@ -47,7 +48,6 @@ import java.util.concurrent.TimeoutException;
 
 import static java.time.temporal.ChronoUnit.YEARS;
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.DOUBLE_TYPE;
 import static org.camunda.optimize.test.util.ProcessVariableFilterUtilHelper.createBooleanVariableFilter;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -107,7 +107,7 @@ public class QueryPerformanceTest {
         .setProcessDefinitionKey(definition.getKey())
         .setProcessDefinitionVersion(definition.getVersionAsString())
         .setVariableName(variableName)
-        .setVariableType(DOUBLE_TYPE)
+        .setVariableType(VariableType.DOUBLE)
         .setDateInterval(GroupByDateUnit.WEEK)
         .setStartFlowNodeId(processPart.getStart())
         .setEndFlowNodeId(processPart.getEnd())

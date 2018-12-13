@@ -1,6 +1,7 @@
 package org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.camunda.optimize.dto.optimize.query.report.VariableType;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -13,17 +14,17 @@ public class OutputVariableEntry extends VariableEntry {
   protected OutputVariableEntry() {
   }
 
-  public OutputVariableEntry(final String id, final String name, final String type, final Object value) {
+  public OutputVariableEntry(final String id, final String name, final VariableType type, final Object value) {
     super(id, name, type);
     this.values.add(value);
   }
 
-  public OutputVariableEntry(final String id, final String name, final String type, final Object... values) {
+  public OutputVariableEntry(final String id, final String name, final VariableType type, final Object... values) {
     super(id, name, type);
     this.values.addAll(Arrays.asList(values));
   }
 
-  public OutputVariableEntry(final String id, final String name, final String type, final List<Object> values) {
+  public OutputVariableEntry(final String id, final String name, final VariableType type, final List<Object> values) {
     super(id, name, type);
     this.values.addAll(values);
   }

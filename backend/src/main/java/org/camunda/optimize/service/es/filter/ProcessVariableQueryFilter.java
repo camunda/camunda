@@ -60,23 +60,23 @@ public class ProcessVariableQueryFilter implements QueryFilter<VariableFilterDat
   private QueryBuilder createFilterQueryBuilder(VariableFilterDataDto dto) {
     ValidationHelper.ensureNotNull("Variable filter data", dto.getData());
     QueryBuilder queryBuilder = matchAllQuery();
-    switch (dto.getType().toLowerCase()) {
-      case "string":
+    switch (dto.getType()) {
+      case STRING:
         StringVariableFilterDataDto stringVarDto = (StringVariableFilterDataDto) dto;
         queryBuilder =  createStringQueryBuilder(stringVarDto);
         break;
-      case "integer":
-      case "double":
-      case "short":
-      case "long":
+      case INTEGER:
+      case DOUBLE:
+      case SHORT:
+      case LONG:
         OperatorMultipleValuesVariableFilterDataDto numericVarDto = (OperatorMultipleValuesVariableFilterDataDto) dto;
         queryBuilder = createNumericQueryBuilder(numericVarDto);
         break;
-      case "date":
+      case DATE:
         DateVariableFilterDataDto dateVarDto = (DateVariableFilterDataDto) dto;
         queryBuilder = createDateQueryBuilder(dateVarDto);
         break;
-      case "boolean":
+      case BOOLEAN:
         BooleanVariableFilterDataDto booleanVarDto = (BooleanVariableFilterDataDto) dto;
         queryBuilder =  createBoolQueryBuilder(booleanVarDto);
         break;
@@ -188,18 +188,18 @@ public class ProcessVariableQueryFilter implements QueryFilter<VariableFilterDat
 
   private Object retrieveValue(OperatorMultipleValuesVariableFilterDataDto dto) {
     String value = dto.getData().getValues().get(0);
-    switch (dto.getType().toLowerCase()) {
-      case "string":
+    switch (dto.getType()) {
+      case STRING:
         return value;
-      case "integer":
+      case INTEGER:
         return Integer.parseInt(value);
-      case "long":
+      case LONG:
         return Long.parseLong(value);
-      case "short":
+      case SHORT:
         return Short.parseShort(value);
-      case "double":
+      case DOUBLE:
         return Double.parseDouble(value);
-      case "date":
+      case DATE:
         return value;
     }
     return value;
