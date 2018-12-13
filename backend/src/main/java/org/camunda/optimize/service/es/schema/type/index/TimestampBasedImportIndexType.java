@@ -10,6 +10,8 @@ import java.io.IOException;
 @Component
 public class TimestampBasedImportIndexType extends StrictTypeMappingCreator {
 
+  public static final int VERSION = 1;
+
   public static final String TIMESTAMP_OF_LAST_ENTITY = "timestampOfLastEntity";
   public static final String ES_TYPE_INDEX_REFERS_TO = "esTypeIndexRefersTo";
   private static final String ENGINE = "engine";
@@ -20,6 +22,11 @@ public class TimestampBasedImportIndexType extends StrictTypeMappingCreator {
   @Override
   public String getType() {
     return TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
+  }
+
+  @Override
+  public int getVersion() {
+    return VERSION;
   }
 
   @Override

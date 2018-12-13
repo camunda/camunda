@@ -30,6 +30,11 @@ public class MyUpdatedEventType implements TypeMappingCreator{
   }
 
   @Override
+  public int getVersion() {
+    return 1;
+  }
+
+  @Override
   public XContentBuilder getSource() {
     XContentBuilder source = null;
     try {

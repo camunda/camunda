@@ -9,6 +9,8 @@ import java.io.IOException;
 @Component
 public class ProcessDefinitionType extends StrictTypeMappingCreator {
 
+  public static final int VERSION = 1;
+
   public static final String PROCESS_DEFINITION_ID = "id";
   public static final String PROCESS_DEFINITION_KEY = "key";
   public static final String PROCESS_DEFINITION_VERSION = "version";
@@ -20,6 +22,11 @@ public class ProcessDefinitionType extends StrictTypeMappingCreator {
   @Override
   public String getType() {
     return configurationService.getProcessDefinitionType();
+  }
+
+  @Override
+  public int getVersion() {
+    return VERSION;
   }
 
   @Override

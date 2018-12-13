@@ -9,6 +9,8 @@ import java.io.IOException;
 @Component
 public class ProcessInstanceType extends StrictTypeMappingCreator {
 
+  public static final int VERSION = 1;
+
   public static final String START_DATE = "startDate";
   public static final String END_DATE = "endDate";
   public static final String DURATION = "durationInMs";
@@ -46,6 +48,11 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
   @Override
   public String getType() {
     return configurationService.getProcessInstanceType();
+  }
+
+  @Override
+  public int getVersion() {
+    return VERSION;
   }
 
   @Override

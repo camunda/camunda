@@ -9,6 +9,9 @@ import java.io.IOException;
 
 @Component
 public class AlertType extends StrictTypeMappingCreator {
+
+  public static final int VERSION = 1;
+
   public static final String ID = "id";
   public static final String NAME = "name";
   public static final String LAST_MODIFIED = "lastModified";
@@ -31,6 +34,11 @@ public class AlertType extends StrictTypeMappingCreator {
   @Override
   public String getType() {
     return configurationService.getAlertType();
+  }
+
+  @Override
+  public int getVersion() {
+    return VERSION;
   }
 
   @Override

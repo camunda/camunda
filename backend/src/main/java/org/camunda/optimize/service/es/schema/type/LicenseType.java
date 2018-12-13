@@ -8,12 +8,19 @@ import java.io.IOException;
 
 @Component
 public class LicenseType extends StrictTypeMappingCreator {
+  public static final int VERSION = 1;
+
 
   public static final String LICENSE = "license";
 
   @Override
   public String getType() {
     return configurationService.getLicenseType();
+  }
+
+  @Override
+  public int getVersion() {
+    return VERSION;
   }
 
   @Override

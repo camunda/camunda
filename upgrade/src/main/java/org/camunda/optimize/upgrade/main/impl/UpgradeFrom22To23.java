@@ -34,6 +34,7 @@ public class UpgradeFrom22To23 implements Upgrade {
 
   private static final String FROM_VERSION = "2.2.0";
   private static final String TO_VERSION = "2.3.0";
+  private static final String TYPE_VERSION = "1";
   public static final String SINGLE_REPORT = "single-report";
 
   private Logger logger = LoggerFactory.getLogger(getClass());
@@ -56,44 +57,44 @@ public class UpgradeFrom22To23 implements Upgrade {
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
         .addUpgradeStep(
-          new CreateIndexAliasForExistingIndexStep(configurationService.getAlertType(), TO_VERSION)
+          new CreateIndexAliasForExistingIndexStep(configurationService.getAlertType(), TYPE_VERSION)
         )
         .addUpgradeStep(
-          new CreateIndexAliasForExistingIndexStep(configurationService.getDashboardShareType(), TO_VERSION)
+          new CreateIndexAliasForExistingIndexStep(configurationService.getDashboardShareType(), TYPE_VERSION)
         )
         .addUpgradeStep(
-          new CreateIndexAliasForExistingIndexStep(configurationService.getImportIndexType(), TO_VERSION)
+          new CreateIndexAliasForExistingIndexStep(configurationService.getImportIndexType(), TYPE_VERSION)
         )
         .addUpgradeStep(
-          new CreateIndexAliasForExistingIndexStep(configurationService.getLicenseType(), TO_VERSION)
+          new CreateIndexAliasForExistingIndexStep(configurationService.getLicenseType(), TYPE_VERSION)
         )
         .addUpgradeStep(
-          new CreateIndexAliasForExistingIndexStep(configurationService.getMetaDataType(), TO_VERSION)
+          new CreateIndexAliasForExistingIndexStep(configurationService.getMetaDataType(), TYPE_VERSION)
         )
         .addUpgradeStep(
-          new CreateIndexAliasForExistingIndexStep(configurationService.getProcessDefinitionType(), TO_VERSION)
+          new CreateIndexAliasForExistingIndexStep(configurationService.getProcessDefinitionType(), TYPE_VERSION)
         )
         .addUpgradeStep(
-          new CreateIndexAliasForExistingIndexStep(configurationService.getProcessInstanceType(), TO_VERSION)
+          new CreateIndexAliasForExistingIndexStep(configurationService.getProcessInstanceType(), TYPE_VERSION)
         )
         .addUpgradeStep(
-          new CreateIndexAliasForExistingIndexStep(configurationService.getReportShareType(), TO_VERSION)
+          new CreateIndexAliasForExistingIndexStep(configurationService.getReportShareType(), TYPE_VERSION)
         )
         .addUpgradeStep(
           new CreateIndexAliasForExistingIndexStep(
-            COMBINED_REPORT_TYPE, COMBINED_REPORT_TYPE, TO_VERSION, getNewCombinedReportMapping()
+            COMBINED_REPORT_TYPE, COMBINED_REPORT_TYPE, TYPE_VERSION, getNewCombinedReportMapping()
           )
         )
         .addUpgradeStep(
           new CreateIndexAliasForExistingIndexStep(
-            SINGLE_REPORT, SINGLE_PROCESS_REPORT_TYPE, TO_VERSION, getNewSingleProcessReportMapping()
+            SINGLE_REPORT, SINGLE_PROCESS_REPORT_TYPE, TYPE_VERSION, getNewSingleProcessReportMapping()
           )
         )
         .addUpgradeStep(
-          new CreateIndexAliasForExistingIndexStep(DASHBOARD_TYPE, TO_VERSION)
+          new CreateIndexAliasForExistingIndexStep(DASHBOARD_TYPE, TYPE_VERSION)
         )
         .addUpgradeStep(
-          new CreateIndexAliasForExistingIndexStep(TIMESTAMP_BASED_IMPORT_INDEX_TYPE, TO_VERSION)
+          new CreateIndexAliasForExistingIndexStep(TIMESTAMP_BASED_IMPORT_INDEX_TYPE, TYPE_VERSION)
         )
         .addUpgradeStep(relocateProcessPart())
         .addUpgradeStep(migrateSingleReportType())

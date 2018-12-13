@@ -6,6 +6,8 @@ public interface TypeMappingCreator {
 
   String getType();
 
+  int getVersion();
+
   XContentBuilder getSource();
 
 }

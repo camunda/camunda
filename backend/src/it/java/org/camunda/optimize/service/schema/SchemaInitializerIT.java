@@ -16,8 +16,8 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getCurrentVersionOptimizeIndexNameForAlias;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getVersionedOptimizeIndexNameForTypeMapping;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -31,7 +31,7 @@ public class SchemaInitializerIT {
 
   @ClassRule
   public static RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
 
   @Before
   public void setUp() {
@@ -75,12 +75,15 @@ public class SchemaInitializerIT {
   private void assertTypeExists(String type) {
     final String optimizeIndexAliasForType = getOptimizeIndexAliasForType(type);
     final GetMappingsResponse response = embeddedOptimizeRule.getTransportClient().admin().indices()
-        .prepareGetMappings(optimizeIndexAliasForType)
-        .get();
+      .prepareGetMappings(optimizeIndexAliasForType)
+      .get();
+
+    assertThat(response.mappings().size(), is(1));
 
     boolean containsType = response.mappings()
-        .get(getCurrentVersionOptimizeIndexNameForAlias(optimizeIndexAliasForType))
-        .containsKey(type);
+      .valuesIt()
+      .next()
+      .containsKey(type);
     assertThat(containsType, is(true));
   }
 
@@ -104,15 +107,18 @@ public class SchemaInitializerIT {
     final String metaDataType = embeddedOptimizeRule.getConfigurationService().getMetaDataType();
     final String optimizeIndexAliasForType = getOptimizeIndexAliasForType(metaDataType);
     final GetFieldMappingsResponse response = embeddedOptimizeRule.getTransportClient().admin().indices()
-        .prepareGetFieldMappings(optimizeIndexAliasForType)
-        .setTypes(metaDataType)
-        .setFields(MyUpdatedEventType.MY_NEW_FIELD)
-        .get();
+      .prepareGetFieldMappings(optimizeIndexAliasForType)
+      .setTypes(metaDataType)
+      .setFields(MyUpdatedEventType.MY_NEW_FIELD)
+      .get();
 
+    final MyUpdatedEventType updatedEventType = new MyUpdatedEventType(embeddedOptimizeRule.getConfigurationService());
     final FieldMappingMetaData fieldEntry =
-        response.fieldMappings(
-            getCurrentVersionOptimizeIndexNameForAlias(optimizeIndexAliasForType), metaDataType, MyUpdatedEventType.MY_NEW_FIELD
-        );
+      response.fieldMappings(
+        getVersionedOptimizeIndexNameForTypeMapping(updatedEventType),
+        metaDataType,
+        MyUpdatedEventType.MY_NEW_FIELD
+      );
 
     assertThat(fieldEntry.isNull(), is(false));
   }
@@ -141,9 +147,9 @@ public class SchemaInitializerIT {
     // when we add an event with an undefined type in schema
     ExtendedFlowNodeEventDto extendedEventDto = new ExtendedFlowNodeEventDto();
     elasticSearchRule.addEntryToElasticsearch(
-        embeddedOptimizeRule.getConfigurationService().getMetaDataType(),
-        "12312412",
-        extendedEventDto
+      embeddedOptimizeRule.getConfigurationService().getMetaDataType(),
+      "12312412",
+      extendedEventDto
     );
   }
 

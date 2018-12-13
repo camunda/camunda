@@ -10,6 +10,8 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_RE
 @Component
 public class CombinedReportType extends AbstractReportType {
 
+  public static final int VERSION = 1;
+
   public static final String REPORT_IDS = "reportIds";
   public static final String VISUALIZATION = "visualization";
   public static final String CONFIGURATION = "configuration";
@@ -17,6 +19,11 @@ public class CombinedReportType extends AbstractReportType {
   @Override
   public String getType() {
     return COMBINED_REPORT_TYPE;
+  }
+
+  @Override
+  public int getVersion() {
+    return VERSION;
   }
 
   @Override

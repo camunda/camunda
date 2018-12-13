@@ -10,9 +10,16 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECI
 @Component
 public class SingleDecisionReportType extends AbstractReportType {
 
+  public static final int VERSION = 1;
+
   @Override
   public String getType() {
     return SINGLE_DECISION_REPORT_TYPE;
+  }
+
+  @Override
+  public int getVersion() {
+    return VERSION;
   }
 
   @Override

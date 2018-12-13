@@ -11,6 +11,8 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_T
 @Component
 public class DashboardType extends StrictTypeMappingCreator {
 
+  public static final int VERSION = 1;
+
   public static final String ID = "id";
   public static final String NAME = "name";
   public static final String LAST_MODIFIED = "lastModified";
@@ -33,6 +35,11 @@ public class DashboardType extends StrictTypeMappingCreator {
   @Override
   public String getType() {
     return DASHBOARD_TYPE;
+  }
+
+  @Override
+  public int getVersion() {
+    return VERSION;
   }
 
   @Override

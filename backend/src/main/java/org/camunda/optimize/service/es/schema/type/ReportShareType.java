@@ -10,6 +10,8 @@ import java.io.IOException;
 @Component
 public class ReportShareType extends StrictTypeMappingCreator {
 
+  public static final int VERSION = 1;
+
   public static final String ID = "id";
   public static final String REPORT_ID = "reportId";
   public static final String POSITION = "position";
@@ -19,6 +21,11 @@ public class ReportShareType extends StrictTypeMappingCreator {
   @Override
   public String getType() {
     return configurationService.getReportShareType();
+  }
+
+  @Override
+  public int getVersion() {
+    return VERSION;
   }
 
   @Override

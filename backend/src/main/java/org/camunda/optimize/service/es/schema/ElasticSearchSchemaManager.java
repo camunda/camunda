@@ -17,6 +17,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getVersionedOptimizeIndexNameForTypeMapping;
 
 @Component
 public class ElasticSearchSchemaManager {
@@ -65,7 +66,7 @@ public class ElasticSearchSchemaManager {
         CreateIndexRequestBuilder createIndexRequestBuilder = esclient
           .admin()
           .indices()
-          .prepareCreate(OptimizeIndexNameHelper.getCurrentVersionOptimizeIndexNameForAlias(optimizeAliasForType))
+          .prepareCreate(getVersionedOptimizeIndexNameForTypeMapping(mapping))
           .addAlias(new Alias(optimizeAliasForType))
           .setSettings(indexSettings);
 

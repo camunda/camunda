@@ -11,6 +11,8 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_
 @Component
 public class CollectionType extends StrictTypeMappingCreator {
 
+  public static final int VERSION = 1;
+
   public static final String ID = "id";
   public static final String NAME = "name";
   public static final String LAST_MODIFIED = "lastModified";
@@ -26,6 +28,11 @@ public class CollectionType extends StrictTypeMappingCreator {
   @Override
   public String getType() {
     return COLLECTION_TYPE;
+  }
+
+  @Override
+  public int getVersion() {
+    return VERSION;
   }
 
   @Override

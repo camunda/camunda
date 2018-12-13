@@ -12,11 +12,18 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_TY
 @Component
 public class MetadataType extends StrictTypeMappingCreator {
 
+  public static final int VERSION = 1;
+
   public static final String SCHEMA_VERSION = METADATA_TYPE_SCHEMA_VERSION;
 
   @Override
   public String getType() {
     return configurationService.getMetaDataType();
+  }
+
+  @Override
+  public int getVersion() {
+    return VERSION;
   }
 
   @Override

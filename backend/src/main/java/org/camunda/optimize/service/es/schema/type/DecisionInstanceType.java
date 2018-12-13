@@ -10,6 +10,8 @@ import java.io.IOException;
 @Component
 public class DecisionInstanceType extends StrictTypeMappingCreator {
 
+  public static final int VERSION = 1;
+
   public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
   public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
 
@@ -51,6 +53,11 @@ public class DecisionInstanceType extends StrictTypeMappingCreator {
   @Override
   public String getType() {
     return ElasticsearchConstants.DECISION_INSTANCE_TYPE;
+  }
+
+  @Override
+  public int getVersion() {
+    return VERSION;
   }
 
   @Override
