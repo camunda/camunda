@@ -116,7 +116,7 @@ public abstract class AbstractZeebeValidationTest {
       final List<ExpectedValidationResult> unmatchedExpectations,
       final List<ValidationResult> unmatchedResults) {
     final StringBuilder sb = new StringBuilder();
-    sb.append("Not all expecations were matched by results (or vice versa)\n\n");
+    sb.append("Not all expectations were matched by results (or vice versa)\n\n");
     describeUnmatchedExpectations(sb, unmatchedExpectations);
     sb.append("\n");
     describeUnmatchedResults(sb, unmatchedResults);

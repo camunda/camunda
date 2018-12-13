@@ -35,5 +35,13 @@ public class SubProcessValidator implements ModelElementValidator<SubProcess> {
     if (startEvents.size() != 1) {
       validationResultCollector.addError(0, "Must have exactly one start event");
     }
+
+    startEvents.forEach(
+        event -> {
+          if (!event.getEventDefinitions().isEmpty()) {
+            validationResultCollector.addError(
+                0, "Start events in subprocesses must be of type none");
+          }
+        });
   }
 }
