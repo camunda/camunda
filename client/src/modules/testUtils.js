@@ -138,7 +138,7 @@ export const createActivity = (options = {}) => {
 
 /**
  * @returns a mocked instance Object with a unique id
- * @param {*} id num value to create unique instance;
+ * @param {*} customProps Obj with any type of custom property
  */
 export const createInstance = (options = {}) => {
   return {
@@ -154,6 +154,78 @@ export const createInstance = (options = {}) => {
     workflowId: '2',
     workflowName: 'someWorkflowName',
     workflowVersion: 1,
+    ...options
+  };
+};
+
+/**
+ * @returns a mocked filter Object with a unique id
+ * @param {*} customProps Obj with any type of custom property
+ */
+export const createFilter = (options = {}) => {
+  return {
+    workflow: 'mockWorkflow',
+    version: '1',
+    active: true,
+    ids: '1,2,3',
+    startDate: '2018-06-21',
+    endDate: '2018-06-22',
+    errorMessage: 'mock error message',
+    incidents: true,
+    canceled: true,
+    completed: true,
+    activityId: randomActivityIdIterator.next().value,
+    ...options
+  };
+};
+
+/**
+ * @returns a mocked workflow Object with a unique id
+ * @param {*} customProps Obj with any type of custom property
+ */
+export const createWorkflow = (options = {}) => {
+  return {
+    id: '1',
+    name: 'mockWorkflow',
+    version: 1,
+    bpmnProcessId: 'mockWorkflow',
+    ...options
+  };
+};
+
+/**
+ * @returns a mocked diagramNode Object with a unique id
+ * @param {*} customProps Obj with any type of custom property
+ */
+export const createDiagramNode = (options = {}) => {
+  return {
+    id: 'StartEvent_1',
+    name: 'Some Mock Name',
+    type: 'bpmn:StartEvent',
+    ...options
+  };
+};
+
+/**
+ * @returns a mocked diagramNode Object with a unique id
+ * @param {*} customProps Obj with any type of custom property
+ */
+export const createGroupedWorkflow = (options = {}) => {
+  return {
+    bpmnProcessId: 'mockWorkflow',
+    name: 'mockWorkflow Name',
+    workflows: [createWorkflow()]
+  };
+};
+
+/**
+ * @returns a mocked groupedWorkflowInstances Object with a unique id
+ * @param {*} customProps Obj with any type of custom property
+ */
+export const createGroupedWorkflowInstances = (options = {}) => {
+  return {
+    mockWorkflowOne: createWorkflow({name: 'mockWorkflowOne'}),
+    mockWorkflowTwo: createGroupedWorkflow({name: 'mockWorkflowTwo'}),
     ...options
   };
 };
