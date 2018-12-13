@@ -12,7 +12,7 @@ import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
-import org.camunda.operate.es.types.WorkflowInstanceType;
+import org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.ActivityStatisticsDto;
 import org.camunda.operate.rest.dto.SortingDto;
@@ -50,20 +50,20 @@ import static org.apache.lucene.search.join.ScoreMode.None;
 import static org.camunda.operate.entities.IncidentState.ACTIVE;
 import static org.camunda.operate.entities.OperationState.LOCKED;
 import static org.camunda.operate.entities.OperationState.SCHEDULED;
-import static org.camunda.operate.es.types.WorkflowInstanceType.ACTIVITIES;
-import static org.camunda.operate.es.types.WorkflowInstanceType.ACTIVITY_ID;
-import static org.camunda.operate.es.types.WorkflowInstanceType.BOOLEAN_VARIABLES;
-import static org.camunda.operate.es.types.WorkflowInstanceType.DOUBLE_VARIABLES;
-import static org.camunda.operate.es.types.WorkflowInstanceType.END_DATE;
-import static org.camunda.operate.es.types.WorkflowInstanceType.ERROR_MSG;
-import static org.camunda.operate.es.types.WorkflowInstanceType.INCIDENTS;
-import static org.camunda.operate.es.types.WorkflowInstanceType.LOCK_EXPIRATION_TIME;
-import static org.camunda.operate.es.types.WorkflowInstanceType.LONG_VARIABLES;
-import static org.camunda.operate.es.types.WorkflowInstanceType.OPERATIONS;
-import static org.camunda.operate.es.types.WorkflowInstanceType.STATE;
-import static org.camunda.operate.es.types.WorkflowInstanceType.STRING_VARIABLES;
-import static org.camunda.operate.es.types.WorkflowInstanceType.VARIABLE_NAME;
-import static org.camunda.operate.es.types.WorkflowInstanceType.VARIABLE_VALUE;
+import static org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate.ACTIVITIES;
+import static org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate.ACTIVITY_ID;
+import static org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate.BOOLEAN_VARIABLES;
+import static org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate.DOUBLE_VARIABLES;
+import static org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate.END_DATE;
+import static org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate.ERROR_MSG;
+import static org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate.INCIDENTS;
+import static org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate.LOCK_EXPIRATION_TIME;
+import static org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate.LONG_VARIABLES;
+import static org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate.OPERATIONS;
+import static org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate.STATE;
+import static org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate.STRING_VARIABLES;
+import static org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate.VARIABLE_NAME;
+import static org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate.VARIABLE_VALUE;
 import static org.camunda.operate.util.ElasticsearchUtil.createMatchNoneQuery;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithOr;
@@ -89,7 +89,7 @@ public class WorkflowInstanceReader {
   private static final String INCIDENT_STATE_TERM = String.format("%s.%s", INCIDENTS, STATE);
   private static final String INCIDENT_ERRORMSG_TERM = String.format("%s.%s", INCIDENTS, ERROR_MSG);
   private static final String ACTIVITY_STATE_TERM = String.format("%s.%s", ACTIVITIES, STATE);
-  private static final String ACTIVITY_TYPE_TERM = String.format("%s.%s", ACTIVITIES, WorkflowInstanceType.TYPE);
+  private static final String ACTIVITY_TYPE_TERM = String.format("%s.%s", ACTIVITIES, WorkflowInstanceTemplate.TYPE);
   private static final String ACTIVITY_ACTIVITYID_TERM = String.format("%s.%s", ACTIVITIES, ACTIVITY_ID);
   private static final String OPERATION_STATE_TERM = String.format("%s.%s", OPERATIONS, STATE);
   private static final String SCHEDULED_OPERATION = SCHEDULED.toString();
@@ -103,7 +103,7 @@ public class WorkflowInstanceReader {
   private ObjectMapper objectMapper;
 
   @Autowired
-  private WorkflowInstanceType workflowInstanceType;
+  private WorkflowInstanceTemplate workflowInstanceTemplate;
 
   @Autowired
   private OperateProperties operateProperties;
@@ -120,14 +120,14 @@ public class WorkflowInstanceReader {
 
     final QueryBuilder queryBuilder =
       joinWithAnd(
-        termQuery(WorkflowInstanceType.WORKFLOW_ID, workflowId),
+        termQuery(WorkflowInstanceTemplate.WORKFLOW_ID, workflowId),
         boolQuery()
-          .mustNot(existsQuery(WorkflowInstanceType.WORKFLOW_VERSION)));
+          .mustNot(existsQuery(WorkflowInstanceTemplate.WORKFLOW_VERSION)));
     //workflow name can be null, as some workflows does not have name
 
 
     final SearchRequestBuilder searchRequestBuilder =
-      esClient.prepareSearch(workflowInstanceType.getAlias())
+      esClient.prepareSearch(workflowInstanceTemplate.getAlias())
         .setQuery(constantScoreQuery(queryBuilder))
         .setFetchSource(false);
 
@@ -143,7 +143,7 @@ public class WorkflowInstanceReader {
    */
   public WorkflowInstanceResponseDto queryWorkflowInstances(WorkflowInstanceRequestDto workflowInstanceRequest, Integer firstResult, Integer maxResults) {
     SearchRequestBuilder searchRequest = createSearchRequest(workflowInstanceRequest)
-      .setFetchSource(null, new String[]{WorkflowInstanceType.ACTIVITIES, WorkflowInstanceType.SEQUENCE_FLOWS});
+      .setFetchSource(null, new String[]{ WorkflowInstanceTemplate.ACTIVITIES, WorkflowInstanceTemplate.SEQUENCE_FLOWS});
 
     if (firstResult != null && maxResults != null) {
       return paginate(searchRequest, firstResult, maxResults);
@@ -161,7 +161,7 @@ public class WorkflowInstanceReader {
 
     logger.debug("Workflow instance search request: \n{}", constantScoreQuery.toString());
 
-    final SearchRequestBuilder searchRequestBuilder = esClient.prepareSearch(workflowInstanceType.getAlias());
+    final SearchRequestBuilder searchRequestBuilder = esClient.prepareSearch(workflowInstanceTemplate.getAlias());
     applySorting(searchRequestBuilder, request.getSorting());
     return searchRequestBuilder.setQuery(constantScoreQuery);
   }
@@ -169,7 +169,7 @@ public class WorkflowInstanceReader {
   private void applySorting(SearchRequestBuilder searchRequestBuilder, SortingDto sorting) {
     if (sorting == null) {
       //apply default sorting
-      searchRequestBuilder.addSort(WorkflowInstanceType.ID, SortOrder.ASC);
+      searchRequestBuilder.addSort(WorkflowInstanceTemplate.ID, SortOrder.ASC);
     } else {
       searchRequestBuilder.addSort(sorting.getSortBy(), SortOrder.fromString(sorting.getSortOrder()));
     }
@@ -238,10 +238,10 @@ public class WorkflowInstanceReader {
   }
 
   private QueryBuilder createBpmnProcessIdQuery(String bpmnProcessId, Integer workflowVersion) {
-    final TermQueryBuilder bpmnProcessIdQ = termQuery(WorkflowInstanceType.BPMN_PROCESS_ID, bpmnProcessId);
+    final TermQueryBuilder bpmnProcessIdQ = termQuery(WorkflowInstanceTemplate.BPMN_PROCESS_ID, bpmnProcessId);
     TermQueryBuilder versionQ = null;
     if (workflowVersion != null) {
-      versionQ = termQuery(WorkflowInstanceType.WORKFLOW_VERSION, workflowVersion);
+      versionQ = termQuery(WorkflowInstanceTemplate.WORKFLOW_VERSION, workflowVersion);
     }
     return joinWithAnd(bpmnProcessIdQ, versionQ);
   }
@@ -268,20 +268,20 @@ public class WorkflowInstanceReader {
     return nestedQuery(nestedCollectionName,
       joinWithAnd(
         termQuery(String.format("%s.%s", nestedCollectionName, VARIABLE_NAME), variablesQuery.getName()),
-        termQuery(String.format("%s.%s", nestedCollectionName, VARIABLE_VALUE), variablesQuery.getValue() == null ? WorkflowInstanceType.NULL_VALUE : variablesQuery.getValue())
+        termQuery(String.format("%s.%s", nestedCollectionName, VARIABLE_VALUE), variablesQuery.getValue() == null ? WorkflowInstanceTemplate.NULL_VALUE : variablesQuery.getValue())
       ), None);
   }
 
   private QueryBuilder createExcludeIdsQuery(List<String> excludeIds) {
-    return boolQuery().mustNot(termsQuery(WorkflowInstanceType.ID, excludeIds));
+    return boolQuery().mustNot(termsQuery(WorkflowInstanceTemplate.ID, excludeIds));
   }
 
   private QueryBuilder createWorkflowIdsQuery(List<String> workflowIds) {
-    return termsQuery(WorkflowInstanceType.WORKFLOW_ID, workflowIds);
+    return termsQuery(WorkflowInstanceTemplate.WORKFLOW_ID, workflowIds);
   }
 
   private QueryBuilder createEndDateQuery(WorkflowInstanceQueryDto query) {
-    final RangeQueryBuilder rangeQueryBuilder = rangeQuery(WorkflowInstanceType.END_DATE);
+    final RangeQueryBuilder rangeQueryBuilder = rangeQuery(WorkflowInstanceTemplate.END_DATE);
     if (query.getEndDateAfter() != null) {
       rangeQueryBuilder.gte(dateTimeFormatter.format(query.getEndDateAfter()));
     }
@@ -293,7 +293,7 @@ public class WorkflowInstanceReader {
   }
 
   private QueryBuilder createStartDateQuery(WorkflowInstanceQueryDto query) {
-    final RangeQueryBuilder rangeQueryBuilder = rangeQuery(WorkflowInstanceType.START_DATE);
+    final RangeQueryBuilder rangeQueryBuilder = rangeQuery(WorkflowInstanceTemplate.START_DATE);
     if (query.getStartDateAfter() != null) {
       rangeQueryBuilder.gte(dateTimeFormatter.format(query.getStartDateAfter()));
     }
@@ -312,7 +312,7 @@ public class WorkflowInstanceReader {
   }
 
   private QueryBuilder createIdsQuery(List<String> ids) {
-    return termsQuery(WorkflowInstanceType.ID, ids);
+    return termsQuery(WorkflowInstanceTemplate.ID, ids);
   }
 
   protected WorkflowInstanceResponseDto paginate(SearchRequestBuilder builder, int firstResult, int maxResults) {
@@ -387,7 +387,7 @@ public class WorkflowInstanceReader {
   public WorkflowInstanceEntity getWorkflowInstanceById(String workflowInstanceId) {
     final IdsQueryBuilder q = idsQuery().addIds(workflowInstanceId);
 
-    final SearchResponse response = esClient.prepareSearch(workflowInstanceType.getAlias())
+    final SearchResponse response = esClient.prepareSearch(workflowInstanceTemplate.getAlias())
       .setQuery(q)
       .get();
 
@@ -522,7 +522,7 @@ public class WorkflowInstanceReader {
 
     ConstantScoreQueryBuilder constantScoreQuery = constantScoreQuery(nestedQuery);
 
-    final SearchRequestBuilder searchRequestBuilder = esClient.prepareSearch(workflowInstanceType.getAlias());
+    final SearchRequestBuilder searchRequestBuilder = esClient.prepareSearch(workflowInstanceTemplate.getAlias());
     searchRequestBuilder.setQuery(constantScoreQuery);
 
     SearchResponse response = searchRequestBuilder
@@ -565,7 +565,7 @@ public class WorkflowInstanceReader {
     final String uniqueActivitiesAggName = "unique_activities";
     final String activityToWorkflowAggName = "activity_to_workflow";
     final NestedAggregationBuilder agg =
-      nested(activitiesAggName, WorkflowInstanceType.ACTIVITIES).subAggregation(
+      nested(activitiesAggName, WorkflowInstanceTemplate.ACTIVITIES).subAggregation(
         filter(activeActivitiesAggName, termQuery(ACTIVITY_STATE_TERM, activityState.toString()))
           .subAggregation(terms(uniqueActivitiesAggName).field(ACTIVITY_ACTIVITYID_TERM)
              .size(100) //TODO
@@ -574,7 +574,7 @@ public class WorkflowInstanceReader {
             );
 
     final SearchRequestBuilder searchRequestBuilder =
-      esClient.prepareSearch(workflowInstanceType.getAlias())
+      esClient.prepareSearch(workflowInstanceTemplate.getAlias())
         .setSize(0)
         .setQuery(q)
         .addAggregation(agg);
@@ -610,7 +610,7 @@ public class WorkflowInstanceReader {
     final String activityToWorkflowAggName = "activity_to_workflow";
     final QueryBuilder completedEndEventsQ = joinWithAnd(termQuery(ACTIVITY_TYPE_TERM, ActivityType.END_EVENT.toString()), termQuery(ACTIVITY_STATE_TERM, ActivityState.COMPLETED.toString()));
     final NestedAggregationBuilder agg =
-      nested(activitiesAggName, WorkflowInstanceType.ACTIVITIES).subAggregation(
+      nested(activitiesAggName, WorkflowInstanceTemplate.ACTIVITIES).subAggregation(
         filter(activeActivitiesAggName, completedEndEventsQ)
           .subAggregation(terms(uniqueActivitiesAggName).field(ACTIVITY_ACTIVITYID_TERM)
             .size(100) //TODO
@@ -619,7 +619,7 @@ public class WorkflowInstanceReader {
       );
 
     final SearchRequestBuilder searchRequestBuilder =
-      esClient.prepareSearch(workflowInstanceType.getAlias())
+      esClient.prepareSearch(workflowInstanceTemplate.getAlias())
         .setSize(0)
         .setQuery(q)
         .addAggregation(agg);

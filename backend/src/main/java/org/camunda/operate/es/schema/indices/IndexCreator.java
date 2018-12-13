@@ -1,9 +1,9 @@
-package org.camunda.operate.es.types;
+package org.camunda.operate.es.schema.indices;
 
 import java.io.IOException;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
-public interface TypeMappingCreator {
+public interface IndexCreator {
 
   String getIndexName();
 

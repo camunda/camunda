@@ -12,9 +12,8 @@ camunda.bpm.operate:
     workflowInstanceIndexName: workflowInstanceI
     workflowIndexName: workflowI
     importPositionAlias: importPositionA
-    eventAlias: eventA
-    workflowInstanceAlias: workflowInstanceA
     workflowAlias: workflowA
+    templateOrder: 50
   zeebeElasticsearch:
     clusterName: zeebeElasticClusterName
     host: someOtherHost

@@ -9,7 +9,7 @@ import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
-import org.camunda.operate.es.types.WorkflowInstanceType;
+import org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate;
 import org.camunda.operate.util.IdTestUtil;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
@@ -159,7 +159,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     assertThat(incidentEntity.getState()).isEqualTo(IncidentState.RESOLVED);
     assertThat(workflowInstanceEntity.getActivities()).filteredOn(ai -> ai.getId().equals(incidentEntity.getActivityInstanceId()))
       .hasSize(1)
-      .extracting(WorkflowInstanceType.STATE).containsOnly(ActivityState.COMPLETED);
+      .extracting(WorkflowInstanceTemplate.STATE).containsOnly(ActivityState.COMPLETED);
 
   }
 
@@ -198,7 +198,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     assertThat(incidentEntity.getState()).isEqualTo(IncidentState.RESOLVED);
     assertThat(workflowInstanceEntity.getActivities()).filteredOn(ai -> ai.getId().equals(incidentEntity.getActivityInstanceId()))
       .hasSize(1)
-      .extracting(WorkflowInstanceType.STATE).containsOnly(ActivityState.TERMINATED);
+      .extracting(WorkflowInstanceTemplate.STATE).containsOnly(ActivityState.TERMINATED);
 
   }
 

@@ -25,7 +25,7 @@ import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
-import org.camunda.operate.es.types.WorkflowInstanceType;
+import org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.DateUtil;
@@ -101,8 +101,8 @@ public class OperationExecutorIT extends OperateIntegrationTest {
     assertThat(lockedOperations).as(assertionLabel + ".workflowInstances.size").hasSize(workflowInstanceCount);
     final List<OperationEntity> allOperations = lockedOperations.values().stream().flatMap(entry -> entry.stream()).collect(Collectors.toList());
     assertThat(allOperations).as(assertionLabel + ".operations.size").hasSize(operationCount);
-    assertThat(allOperations).extracting(WorkflowInstanceType.STATE).as(assertionLabel + "operation.state").containsOnly(OperationState.LOCKED);
-    assertThat(allOperations).extracting(WorkflowInstanceType.LOCK_OWNER).as(assertionLabel + "operation.lockOwner").containsOnly(operateProperties.getOperationExecutor().getWorkerId());
+    assertThat(allOperations).extracting(WorkflowInstanceTemplate.STATE).as(assertionLabel + "operation.state").containsOnly(OperationState.LOCKED);
+    assertThat(allOperations).extracting(WorkflowInstanceTemplate.LOCK_OWNER).as(assertionLabel + "operation.lockOwner").containsOnly(operateProperties.getOperationExecutor().getWorkerId());
     assertThat(allOperations).filteredOn(op -> op.getLockExpirationTime().isBefore(approxLockExpirationTime)).as(assertionLabel + "operation.lockExpirationTime").isEmpty();
   }
 

@@ -21,7 +21,7 @@ import java.util.TreeSet;
 import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
-import org.camunda.operate.es.types.WorkflowInstanceType;
+import org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.incidents.IncidentByWorkflowStatisticsDto;
 import org.camunda.operate.rest.dto.incidents.IncidentsByErrorMsgStatisticsDto;
@@ -43,9 +43,9 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.apache.lucene.search.join.ScoreMode.None;
 import static org.camunda.operate.entities.IncidentState.ACTIVE;
-import static org.camunda.operate.es.types.WorkflowInstanceType.ERROR_MSG;
-import static org.camunda.operate.es.types.WorkflowInstanceType.INCIDENTS;
-import static org.camunda.operate.es.types.WorkflowInstanceType.STATE;
+import static org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate.ERROR_MSG;
+import static org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate.INCIDENTS;
+import static org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate.STATE;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
@@ -68,7 +68,7 @@ public class IncidentStatisticsReader {
   private ObjectMapper objectMapper;
 
   @Autowired
-  private WorkflowInstanceType workflowInstanceType;
+  private WorkflowInstanceTemplate workflowInstanceTemplate;
 
   @Autowired
   private OperateProperties operateProperties;
@@ -138,15 +138,15 @@ public class IncidentStatisticsReader {
   private Map<String, IncidentByWorkflowStatisticsDto> getIncidentByWorkflowIdMap() {
     Map<String, IncidentByWorkflowStatisticsDto> statByWorkflowIdMap = new HashMap<>();
 
-    QueryBuilder activeInstancesQ = termQuery(WorkflowInstanceType.STATE, WorkflowInstanceState.ACTIVE.toString());
+    QueryBuilder activeInstancesQ = termQuery(WorkflowInstanceTemplate.STATE, WorkflowInstanceState.ACTIVE.toString());
 
     final String workflowIdsAggName = "workflowIds";
     final String incidentsAggName = "incidents";
     final String activeIncidentsAggName = "active_incidents";
     final String incidentsToInstancesAggName = "incidents_to_instances";
     AggregationBuilder agg =
-      terms(workflowIdsAggName).field(WorkflowInstanceType.WORKFLOW_ID).subAggregation(
-        nested(incidentsAggName, WorkflowInstanceType.INCIDENTS).subAggregation(
+      terms(workflowIdsAggName).field(WorkflowInstanceTemplate.WORKFLOW_ID).subAggregation(
+        nested(incidentsAggName, WorkflowInstanceTemplate.INCIDENTS).subAggregation(
           filter(activeIncidentsAggName, termQuery(INCIDENT_STATE_TERM, ACTIVE.toString())).subAggregation(
             reverseNested(incidentsToInstancesAggName)
           )
@@ -156,7 +156,7 @@ public class IncidentStatisticsReader {
     logger.debug("Incident by workflow statistics query: \n{}\n and aggregation: \n{}", activeInstancesQ.toString(), agg.toString());
 
     final SearchRequestBuilder searchRequestBuilder =
-      esClient.prepareSearch(workflowInstanceType.getAlias())
+      esClient.prepareSearch(workflowInstanceTemplate.getAlias())
         .setSize(0)
         .setQuery(activeInstancesQ)
         .addAggregation(agg);
@@ -190,11 +190,11 @@ public class IncidentStatisticsReader {
     final String incidentsToInstancesAggName = "incidents_to_instances";
     final String workflowIdsAggName = "workflowIds";
     AggregationBuilder agg =
-      nested(incidentsAggName, WorkflowInstanceType.INCIDENTS).subAggregation(
+      nested(incidentsAggName, WorkflowInstanceTemplate.INCIDENTS).subAggregation(
         filter(activeIncidentsAggName, termQuery(INCIDENT_STATE_TERM, IncidentState.ACTIVE.toString())).subAggregation(
           terms(errorMessagesAggName).field(INCIDENT_ERRORMSG_TERM).subAggregation(
             reverseNested(incidentsToInstancesAggName).subAggregation(
-              terms(workflowIdsAggName).field(WorkflowInstanceType.WORKFLOW_ID)     //TODO check if we can put workflowId inside incident entity
+              terms(workflowIdsAggName).field(WorkflowInstanceTemplate.WORKFLOW_ID)     //TODO check if we can put workflowId inside incident entity
             )
           )
         )
@@ -203,7 +203,7 @@ public class IncidentStatisticsReader {
     logger.debug("Incident by error message statistics query: \n{}\n and aggregation: \n{}", withIncidentsQ.toString(), agg.toString());
 
     final SearchRequestBuilder searchRequestBuilder =
-      esClient.prepareSearch(workflowInstanceType.getAlias())
+      esClient.prepareSearch(workflowInstanceTemplate.getAlias())
         .setSize(0)
         .setQuery(withIncidentsQ)
         .addAggregation(agg);

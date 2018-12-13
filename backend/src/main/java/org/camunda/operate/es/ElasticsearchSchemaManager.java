@@ -1,9 +1,11 @@
 package org.camunda.operate.es;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
-import org.camunda.operate.es.types.TypeMappingCreator;
+import org.camunda.operate.es.schema.indices.IndexCreator;
+import org.camunda.operate.es.schema.templates.TemplateCreator;
+import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.ResourceAlreadyExistsException;
 import org.elasticsearch.action.admin.indices.alias.Alias;
@@ -25,15 +27,22 @@ public class ElasticsearchSchemaManager {
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchSchemaManager.class);
 
   @Autowired
-  private List<TypeMappingCreator> typeMappingCreators;
+  private List<IndexCreator> indexCreators;
+
+  @Autowired
+  private List<TemplateCreator> templateCreators;
 
   @Autowired
   private TransportClient esClient;
+
+  @Autowired
+  private OperateProperties operateProperties;
 
   public boolean initializeSchema() {
     if (!schemaAlreadyExists()) {
       logger.info("Elasticsearch schema is empty. Indices will be created.");
       createIndices();
+      createTemplates();
       return true;
     } else {
       logger.info("Elasticsearch schema already exists");
@@ -42,14 +51,49 @@ public class ElasticsearchSchemaManager {
   }
 
   public void createIndices() {
-    for (TypeMappingCreator mapping : typeMappingCreators) {
+    for (IndexCreator mapping : indexCreators) {
       createIndex(mapping);
     }
   }
 
-  private void createIndex(TypeMappingCreator mapping) {
-    Settings indexSettings = null;
+  public void createTemplates() {
+    for (TemplateCreator templateCreator: templateCreators) {
+      createTemplate(templateCreator);
+    }
+  }
+
+  private void createTemplate(TemplateCreator templateCreator) {
     try {
+      Settings templateSettings = null;
+      try {
+        templateSettings = buildSettings();
+      } catch (IOException e) {
+        logger.error(String.format("Could not create settings for template [%s]", templateCreator.getTemplateName()), e);
+      }
+      esClient.admin().indices().preparePutTemplate(templateCreator.getTemplateName())
+        .setPatterns(Arrays.asList(templateCreator.getIndexPattern()))
+        .addMapping(ElasticsearchUtil.ES_INDEX_TYPE, templateCreator.getSource())
+        .addAlias(new Alias(templateCreator.getAlias()))
+        .setSettings(templateSettings)
+        .setOrder(operateProperties.getElasticsearch().getTemplateOrder())
+        .get();
+
+      //create main index
+      esClient.admin().indices().prepareCreate(templateCreator.getMainIndexName())
+        .addAlias(new Alias(templateCreator.getAlias())).get();
+
+    } catch (IOException e) {
+      String message = String.format("Could not add mapping to the template [%s]", templateCreator.getTemplateName());
+      logger.error(message, e);
+    } catch (ResourceAlreadyExistsException e) {
+      logger.warn("Template [{}] already exists", templateCreator.getTemplateName());
+    }
+    logger.debug("Template [{}] was successfully created", templateCreator.getTemplateName());
+  }
+
+  private void createIndex(IndexCreator mapping) {
+    try {
+      Settings indexSettings = null;
       try {
         indexSettings = buildSettings();
       } catch (IOException e) {
@@ -80,7 +124,7 @@ public class ElasticsearchSchemaManager {
    * @return true is Elasticsearch schema already exists, false otherwise
    */
   private boolean schemaAlreadyExists() {
-    IndicesExistsResponse response = esClient.admin().indices().prepareExists(typeMappingCreators.get(0).getAlias()).get();
+    IndicesExistsResponse response = esClient.admin().indices().prepareExists(indexCreators.get(0).getAlias()).get();
     return response.isExists();
   }
 

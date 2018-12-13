@@ -20,7 +20,7 @@ import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.WorkflowInstanceState;
-import org.camunda.operate.es.types.WorkflowInstanceType;
+import org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.IncidentDto;
 import org.camunda.operate.rest.dto.OperationDto;
@@ -121,11 +121,11 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     WorkflowInstanceResponseDto response = getWorkflowInstances(allRunningQuery);
 
     assertThat(response.getWorkflowInstances()).hasSize(instanceCount);
-    assertThat(response.getWorkflowInstances()).flatExtracting(WorkflowInstanceType.OPERATIONS).extracting(WorkflowInstanceType.TYPE).containsOnly(OperationType.UPDATE_RETRIES);
-    assertThat(response.getWorkflowInstances()).flatExtracting(WorkflowInstanceType.OPERATIONS).extracting(WorkflowInstanceType.STATE).containsOnly(
+    assertThat(response.getWorkflowInstances()).flatExtracting(WorkflowInstanceTemplate.OPERATIONS).extracting(WorkflowInstanceTemplate.TYPE).containsOnly(OperationType.UPDATE_RETRIES);
+    assertThat(response.getWorkflowInstances()).flatExtracting(WorkflowInstanceTemplate.OPERATIONS).extracting(WorkflowInstanceTemplate.STATE).containsOnly(
       OperationState.SCHEDULED);
-    assertThat(response.getWorkflowInstances()).flatExtracting(WorkflowInstanceType.OPERATIONS).extracting(WorkflowInstanceType.START_DATE).doesNotContainNull();
-    assertThat(response.getWorkflowInstances()).flatExtracting(WorkflowInstanceType.OPERATIONS).extracting(WorkflowInstanceType.END_DATE).containsOnlyNulls();
+    assertThat(response.getWorkflowInstances()).flatExtracting(WorkflowInstanceTemplate.OPERATIONS).extracting(WorkflowInstanceTemplate.START_DATE).doesNotContainNull();
+    assertThat(response.getWorkflowInstances()).flatExtracting(WorkflowInstanceTemplate.OPERATIONS).extracting(WorkflowInstanceTemplate.END_DATE).containsOnlyNulls();
   }
 
   @Test

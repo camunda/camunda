@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.es.reader.WorkflowReader;
-import org.camunda.operate.es.types.WorkflowType;
+import org.camunda.operate.es.schema.indices.WorkflowIndex;
 import org.camunda.operate.rest.dto.WorkflowGroupDto;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
@@ -151,7 +151,7 @@ public class WorkflowIT extends OperateZeebeIntegrationTest {
     assertThat(demoProcessWorkflowGroup.getWorkflows()).hasSize(2);
     assertThat(demoProcessWorkflowGroup.getName()).isEqualTo(demoProcessName);
     assertThat(demoProcessWorkflowGroup.getWorkflows()).isSortedAccordingTo((w1, w2) -> Integer.valueOf(w2.getVersion()).compareTo(w1.getVersion()));
-    assertThat(demoProcessWorkflowGroup.getWorkflows()).extracting(WorkflowType.ID).containsExactlyInAnyOrder(demoProcessV1Id, demoProcessV2Id);
+    assertThat(demoProcessWorkflowGroup.getWorkflows()).extracting(WorkflowIndex.ID).containsExactlyInAnyOrder(demoProcessV1Id, demoProcessV2Id);
 
     assertThat(workflowGroupDtos).filteredOn(wg -> wg.getBpmnProcessId().equals(orderProcessId)).hasSize(1);
     final WorkflowGroupDto orderProcessWorkflowGroup =
@@ -159,7 +159,7 @@ public class WorkflowIT extends OperateZeebeIntegrationTest {
     assertThat(orderProcessWorkflowGroup.getWorkflows()).hasSize(3);
     assertThat(orderProcessWorkflowGroup.getName()).isEqualTo(orderProcessName);
     assertThat(orderProcessWorkflowGroup.getWorkflows()).isSortedAccordingTo((w1, w2) -> Integer.valueOf(w2.getVersion()).compareTo(w1.getVersion()));
-    assertThat(orderProcessWorkflowGroup.getWorkflows()).extracting(WorkflowType.ID).containsExactlyInAnyOrder(orderProcessV1Id, orderProcessV2Id, orderProcessV3Id);
+    assertThat(orderProcessWorkflowGroup.getWorkflows()).extracting(WorkflowIndex.ID).containsExactlyInAnyOrder(orderProcessV1Id, orderProcessV2Id, orderProcessV3Id);
 
 
     assertThat(workflowGroupDtos).filteredOn(wg -> wg.getBpmnProcessId().equals(loanProcessId)).hasSize(1);

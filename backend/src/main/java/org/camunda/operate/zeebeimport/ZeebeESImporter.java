@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.camunda.operate.entities.meta.ImportPositionEntity;
-import org.camunda.operate.es.types.ImportPositionType;
+import org.camunda.operate.es.schema.indices.ImportPositionIndex;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.ElasticsearchUtil;
@@ -46,8 +46,6 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.commands.BrokerInfo;
-import io.zeebe.client.api.commands.PartitionInfo;
 import io.zeebe.client.api.commands.Topology;
 import io.zeebe.exporter.record.RecordValue;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -82,7 +80,7 @@ public class ZeebeESImporter extends Thread {
   private TransportClient esClient;
 
   @Autowired
-  private ImportPositionType importPositionType;
+  private ImportPositionIndex importPositionType;
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -92,15 +90,15 @@ public class ZeebeESImporter extends Thread {
 
   public long getLatestLoadedPosition(String aliasName, int partitionId) {
 
-    final QueryBuilder queryBuilder = joinWithAnd(termQuery(ImportPositionType.ALIAS_NAME, aliasName),
-      termQuery(ImportPositionType.PARTITION_ID, partitionId));
+    final QueryBuilder queryBuilder = joinWithAnd(termQuery(ImportPositionIndex.ALIAS_NAME, aliasName),
+      termQuery(ImportPositionIndex.PARTITION_ID, partitionId));
 
     final SearchResponse searchResponse =
       esClient
         .prepareSearch(importPositionType.getAlias())
         .setQuery(queryBuilder)
         .setSize(10)
-        .setFetchSource(ImportPositionType.POSITION, null)
+        .setFetchSource(ImportPositionIndex.POSITION, null)
         .get();
 
     final Iterator<SearchHit> hitIterator = searchResponse.getHits().iterator();
@@ -108,7 +106,7 @@ public class ZeebeESImporter extends Thread {
     long position = 0;
 
     if (hitIterator.hasNext()) {
-      position = (Long)hitIterator.next().getSourceAsMap().get(ImportPositionType.POSITION);
+      position = (Long)hitIterator.next().getSourceAsMap().get(ImportPositionIndex.POSITION);
     }
 
     logger.debug("Latest loaded position for alias [{}] and partitionId [{}]: {}", aliasName, partitionId, position);
@@ -119,7 +117,7 @@ public class ZeebeESImporter extends Thread {
   public void recordLatestLoadedPosition(String aliasName, int partitionId, long position) {
     ImportPositionEntity entity = new ImportPositionEntity(aliasName, partitionId, position);
     Map<String, Object> updateFields = new HashMap<>();
-    updateFields.put(ImportPositionType.POSITION, entity.getPosition());
+    updateFields.put(ImportPositionIndex.POSITION, entity.getPosition());
     try {
       esClient
         .prepareUpdate(importPositionType.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
@@ -141,18 +139,18 @@ public class ZeebeESImporter extends Thread {
 
     QueryBuilder positionBeforeQ = null;
     if(positionBefore != null) {
-      positionBeforeQ = rangeQuery(ImportPositionType.POSITION).lt(positionBefore);
+      positionBeforeQ = rangeQuery(ImportPositionIndex.POSITION).lt(positionBefore);
     }
 
     final QueryBuilder queryBuilder = joinWithAnd(
-      rangeQuery(ImportPositionType.POSITION).gt(positionAfter),
+      rangeQuery(ImportPositionIndex.POSITION).gt(positionAfter),
       positionBeforeQ,
-      termQuery("metadata." + ImportPositionType.PARTITION_ID, partitionId));
+      termQuery("metadata." + ImportPositionIndex.PARTITION_ID, partitionId));
 
     final SearchResponse searchResponse =
       zeebeEsClient
         .prepareSearch(aliasName)
-        .addSort(ImportPositionType.POSITION, SortOrder.ASC)
+        .addSort(ImportPositionIndex.POSITION, SortOrder.ASC)
         .setQuery(queryBuilder)
         .setSize(operateProperties.getZeebeElasticsearch().getBatchSize())
         .get();
@@ -232,8 +230,8 @@ public class ZeebeESImporter extends Thread {
   }
 
   public Integer processNextEntitiesBatch(Integer processedEntities, ImportValueType importValueType) throws PersistenceException {
+    String aliasName = importValueType.getAliasName(operateProperties.getZeebeElasticsearch().getPrefix());
     try {
-      String aliasName = importValueType.getAliasName(operateProperties.getZeebeElasticsearch().getPrefix());
 
       for (Integer partitionId : getPartitionIds()) {
         final long latestLoadedPosition = getLatestLoadedPosition(aliasName, partitionId);
@@ -248,7 +246,7 @@ public class ZeebeESImporter extends Thread {
         }
       }
     } catch (IndexNotFoundException ex) {
-      logger.info("Elasticsearch index for ValueType {} was not found. Skipping.", importValueType.getValueType());
+      logger.info("Elasticsearch index for ValueType {} was not found, alias {}. Skipping.", importValueType.getValueType(), aliasName);
     } catch (SearchPhaseExecutionException ex) {
       logger.error(ex.getMessage(), ex);
     }

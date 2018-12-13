@@ -1,4 +1,4 @@
-package org.camunda.operate.es.types;
+package org.camunda.operate.es.schema.templates;
 
 import java.io.IOException;
 import org.camunda.operate.property.OperateProperties;
@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class EventType extends StrictTypeMappingCreator {
+public class EventTemplate extends AbstractTemplateCreator {
 
   public static final String ID = "id";
 
@@ -41,14 +41,23 @@ public class EventType extends StrictTypeMappingCreator {
   private OperateProperties operateProperties;
 
   @Override
-  public String getIndexName() {
+  public String getTemplateName() {
+    return operateProperties.getElasticsearch().getEventIndexName() + "template";
+  }
+
+  @Override
+  public String getIndexPattern() {
+    return operateProperties.getElasticsearch().getEventIndexName() + "*";
+  }
+
+  @Override
+  public String getMainIndexName() {
     return operateProperties.getElasticsearch().getEventIndexName();
   }
 
-
   @Override
   public String getAlias() {
-    return operateProperties.getElasticsearch().getEventAlias();
+    return operateProperties.getElasticsearch().getEventIndexName() + "alias";
   }
 
   @Override

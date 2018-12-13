@@ -1,4 +1,4 @@
-package org.camunda.operate.es.types;
+package org.camunda.operate.es.schema.indices;
 
 import java.io.IOException;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -8,9 +8,9 @@ import org.springframework.stereotype.Component;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 @Component
-public abstract class StrictTypeMappingCreator implements TypeMappingCreator {
+public abstract class AbstractIndexCreator implements IndexCreator {
 
-  private static final Logger logger = LoggerFactory.getLogger(StrictTypeMappingCreator.class);
+  private static final Logger logger = LoggerFactory.getLogger(AbstractIndexCreator.class);
 
   public static final String PARTITION_ID = "partitionId";
 

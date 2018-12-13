@@ -1,4 +1,4 @@
-package org.camunda.operate.es.types;
+package org.camunda.operate.es.schema.templates;
 
 import java.io.IOException;
 import org.camunda.operate.property.OperateProperties;
@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class WorkflowInstanceType extends StrictTypeMappingCreator {
+public class WorkflowInstanceTemplate extends AbstractTemplateCreator {
 
   public static final String ID = "id";
   public static final String KEY = "key";
@@ -43,13 +43,23 @@ public class WorkflowInstanceType extends StrictTypeMappingCreator {
   private OperateProperties operateProperties;
 
   @Override
-  public String getIndexName() {
-    return operateProperties.getElasticsearch().getWorkflowInstanceIndexName();
+  public String getTemplateName() {
+    return operateProperties.getElasticsearch().getWorkflowInstanceIndexName() + "template";
   }
 
   @Override
   public String getAlias() {
-    return operateProperties.getElasticsearch().getWorkflowInstanceAlias();
+    return operateProperties.getElasticsearch().getWorkflowInstanceIndexName() + "alias";
+  }
+
+  @Override
+  public String getIndexPattern() {
+    return operateProperties.getElasticsearch().getWorkflowInstanceIndexName() + "*";
+  }
+
+  @Override
+  public String getMainIndexName() {
+    return operateProperties.getElasticsearch().getWorkflowInstanceIndexName();
   }
 
   @Override

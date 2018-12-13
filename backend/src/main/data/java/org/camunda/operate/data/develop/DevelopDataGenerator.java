@@ -114,6 +114,8 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
         final int scenarioCount = random.nextInt(3);
         switch (scenarioCount) {
         case 0:
+          //timeout
+          break;
         case 1:
           //successfully complete task
           jobClient.newCompleteCommand(job.getKey()).send().join();
@@ -172,12 +174,12 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
       if (version < 2) {
         instanceKey = ZeebeTestUtil.startWorkflowInstance(client, "eventBasedGatewayProcess",
-          "{\"clientId\": \"" + random.nextInt(10) + "\"\n}");
+          "{\"clientId\": \"" + random.nextInt(12) + "\"\n}");
         workflowInstanceKeys.add(instanceKey);
       }
 
       instanceKey = ZeebeTestUtil.startWorkflowInstance(client, "complexProcess",
-      "{\"clientId\": \"" + random.nextInt(10) + "\"\n}");
+      "{\"clientId\": \"" + random.nextInt(12) + "\"\n}");
       workflowInstanceKeys.add(instanceKey);
     }
   }

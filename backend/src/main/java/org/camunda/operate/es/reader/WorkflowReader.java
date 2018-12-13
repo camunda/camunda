@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.camunda.operate.entities.WorkflowEntity;
-import org.camunda.operate.es.types.WorkflowType;
+import org.camunda.operate.es.schema.indices.WorkflowIndex;
 import org.camunda.operate.rest.exception.NotFoundException;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import static org.camunda.operate.es.types.WorkflowType.BPMN_XML;
+import static org.camunda.operate.es.schema.indices.WorkflowIndex.BPMN_XML;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
@@ -40,7 +40,7 @@ public class WorkflowReader {
   private ObjectMapper objectMapper;
 
   @Autowired
-  private WorkflowType workflowType;
+  private WorkflowIndex workflowType;
 
   /**
    * Gets the workflow diagram XML as a string.
@@ -101,12 +101,12 @@ public class WorkflowReader {
       esClient.prepareSearch(workflowType.getAlias()).setSize(0)
         .addAggregation(
           terms(groupsAggName)
-            .field(WorkflowType.BPMN_PROCESS_ID)
+            .field(WorkflowIndex.BPMN_PROCESS_ID)
             .subAggregation(
               topHits(workflowsAggName)
-                .fetchSource(new String[] { WorkflowType.ID, WorkflowType.NAME, WorkflowType.VERSION, WorkflowType.BPMN_PROCESS_ID  }, null)
+                .fetchSource(new String[] { WorkflowIndex.ID, WorkflowIndex.NAME, WorkflowIndex.VERSION, WorkflowIndex.BPMN_PROCESS_ID  }, null)
                 .size(100)
-                .sort(WorkflowType.VERSION, SortOrder.DESC)));
+                .sort(WorkflowIndex.VERSION, SortOrder.DESC)));
 
     logger.debug("Grouped workflow request: \n{}", searchRequestBuilder.toString());
 

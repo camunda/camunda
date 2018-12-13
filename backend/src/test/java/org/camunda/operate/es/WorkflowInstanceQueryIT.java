@@ -19,7 +19,7 @@ import org.camunda.operate.entities.variables.BooleanVariableEntity;
 import org.camunda.operate.entities.variables.DoubleVariableEntity;
 import org.camunda.operate.entities.variables.LongVariableEntity;
 import org.camunda.operate.entities.variables.StringVariableEntity;
-import org.camunda.operate.es.types.WorkflowInstanceType;
+import org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate;
 import org.camunda.operate.rest.dto.IncidentDto;
 import org.camunda.operate.rest.dto.SortingDto;
 import org.camunda.operate.rest.dto.VariablesQueryDto;
@@ -182,7 +182,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     WorkflowInstanceResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceResponseDto>() { });
 
-    assertThat(response.getWorkflowInstances()).as(testCaseName).extracting(WorkflowInstanceType.ID).containsExactlyInAnyOrder(ids);
+    assertThat(response.getWorkflowInstances()).as(testCaseName).extracting(WorkflowInstanceTemplate.ID).containsExactlyInAnyOrder(ids);
   }
 
   @Test
@@ -231,7 +231,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     assertThat(response.getWorkflowInstances().get(0).getIncidents())
       .filteredOn(incident -> incident.getState().equals(IncidentState.ACTIVE))
-      .extracting(WorkflowInstanceType.ERROR_MSG)
+      .extracting(WorkflowInstanceTemplate.ERROR_MSG)
       .containsExactly(errorMessage);
 
   }
@@ -605,7 +605,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     assertThat(response.getWorkflowInstances()).hasSize(2);
 
-    assertThat(response.getWorkflowInstances()).extracting(WorkflowInstanceType.ID).containsExactlyInAnyOrder(workflowInstance1.getId(), workflowInstance2.getId());
+    assertThat(response.getWorkflowInstances()).extracting(WorkflowInstanceTemplate.ID).containsExactlyInAnyOrder(workflowInstance1.getId(), workflowInstance2.getId());
   }
 
   @Test
@@ -749,7 +749,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     assertThat(response.getWorkflowInstances()).hasSize(2);
 
-    assertThat(response.getWorkflowInstances()).extracting(WorkflowInstanceType.ID).containsExactlyInAnyOrder(workflowInstance2.getId(), workflowInstance4.getId());
+    assertThat(response.getWorkflowInstances()).extracting(WorkflowInstanceTemplate.ID).containsExactlyInAnyOrder(workflowInstance2.getId(), workflowInstance4.getId());
   }
 
   @Test
@@ -786,7 +786,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     assertThat(response.getWorkflowInstances()).hasSize(3);
 
-    assertThat(response.getWorkflowInstances()).extracting(WorkflowInstanceType.ID)
+    assertThat(response.getWorkflowInstances()).extracting(WorkflowInstanceTemplate.ID)
       .containsExactlyInAnyOrder(workflowInstance1.getId(), workflowInstance3.getId(), workflowInstance4.getId());
   }
 
@@ -829,7 +829,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     assertThat(response.getWorkflowInstances()).hasSize(1);
 
-    assertThat(response.getWorkflowInstances()).extracting(WorkflowInstanceType.ID)
+    assertThat(response.getWorkflowInstances()).extracting(WorkflowInstanceTemplate.ID)
       .containsExactly(workflowInstance1.getId());
   }
 
@@ -888,7 +888,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     assertThat(response.getWorkflowInstances()).hasSize(2);
 
-    assertThat(response.getWorkflowInstances()).extracting(WorkflowInstanceType.ID)
+    assertThat(response.getWorkflowInstances()).extracting(WorkflowInstanceTemplate.ID)
       .containsExactlyInAnyOrder(workflowInstance1.getId(), workflowInstance2.getId());
   }
 

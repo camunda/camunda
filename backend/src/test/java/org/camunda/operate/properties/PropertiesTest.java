@@ -47,9 +47,8 @@ public class PropertiesTest {
     assertThat(operateProperties.getElasticsearch().getWorkflowInstanceIndexName()).isEqualTo("workflowInstanceI");
     assertThat(operateProperties.getElasticsearch().getWorkflowIndexName()).isEqualTo("workflowI");
     assertThat(operateProperties.getElasticsearch().getImportPositionAlias()).isEqualTo("importPositionA");
-    assertThat(operateProperties.getElasticsearch().getEventAlias()).isEqualTo("eventA");
-    assertThat(operateProperties.getElasticsearch().getWorkflowInstanceAlias()).isEqualTo("workflowInstanceA");
     assertThat(operateProperties.getElasticsearch().getWorkflowAlias()).isEqualTo("workflowA");
+    assertThat(operateProperties.getElasticsearch().getTemplateOrder()).isEqualTo(50);
     assertThat(operateProperties.getZeebeElasticsearch().getClusterName()).isEqualTo("zeebeElasticClusterName");
     assertThat(operateProperties.getZeebeElasticsearch().getHost()).isEqualTo("someOtherHost");
     assertThat(operateProperties.getZeebeElasticsearch().getPort()).isEqualTo(54321);

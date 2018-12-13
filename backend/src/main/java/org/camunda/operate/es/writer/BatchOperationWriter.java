@@ -23,7 +23,7 @@ import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
-import org.camunda.operate.es.types.WorkflowInstanceType;
+import org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.WorkflowInstanceBatchOperationDto;
@@ -66,7 +66,7 @@ public class BatchOperationWriter {
   private ObjectMapper objectMapper;
 
   @Autowired
-  private WorkflowInstanceType workflowInstanceType;
+  private WorkflowInstanceTemplate workflowInstanceTemplate;
 
   /**
    * Finds operation, which are scheduled or locked with expired timeout, in the amount of configured batch size, and locks them.
@@ -131,7 +131,7 @@ public class BatchOperationWriter {
 
       Script updateScript = new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, params);
       UpdateRequestBuilder updateRequestBuilder = esClient
-        .prepareUpdate(workflowInstanceType.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, workflowInstanceId)
+        .prepareUpdate(workflowInstanceTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, workflowInstanceId)
         .setScript(updateScript);
       if (refreshImmediately) {
         updateRequestBuilder = updateRequestBuilder.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
@@ -172,7 +172,7 @@ public class BatchOperationWriter {
 
       Script updateScript = new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, jsonMap);
       return esClient
-        .prepareUpdate(workflowInstanceType.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, workflowInstanceId)
+        .prepareUpdate(workflowInstanceTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, workflowInstanceId)
         .setScript(updateScript);
     } catch (IOException e) {
       logger.error("Error preparing the query to complete operation", e);
@@ -242,7 +242,7 @@ public class BatchOperationWriter {
 
       Script updateScript = new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, params);
       return esClient
-        .prepareUpdate(workflowInstanceType.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+        .prepareUpdate(workflowInstanceTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
         .setScript(updateScript);
     } catch (IOException e) {
       logger.error("Error preparing the query to insert operation", e);

@@ -16,7 +16,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.camunda.operate.entities.EventEntity;
-import org.camunda.operate.es.types.EventType;
+import org.camunda.operate.es.schema.templates.EventTemplate;
 import org.camunda.operate.rest.dto.EventQueryDto;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -47,7 +47,7 @@ public class EventReader {
   private TransportClient esClient;
 
   @Autowired
-  private EventType eventType;
+  private EventTemplate eventTemplate;
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -65,8 +65,8 @@ public class EventReader {
   }
 
   private void applySorting(SearchRequestBuilder searchRequestBuilder) {
-    searchRequestBuilder.addSort(EventType.DATE_TIME, SortOrder.ASC)
-      .addSort(EventType.ID, SortOrder.ASC);
+    searchRequestBuilder.addSort(EventTemplate.DATE_TIME, SortOrder.ASC)
+      .addSort(EventTemplate.ID, SortOrder.ASC);
   }
 
   protected List<EventEntity> paginate(SearchRequestBuilder builder, int firstResult, int maxResults) {
@@ -127,11 +127,11 @@ public class EventReader {
   private SearchRequestBuilder createSearchRequest(EventQueryDto eventQuery) {
     TermQueryBuilder workflowInstanceQ = null;
     if (eventQuery.getWorkflowInstanceId() != null) {
-      workflowInstanceQ = termQuery(EventType.WORKFLOW_INSTANCE_ID, eventQuery.getWorkflowInstanceId());
+      workflowInstanceQ = termQuery(EventTemplate.WORKFLOW_INSTANCE_ID, eventQuery.getWorkflowInstanceId());
     }
     TermQueryBuilder activityInstanceQ = null;
     if (eventQuery.getActivityInstanceId() != null) {
-      activityInstanceQ = termQuery(EventType.ACTIVITY_INSTANCE_ID, eventQuery.getActivityInstanceId());
+      activityInstanceQ = termQuery(EventTemplate.ACTIVITY_INSTANCE_ID, eventQuery.getActivityInstanceId());
     }
     QueryBuilder query = ElasticsearchUtil.joinWithAnd(workflowInstanceQ, activityInstanceQ);
     if (query == null) {
@@ -142,7 +142,7 @@ public class EventReader {
     logger.debug("Events search request: \n{}", constantScoreQuery.toString());
 
     return esClient
-      .prepareSearch(eventType.getAlias())
+      .prepareSearch(eventTemplate.getAlias())
       .setQuery(constantScoreQuery);
   }
 

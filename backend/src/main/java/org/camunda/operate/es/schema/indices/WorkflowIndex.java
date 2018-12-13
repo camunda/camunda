@@ -1,4 +1,4 @@
-package org.camunda.operate.es.types;
+package org.camunda.operate.es.schema.indices;
 
 import java.io.IOException;
 import org.camunda.operate.property.OperateProperties;
@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class WorkflowType extends StrictTypeMappingCreator {
+public class WorkflowIndex extends AbstractIndexCreator {
 
   public static final String ID = "id";
   public static final String KEY = "key";

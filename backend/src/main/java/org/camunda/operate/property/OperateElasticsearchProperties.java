@@ -24,9 +24,9 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
   private String workflowInstanceIndexName = WORKFLOW_INSTANCE_INDEX_PATTERN + "_";
   private String workflowIndexName = WORKFLOW_INDEX_PATTERN + "_";
   private String importPositionAlias = IMPORT_POSITION_INDEX_PATTERN;
-  private String eventAlias = EVENT_INDEX_PATTERN;
-  private String workflowInstanceAlias = WORKFLOW_INSTANCE_INDEX_PATTERN;
   private String workflowAlias = WORKFLOW_INDEX_PATTERN;
+
+  private int templateOrder = 30;
 
   public String getWorkflowInstanceIndexName() {
     return workflowInstanceIndexName;
@@ -68,27 +68,19 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
     this.importPositionAlias = importPositionAlias;
   }
 
-  public String getEventAlias() {
-    return eventAlias;
-  }
-
-  public void setEventAlias(String eventAlias) {
-    this.eventAlias = eventAlias;
-  }
-
-  public String getWorkflowInstanceAlias() {
-    return workflowInstanceAlias;
-  }
-
-  public void setWorkflowInstanceAlias(String workflowInstanceAlias) {
-    this.workflowInstanceAlias = workflowInstanceAlias;
-  }
-
   public String getWorkflowAlias() {
     return workflowAlias;
   }
 
   public void setWorkflowAlias(String workflowAlias) {
     this.workflowAlias = workflowAlias;
+  }
+
+  public int getTemplateOrder() {
+    return templateOrder;
+  }
+
+  public void setTemplateOrder(int templateOrder) {
+    this.templateOrder = templateOrder;
   }
 }

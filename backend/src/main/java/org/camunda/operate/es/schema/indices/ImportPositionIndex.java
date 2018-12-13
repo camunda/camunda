@@ -1,4 +1,4 @@
-package org.camunda.operate.es.types;
+package org.camunda.operate.es.schema.indices;
 
 import java.io.IOException;
 import org.camunda.operate.property.OperateProperties;
@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ImportPositionType extends StrictTypeMappingCreator {
+public class ImportPositionIndex extends AbstractIndexCreator {
 
   public static final String ALIAS_NAME = "aliasName";
   public static final String ID = "id";

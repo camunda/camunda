@@ -18,10 +18,10 @@ import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
-import org.camunda.operate.es.types.EventType;
-import org.camunda.operate.es.types.StrictTypeMappingCreator;
-import org.camunda.operate.es.types.WorkflowInstanceType;
-import org.camunda.operate.es.types.WorkflowType;
+import org.camunda.operate.es.schema.indices.AbstractIndexCreator;
+import org.camunda.operate.es.schema.indices.WorkflowIndex;
+import org.camunda.operate.es.schema.templates.EventTemplate;
+import org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate;
 import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ElasticsearchUtil;
@@ -53,13 +53,13 @@ public class ElasticsearchRequestCreatorsHolder {
   private TransportClient esClient;
 
   @Autowired
-  private WorkflowType workflowType;
+  private WorkflowIndex workflowType;
 
   @Autowired
-  private EventType eventType;
+  private EventTemplate eventTemplate;
 
   @Autowired
-  private WorkflowInstanceType workflowInstanceType;
+  private WorkflowInstanceTemplate workflowInstanceTemplate;
 
   @Autowired
   private BatchOperationWriter batchOperationWriter;
@@ -77,29 +77,29 @@ public class ElasticsearchRequestCreatorsHolder {
         logger.debug("Workflow instance: id {}", entity.getId());
         Map<String, Object> updateFields = new HashMap<>();
         if (entity.getStartDate() != null) {
-          updateFields.put(WorkflowInstanceType.START_DATE, entity.getStartDate());
+          updateFields.put(WorkflowInstanceTemplate.START_DATE, entity.getStartDate());
         }
         if (entity.getEndDate() != null) {
-          updateFields.put(WorkflowInstanceType.END_DATE, entity.getEndDate());
+          updateFields.put(WorkflowInstanceTemplate.END_DATE, entity.getEndDate());
         }
-        updateFields.put(WorkflowInstanceType.WORKFLOW_ID, entity.getWorkflowId());
-        updateFields.put(WorkflowInstanceType.KEY, entity.getKey());
-        updateFields.put(WorkflowInstanceType.BPMN_PROCESS_ID, entity.getBpmnProcessId());
-        updateFields.put(WorkflowInstanceType.WORKFLOW_NAME, entity.getWorkflowName());
-        updateFields.put(WorkflowInstanceType.WORKFLOW_VERSION, entity.getWorkflowVersion());
-        updateFields.put(WorkflowInstanceType.STATE, entity.getState());
-        updateFields.put(StrictTypeMappingCreator.PARTITION_ID, entity.getPartitionId());
-        updateFields.put(WorkflowInstanceType.STRING_VARIABLES, entity.getStringVariables());
-        updateFields.put(WorkflowInstanceType.DOUBLE_VARIABLES, entity.getDoubleVariables());
-        updateFields.put(WorkflowInstanceType.LONG_VARIABLES, entity.getLongVariables());
-        updateFields.put(WorkflowInstanceType.BOOLEAN_VARIABLES, entity.getBooleanVariables());
+        updateFields.put(WorkflowInstanceTemplate.WORKFLOW_ID, entity.getWorkflowId());
+        updateFields.put(WorkflowInstanceTemplate.KEY, entity.getKey());
+        updateFields.put(WorkflowInstanceTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
+        updateFields.put(WorkflowInstanceTemplate.WORKFLOW_NAME, entity.getWorkflowName());
+        updateFields.put(WorkflowInstanceTemplate.WORKFLOW_VERSION, entity.getWorkflowVersion());
+        updateFields.put(WorkflowInstanceTemplate.STATE, entity.getState());
+        updateFields.put(AbstractIndexCreator.PARTITION_ID, entity.getPartitionId());
+        updateFields.put(WorkflowInstanceTemplate.STRING_VARIABLES, entity.getStringVariables());
+        updateFields.put(WorkflowInstanceTemplate.DOUBLE_VARIABLES, entity.getDoubleVariables());
+        updateFields.put(WorkflowInstanceTemplate.LONG_VARIABLES, entity.getLongVariables());
+        updateFields.put(WorkflowInstanceTemplate.BOOLEAN_VARIABLES, entity.getBooleanVariables());
 
         //TODO some weird not efficient magic is needed here, in order to format date fields properly, may be this can be improved
         Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
 
         final UpdateRequestBuilder updateRequest =
           esClient
-            .prepareUpdate(workflowInstanceType.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+            .prepareUpdate(workflowInstanceTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
             .setUpsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
             .setDoc(jsonMap);
 
@@ -186,7 +186,7 @@ public class ElasticsearchRequestCreatorsHolder {
 
         return bulkRequestBuilder.add(
           esClient
-            .prepareUpdate(workflowInstanceType.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getWorkflowInstanceId())
+            .prepareUpdate(workflowInstanceTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getWorkflowInstanceId())
             .setScript(updateScript)
             .setUpsert(objectMapper.writeValueAsString(workflowInstanceEntity), XContentType.JSON));
       } catch (IOException e) {
@@ -254,7 +254,7 @@ public class ElasticsearchRequestCreatorsHolder {
         );
         return bulkRequestBuilder.add(
           esClient
-            .prepareUpdate(workflowInstanceType.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getWorkflowInstanceId())
+            .prepareUpdate(workflowInstanceTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getWorkflowInstanceId())
             .setScript(updateScript));
       } catch (IOException e) {
         logger.error("Error preparing the query to update activity instance", e);
@@ -276,10 +276,10 @@ public class ElasticsearchRequestCreatorsHolder {
         final List<String> workflowInstanceIds = workflowInstanceReader.queryWorkflowInstancesWithEmptyWorkflowVersion(entity.getKey());
         for (String workflowInstanceId : workflowInstanceIds) {
           Map<String, Object> updateFields = new HashMap<>();
-          updateFields.put(WorkflowInstanceType.WORKFLOW_NAME, entity.getName());
-          updateFields.put(WorkflowInstanceType.WORKFLOW_VERSION, entity.getVersion());
+          updateFields.put(WorkflowInstanceTemplate.WORKFLOW_NAME, entity.getName());
+          updateFields.put(WorkflowInstanceTemplate.WORKFLOW_VERSION, entity.getVersion());
           bulkRequestBuilder.add(esClient
-            .prepareUpdate(workflowInstanceType.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, workflowInstanceId)
+            .prepareUpdate(workflowInstanceTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, workflowInstanceId)
             .setDoc(updateFields));
         }
 
@@ -325,7 +325,7 @@ public class ElasticsearchRequestCreatorsHolder {
         );
         return bulkRequestBuilder.add(
           esClient
-            .prepareUpdate(workflowInstanceType.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getWorkflowInstanceId())
+            .prepareUpdate(workflowInstanceTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getWorkflowInstanceId())
             .setScript(updateScript));
       } catch (IOException e) {
         logger.error("Error preparing the query to insert sequence flow", e);
@@ -344,7 +344,7 @@ public class ElasticsearchRequestCreatorsHolder {
 
         //write event
         bulkRequestBuilder =
-          bulkRequestBuilder.add(esClient.prepareIndex(eventType.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+          bulkRequestBuilder.add(esClient.prepareIndex(eventTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
           .setSource(objectMapper.writeValueAsString(entity), XContentType.JSON));
 
         //complete operation in workflow instance if needed

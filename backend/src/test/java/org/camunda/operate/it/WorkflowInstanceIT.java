@@ -14,7 +14,7 @@ import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
-import org.camunda.operate.es.types.WorkflowInstanceType;
+import org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate;
 import org.camunda.operate.rest.dto.EventQueryDto;
 import org.camunda.operate.rest.exception.NotFoundException;
 import org.camunda.operate.util.IdTestUtil;
@@ -169,7 +169,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
 
     WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
     assertThat(workflowInstanceEntity.getSequenceFlows()).hasSize(3)
-      .extracting(WorkflowInstanceType.ACTIVITY_ID).containsOnly("sf1", "sf2", "sf3");
+      .extracting(WorkflowInstanceTemplate.ACTIVITY_ID).containsOnly("sf1", "sf2", "sf3");
 
   }
 
@@ -320,7 +320,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     IncidentEntity incidentEntity = workflowInstanceEntity.getIncidents().get(0);
     assertThat(incidentEntity.getState()).isEqualTo(IncidentState.RESOLVED);
     assertThat(workflowInstanceEntity.getActivities()).filteredOn(ai -> ai.getId().equals(incidentEntity.getActivityInstanceId())).extracting(
-      WorkflowInstanceType.STATE).containsOnly(ActivityState.ACTIVE);
+      WorkflowInstanceTemplate.STATE).containsOnly(ActivityState.ACTIVE);
 
   }
 
