@@ -229,3 +229,19 @@ export const createGroupedWorkflowInstances = (options = {}) => {
     ...options
   };
 };
+
+export const getDiagramNodes = () => {
+  return {
+    taskD: {
+      $type: 'bpmn:ServiceTask',
+      id: 'taskD',
+      name: 'task D'
+    },
+    demoProcess: {
+      $type: 'bpmn:Process',
+      id: 'demoProcess',
+      isExecutable: true,
+      name: 'Demo process'
+    }
+  };
+};

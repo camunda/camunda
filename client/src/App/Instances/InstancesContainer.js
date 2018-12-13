@@ -9,7 +9,7 @@ import {DEFAULT_FILTER, PAGE_TITLE} from 'modules/constants';
 import {isEqual} from 'lodash';
 import {fetchWorkflowXML} from 'modules/api/diagram';
 import {getFilterQueryString, getWorkflowByVersion} from 'modules/utils/filter';
-import {parseQueryString, getDiagramNodes} from './service';
+import {parseQueryString, formatDiagramNodes} from './service';
 import {getNodesFromXML} from 'modules/utils/bpmn';
 
 class InstancesContainer extends Component {
@@ -55,7 +55,6 @@ class InstancesContainer extends Component {
   validateAndSetUrlFilter = async () => {
     const {filter} = parseQueryString(this.props.location.search);
     const validFilter = await this.getValidFilter(filter);
-
     // update URL with new valid filter
     if (!isEqual(filter, validFilter)) {
       this.setFilterInURL(validFilter);
@@ -109,6 +108,7 @@ class InstancesContainer extends Component {
     if (!Boolean(workflowByVersion)) {
       return otherFilters;
     }
+
     // refetch nodes for new workflow + version combination
     const nodes = isEqual(workflowByVersion, this.state.currentWorkflow)
       ? this.state.nodes
@@ -136,7 +136,7 @@ class InstancesContainer extends Component {
     return nodes;
   };
 
-  setGroupedWorkflowInstances = workflows => {
+  setGroupedWorkflowInstances = (workflows = []) => {
     const groupedWorkflowInstances = workflows.reduce((obj, value) => {
       obj[value.bpmnProcessId] = {
         ...value
@@ -162,7 +162,7 @@ class InstancesContainer extends Component {
         diagramWorkflow={this.state.currentWorkflow}
         groupedWorkflowInstances={this.state.groupedWorkflowInstances}
         onFilterChange={this.setFilterInURL}
-        diagramNodes={getDiagramNodes(this.state.nodes)}
+        diagramNodes={formatDiagramNodes(this.state.nodes)}
       />
     );
   }

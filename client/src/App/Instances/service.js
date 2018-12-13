@@ -110,7 +110,7 @@ export function getWorkflowName(workflow) {
   return workflow ? workflow.name || workflow.bpmnProcessId : 'Workflow';
 }
 
-export function getDiagramNodes(nodes = {}) {
+export function formatDiagramNodes(nodes = {}) {
   const result = [];
   for (let node in nodes) {
     const item = nodes[node];
