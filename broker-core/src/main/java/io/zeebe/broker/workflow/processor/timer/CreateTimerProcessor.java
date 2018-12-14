@@ -57,6 +57,7 @@ public class CreateTimerProcessor implements TypedRecordProcessor<TimerRecord> {
     timerInstance.setKey(timerKey);
     timerInstance.setHandlerNodeId(timer.getHandlerNodeId());
     timerInstance.setRepetitions(timer.getRepetitions());
+    timerInstance.setBpmnId(timer.getBpmnId());
 
     sideEffect.accept(this::scheduleTimer);
 
