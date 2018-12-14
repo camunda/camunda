@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.workflow.processor.timer;
 
+import static io.zeebe.broker.workflow.state.TimerInstance.NO_ELEMENT_INSTANCE;
 import static io.zeebe.msgpack.value.DocumentValue.EMPTY_DOCUMENT;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
@@ -67,28 +68,26 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
 
     workflowState.getTimerState().remove(timerInstance);
 
-    final boolean isOccurred =
-        catchEventBehavior.occurEventForElement(
-            elementInstanceKey,
-            timer.getBpmnId(),
-            timer.getHandlerNodeId(),
-            EMPTY_DOCUMENT,
-            streamWriter);
+    boolean isOccurred = true;
+
+    if (elementInstanceKey == NO_ELEMENT_INSTANCE) {
+      catchEventBehavior.occurStartEvent(timer.getWorkflowKey(), EMPTY_DOCUMENT, streamWriter);
+    } else {
+      isOccurred =
+          catchEventBehavior.occurEventForElement(
+              elementInstanceKey, timer.getHandlerNodeId(), EMPTY_DOCUMENT, streamWriter);
+    }
+
     if (isOccurred) {
       streamWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
 
-      final ElementInstance elementInstance =
-          workflowState.getElementInstanceState().getInstance(elementInstanceKey);
-      if (shouldReschedule(timer) && elementInstance != null) {
+      if (shouldReschedule(timer)) {
+        final ExecutableCatchEventElement timerEvent = getTimerEvent(elementInstanceKey, timer);
 
-        final ExecutableCatchEventElement event =
-            getCatchEventById(
-                workflowState,
-                elementInstance.getValue().getWorkflowKey(),
-                timer.getHandlerNodeId());
-        rescheduleTimer(timer, streamWriter, event);
+        if (timerEvent != null && timerEvent.isTimer()) {
+          rescheduleTimer(timer, streamWriter, timerEvent);
+        }
       }
-
     } else {
       streamWriter.appendRejection(
           record, RejectionType.NOT_APPLICABLE, "activity is not active anymore");
@@ -97,6 +96,20 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
 
   private boolean shouldReschedule(TimerRecord timer) {
     return timer.getRepetitions() == RepeatingInterval.INFINITE || timer.getRepetitions() > 1;
+  }
+
+  private ExecutableCatchEventElement getTimerEvent(long elementInstanceKey, TimerRecord timer) {
+    final ElementInstance elementInstance =
+        workflowState.getElementInstanceState().getInstance(elementInstanceKey);
+
+    if (elementInstance != null) {
+      return getCatchEventById(
+          workflowState, elementInstance.getValue().getWorkflowKey(), timer.getHandlerNodeId());
+    } else if (elementInstanceKey == NO_ELEMENT_INSTANCE) {
+      return workflowState.getWorkflowByKey(timer.getWorkflowKey()).getWorkflow().getStartEvent();
+    }
+
+    return null;
   }
 
   private void rescheduleTimer(
@@ -117,7 +130,7 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
     final RepeatingInterval timer =
         new RepeatingInterval(repetitions, event.getTimer().getInterval());
     catchEventBehavior.subscribeToTimerEvent(
-        record.getElementInstanceKey(), event.getId(), record.getBpmnId(), timer, writer);
+        record.getElementInstanceKey(), record.getWorkflowKey(), event.getId(), timer, writer);
   }
 
   private ExecutableCatchEventElement getCatchEventById(

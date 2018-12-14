@@ -26,17 +26,17 @@ package io.zeebe.broker.workflow.model.element;
  */
 public class ExecutableFlowElementContainer extends ExecutableActivity {
 
-  private ExecutableFlowNode startEvent;
+  private ExecutableCatchEventElement startEvent;
 
   public ExecutableFlowElementContainer(String id) {
     super(id);
   }
 
-  public ExecutableFlowNode getStartEvent() {
+  public ExecutableCatchEventElement getStartEvent() {
     return startEvent;
   }
 
-  public void setStartEvent(ExecutableFlowNode startEvent) {
+  public void setStartEvent(ExecutableCatchEventElement startEvent) {
     this.startEvent = startEvent;
   }
 }

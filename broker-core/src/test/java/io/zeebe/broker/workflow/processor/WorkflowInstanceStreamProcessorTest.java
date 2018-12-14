@@ -36,7 +36,6 @@ import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
@@ -46,12 +45,10 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.util.buffer.BufferUtil;
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -105,13 +102,6 @@ public class WorkflowInstanceStreamProcessorTest {
           .endEvent("end")
           .done();
 
-  private static final BpmnModelInstance TIMER_START_EVENT_WORKFLOW =
-      Bpmn.createExecutableProcess(PROCESS_ID)
-          .startEvent("start")
-          .timerWithCycle("R/PT1S")
-          .endEvent("end")
-          .done();
-
   public StreamProcessorRule envRule = new StreamProcessorRule();
   public WorkflowInstanceStreamProcessorRule streamProcessorRule =
       new WorkflowInstanceStreamProcessorRule(envRule);
@@ -123,42 +113,6 @@ public class WorkflowInstanceStreamProcessorTest {
   @Before
   public void setUp() {
     streamProcessor = streamProcessorRule.getStreamProcessor();
-  }
-
-  @Test
-  public void shouldCreateWorkflowInstanceWithTimerTrigger() {
-    // given
-    streamProcessorRule.deploy(TIMER_START_EVENT_WORKFLOW);
-    envRule.getClock().pinCurrentTime();
-    streamProcessor.blockAfterTimerEvent(e -> e.getMetadata().getIntent() == TimerIntent.CREATED);
-
-    final TimerRecord record = new TimerRecord();
-    record.setHandlerNodeId(wrapString("start"));
-    record.setDueDate(envRule.getClock().getTimeMillis() + 1000);
-    record.setRepetitions(RepeatingInterval.INFINITE);
-    record.setBpmnId(wrapString(PROCESS_ID));
-    record.setElementInstanceKey(-1);
-
-    // when
-    envRule.writeCommand(TimerIntent.CREATE, record);
-    waitUntil(() -> streamProcessor.isBlocked());
-    envRule.getClock().addTime(Duration.ofSeconds(1));
-    streamProcessor.unblock();
-
-    // then
-    assertThat(streamProcessorRule.awaitTimerInState("start", TimerIntent.TRIGGERED)).isNotNull();
-    Assertions.assertThat(
-            streamProcessorRule.awaitElementInState(
-                PROCESS_ID, WorkflowInstanceIntent.ELEMENT_READY))
-        .isNotNull();
-    final TypedRecord<WorkflowInstanceRecord> instanceCreatedRecord =
-        envRule.events().onlyWorkflowInstanceRecords().limit(1).getLast();
-    assertThat(instanceCreatedRecord.getValue().getBpmnProcessId())
-        .isEqualTo(wrapString(PROCESS_ID));
-    assertThat(instanceCreatedRecord.getValue().getVersion())
-        .isEqualTo(WorkflowInstanceStreamProcessorRule.VERSION);
-    assertThat(instanceCreatedRecord.getValue().getWorkflowKey())
-        .isEqualTo(WorkflowInstanceStreamProcessorRule.WORKFLOW_KEY);
   }
 
   @Test

@@ -32,6 +32,7 @@ public class DeploymentCreatedProcessor implements TypedRecordProcessor<Deployme
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter) {
     final DeploymentRecord deploymentEvent = event.getValue();
+
     streamWriter.appendFollowUpCommand(
         event.getKey(), DeploymentIntent.DISTRIBUTE, deploymentEvent);
   }

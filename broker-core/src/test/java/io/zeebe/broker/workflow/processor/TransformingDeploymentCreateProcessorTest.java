@@ -20,6 +20,7 @@ package io.zeebe.broker.workflow.processor;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.state.ZeebeState;
@@ -56,8 +57,10 @@ public class TransformingDeploymentCreateProcessorTest {
             (typedEventStreamProcessorBuilder, zeebeDb) -> {
               final ZeebeState zeebeState = new ZeebeState(zeebeDb);
               workflowState = zeebeState.getWorkflowState();
+
+              final CatchEventBehavior catchEventBehavior = mock(CatchEventBehavior.class);
               DeploymentEventProcessors.addTransformingDeploymentProcessor(
-                  typedEventStreamProcessorBuilder, zeebeState);
+                  typedEventStreamProcessorBuilder, zeebeState, catchEventBehavior);
 
               return typedEventStreamProcessorBuilder.build();
             });
