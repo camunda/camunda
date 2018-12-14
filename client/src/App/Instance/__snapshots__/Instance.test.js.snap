@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Instance rendering should display a Header, DiagramPanel and Copyright 1`] = `
+exports[`Instance render should render a the instance history 1`] = `
 <Fragment>
   <WithSelection(HeaderSharedState)
     detail={
@@ -14,6 +14,7 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
                 "id": "foo",
                 "startDate": "2018-10-10T09:20:38.658Z",
                 "state": "COMPLETED",
+                "type": "END_EVENT",
               },
               Object {
                 "activityId": "bar",
@@ -21,6 +22,7 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
                 "id": "bar",
                 "startDate": "2018-10-10T09:20:38.658Z",
                 "state": "COMPLETED",
+                "type": "TASK",
               },
               Object {
                 "activityId": "taskA",
@@ -28,6 +30,7 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
                 "id": "4294983744",
                 "startDate": "2018-10-10T09:20:38.658Z",
                 "state": "INCIDENT",
+                "type": "TASK",
               },
             ],
             "bpmnProcessId": "someKey",
@@ -98,6 +101,7 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
                 "id": "foo",
                 "startDate": "2018-10-10T09:20:38.658Z",
                 "state": "COMPLETED",
+                "type": "END_EVENT",
               },
               Object {
                 "activityId": "bar",
@@ -105,6 +109,7 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
                 "id": "bar",
                 "startDate": "2018-10-10T09:20:38.658Z",
                 "state": "COMPLETED",
+                "type": "TASK",
               },
               Object {
                 "activityId": "taskA",
@@ -112,6 +117,7 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
                 "id": "4294983744",
                 "startDate": "2018-10-10T09:20:38.658Z",
                 "state": "INCIDENT",
+                "type": "TASK",
               },
             ],
             "bpmnProcessId": "someKey",
@@ -161,16 +167,25 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
           Object {
             "bar": Object {
               "activityId": "bar",
+              "endDate": "2018-10-10T09:20:38.658Z",
+              "id": "bar",
+              "startDate": "2018-10-10T09:20:38.658Z",
               "state": "COMPLETED",
               "type": "TASK",
             },
             "foo": Object {
               "activityId": "foo",
+              "endDate": "2018-10-10T09:20:38.658Z",
+              "id": "foo",
+              "startDate": "2018-10-10T09:20:38.658Z",
               "state": "COMPLETED",
               "type": "END_EVENT",
             },
             "taskA": Object {
               "activityId": "taskA",
+              "endDate": "2018-10-10T09:20:38.658Z",
+              "id": "4294983744",
+              "startDate": "2018-10-10T09:20:38.658Z",
               "state": "INCIDENT",
               "type": "TASK",
             },
@@ -185,6 +200,7 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
                 "id": "foo",
                 "startDate": "2018-10-10T09:20:38.658Z",
                 "state": "COMPLETED",
+                "type": "END_EVENT",
               },
               Object {
                 "activityId": "bar",
@@ -192,6 +208,7 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
                 "id": "bar",
                 "startDate": "2018-10-10T09:20:38.658Z",
                 "state": "COMPLETED",
+                "type": "TASK",
               },
               Object {
                 "activityId": "taskA",
@@ -199,6 +216,7 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
                 "id": "4294983744",
                 "startDate": "2018-10-10T09:20:38.658Z",
                 "state": "INCIDENT",
+                "type": "TASK",
               },
             ],
             "bpmnProcessId": "someKey",
