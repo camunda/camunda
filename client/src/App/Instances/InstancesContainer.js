@@ -9,7 +9,7 @@ import {DEFAULT_FILTER, PAGE_TITLE} from 'modules/constants';
 import {isEqual} from 'lodash';
 import {fetchWorkflowXML} from 'modules/api/diagram';
 import {getFilterQueryString, getWorkflowByVersion} from 'modules/utils/filter';
-import {parseQueryString, formatDiagramNodes} from './service';
+import {parseQueryString, formatDiagramNodes, decodeFields} from './service';
 import {getNodesFromXML} from 'modules/utils/bpmn';
 
 class InstancesContainer extends Component {
@@ -158,7 +158,7 @@ class InstancesContainer extends Component {
   render() {
     return (
       <Instances
-        filter={this.state.filter}
+        filter={decodeFields(this.state.filter)}
         diagramWorkflow={this.state.currentWorkflow}
         groupedWorkflowInstances={this.state.groupedWorkflowInstances}
         onFilterChange={this.setFilterInURL}
