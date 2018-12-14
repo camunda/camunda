@@ -223,7 +223,7 @@ class Instances extends Component {
 
   getFilterQuery = () => {
     const filterWithWorkflowIds = getFilterWithWorkflowIds(
-      this.state.filter,
+      this.props.filter,
       this.state.groupedWorkflowInstances
     );
 
