@@ -1,4 +1,4 @@
-export const createMapOfInstances = workflowInstances => {
+export function createMapOfInstances(workflowInstances) {
   const transformedInstances = workflowInstances.reduce((acc, instance) => {
     return {
       [instance.id]: instance,
@@ -6,18 +6,12 @@ export const createMapOfInstances = workflowInstances => {
     };
   }, {});
   return new Map(Object.entries(transformedInstances));
-};
+}
 
-export const getPayloadtoFetchInstancesById = IdsOfInstancesInSelections => {
-  let query = {
-    ids: [...IdsOfInstancesInSelections],
-    running: true,
-    active: true,
-    canceled: true,
-    completed: true,
-    finished: true,
-    incidents: true
-  };
+export function getInstancesIdsFromSelections(selections) {
+  const idsSet = selections.reduce((acc, {instancesMap}) => {
+    return new Set([...acc, ...[...instancesMap.keys()]]);
+  }, new Set());
 
-  return {queries: [query]};
-};
+  return [...idsSet];
+}

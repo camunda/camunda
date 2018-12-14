@@ -31,12 +31,7 @@ import ListView from './ListView';
 import Filters from './Filters';
 import Selections from './Selections';
 
-import {
-  getPayload,
-  getEmptyDiagramMessage,
-  getWorkflowName,
-  getTaskNodes
-} from './service';
+import {getEmptyDiagramMessage, getWorkflowName, getTaskNodes} from './service';
 import * as Styled from './styled.js';
 
 class Instances extends Component {
@@ -226,8 +221,13 @@ class Instances extends Component {
     this.handleFilterChange({activityId: flowNodeId});
   };
 
-  getSelectionPayload = ({selectionState, selectionId}) => {
-    return getPayload({state: {...this.state, ...selectionState}, selectionId});
+  getFilterQuery = () => {
+    const filterWithWorkflowIds = getFilterWithWorkflowIds(
+      this.state.filter,
+      this.state.groupedWorkflowInstances
+    );
+
+    return parseFilterForRequest(filterWithWorkflowIds);
   };
 
   render() {
@@ -241,7 +241,7 @@ class Instances extends Component {
     });
 
     return (
-      <SelectionProvider getSelectionPayload={this.getSelectionPayload}>
+      <SelectionProvider getFilterQuery={this.getFilterQuery}>
         <Header
           active="instances"
           filter={this.props.filter}

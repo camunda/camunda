@@ -1,4 +1,4 @@
-import {parseQueryString, getPayload} from './service';
+import {parseQueryString} from './service';
 
 describe('Instances service', () => {
   describe('parseQueryString', () => {
@@ -31,45 +31,5 @@ describe('Instances service', () => {
 
       expect(parseQueryString(input)).toEqual(output);
     });
-  });
-});
-
-describe('Selection services', () => {
-  let state;
-
-  it('should return payload containing included ids', () => {
-    //when
-    state = {
-      selection: {all: false, ids: ['foo'], excludeIds: []},
-      selections: [],
-      filter: {incidents: true}
-    };
-
-    //then
-    expect(getPayload({state})).toMatchSnapshot();
-  });
-
-  it('should return payload containing empty excluded ids', () => {
-    //when
-    state = {
-      selection: {all: true, ids: [], excludeIds: []},
-      selections: [],
-      filter: {incidents: true}
-    };
-
-    //then
-    expect(getPayload({state})).toMatchSnapshot();
-  });
-
-  it('should return payload containing excluded ids', () => {
-    //when
-    state = {
-      selection: {all: true, ids: [], excludeIds: ['foo']},
-      selections: [],
-      filter: {incidents: true}
-    };
-
-    //then
-    expect(getPayload({state})).toMatchSnapshot();
   });
 });

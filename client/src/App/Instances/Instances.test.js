@@ -147,7 +147,7 @@ api.fetchWorkflowInstances = mockResolvedAsyncFn({
 });
 api.fetchGroupedWorkflowInstances = mockResolvedAsyncFn(groupedWorkflowsMock);
 api.fetchWorkflowInstancesStatistics = mockResolvedAsyncFn(statistics);
-api.fetchWorkflowInstanceBySelection = mockResolvedAsyncFn({
+api.fetchWorkflowInstancesBySelection = mockResolvedAsyncFn({
   id: 'foo'
 });
 apiDiagram.fetchWorkflowXML = mockResolvedAsyncFn('');

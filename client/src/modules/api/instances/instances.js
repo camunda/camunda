@@ -57,7 +57,7 @@ export async function fetchWorkflowInstancesByIds(ids) {
   return await fetchWorkflowInstances(options);
 }
 
-export async function fetchWorkflowInstanceBySelection(payload) {
+export async function fetchWorkflowInstancesBySelection(payload) {
   let query = payload.queries[0];
 
   if (query.ids) {

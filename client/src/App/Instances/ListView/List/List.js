@@ -21,7 +21,7 @@ const {THead, TBody, TH, TR, TD} = Table;
 class List extends React.Component {
   static propTypes = {
     data: PropTypes.arrayOf(PropTypes.object).isRequired,
-    onUpdateSelection: PropTypes.func.isRequired,
+    onSelectionChange: PropTypes.func.isRequired,
     onEntriesPerPageChange: PropTypes.func.isRequired,
     selection: PropTypes.shape({
       all: PropTypes.bool,
@@ -61,7 +61,7 @@ class List extends React.Component {
   }
 
   handleSelectAll = (_, isChecked) => {
-    this.props.onUpdateSelection({
+    this.props.onSelectionChange({
       all: isChecked,
       ids: [],
       excludeIds: []
@@ -109,7 +109,7 @@ class List extends React.Component {
       all = !all;
     }
 
-    this.props.onUpdateSelection({all, ids, excludeIds});
+    this.props.onSelectionChange({all, ids, excludeIds});
   };
 
   handleSelection = (selectedIds = [], {id}, isChecked) => {

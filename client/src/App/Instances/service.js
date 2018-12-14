@@ -1,9 +1,4 @@
 import {isValidJSON} from 'modules/utils';
-import {getSelectionById} from 'modules/utils/selection';
-import {
-  parseFilterForRequest,
-  getFilterWithWorkflowIds
-} from 'modules/utils/filter';
 
 export function parseQueryString(queryString = '') {
   var params = {};
@@ -22,33 +17,6 @@ export function parseQueryString(queryString = '') {
   });
 
   return params;
-}
-
-export function getPayload({selectionId, state}) {
-  const {selection, selections, filter, groupedWorkflowInstances} = state;
-  const filterWithWorkflowIds = getFilterWithWorkflowIds(
-    filter,
-    groupedWorkflowInstances
-  );
-  let selectionIndex;
-
-  if (selectionId) {
-    selectionIndex = getSelectionById(selections, selectionId).index;
-  }
-
-  const query = {
-    ...parseFilterForRequest(filterWithWorkflowIds)
-  };
-
-  if (!selection.all) {
-    query.ids = [...selection.ids];
-  } else {
-    query.excludeIds = [...selection.excludeIds];
-  }
-
-  return {
-    queries: [query, ...(selectionId ? selections[selectionIndex].queries : '')]
-  };
 }
 
 export function getStateUpdateForAddSelection(

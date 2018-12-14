@@ -29,7 +29,7 @@ createMockInstances(1, instances);
 
 const mockProps = {
   data: instances,
-  onUpdateSelection: jest.fn(),
+  onSelectionChange: jest.fn(),
   onEntriesPerPageChange: jest.fn(),
   filter: {active: true, incidents: true},
   onSort: jest.fn(),
@@ -44,7 +44,7 @@ const mockProps = {
 
 const emptyList = {
   data: [],
-  onUpdateSelection: jest.fn(),
+  onSelectionChange: jest.fn(),
   onEntriesPerPageChange: jest.fn(),
   onSort: jest.fn(),
   selection: {
@@ -358,7 +358,7 @@ describe('List', () => {
 
       it('should set selection.all to true', () => {
         // given
-        const onUpdateSelection = jest.fn();
+        const onSelectionChange = jest.fn();
 
         node.setProps({
           filterCount: 2,
@@ -367,7 +367,7 @@ describe('List', () => {
             ids: [10],
             excludeIds: []
           },
-          onUpdateSelection: onUpdateSelection
+          onSelectionChange: onSelectionChange
         });
 
         // when
@@ -375,7 +375,7 @@ describe('List', () => {
         select(undefined, true);
 
         // then
-        expect(onUpdateSelection).toBeCalledWith({
+        expect(onSelectionChange).toBeCalledWith({
           all: true,
           ids: [],
           excludeIds: []
@@ -384,7 +384,7 @@ describe('List', () => {
 
       it('should set selection.all to false', () => {
         // given
-        const onUpdateSelection = jest.fn();
+        const onSelectionChange = jest.fn();
 
         node.setProps({
           filterCount: 2,
@@ -393,7 +393,7 @@ describe('List', () => {
             ids: [],
             excludeIds: [10]
           },
-          onUpdateSelection: onUpdateSelection
+          onSelectionChange: onSelectionChange
         });
 
         // when
@@ -402,7 +402,7 @@ describe('List', () => {
         node.update();
 
         // then
-        expect(onUpdateSelection).toBeCalledWith({
+        expect(onSelectionChange).toBeCalledWith({
           all: false,
           ids: [],
           excludeIds: []

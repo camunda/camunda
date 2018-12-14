@@ -6,13 +6,14 @@ import {
   deserializeInstancesMaps
 } from 'modules/utils/selection/selection';
 import {
-  fetchWorkflowInstanceBySelection,
-  fetchWorkflowInstances
+  fetchWorkflowInstancesBySelection,
+  fetchWorkflowInstancesByIds
 } from 'modules/api/instances';
 import {getSelectionById} from 'modules/utils/selection';
 import withSharedState from 'modules/components/withSharedState';
+import {DEFAULT_SELECTION} from 'modules/constants';
 
-import {createMapOfInstances, getPayloadtoFetchInstancesById} from './service';
+import {createMapOfInstances, getInstancesIdsFromSelections} from './service';
 
 const SelectionContext = React.createContext();
 
@@ -24,7 +25,7 @@ class BasicSelectionProvider extends React.Component {
       PropTypes.arrayOf(PropTypes.node),
       PropTypes.node
     ]),
-    getSelectionPayload: PropTypes.func.isRequired,
+    getFilterQuery: PropTypes.func.isRequired,
     getStateLocally: PropTypes.func.isRequired,
     storeStateLocally: PropTypes.func.isRequired
   };
@@ -44,133 +45,160 @@ class BasicSelectionProvider extends React.Component {
       instancesInSelectionsCount: instancesInSelectionsCount || 0,
       openSelection: null,
       rollingSelectionIndex: rollingSelectionIndex || 0,
-      selection: {all: false, ids: [], excludeIds: []},
+      selection: DEFAULT_SELECTION,
       selectionCount: selectionCount || 0,
-      selections: deserializeInstancesMaps(selections) || [],
-      IdsOfInstancesInSelections: []
+      selections: deserializeInstancesMaps(selections) || []
     };
   }
 
-  componentDidMount() {
+  async componentDidMount() {
     if (this.state.selectionCount) {
-      this.getIdsOfInstancesInSelections();
-      this.updateInstancesInSelections();
+      await this.refetchInstancesInSelections();
     }
   }
 
-  getIdsOfInstancesInSelections() {
-    let ids = new Set();
-    this.state.selections.map(
-      selection =>
-        (ids = new Set([...ids, ...[...selection.instancesMap.keys()]]))
-    );
-    this.setState({IdsOfInstancesInSelections: ids});
-  }
+  /**
+   * Gets the queries associatioed with a particular selection.
+   * It combines the current filter query and the ids of instances in the selection
+   */
+  getSelectionQueries = () => {
+    // add filter query to the query
+    let query = this.props.getFilterQuery();
 
+    if (!this.state.selection.all) {
+      query.ids = [...this.state.selection.ids];
+    } else {
+      query.excludeIds = [...this.state.selection.excludeIds];
+    }
+
+    return [query];
+  };
+
+  /**
+   * Gets the queries associatioed with a particular selection.
+   * It combines the current filter query and the ids of instances in the selection
+   * @param {string} selectionId: selectionId of the target selection.
+   */
+  getSelectionQueriesById = selectionId => {
+    const {queries} = this.state.selections.find(
+      selection => selection.selectionId === selectionId
+    );
+
+    return [...this.getSelectionQueries(), ...queries];
+  };
+
+  /**
+   * Creates a new selection and adds it to the selection list
+   */
   handleAddNewSelection = async () => {
-    const payload = this.props.getSelectionPayload({
-      selectionState: this.state
-    });
-    const instancesDetails = await fetchWorkflowInstanceBySelection(payload);
-    const {workflowInstances, ...rest} = instancesDetails;
-    const instancesMap = createMapOfInstances(workflowInstances);
-    const selection = {
-      instancesMap,
-      ...payload,
-      ...rest
-    };
+    const queries = this.getSelectionQueries();
+
+    // fetch new workflowInstances for the selection
     const {
+      workflowInstances,
+      totalCount
+    } = await fetchWorkflowInstancesBySelection({queries});
+
+    // update selection related data
+    const rollingSelectionIndex = this.state.rollingSelectionIndex + 1;
+
+    // add new selections to the list
+    const selections = [
+      {
+        selectionId: rollingSelectionIndex,
+        instancesMap: createMapOfInstances(workflowInstances),
+        queries,
+        totalCount
+      },
+      ...this.state.selections
+    ];
+
+    // add the count of the new instances in selection
+    const instancesInSelectionsCount =
+      this.state.instancesInSelectionsCount + totalCount;
+
+    // increment the number of selections
+    const selectionCount = this.state.selectionCount + 1;
+
+    // set the updated data in the state
+    this.setState({
+      selections,
       rollingSelectionIndex,
       instancesInSelectionsCount,
       selectionCount,
-      selections
-    } = this.state;
-
-    const currentSelectionIndex = rollingSelectionIndex + 1;
-    const newCount = instancesInSelectionsCount + selection.totalCount;
-
-    // Add Id for each selection
-    this.setState(
-      {
-        selections: [
-          {
-            selectionId: currentSelectionIndex,
-            ...selection
-          },
-          ...selections
-        ],
-        rollingSelectionIndex: currentSelectionIndex,
-        instancesInSelectionsCount: newCount,
-        selectionCount: selectionCount + 1,
-        openSelection: currentSelectionIndex,
-        selection: {all: false, ids: [], excludeIds: []}
-      },
-      () => {
-        const {
-          selections,
-          rollingSelectionIndex,
-          instancesInSelectionsCount,
-          selectionCount
-        } = this.state;
-
-        this.props.storeStateLocally({
-          instancesInSelectionsCount,
-          selections: serializeInstancesMaps(selections),
-          rollingSelectionIndex,
-          selectionCount
-        });
-      }
-    );
-  };
-
-  handleAddToSelectionById = async selectionId => {
-    const payload = this.props.getSelectionPayload({
-      selectionState: this.state,
-      selectionId
+      openSelection: rollingSelectionIndex,
+      selection: DEFAULT_SELECTION
     });
-    const instancesDetails = await fetchWorkflowInstanceBySelection(payload);
-    const {workflowInstances, ...rest} = instancesDetails;
-    const newInstancesMap = createMapOfInstances(workflowInstances);
 
-    const {selections, instancesInSelectionsCount} = this.state;
-
-    const {index: selectionIndex} = getSelectionById(selections, selectionId);
-
-    const {totalCount} = selections[selectionIndex];
-
-    const newSelection = {
-      ...selections[selectionIndex],
-      instancesMap: newInstancesMap,
-      ...payload,
-      ...rest
-    };
-
-    selections[selectionIndex] = newSelection;
-
-    const newCount =
-      instancesInSelectionsCount - totalCount + newSelection.totalCount;
-
-    this.setState(
-      {
-        selections,
-        instancesInSelectionsCount: newCount,
-        selection: {all: false, ids: [], excludeIds: []},
-        openSelection: selectionId
-      },
-      () => {
-        const {instancesInSelectionsCount, selections} = this.state;
-        this.props.storeStateLocally({
-          instancesInSelectionsCount,
-          selections: serializeInstancesMaps(selections)
-        });
-      }
-    );
+    // store the updated data in the local storage
+    this.props.storeStateLocally({
+      selections: serializeInstancesMaps(selections),
+      rollingSelectionIndex,
+      instancesInSelectionsCount,
+      selectionCount
+    });
   };
 
+  /**
+   * Adds the selected instances to a target selection
+   * @param {string} selectionId: selectionId of the target selection.
+   */
+  handleAddToSelectionById = async selectionId => {
+    const queries = this.getSelectionQueriesById(selectionId);
+
+    // fetch new workflowInstances for the selection
+    const {
+      workflowInstances,
+      totalCount
+    } = await fetchWorkflowInstancesBySelection({queries});
+
+    // get target selection from list of selections
+    const {index: selectionIndex, totalCount: oldTotalCount} = getSelectionById(
+      this.state.selections,
+      selectionId
+    );
+
+    // update the target selection
+    const selections = [
+      ...this.state.selections.slice(0, selectionIndex),
+      {
+        ...this.state.selections[selectionIndex],
+        instancesMap: createMapOfInstances(workflowInstances),
+        queries,
+        totalCount
+      },
+      ...this.state.selections.slice(selectionIndex + 1)
+    ];
+
+    const instancesInSelectionsCount =
+      this.state.instancesInSelectionsCount - oldTotalCount + totalCount;
+
+    // set the updated data in the state
+    this.setState({
+      selections,
+      instancesInSelectionsCount,
+      selection: DEFAULT_SELECTION,
+      openSelection: selectionId
+    });
+
+    // store the updated data in the local storage
+    this.props.storeStateLocally({
+      selections: serializeInstancesMaps(selections),
+      instancesInSelectionsCount
+    });
+  };
+
+  /**
+   * Adds selected instances to the currently open selection
+   */
   handleAddToOpenSelection = () => {
     this.handleAddToSelectionById(this.state.openSelection);
   };
 
+  /**
+   * Toggles a selection
+   * @param {string} selectionId: selectionId of the selection to be toggled
+   */
   handleToggleSelection = selectionId => {
     this.setState({
       openSelection:
@@ -178,7 +206,11 @@ class BasicSelectionProvider extends React.Component {
     });
   };
 
-  handleDeleteSelection = async selectionId => {
+  /**
+   * Toggles a selection
+   * @param {string} selectionId: selectionId of the selection to be deleted
+   */
+  handleDeleteSelectionById = async selectionId => {
     const {selections, instancesInSelectionsCount, selectionCount} = this.state;
 
     const selectionToRemove = getSelectionById(selections, selectionId);
@@ -202,41 +234,55 @@ class BasicSelectionProvider extends React.Component {
     );
   };
 
-  updateSelection = selection => {
+  /**
+   * Re-fetches all workflow instances present in the selections
+   */
+  refetchInstancesInSelections = async () => {
+    const IdsOfInstancesInSelections = getInstancesIdsFromSelections(
+      this.state.selections
+    );
+    const {workflowInstances} = await fetchWorkflowInstancesByIds(
+      IdsOfInstancesInSelections
+    );
+    const workflowInstancesMap = createMapOfInstances(workflowInstances);
+    let selections = this.state.selections.map(
+      ({instancesMap, ...selection}) => {
+        const newMap = new Map();
+        instancesMap.forEach(function(_, key) {
+          const newValue = workflowInstancesMap.get(key);
+          newMap.set(key, newValue);
+        });
+        return {instancesMap: newMap, ...selection};
+      }
+    );
+    this.setState({selections});
+  };
+
+  /**
+   * A setter for this.state.selection
+   */
+  handleSelectionChange = selection => {
     this.setState({selection});
   };
 
-  resetSelections = () => {
-    this.setState({selection: {all: false, ids: [], excludeIds: []}});
+  /**
+   * Resets this.state.selection to its default value
+   */
+  resetSelection = () => {
+    this.setState({selection: DEFAULT_SELECTION});
   };
 
-  async updateInstancesInSelections() {
-    const workflowInstances = await this.fetchInstancesInSelection();
-    const updatedInstanceMap = createMapOfInstances(workflowInstances);
-    this.updateSelections(updatedInstanceMap);
-  }
-
-  async fetchInstancesInSelection() {
-    const {IdsOfInstancesInSelections: IdsOfInstances} = this.state;
-    const payload = getPayloadtoFetchInstancesById(IdsOfInstances);
-    const options = {
-      firstResult: 0,
-      maxResults: IdsOfInstances.size,
-      ...payload
-    };
-    const {workflowInstances} = await fetchWorkflowInstances(options);
-    return workflowInstances;
-  }
-
   render() {
+    // values to be provided to the context consumers
     const contextValue = {
       ...this.state,
-      onUpdateSelection: this.updateSelection,
+      onSelectionChange: this.handleSelectionChange,
+      onResetSelection: this.resetSelection,
       onAddNewSelection: this.handleAddNewSelection,
       onAddToSelectionById: this.handleAddToSelectionById,
       onAddToOpenSelection: this.handleAddToOpenSelection,
       onToggleSelection: this.handleToggleSelection,
-      onDeleteSelection: this.handleDeleteSelection
+      onDeleteSelection: this.handleDeleteSelectionById
     };
 
     return (
@@ -247,6 +293,12 @@ class BasicSelectionProvider extends React.Component {
   }
 }
 
+export const SelectionProvider = withSharedState(BasicSelectionProvider);
+
+/**
+ * HOC that Wraps a component in a the selection consumer
+ * @param {*} Component: Component to be wrapped
+ */
 export const withSelection = Component => {
   function WithSelection(props) {
     return (
@@ -264,5 +316,3 @@ export const withSelection = Component => {
 
   return WithSelection;
 };
-
-export const SelectionProvider = withSharedState(BasicSelectionProvider);
