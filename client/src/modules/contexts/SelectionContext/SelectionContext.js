@@ -45,7 +45,7 @@ class BasicSelectionProvider extends React.Component {
       instancesInSelectionsCount: instancesInSelectionsCount || 0,
       openSelection: null,
       rollingSelectionIndex: rollingSelectionIndex || 0,
-      selection: DEFAULT_SELECTION,
+      selectedInstances: DEFAULT_SELECTION,
       selectionCount: selectionCount || 0,
       selections: deserializeInstancesMaps(selections) || []
     };
@@ -65,10 +65,10 @@ class BasicSelectionProvider extends React.Component {
     // add filter query to the query
     let query = this.props.getFilterQuery();
 
-    if (!this.state.selection.all) {
-      query.ids = [...this.state.selection.ids];
+    if (!this.state.selectedInstances.all) {
+      query.ids = [...this.state.selectedInstances.ids];
     } else {
-      query.excludeIds = [...this.state.selection.excludeIds];
+      query.excludeIds = [...this.state.selectedInstances.excludeIds];
     }
 
     return [query];
@@ -127,7 +127,7 @@ class BasicSelectionProvider extends React.Component {
       instancesInSelectionsCount,
       selectionCount,
       openSelection: rollingSelectionIndex,
-      selection: DEFAULT_SELECTION
+      selectedInstances: DEFAULT_SELECTION
     });
 
     // store the updated data in the local storage
@@ -177,7 +177,7 @@ class BasicSelectionProvider extends React.Component {
     this.setState({
       selections,
       instancesInSelectionsCount,
-      selection: DEFAULT_SELECTION,
+      selectedInstances: DEFAULT_SELECTION,
       openSelection: selectionId
     });
 
@@ -261,23 +261,23 @@ class BasicSelectionProvider extends React.Component {
   /**
    * A setter for this.state.selection
    */
-  handleSelectionChange = selection => {
-    this.setState({selection});
+  handleSelectedInstancesUpdate = selectedInstances => {
+    this.setState({selectedInstances});
   };
 
   /**
    * Resets this.state.selection to its default value
    */
-  resetSelection = () => {
-    this.setState({selection: DEFAULT_SELECTION});
+  handleSelectedInstancesReset = () => {
+    this.setState({selectedInstances: DEFAULT_SELECTION});
   };
 
   render() {
     // values to be provided to the context consumers
     const contextValue = {
       ...this.state,
-      onSelectionChange: this.handleSelectionChange,
-      onResetSelection: this.resetSelection,
+      onSelectedInstancesUpdate: this.handleSelectedInstancesUpdate,
+      onSelectedInstancesReset: this.handleSelectedInstancesReset,
       onAddNewSelection: this.handleAddNewSelection,
       onAddToSelectionById: this.handleAddToSelectionById,
       onAddToOpenSelection: this.handleAddToOpenSelection,

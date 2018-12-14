@@ -17,7 +17,7 @@ class AddSelection extends React.Component {
     onAddToOpenSelection: PropTypes.func.isRequired,
     expandSelections: PropTypes.func.isRequired,
     selections: PropTypes.array.isRequired,
-    selection: PropTypes.object,
+    selectedInstances: PropTypes.object,
     openSelection: PropTypes.number
   };
 
@@ -30,7 +30,7 @@ class AddSelection extends React.Component {
     return (
       <Styled.SelectionButton
         onClick={this.handleAddNewSelection}
-        disabled={!isAnyInstanceSelected(this.props.selection)}
+        disabled={!isAnyInstanceSelected(this.props.selectedInstances)}
       >
         Create Selection
       </Styled.SelectionButton>
@@ -45,7 +45,7 @@ class AddSelection extends React.Component {
         placement={DROPDOWN_PLACEMENT.TOP}
         label="Add to Selection..."
         buttonStyles={Styled.dropdownButtonStyles}
-        disabled={!isAnyInstanceSelected(this.props.selection)}
+        disabled={!isAnyInstanceSelected(this.props.selectedInstances)}
         onOpen={this.openSelectionsPanel}
       >
         {selections.length < 10 ? (

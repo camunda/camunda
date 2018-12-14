@@ -1,7 +1,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {EXPAND_STATE, SORT_ORDER, DEFAULT_FILTER} from 'modules/constants';
+import {EXPAND_STATE, SORT_ORDER} from 'modules/constants';
 import Checkbox from 'modules/components/Checkbox';
 import Table from 'modules/components/Table';
 import StateIcon from 'modules/components/StateIcon';
@@ -29,11 +29,11 @@ createMockInstances(1, instances);
 
 const mockProps = {
   data: instances,
-  onSelectionChange: jest.fn(),
+  onSelectedInstancesUpdate: jest.fn(),
   onEntriesPerPageChange: jest.fn(),
   filter: {active: true, incidents: true},
   onSort: jest.fn(),
-  selection: {
+  selectedInstances: {
     all: false,
     excludeIds: [],
     ids: [0, 10]
@@ -44,10 +44,10 @@ const mockProps = {
 
 const emptyList = {
   data: [],
-  onSelectionChange: jest.fn(),
+  onSelectedInstancesUpdate: jest.fn(),
   onEntriesPerPageChange: jest.fn(),
   onSort: jest.fn(),
-  selection: {
+  selectedInstances: {
     all: false,
     excludeIds: [],
     ids: []
@@ -286,7 +286,7 @@ describe('List', () => {
     });
   });
 
-  describe('Selection', () => {
+  describe('Selected Instances', () => {
     let node;
     let instances = [];
     createMockInstances(3, instances);
@@ -299,7 +299,7 @@ describe('List', () => {
     describe('highlight', () => {
       it('should highlight all instances when all are selected', () => {
         node.setProps({
-          selection: {
+          selectedInstances: {
             all: true,
             ids: [],
             excludeIds: []
@@ -314,7 +314,7 @@ describe('List', () => {
 
       it('should not highlight any instance if none is selected', () => {
         node.setProps({
-          selection: {
+          selectedInstances: {
             all: false,
             ids: [],
             excludeIds: []
@@ -327,16 +327,22 @@ describe('List', () => {
         expect(node.instance().isSelected(8)).toBe(false);
       });
 
-      it('should highlight an instance when it is selection', () => {
+      it('should highlight an instance when it is selected', () => {
         // given
         const selectedInstanceId = 10;
         node.setProps({
-          selection: {all: false, excludeIds: [], ids: [selectedInstanceId]}
+          selectedInstances: {
+            all: false,
+            excludeIds: [],
+            ids: [selectedInstanceId]
+          }
         });
         expect(node.instance().isSelected(selectedInstanceId)).toBe(true);
 
         // when
-        node.setProps({selection: {all: false, excludeIds: [], ids: []}});
+        node.setProps({
+          selectedInstances: {all: false, excludeIds: [], ids: []}
+        });
 
         // then
         expect(node.instance().isSelected(selectedInstanceId)).toBe(false);
@@ -346,7 +352,7 @@ describe('List', () => {
         // when
         const selectedInstanceId = 10;
         node.setProps({
-          selection: {
+          selectedInstances: {
             all: true,
             ids: [],
             excludeIds: [selectedInstanceId]
@@ -356,18 +362,18 @@ describe('List', () => {
         expect(node.instance().isSelected(selectedInstanceId)).toBe(false);
       });
 
-      it('should set selection.all to true', () => {
+      it('should set selectedInstances.all to true', () => {
         // given
-        const onSelectionChange = jest.fn();
+        const onSelectedInstancesUpdate = jest.fn();
 
         node.setProps({
           filterCount: 2,
-          selection: {
+          selectedInstances: {
             all: false,
             ids: [10],
             excludeIds: []
           },
-          onSelectionChange: onSelectionChange
+          onSelectedInstancesUpdate: onSelectedInstancesUpdate
         });
 
         // when
@@ -375,25 +381,25 @@ describe('List', () => {
         select(undefined, true);
 
         // then
-        expect(onSelectionChange).toBeCalledWith({
+        expect(onSelectedInstancesUpdate).toBeCalledWith({
           all: true,
           ids: [],
           excludeIds: []
         });
       });
 
-      it('should set selection.all to false', () => {
+      it('should set selectedInstances.all to false', () => {
         // given
-        const onSelectionChange = jest.fn();
+        const onSelectedInstancesUpdate = jest.fn();
 
         node.setProps({
           filterCount: 2,
-          selection: {
+          selectedInstances: {
             all: true,
             ids: [],
             excludeIds: [10]
           },
-          onSelectionChange: onSelectionChange
+          onSelectedInstancesUpdate: onSelectedInstancesUpdate
         });
 
         // when
@@ -402,7 +408,7 @@ describe('List', () => {
         node.update();
 
         // then
-        expect(onSelectionChange).toBeCalledWith({
+        expect(onSelectedInstancesUpdate).toBeCalledWith({
           all: false,
           ids: [],
           excludeIds: []
@@ -412,7 +418,7 @@ describe('List', () => {
       it('should return that all instances are selected', () => {
         // when
         node.setProps({
-          selection: {
+          selectedInstances: {
             all: true,
             ids: [],
             excludeIds: []
@@ -426,7 +432,7 @@ describe('List', () => {
       it('should return that not all instances are selected when any instance is excluded', () => {
         // when
         node.setProps({
-          selection: {
+          selectedInstances: {
             all: true,
             ids: [],
             excludeIds: [10]

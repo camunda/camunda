@@ -80,7 +80,7 @@ describe('SelectionContext', () => {
     expect(fooNode.prop('rollingSelectionIndex')).toBe(
       localStorageData.rollingSelectionIndex
     );
-    expect(fooNode.prop('selection')).toEqual(DEFAULT_SELECTION);
+    expect(fooNode.prop('selectedInstances')).toEqual(DEFAULT_SELECTION);
     expect(fooNode.prop('selectionCount')).toBe(
       localStorageData.selectionCount
     );
@@ -90,46 +90,49 @@ describe('SelectionContext', () => {
     expect(selections[1].instancesMap.get('key3').value).toBe('newValue3');
   });
 
-  describe('handleSelectionChange', () => {
-    it('should update selection', () => {
+  describe('handleSelectedInstancesUpdate', () => {
+    it('should update selected instances', () => {
       // given
       const node = createNode();
       let fooNode = node.find('Foo');
-      const {onSelectionChange} = fooNode.props();
+      const {onSelectedInstancesUpdate} = fooNode.props();
 
       // when
-      onSelectionChange({all: true});
+      onSelectedInstancesUpdate({all: true});
       node.update();
       fooNode = node.find('Foo');
 
       // then
-      expect(fooNode.prop('selection')).toEqual({all: true});
+      expect(fooNode.prop('selectedInstances')).toEqual({all: true});
     });
   });
 
-  describe('resetSelection', () => {
-    it('should reset selection', () => {
+  describe('handleSelectedInstancesReset', () => {
+    it('should reset selected instances', () => {
       // given
       const node = createNode();
       let fooNode = node.find('Foo');
-      const {onSelectionChange, onResetSelection} = fooNode.props();
-      onSelectionChange({all: true});
+      const {
+        onSelectedInstancesUpdate,
+        onSelectedInstancesReset
+      } = fooNode.props();
+      onSelectedInstancesUpdate({all: true});
       node.update();
 
       // when
-      onResetSelection();
+      onSelectedInstancesReset();
       node.update();
       fooNode = node.find('Foo');
 
       // then
-      expect(fooNode.prop('selection')).toEqual(DEFAULT_SELECTION);
+      expect(fooNode.prop('selectedInstances')).toEqual(DEFAULT_SELECTION);
     });
   });
 
   describe('handleAddNewSelection', () => {
     it('should create a new selection', async () => {
       // given
-      const selection = {all: false, ids: ['foo1', 'foo2']};
+      const selectedInstances = {all: false, ids: ['foo1', 'foo2']};
       const filterQuery = FILTER_SELECTION.incidents;
       instancesApi.fetchWorkflowInstancesByIds = instancesApi.fetchWorkflowInstancesBySelection = mockResolvedAsyncFn(
         {
@@ -143,9 +146,11 @@ describe('SelectionContext', () => {
       const wrapper = createNode({getFilterQuery: () => filterQuery});
       const node = wrapper.find('BasicSelectionProvider');
       await flushPromises();
-      node.instance().handleSelectionChange(selection);
+      node.instance().handleSelectedInstancesUpdate(selectedInstances);
       wrapper.update();
-      const expectedSelectionQueries = [{...filterQuery, ids: selection.ids}];
+      const expectedSelectionQueries = [
+        {...filterQuery, ids: selectedInstances.ids}
+      ];
       const expectedSelection = {
         selectionId: 1,
         instancesMap: new Map([
@@ -175,7 +180,7 @@ describe('SelectionContext', () => {
       expect(node.state('instancesInSelectionsCount')).toBe(2);
       expect(node.state('selectionCount')).toBe(1);
       expect(node.state('openSelection')).toBe(1);
-      expect(node.state('selection')).toEqual(DEFAULT_SELECTION);
+      expect(node.state('selectedInstances')).toEqual(DEFAULT_SELECTION);
 
       // (3) localStorage changes with new selection related data
       const storeStateCall = mockFunctions.storeStateLocally.mock.calls[0][0];
@@ -191,7 +196,7 @@ describe('SelectionContext', () => {
   describe('handleAddToSelectionById', async () => {
     it('should add selected instances to target selection', async () => {
       // given
-      const selection = {all: false, ids: ['foo1', 'foo2']};
+      const selectedInstances = {all: false, ids: ['foo1', 'foo2']};
       const mockLocalStorage = {
         instancesInSelectionsCount: 2,
         rollingSelectionIndex: 2,
@@ -230,10 +235,10 @@ describe('SelectionContext', () => {
       });
       const node = wrapper.find('BasicSelectionProvider');
       await flushPromises();
-      node.instance().handleSelectionChange(selection);
+      node.instance().handleSelectedInstancesUpdate(selectedInstances);
       wrapper.update();
       const expectedSelectionQueries = [
-        {...filterQuery, ids: selection.ids},
+        {...filterQuery, ids: selectedInstances.ids},
         {ids: ['key1', 'key2']}
       ];
       const expectedSelection = {
@@ -263,7 +268,7 @@ describe('SelectionContext', () => {
       // (2) state changes with new selection related data
       expect(node.state('selections')[0]).toEqual(expectedSelection);
       expect(node.state('instancesInSelectionsCount')).toBe(4);
-      expect(node.state('selection')).toEqual(DEFAULT_SELECTION);
+      expect(node.state('selectedInstances')).toEqual(DEFAULT_SELECTION);
       expect(node.state('openSelection')).toBe(2);
 
       // (3) localStorage changes with new selection related data
@@ -317,7 +322,7 @@ describe('SelectionContext', () => {
       });
       const node = wrapper.find('BasicSelectionProvider');
       await flushPromises();
-      node.instance().handleSelectionChange(selection);
+      node.instance().handleSelectedInstancesUpdate(selection);
       const openSelectionId = 2;
       node.instance().handleToggleSelection(openSelectionId);
       wrapper.update();

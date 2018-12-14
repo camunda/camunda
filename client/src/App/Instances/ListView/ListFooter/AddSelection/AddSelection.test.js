@@ -31,7 +31,7 @@ describe('AddSelection', () => {
           <AddSelection
             {...mockFunctions}
             selections={[]}
-            selection={{ids: [], excludeIds: []}}
+            selectedInstances={{ids: [], excludeIds: []}}
           />
         </ThemeProvider>
       );
@@ -49,7 +49,7 @@ describe('AddSelection', () => {
           <AddSelection
             {...mockFunctions}
             selections={[]}
-            selection={{all: true}}
+            selectedInstances={{all: true}}
           />
         </ThemeProvider>
       );
@@ -72,7 +72,7 @@ describe('AddSelection', () => {
           <AddSelection
             {...mockFunctions}
             selections={[{selectionId: 1}, {selectionId: 2}]}
-            selection={{ids: [], excludeIds: []}}
+            selectedInstances={{ids: [], excludeIds: []}}
           />
         </ThemeProvider>
       );
@@ -89,7 +89,7 @@ describe('AddSelection', () => {
           <AddSelection
             {...mockFunctions}
             selections={[{selectionId: 1}, {selectionId: 2}]}
-            selection={{all: true}}
+            selectedInstances={{all: true}}
           />
         </ThemeProvider>
       );
@@ -114,7 +114,7 @@ describe('AddSelection', () => {
           <AddSelection
             {...mockFunctions}
             selections={[{selectionId: 1}, {selectionId: 2}]}
-            selection={{all: true}}
+            selectedInstances={{all: true}}
           />
         </ThemeProvider>
       );
@@ -137,7 +137,7 @@ describe('AddSelection', () => {
           <AddSelection
             {...mockFunctions}
             selections={[{selectionId: 1}, {selectionId: 2}]}
-            selection={{all: true}}
+            selectedInstances={{all: true}}
             openSelection={1}
           />
         </ThemeProvider>
@@ -162,7 +162,7 @@ describe('AddSelection', () => {
             <AddSelection
               {...mockFunctions}
               selections={[{selectionId: 1}, {selectionId: 2}]}
-              selection={{all: true}}
+              selectedInstances={{all: true}}
             />
           </ThemeProvider>
         );
@@ -188,7 +188,7 @@ describe('AddSelection', () => {
             <AddSelection
               {...mockFunctions}
               selections={[{selectionId: 1}, {selectionId: 2}]}
-              selection={{all: true}}
+              selectedInstances={{all: true}}
             />
           </ThemeProvider>
         );

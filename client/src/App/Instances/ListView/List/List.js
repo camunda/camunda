@@ -21,9 +21,9 @@ const {THead, TBody, TH, TR, TD} = Table;
 class List extends React.Component {
   static propTypes = {
     data: PropTypes.arrayOf(PropTypes.object).isRequired,
-    onSelectionChange: PropTypes.func.isRequired,
+    onSelectedInstancesUpdate: PropTypes.func.isRequired,
     onEntriesPerPageChange: PropTypes.func.isRequired,
-    selection: PropTypes.shape({
+    selectedInstances: PropTypes.shape({
       all: PropTypes.bool,
       excludeIds: PropTypes.Array,
       ids: PropTypes.Array
@@ -61,7 +61,7 @@ class List extends React.Component {
   }
 
   handleSelectAll = (_, isChecked) => {
-    this.props.onSelectionChange({
+    this.props.onSelectedInstancesUpdate({
       all: isChecked,
       ids: [],
       excludeIds: []
@@ -69,11 +69,11 @@ class List extends React.Component {
   };
 
   handleSelectInstance = instance => (_, isChecked) => {
-    const {selection, filterCount} = this.props;
+    const {selectedInstances, filterCount} = this.props;
 
-    let {all} = selection;
-    let ids = [...selection.ids];
-    let excludeIds = [...selection.excludeIds];
+    let {all} = selectedInstances;
+    let ids = [...selectedInstances.ids];
+    let excludeIds = [...selectedInstances.excludeIds];
 
     let selectedIdArray = undefined;
     let checked = undefined;
@@ -109,7 +109,7 @@ class List extends React.Component {
       all = !all;
     }
 
-    this.props.onSelectionChange({all, ids, excludeIds});
+    this.props.onSelectedInstancesUpdate({all, ids, excludeIds});
   };
 
   handleSelection = (selectedIds = [], {id}, isChecked) => {
@@ -121,26 +121,26 @@ class List extends React.Component {
   };
 
   isSelected = id => {
-    const {selection} = this.props;
-    const {all} = selection;
+    const {selectedInstances} = this.props;
+    const {all} = selectedInstances;
     return all ? !this.isExcluded(id) : this.isIncluded(id);
   };
 
   isExcluded = id => {
-    const {selection} = this.props;
-    const {excludeIds = []} = selection;
+    const {selectedInstances} = this.props;
+    const {excludeIds = []} = selectedInstances;
     return excludeIds.indexOf(id) >= 0;
   };
 
   isIncluded = id => {
-    const {selection} = this.props;
-    const {ids = []} = selection;
+    const {selectedInstances} = this.props;
+    const {ids = []} = selectedInstances;
     return ids.indexOf(id) >= 0;
   };
 
   areAllInstancesSelected = () => {
-    const {selection} = this.props;
-    const {all, excludeIds = []} = selection;
+    const {selectedInstances} = this.props;
+    const {all, excludeIds = []} = selectedInstances;
     return all && excludeIds.length === 0;
   };
 
