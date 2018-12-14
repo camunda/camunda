@@ -2,7 +2,7 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
-import {DEFAULT_SELECTION} from 'modules/constants';
+import {DEFAULT_SELECTED_INSTANCES} from 'modules/constants';
 import {serializeInstancesMaps} from 'modules/utils/selection/selection';
 import * as instancesApi from 'modules/api/instances/instances';
 import {FILTER_SELECTION} from 'modules/constants';
@@ -80,7 +80,9 @@ describe('SelectionContext', () => {
     expect(fooNode.prop('rollingSelectionIndex')).toBe(
       localStorageData.rollingSelectionIndex
     );
-    expect(fooNode.prop('selectedInstances')).toEqual(DEFAULT_SELECTION);
+    expect(fooNode.prop('selectedInstances')).toEqual(
+      DEFAULT_SELECTED_INSTANCES
+    );
     expect(fooNode.prop('selectionCount')).toBe(
       localStorageData.selectionCount
     );
@@ -88,6 +90,23 @@ describe('SelectionContext', () => {
     expect(selections[0].instancesMap.get('key1').value).toBe('newValue1');
     expect(selections[0].instancesMap.get('key2').value).toBe('newValue2');
     expect(selections[1].instancesMap.get('key3').value).toBe('newValue3');
+  });
+
+  it('should reset selected instances when filter changes', () => {
+    // given
+    const node = createNode({filter: FILTER_SELECTION.running});
+    let fooNode = node.find('Foo');
+    const {onSelectedInstancesUpdate} = fooNode.props();
+    onSelectedInstancesUpdate({all: true});
+    node.update();
+
+    // when
+    node.setProps({filter: FILTER_SELECTION.incidents});
+    node.update();
+    fooNode = node.find('Foo');
+
+    // then
+    expect(fooNode.prop('selectedInstances')).toBe(DEFAULT_SELECTED_INSTANCES);
   });
 
   describe('handleSelectedInstancesUpdate', () => {
@@ -125,7 +144,9 @@ describe('SelectionContext', () => {
       fooNode = node.find('Foo');
 
       // then
-      expect(fooNode.prop('selectedInstances')).toEqual(DEFAULT_SELECTION);
+      expect(fooNode.prop('selectedInstances')).toEqual(
+        DEFAULT_SELECTED_INSTANCES
+      );
     });
   });
 
@@ -180,7 +201,9 @@ describe('SelectionContext', () => {
       expect(node.state('instancesInSelectionsCount')).toBe(2);
       expect(node.state('selectionCount')).toBe(1);
       expect(node.state('openSelection')).toBe(1);
-      expect(node.state('selectedInstances')).toEqual(DEFAULT_SELECTION);
+      expect(node.state('selectedInstances')).toEqual(
+        DEFAULT_SELECTED_INSTANCES
+      );
 
       // (3) localStorage changes with new selection related data
       const storeStateCall = mockFunctions.storeStateLocally.mock.calls[0][0];
@@ -268,7 +291,9 @@ describe('SelectionContext', () => {
       // (2) state changes with new selection related data
       expect(node.state('selections')[0]).toEqual(expectedSelection);
       expect(node.state('instancesInSelectionsCount')).toBe(4);
-      expect(node.state('selectedInstances')).toEqual(DEFAULT_SELECTION);
+      expect(node.state('selectedInstances')).toEqual(
+        DEFAULT_SELECTED_INSTANCES
+      );
       expect(node.state('openSelection')).toBe(2);
 
       // (3) localStorage changes with new selection related data

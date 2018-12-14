@@ -204,8 +204,6 @@ class Instances extends Component {
 
     // only change the URL if a new value for a field is provided
     if (hasNewValue) {
-      // TODO: Once filter gets moved to context, this logic should move to selecitons context.
-      // this.resetSelections();
       const filter = {...this.props.filter, ...newFilter};
       this.props.onFilterChange(filter);
     }
@@ -213,8 +211,6 @@ class Instances extends Component {
 
   handleFilterReset = () => {
     this.props.onFilterChange(DEFAULT_FILTER);
-    // TODO: Once filter gets moved to context, this logic should move to selecitons context.
-    // this.resetSelections();
   };
 
   handleFlowNodeSelection = flowNodeId => {
@@ -241,7 +237,10 @@ class Instances extends Component {
     });
 
     return (
-      <SelectionProvider getFilterQuery={this.getFilterQuery}>
+      <SelectionProvider
+        getFilterQuery={this.getFilterQuery}
+        filter={this.props.filter}
+      >
         <Header
           active="instances"
           filter={this.props.filter}

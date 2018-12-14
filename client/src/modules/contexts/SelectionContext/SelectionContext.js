@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import {isEqual} from 'lodash';
 
 import {
   serializeInstancesMaps,
@@ -11,7 +12,7 @@ import {
 } from 'modules/api/instances';
 import {getSelectionById} from 'modules/utils/selection';
 import withSharedState from 'modules/components/withSharedState';
-import {DEFAULT_SELECTION} from 'modules/constants';
+import {DEFAULT_SELECTED_INSTANCES} from 'modules/constants';
 
 import {createMapOfInstances, getInstancesIdsFromSelections} from './service';
 
@@ -27,7 +28,8 @@ class BasicSelectionProvider extends React.Component {
     ]),
     getFilterQuery: PropTypes.func.isRequired,
     getStateLocally: PropTypes.func.isRequired,
-    storeStateLocally: PropTypes.func.isRequired
+    storeStateLocally: PropTypes.func.isRequired,
+    filter: PropTypes.object
   };
 
   constructor(props) {
@@ -45,7 +47,7 @@ class BasicSelectionProvider extends React.Component {
       instancesInSelectionsCount: instancesInSelectionsCount || 0,
       openSelection: null,
       rollingSelectionIndex: rollingSelectionIndex || 0,
-      selectedInstances: DEFAULT_SELECTION,
+      selectedInstances: DEFAULT_SELECTED_INSTANCES,
       selectionCount: selectionCount || 0,
       selections: deserializeInstancesMaps(selections) || []
     };
@@ -54,6 +56,17 @@ class BasicSelectionProvider extends React.Component {
   async componentDidMount() {
     if (this.state.selectionCount) {
       await this.refetchInstancesInSelections();
+    }
+  }
+
+  componentDidUpdate(prevProps) {
+    if (this.state.selectedInstances === DEFAULT_SELECTED_INSTANCES) {
+      return;
+    }
+
+    // reset selected instances when filter changes
+    if (!isEqual(prevProps.filter, this.props.filter)) {
+      this.handleSelectedInstancesReset();
     }
   }
 
@@ -127,7 +140,7 @@ class BasicSelectionProvider extends React.Component {
       instancesInSelectionsCount,
       selectionCount,
       openSelection: rollingSelectionIndex,
-      selectedInstances: DEFAULT_SELECTION
+      selectedInstances: DEFAULT_SELECTED_INSTANCES
     });
 
     // store the updated data in the local storage
@@ -177,7 +190,7 @@ class BasicSelectionProvider extends React.Component {
     this.setState({
       selections,
       instancesInSelectionsCount,
-      selectedInstances: DEFAULT_SELECTION,
+      selectedInstances: DEFAULT_SELECTED_INSTANCES,
       openSelection: selectionId
     });
 
@@ -269,7 +282,7 @@ class BasicSelectionProvider extends React.Component {
    * Resets this.state.selection to its default value
    */
   handleSelectedInstancesReset = () => {
-    this.setState({selectedInstances: DEFAULT_SELECTION});
+    this.setState({selectedInstances: DEFAULT_SELECTED_INSTANCES});
   };
 
   render() {

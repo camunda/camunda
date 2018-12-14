@@ -65,7 +65,7 @@ export const DEFAULT_SORTING = {
 };
 
 export const DEFAULT_MAX_RESULTS = 50;
-export const DEFAULT_SELECTION = {all: false, ids: [], excludeIds: []};
+export const DEFAULT_SELECTED_INSTANCES = {all: false, ids: [], excludeIds: []};
 
 export const PANE_ID = {
   TOP: 'TOP',
