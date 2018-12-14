@@ -224,7 +224,7 @@ class Instances extends Component {
   getFilterQuery = () => {
     const filterWithWorkflowIds = getFilterWithWorkflowIds(
       this.props.filter,
-      this.state.groupedWorkflowInstances
+      this.props.groupedWorkflowInstances
     );
 
     return parseFilterForRequest(filterWithWorkflowIds);
