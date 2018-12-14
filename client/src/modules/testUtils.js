@@ -207,41 +207,51 @@ export const createDiagramNode = (options = {}) => {
 };
 
 /**
- * @returns a mocked diagramNode Object with a unique id
+ * @return {Object} mocked diagramNode Object with a unique id
  * @param {*} customProps Obj with any type of custom property
  */
-export const createGroupedWorkflow = (options = {}) => {
+export const getDiagramNodes = () => {
   return {
-    bpmnProcessId: 'mockWorkflow',
-    name: 'mockWorkflow Name',
-    workflows: [createWorkflow()]
+    taskD: createDiagramNode({
+      $type: 'bpmn:ServiceTask',
+      id: 'taskD',
+      name: 'task D'
+    }),
+    demoProcess: createDiagramNode()
   };
 };
 
 /**
- * @returns a mocked groupedWorkflowInstances Object with a unique id
- * @param {*} customProps Obj with any type of custom property
+ * A hard coded object to use when mocking fetchGroupedWorkflowInstances api/instances.js
  */
-export const createGroupedWorkflowInstances = (options = {}) => {
-  return {
-    mockWorkflowOne: createWorkflow({name: 'mockWorkflowOne'}),
-    mockWorkflowTwo: createGroupedWorkflow({name: 'mockWorkflowTwo'}),
-    ...options
-  };
-};
-
-export const getDiagramNodes = () => {
-  return {
-    taskD: {
-      $type: 'bpmn:ServiceTask',
-      id: 'taskD',
-      name: 'task D'
-    },
-    demoProcess: {
-      $type: 'bpmn:Process',
-      id: 'demoProcess',
-      isExecutable: true,
-      name: 'Demo process'
-    }
-  };
-};
+export const groupedWorkflowsMock = [
+  {
+    bpmnProcessId: 'demoProcess',
+    name: 'New demo process',
+    workflows: [
+      {
+        id: '6',
+        name: 'New demo process',
+        version: 3,
+        bpmnProcessId: 'demoProcess'
+      },
+      {
+        id: '4',
+        name: 'Demo process',
+        version: 2,
+        bpmnProcessId: 'demoProcess'
+      },
+      {
+        id: '1',
+        name: 'Demo process',
+        version: 1,
+        bpmnProcessId: 'demoProcess'
+      }
+    ]
+  },
+  {
+    bpmnProcessId: 'orderProcess',
+    name: 'Order',
+    workflows: []
+  }
+];

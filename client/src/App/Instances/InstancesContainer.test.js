@@ -1,62 +1,28 @@
 import React from 'react';
 import {mount} from 'enzyme';
-import {BrowserRouter as Router} from 'react-router-dom';
 
 import InstancesContainer from './InstancesContainer';
 import Instances from './Instances';
 
-import {ThemeProvider} from 'modules/contexts/ThemeContext';
-import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 import {formatDiagramNodes, parseQueryString} from './service';
 import * as api from 'modules/api/instances/instances';
 import * as apiDiagram from 'modules/api/diagram/diagram';
 import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 import {getFilterQueryString} from 'modules/utils/filter';
 import {DEFAULT_FILTER} from 'modules/constants';
-import {getDiagramNodes} from 'modules/testUtils';
+import {getDiagramNodes, groupedWorkflowsMock} from 'modules/testUtils';
 const InstancesContainerWrapped = InstancesContainer.WrappedComponent;
 
-// component mock
+// component mocks
 jest.mock(
   './Instances',
   () =>
-    function InstancesMock(props) {
+    function Instances(props) {
       return <div />;
     }
 );
-// what to do with this
-const groupedWorkflowsMock = [
-  {
-    bpmnProcessId: 'demoProcess',
-    name: 'New demo process',
-    workflows: [
-      {
-        id: '6',
-        name: 'New demo process',
-        version: 3,
-        bpmnProcessId: 'demoProcess'
-      },
-      {
-        id: '4',
-        name: 'Demo process',
-        version: 2,
-        bpmnProcessId: 'demoProcess'
-      },
-      {
-        id: '1',
-        name: 'Demo process',
-        version: 1,
-        bpmnProcessId: 'demoProcess'
-      }
-    ]
-  },
-  {
-    bpmnProcessId: 'orderProcess',
-    name: 'Order',
-    workflows: []
-  }
-];
 
+// props mocks
 const fullFilterWithoutWorkflow = {
   active: true,
   incidents: true,
@@ -86,6 +52,14 @@ const localStorageProps = {
   getStateLocally: jest.fn(),
   storeStateLocally: jest.fn()
 };
+
+// api mocks
+api.fetchGroupedWorkflowInstances = mockResolvedAsyncFn(groupedWorkflowsMock);
+apiDiagram.fetchWorkflowXML = mockResolvedAsyncFn('<xml />');
+jest.mock('bpmn-js', () => ({}));
+jest.mock('modules/utils/bpmn');
+
+// local utility
 const pushMock = jest.fn();
 function getRouterProps(filter = DEFAULT_FILTER) {
   return {
@@ -96,84 +70,49 @@ function getRouterProps(filter = DEFAULT_FILTER) {
   };
 }
 
-// api mocks
-api.fetchGroupedWorkflowInstances = mockResolvedAsyncFn(groupedWorkflowsMock);
-apiDiagram.fetchWorkflowXML = mockResolvedAsyncFn('<xml />');
-jest.mock('bpmn-js', () => ({}));
-jest.mock('modules/utils/bpmn');
-
 describe('InstancesContainer', () => {
   afterEach(() => {
     pushMock.mockClear();
   });
 
   it('should fetch the groupedWorkflowInstances', async () => {
+    // given
     const node = mount(
-      <Router>
-        <ThemeProvider>
-          <CollapsablePanelProvider>
-            <InstancesContainerWrapped
-              {...localStorageProps}
-              {...getRouterProps()}
-            />
-          </CollapsablePanelProvider>
-        </ThemeProvider>
-      </Router>
+      <InstancesContainerWrapped {...localStorageProps} {...getRouterProps()} />
     );
 
     //when
     await flushPromises();
     node.update();
 
+    // then
     expect(api.fetchGroupedWorkflowInstances).toHaveBeenCalled();
   });
 
   it('should write the filter to local storage', async () => {
-    const node = mount(
-      <Router>
-        <ThemeProvider>
-          <CollapsablePanelProvider>
-            <InstancesContainer {...getRouterProps()} />
-          </CollapsablePanelProvider>
-        </ThemeProvider>
-      </Router>
-    );
+    // given
+    const node = mount(<InstancesContainer {...getRouterProps()} />);
 
     //when
     await flushPromises();
     node.update();
 
+    // then
     expect(localStorage.setItem).toHaveBeenCalled();
   });
 
   it('should render the Instances', () => {
     const node = mount(
-      <Router>
-        <ThemeProvider>
-          <CollapsablePanelProvider>
-            <InstancesContainerWrapped
-              {...localStorageProps}
-              {...getRouterProps()}
-            />
-          </CollapsablePanelProvider>
-        </ThemeProvider>
-      </Router>
+      <InstancesContainerWrapped {...localStorageProps} {...getRouterProps()} />
     );
+
     expect(node.find(Instances)).toExist();
   });
 
   it('should pass data to Instances for default filter', async () => {
+    // given
     const node = mount(
-      <Router>
-        <ThemeProvider>
-          <CollapsablePanelProvider>
-            <InstancesContainerWrapped
-              {...localStorageProps}
-              {...getRouterProps()}
-            />
-          </CollapsablePanelProvider>
-        </ThemeProvider>
-      </Router>
+      <InstancesContainerWrapped {...localStorageProps} {...getRouterProps()} />
     );
 
     //when
@@ -181,7 +120,8 @@ describe('InstancesContainer', () => {
     node.update();
 
     const InstancesNode = node.find(Instances);
-    const InstancesContainerNode = node.find(InstancesContainerWrapped);
+
+    // then
     expect(
       InstancesNode.prop('groupedWorkflowInstances')[
         groupedWorkflowsMock[0].bpmnProcessId
@@ -194,25 +134,21 @@ describe('InstancesContainer', () => {
     ).not.toBe(undefined);
     expect(InstancesNode.prop('filter')).toEqual(DEFAULT_FILTER);
     expect(InstancesNode.prop('diagramWorkflow')).toBe(
-      InstancesContainerNode.state().currentWorkflow
+      node.state().currentWorkflow
     );
-    expect(InstancesNode.prop('onFilterChange')).toBe(
-      InstancesContainerNode.instance().setFilterInURL
+    expect(InstancesNode.props().onFilterChange).toBe(
+      node.instance().setFilterInURL
     );
-    expect(InstancesNode.prop('diagramNodes')).toEqual([]);
+    expect(InstancesNode.props().diagramNodes).toEqual([]);
   });
+
   it('should pass data to Instances for full filter, without workflow data', async () => {
+    // given
     const node = mount(
-      <Router>
-        <ThemeProvider>
-          <CollapsablePanelProvider>
-            <InstancesContainerWrapped
-              {...localStorageProps}
-              {...getRouterProps(fullFilterWithoutWorkflow)}
-            />
-          </CollapsablePanelProvider>
-        </ThemeProvider>
-      </Router>
+      <InstancesContainerWrapped
+        {...localStorageProps}
+        {...getRouterProps(fullFilterWithoutWorkflow)}
+      />
     );
 
     //when
@@ -227,16 +163,10 @@ describe('InstancesContainer', () => {
   });
   it('should pass data to Instances for full filter, with workflow data', async () => {
     const node = mount(
-      <Router>
-        <ThemeProvider>
-          <CollapsablePanelProvider>
-            <InstancesContainerWrapped
-              {...localStorageProps}
-              {...getRouterProps(fullFilterWithWorkflow)}
-            />
-          </CollapsablePanelProvider>
-        </ThemeProvider>
-      </Router>
+      <InstancesContainerWrapped
+        {...localStorageProps}
+        {...getRouterProps(fullFilterWithWorkflow)}
+      />
     );
 
     //when
@@ -256,19 +186,13 @@ describe('InstancesContainer', () => {
   it('should pass data to Instances for full filter, with all versions', async () => {
     const {activityId, version, ...rest} = fullFilterWithWorkflow;
     const node = mount(
-      <Router>
-        <ThemeProvider>
-          <CollapsablePanelProvider>
-            <InstancesContainerWrapped
-              {...localStorageProps}
-              {...getRouterProps({
-                ...rest,
-                version: 'all'
-              })}
-            />
-          </CollapsablePanelProvider>
-        </ThemeProvider>
-      </Router>
+      <InstancesContainerWrapped
+        {...localStorageProps}
+        {...getRouterProps({
+          ...rest,
+          version: 'all'
+        })}
+      />
     );
 
     //when
@@ -294,16 +218,10 @@ describe('InstancesContainer', () => {
       };
 
       mount(
-        <Router>
-          <ThemeProvider>
-            <CollapsablePanelProvider>
-              <InstancesContainerWrapped
-                {...localStorageProps}
-                {...noFilterRouterProps}
-              />
-            </CollapsablePanelProvider>
-          </ThemeProvider>
-        </Router>
+        <InstancesContainerWrapped
+          {...localStorageProps}
+          {...noFilterRouterProps}
+        />
       );
 
       //when
@@ -324,16 +242,10 @@ describe('InstancesContainer', () => {
         }
       };
       const node = mount(
-        <Router>
-          <ThemeProvider>
-            <CollapsablePanelProvider>
-              <InstancesContainerWrapped
-                {...localStorageProps}
-                {...invalidFilterRouterProps}
-              />
-            </CollapsablePanelProvider>
-          </ThemeProvider>
-        </Router>
+        <InstancesContainerWrapped
+          {...localStorageProps}
+          {...invalidFilterRouterProps}
+        />
       );
 
       //when
@@ -348,19 +260,13 @@ describe('InstancesContainer', () => {
 
     it('when the workflow in url is invalid', async () => {
       const node = mount(
-        <Router>
-          <ThemeProvider>
-            <CollapsablePanelProvider>
-              <InstancesContainerWrapped
-                {...localStorageProps}
-                {...getRouterProps({
-                  ...fullFilterWithWorkflow,
-                  workflow: 'x'
-                })}
-              />
-            </CollapsablePanelProvider>
-          </ThemeProvider>
-        </Router>
+        <InstancesContainerWrapped
+          {...localStorageProps}
+          {...getRouterProps({
+            ...fullFilterWithWorkflow,
+            workflow: 'x'
+          })}
+        />
       );
 
       //when
@@ -377,19 +283,13 @@ describe('InstancesContainer', () => {
 
     it('when the version in url is invalid', async () => {
       const node = mount(
-        <Router>
-          <ThemeProvider>
-            <CollapsablePanelProvider>
-              <InstancesContainerWrapped
-                {...localStorageProps}
-                {...getRouterProps({
-                  ...fullFilterWithWorkflow,
-                  version: 'x'
-                })}
-              />
-            </CollapsablePanelProvider>
-          </ThemeProvider>
-        </Router>
+        <InstancesContainerWrapped
+          {...localStorageProps}
+          {...getRouterProps({
+            ...fullFilterWithWorkflow,
+            version: 'x'
+          })}
+        />
       );
 
       //when
@@ -406,19 +306,13 @@ describe('InstancesContainer', () => {
 
     it('when the activityId in url is invalid', async () => {
       const node = mount(
-        <Router>
-          <ThemeProvider>
-            <CollapsablePanelProvider>
-              <InstancesContainerWrapped
-                {...localStorageProps}
-                {...getRouterProps({
-                  ...fullFilterWithWorkflow,
-                  activityId: 'x'
-                })}
-              />
-            </CollapsablePanelProvider>
-          </ThemeProvider>
-        </Router>
+        <InstancesContainerWrapped
+          {...localStorageProps}
+          {...getRouterProps({
+            ...fullFilterWithWorkflow,
+            activityId: 'x'
+          })}
+        />
       );
 
       //when
@@ -434,19 +328,13 @@ describe('InstancesContainer', () => {
 
     it('should remove activityId when version="all"', async () => {
       const node = mount(
-        <Router>
-          <ThemeProvider>
-            <CollapsablePanelProvider>
-              <InstancesContainerWrapped
-                {...localStorageProps}
-                {...getRouterProps({
-                  ...fullFilterWithWorkflow,
-                  version: 'all'
-                })}
-              />
-            </CollapsablePanelProvider>
-          </ThemeProvider>
-        </Router>
+        <InstancesContainerWrapped
+          {...localStorageProps}
+          {...getRouterProps({
+            ...fullFilterWithWorkflow,
+            version: 'all'
+          })}
+        />
       );
 
       //when
