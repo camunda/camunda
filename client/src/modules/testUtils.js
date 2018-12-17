@@ -159,18 +159,53 @@ export const createInstance = (options = {}) => {
 };
 
 /**
+ * A hard coded object to use when mocking fetchGroupedWorkflowInstances api/instances.js
+ */
+export const groupedWorkflowsMock = [
+  {
+    bpmnProcessId: 'demoProcess',
+    name: 'New demo process',
+    workflows: [
+      {
+        id: '6',
+        name: 'New demo process',
+        version: 3,
+        bpmnProcessId: 'demoProcess'
+      },
+      {
+        id: '4',
+        name: 'Demo process',
+        version: 2,
+        bpmnProcessId: 'demoProcess'
+      },
+      {
+        id: '1',
+        name: 'Demo process',
+        version: 1,
+        bpmnProcessId: 'demoProcess'
+      }
+    ]
+  },
+  {
+    bpmnProcessId: 'orderProcess',
+    name: 'Order',
+    workflows: []
+  }
+];
+
+/**
  * @returns a mocked filter Object with a unique id
  * @param {*} customProps Obj with any type of custom property
  */
 export const createFilter = (options = {}) => {
   return {
-    workflow: 'mockWorkflow',
+    workflow: groupedWorkflowsMock[0].bpmnProcessId,
     version: '1',
     active: true,
     ids: '1,2,3',
     startDate: '2018-06-21',
     endDate: '2018-06-22',
-    errorMessage: 'mock error message',
+    errorMessage: 'No more retries left.',
     incidents: true,
     canceled: true,
     completed: true,
@@ -220,38 +255,3 @@ export const getDiagramNodes = () => {
     demoProcess: createDiagramNode()
   };
 };
-
-/**
- * A hard coded object to use when mocking fetchGroupedWorkflowInstances api/instances.js
- */
-export const groupedWorkflowsMock = [
-  {
-    bpmnProcessId: 'demoProcess',
-    name: 'New demo process',
-    workflows: [
-      {
-        id: '6',
-        name: 'New demo process',
-        version: 3,
-        bpmnProcessId: 'demoProcess'
-      },
-      {
-        id: '4',
-        name: 'Demo process',
-        version: 2,
-        bpmnProcessId: 'demoProcess'
-      },
-      {
-        id: '1',
-        name: 'Demo process',
-        version: 1,
-        bpmnProcessId: 'demoProcess'
-      }
-    ]
-  },
-  {
-    bpmnProcessId: 'orderProcess',
-    name: 'Order',
-    workflows: []
-  }
-];

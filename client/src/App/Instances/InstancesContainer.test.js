@@ -4,7 +4,12 @@ import {mount} from 'enzyme';
 import InstancesContainer from './InstancesContainer';
 import Instances from './Instances';
 
-import {formatDiagramNodes, parseQueryString} from './service';
+import {
+  formatDiagramNodes,
+  parseQueryString,
+  decodeFields,
+  formatGroupedWorkflowInstances
+} from './service';
 import * as api from 'modules/api/instances/instances';
 import * as apiDiagram from 'modules/api/diagram/diagram';
 import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
@@ -29,7 +34,7 @@ const fullFilterWithoutWorkflow = {
   completed: true,
   finished: true,
   ids: '424242, 434343',
-  errorMessage: 'loremIpsum',
+  errorMessage: 'No%20data%20found%20for%20query%20$.foo.',
   startDate: '28 December 2018',
   endDate: '28 December 2018'
 };
@@ -40,7 +45,7 @@ const fullFilterWithWorkflow = {
   completed: true,
   finished: true,
   ids: '424242, 434343',
-  errorMessage: 'loremIpsum',
+  errorMessage: 'No%20data%20found%20for%20query%20$.foo.',
   startDate: '28 December 2018',
   endDate: '28 December 2018',
   workflow: 'demoProcess',
@@ -122,16 +127,9 @@ describe('InstancesContainer', () => {
     const InstancesNode = node.find(Instances);
 
     // then
-    expect(
-      InstancesNode.prop('groupedWorkflowInstances')[
-        groupedWorkflowsMock[0].bpmnProcessId
-      ]
-    ).not.toBe(undefined);
-    expect(
-      InstancesNode.prop('groupedWorkflowInstances')[
-        groupedWorkflowsMock[1].bpmnProcessId
-      ]
-    ).not.toBe(undefined);
+    expect(InstancesNode.prop('groupedWorkflowInstances')).toEqual(
+      formatGroupedWorkflowInstances(groupedWorkflowsMock)
+    );
     expect(InstancesNode.prop('filter')).toEqual(DEFAULT_FILTER);
     expect(InstancesNode.prop('diagramWorkflow')).toBe(
       node.state().currentWorkflow
@@ -147,7 +145,7 @@ describe('InstancesContainer', () => {
     const node = mount(
       <InstancesContainerWrapped
         {...localStorageProps}
-        {...getRouterProps(fullFilterWithoutWorkflow)}
+        {...getRouterProps(decodeFields(fullFilterWithoutWorkflow))}
       />
     );
 
@@ -157,7 +155,9 @@ describe('InstancesContainer', () => {
 
     const InstancesNode = node.find(Instances);
 
-    expect(InstancesNode.prop('filter')).toEqual(fullFilterWithoutWorkflow);
+    expect(InstancesNode.prop('filter')).toEqual(
+      decodeFields(fullFilterWithoutWorkflow)
+    );
     expect(InstancesNode.prop('diagramWorkflow')).toEqual({});
     expect(InstancesNode.prop('diagramNodes')).toEqual([]);
   });
@@ -175,7 +175,9 @@ describe('InstancesContainer', () => {
 
     const InstancesNode = node.find(Instances);
 
-    expect(InstancesNode.prop('filter')).toEqual(fullFilterWithWorkflow);
+    expect(InstancesNode.prop('filter')).toEqual(
+      decodeFields(fullFilterWithWorkflow)
+    );
     expect(InstancesNode.prop('diagramWorkflow')).toEqual(
       groupedWorkflowsMock[0].workflows[2]
     );
@@ -200,10 +202,12 @@ describe('InstancesContainer', () => {
     node.update();
 
     const InstancesNode = node.find(Instances);
-    expect(InstancesNode.prop('filter')).toEqual({
-      ...rest,
-      version: 'all'
-    });
+    expect(InstancesNode.prop('filter')).toEqual(
+      decodeFields({
+        ...rest,
+        version: 'all'
+      })
+    );
     expect(InstancesNode.prop('diagramWorkflow')).toEqual({});
     expect(InstancesNode.prop('diagramNodes')).toEqual([]);
   });
@@ -238,7 +242,7 @@ describe('InstancesContainer', () => {
         history: {push: jest.fn()},
         location: {
           search:
-            '?filter={"active": fallse, "errorMessage": "No more retries left"'
+            '?filter={"active": fallse, "errorMessage": "No%20data%20found%20for%20query%20$.foo."'
         }
       };
       const node = mount(

@@ -9,7 +9,12 @@ import {DEFAULT_FILTER, PAGE_TITLE} from 'modules/constants';
 import {isEqual} from 'lodash';
 import {fetchWorkflowXML} from 'modules/api/diagram';
 import {getFilterQueryString, getWorkflowByVersion} from 'modules/utils/filter';
-import {parseQueryString, formatDiagramNodes, decodeFields} from './service';
+import {
+  parseQueryString,
+  formatDiagramNodes,
+  decodeFields,
+  formatGroupedWorkflowInstances
+} from './service';
 import {getNodesFromXML} from 'modules/utils/bpmn';
 
 class InstancesContainer extends Component {
@@ -137,13 +142,7 @@ class InstancesContainer extends Component {
   };
 
   setGroupedWorkflowInstances = (workflows = []) => {
-    const groupedWorkflowInstances = workflows.reduce((obj, value) => {
-      obj[value.bpmnProcessId] = {
-        ...value
-      };
-
-      return obj;
-    }, {});
+    const groupedWorkflowInstances = formatGroupedWorkflowInstances(workflows);
 
     this.setState({groupedWorkflowInstances});
   };

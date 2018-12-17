@@ -264,7 +264,11 @@ class Instances extends Component {
 
             <Styled.Center titles={{top: 'Workflow', bottom: 'Instances'}}>
               <Styled.Pane>
-                <Styled.PaneHeader>{workflowName}</Styled.PaneHeader>
+                <Styled.PaneHeader>
+                  <span data-test="instances-diagram-title">
+                    {workflowName}
+                  </span>
+                </Styled.PaneHeader>
                 <SplitPane.Pane.Body>
                   {!this.props.filter.workflow && (
                     <Styled.EmptyMessageWrapper>

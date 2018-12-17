@@ -86,3 +86,13 @@ export function formatDiagramNodes(nodes = {}) {
   }
   return result;
 }
+
+export function formatGroupedWorkflowInstances(workflows = []) {
+  return workflows.reduce((obj, value) => {
+    obj[value.bpmnProcessId] = {
+      ...value
+    };
+
+    return obj;
+  }, {});
+}
