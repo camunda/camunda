@@ -390,6 +390,22 @@ public class EngineDatabaseRule extends TestWatcher {
     return result;
   }
 
+  public int countDecisionDefinitions() throws SQLException {
+    String sql = "select count(*) as total from act_re_decision_def;";
+    ResultSet statement = connection.createStatement().executeQuery(sql);
+    statement.next();
+    return statement.getInt("total");
+  }
+
+  public int countHistoricDecisionInstances() throws SQLException {
+    String sql = "select count(*) as total from act_hi_decinst;";
+    String postgresSQL = "SELECT reltuples AS total FROM pg_class WHERE relname = 'act_hi_decinst';";
+    sql = usePostgresOptimizations() ? postgresSQL: sql;
+    ResultSet statement = connection.createStatement().executeQuery(sql);
+    statement.next();
+    return statement.getInt("total");
+  }
+
   @Override
   protected void finished(Description description) {
     super.finished(description);

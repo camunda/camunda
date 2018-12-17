@@ -20,6 +20,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -128,6 +130,17 @@ public abstract class AbstractImportTest {
       "historicActivityInstanceCount",
       elasticSearchRule.getActivityCount(configurationService),
       is(engineDatabaseRule.countHistoricActivityInstances())
+    );
+
+    assertThat(
+      "decisionDefinitionsCount",
+      elasticSearchRule.getImportedCountOf(DECISION_DEFINITION_TYPE, configurationService),
+      is(engineDatabaseRule.countDecisionDefinitions())
+    );
+    assertThat(
+      "decisionInstancesCount",
+      elasticSearchRule.getImportedCountOf(DECISION_INSTANCE_TYPE, configurationService),
+      is(engineDatabaseRule.countHistoricDecisionInstances())
     );
   }
 }
