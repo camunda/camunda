@@ -37,12 +37,11 @@ public class JsonConditionInterpreter {
 
   public boolean eval(final JsonCondition condition, final DirectBuffer json) {
     cache.wrap(json);
-
     return evalCondition(condition, json);
   }
 
   private boolean evalCondition(final JsonCondition condition, final DirectBuffer json) {
-    boolean isFulFilled = false;
+    final boolean isFulFilled;
 
     if (condition instanceof Comparison) {
       isFulFilled = evalComparison((Comparison) condition, json);
@@ -105,9 +104,17 @@ public class JsonConditionInterpreter {
     final DirectBuffer resultBuffer = cachable ? cache.get(pathId) : null;
 
     if (resultBuffer != null) {
+      if (resultBuffer.capacity() == 0) {
+        return MsgPackToken.NIL;
+      }
       msgPackReader.wrap(resultBuffer, 0, resultBuffer.capacity());
     } else {
-      readQueryResult(path.query(), json);
+      if (!readQueryResult(path.query(), json)) {
+        if (cachable) {
+          cache.put(pathId, 0, 0);
+        }
+        return MsgPackToken.NIL;
+      }
 
       final int offset = visitor.currentResultPosition();
       final int length = visitor.currentResultLength();
@@ -122,15 +129,14 @@ public class JsonConditionInterpreter {
     return msgPackReader.readToken();
   }
 
-  private void readQueryResult(JsonPathQuery query, DirectBuffer json) {
+  private boolean readQueryResult(JsonPathQuery query, DirectBuffer json) {
     visitor.init(query.getFilters(), query.getFilterInstances());
     traverser.wrap(json, 0, json.capacity());
 
     traverser.traverse(visitor);
 
     if (visitor.numResults() == 0) {
-      throw new JsonConditionException(
-          String.format("JSON path '%s' has no result.", bufferAsString(query.getExpression())));
+      return false;
     } else if (visitor.numResults() > 1) {
       // such a JSON path expression should not be valid
       throw new JsonConditionException(
@@ -139,13 +145,12 @@ public class JsonConditionInterpreter {
     }
 
     visitor.moveToResult(0);
+    return true;
   }
 
   private boolean equals(MsgPackToken x, MsgPackToken y) {
-    if (x.getType() == MsgPackType.NIL) {
-      return y.getType() == MsgPackType.NIL;
-    } else if (y.getType() == MsgPackType.NIL) {
-      return false;
+    if (x.getType() == MsgPackType.NIL || y.getType() == MsgPackType.NIL) {
+      return x.getType() == y.getType();
     } else {
       ensureSameType(x, y);
 
