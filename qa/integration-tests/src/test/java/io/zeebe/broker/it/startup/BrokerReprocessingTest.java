@@ -38,6 +38,8 @@ import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.subscription.JobWorker;
+import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.IncidentRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -59,7 +61,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -216,6 +217,8 @@ public class BrokerReprocessingTest {
 
     // when
     reprocessingTrigger.accept(this);
+
+    awaitGateway();
 
     final ActivatedJob jobEvent = recordingJobHandler.getHandledJobs().get(0);
 
@@ -383,32 +386,35 @@ public class BrokerReprocessingTest {
   }
 
   @Test
-  @Ignore("https://github.com/zeebe-io/zeebe/issues/1033")
   public void shouldResolveIncidentAfterRestart() {
     // given
     deploy(WORKFLOW_INCIDENT, "incident.bpmn");
 
-    final WorkflowInstanceEvent instance =
-        clientRule
-            .getClient()
-            .newCreateInstanceCommand()
-            .bpmnProcessId(PROCESS_ID)
-            .latestVersion()
-            .send()
-            .join();
+    clientRule
+        .getClient()
+        .newCreateInstanceCommand()
+        .bpmnProcessId(PROCESS_ID)
+        .latestVersion()
+        .send()
+        .join();
 
     assertIncidentCreated();
     assertElementReady("task");
+
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();
 
     // when
     reprocessingTrigger.accept(this);
 
     clientRule
         .getClient()
-        .newUpdatePayloadCommand(instance.getWorkflowInstanceKey())
+        .newUpdatePayloadCommand(incident.getValue().getElementInstanceKey())
         .payload("{\"foo\":\"bar\"}")
         .send()
         .join();
+
+    clientRule.getClient().newResolveIncidentCommand(incident.getKey()).send().join();
 
     // then
     assertIncidentResolved();
@@ -416,7 +422,6 @@ public class BrokerReprocessingTest {
   }
 
   @Test
-  @Ignore("https://github.com/zeebe-io/zeebe/issues/1033")
   public void shouldResolveFailedIncidentAfterRestart() {
     // given
     deploy(WORKFLOW_INCIDENT, "incident.bpmn");
@@ -433,24 +438,33 @@ public class BrokerReprocessingTest {
     assertIncidentCreated();
     assertElementReady("task");
 
+    Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();
+
     clientRule
         .getClient()
-        .newUpdatePayloadCommand(instanceEvent.getWorkflowInstanceKey())
+        .newUpdatePayloadCommand(incident.getValue().getElementInstanceKey())
         .payload("{\"x\":\"y\"}")
         .send()
         .join();
+
+    clientRule.getClient().newResolveIncidentCommand(incident.getKey()).send().join();
 
     assertIncidentResolveFailed();
 
     // when
     reprocessingTrigger.accept(this);
 
+    incident = RecordingExporter.incidentRecords(IncidentIntent.CREATED).getLast();
+
     clientRule
         .getClient()
-        .newUpdatePayloadCommand(instanceEvent.getWorkflowInstanceKey())
+        .newUpdatePayloadCommand(incident.getValue().getElementInstanceKey())
         .payload("{\"foo\":\"bar\"}")
         .send()
         .join();
+
+    clientRule.getClient().newResolveIncidentCommand(incident.getKey()).send().join();
 
     // then
     assertIncidentResolved();
@@ -730,6 +744,18 @@ public class BrokerReprocessingTest {
             .join();
 
     clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
+  }
+
+  private void awaitGateway() {
+    TestUtil.waitUntil(
+        () -> {
+          try {
+            clientRule.getClient().newTopologyRequest().send().join();
+            return true;
+          } catch (Exception e) {
+            return false;
+          }
+        });
   }
 
   private void awaitJobTimeout() {
