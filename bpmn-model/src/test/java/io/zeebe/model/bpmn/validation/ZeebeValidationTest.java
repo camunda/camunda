@@ -22,6 +22,9 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.builder.AbstractCatchEventBuilder;
 import io.zeebe.model.bpmn.instance.CompensateEventDefinition;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
+import io.zeebe.model.bpmn.instance.SignalEventDefinition;
+import io.zeebe.model.bpmn.instance.StartEvent;
+import io.zeebe.model.bpmn.instance.SubProcess;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
 import java.util.Arrays;
@@ -105,6 +108,30 @@ public class ZeebeValidationTest extends AbstractZeebeValidationTest {
             expect(
                 "task",
                 "Cannot have two message catch boundary events with the same name: message"))
+      },
+      {
+        Bpmn.createExecutableProcess().startEvent().signal("signal").endEvent().done(),
+        Arrays.asList(
+            expect(StartEvent.class, "Start event must be one of the following types: none, timer"),
+            expect(SignalEventDefinition.class, "Event definition of this type is not supported")),
+      },
+      {
+        Bpmn.createExecutableProcess()
+            .startEvent()
+            .timerWithCycle("R1/PT2H")
+            .signal("signal")
+            .endEvent()
+            .done(),
+        Arrays.asList(
+            expect(StartEvent.class, "Start event can't have more than one type"),
+            expect(SignalEventDefinition.class, "Event definition of this type is not supported")),
+      },
+      {
+        "multiple-timer-start-event-sub-process.bpmn",
+        Arrays.asList(
+            expect(SubProcess.class, "Start events in subprocesses must be of type none"),
+            expect(SubProcess.class, "Start events in subprocesses must be of type none"),
+            expect(SubProcess.class, "Must have exactly one start event"))
       },
     };
   }

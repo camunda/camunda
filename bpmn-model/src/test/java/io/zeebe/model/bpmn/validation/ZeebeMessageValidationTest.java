@@ -106,7 +106,8 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
             .startEvent()
             .message(b -> b.name("foo").zeebeCorrelationKey("correlationKey"))
             .done(),
-        singletonList(expect(StartEvent.class, "Must be a none start event"))
+        singletonList(
+            expect(StartEvent.class, "Start event must be one of the following types: none, timer"))
       },
       {
         Bpmn.createExecutableProcess("process")
@@ -132,7 +133,10 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
             .subProcessDone()
             .endEvent()
             .done(),
-        singletonList(expect("subProcessStart", "Must be a none start event"))
+        Arrays.asList(
+            expect("subProcess", "Start events in subprocesses must be of type none"),
+            expect(
+                "subProcessStart", "Start event must be one of the following types: none, timer"))
       },
       {
         Bpmn.createExecutableProcess("process")

@@ -15,11 +15,16 @@
  */
 package io.zeebe.model.bpmn.validation.zeebe;
 
+import io.zeebe.model.bpmn.instance.EventDefinition;
 import io.zeebe.model.bpmn.instance.StartEvent;
+import io.zeebe.model.bpmn.instance.TimerEventDefinition;
+import java.util.Collection;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
 public class StartEventValidator implements ModelElementValidator<StartEvent> {
+  private static final Class SUPPORTED_EVENT_TYPE = TimerEventDefinition.class;
+
   @Override
   public Class<StartEvent> getElementType() {
     return StartEvent.class;
@@ -27,8 +32,16 @@ public class StartEventValidator implements ModelElementValidator<StartEvent> {
 
   @Override
   public void validate(StartEvent element, ValidationResultCollector validationResultCollector) {
-    if (!element.getEventDefinitions().isEmpty()) {
-      validationResultCollector.addError(0, "Must be a none start event");
+    final Collection<EventDefinition> eventDefinitions = element.getEventDefinitions();
+    if (eventDefinitions.size() > 1) {
+      validationResultCollector.addError(0, "Start event can't have more than one type");
+    } else {
+      for (EventDefinition eventDef : eventDefinitions) {
+        if (!SUPPORTED_EVENT_TYPE.isAssignableFrom(eventDef.getClass())) {
+          validationResultCollector.addError(
+              0, "Start event must be one of the following types: none, timer");
+        }
+      }
     }
   }
 }
