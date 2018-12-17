@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.es.schema;
 
 public class OptimizeIndexNameHelper {
-  private static final String OPTIMIZE_INDEX_PREFIX = "optimize-";
+  public static final String OPTIMIZE_INDEX_PREFIX = "optimize-";
 
   private OptimizeIndexNameHelper() {
   }
