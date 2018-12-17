@@ -11,7 +11,11 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+
+import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUser;
 
 @Secured
 @Component
@@ -29,7 +33,9 @@ public class AnalysisRestService {
   @Path("/correlation")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public BranchAnalysisDto getBranchAnalysis(BranchAnalysisQueryDto to) {
-    return branchAnalysisReader.branchAnalysis(to);
+  public BranchAnalysisDto getBranchAnalysis(@Context ContainerRequestContext requestContext,
+                                             BranchAnalysisQueryDto branchAnalysisDto) {
+    String userId = getRequestUser(requestContext);
+    return branchAnalysisReader.branchAnalysis(userId, branchAnalysisDto);
   }
 }

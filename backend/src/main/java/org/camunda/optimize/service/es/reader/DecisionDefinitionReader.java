@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.ForbiddenException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -87,12 +88,17 @@ public class DecisionDefinitionReader {
     return definitionsResult;
   }
 
-  public Optional<String> getDecisionDefinitionXml(final String decisionDefinitionKey,
-                                                   final String decisionDefinitionVersion) {
-    return getDecisionDefinition(decisionDefinitionKey, decisionDefinitionVersion)
-      .flatMap(
-        decisionDefinitionOptimizeDto -> Optional.ofNullable(decisionDefinitionOptimizeDto.getDmn10Xml())
-      );
+  public Optional<String> getDecisionDefinitionXml(final String userId,
+                                                   final String definitionKey,
+                                                   final String definitionVersion) {
+    return getDecisionDefinition(definitionKey, definitionVersion)
+      .flatMap(definitionOptimizeDto -> {
+        if (isAuthorizedToSeeDecisionDefinition(userId, definitionOptimizeDto)) {
+          return Optional.ofNullable(definitionOptimizeDto.getDmn10Xml());
+        } else {
+          throw new ForbiddenException("Current user is not authorized to access data of the decision definition");
+        }
+      });
   }
 
   public List<DecisionDefinitionGroupOptimizeDto> getDecisionDefinitionsGroupedByKey(String userId) {
@@ -119,9 +125,14 @@ public class DecisionDefinitionReader {
                                                                                   final List<DecisionDefinitionOptimizeDto> decisionDefinitions) {
     final List<DecisionDefinitionOptimizeDto> result = decisionDefinitions
       .stream()
-      .filter(def -> sessionService.isAuthorizedToSeeDecisionDefinition(userId, def.getKey()))
+      .filter(def -> isAuthorizedToSeeDecisionDefinition(userId, def))
       .collect(Collectors.toList());
     return result;
+  }
+
+  private boolean isAuthorizedToSeeDecisionDefinition(final String userId,
+                                                      final DecisionDefinitionOptimizeDto definitionOptimizeDto) {
+    return sessionService.isAuthorizedToSeeDecisionDefinition(userId, definitionOptimizeDto.getKey());
   }
 
   private String convertToValidVersion(String decisionDefinitionKey, String decisionDefinitionVersion) {

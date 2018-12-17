@@ -1,5 +1,6 @@
 package org.camunda.optimize.rest;
 
+import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.SimpleEventDto;
@@ -9,15 +10,12 @@ import org.camunda.optimize.dto.optimize.query.definition.ProcessDefinitionGroup
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -25,16 +23,18 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-
 
 
 public class ProcessDefinitionRestServiceIT {
@@ -50,11 +50,10 @@ public class ProcessDefinitionRestServiceIT {
   private static final String PROCESS_INSTANCE_ID_2 = PROCESS_INSTANCE_ID + "2";
   private static final String TASK = "task_1";
 
-  private static final String ID = "123";
   private static final String KEY = "testKey";
-  private static final String BPMN_20_XML = "test";
-  private static final String TEST_ENGINE = "1";
+
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
+  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
   private ConfigurationService configurationService;
@@ -66,82 +65,108 @@ public class ProcessDefinitionRestServiceIT {
 
   @Rule
   public RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchRule)
+    .around(engineRule)
+    .around(embeddedOptimizeRule);
+
+  @Test
+  public void getProcessDefinitions() {
+    //given
+    final ProcessDefinitionOptimizeDto processDefinitionOptimizeDto = addProcessDefinitionToElasticsearch(KEY);
+
+    // when
+    List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildGetProcessDefinitionsRequest()
+      .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
+
+    // then the status code is okay
+    assertThat(definitions, is(notNullValue()));
+    assertThat(definitions.get(0).getId(), is(processDefinitionOptimizeDto.getId()));
+  }
+
+  @Test
+  public void getProcessDefinitionsReturnOnlyThoseAuthorizedToSee() {
+    //given
+    final String kermitUser = "kermit";
+    final String notAuthorizedDefinitionKey = "noAccess";
+    final String authorizedDefinitionKey = "access";
+    engineRule.addUser(kermitUser, kermitUser);
+    engineRule.grantUserOptimizeAccess(kermitUser);
+    grantSingleDefinitionAuthorizationsForUser(kermitUser, authorizedDefinitionKey);
+    final ProcessDefinitionOptimizeDto notAuthorizedToSee = addProcessDefinitionToElasticsearch(notAuthorizedDefinitionKey);
+    final ProcessDefinitionOptimizeDto authorizedToSee = addProcessDefinitionToElasticsearch(authorizedDefinitionKey);
+
+    // when
+    List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeRule
+      .getRequestExecutor()
+      .withUserAuthentication(kermitUser, kermitUser)
+      .buildGetProcessDefinitionsRequest()
+      .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
+
+    // then we only get 1 definition, the one kermit is authorized to see
+    assertThat(definitions, is(notNullValue()));
+    assertThat(definitions.size(), is(1));
+    assertThat(definitions.get(0).getId(), is(authorizedToSee.getId()));
+  }
 
   @Test
   public void getProcessDefinitionsWithoutAuthentication() {
     // when
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .withoutAuthentication()
-            .buildGetProcessDefinitionsRequest()
-            .execute();
+      .getRequestExecutor()
+      .withoutAuthentication()
+      .buildGetProcessDefinitionsRequest()
+      .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
-  }
-
-  @Test
-  public void getProcessDefinitions() {
-    //given
-    createProcessDefinition(ID, KEY);
-
-    // when
-    List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildGetProcessDefinitionsRequest()
-            .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
-
-    // then the status code is okay
-    assertThat(definitions, is(notNullValue()));
-    assertThat(definitions.get(0).getId(), is(ID));
   }
 
   @Test
   public void getProcessDefinitionsWithXml() {
     //given
-    String expectedProcessDefinitionId = ID;
-    createProcessDefinition(expectedProcessDefinitionId, KEY);
+    final ProcessDefinitionOptimizeDto processDefinitionOptimizeDto = addProcessDefinitionToElasticsearch(KEY);
 
     // when
     List<ProcessDefinitionOptimizeDto> definitions =
       embeddedOptimizeRule
-              .getRequestExecutor()
-              .buildGetProcessDefinitionsRequest()
-              .addSingleQueryParam("includeXml", true)
-              .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
+        .getRequestExecutor()
+        .buildGetProcessDefinitionsRequest()
+        .addSingleQueryParam("includeXml", true)
+        .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
 
     // then
     assertThat(definitions, is(notNullValue()));
-    assertThat(definitions.get(0).getId(), is(expectedProcessDefinitionId));
-    assertThat(definitions.get(0).getBpmn20Xml(), is("test"));
+    assertThat(definitions.get(0).getId(), is(processDefinitionOptimizeDto.getId()));
+    assertThat(definitions.get(0).getBpmn20Xml(), is(processDefinitionOptimizeDto.getBpmn20Xml()));
   }
 
-  private void createProcessDefinition(String expectedProcessDefinitionId, String key) {
-    createProcessDefinition(expectedProcessDefinitionId, key, "0");
-  }
+  @Test
+  public void getProcessDefinitionXml() {
+    //given
+    ProcessDefinitionOptimizeDto expectedDto = addProcessDefinitionToElasticsearch(KEY);
 
-  private void createProcessDefinition(String expectedProcessDefinitionId, String key, String version) {
-    ProcessDefinitionOptimizeDto expected = new ProcessDefinitionOptimizeDto();
-    expected.setId(expectedProcessDefinitionId);
-    expected.setKey(key);
-    expected.setVersion(version);
-    expected.setBpmn20Xml(BPMN_20_XML);
-    expected.setFlowNodeNames(new HashMap<>());
-    expected.setEngine(TEST_ENGINE);
-    elasticSearchRule.addEntryToElasticsearch(configurationService.getProcessDefinitionType(), expectedProcessDefinitionId, expected);
-  }
+    // when
+    String actualXml =
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildGetProcessDefinitionXmlRequest(expectedDto.getKey(), expectedDto.getVersion())
+        .execute(String.class, 200);
 
+    // then
+    assertThat(actualXml, is(expectedDto.getBpmn20Xml()));
+  }
 
   @Test
   public void getProcessDefinitionXmlWithoutAuthentication() {
     // when
     Response response =
-        embeddedOptimizeRule
-            .getRequestExecutor()
-            .withoutAuthentication()
-            .buildGetProcessDefinitionXmlRequest("foo", "bar")
-            .execute();
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .withoutAuthentication()
+        .buildGetProcessDefinitionXmlRequest("foo", "bar")
+        .execute();
 
 
     // then the status code is not authorized
@@ -149,42 +174,38 @@ public class ProcessDefinitionRestServiceIT {
   }
 
   @Test
-  public void getProcessDefinitionXml() {
-    //given
-    ProcessDefinitionOptimizeDto expectedXml = new ProcessDefinitionOptimizeDto();
-    expectedXml.setBpmn20Xml("ProcessModelXml");
-    expectedXml.setKey("aProcDefKey");
-    expectedXml.setVersion("aProcDefVersion");
-    expectedXml.setId("aProcDefId");
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionType(), ID, expectedXml);
+  public void getProcessDefinitionXmlWithoutAuthorization() {
+    // given
+    final String kermitUser = "kermit";
+    final String definitionKey = "aProcDefKey";
+    engineRule.addUser(kermitUser, kermitUser);
+    engineRule.grantUserOptimizeAccess(kermitUser);
+    final ProcessDefinitionOptimizeDto processDefinitionOptimizeDto = addProcessDefinitionToElasticsearch(
+      definitionKey
+    );
 
     // when
-    String actualXml =
-            embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildGetProcessDefinitionXmlRequest("aProcDefKey", "aProcDefVersion")
-            .execute(String.class, 200);
+    Response response = embeddedOptimizeRule.getRequestExecutor()
+      .withUserAuthentication(kermitUser, kermitUser)
+      .buildGetProcessDefinitionXmlRequest(
+        processDefinitionOptimizeDto.getKey(), processDefinitionOptimizeDto.getVersion()
+      ).execute();
 
-    // then
-    assertThat(actualXml, is(expectedXml.getBpmn20Xml()));
+    // then the status code is forbidden
+    assertThat(response.getStatus(), is(403));
   }
 
   @Test
   public void getProcessDefinitionXmlWithNonsenseVersionReturns404Code() {
     //given
-    ProcessDefinitionOptimizeDto expectedXml = new ProcessDefinitionOptimizeDto();
-    expectedXml.setBpmn20Xml("ProcessModelXml");
-    expectedXml.setKey("aProcDefKey");
-    expectedXml.setVersion("aProcDefVersion");
-    expectedXml.setId("aProcDefId");
-    elasticSearchRule.addEntryToElasticsearch(configurationService.getProcessDefinitionType(), ID, expectedXml);
+    final ProcessDefinitionOptimizeDto processDefinitionOptimizeDto = addProcessDefinitionToElasticsearch(KEY);
 
     // when
     String message =
-            embeddedOptimizeRule
-                    .getRequestExecutor()
-                    .buildGetProcessDefinitionXmlRequest("aProcDefKey", "nonsenseVersion")
-                    .execute(String.class, 404);
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildGetProcessDefinitionXmlRequest(processDefinitionOptimizeDto.getKey(), "nonsenseVersion")
+        .execute(String.class, 404);
 
     // then
     assertThat(message.contains("Could not find xml for process definition with key"), is(true));
@@ -193,19 +214,14 @@ public class ProcessDefinitionRestServiceIT {
   @Test
   public void getProcessDefinitionXmlWithNonsenseKeyReturns404Code() {
     //given
-    ProcessDefinitionOptimizeDto expectedXml = new ProcessDefinitionOptimizeDto();
-    expectedXml.setBpmn20Xml("ProcessModelXml");
-    expectedXml.setKey("aProcDefKey");
-    expectedXml.setVersion("aProcDefVersion");
-    expectedXml.setId("aProcDefId");
-    elasticSearchRule.addEntryToElasticsearch(configurationService.getProcessDefinitionType(), ID, expectedXml);
+    final ProcessDefinitionOptimizeDto processDefinitionOptimizeDto = addProcessDefinitionToElasticsearch(KEY);
 
     // when
     String message =
-            embeddedOptimizeRule
-                    .getRequestExecutor()
-                    .buildGetProcessDefinitionXmlRequest("nonsenseKey", "aProcDefVersion")
-                    .execute(String.class, 404);
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildGetProcessDefinitionXmlRequest("nonesense", processDefinitionOptimizeDto.getVersion())
+        .execute(String.class, 404);
 
     assertThat(message.contains("Could not find xml for process definition with key"), is(true));
   }
@@ -214,10 +230,10 @@ public class ProcessDefinitionRestServiceIT {
   public void getCorrelationWithoutAuthentication() {
     // when
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildProcessDefinitionCorrelation(new BranchAnalysisQueryDto())
-            .withoutAuthentication()
-            .execute();
+      .getRequestExecutor()
+      .buildProcessDefinitionCorrelation(new BranchAnalysisQueryDto())
+      .withoutAuthentication()
+      .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
@@ -236,15 +252,15 @@ public class ProcessDefinitionRestServiceIT {
     branchAnalysisQueryDto.setEnd(END_ACTIVITY);
 
     Response response =
-            embeddedOptimizeRule
-                    .getRequestExecutor()
-                    .buildProcessDefinitionCorrelation(branchAnalysisQueryDto)
-                    .execute();
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildProcessDefinitionCorrelation(branchAnalysisQueryDto)
+        .execute();
 
     // then the status code is okay
     assertThat(response.getStatus(), is(200));
     BranchAnalysisDto actual =
-        response.readEntity(BranchAnalysisDto.class);
+      response.readEntity(BranchAnalysisDto.class);
     assertThat(actual, is(notNullValue()));
     assertThat(actual.getTotal(), is(2L));
   }
@@ -256,16 +272,19 @@ public class ProcessDefinitionRestServiceIT {
     createProcessDefinitionsForKey("procDefKey2", 2);
 
     // when
-    List <ProcessDefinitionGroupOptimizeDto> actual = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildGetProcessDefinitionsGroupedByKeyRequest()
-            .executeAndReturnList(ProcessDefinitionGroupOptimizeDto.class, 200);
+    List<ProcessDefinitionGroupOptimizeDto> actual = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildGetProcessDefinitionsGroupedByKeyRequest()
+      .executeAndReturnList(ProcessDefinitionGroupOptimizeDto.class, 200);
 
     // then
     assertThat(actual, is(notNullValue()));
     assertThat(actual.size(), is(2));
     // assert that procDefKey1 comes first in list
-    actual.sort(Comparator.comparing(ProcessDefinitionGroupOptimizeDto::getVersions, Comparator.comparing(v -> v.get(0).getKey())));
+    actual.sort(Comparator.comparing(
+      ProcessDefinitionGroupOptimizeDto::getVersions,
+      Comparator.comparing(v -> v.get(0).getKey())
+    ));
     ProcessDefinitionGroupOptimizeDto procDefs1 = actual.get(0);
     assertThat(procDefs1.getKey(), is("procDefKey1"));
     assertThat(procDefs1.getVersions().size(), is(11));
@@ -279,12 +298,33 @@ public class ProcessDefinitionRestServiceIT {
     assertThat(procDefs2.getVersions().get(1).getVersion(), is("0"));
   }
 
+  private void grantSingleDefinitionAuthorizationsForUser(String userId, String definitionKey) {
+    AuthorizationDto authorizationDto = new AuthorizationDto();
+    authorizationDto.setResourceType(RESOURCE_TYPE_PROCESS_DEFINITION);
+    authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
+    authorizationDto.setResourceId(definitionKey);
+    authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
+    authorizationDto.setUserId(userId);
+    engineRule.createAuthorization(authorizationDto);
+  }
+
+  private ProcessDefinitionOptimizeDto addProcessDefinitionToElasticsearch(final String key) {
+    return addProcessDefinitionToElasticsearch(key, "1");
+  }
+
+  private ProcessDefinitionOptimizeDto addProcessDefinitionToElasticsearch(final String key, final String version) {
+    ProcessDefinitionOptimizeDto expectedXml = new ProcessDefinitionOptimizeDto();
+    expectedXml.setBpmn20Xml("ProcessModelXml");
+    expectedXml.setKey(key);
+    expectedXml.setVersion(version);
+    expectedXml.setId(key + version);
+    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionType(), expectedXml.getId(), expectedXml);
+    return expectedXml;
+  }
+
   private void createProcessDefinitionsForKey(String key, int count) {
     IntStream.range(0, count).forEach(
-      i -> {
-        String constructedId = "id-" + key + "-version-" + i;
-        createProcessDefinition(constructedId, key, String.valueOf(i) );
-      }
+      i -> addProcessDefinitionToElasticsearch(key, String.valueOf(i))
     );
   }
 
@@ -295,10 +335,18 @@ public class ProcessDefinitionRestServiceIT {
     processDefinitionXmlDto.setKey(PROCESS_DEFINITION_KEY);
     processDefinitionXmlDto.setVersion(PROCESS_DEFINITION_VERSION_1);
     processDefinitionXmlDto.setBpmn20Xml(readDiagram(DIAGRAM));
-    elasticSearchRule.addEntryToElasticsearch(configurationService.getProcessDefinitionType(), PROCESS_DEFINITION_ID, processDefinitionXmlDto);
+    elasticSearchRule.addEntryToElasticsearch(
+      configurationService.getProcessDefinitionType(),
+      PROCESS_DEFINITION_ID,
+      processDefinitionXmlDto
+    );
     processDefinitionXmlDto.setId(PROCESS_DEFINITION_ID_2);
     processDefinitionXmlDto.setVersion(PROCESS_DEFINITION_VERSION_2);
-    elasticSearchRule.addEntryToElasticsearch(configurationService.getProcessDefinitionType(), PROCESS_DEFINITION_ID_2, processDefinitionXmlDto);
+    elasticSearchRule.addEntryToElasticsearch(
+      configurationService.getProcessDefinitionType(),
+      PROCESS_DEFINITION_ID_2,
+      processDefinitionXmlDto
+    );
 
     ProcessInstanceDto procInst = new ProcessInstanceDto();
     procInst.setProcessDefinitionId(PROCESS_DEFINITION_ID);
@@ -309,12 +357,20 @@ public class ProcessDefinitionRestServiceIT {
     procInst.setEndDate(OffsetDateTime.now());
     procInst.setEvents(createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY, TASK}));
 
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), PROCESS_INSTANCE_ID, procInst);
+    elasticSearchRule.addEntryToElasticsearch(
+      elasticSearchRule.getProcessInstanceType(),
+      PROCESS_INSTANCE_ID,
+      procInst
+    );
     procInst.setEvents(
-        createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY})
+      createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY})
     );
     procInst.setProcessInstanceId(PROCESS_INSTANCE_ID_2);
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessInstanceType(), PROCESS_INSTANCE_ID_2, procInst);
+    elasticSearchRule.addEntryToElasticsearch(
+      elasticSearchRule.getProcessInstanceType(),
+      PROCESS_INSTANCE_ID_2,
+      procInst
+    );
   }
 
   private List<SimpleEventDto> createEventList(String[] activityIds) {

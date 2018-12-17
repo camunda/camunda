@@ -19,7 +19,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
 import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUser;
 
@@ -76,18 +75,16 @@ public class DecisionDefinitionRestService {
   @GET
   @Produces(value = {MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
   @Path("/xml")
-  public String getDecisionDefinitionXml(
-    @QueryParam("key") String decisionDefinitionKey,
-    @QueryParam("version") String decisionDefinitionVersion) {
-    final Optional<String> decisionDefinitionXml = decisionDefinitionReader.getDecisionDefinitionXml(
-      decisionDefinitionKey, decisionDefinitionVersion
-    );
-    if (!decisionDefinitionXml.isPresent()) {
-      String notFoundErrorMessage = "Could not find xml for decision definition with key [" + decisionDefinitionKey +
-        "] and version [" + decisionDefinitionVersion + "]. It is possible that is hasn't been imported yet.";
-      logger.error(notFoundErrorMessage);
-      throw new NotFoundException(notFoundErrorMessage);
-    }
-    return decisionDefinitionXml.get();
+  public String getDecisionDefinitionXml(@Context ContainerRequestContext requestContext,
+                                         @QueryParam("key") String decisionDefinitionKey,
+                                         @QueryParam("version") String decisionDefinitionVersion) {
+    final String userId = getRequestUser(requestContext);
+    return decisionDefinitionReader.getDecisionDefinitionXml(userId, decisionDefinitionKey, decisionDefinitionVersion)
+      .orElseThrow(() -> {
+        String notFoundErrorMessage = "Could not find xml for decision definition with key [" + decisionDefinitionKey +
+          "] and version [" + decisionDefinitionVersion + "]. It is possible that is hasn't been imported yet.";
+        logger.error(notFoundErrorMessage);
+        return new NotFoundException(notFoundErrorMessage);
+      });
   }
 }

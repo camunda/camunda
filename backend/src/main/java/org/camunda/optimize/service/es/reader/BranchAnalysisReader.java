@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
@@ -53,29 +54,30 @@ public class BranchAnalysisReader {
   @Autowired
   private ProcessQueryFilterEnhancer queryFilterEnhancer;
 
-  public BranchAnalysisDto branchAnalysis(BranchAnalysisQueryDto request) {
+  public BranchAnalysisDto branchAnalysis(String userId, BranchAnalysisQueryDto request) {
     ValidationHelper.validate(request);
     logger.debug("Performing branch analysis on process definition with key [{}] and version [{}]",
       request.getProcessDefinitionKey(),
       request.getProcessDefinitionVersion()
     );
     
-    BranchAnalysisDto result = new BranchAnalysisDto();
-    BpmnModelInstance bpmnModelInstance =
-      getBpmnModelInstance(request.getProcessDefinitionKey(), request.getProcessDefinitionVersion());
-    List<FlowNode> gatewayOutcomes = fetchGatewayOutcomes(bpmnModelInstance, request.getGateway());
-    Set<String> activityIdsWithMultipleIncomingSequenceFlows =
-      extractFlowNodesWithMultipleIncomingSequenceFlows(bpmnModelInstance);
+    final BranchAnalysisDto result = new BranchAnalysisDto();
+    getBpmnModelInstance(userId, request.getProcessDefinitionKey(), request.getProcessDefinitionVersion())
+      .ifPresent(bpmnModelInstance -> {
+        final List<FlowNode> gatewayOutcomes = fetchGatewayOutcomes(bpmnModelInstance, request.getGateway());
+        final Set<String> activityIdsWithMultipleIncomingSequenceFlows =
+          extractFlowNodesWithMultipleIncomingSequenceFlows(bpmnModelInstance);
 
-    for (FlowNode activity : gatewayOutcomes) {
-      Set<String> activitiesToExcludeFromBranchAnalysis =
-        extractActivitiesToExclude(gatewayOutcomes, activityIdsWithMultipleIncomingSequenceFlows, activity.getId(), request.getEnd());
-      BranchAnalysisOutcomeDto branchAnalysis = branchAnalysis(activity, request, activitiesToExcludeFromBranchAnalysis);
-      result.getFollowingNodes().put(branchAnalysis.getActivityId(), branchAnalysis);
-    }
+        for (FlowNode activity : gatewayOutcomes) {
+          Set<String> activitiesToExcludeFromBranchAnalysis =
+            extractActivitiesToExclude(gatewayOutcomes, activityIdsWithMultipleIncomingSequenceFlows, activity.getId(), request.getEnd());
+          BranchAnalysisOutcomeDto branchAnalysis = branchAnalysis(activity, request, activitiesToExcludeFromBranchAnalysis);
+          result.getFollowingNodes().put(branchAnalysis.getActivityId(), branchAnalysis);
+        }
 
-    result.setEndEvent(request.getEnd());
-    result.setTotal(calculateActivityCount(request.getEnd(), request, Collections.emptySet()));
+        result.setEndEvent(request.getEnd());
+        result.setTotal(calculateActivityCount(request.getEnd(), request, Collections.emptySet()));
+      });
 
     return result;
   }
@@ -168,9 +170,9 @@ public class BranchAnalysisReader {
     return result;
   }
 
-  private BpmnModelInstance getBpmnModelInstance(String processDefinitionKey, String processDefinitionVersion) {
-    String xml = processDefinitionReader.getProcessDefinitionXml(processDefinitionKey, processDefinitionVersion);
-    return Bpmn.readModelFromStream(new ByteArrayInputStream(xml.getBytes()));
+  private Optional<BpmnModelInstance> getBpmnModelInstance(String userId, String definitionKey, String definitionVersion) {
+    return processDefinitionReader.getProcessDefinitionXml(userId, definitionKey, definitionVersion)
+      .map(xml -> Bpmn.readModelFromStream(new ByteArrayInputStream(xml.getBytes())));
   }
 
   private Set<String> extractFlowNodesWithMultipleIncomingSequenceFlows(BpmnModelInstance bpmnModelInstance) {

@@ -4,10 +4,13 @@ import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.definition.ProcessDefinitionGroupOptimizeDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.GET;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
@@ -24,6 +27,7 @@ import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUser;
 @Path("/process-definition")
 @Component
 public class ProcessDefinitionRestService {
+  private static final Logger logger = LoggerFactory.getLogger(ProcessDefinitionRestService.class);
 
   @Autowired
   private ProcessDefinitionReader processDefinitionReader;
@@ -52,8 +56,8 @@ public class ProcessDefinitionRestService {
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   @Path("/groupedByKey")
-  public List<ProcessDefinitionGroupOptimizeDto>
-      getProcessDefinitionsGroupedByKey(@Context ContainerRequestContext requestContext) {
+  public List<ProcessDefinitionGroupOptimizeDto> getProcessDefinitionsGroupedByKey(
+    @Context ContainerRequestContext requestContext) {
     String userId = getRequestUser(requestContext);
     return processDefinitionReader.getProcessDefinitionsGroupedByKey(userId);
   }
@@ -70,8 +74,16 @@ public class ProcessDefinitionRestService {
   @Produces(value = {MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
   @Path("/xml")
   public String getProcessDefinitionXml(
+      @Context ContainerRequestContext requestContext,
       @QueryParam("processDefinitionKey") String processDefinitionKey,
       @QueryParam("processDefinitionVersion") String processDefinitionVersion) {
-    return processDefinitionReader.getProcessDefinitionXml(processDefinitionKey, processDefinitionVersion);
+    final String userId = getRequestUser(requestContext);
+    return processDefinitionReader.getProcessDefinitionXml(userId, processDefinitionKey, processDefinitionVersion)
+      .orElseThrow(() -> {
+        String notFoundErrorMessage = "Could not find xml for process definition with key [" + processDefinitionKey +
+          "] and version [" + processDefinitionVersion + "]. It is possible that is hasn't been imported yet.";
+        logger.error(notFoundErrorMessage);
+        return new NotFoundException(notFoundErrorMessage);
+      });
   }
 }

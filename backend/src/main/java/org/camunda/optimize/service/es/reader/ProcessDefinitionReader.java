@@ -22,12 +22,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.NotFoundException;
+import javax.ws.rs.ForbiddenException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
@@ -90,25 +91,59 @@ public class ProcessDefinitionReader {
     return definitionsResult;
   }
 
+  public Optional<String> getProcessDefinitionXml(String userId, String definitionKey, String definitionVersion) {
+    return getProcessDefinitionWithXml(definitionKey, definitionVersion)
+      .flatMap(processDefinitionOptimizeDto -> {
+        if (isAuthorizedToReadProcessDefinition(userId, processDefinitionOptimizeDto)) {
+          return Optional.ofNullable(processDefinitionOptimizeDto.getBpmn20Xml());
+        } else {
+          throw new ForbiddenException("Current user is not authorized to access data of the process definition");
+        }
+      });
+  }
+
+  public List<ProcessDefinitionGroupOptimizeDto> getProcessDefinitionsGroupedByKey(String userId) {
+    Map<String, ProcessDefinitionGroupOptimizeDto> resultMap = getKeyToProcessDefinitionMap(userId);
+    return new ArrayList<>(resultMap.values());
+  }
+
+  public FlowNodeNamesResponseDto getFlowNodeNames(FlowNodeIdsToNamesRequestDto flowNodeIdsToNamesRequestDto) {
+    FlowNodeNamesResponseDto result = new FlowNodeNamesResponseDto();
+
+    final Optional<ProcessDefinitionOptimizeDto> processDefinitionXmlDto = getProcessDefinitionWithXml(
+      flowNodeIdsToNamesRequestDto.getProcessDefinitionKey(),
+      flowNodeIdsToNamesRequestDto.getProcessDefinitionVersion()
+    );
+    if (processDefinitionXmlDto.isPresent()) {
+      List<String> nodeIds = flowNodeIdsToNamesRequestDto.getNodeIds();
+      if (nodeIds != null && !nodeIds.isEmpty()) {
+        for (String id : nodeIds) {
+          result.getFlowNodeNames().put(id, processDefinitionXmlDto.get().getFlowNodeNames().get(id));
+        }
+      } else {
+        result.setFlowNodeNames(processDefinitionXmlDto.get().getFlowNodeNames());
+      }
+    } else {
+      logger.debug(
+        "No process definition found for key {} and version {}, returning empty result.",
+        flowNodeIdsToNamesRequestDto.getProcessDefinitionKey(),
+        flowNodeIdsToNamesRequestDto.getProcessDefinitionVersion()
+      );
+    }
+
+    return result;
+  }
+
   private List<ProcessDefinitionOptimizeDto> filterAuthorizedProcessDefinitions(final String userId,
                                                                                 final List<ProcessDefinitionOptimizeDto> processDefinitions) {
     return processDefinitions
       .stream()
-      .filter(def -> sessionService.isAuthorizedToSeeProcessDefinition(userId, def.getKey()))
+      .filter(def -> isAuthorizedToReadProcessDefinition(userId, def))
       .collect(Collectors.toList());
   }
 
-  public String getProcessDefinitionXml(String processDefinitionKey, String processDefinitionVersion) {
-    ProcessDefinitionOptimizeDto processDefinitionXmlDto =
-      getProcessDefinitionWithXml(processDefinitionKey, processDefinitionVersion);
-    if (processDefinitionXmlDto != null && processDefinitionXmlDto.getBpmn20Xml() != null) {
-      return processDefinitionXmlDto.getBpmn20Xml();
-    } else {
-      String notFoundErrorMessage = "Could not find xml for process definition with key [" + processDefinitionKey +
-        "] and version [" + processDefinitionVersion + "]. It is possible that is hasn't been imported yet.";
-      logger.error(notFoundErrorMessage);
-      throw new NotFoundException(notFoundErrorMessage);
-    }
+  private boolean isAuthorizedToReadProcessDefinition(final String userId, final ProcessDefinitionOptimizeDto def) {
+    return sessionService.isAuthorizedToSeeProcessDefinition(userId, def.getKey());
   }
 
   private String convertToValidVersion(String processDefinitionKey, String processDefinitionVersion) {
@@ -119,8 +154,8 @@ public class ProcessDefinitionReader {
     }
   }
 
-  private ProcessDefinitionOptimizeDto getProcessDefinitionWithXml(String processDefinitionKey,
-                                                                   String processDefinitionVersion) {
+  private Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionWithXml(String processDefinitionKey,
+                                                                             String processDefinitionVersion) {
     processDefinitionVersion = convertToValidVersion(processDefinitionKey, processDefinitionVersion);
     SearchResponse response = esclient.prepareSearch(
       getOptimizeIndexAliasForType(configurationService.getProcessDefinitionType()))
@@ -147,12 +182,7 @@ public class ProcessDefinitionReader {
         processDefinitionVersion
       );
     }
-    return xml;
-  }
-
-  public List<ProcessDefinitionGroupOptimizeDto> getProcessDefinitionsGroupedByKey(String userId) {
-    Map<String, ProcessDefinitionGroupOptimizeDto> resultMap = getKeyToProcessDefinitionMap(userId);
-    return new ArrayList<>(resultMap.values());
+    return Optional.ofNullable(xml);
   }
 
   private String getLatestVersionToKey(String key) {
@@ -192,33 +222,6 @@ public class ProcessDefinitionReader {
   private ProcessDefinitionGroupOptimizeDto constructGroup(ProcessDefinitionOptimizeDto process) {
     ProcessDefinitionGroupOptimizeDto result = new ProcessDefinitionGroupOptimizeDto();
     result.setKey(process.getKey());
-    return result;
-  }
-
-  public FlowNodeNamesResponseDto getFlowNodeNames(FlowNodeIdsToNamesRequestDto flowNodeIdsToNamesRequestDto) {
-    FlowNodeNamesResponseDto result = new FlowNodeNamesResponseDto();
-
-    ProcessDefinitionOptimizeDto processDefinitionXmlDto = getProcessDefinitionWithXml(
-      flowNodeIdsToNamesRequestDto.getProcessDefinitionKey(),
-      flowNodeIdsToNamesRequestDto.getProcessDefinitionVersion()
-    );
-    if (processDefinitionXmlDto != null) {
-      List<String> nodeIds = flowNodeIdsToNamesRequestDto.getNodeIds();
-      if (nodeIds != null && !nodeIds.isEmpty()) {
-        for (String id : nodeIds) {
-          result.getFlowNodeNames().put(id, processDefinitionXmlDto.getFlowNodeNames().get(id));
-        }
-      } else {
-        result.setFlowNodeNames(processDefinitionXmlDto.getFlowNodeNames());
-      }
-    } else {
-      logger.debug(
-        "No process definition found for key {} and version {}, returning empty result.",
-        flowNodeIdsToNamesRequestDto.getProcessDefinitionKey(),
-        flowNodeIdsToNamesRequestDto.getProcessDefinitionVersion()
-      );
-    }
-
     return result;
   }
 }
