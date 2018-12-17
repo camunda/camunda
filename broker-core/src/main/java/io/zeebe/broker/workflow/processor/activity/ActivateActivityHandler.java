@@ -24,9 +24,6 @@ import io.zeebe.broker.workflow.processor.flownode.ActivateFlowNodeHandler;
 public class ActivateActivityHandler extends ActivateFlowNodeHandler<ExecutableActivity> {
   @Override
   protected void activate(BpmnStepContext<ExecutableActivity> context) {
-    super.activate(context);
-    context
-        .getCatchEventBehavior()
-        .subscribeToEvents(context, context.getElement().getBoundaryEvents());
+    context.getCatchEventBehavior().subscribeToEvents(context, context.getElement());
   }
 }

@@ -20,18 +20,19 @@ package io.zeebe.broker.workflow.model.element;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ExecutableActivity extends ExecutableFlowNode {
-  private List<ExecutableBoundaryEvent> boundaryEvents = new ArrayList<>();
+public class ExecutableActivity extends ExecutableFlowNode implements ExecutableCatchEventSupplier {
+  private List<ExecutableCatchEvent> boundaryEvents = new ArrayList<>();
 
   public ExecutableActivity(String id) {
     super(id);
   }
 
-  public List<ExecutableBoundaryEvent> getBoundaryEvents() {
-    return boundaryEvents;
-  }
-
   public void attach(ExecutableBoundaryEvent boundaryEvent) {
     boundaryEvents.add(boundaryEvent);
+  }
+
+  @Override
+  public List<ExecutableCatchEvent> getEvents() {
+    return boundaryEvents;
   }
 }

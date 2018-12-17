@@ -19,14 +19,14 @@ package io.zeebe.broker.workflow.processor.servicetask;
 
 import io.zeebe.broker.workflow.model.element.ExecutableReceiveTask;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
-import io.zeebe.broker.workflow.processor.BpmnStepHandler;
+import io.zeebe.broker.workflow.processor.flownode.ActivateFlowNodeHandler;
 
-public class SubscribeReceiveTaskHandler implements BpmnStepHandler<ExecutableReceiveTask> {
+public class ActivateReceiveTaskHandler extends ActivateFlowNodeHandler<ExecutableReceiveTask> {
 
   @Override
-  public void handle(final BpmnStepContext<ExecutableReceiveTask> context) {
+  protected void activate(BpmnStepContext<ExecutableReceiveTask> context) {
     final ExecutableReceiveTask receiveTask = context.getElement();
 
-    context.getCatchEventBehavior().subscribeToEvents(context, receiveTask.getEvents());
+    context.getCatchEventBehavior().subscribeToEvents(context, receiveTask);
   }
 }

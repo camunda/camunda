@@ -42,7 +42,7 @@ public enum BpmnStep {
   // task
   CREATE_JOB,
   TERMINATE_JOB_TASK,
-  SUBSCRIBE_RECEIVE_TASK,
+  ACTIVATE_RECEIVE_TASK,
 
   // exclusive gateway
   ACTIVATE_GATEWAY,

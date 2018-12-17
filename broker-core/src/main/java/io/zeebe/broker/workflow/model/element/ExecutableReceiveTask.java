@@ -18,16 +18,13 @@
 package io.zeebe.broker.workflow.model.element;
 
 import io.zeebe.model.bpmn.util.time.RepeatingInterval;
-import java.util.Collections;
-import java.util.List;
 
-public class ExecutableReceiveTask extends ExecutableActivity
-    implements ExecutableCatchEvent, ExecutableCatchEventSupplier {
-
-  private final List<ExecutableCatchEvent> events = Collections.singletonList(this);
+public class ExecutableReceiveTask extends ExecutableActivity implements ExecutableCatchEvent {
 
   public ExecutableReceiveTask(String id) {
     super(id);
+
+    getEvents().add(this);
   }
 
   private ExecutableMessage message;
@@ -54,10 +51,5 @@ public class ExecutableReceiveTask extends ExecutableActivity
   @Override
   public RepeatingInterval getTimer() {
     return null;
-  }
-
-  @Override
-  public List<ExecutableCatchEvent> getEvents() {
-    return events;
   }
 }
