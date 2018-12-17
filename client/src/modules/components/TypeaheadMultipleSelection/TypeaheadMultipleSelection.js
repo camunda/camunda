@@ -58,6 +58,8 @@ export default class TypeaheadMultipleSelection extends React.Component {
   dragStart = evt => {
     this.dragged = evt.currentTarget;
     evt.dataTransfer.effectAllowed = 'move';
+    // firefox requires calling this function to start dragging
+    evt.dataTransfer.setData('text/plain', '');
   };
 
   dragEnd = evt => {
