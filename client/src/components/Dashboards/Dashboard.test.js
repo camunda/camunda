@@ -65,7 +65,8 @@ jest.mock('./service', () => {
     loadDashboard: jest.fn(),
     remove: jest.fn(),
     update: jest.fn(),
-    isAuthorizedToShareDashboard: jest.fn()
+    isAuthorizedToShareDashboard: jest.fn(),
+    isSharingEnabled: jest.fn().mockReturnValue(true)
   };
 });
 
@@ -286,7 +287,7 @@ it('should invoke the renderDashboard function after the interval duration ends'
   node.update();
   node.instance().setAutorefresh(600)();
   jest.runTimersToTime(700);
-  expect(await node.instance().renderDashboard).toHaveBeenCalledTimes(1);
+  expect(node.instance().renderDashboard).toHaveBeenCalledTimes(1);
 });
 
 it('should have a toggle theme button that is only visible in fullscreen mode', () => {
@@ -462,7 +463,8 @@ describe('edit mode', async () => {
     node.setState({
       loaded: true,
       name: '',
-      isAuthorizedToShare: false
+      isAuthorizedToShare: false,
+      sharingEnabled: true
     });
 
     const shareButton = node.find('.Dashboard__share-button');
@@ -478,7 +480,8 @@ describe('edit mode', async () => {
     node.setState({
       loaded: true,
       name: '',
-      isAuthorizedToShare: true
+      isAuthorizedToShare: true,
+      sharingEnabled: true
     });
 
     const shareButton = node.find('.Dashboard__share-button');

@@ -30,7 +30,8 @@ import {
   getSharedDashboard,
   shareDashboard,
   revokeDashboardSharing,
-  isAuthorizedToShareDashboard
+  isAuthorizedToShareDashboard,
+  isSharingEnabled
 } from './service';
 
 import {AddButton} from './AddButton';
@@ -66,11 +67,16 @@ export default themed(
           autoRefreshInterval: null,
           fullScreenActive: false,
           serverError: null,
-          isAuthorizedToShare: false
+          isAuthorizedToShare: false,
+          sharingEnabled: false
         };
       }
 
       componentDidMount = async () => {
+        const sharingEnabled = await isSharingEnabled();
+        this.setState({
+          sharingEnabled
+        });
         await this.renderDashboard();
       };
 
@@ -309,7 +315,14 @@ export default themed(
       };
 
       renderViewMode = state => {
-        const {name, lastModifier, lastModified, confirmModalVisible, isAuthorizedToShare} = state;
+        const {
+          name,
+          lastModifier,
+          lastModified,
+          confirmModalVisible,
+          isAuthorizedToShare,
+          sharingEnabled
+        } = state;
         return (
           <Fullscreen enabled={this.state.fullScreenActive} onChange={this.changeFullScreen}>
             <div
@@ -348,7 +361,7 @@ export default themed(
                         className="Dashboard__tool-button Dashboard__share-button"
                         icon="share"
                         title="Share"
-                        disabled={!isAuthorizedToShare}
+                        disabled={!sharingEnabled || !isAuthorizedToShare}
                         tooltip={this.createShareTooltip()}
                       >
                         <ShareEntity
@@ -417,10 +430,16 @@ export default themed(
       };
 
       createShareTooltip = () => {
-        return this.state.isAuthorizedToShare
-          ? ''
-          : 'You are not authorized to share the dashboard, ' +
-              " because you don't have access to all reports on the dashboard!";
+        if (!this.state.sharingEnabled) {
+          return 'Sharing is disabled per configuration';
+        }
+        if (!this.state.isAuthorizedToShare) {
+          return (
+            'You are not authorized to share the dashboard, ' +
+            " because you don't have access to all reports on the dashboard!"
+          );
+        }
+        return '';
       };
 
       inputRef = input => {

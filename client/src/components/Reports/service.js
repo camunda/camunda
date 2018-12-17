@@ -34,6 +34,12 @@ export async function loadVariables(processDefinitionKey, processDefinitionVersi
   return await response.json();
 }
 
+export async function isSharingEnabled() {
+  const response = await get(`api/share/isEnabled`);
+  const json = await response.json();
+  return json.enabled;
+}
+
 export async function getReportData(query) {
   let response;
 

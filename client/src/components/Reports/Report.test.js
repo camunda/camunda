@@ -63,7 +63,8 @@ jest.mock('./service', () => {
     remove: jest.fn(),
     getReportData: jest.fn(),
     saveReport: jest.fn(),
-    loadProcessDefinitionXml: jest.fn()
+    loadProcessDefinitionXml: jest.fn(),
+    isSharingEnabled: jest.fn().mockReturnValue(true)
   };
 });
 

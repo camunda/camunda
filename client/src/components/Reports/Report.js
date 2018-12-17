@@ -26,7 +26,8 @@ import {
   saveReport,
   shareReport,
   revokeReportSharing,
-  getSharedReport
+  getSharedReport,
+  isSharingEnabled
 } from './service';
 
 import {loadProcessDefinitions, checkDeleteConflict, incompatibleFilters} from 'services';
@@ -59,7 +60,8 @@ export default withErrorHandling(
         combined: false,
         reportType: 'process',
         redirectToReport: false,
-        conflict: null
+        conflict: null,
+        sharingEnabled: false
       };
     }
 
@@ -107,6 +109,7 @@ export default withErrorHandling(
 
           const reportResult = await getReportData(this.id);
           const stateData = data || (await this.initializeReport(combined));
+          const sharingEnabled = await isSharingEnabled();
           this.setState(
             {
               name,
@@ -118,7 +121,8 @@ export default withErrorHandling(
               reportResult: reportResult || {combined, data: stateData},
               reportType,
               originalName: name,
-              combined
+              combined,
+              sharingEnabled
             },
             async () => {
               if (isNew) {
@@ -561,8 +565,7 @@ export default withErrorHandling(
     };
 
     renderViewMode = () => {
-      const {name, lastModifier, lastModified, reportResult} = this.state;
-
+      const {name, lastModifier, lastModified, reportResult, sharingEnabled} = this.state;
       return (
         <div className="Report">
           <div className="Report__header">
@@ -593,6 +596,8 @@ export default withErrorHandling(
                 className="Report__tool-button Report__share-button"
                 icon="share"
                 title="Share"
+                tooltip={!sharingEnabled ? 'Sharing is disabled per configuration' : ''}
+                disabled={!sharingEnabled}
               >
                 <ShareEntity
                   type="report"

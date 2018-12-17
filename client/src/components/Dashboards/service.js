@@ -23,6 +23,12 @@ export async function loadReport(report) {
   }
 }
 
+export async function isSharingEnabled() {
+  const response = await get(`api/share/isEnabled`);
+  const json = await response.json();
+  return json.enabled;
+}
+
 export async function shareDashboard(dashboardId) {
   const body = {
     dashboardId
