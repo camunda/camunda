@@ -287,13 +287,18 @@ historyCleanup:
   # time to live (ttl) for process instance data, from when reached the process instance will get cleaned up
   # Format is ISO_8601 duration  https://en.wikipedia.org/wiki/ISO_8601#Durations
   ttl: 'P2Y'
-  # type of cleanup to perform, possible values:
+  # type of process data cleanup to perform, possible values:
   # 'all' - delete everything related to the process instance
   # 'variables' - only delete associated variables of a process instance
-  mode: 'all'
-  # process definition specific configuration parameters that will overwrite the general parameters (ttl, cleanupMode)
+  processDataCleanupMode: 'all'
+  # process definition specific configuration parameters that will overwrite the general parameters (ttl, processDataCleanupMode)
   # for the specific processDefinition key
   perProcessDefinitionConfig:
   # 'myProcessDefinitionKey':
   #   ttl: 'P2M'
   #    mode: 'variables'
+  # decision definition specific configuration parameters that will overwrite the general parameters (ttl)
+  # for the specific decisionDefinition key
+  perDecisionDefinitionConfig:
+  # 'myDecisionDefinitionKey':
+  #   ttl: 'P2M'

@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.cleanup;
 
 import org.apache.commons.collections.ListUtils;
+import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
@@ -21,6 +22,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.time.OffsetDateTime;
 import java.time.Period;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +42,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class  OptimizeCleanupServiceTest {
+public class OptimizeProcessCleanupServiceTest {
 
   @Mock
   private ProcessDefinitionReader processDefinitionReader;
@@ -53,19 +55,19 @@ public class  OptimizeCleanupServiceTest {
 
   @Before
   public void init() {
-    final String[] locations = {"service-config.yaml", "cleanup-test-config.yaml"};
-    configurationService = new ConfigurationService(locations);
+    configurationService = new ConfigurationService();
+    mockProcessDefinitions(new ArrayList<>());
   }
 
   @Test
   public void testCleanupRunForMultipleProcessDefinitionsDefaultConfig() {
     // given
-    final List<String> processDefinitionKeys = generateRandomProcessDefinitionsKeys(3);
+    final List<String> processDefinitionKeys = generateRandomDefinitionsKeys(3);
     mockProcessDefinitions(processDefinitionKeys);
 
     //when
     final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
-    underTest.runCleanup();
+    doCleanup(underTest);
 
     //then
     assertDeleteProcessInstancesExecutedFor(processDefinitionKeys, getCleanupConfig().getDefaultTtl());
@@ -75,20 +77,16 @@ public class  OptimizeCleanupServiceTest {
   public void testCleanupRunForMultipleProcessDefinitionsDifferentDefaultMode() {
     // given
     final CleanupMode customMode = CleanupMode.VARIABLES;
-    getCleanupConfig().setDefaultMode(customMode);
-    final List<String> processDefinitionKeys = generateRandomProcessDefinitionsKeys(3);
+    getCleanupConfig().setDefaultProcessDataCleanupMode(customMode);
+    final List<String> processDefinitionKeys = generateRandomDefinitionsKeys(3);
 
     //when
     mockProcessDefinitions(processDefinitionKeys);
     final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
-    underTest.runCleanup();
+    doCleanup(underTest);
 
     //then
     assertDeleteAllInstanceVariablesExecutedFor(processDefinitionKeys, getCleanupConfig().getDefaultTtl());
-  }
-
-  private OptimizeCleanupConfiguration getCleanupConfig() {
-    return configurationService.getCleanupServiceConfiguration();
   }
 
   @Test
@@ -96,12 +94,12 @@ public class  OptimizeCleanupServiceTest {
     // given
     final Period customTtl = Period.parse("P2M");
     getCleanupConfig().setDefaultTtl(customTtl);
-    final List<String> processDefinitionKeys = generateRandomProcessDefinitionsKeys(3);
+    final List<String> processDefinitionKeys = generateRandomDefinitionsKeys(3);
 
     //when
     mockProcessDefinitions(processDefinitionKeys);
     final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
-    underTest.runCleanup();
+    doCleanup(underTest);
 
     //then
     assertDeleteProcessInstancesExecutedFor(processDefinitionKeys, customTtl);
@@ -111,13 +109,13 @@ public class  OptimizeCleanupServiceTest {
   public void testCleanupRunForMultipleProcessDefinitionsSpecificModeOverridesDefault() {
     // given
     final CleanupMode customMode = CleanupMode.VARIABLES;
-    final List<String> processDefinitionKeysWithSpecificMode = generateRandomProcessDefinitionsKeys(3);
+    final List<String> processDefinitionKeysWithSpecificMode = generateRandomDefinitionsKeys(3);
     Map<String, ProcessDefinitionCleanupConfiguration> processDefinitionSpecificConfiguration =
       getCleanupConfig().getProcessDefinitionSpecificConfiguration();
     processDefinitionKeysWithSpecificMode.forEach(processDefinitionKey -> processDefinitionSpecificConfiguration.put(
       processDefinitionKey, new ProcessDefinitionCleanupConfiguration(customMode)
     ));
-    final List<String> processDefinitionKeysWithDefaultMode = generateRandomProcessDefinitionsKeys(3);
+    final List<String> processDefinitionKeysWithDefaultMode = generateRandomDefinitionsKeys(3);
     final List allProcessDefinitionKeys = ListUtils.union(
       processDefinitionKeysWithSpecificMode,
       processDefinitionKeysWithDefaultMode
@@ -126,7 +124,7 @@ public class  OptimizeCleanupServiceTest {
     //when
     mockProcessDefinitions(allProcessDefinitionKeys);
     final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
-    underTest.runCleanup();
+    doCleanup(underTest);
 
     //then
     verifyDeleteProcessInstanceExecutionReturnCapturedArguments(processDefinitionKeysWithDefaultMode);
@@ -137,13 +135,13 @@ public class  OptimizeCleanupServiceTest {
   public void testCleanupRunForMultipleProcessDefinitionsSpecificTtlsOverrideDefault() {
     // given
     final Period customTtl = Period.parse("P2M");
-    final List<String> processDefinitionKeysWithSpecificTtl = generateRandomProcessDefinitionsKeys(3);
+    final List<String> processDefinitionKeysWithSpecificTtl = generateRandomDefinitionsKeys(3);
     Map<String, ProcessDefinitionCleanupConfiguration> processDefinitionSpecificConfiguration =
       getCleanupConfig().getProcessDefinitionSpecificConfiguration();
     processDefinitionKeysWithSpecificTtl.forEach(processDefinitionKey -> processDefinitionSpecificConfiguration.put(
       processDefinitionKey, new ProcessDefinitionCleanupConfiguration(customTtl)
     ));
-    final List<String> processDefinitionKeysWithDefaultTtl = generateRandomProcessDefinitionsKeys(3);
+    final List<String> processDefinitionKeysWithDefaultTtl = generateRandomDefinitionsKeys(3);
     final List allProcessDefinitionKeys = ListUtils.union(
       processDefinitionKeysWithSpecificTtl,
       processDefinitionKeysWithDefaultTtl
@@ -152,7 +150,7 @@ public class  OptimizeCleanupServiceTest {
     //when
     mockProcessDefinitions(allProcessDefinitionKeys);
     final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
-    underTest.runCleanup();
+    doCleanup(underTest);
 
     //then
     Map<String, OffsetDateTime> capturedArguments = verifyDeleteProcessInstanceExecutionReturnCapturedArguments(
@@ -164,28 +162,16 @@ public class  OptimizeCleanupServiceTest {
     );
   }
 
-  @Test(expected = OptimizeConfigurationException.class)
-  public void testFailInitOnInvalidConfig() {
-    // given
-    getCleanupConfig().setDefaultTtl(null);
-
-    //when
-    final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
-    underTest.init();
-
-    //then
-  }
-
   @Test
   public void testCleanupRunOnceForEveryProcessDefinitionKey() {
     // given
-    final List<String> processDefinitionKeys = generateRandomProcessDefinitionsKeys(3);
+    final List<String> processDefinitionKeys = generateRandomDefinitionsKeys(3);
     // mock returns keys twice (in reality they have different versions but that doesn't matter for the test)
     mockProcessDefinitions(ListUtils.union(processDefinitionKeys, processDefinitionKeys));
 
     //when
     final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
-    underTest.runCleanup();
+    doCleanup(underTest);
 
     //then
     assertDeleteProcessInstancesExecutedFor(processDefinitionKeys, getCleanupConfig().getDefaultTtl());
@@ -200,13 +186,13 @@ public class  OptimizeCleanupServiceTest {
       new ProcessDefinitionCleanupConfiguration(CleanupMode.VARIABLES)
     );
     // and this key is not present in the known process definition keys
-    generateRandomProcessDefinitionsKeys(3);
+    mockProcessDefinitions(generateRandomDefinitionsKeys(3));
 
     //when I run the cleanup
     final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
     OptimizeConfigurationException expectedException = null;
     try {
-      underTest.runCleanup();
+      doCleanup(underTest);
     } catch (OptimizeConfigurationException e) {
       expectedException = e;
     }
@@ -214,6 +200,14 @@ public class  OptimizeCleanupServiceTest {
     //then it fails with an exception
     MatcherAssert.assertThat(expectedException, CoreMatchers.is((notNullValue())));
     MatcherAssert.assertThat(expectedException.getMessage(), containsString(configuredKey));
+  }
+
+  private void doCleanup(final OptimizeCleanupService underTest) {
+    underTest.doCleanup(OffsetDateTime.now());
+  }
+
+  private OptimizeCleanupConfiguration getCleanupConfig() {
+    return configurationService.getCleanupServiceConfiguration();
   }
 
   private void assertDeleteProcessInstancesExecutedFor(List<String> expectedProcessDefinitionKeys, Period expectedTtl) {
@@ -224,16 +218,16 @@ public class  OptimizeCleanupServiceTest {
   }
 
   private void assertKeysWereCalledWithExpectedTtl(Map<String, OffsetDateTime> capturedInvocationArguments,
-                                                   List<String> expectedProcessDefinitionKeys,
+                                                   List<String> expectedDefinitionKeys,
                                                    Period expectedTtl) {
-    Map<String, OffsetDateTime> filteredInvocationArguments = capturedInvocationArguments.entrySet().stream()
-      .filter(entry -> expectedProcessDefinitionKeys.contains(entry.getKey()))
+    final Map<String, OffsetDateTime> filteredInvocationArguments = capturedInvocationArguments.entrySet().stream()
+      .filter(entry -> expectedDefinitionKeys.contains(entry.getKey()))
       .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
-    assertThat(filteredInvocationArguments.size(), is(expectedProcessDefinitionKeys.size()));
-    final OffsetDateTime endDateFilterValue = filteredInvocationArguments.values()
-      .toArray(new OffsetDateTime[]{})[0];
-    assertThat(endDateFilterValue, lessThanOrEqualTo(OffsetDateTime.now().minus(expectedTtl)));
-    filteredInvocationArguments.values().forEach(instant -> assertThat(instant, is(endDateFilterValue)));
+    assertThat(filteredInvocationArguments.size(), is(expectedDefinitionKeys.size()));
+
+    final OffsetDateTime dateFilterValue = filteredInvocationArguments.values().toArray(new OffsetDateTime[]{})[0];
+    assertThat(dateFilterValue, lessThanOrEqualTo(OffsetDateTime.now().minus(expectedTtl)));
+    filteredInvocationArguments.values().forEach(instant -> assertThat(instant, is(dateFilterValue)));
   }
 
   private Map<String, OffsetDateTime> verifyDeleteProcessInstanceExecutionReturnCapturedArguments(List<String> expectedProcessDefinitionKeys) {
@@ -290,7 +284,7 @@ public class  OptimizeCleanupServiceTest {
     return processDefinitionIds;
   }
 
-  private List<String> generateRandomProcessDefinitionsKeys(Integer amount) {
+  private List<String> generateRandomDefinitionsKeys(Integer amount) {
     return IntStream.range(0, amount)
       .mapToObj(i -> UUID.randomUUID().toString())
       .collect(toList());
@@ -302,12 +296,15 @@ public class  OptimizeCleanupServiceTest {
     return processDefinitionOptimizeDto;
   }
 
+  private DecisionDefinitionOptimizeDto createDecisionDefinitionDto(String key) {
+    DecisionDefinitionOptimizeDto decisionDefinitionOptimizeDto = new DecisionDefinitionOptimizeDto();
+    decisionDefinitionOptimizeDto.setKey(key);
+    return decisionDefinitionOptimizeDto;
+  }
+
   private OptimizeCleanupService createOptimizeCleanupServiceToTest() {
-    return new OptimizeCleanupService(
-      configurationService,
-      processDefinitionReader,
-      processInstanceWriter,
-      variableWriter
+    return new OptimizeProcessCleanupService(
+      configurationService, processDefinitionReader, processInstanceWriter, variableWriter
     );
   }
 }

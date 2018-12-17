@@ -73,7 +73,7 @@ public abstract class AbstractCleanupTest {
     logger.info("Starting History Cleanup...");
     final ExecutorService cleanupExecutorService = Executors.newSingleThreadExecutor();
     cleanupExecutorService.execute(
-      () -> embeddedOptimizeRule.getCleanupService().runCleanup()
+      () -> embeddedOptimizeRule.getCleanupScheduler().runCleanup()
     );
     cleanupExecutorService.shutdown();
     boolean wasAbleToFinishImportInTime = cleanupExecutorService.awaitTermination(

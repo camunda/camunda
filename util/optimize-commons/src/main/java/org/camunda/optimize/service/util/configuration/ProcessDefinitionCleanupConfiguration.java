@@ -9,8 +9,8 @@ import java.time.Period;
 public class ProcessDefinitionCleanupConfiguration {
   @JsonProperty("ttl")
   private Period ttl;
-  @JsonProperty("mode")
-  private CleanupMode cleanupMode;
+  @JsonProperty("processDataCleanupMode")
+  private CleanupMode processDataCleanupMode;
 
   protected ProcessDefinitionCleanupConfiguration() {
   }
@@ -19,20 +19,20 @@ public class ProcessDefinitionCleanupConfiguration {
     this(ttl, null);
   }
 
-  public ProcessDefinitionCleanupConfiguration(CleanupMode cleanupMode) {
-    this(null, cleanupMode);
+  public ProcessDefinitionCleanupConfiguration(CleanupMode processDataCleanupMode) {
+    this(null, processDataCleanupMode);
   }
 
-  public ProcessDefinitionCleanupConfiguration(Period ttl, CleanupMode cleanupMode) {
+  public ProcessDefinitionCleanupConfiguration(Period ttl, CleanupMode processDataCleanupMode) {
     this.ttl = ttl;
-    this.cleanupMode = cleanupMode;
+    this.processDataCleanupMode = processDataCleanupMode;
   }
 
   public Period getTtl() {
     return ttl;
   }
 
-  public CleanupMode getCleanupMode() {
-    return cleanupMode;
+  public CleanupMode getProcessDataCleanupMode() {
+    return processDataCleanupMode;
   }
 }

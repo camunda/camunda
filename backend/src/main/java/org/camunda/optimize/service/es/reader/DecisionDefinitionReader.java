@@ -53,6 +53,10 @@ public class DecisionDefinitionReader {
     this.sessionService = sessionService;
   }
 
+  public List<DecisionDefinitionOptimizeDto> getDecisionDefinitionsAsService() {
+    return getDecisionDefinitionsAsService(false);
+  }
+
   public List<DecisionDefinitionOptimizeDto> getDecisionDefinitionsAsService(final boolean withXml) {
     return getDecisionDefinitions(null, withXml);
   }

@@ -11,6 +11,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
@@ -39,7 +41,9 @@ public class EngineDatabaseRule extends TestWatcher {
 
   public EngineDatabaseRule(Properties properties) {
     database = properties.getProperty("db.name");
-    usePostgresOptimizations = Optional.ofNullable(properties.getProperty("db.usePostgresOptimizations")).map(Boolean::valueOf).orElse(true);
+    usePostgresOptimizations = Optional.ofNullable(properties.getProperty("db.usePostgresOptimizations"))
+      .map(Boolean::valueOf)
+      .orElse(true);
     String jdbcDriver = properties.getProperty("db.jdbc.driver");
     String dbUrl = properties.getProperty("db.url");
     if (dbUrl == null || dbUrl.isEmpty() || dbUrl.startsWith("${")) {
@@ -133,7 +137,7 @@ public class EngineDatabaseRule extends TestWatcher {
   }
 
   public void changeActivityDurationForProcessDefinition(String processDefinitionId,
-                                     long duration) throws SQLException {
+                                                         long duration) throws SQLException {
     String sql = "UPDATE ACT_HI_ACTINST " +
       "SET DURATION_ = ? WHERE " +
       "PROC_DEF_ID_ = ?";
@@ -167,7 +171,7 @@ public class EngineDatabaseRule extends TestWatcher {
   }
 
   public void changeFirstActivityInstanceStartDate(String activityInstanceId,
-                                                OffsetDateTime startDate) throws SQLException {
+                                                   OffsetDateTime startDate) throws SQLException {
     String sql = "UPDATE ACT_HI_ACTINST " +
       "SET START_TIME_ = ? WHERE " +
       "ID_ = (SELECT ID_ FROM ACT_HI_ACTINST WHERE ACT_ID_ = ? ORDER BY START_TIME_ LIMIT 1) ";
@@ -179,8 +183,8 @@ public class EngineDatabaseRule extends TestWatcher {
   }
 
   public void changeActivityInstanceStartDateForProcessDefinition(
-                                              String processDefinitionId,
-                                              OffsetDateTime startDate) throws SQLException {
+    String processDefinitionId,
+    OffsetDateTime startDate) throws SQLException {
     String sql = "UPDATE ACT_HI_ACTINST " +
       "SET START_TIME_ = ? WHERE " +
       "PROC_DEF_ID_ = ?";
@@ -204,7 +208,7 @@ public class EngineDatabaseRule extends TestWatcher {
   }
 
   public void changeActivityInstanceEndDate(String processInstanceId,
-                                              OffsetDateTime endDate) throws SQLException {
+                                            OffsetDateTime endDate) throws SQLException {
     String sql = "UPDATE ACT_HI_ACTINST " +
       "SET END_TIME_ = ? WHERE " +
       "PROC_INST_ID_ = ?";
@@ -216,7 +220,7 @@ public class EngineDatabaseRule extends TestWatcher {
   }
 
   public void changeFirstActivityInstanceEndDate(String activityInstanceId,
-                                                OffsetDateTime endDate) throws SQLException {
+                                                 OffsetDateTime endDate) throws SQLException {
     String sql = "UPDATE ACT_HI_ACTINST " +
       "SET END_TIME_ = ? WHERE " +
       "ID_ = (SELECT ID_ FROM ACT_HI_ACTINST WHERE ACT_ID_ = ? ORDER BY END_TIME_ LIMIT 1) ";
@@ -228,8 +232,8 @@ public class EngineDatabaseRule extends TestWatcher {
   }
 
   public void changeActivityInstanceEndDateForProcessDefinition(
-                                              String processDefinitionId,
-                                              OffsetDateTime endDate) throws SQLException {
+    String processDefinitionId,
+    OffsetDateTime endDate) throws SQLException {
     String sql = "UPDATE ACT_HI_ACTINST " +
       "SET END_TIME_ = ? WHERE " +
       "PROC_DEF_ID_ = ?";
@@ -254,7 +258,7 @@ public class EngineDatabaseRule extends TestWatcher {
 
   public void changeProcessInstanceState(String processInstanceId, String newState) throws SQLException {
     String sql = "UPDATE ACT_HI_PROCINST " +
-            "SET STATE_ = ? WHERE PROC_INST_ID_ = ?";
+      "SET STATE_ = ? WHERE PROC_INST_ID_ = ?";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
     statement.setString(1, newState);
     statement.setString(2, processInstanceId);
@@ -262,7 +266,8 @@ public class EngineDatabaseRule extends TestWatcher {
     connection.commit();
   }
 
-  public void updateProcessInstanceStartDates(Map<String, OffsetDateTime> processInstanceIdToStartDate) throws SQLException {
+  public void updateProcessInstanceStartDates(Map<String, OffsetDateTime> processInstanceIdToStartDate) throws
+                                                                                                        SQLException {
     String sql = "UPDATE ACT_HI_PROCINST " +
       "SET START_TIME_ = ? WHERE PROC_INST_ID_ = ?";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
@@ -274,7 +279,7 @@ public class EngineDatabaseRule extends TestWatcher {
     connection.commit();
   }
 
-   public void changeProcessInstanceEndDate(String processInstanceId, OffsetDateTime endDate) throws SQLException {
+  public void changeProcessInstanceEndDate(String processInstanceId, OffsetDateTime endDate) throws SQLException {
     String sql = "UPDATE ACT_HI_PROCINST " +
       "SET END_TIME_ = ? WHERE PROC_INST_ID_ = ?";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
@@ -284,7 +289,8 @@ public class EngineDatabaseRule extends TestWatcher {
     connection.commit();
   }
 
-  public void updateProcessInstanceEndDates(Map<String, OffsetDateTime> processInstanceIdToEndDate) throws SQLException {
+  public void updateProcessInstanceEndDates(Map<String, OffsetDateTime> processInstanceIdToEndDate) throws
+                                                                                                    SQLException {
     String sql = "UPDATE ACT_HI_PROCINST " +
       "SET END_TIME_ = ? WHERE PROC_INST_ID_ = ?";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
@@ -300,18 +306,18 @@ public class EngineDatabaseRule extends TestWatcher {
     String sql = "select count(*) as total from act_hi_actinst;";
     String postgresSQL =
       "SELECT reltuples AS total FROM pg_class WHERE relname = 'act_hi_actinst';";
-    sql = usePostgresOptimizations() ? postgresSQL: sql;
+    sql = usePostgresOptimizations() ? postgresSQL : sql;
     ResultSet statement =
       connection.createStatement().executeQuery(sql);
     statement.next();
-    int totalCount =  statement.getInt("total");
+    int totalCount = statement.getInt("total");
 
     // substract the amount of activity instances that are not finished yet
     sql = "select count(*) as total from act_hi_actinst where END_TIME_ is null;";
     statement =
       connection.createStatement().executeQuery(sql);
     statement.next();
-    totalCount -=  statement.getInt("total");
+    totalCount -= statement.getInt("total");
     return totalCount;
   }
 
@@ -319,7 +325,7 @@ public class EngineDatabaseRule extends TestWatcher {
     String sql = "select count(*) as total from act_hi_procinst;";
     String postgresSQL =
       "SELECT reltuples AS total FROM pg_class WHERE relname = 'act_hi_procinst';";
-    sql = usePostgresOptimizations() ? postgresSQL: sql;
+    sql = usePostgresOptimizations() ? postgresSQL : sql;
     ResultSet statement =
       connection.createStatement().executeQuery(sql);
     statement.next();
@@ -330,16 +336,16 @@ public class EngineDatabaseRule extends TestWatcher {
     String sql = "select count(*) as total from act_hi_varinst;";
     String postgresSQL =
       "SELECT reltuples AS total FROM pg_class WHERE relname = 'act_hi_varinst';";
-    sql = usePostgresOptimizations() ? postgresSQL: sql;
+    sql = usePostgresOptimizations() ? postgresSQL : sql;
     ResultSet statement =
       connection.createStatement().executeQuery(sql);
     statement.next();
-    int totalAmount =  statement.getInt("total");
+    int totalAmount = statement.getInt("total");
 
     // subtract all case and complex variables
     sql = "select count(*) as total from act_hi_varinst " +
-            "where var_type_ not in ('string', 'double', 'integer', 'long', 'short', 'date', 'boolean' ) " +
-              "or CASE_INST_ID_  is not null;";
+      "where var_type_ not in ('string', 'double', 'integer', 'long', 'short', 'date', 'boolean' ) " +
+      "or CASE_INST_ID_  is not null;";
     statement =
       connection.createStatement().executeQuery(sql);
     statement.next();
@@ -354,6 +360,34 @@ public class EngineDatabaseRule extends TestWatcher {
       connection.createStatement().executeQuery(sql);
     statement.next();
     return statement.getInt("total");
+  }
+
+  public void changeDecisionInstanceEvaluationDate(OffsetDateTime fromEvaluationDateTime,
+                                                   OffsetDateTime newEvaluationDateTime) throws SQLException {
+    final String sql = "UPDATE ACT_HI_DECINST " +
+      "SET EVAL_TIME_ = ? WHERE EVAL_TIME_ >= ?";
+    final PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setTimestamp(1, java.sql.Timestamp.valueOf(newEvaluationDateTime.toLocalDateTime()));
+    statement.setTimestamp(2, java.sql.Timestamp.valueOf(fromEvaluationDateTime.toLocalDateTime()));
+    statement.executeUpdate();
+    connection.commit();
+  }
+
+  public List<String> getDecisionInstanceIdsWithEvaluationDateEqualTo(OffsetDateTime evaluationDateTime)
+    throws SQLException {
+    final List<String> result = new ArrayList<>();
+
+    final String sql = "SELECT ID_ FROM ACT_HI_DECINST " +
+      "WHERE EVAL_TIME_ = ?";
+    final PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setTimestamp(1, java.sql.Timestamp.valueOf(evaluationDateTime.toLocalDateTime()));
+    final ResultSet resultSet = statement.executeQuery();
+
+    while (resultSet.next()) {
+      result.add(resultSet.getString(1));
+    }
+
+    return result;
   }
 
   @Override

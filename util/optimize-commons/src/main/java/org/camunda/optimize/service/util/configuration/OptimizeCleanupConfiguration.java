@@ -21,19 +21,24 @@ public class OptimizeCleanupConfiguration {
   private String cronTrigger;
   @JsonProperty("ttl")
   private Period defaultTtl;
-  @JsonProperty("mode")
-  private CleanupMode defaultMode;
+  @JsonProperty("processDataCleanupMode")
+  private CleanupMode defaultProcessDataCleanupMode;
   @JsonProperty("perProcessDefinitionConfig")
   private Map<String, ProcessDefinitionCleanupConfiguration> processDefinitionSpecificConfiguration = new HashMap<>();
+  @JsonProperty("perDecisionDefinitionConfig")
+  private Map<String, DecisionDefinitionCleanupConfiguration> decisionDefinitionSpecificConfiguration = new HashMap<>();
 
   protected OptimizeCleanupConfiguration() {
   }
 
-  public OptimizeCleanupConfiguration(boolean enabled, String cronTrigger, Period defaultTtl, CleanupMode defaultMode) {
+  public OptimizeCleanupConfiguration(boolean enabled,
+                                      String cronTrigger,
+                                      Period defaultTtl,
+                                      CleanupMode defaultProcessDataCleanupMode) {
     this.enabled = enabled;
     setCronTrigger(cronTrigger);
     this.defaultTtl = defaultTtl;
-    this.defaultMode = defaultMode;
+    this.defaultProcessDataCleanupMode = defaultProcessDataCleanupMode;
   }
 
   public void validate() {
@@ -43,7 +48,7 @@ public class OptimizeCleanupConfiguration {
     if (defaultTtl == null) {
       throw new OptimizeConfigurationException(HISTORY_CLEANUP + ".ttl must be set");
     }
-    if (defaultMode == null) {
+    if (defaultProcessDataCleanupMode == null) {
       throw new OptimizeConfigurationException(HISTORY_CLEANUP + ".mode must be set");
     }
   }
@@ -60,8 +65,8 @@ public class OptimizeCleanupConfiguration {
     return defaultTtl;
   }
 
-  public CleanupMode getDefaultMode() {
-    return defaultMode;
+  public CleanupMode getDefaultProcessDataCleanupMode() {
+    return defaultProcessDataCleanupMode;
   }
 
   public Map<String, ProcessDefinitionCleanupConfiguration> getProcessDefinitionSpecificConfiguration() {
@@ -79,7 +84,26 @@ public class OptimizeCleanupConfiguration {
 
     return new ProcessDefinitionCleanupConfiguration(
       keySpecificConfig.flatMap(config -> Optional.ofNullable(config.getTtl())).orElse(getDefaultTtl()),
-      keySpecificConfig.flatMap(config -> Optional.ofNullable(config.getCleanupMode())).orElse(getDefaultMode())
+      keySpecificConfig.flatMap(config -> Optional.ofNullable(config.getProcessDataCleanupMode())).orElse(
+        getDefaultProcessDataCleanupMode())
+    );
+  }
+
+  public Map<String, DecisionDefinitionCleanupConfiguration> getDecisionDefinitionSpecificConfiguration() {
+    return decisionDefinitionSpecificConfiguration;
+  }
+
+  public Set<String> getAllDecisionSpecificConfigurationKeys() {
+    return new HashSet<>(decisionDefinitionSpecificConfiguration.keySet());
+  }
+
+  public DecisionDefinitionCleanupConfiguration getDecisionDefinitionCleanupConfigurationForKey(final String decisionDefinitionKey) {
+    final Optional<DecisionDefinitionCleanupConfiguration> keySpecificConfig =
+      Optional.ofNullable(decisionDefinitionSpecificConfiguration)
+        .flatMap(map -> Optional.ofNullable(map.get(decisionDefinitionKey)));
+
+    return new DecisionDefinitionCleanupConfiguration(
+      keySpecificConfig.flatMap(config -> Optional.ofNullable(config.getTtl())).orElse(getDefaultTtl())
     );
   }
 
@@ -104,11 +128,19 @@ public class OptimizeCleanupConfiguration {
     this.defaultTtl = defaultTtl;
   }
 
-  public void setDefaultMode(CleanupMode defaultMode) {
-    this.defaultMode = defaultMode;
+  public void setDefaultProcessDataCleanupMode(CleanupMode defaultProcessDataCleanupMode) {
+    this.defaultProcessDataCleanupMode = defaultProcessDataCleanupMode;
   }
 
-  public void setProcessDefinitionSpecificConfiguration(Map<String, ProcessDefinitionCleanupConfiguration> processDefinitionSpecificConfiguration) {
-    this.processDefinitionSpecificConfiguration = Optional.ofNullable(processDefinitionSpecificConfiguration).orElse(new HashMap<>());
+  public void setProcessDefinitionSpecificConfiguration(
+    Map<String, ProcessDefinitionCleanupConfiguration> processDefinitionSpecificConfiguration) {
+    this.processDefinitionSpecificConfiguration = Optional.ofNullable(processDefinitionSpecificConfiguration)
+      .orElse(new HashMap<>());
+  }
+
+  public void setDecisionDefinitionSpecificConfiguration(
+    Map<String, DecisionDefinitionCleanupConfiguration> decisionDefinitionSpecificConfiguration) {
+    this.decisionDefinitionSpecificConfiguration = Optional.ofNullable(decisionDefinitionSpecificConfiguration)
+      .orElse(new HashMap<>());
   }
 }

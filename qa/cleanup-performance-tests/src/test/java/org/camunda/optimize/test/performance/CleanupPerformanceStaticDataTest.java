@@ -32,7 +32,7 @@ public class CleanupPerformanceStaticDataTest extends AbstractCleanupTest {
     embeddedOptimizeRule.getConfigurationService().getCleanupServiceConfiguration().setDefaultTtl(Period.parse("P0D"));
     embeddedOptimizeRule.getConfigurationService()
       .getCleanupServiceConfiguration()
-      .setDefaultMode(CleanupMode.VARIABLES);
+      .setDefaultProcessDataCleanupMode(CleanupMode.VARIABLES);
     final int countProcessDefinitions = elasticSearchRule.getImportedCountOf(
       configurationService.getProcessDefinitionType(), configurationService
     );
@@ -80,7 +80,8 @@ public class CleanupPerformanceStaticDataTest extends AbstractCleanupTest {
     final ConfigurationService configurationService = getConfigurationService();
     //given ttl of 0
     embeddedOptimizeRule.getConfigurationService().getCleanupServiceConfiguration().setDefaultTtl(Period.parse("P0D"));
-    embeddedOptimizeRule.getConfigurationService().getCleanupServiceConfiguration().setDefaultMode(CleanupMode.ALL);
+    embeddedOptimizeRule.getConfigurationService().getCleanupServiceConfiguration()
+      .setDefaultProcessDataCleanupMode(CleanupMode.ALL);
     final int countProcessDefinitions = elasticSearchRule.getImportedCountOf(
       configurationService.getProcessDefinitionType(), configurationService
     );

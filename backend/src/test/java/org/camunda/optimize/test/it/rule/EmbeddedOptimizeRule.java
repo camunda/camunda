@@ -8,7 +8,7 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.alert.AlertService;
-import org.camunda.optimize.service.cleanup.OptimizeCleanupService;
+import org.camunda.optimize.service.cleanup.OptimizeCleanupScheduler;
 import org.camunda.optimize.service.engine.importing.EngineImportScheduler;
 import org.camunda.optimize.service.engine.importing.EngineImportSchedulerFactory;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandler;
@@ -343,7 +343,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     return getOptimize().getConfigurationService();
   }
 
-  public OptimizeCleanupService getCleanupService() {
+  public OptimizeCleanupScheduler getCleanupScheduler() {
     return getOptimize().getCleanupService();
   }
 
