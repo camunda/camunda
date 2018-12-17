@@ -1,6 +1,7 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.LicenseInformationDto;
+import org.camunda.optimize.service.license.LicenseManager;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.junit.BeforeClass;
@@ -137,6 +138,8 @@ public class LicenseCheckingRestServiceIT {
 
   @Test
   public void noLicenseAvailableShouldThrowAnError() {
+    // to ensure license is refreshed from file and elasticsearch
+    embeddedOptimizeRule.getApplicationContext().getBean(LicenseManager.class).init();
     // when
     String errorMessage = embeddedOptimizeRule
             .getRequestExecutor()

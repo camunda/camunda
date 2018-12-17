@@ -60,7 +60,7 @@ public class AuthenticationExtractorPluginIT {
   @Before
   public void setup() {
     licenseManager = embeddedOptimizeRule.getApplicationContext().getBean(LicenseManager.class);
-    licenseManager.setLicenseFromFile(license);
+    licenseManager.setOptimizeLicense(license);
     configurationService = embeddedOptimizeRule.getConfigurationService();
     pluginProvider =
       embeddedOptimizeRule.getApplicationContext().getBean(AuthenticationExtractorProvider.class);

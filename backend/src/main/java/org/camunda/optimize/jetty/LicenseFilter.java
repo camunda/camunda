@@ -51,12 +51,10 @@ public class LicenseFilter implements Filter {
     boolean indexOrLogin = isIndexPage(requestPath) || isLoginPage(requestPath);
     if (indexOrLogin && !isErrorPage(requestPath)) {
       try {
-        String licenseAsString = retrieveLicense();
-        if(!licenseManager.isValidOptimizeLicense(licenseAsString)) {
-          logger.warn("Given License is invalid or not available, redirecting to license page!");
-          servletResponse.sendRedirect(LICENSE_PAGE);
-          return;
-        }
+        licenseManager.validateLicenseStoredInOptimize();
+      } catch (InvalidLicenseException e) {
+        logger.warn("Given License is invalid or not available, redirecting to license page!");
+        servletResponse.sendRedirect(LICENSE_PAGE);
       } catch (Exception e) {
         logger.error("could not fetch license", e);
         servletResponse.sendRedirect(ERROR_PAGE);
@@ -64,16 +62,6 @@ public class LicenseFilter implements Filter {
       }
     }
     chain.doFilter(request, response);
-  }
-
-  private String retrieveLicense() {
-    String license = null;
-    try {
-      license = licenseManager.retrieveLicense();
-    } catch (InvalidLicenseException ignored) {
-      // do nothing
-    }
-    return license;
   }
 
   private void setLicenseManager() {

@@ -14,6 +14,7 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,14 +37,18 @@ public class LicenseManager {
 
   private final String licenseDocumentId = "license";
   private LicenseKey licenseKey = new OptimizeLicenseKey();
-  private String licenseFromFile;
-
-  public LicenseManager() {
-    // nothing to do here
-    try {
-      licenseFromFile = readFileToString("OptimizeLicense.txt");
-    } catch (Exception ignore) {
-      // do nothing
+  private String optimizeLicense;
+  
+  @PostConstruct
+  public void init() {
+    optimizeLicense = retrieveStoredOptimizeLicense();
+    if (optimizeLicense == null) {
+      try {
+        optimizeLicense = readFileToString("OptimizeLicense.txt");
+        storeLicense(optimizeLicense);
+      } catch (Exception ignored) {
+        // nothing to do here
+      }
     }
   }
 
@@ -82,17 +87,19 @@ public class LicenseManager {
     boolean licenseWasStored = response.getId() != null;
     if (!licenseWasStored) {
       throw new OptimizeException("Could not store license in Elasticsearch. Please check the connection!");
+    } else {
+      optimizeLicense = licenseAsString;
     }
   }
 
-  public String retrieveLicense() throws InvalidLicenseException {
-    if (licenseFromFile != null) {
-      return licenseFromFile;
+  private String retrieveLicense() throws InvalidLicenseException {
+    if (optimizeLicense == null) {
+      throw new InvalidLicenseException("No license stored in Optimize. Please provide a valid Optimize license");
     }
-    return retrieveStoredOptimizeLicense();
+    return optimizeLicense;
   }
 
-  public String retrieveStoredOptimizeLicense() throws InvalidLicenseException {
+  private String retrieveStoredOptimizeLicense() {
     GetResponse response = esclient
       .prepareGet(
         getOptimizeIndexAliasForType(configurationService.getLicenseType()),
@@ -101,24 +108,11 @@ public class LicenseManager {
       )
       .get();
 
-    String licenseAsString;
+    String licenseAsString = null;
     if (response.isExists()) {
       licenseAsString = response.getSource().get(LICENSE).toString();
-    } else {
-      throw new InvalidLicenseException("No license stored in Optimize. Please provide a valid Optimize license!");
     }
     return licenseAsString;
-  }
-
-  public boolean isValidOptimizeLicense(String licenseAsString) {
-    boolean isValid = false;
-    try {
-      validateOptimizeLicense(licenseAsString);
-      isValid = true;
-    } catch (InvalidLicenseException ignored) {
-      // nothing to do
-    }
-    return isValid;
   }
 
   public LicenseInformationDto validateOptimizeLicense(String licenseAsString) throws InvalidLicenseException {
@@ -145,12 +139,12 @@ public class LicenseManager {
     return validateOptimizeLicense(license);
   }
 
-  public void setLicenseFromFile(String licenseFromFile) {
-    this.licenseFromFile = licenseFromFile;
+  public void setOptimizeLicense(String optimizeLicense) {
+    this.optimizeLicense = optimizeLicense;
   }
 
   public void resetLicenseFromFile() {
-    this.licenseFromFile = null;
+    this.optimizeLicense = null;
   }
 
 }

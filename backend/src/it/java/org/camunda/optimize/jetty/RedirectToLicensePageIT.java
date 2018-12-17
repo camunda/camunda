@@ -1,5 +1,6 @@
 package org.camunda.optimize.jetty;
 
+import org.camunda.optimize.service.license.LicenseManager;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.junit.Rule;
@@ -94,6 +95,8 @@ public class RedirectToLicensePageIT {
 
   @Test
   public void redirectFromErrorPageToLicensePage() {
+    // to ensure license is refreshed from file and elasticsearch
+    embeddedOptimizeRule.getApplicationContext().getBean(LicenseManager.class).init();
     // when
     Response response =
       embeddedOptimizeRule
