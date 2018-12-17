@@ -32,6 +32,7 @@ import static org.junit.Assert.fail;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
+import io.zeebe.broker.job.JobTimeoutTrigger;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
@@ -39,6 +40,7 @@ import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.subscription.JobWorker;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.TimerIntent;
@@ -50,9 +52,11 @@ import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.junit.Ignore;
@@ -60,6 +64,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
@@ -75,21 +80,10 @@ public class BrokerReprocessingTest {
   public static Object[][] reprocessingTriggers() {
     return new Object[][] {
       new Object[] {
-        new Consumer<BrokerReprocessingTest>() {
-          @Override
-          public void accept(final BrokerReprocessingTest t) {
-            t.restartBroker();
-          }
-        },
-        "restart"
+        (Consumer<BrokerReprocessingTest>) BrokerReprocessingTest::restartBroker, "restart"
       },
       new Object[] {
-        new Consumer<BrokerReprocessingTest>() {
-          @Override
-          public void accept(final BrokerReprocessingTest t) {
-            t.deleteSnapshotsAndRestart();
-          }
-        },
+        (Consumer<BrokerReprocessingTest>) BrokerReprocessingTest::deleteSnapshotsAndRestart,
         "restart-without-snapshot"
       }
     };
@@ -147,6 +141,8 @@ public class BrokerReprocessingTest {
 
   @Rule public ExpectedException exception = ExpectedException.none();
 
+  @Rule public Timeout timeout = new Timeout(30, TimeUnit.SECONDS);
+
   private Runnable restartAction = () -> {};
 
   @Test
@@ -201,7 +197,6 @@ public class BrokerReprocessingTest {
   }
 
   @Test
-  @Ignore("https://github.com/zeebe-io/zeebe/issues/1518")
   public void shouldContinueWorkflowInstanceWithLockedTaskAfterRestart() {
     // given
     deploy(WORKFLOW, "workflow.bpmn");
@@ -232,10 +227,12 @@ public class BrokerReprocessingTest {
   }
 
   @Test
-  @Ignore("https://github.com/zeebe-io/zeebe/issues/1518")
   public void shouldContinueWorkflowInstanceAtSecondTaskAfterRestart() throws Exception {
     // given
     deploy(WORKFLOW_TWO_TASKS, "two-tasks.bpmn");
+
+    final Duration defaultJobTimeout =
+        clientRule.getClient().getConfiguration().getDefaultJobTimeout();
 
     clientRule
         .getClient()
@@ -254,16 +251,22 @@ public class BrokerReprocessingTest {
         .open();
 
     final CountDownLatch latch = new CountDownLatch(1);
-    clientRule
-        .getClient()
-        .newWorker()
-        .jobType("bar")
-        .handler((client, job) -> latch.countDown())
-        .open();
+    final JobWorker latchWorker =
+        clientRule
+            .getClient()
+            .newWorker()
+            .jobType("bar")
+            .handler((client, job) -> latch.countDown())
+            .open();
     latch.await();
+    // close sync worker, to prevent reassignment after restart
+    latchWorker.close();
 
     // when
+    restartAction = () -> brokerRule.getClock().addTime(defaultJobTimeout);
     reprocessingTrigger.accept(this);
+
+    awaitJobTimeout();
 
     clientRule
         .getClient()
@@ -275,7 +278,7 @@ public class BrokerReprocessingTest {
 
     // then
     assertJobCompleted("foo");
-    assertJobCreated("bar");
+    assertJobCompleted("bar");
     assertWorkflowInstanceCompleted(PROCESS_ID);
   }
 
@@ -322,7 +325,6 @@ public class BrokerReprocessingTest {
   }
 
   @Test
-  @Ignore("https://github.com/zeebe-io/zeebe/issues/1518")
   public void shouldNotReceiveLockedJobAfterRestart() {
     // given
     clientRule.createSingleJob("foo");
@@ -347,7 +349,6 @@ public class BrokerReprocessingTest {
   }
 
   @Test
-  @Ignore("https://github.com/zeebe-io/zeebe/issues/1518")
   public void shouldReceiveLockExpiredJobAfterRestart() {
     // given
     clientRule.createSingleJob("foo");
@@ -356,14 +357,17 @@ public class BrokerReprocessingTest {
     final JobWorker subscription =
         clientRule.getClient().newWorker().jobType("foo").handler(jobHandler).open();
 
+    final Duration defaultJobTimeout =
+        clientRule.getClient().getConfiguration().getDefaultJobTimeout();
+
     waitUntil(() -> !jobHandler.getHandledJobs().isEmpty());
     subscription.close();
 
     // when
-    restartAction = () -> brokerRule.getClock().addTime(Duration.ofSeconds(60));
+    restartAction = () -> brokerRule.getClock().addTime(defaultJobTimeout);
     reprocessingTrigger.accept(this);
 
-    assertThat(RecordingExporter.jobRecords(JobIntent.TIMED_OUT).exists()).isTrue();
+    awaitJobTimeout();
 
     jobHandler.clear();
 
@@ -530,15 +534,13 @@ public class BrokerReprocessingTest {
     final long firstIncidentKey =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withWorkflowInstanceKey(workflowInstanceKey)
-            .findFirst()
-            .get()
+            .getFirst()
             .getKey();
 
     final long secondIncidentKey =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withWorkflowInstanceKey(workflowInstanceKey2)
-            .findFirst()
-            .get()
+            .getFirst()
             .getKey();
 
     assertThat(firstIncidentKey).isLessThan(secondIncidentKey);
@@ -728,5 +730,28 @@ public class BrokerReprocessingTest {
             .join();
 
     clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
+  }
+
+  private void awaitJobTimeout() {
+    final Duration defaultJobTimeout =
+        clientRule.getClient().getConfiguration().getDefaultJobTimeout();
+
+    final ControlledActorClock clock = brokerRule.getClock();
+    final Duration pollingInterval =
+        JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL
+            // this shouldn't be needed but is caused by the fact hat on reprocessing without
+            // a snapshot a new deadline is set for the job
+            // https://github.com/zeebe-io/zeebe/issues/1800
+            .plus(defaultJobTimeout);
+
+    TestUtil.waitUntil(
+        () -> {
+          clock.addTime(pollingInterval);
+          // not using RecordingExporter.jobRecords cause it is blocking
+          return RecordingExporter.getRecords()
+              .stream()
+              .filter(r -> r.getMetadata().getValueType() == ValueType.JOB)
+              .anyMatch(r -> r.getMetadata().getIntent() == JobIntent.TIMED_OUT);
+        });
   }
 }
