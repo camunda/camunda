@@ -6,12 +6,11 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.mockito.runners.MockitoJUnitRunner;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -25,18 +24,24 @@ import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.Assert.assertThat;
 
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = {"/unit/applicationContext.xml"})
+@RunWith(MockitoJUnitRunner.class)
 public class ObjectMapperFactoryTest {
 
-  @Autowired
   private ObjectMapperFactory objectMapperFactory;
 
   private ObjectMapper optimizeMapper;
   private ObjectMapper engineMapper;
 
+  private ConfigurationService configurationService;
+  private OptimizeDateTimeFormatterFactory optimizeDateTimeFormatterFactory;
+
   @Before
-  public void init() {
+  public void init() throws Exception {
+    configurationService = new ConfigurationService(new String[]{"service-config.yaml"});
+    this.optimizeDateTimeFormatterFactory = new OptimizeDateTimeFormatterFactory(configurationService);
+    this.objectMapperFactory = new ObjectMapperFactory(
+      optimizeDateTimeFormatterFactory.getObject(), configurationService
+    );
     optimizeMapper = optimizeMapper == null ? objectMapperFactory.createOptimizeMapper() : optimizeMapper;
     engineMapper = engineMapper == null ? objectMapperFactory.createEngineMapper() : engineMapper;
   }

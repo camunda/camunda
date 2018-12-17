@@ -10,10 +10,14 @@ import java.time.format.DateTimeFormatter;
 @Component
 public class OptimizeDateTimeFormatterFactory implements FactoryBean<DateTimeFormatter> {
 
-  @Autowired
   private ConfigurationService configurationService;
 
   private DateTimeFormatter dateTimeFormatter;
+
+  @Autowired
+  public OptimizeDateTimeFormatterFactory(final ConfigurationService configurationService) {
+    this.configurationService = configurationService;
+  }
 
   @Override
   public DateTimeFormatter getObject() throws Exception {

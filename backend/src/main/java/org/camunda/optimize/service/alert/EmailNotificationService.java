@@ -14,8 +14,12 @@ import org.springframework.stereotype.Component;
 public class EmailNotificationService implements NotificationService {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  @Autowired
   private ConfigurationService configurationService;
+
+  @Autowired
+  public EmailNotificationService(final ConfigurationService configurationService) {
+    this.configurationService = configurationService;
+  }
 
   @Override
   public void notifyRecipient(String text, String destination) {

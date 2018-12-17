@@ -30,6 +30,7 @@ import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -67,53 +68,64 @@ public class AlertService {
 
   @PostConstruct
   public void init() {
+    try {
+      if (schedulerFactoryBean == null) {
+        QuartzJobFactory sampleJobFactory = new QuartzJobFactory();
+        sampleJobFactory.setApplicationContext(applicationContext);
 
-    if (schedulerFactoryBean == null) {
-      QuartzJobFactory sampleJobFactory = new QuartzJobFactory();
-      sampleJobFactory.setApplicationContext(applicationContext);
+        schedulerFactoryBean = new SchedulerFactoryBean();
+        schedulerFactoryBean.setOverwriteExistingJobs(true);
+        schedulerFactoryBean.setJobFactory(sampleJobFactory);
 
-      schedulerFactoryBean = new SchedulerFactoryBean();
-      schedulerFactoryBean.setOverwriteExistingJobs(true);
-      schedulerFactoryBean.setJobFactory(sampleJobFactory);
+        List<AlertDefinitionDto> alerts = alertReader.getStoredAlerts();
 
+        Map<AlertDefinitionDto, JobDetail> checkingDetails = createCheckDetails(alerts);
+        List<Trigger> checkingTriggers = createCheckTriggers(checkingDetails);
 
-      List<AlertDefinitionDto> alerts = new ArrayList<>();
-      try {
-        alerts = alertReader.getStoredAlerts();
-      } catch (Exception e) {
-        logger.error("can't initialize alerts", e);
-      }
+        Map<AlertDefinitionDto, JobDetail> reminderDetails = createReminderDetails(alerts);
+        List<Trigger> reminderTriggers = createReminderTriggers(reminderDetails);
 
-      Map<AlertDefinitionDto, JobDetail> checkingDetails = createCheckDetails(alerts);
-      List<Trigger> checkingTriggers = createCheckTriggers(checkingDetails);
+        List<Trigger> allTriggers = new ArrayList<>();
+        allTriggers.addAll(checkingTriggers);
+        allTriggers.addAll(reminderTriggers);
 
-      Map<AlertDefinitionDto, JobDetail> reminderDetails = createReminderDetails(alerts);
-      List<Trigger> reminderTriggers = createReminderTriggers(reminderDetails);
+        List<JobDetail> allJobDetails = new ArrayList<>();
+        allJobDetails.addAll(checkingDetails.values());
+        allJobDetails.addAll(reminderDetails.values());
 
-      List<Trigger> allTriggers = new ArrayList<>();
-      allTriggers.addAll(checkingTriggers);
-      allTriggers.addAll(reminderTriggers);
+        JobDetail[] jobDetails = allJobDetails.toArray(new JobDetail[allJobDetails.size()]);
+        Trigger[] triggers = allTriggers.toArray(new Trigger[allTriggers.size()]);
 
-      List<JobDetail> allJobDetails = new ArrayList<>();
-      allJobDetails.addAll(checkingDetails.values());
-      allJobDetails.addAll(reminderDetails.values());
-
-      JobDetail[] jobDetails = allJobDetails.toArray(new JobDetail[allJobDetails.size()]);
-      Trigger[] triggers = allTriggers.toArray(new Trigger[allTriggers.size()]);
-
-      schedulerFactoryBean.setGlobalJobListeners(createReminderListener());
-      schedulerFactoryBean.setTriggers(triggers);
-      schedulerFactoryBean.setJobDetails(jobDetails);
-      schedulerFactoryBean.setApplicationContext(applicationContext);
-      schedulerFactoryBean.setQuartzProperties(configurationService.getQuartzProperties());
-      try {
+        schedulerFactoryBean.setGlobalJobListeners(createReminderListener());
+        schedulerFactoryBean.setTriggers(triggers);
+        schedulerFactoryBean.setJobDetails(jobDetails);
+        schedulerFactoryBean.setApplicationContext(applicationContext);
+        schedulerFactoryBean.setQuartzProperties(configurationService.getQuartzProperties());
         schedulerFactoryBean.afterPropertiesSet();
-      } catch (Exception e) {
-        logger.error("can't instantiate scheduler", e);
+        schedulerFactoryBean.start();
       }
-      schedulerFactoryBean.start();
+    } catch (Exception e) {
+      logger.error("Couldn't initialize alert scheduling.", e);
+      try {
+        destroy();
+      } catch (Exception destroyException){
+        logger.error("Failed destroying alertService", destroyException);
+      }
+      throw new RuntimeException(e);
     }
+  }
 
+  @PreDestroy
+  public void destroy() {
+    if (schedulerFactoryBean != null) {
+      schedulerFactoryBean.stop();
+      try {
+        schedulerFactoryBean.destroy();
+      } catch (Exception e) {
+        logger.error("Can't destroy scheduler", e);
+      }
+      this.schedulerFactoryBean = null;
+    }
   }
 
   public EmailAlertEnabledDto isAlertingEnabled() {
@@ -338,15 +350,4 @@ public class AlertService {
     return this.alertCheckJobFactory.createTrigger(fakeReportAlert, jobDetail);
   }
 
-  public void destroy() {
-    if (schedulerFactoryBean != null) {
-      schedulerFactoryBean.stop();
-      try {
-        schedulerFactoryBean.destroy();
-      } catch (SchedulerException e) {
-        logger.error("Can't destroy scheduler", e);
-      }
-      this.schedulerFactoryBean = null;
-    }
-  }
 }
