@@ -178,7 +178,6 @@ export default class Filters extends React.Component {
               <Styled.ExpandButton
                 direction={DIRECTION.LEFT}
                 isExpanded={true}
-                onClick={this.handleCollapse}
                 title="Collapse Filters"
               />
             }

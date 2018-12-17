@@ -13,7 +13,7 @@ const mockProps = {
   onCollapse: jest.fn()
 };
 
-describe('CollapsablePanel', () => {
+describe.skip('CollapsablePanel', () => {
   it('should render an exapnding panel and a collapsing one', () => {
     // given
     const node = shallow(<CollapsablePanel {...mockProps} />);
