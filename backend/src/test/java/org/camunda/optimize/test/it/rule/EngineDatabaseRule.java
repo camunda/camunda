@@ -304,21 +304,11 @@ public class EngineDatabaseRule extends TestWatcher {
 
   public int countHistoricActivityInstances() throws SQLException {
     String sql = "select count(*) as total from act_hi_actinst;";
-    String postgresSQL =
-      "SELECT reltuples AS total FROM pg_class WHERE relname = 'act_hi_actinst';";
+    String postgresSQL = "SELECT reltuples AS total FROM pg_class WHERE relname = 'act_hi_actinst';";
     sql = usePostgresOptimizations() ? postgresSQL : sql;
-    ResultSet statement =
-      connection.createStatement().executeQuery(sql);
+    ResultSet statement = connection.createStatement().executeQuery(sql);
     statement.next();
-    int totalCount = statement.getInt("total");
-
-    // substract the amount of activity instances that are not finished yet
-    sql = "select count(*) as total from act_hi_actinst where END_TIME_ is null;";
-    statement =
-      connection.createStatement().executeQuery(sql);
-    statement.next();
-    totalCount -= statement.getInt("total");
-    return totalCount;
+    return statement.getInt("total");
   }
 
   public int countHistoricProcessInstances() throws SQLException {
