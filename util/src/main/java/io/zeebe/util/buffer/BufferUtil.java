@@ -245,6 +245,33 @@ public final class BufferUtil {
     return true;
   }
 
+  /**
+   * Performs byte wise comparison of a given buffer and a prefix.
+   *
+   * @param prefix the prefix to look for
+   * @param content the buffer to check against
+   * @return true if buffer starts with the all bytes contained in prefix
+   */
+  public static boolean startsWith(
+      final byte[] prefix,
+      int prefixOffset,
+      final int prefixLength,
+      final byte[] content,
+      int contentOffset,
+      final int contentLength) {
+    if (contentLength < prefixLength) {
+      return false;
+    }
+
+    for (int i = prefixOffset; i < prefixLength; i++, contentOffset++) {
+      if (content[contentOffset] != prefix[i]) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   protected static byte[] intArrayToByteArray(int[] input) {
     final byte[] result = new byte[input.length];
     for (int i = 0; i < input.length; i++) {
