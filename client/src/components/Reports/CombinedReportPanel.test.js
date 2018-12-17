@@ -75,21 +75,27 @@ const reportsList = [
 loadEntity.mockReturnValue(reportsList);
 
 it('should invoke loadEntity to load all reports when it is mounted', async () => {
-  const node = await shallow(<CombinedReportPanel reportResult={reportsList[1]} />);
+  const node = await shallow(
+    <CombinedReportPanel updateReport={() => {}} configuration={{}} reportResult={reportsList[1]} />
+  );
   await node.update();
 
   expect(loadEntity).toHaveBeenCalled();
 });
 
 it('should not include heatmap report', async () => {
-  const node = await shallow(<CombinedReportPanel reportResult={reportsList[1]} />);
+  const node = await shallow(
+    <CombinedReportPanel updateReport={() => {}} configuration={{}} reportResult={reportsList[1]} />
+  );
   await node.update();
 
   expect(node).not.toIncludeText('heatmap');
 });
 
 it('should have input checkbox for only single report items in the list', async () => {
-  const node = await shallow(<CombinedReportPanel reportResult={reportsList[1]} />);
+  const node = await shallow(
+    <CombinedReportPanel updateReport={() => {}} configuration={{}} reportResult={reportsList[1]} />
+  );
   await node.update();
   expect(JSON.stringify(node.find('TypeaheadMultipleSelection').props())).toMatch('Single Report');
   expect(JSON.stringify(node.find('TypeaheadMultipleSelection').props())).not.toMatch(
@@ -100,7 +106,13 @@ it('should have input checkbox for only single report items in the list', async 
 describe('isCompatible', () => {
   let node = {};
   beforeEach(async () => {
-    node = await shallow(<CombinedReportPanel reportResult={reportsList[1]} />);
+    node = await shallow(
+      <CombinedReportPanel
+        updateReport={() => {}}
+        configuration={{}}
+        reportResult={reportsList[1]}
+      />
+    );
     await node.update();
   });
 
@@ -190,5 +202,18 @@ it('should generate new colors or preserve existing ones when selected/deselecti
 
   const updateColors = node.instance().getUpdatedColors([{id: 'report2'}, {id: 'report1'}]);
 
-  expect(updateColors).toEqual(['yellow', 'red', '#FCCB00']);
+  expect(updateColors).toEqual(['yellow', 'red', '#00d0a3']);
+});
+
+it('should invok updateReport on mount when combined report has reports but these reports has no defined colors', async () => {
+  const spy = jest.fn();
+  await shallow(
+    <CombinedReportPanel
+      updateReport={spy}
+      reportResult={reportsList[1]}
+      configuration={{color: undefined}}
+    />
+  );
+
+  expect(spy).toHaveBeenCalledWith({configuration: {color: ['#1991c8']}});
 });

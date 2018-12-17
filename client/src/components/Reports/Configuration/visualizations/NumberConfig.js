@@ -8,9 +8,10 @@ import DurationTargetInput from './subComponents/DurationTargetInput';
 import './NumberConfig.scss';
 
 export default function NumberConfig({report, configuration, onChange}) {
-  const targetValue = configuration.targetValue
-    ? configuration.targetValue
-    : NumberConfig.defaults({report}).targetValue;
+  const targetValue =
+    configuration.targetValue && configuration.targetValue.values
+      ? configuration.targetValue
+      : NumberConfig.defaults({report}).targetValue;
 
   const precisionSet = typeof configuration.precision === 'number';
   const countOperation = report.data.view.operation === 'count';

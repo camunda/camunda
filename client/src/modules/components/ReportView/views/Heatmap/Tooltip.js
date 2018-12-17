@@ -15,7 +15,7 @@ export default class Tooltip extends React.Component {
   }
 
   alwaysShow = () => {
-    return !this.props.hideAbsoluteValue || !this.props.hideRelativeValue;
+    return this.props.hideAbsoluteValue === false || this.props.hideRelativeValue === false;
   };
 
   componentDidUpdate(prevProps) {

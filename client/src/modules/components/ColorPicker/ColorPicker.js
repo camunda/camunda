@@ -31,10 +31,10 @@ ColorPicker.dark = {
   red: '#DB3E00',
   yellow: '#FCCB00',
   green: '#008B02',
-  teal: '#006B76',
-  steelBlue: '#1991c8',
-  blue: '#004DCF',
-  purple: '#5300EB'
+  teal: '#009688',
+  paleGreen: '#00d0a3',
+  blue: '#00bcd4',
+  steelBlue: '#1991c8'
 };
 
 ColorPicker.light = {
@@ -42,14 +42,17 @@ ColorPicker.light = {
   red: '#FAD0C3',
   yellow: '#FEF3BD',
   green: '#C1E1C5',
-  teal: '#BEDADC',
-  steelBlue: '#C4DEF6',
-  blue: '#BED3F3',
-  purple: '#D4C4FB'
+  teal: '#b3e5e1',
+  paleGreen: '#b5eee2',
+  blue: '#b3e0e5',
+  steelBlue: '#b3d5e5'
 };
 
 ColorPicker.getColors = amount => {
-  const allColors = [...Object.values(ColorPicker.dark), ...Object.values(ColorPicker.light)];
+  const allColors = [
+    ...Object.values(ColorPicker.dark).reverse(),
+    ...Object.values(ColorPicker.light)
+  ];
   if (amount > colorsAmount)
     return [...allColors, ...new Array(amount - colorsAmount).fill(ColorPicker.dark.steelBlue)];
 

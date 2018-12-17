@@ -66,9 +66,13 @@ const Heatmap = props => {
         hideAbsoluteValue={props.hideAbsoluteValue}
         hideRelativeValue={props.hideRelativeValue}
         formatter={data => {
-          const allDisabled = props.hideAbsoluteValue && props.hideRelativeValue;
-          const allEnabled = !props.hideAbsoluteValue && !props.hideRelativeValue;
-          const relativeOnly = !props.hideRelativeValue && props.hideAbsoluteValue;
+          const allDisabled =
+            (props.hideAbsoluteValue && props.hideRelativeValue) ||
+            (typeof props.hideAbsoluteValue === 'undefined' &&
+              typeof props.hideRelativeValue === 'undefined');
+
+          const allEnabled = props.hideAbsoluteValue === false && props.hideRelativeValue === false;
+          const relativeOnly = props.hideRelativeValue === false && props.hideAbsoluteValue;
 
           let formattedValue = props.formatter(data);
 

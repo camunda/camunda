@@ -94,3 +94,12 @@ it('should call the onUpdate method of the component and propagate changes', () 
   expect(typeA.onUpdate).toHaveBeenCalled();
   expect(spy).toHaveBeenCalledWith({configuration: {prop: 'updateValue'}});
 });
+
+it('should use the default configuration for the not set configuration', () => {
+  const node = shallow(<Configuration type="typeA" report={{}} configuration={{propB: 2}} />); //configuration={}
+
+  expect(node.find('typeA').props().configuration).toEqual({
+    propA: 'abc',
+    propB: 2
+  });
+});

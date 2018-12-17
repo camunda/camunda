@@ -39,11 +39,25 @@ export default class CombinedReportPanel extends React.Component {
       report => !this.props.reportResult.data.reportIds.includes(report.id)
     );
 
-    this.setState({
-      reports: notSelectedReports,
-      selectedReports,
-      referenceReport: selectedReports.length ? selectedReports[0].data : null
-    });
+    this.setState(
+      {
+        reports: notSelectedReports,
+        selectedReports,
+        referenceReport: selectedReports.length ? selectedReports[0].data : null
+      },
+      () => {
+        if (selectedReports.length && !this.props.configuration.color) {
+          this.props.updateReport({
+            configuration: {
+              ...this.props.configuration,
+              ...(selectedReports[0].data.visualization !== 'table'
+                ? {color: this.getUpdatedColors(selectedReports)}
+                : {})
+            }
+          });
+        }
+      }
+    );
   }
 
   update = (selectedReport, checked) => {
@@ -80,14 +94,15 @@ export default class CombinedReportPanel extends React.Component {
   };
 
   getUpdatedColors = prevOrderReports => {
-    const colorsHash = prevOrderReports.reduce((colors, report, i) => {
-      return {...colors, [report.id]: this.props.configuration.color[i]};
-    }, {});
+    let colorsHash = {};
+    if (this.props.configuration.color)
+      colorsHash = prevOrderReports.reduce((colors, report, i) => {
+        return {...colors, [report.id]: this.props.configuration.color[i]};
+      }, {});
 
     const colors = ColorPicker.getColors(this.state.selectedReports.length).filter(
       color => !Object.values(colorsHash).includes(color)
     );
-    colors[0] = ColorPicker.dark.steelBlue;
 
     return this.state.selectedReports.map((report, i) => colorsHash[report.id] || colors.pop());
   };

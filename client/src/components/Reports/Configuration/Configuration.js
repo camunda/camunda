@@ -9,10 +9,7 @@ export default class Configuration extends React.Component {
   resetToDefaults = () => {
     const Component = visualizations[this.props.type] || {};
 
-    const defaults =
-      typeof Component.defaults === 'function'
-        ? Component.defaults(this.props)
-        : Component.defaults || {};
+    const defaults = this.getDefaults(Component);
 
     this.props.onChange({
       configuration: {
@@ -29,6 +26,12 @@ export default class Configuration extends React.Component {
         [prop]: value
       }
     });
+  };
+
+  getDefaults = Component => {
+    return typeof Component.defaults === 'function'
+      ? Component.defaults(this.props)
+      : Component.defaults || {};
   };
 
   componentDidUpdate(prevProps) {
@@ -52,6 +55,8 @@ export default class Configuration extends React.Component {
     const {report, type, configuration} = this.props;
     const Component = visualizations[type];
 
+    const defaults = Component ? this.getDefaults(Component) : {};
+
     const disabledComponent = Component && Component.isDisabled && Component.isDisabled(report);
 
     return (
@@ -60,7 +65,7 @@ export default class Configuration extends React.Component {
           <div className="content">
             {Component && (
               <Component
-                configuration={configuration}
+                configuration={{...defaults, ...configuration}}
                 report={report}
                 onChange={this.updateConfiguration}
               />

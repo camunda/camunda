@@ -51,7 +51,7 @@ export default function ChartTargetInput({configuration: {targetValue}, onChange
       {isDurationReport(report) && (
         <Select
           className="dataUnitSelect"
-          value={targetValue ? targetValue.values.dateFormat : ''}
+          value={targetValue && targetValue.values ? targetValue.values.dateFormat : ''}
           onChange={({target: {value}}) => setValues('dateFormat', value)}
           disabled={!definedTarget}
         >

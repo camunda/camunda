@@ -8,6 +8,10 @@ const props = {
   configuration: {precision: null, targetValue: {active: false, values: {baseline: 0, target: 100}}}
 };
 
+it('should not crash when target value values is not defined', () => {
+  shallow(<NumberConfig {...{...props, configuration: {targetValue: {active: false}}}} />);
+});
+
 it('should have a switch for the precision setting', () => {
   const spy = jest.fn();
   const node = shallow(<NumberConfig {...props} onChange={spy} />);
