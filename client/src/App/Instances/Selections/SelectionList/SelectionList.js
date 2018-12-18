@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import Selection from 'modules/components/Selection';
+import ContextualMessage from 'modules/components/ContextualMessage';
 import {withSelection} from 'modules/contexts/SelectionContext';
 import {getSelectionById} from 'modules/utils/selection';
 import {applyOperation} from 'modules/api/instances';
@@ -49,7 +50,7 @@ class SelectionList extends React.Component {
       <React.Fragment>
         {selections.length === 10 && (
           <Styled.MessageWrapper>
-            <Styled.SelectionMessage type={MESSAGES_TYPE.DROP_SELECTION} />
+            <ContextualMessage type={MESSAGES_TYPE.DROP_SELECTION} />
           </Styled.MessageWrapper>
         )}
 
