@@ -81,7 +81,7 @@ public class CreateDeploymentTest {
   public void shouldNotDeployInvalidModel() throws Exception {
     // then
     exception.expect(ClientException.class);
-    exception.expectMessage("Must have exactly one start event");
+    exception.expectMessage("Must have at least one start event");
 
     // when
     clientRule

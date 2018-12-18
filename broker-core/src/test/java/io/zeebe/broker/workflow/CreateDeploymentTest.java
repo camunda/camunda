@@ -240,7 +240,7 @@ public class CreateDeploymentTest {
     assertThat(resp.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATE);
     assertThat(resp.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(resp.getRejectionReason()).contains("ERROR: Must have exactly one start event");
+    assertThat(resp.getRejectionReason()).contains("ERROR: Must have at least one start event");
   }
 
   @Test
@@ -289,7 +289,7 @@ public class CreateDeploymentTest {
     assertThat(resp.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
     assertThat(resp.getRejectionReason())
         .contains("Resource 'process2.bpmn':")
-        .contains("ERROR: Must have exactly one start event");
+        .contains("ERROR: Must have at least one start event");
     assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATE);
   }
 
