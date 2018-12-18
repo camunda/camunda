@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.Client;
@@ -80,9 +81,9 @@ public class ProcessDefinitionXmlWriter {
 
     bulkRequest.add(esclient
         .prepareUpdate(
-            getOptimizeIndexAliasForType(configurationService.getProcessDefinitionType()),
-            configurationService.getProcessDefinitionType(),
-            newEntryIfAbsent.getId()
+          getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_DEF_TYPE),
+          ElasticsearchConstants.PROC_DEF_TYPE,
+          newEntryIfAbsent.getId()
         )
         .setScript(updateScript)
         .setUpsert(source, XContentType.JSON)

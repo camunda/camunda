@@ -17,6 +17,7 @@ import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.Client;
@@ -115,7 +116,7 @@ public abstract class VariableWriter {
       addAtLeastOneVariableArrayNotEmptyNestedFilters(filterQuery);
 
       final BulkByScrollResponse response = UpdateByQueryAction.INSTANCE.newRequestBuilder(esClient)
-        .source(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
+        .source(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE))
         .script(createVariableClearScript(ProcessVariableHelper.getAllVariableTypeFieldLabels()))
         .abortOnVersionConflict(false)
         .filter(filterQuery)
@@ -207,8 +208,8 @@ public abstract class VariableWriter {
     if (newEntryIfAbsent != null) {
       addVariablesToProcessInstanceBulkRequest.add(esClient
                                                      .prepareUpdate(
-                                                       getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()),
-                                                       configurationService.getProcessInstanceType(),
+                                                       getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE),
+                                                       ElasticsearchConstants.PROC_INSTANCE_TYPE,
                                                        processInstanceId
                                                      )
                                                      .setScript(updateScript)

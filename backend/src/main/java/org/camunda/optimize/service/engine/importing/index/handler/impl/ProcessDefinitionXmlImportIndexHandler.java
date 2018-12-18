@@ -2,6 +2,7 @@ package org.camunda.optimize.service.engine.importing.index.handler.impl;
 
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.handler.ScrollBasedImportIndexHandler;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -57,7 +58,7 @@ public class ProcessDefinitionXmlImportIndexHandler extends ScrollBasedImportInd
     esclient
       .admin()
       .indices()
-      .prepareRefresh(getOptimizeIndexAliasForType(configurationService.getProcessDefinitionType()))
+      .prepareRefresh(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_DEF_TYPE))
       .get();
   }
 
@@ -77,8 +78,8 @@ public class ProcessDefinitionXmlImportIndexHandler extends ScrollBasedImportInd
     QueryBuilder query;
     query = buildBasicQuery();
     SearchResponse scrollResp = esclient
-        .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessDefinitionType()))
-        .setTypes(configurationService.getProcessDefinitionType())
+        .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_DEF_TYPE))
+        .setTypes(ElasticsearchConstants.PROC_DEF_TYPE)
         .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
         .setQuery(query)
         .setFetchSource(false)

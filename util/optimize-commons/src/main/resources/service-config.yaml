@@ -90,9 +90,6 @@ import:
       #Overwrites the maximum page size for historic activity instance
       #fetching.
       maxPageSize: 10000
-    process-definition:
-      #The name of the process definition type.
-      elasticsearchType: process-definition
     process-definition-xml:
       #Overwrites the maximum page size for process definition xml model
       #fetching. Should be a low value, as large models will lead to
@@ -102,8 +99,6 @@ import:
       #Overwrites the maximum page size for historic process instance
       #fetching.
       maxPageSize: 10000
-      #The name of the process instance type.
-      elasticsearchType: process-instance
     variable:
       #Overwrites the maximum page size for historic variable instance
       #fetching.
@@ -125,8 +120,6 @@ import:
       # start scheduling fetching tasks in increasing periods of time,
       # controlled by 'backoff' counter.
       max: 15
-  #The name of the import index type.
-  indexType: import-index
   #States how often the import index should be stored to Elasticsearch.
   importIndexStorageIntervalInSec: 10
   # the time interval the import backs off from the current tip of the time, to reread potentially missed concurrent writes
@@ -185,14 +178,6 @@ es:
       # used to enable or disable TLS/SSL for both the transport and http layer.
       # Also decides if a secured connection is build up at all.
       enabled: false
-
-  licenseType: license
-  dashboardType: dashboard
-  alertType: alert
-  alertStatusType: alert-status
-  reportShareType: report-share
-  dashboardShareType: dashboard-share
-  metaDataType: metadata
 
   #Maximum time a request to elasticsearch should last, before a timeout
   #triggers.

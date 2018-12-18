@@ -6,6 +6,7 @@ import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.Client;
@@ -78,7 +79,7 @@ public class CompletedProcessInstanceWriter {
         .filter(termQuery(ProcessInstanceType.PROCESS_DEFINITION_KEY, processDefinitionKey))
         .filter(rangeQuery(ProcessInstanceType.END_DATE).lt(dateTimeFormatter.format(endDate)));
       final BulkByScrollResponse response = DeleteByQueryAction.INSTANCE.newRequestBuilder(esClient)
-        .source(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
+        .source(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE))
         .abortOnVersionConflict(false)
         .filter(filterQuery)
         .get();
@@ -133,8 +134,8 @@ public class CompletedProcessInstanceWriter {
 
     bulkRequest.add(esClient
                       .prepareUpdate(
-                        getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()),
-                        configurationService.getProcessInstanceType(),
+                        getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE),
+                        ElasticsearchConstants.PROC_INSTANCE_TYPE,
                         processInstanceId
                       )
                       .setScript(updateScript)

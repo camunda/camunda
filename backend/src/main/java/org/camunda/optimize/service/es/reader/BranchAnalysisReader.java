@@ -12,6 +12,7 @@ import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -151,8 +152,8 @@ public class BranchAnalysisReader {
     queryFilterEnhancer.addFilterToQuery(query, request.getFilter());
 
     SearchResponse sr = esclient
-        .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
-        .setTypes(configurationService.getProcessInstanceType())
+        .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE))
+        .setTypes(ElasticsearchConstants.PROC_INSTANCE_TYPE)
         .setQuery(query)
         .setFetchSource(false)
         .setSize(0)

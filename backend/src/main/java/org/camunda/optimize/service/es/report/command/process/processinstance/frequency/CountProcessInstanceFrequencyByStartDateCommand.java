@@ -8,6 +8,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.Proc
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeException;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -48,8 +49,8 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessRepo
     StartDateGroupByValueDto groupByStartDate = ((StartDateGroupByDto) processReportData.getGroupBy()).getValue();
 
     SearchResponse response = esclient
-      .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
-      .setTypes(configurationService.getProcessInstanceType())
+      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE))
+      .setTypes(ElasticsearchConstants.PROC_INSTANCE_TYPE)
       .setQuery(query)
       .setFetchSource(false)
       .setSize(0)

@@ -69,7 +69,7 @@ public class ProcessDefinitionReader {
     String[] fieldsToExclude = withXml ? null : new String[]{ProcessDefinitionType.PROCESS_DEFINITION_XML};
 
     SearchResponse scrollResp = esclient
-      .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessDefinitionType()))
+      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_DEF_TYPE))
       .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
       .setQuery(query)
       .setFetchSource(null, fieldsToExclude)
@@ -158,7 +158,7 @@ public class ProcessDefinitionReader {
                                                                              String processDefinitionVersion) {
     processDefinitionVersion = convertToValidVersion(processDefinitionKey, processDefinitionVersion);
     SearchResponse response = esclient.prepareSearch(
-      getOptimizeIndexAliasForType(configurationService.getProcessDefinitionType()))
+      getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_DEF_TYPE))
       .setQuery(
         QueryBuilders.boolQuery()
           .must(termQuery(PROCESS_DEFINITION_KEY, processDefinitionKey))
@@ -187,8 +187,8 @@ public class ProcessDefinitionReader {
 
   private String getLatestVersionToKey(String key) {
     SearchResponse response = esclient
-      .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessDefinitionType()))
-      .setTypes(configurationService.getProcessDefinitionType())
+      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_DEF_TYPE))
+      .setTypes(ElasticsearchConstants.PROC_DEF_TYPE)
       .setQuery(termQuery(PROCESS_DEFINITION_KEY, key))
       .addSort(PROCESS_DEFINITION_VERSION, SortOrder.DESC)
       .setSize(1)

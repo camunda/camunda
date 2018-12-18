@@ -5,6 +5,7 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.service.es.schema.type.AlertType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
@@ -41,8 +42,8 @@ public class AlertReader {
     query = QueryBuilders.matchAllQuery();
 
     SearchResponse scrollResp = esclient
-        .prepareSearch(getOptimizeIndexAliasForType(configurationService.getAlertType()))
-        .setTypes(configurationService.getAlertType())
+        .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.ALERT_TYPE))
+        .setTypes(ElasticsearchConstants.ALERT_TYPE)
         .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
         .setQuery(query)
       .setSize(LIST_FETCH_LIMIT)
@@ -61,8 +62,8 @@ public class AlertReader {
     logger.debug("Fetching alert with id [{}]", alertId);
     GetResponse getResponse = esclient
         .prepareGet(
-            getOptimizeIndexAliasForType(configurationService.getAlertType()),
-            configurationService.getAlertType(),
+            getOptimizeIndexAliasForType(ElasticsearchConstants.ALERT_TYPE),
+            ElasticsearchConstants.ALERT_TYPE,
             alertId
         )
         .setRealtime(false)
@@ -88,8 +89,8 @@ public class AlertReader {
 
     final QueryBuilder query = QueryBuilders.termQuery(AlertType.REPORT_ID, reportId);
     final SearchResponse searchResponse = esclient
-        .prepareSearch(getOptimizeIndexAliasForType(configurationService.getAlertType()))
-        .setTypes(configurationService.getAlertType())
+        .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.ALERT_TYPE))
+        .setTypes(ElasticsearchConstants.ALERT_TYPE)
         .setQuery(query)
       .setSize(limit)
       .get();

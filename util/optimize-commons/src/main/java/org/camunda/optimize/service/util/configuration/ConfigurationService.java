@@ -63,16 +63,7 @@ public class ConfigurationService {
   private String processDefinitionXmlEndpoint;
   private String decisionDefinitionEndpoint;
   private String decisionDefinitionXmlEndpoint;
-
-  private String processDefinitionType;
-  private String importIndexType;
-  private String processInstanceType;
-  private String licenseType;
-  private String alertType;
-  private String reportShareType;
-  private String dashboardShareType;
-  private String metaDataType;
-
+  
   private String engineDateFormat;
   private String optimizeDateFormat;
   private Long importHandlerWait;
@@ -346,20 +337,6 @@ public class ConfigurationService {
     return userValidationEndpoint;
   }
 
-  public String getProcessDefinitionType() {
-    if (processDefinitionType == null) {
-      processDefinitionType = configJsonContext.read(ConfigurationServiceConstants.PROCESS_DEFINITION_TYPE);
-    }
-    return processDefinitionType;
-  }
-
-  public String getMetaDataType() {
-    if (metaDataType == null) {
-      metaDataType = configJsonContext.read(ConfigurationServiceConstants.METADATA_TYPE);
-    }
-    return metaDataType;
-  }
-
   public String getProcessDefinitionEndpoint() {
     if (processDefinitionEndpoint == null) {
       processDefinitionEndpoint = cutTrailingSlash(
@@ -485,20 +462,6 @@ public class ConfigurationService {
     return currentTimeBackoffMilliseconds;
   }
 
-  public String getImportIndexType() {
-    if (importIndexType == null) {
-      importIndexType = configJsonContext.read(ConfigurationServiceConstants.IMPORT_INDEX_TYPE);
-    }
-    return importIndexType;
-  }
-
-  public String getProcessInstanceType() {
-    if (processInstanceType == null) {
-      processInstanceType = configJsonContext.read(ConfigurationServiceConstants.PROCESS_INSTANCE_TYPE);
-    }
-    return processInstanceType;
-  }
-
   public int getEngineImportProcessInstanceMaxPageSize() {
     if (engineImportProcessInstanceMaxPageSize == null) {
       engineImportProcessInstanceMaxPageSize =
@@ -586,13 +549,6 @@ public class ConfigurationService {
     }
     ensureGreaterThanZero(engineImportDecisionInstanceMaxPageSize);
     return engineImportDecisionInstanceMaxPageSize;
-  }
-
-  public String getLicenseType() {
-    if (licenseType == null) {
-      licenseType = configJsonContext.read(ConfigurationServiceConstants.LICENSE_TYPE);
-    }
-    return licenseType;
   }
 
   public long getSamplerInterval() {
@@ -702,20 +658,6 @@ public class ConfigurationService {
     return checkMetadata;
   }
 
-  public String getAlertType() {
-    if (alertType == null) {
-      alertType = configJsonContext.read(ConfigurationServiceConstants.ALERT_TYPE);
-    }
-    return alertType;
-  }
-
-  public String getReportShareType() {
-    if (reportShareType == null) {
-      reportShareType = configJsonContext.read(ConfigurationServiceConstants.REPORT_SHARE_TYPE);
-    }
-    return reportShareType;
-  }
-
   public String getProcessDefinitionXmlEndpoint(String processDefinitionId) {
     return getProcessDefinitionEndpoint() + "/" + processDefinitionId + getProcessDefinitionXmlEndpoint();
   }
@@ -750,13 +692,6 @@ public class ConfigurationService {
 
   private EngineConfiguration getEngineConfiguration(String engineAlias) {
     return this.getConfiguredEngines().get(engineAlias);
-  }
-
-  public String getDashboardShareType() {
-    if (dashboardShareType == null) {
-      dashboardShareType = configJsonContext.read(ConfigurationServiceConstants.DASHBOARD_SHARE_TYPE);
-    }
-    return dashboardShareType;
   }
 
   public Properties getQuartzProperties() {
@@ -962,10 +897,6 @@ public class ConfigurationService {
     this.userValidationEndpoint = userValidationEndpoint;
   }
 
-  public void setProcessDefinitionType(String processDefinitionType) {
-    this.processDefinitionType = processDefinitionType;
-  }
-
   public void setProcessDefinitionEndpoint(String processDefinitionEndpoint) {
     this.processDefinitionEndpoint = processDefinitionEndpoint;
   }
@@ -1018,15 +949,6 @@ public class ConfigurationService {
     this.currentTimeBackoffMilliseconds = currentTimeBackoffMilliseconds;
   }
 
-
-  public void setImportIndexType(String importIndexType) {
-    this.importIndexType = importIndexType;
-  }
-
-  public void setProcessInstanceType(String processInstanceType) {
-    this.processInstanceType = processInstanceType;
-  }
-
   public void setEngineImportProcessInstanceMaxPageSize(Integer engineImportProcessInstanceMaxPageSize) {
     this.engineImportProcessInstanceMaxPageSize = engineImportProcessInstanceMaxPageSize;
   }
@@ -1053,10 +975,6 @@ public class ConfigurationService {
 
   public void setProcessDefinitionXmlEndpoint(String processDefinitionXmlEndpoint) {
     this.processDefinitionXmlEndpoint = processDefinitionXmlEndpoint;
-  }
-
-  public void setLicenseType(String licenseType) {
-    this.licenseType = licenseType;
   }
 
   public void setSamplerInterval(Long samplerInterval) {
@@ -1097,10 +1015,6 @@ public class ConfigurationService {
 
   public void setCheckMetadata(Boolean checkMetadata) {
     this.checkMetadata = checkMetadata;
-  }
-
-  public void setAlertType(String alertType) {
-    this.alertType = alertType;
   }
 
   public void setAlertEmailUsername(String alertEmailUsername) {

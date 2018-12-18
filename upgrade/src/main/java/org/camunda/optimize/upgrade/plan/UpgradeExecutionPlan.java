@@ -5,6 +5,7 @@ import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.camunda.optimize.upgrade.es.ElasticsearchRestClientBuilder;
 import org.camunda.optimize.upgrade.main.UpgradeMain;
 import org.camunda.optimize.upgrade.service.ValidationService;
@@ -153,7 +154,7 @@ public class UpgradeExecutionPlan implements UpgradePlan {
   private void updateOptimizeVersion(ESIndexAdjuster ESIndexAdjuster) {
     logger.info("Updating Elasticsearch data structure version tag from {} to {}.", fromVersion, toVersion);
     ESIndexAdjuster.updateDataByTypeName(
-      configurationService.getMetaDataType(),
+      ElasticsearchConstants.METADATA_TYPE,
       termQuery(METADATA_TYPE_SCHEMA_VERSION, fromVersion),
       String.format("ctx._source.schemaVersion = \"%s\"", toVersion),
       null

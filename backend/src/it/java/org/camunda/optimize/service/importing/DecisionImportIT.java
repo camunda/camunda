@@ -8,6 +8,7 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
@@ -120,9 +121,9 @@ public class DecisionImportIT {
   private SearchResponse getDecisionDefinitionIndexById(final String decisionDefinitionIndexId) {
     return elasticSearchRule.getClient()
       .prepareSearch(
-        elasticSearchRule.getOptimizeIndex(embeddedOptimizeRule.getConfigurationService().getImportIndexType())
+        elasticSearchRule.getOptimizeIndex(ElasticsearchConstants.IMPORT_INDEX_TYPE)
       )
-      .setTypes(embeddedOptimizeRule.getConfigurationService().getImportIndexType())
+      .setTypes(ElasticsearchConstants.IMPORT_INDEX_TYPE)
       .setQuery(termsQuery("_id", decisionDefinitionIndexId))
       .setSize(100)
       .get();

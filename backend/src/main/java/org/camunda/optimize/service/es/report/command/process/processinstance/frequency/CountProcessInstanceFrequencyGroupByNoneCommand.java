@@ -3,6 +3,7 @@ package org.camunda.optimize.service.es.report.command.process.processinstance.f
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 
@@ -29,8 +30,8 @@ public class CountProcessInstanceFrequencyGroupByNoneCommand
     queryFilterEnhancer.addFilterToQuery(query, processReportData.getFilter());
 
     SearchResponse response = esclient
-      .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
-      .setTypes(configurationService.getProcessInstanceType())
+      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE))
+      .setTypes(ElasticsearchConstants.PROC_INSTANCE_TYPE)
       .setQuery(query)
       .setFetchSource(false)
       .setSize(0)

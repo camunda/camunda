@@ -3,6 +3,7 @@ package org.camunda.optimize.service.engine.importing.index.handler.impl;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.handler.AllEntitiesBasedImportIndexHandler;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.TimeValue;
@@ -37,7 +38,7 @@ public class ProcessDefinitionImportIndexHandler extends AllEntitiesBasedImportI
 
   @Override
   protected String getElasticsearchImportIndexType() {
-    return configurationService.getProcessDefinitionType();
+    return ElasticsearchConstants.PROC_DEF_TYPE;
   }
 
   public void addImportedDefinitions(Collection<ProcessDefinitionEngineDto> definitions) {

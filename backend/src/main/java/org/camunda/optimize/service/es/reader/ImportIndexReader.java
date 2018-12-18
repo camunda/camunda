@@ -3,6 +3,7 @@ package org.camunda.optimize.service.es.reader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Client;
 import org.slf4j.Logger;
@@ -35,8 +36,8 @@ public class ImportIndexReader {
     try {
       getResponse = esclient
         .prepareGet(
-          getOptimizeIndexAliasForType(configurationService.getImportIndexType()),
-          configurationService.getImportIndexType(),
+          getOptimizeIndexAliasForType(ElasticsearchConstants.IMPORT_INDEX_TYPE),
+          ElasticsearchConstants.IMPORT_INDEX_TYPE,
           id)
         .setRealtime(false)
         .get();

@@ -5,6 +5,7 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
@@ -73,8 +74,8 @@ public class VariableReader {
 
     SearchRequestBuilder requestBuilder =
       esclient
-          .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
-          .setTypes(configurationService.getProcessInstanceType())
+          .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE))
+          .setTypes(ElasticsearchConstants.PROC_INSTANCE_TYPE)
           .setQuery(query);
     addVariableAggregation(requestBuilder, namePrefix);
     SearchResponse response = requestBuilder.get();
@@ -161,8 +162,8 @@ public class VariableReader {
 
     SearchResponse response =
       esclient
-          .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
-          .setTypes(configurationService.getProcessInstanceType())
+          .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE))
+          .setTypes(ElasticsearchConstants.PROC_INSTANCE_TYPE)
           .setQuery(query)
           .addAggregation(getVariableValueAggregation(name, variableFieldLabel, valueFilter))
           .get();

@@ -13,6 +13,7 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -470,8 +471,8 @@ public class ImportIT  {
   private Long getImportedActivityCount() {
     ConfigurationService configurationService = embeddedOptimizeRule.getConfigurationService();
     SearchResponse response = elasticSearchRule.getClient()
-      .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
-      .setTypes(configurationService.getProcessInstanceType())
+      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE))
+      .setTypes(ElasticsearchConstants.PROC_INSTANCE_TYPE)
       .setQuery(QueryBuilders.matchAllQuery())
       .setSize(0)
       .addAggregation(

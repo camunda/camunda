@@ -5,6 +5,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
@@ -57,12 +58,12 @@ public abstract class AbstractImportTest {
       logger.info(
         "The Camunda Platform contains {} process definitions. Optimize: {}",
         (engineDatabaseRule.countProcessDefinitions()),
-        elasticSearchRule.getImportedCountOf(configurationService.getProcessDefinitionType(), configurationService)
+        elasticSearchRule.getImportedCountOf(ElasticsearchConstants.PROC_DEF_TYPE, configurationService)
       );
       logger.info(
         "The Camunda Platform contains {} historic process instances. Optimize: {}",
         engineDatabaseRule.countHistoricProcessInstances(),
-        elasticSearchRule.getImportedCountOf(configurationService.getProcessInstanceType(), configurationService)
+        elasticSearchRule.getImportedCountOf(ElasticsearchConstants.PROC_INSTANCE_TYPE, configurationService)
       );
       logger.info(
         "The Camunda Platform contains {} historic variable instances. Optimize: {}",
@@ -96,7 +97,7 @@ public abstract class AbstractImportTest {
   private long computeImportProgress() {
     // assumption: we know how many process instances have been generated
     Integer processInstancesImported = elasticSearchRule.getImportedCountOf(
-      configurationService.getProcessInstanceType(), configurationService
+      ElasticsearchConstants.PROC_INSTANCE_TYPE, configurationService
     );
     Long totalInstances = null;
     try {
@@ -112,13 +113,13 @@ public abstract class AbstractImportTest {
     assertThat(
       "processDefinitionsCount",
       elasticSearchRule.getImportedCountOf(
-        configurationService.getProcessDefinitionType(), configurationService
+        ElasticsearchConstants.PROC_DEF_TYPE, configurationService
       ),
       is(engineDatabaseRule.countProcessDefinitions())
     );
     assertThat(
       "processInstanceTypeCount",
-      elasticSearchRule.getImportedCountOf(configurationService.getProcessInstanceType(), configurationService),
+      elasticSearchRule.getImportedCountOf(ElasticsearchConstants.PROC_INSTANCE_TYPE, configurationService),
       is(engineDatabaseRule.countHistoricProcessInstances())
     );
     assertThat(

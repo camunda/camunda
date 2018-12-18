@@ -7,6 +7,7 @@ import org.camunda.optimize.service.es.schema.type.DashboardShareType;
 import org.camunda.optimize.service.es.schema.type.ReportShareType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
@@ -45,8 +46,8 @@ public class SharingReader {
     Optional<ReportShareDto> result = Optional.empty();
 
     SearchResponse scrollResp = esclient
-      .prepareSearch(getOptimizeIndexAliasForType(configurationService.getReportShareType()))
-      .setTypes(configurationService.getReportShareType())
+      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.REPORT_SHARE_TYPE))
+      .setTypes(ElasticsearchConstants.REPORT_SHARE_TYPE)
       .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
       .setQuery(query)
       .setSize(20)
@@ -72,8 +73,8 @@ public class SharingReader {
     logger.debug("Fetching share with id [{}]", shareId);
     GetResponse getResponse = esclient
       .prepareGet(
-          getOptimizeIndexAliasForType(configurationService.getReportShareType()),
-          configurationService.getReportShareType(),
+          getOptimizeIndexAliasForType(ElasticsearchConstants.REPORT_SHARE_TYPE),
+          ElasticsearchConstants.REPORT_SHARE_TYPE,
           shareId
       )
       .setRealtime(false)
@@ -96,8 +97,8 @@ public class SharingReader {
     logger.debug("Fetching share with id [{}]", shareId);
     GetResponse getResponse = esclient
       .prepareGet(
-          getOptimizeIndexAliasForType(configurationService.getDashboardShareType()),
-          configurationService.getDashboardShareType(),
+          getOptimizeIndexAliasForType(ElasticsearchConstants.DASHBOARD_SHARE_TYPE),
+          ElasticsearchConstants.DASHBOARD_SHARE_TYPE,
           shareId
       )
       .setRealtime(false)
@@ -132,8 +133,8 @@ public class SharingReader {
     Optional<DashboardShareDto> result = Optional.empty();
 
     SearchResponse scrollResp = esclient
-        .prepareSearch(getOptimizeIndexAliasForType(configurationService.getDashboardShareType()))
-        .setTypes(configurationService.getDashboardShareType())
+        .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.DASHBOARD_SHARE_TYPE))
+        .setTypes(ElasticsearchConstants.DASHBOARD_SHARE_TYPE)
         .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
         .setQuery(boolQueryBuilder)
         .setSize(20)
@@ -157,8 +158,8 @@ public class SharingReader {
   private Map<String, ReportShareDto> findReportSharesByQuery(QueryBuilder query) {
     Map<String, ReportShareDto> result = new HashMap<>();
     SearchResponse scrollResp = esclient
-        .prepareSearch(getOptimizeIndexAliasForType(configurationService.getReportShareType()))
-        .setTypes(configurationService.getReportShareType())
+        .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.REPORT_SHARE_TYPE))
+        .setTypes(ElasticsearchConstants.REPORT_SHARE_TYPE)
         .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
         .setQuery(query)
         .setSize(20)
@@ -199,8 +200,8 @@ public class SharingReader {
 
     Map<String, DashboardShareDto> result = new HashMap<>();
     SearchResponse scrollResp = esclient
-      .prepareSearch(getOptimizeIndexAliasForType(configurationService.getDashboardShareType()))
-      .setTypes(configurationService.getDashboardShareType())
+      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.DASHBOARD_SHARE_TYPE))
+      .setTypes(ElasticsearchConstants.DASHBOARD_SHARE_TYPE)
       .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
       .setQuery(query)
       .setSize(20)

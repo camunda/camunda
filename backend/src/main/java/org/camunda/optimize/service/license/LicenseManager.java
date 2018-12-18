@@ -6,6 +6,7 @@ import org.camunda.bpm.licensecheck.OptimizeLicenseKey;
 import org.camunda.optimize.dto.optimize.query.LicenseInformationDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.support.WriteRequest;
@@ -76,8 +77,8 @@ public class LicenseManager {
 
     IndexResponse response = esclient
       .prepareIndex(
-        getOptimizeIndexAliasForType(configurationService.getLicenseType()),
-        configurationService.getLicenseType(),
+        getOptimizeIndexAliasForType(ElasticsearchConstants.LICENSE_TYPE),
+        ElasticsearchConstants.LICENSE_TYPE,
         licenseDocumentId
       )
       .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
@@ -102,8 +103,8 @@ public class LicenseManager {
   private String retrieveStoredOptimizeLicense() {
     GetResponse response = esclient
       .prepareGet(
-        getOptimizeIndexAliasForType(configurationService.getLicenseType()),
-        configurationService.getLicenseType(),
+        getOptimizeIndexAliasForType(ElasticsearchConstants.LICENSE_TYPE),
+        ElasticsearchConstants.LICENSE_TYPE,
         licenseDocumentId
       )
       .get();

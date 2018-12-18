@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.es.schema.type;
 
 import org.camunda.optimize.service.es.schema.StrictTypeMappingCreator;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
 
@@ -47,7 +48,7 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
 
   @Override
   public String getType() {
-    return configurationService.getProcessInstanceType();
+    return ElasticsearchConstants.PROC_INSTANCE_TYPE;
   }
 
   @Override

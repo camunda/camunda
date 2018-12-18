@@ -7,6 +7,7 @@ import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.support.WriteRequest;
@@ -42,8 +43,8 @@ public class SharingWriter {
     try {
       IndexResponse indexResponse = esclient
         .prepareIndex(
-          getOptimizeIndexAliasForType(configurationService.getReportShareType()),
-          configurationService.getReportShareType(),
+          getOptimizeIndexAliasForType(ElasticsearchConstants.REPORT_SHARE_TYPE),
+          ElasticsearchConstants.REPORT_SHARE_TYPE,
           id
         )
         .setSource(objectMapper.writeValueAsString(createSharingDto), XContentType.JSON)
@@ -73,8 +74,8 @@ public class SharingWriter {
     try {
       IndexResponse indexResponse = esclient
         .prepareIndex(
-          getOptimizeIndexAliasForType(configurationService.getDashboardShareType()),
-          configurationService.getDashboardShareType(),
+          getOptimizeIndexAliasForType(ElasticsearchConstants.DASHBOARD_SHARE_TYPE),
+          ElasticsearchConstants.DASHBOARD_SHARE_TYPE,
           id
         )
         .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
@@ -102,8 +103,8 @@ public class SharingWriter {
     try {
       esclient
         .prepareIndex(
-          getOptimizeIndexAliasForType(configurationService.getDashboardShareType()),
-          configurationService.getDashboardShareType(),
+          getOptimizeIndexAliasForType(ElasticsearchConstants.DASHBOARD_SHARE_TYPE),
+          ElasticsearchConstants.DASHBOARD_SHARE_TYPE,
           id
         )
         .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
@@ -126,8 +127,8 @@ public class SharingWriter {
   public void deleteReportShare(String shareId) {
     logger.debug("Deleting report share with id [{}]", shareId);
     DeleteResponse deleteResponse = esclient.prepareDelete(
-      getOptimizeIndexAliasForType(configurationService.getReportShareType()),
-      configurationService.getReportShareType(),
+      getOptimizeIndexAliasForType(ElasticsearchConstants.REPORT_SHARE_TYPE),
+      ElasticsearchConstants.REPORT_SHARE_TYPE,
       shareId
     )
       .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
@@ -145,8 +146,8 @@ public class SharingWriter {
   public void deleteDashboardShare(String shareId) {
     logger.debug("Deleting dashboard share with id [{}]", shareId);
     DeleteResponse deleteResponse = esclient.prepareDelete(
-      getOptimizeIndexAliasForType(configurationService.getDashboardShareType()),
-      configurationService.getDashboardShareType(),
+      getOptimizeIndexAliasForType(ElasticsearchConstants.DASHBOARD_SHARE_TYPE),
+      ElasticsearchConstants.DASHBOARD_SHARE_TYPE,
       shareId
     )
       .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)

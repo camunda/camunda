@@ -12,10 +12,16 @@ public class ElasticsearchConstants {
   public static final String SINGLE_DECISION_REPORT_TYPE = "single-decision-report";
   public static final String COMBINED_REPORT_TYPE = "combined-report";
   public static final String DASHBOARD_TYPE = "dashboard";
-
   public static final String COLLECTION_TYPE = "collection";
-
+  public static final String PROC_DEF_TYPE = "process-definition";
+  public static final String PROC_INSTANCE_TYPE = "process-instance";
+  public static final String IMPORT_INDEX_TYPE = "import-index";
+  public static final String LICENSE_TYPE = "license";
+  public static final String ALERT_TYPE = "alert";
+  public static final String REPORT_SHARE_TYPE = "report-share";
+  public static final String DASHBOARD_SHARE_TYPE =  "dashboard-share";
   public static final String TIMESTAMP_BASED_IMPORT_INDEX_TYPE = "timestamp-based-import-index";
+  public static final String METADATA_TYPE = "metadata";
 
   public static final String METADATA_TYPE_SCHEMA_VERSION = "schemaVersion";
 

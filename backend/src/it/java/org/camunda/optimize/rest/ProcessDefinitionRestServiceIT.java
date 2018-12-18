@@ -11,6 +11,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -336,14 +337,14 @@ public class ProcessDefinitionRestServiceIT {
     processDefinitionXmlDto.setVersion(PROCESS_DEFINITION_VERSION_1);
     processDefinitionXmlDto.setBpmn20Xml(readDiagram(DIAGRAM));
     elasticSearchRule.addEntryToElasticsearch(
-      configurationService.getProcessDefinitionType(),
+      ElasticsearchConstants.PROC_DEF_TYPE,
       PROCESS_DEFINITION_ID,
       processDefinitionXmlDto
     );
     processDefinitionXmlDto.setId(PROCESS_DEFINITION_ID_2);
     processDefinitionXmlDto.setVersion(PROCESS_DEFINITION_VERSION_2);
     elasticSearchRule.addEntryToElasticsearch(
-      configurationService.getProcessDefinitionType(),
+      ElasticsearchConstants.PROC_DEF_TYPE,
       PROCESS_DEFINITION_ID_2,
       processDefinitionXmlDto
     );

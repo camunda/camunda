@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportInd
 import org.camunda.optimize.service.es.schema.type.index.ImportIndexType;
 import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.client.Client;
@@ -98,8 +99,8 @@ public class ImportIndexWriter {
     try {
       return esclient
         .prepareIndex(
-          getOptimizeIndexAliasForType(configurationService.getImportIndexType()),
-          configurationService.getImportIndexType(),
+          getOptimizeIndexAliasForType(ElasticsearchConstants.IMPORT_INDEX_TYPE),
+          ElasticsearchConstants.IMPORT_INDEX_TYPE,
           getId(importIndex)
         )
         .setSource(

@@ -17,6 +17,7 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -105,9 +106,12 @@ public class ForceReimportIT {
 
     List<String> types = new ArrayList<>();
     types.add(TIMESTAMP_BASED_IMPORT_INDEX_TYPE);
-    types.add(configurationService.getImportIndexType());
-    types.add(configurationService.getProcessDefinitionType());
-    types.add(configurationService.getProcessInstanceType());
+    types.add(
+      ElasticsearchConstants.IMPORT_INDEX_TYPE);
+    types.add(
+      ElasticsearchConstants.PROC_DEF_TYPE);
+    types.add(
+      ElasticsearchConstants.PROC_INSTANCE_TYPE);
 
     List<String> indexNames = types
       .stream()
@@ -126,9 +130,9 @@ public class ForceReimportIT {
   private boolean licenseExists() {
     ConfigurationService configurationService = embeddedOptimizeRule.getConfigurationService();
     GetResponse response = elasticSearchRule.getClient().prepareGet(
-      getOptimizeIndexAliasForType(configurationService.getLicenseType()),
-      configurationService.getLicenseType(),
-      configurationService.getLicenseType()
+      getOptimizeIndexAliasForType(ElasticsearchConstants.LICENSE_TYPE),
+      ElasticsearchConstants.LICENSE_TYPE,
+      ElasticsearchConstants.LICENSE_TYPE
     )
       .get();
     return response.isExists();

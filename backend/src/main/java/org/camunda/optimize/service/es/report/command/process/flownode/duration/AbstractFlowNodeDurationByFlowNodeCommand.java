@@ -4,6 +4,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
 import org.camunda.optimize.service.es.report.command.process.FlowNodeGroupingCommand;
 import org.camunda.optimize.service.util.ValidationHelper;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.Aggregation;
@@ -52,8 +53,8 @@ public abstract class AbstractFlowNodeDurationByFlowNodeCommand<T extends Aggreg
     queryFilterEnhancer.addFilterToQuery(query, processReportData.getFilter());
 
     SearchResponse response = esclient
-      .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
-      .setTypes(configurationService.getProcessInstanceType())
+      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE))
+      .setTypes(ElasticsearchConstants.PROC_INSTANCE_TYPE)
       .setQuery(query)
       .setFetchSource(false)
       .setSize(0)

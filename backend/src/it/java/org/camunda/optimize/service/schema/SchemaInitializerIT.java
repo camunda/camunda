@@ -4,6 +4,7 @@ import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.service.schema.type.MyUpdatedEventType;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.admin.indices.mapping.get.GetFieldMappingsResponse;
 import org.elasticsearch.action.admin.indices.mapping.get.GetFieldMappingsResponse.FieldMappingMetaData;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
@@ -66,10 +67,10 @@ public class SchemaInitializerIT {
     embeddedOptimizeRule.getSchemaInitializer().initializeSchema();
 
     // then
-    assertTypeExists(embeddedOptimizeRule.getConfigurationService().getMetaDataType());
-    assertTypeExists(embeddedOptimizeRule.getConfigurationService().getProcessInstanceType());
-    assertTypeExists(embeddedOptimizeRule.getConfigurationService().getImportIndexType());
-    assertTypeExists(embeddedOptimizeRule.getConfigurationService().getProcessDefinitionType());
+    assertTypeExists(ElasticsearchConstants.METADATA_TYPE);
+    assertTypeExists(ElasticsearchConstants.PROC_INSTANCE_TYPE);
+    assertTypeExists(ElasticsearchConstants.IMPORT_INDEX_TYPE);
+    assertTypeExists(ElasticsearchConstants.PROC_DEF_TYPE);
   }
 
   private void assertTypeExists(String type) {
@@ -104,7 +105,7 @@ public class SchemaInitializerIT {
   }
 
   private void assertThatNewFieldExists() {
-    final String metaDataType = embeddedOptimizeRule.getConfigurationService().getMetaDataType();
+    final String metaDataType = ElasticsearchConstants.METADATA_TYPE;
     final String optimizeIndexAliasForType = getOptimizeIndexAliasForType(metaDataType);
     final GetFieldMappingsResponse response = embeddedOptimizeRule.getTransportClient().admin().indices()
       .prepareGetFieldMappings(optimizeIndexAliasForType)
@@ -147,7 +148,7 @@ public class SchemaInitializerIT {
     // when we add an event with an undefined type in schema
     ExtendedFlowNodeEventDto extendedEventDto = new ExtendedFlowNodeEventDto();
     elasticSearchRule.addEntryToElasticsearch(
-      embeddedOptimizeRule.getConfigurationService().getMetaDataType(),
+      ElasticsearchConstants.METADATA_TYPE,
       "12312412",
       extendedEventDto
     );

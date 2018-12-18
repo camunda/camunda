@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.Client;
@@ -77,8 +78,8 @@ public class RunningProcessInstanceWriter {
 
     bulkRequest.add(esclient
       .prepareUpdate(
-        getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()),
-        configurationService.getProcessInstanceType(),
+        getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE),
+        ElasticsearchConstants.PROC_INSTANCE_TYPE,
         processInstanceId)
       .setScript(updateScript)
       .setUpsert(newEntryIfAbsent, XContentType.JSON)

@@ -4,6 +4,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -35,8 +36,8 @@ public abstract class AbstractProcessInstanceDurationGroupByNoneCommand
     queryFilterEnhancer.addFilterToQuery(query, processReportData.getFilter());
 
     SearchResponse response = esclient
-      .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
-      .setTypes(configurationService.getProcessInstanceType())
+      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE))
+      .setTypes(ElasticsearchConstants.PROC_INSTANCE_TYPE)
       .setQuery(query)
       .setFetchSource(false)
       .setSize(0)

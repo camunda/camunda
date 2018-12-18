@@ -13,6 +13,7 @@ import org.camunda.optimize.service.util.CustomSerializer;
 import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.util.PropertyUtil;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest;
@@ -223,8 +224,8 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   public Integer getActivityCount(ConfigurationService configurationService) {
     SearchResponse response = getClient()
-      .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
-      .setTypes(configurationService.getProcessInstanceType())
+      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE))
+      .setTypes(ElasticsearchConstants.PROC_INSTANCE_TYPE)
       .setQuery(QueryBuilders.matchAllQuery())
       .setSize(0)
       .addAggregation(
@@ -247,8 +248,8 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   public Integer getVariableInstanceCount(ConfigurationService configurationService) {
     SearchRequestBuilder searchRequestBuilder = getClient()
-      .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
-      .setTypes(configurationService.getProcessInstanceType())
+      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE))
+      .setTypes(ElasticsearchConstants.PROC_INSTANCE_TYPE)
       .setQuery(QueryBuilders.matchAllQuery())
       .setSize(0)
       .setFetchSource(false);
@@ -341,24 +342,17 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   }
 
   public String getProcessDefinitionType() {
-    return properties.getProperty("camunda.optimize.es.procdef.type");
+    return ElasticsearchConstants.PROC_DEF_TYPE;
   }
 
   public String getDashboardType() {
-    return properties.getProperty("camunda.optimize.es.dashboard.type");
-  }
-
-  public String getCollectionType() {
-    return properties.getProperty("camunda.optimize.es.collection.type");
+    return ElasticsearchConstants.DASHBOARD_TYPE;
   }
 
   public String getProcessInstanceType() {
-    return properties.getProperty("camunda.optimize.es.process.instance.type");
+    return ElasticsearchConstants.PROC_INSTANCE_TYPE;
   }
 
-  public String getDurationHeatmapTargetValueType() {
-    return properties.getProperty("camunda.optimize.es.heatmap.duration.target.value.type");
-  }
 
   public void disableCleanup() {
     this.haveToClean = false;

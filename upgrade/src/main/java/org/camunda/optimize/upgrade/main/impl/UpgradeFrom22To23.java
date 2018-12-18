@@ -3,6 +3,7 @@ package org.camunda.optimize.upgrade.main.impl;
 import com.jayway.jsonpath.JsonPath;
 import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.camunda.optimize.upgrade.es.ElasticsearchRestClientBuilder;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.main.Upgrade;
@@ -57,28 +58,28 @@ public class UpgradeFrom22To23 implements Upgrade {
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
         .addUpgradeStep(
-          new CreateIndexAliasForExistingIndexStep(configurationService.getAlertType(), TYPE_VERSION)
+          new CreateIndexAliasForExistingIndexStep(ElasticsearchConstants.ALERT_TYPE, TYPE_VERSION)
         )
         .addUpgradeStep(
-          new CreateIndexAliasForExistingIndexStep(configurationService.getDashboardShareType(), TYPE_VERSION)
+          new CreateIndexAliasForExistingIndexStep(ElasticsearchConstants.DASHBOARD_SHARE_TYPE, TYPE_VERSION)
         )
         .addUpgradeStep(
-          new CreateIndexAliasForExistingIndexStep(configurationService.getImportIndexType(), TYPE_VERSION)
+          new CreateIndexAliasForExistingIndexStep(ElasticsearchConstants.IMPORT_INDEX_TYPE, TYPE_VERSION)
         )
         .addUpgradeStep(
-          new CreateIndexAliasForExistingIndexStep(configurationService.getLicenseType(), TYPE_VERSION)
+          new CreateIndexAliasForExistingIndexStep(ElasticsearchConstants.LICENSE_TYPE, TYPE_VERSION)
         )
         .addUpgradeStep(
-          new CreateIndexAliasForExistingIndexStep(configurationService.getMetaDataType(), TYPE_VERSION)
+          new CreateIndexAliasForExistingIndexStep(ElasticsearchConstants.METADATA_TYPE, TYPE_VERSION)
         )
         .addUpgradeStep(
-          new CreateIndexAliasForExistingIndexStep(configurationService.getProcessDefinitionType(), TYPE_VERSION)
+          new CreateIndexAliasForExistingIndexStep(ElasticsearchConstants.PROC_DEF_TYPE, TYPE_VERSION)
         )
         .addUpgradeStep(
-          new CreateIndexAliasForExistingIndexStep(configurationService.getProcessInstanceType(), TYPE_VERSION)
+          new CreateIndexAliasForExistingIndexStep(ElasticsearchConstants.PROC_INSTANCE_TYPE, TYPE_VERSION)
         )
         .addUpgradeStep(
-          new CreateIndexAliasForExistingIndexStep(configurationService.getReportShareType(), TYPE_VERSION)
+          new CreateIndexAliasForExistingIndexStep(ElasticsearchConstants.REPORT_SHARE_TYPE, TYPE_VERSION)
         )
         .addUpgradeStep(
           new CreateIndexAliasForExistingIndexStep(

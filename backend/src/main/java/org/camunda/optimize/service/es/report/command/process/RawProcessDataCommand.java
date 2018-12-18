@@ -6,6 +6,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.service.es.report.command.process.mapping.RawProcessDataResultDtoMapper;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.ProcessVariableHelper;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -52,8 +53,8 @@ public class RawProcessDataCommand extends ProcessReportCommand<RawDataProcessRe
       .orElse(SortOrder.DESC);
 
     final SearchRequestBuilder searchRequestBuilder = esclient
-      .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
-      .setTypes(configurationService.getProcessInstanceType())
+      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE))
+      .setTypes(ElasticsearchConstants.PROC_INSTANCE_TYPE)
       .setQuery(query)
       .setFetchSource(null, EVENTS)
       .setSize(RAW_DATA_LIMIT.intValue());

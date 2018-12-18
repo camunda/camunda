@@ -3,6 +3,7 @@ package org.camunda.optimize.upgrade.service;
 import com.jayway.jsonpath.JsonPath;
 import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
@@ -35,7 +36,7 @@ public class ValidationService {
   public void validateVersions(RestClient restClient, String fromVersion, String toVersion) {
 
     try {
-      String metaDataIndex = getOptimizeIndexAliasForType(configurationService.getMetaDataType());
+      String metaDataIndex = getOptimizeIndexAliasForType(ElasticsearchConstants.METADATA_TYPE);
       Response metadataResponse = restClient
         .performRequest("GET", metaDataIndex + "/_search", Collections.emptyMap());
 

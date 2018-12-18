@@ -5,6 +5,7 @@ import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.unit.TimeValue;
@@ -50,8 +51,8 @@ public abstract class FlowNodeGroupingCommand extends ProcessReportCommand<Proce
       .must(termQuery("processDefinitionKey", getProcessReportData().getProcessDefinitionKey()));
 
     SearchResponse scrollResp = esclient
-      .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
-      .setTypes(configurationService.getProcessInstanceType())
+      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE))
+      .setTypes(ElasticsearchConstants.PROC_INSTANCE_TYPE)
       .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
       .setQuery(query)
       .addSort(ProcessInstanceType.PROCESS_DEFINITION_VERSION, SortOrder.DESC)
@@ -65,8 +66,8 @@ public abstract class FlowNodeGroupingCommand extends ProcessReportCommand<Proce
         String processDefinitionId = processInstanceDto.getProcessDefinitionId();
 
         GetResponse response = esclient.prepareGet(
-          getOptimizeIndexAliasForType(configurationService.getProcessDefinitionType()),
-          configurationService.getProcessDefinitionType(),
+          getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_DEF_TYPE),
+          ElasticsearchConstants.PROC_DEF_TYPE,
           processDefinitionId
         )
           .get();

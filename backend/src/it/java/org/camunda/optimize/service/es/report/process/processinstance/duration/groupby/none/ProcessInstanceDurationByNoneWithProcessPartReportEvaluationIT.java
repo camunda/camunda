@@ -23,6 +23,7 @@ import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.index.reindex.UpdateByQueryAction;
 import org.elasticsearch.index.reindex.UpdateByQueryRequestBuilder;
 import org.elasticsearch.script.Script;
@@ -284,7 +285,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
     UpdateByQueryRequestBuilder updateByQuery =
       UpdateByQueryAction.INSTANCE.newRequestBuilder(elasticSearchRule.getClient());
     ConfigurationService configurationService = embeddedOptimizeRule.getConfigurationService();
-    String processInstanceIndex = getOptimizeIndexAliasForType(configurationService.getProcessInstanceType());
+    String processInstanceIndex = getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE);
     Script setActivityStartDatesToNull = new Script(
       ScriptType.INLINE,
       DEFAULT_SCRIPT_LANG,

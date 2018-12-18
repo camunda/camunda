@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.es.schema.type;
 
 import org.camunda.optimize.service.es.schema.StrictTypeMappingCreator;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
 
@@ -15,7 +16,7 @@ public class LicenseType extends StrictTypeMappingCreator {
 
   @Override
   public String getType() {
-    return configurationService.getLicenseType();
+    return ElasticsearchConstants.LICENSE_TYPE;
   }
 
   @Override

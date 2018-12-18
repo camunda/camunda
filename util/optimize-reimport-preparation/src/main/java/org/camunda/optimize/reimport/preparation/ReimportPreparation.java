@@ -7,6 +7,7 @@ import org.camunda.optimize.jetty.util.LoggingConfigurationReader;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.camunda.optimize.upgrade.es.ElasticsearchRestClientBuilder;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
@@ -53,9 +54,9 @@ public class ReimportPreparation {
     logger.info("Deleting import indexes and engine data from Optimize...");
     List<String> types = new ArrayList<>();
     types.add(TIMESTAMP_BASED_IMPORT_INDEX_TYPE);
-    types.add(configurationService.getImportIndexType());
-    types.add(configurationService.getProcessDefinitionType());
-    types.add(configurationService.getProcessInstanceType());
+    types.add(ElasticsearchConstants.IMPORT_INDEX_TYPE);
+    types.add(ElasticsearchConstants.PROC_DEF_TYPE);
+    types.add(ElasticsearchConstants.PROC_INSTANCE_TYPE);
 
     List<String> indexNames = types
       .stream()

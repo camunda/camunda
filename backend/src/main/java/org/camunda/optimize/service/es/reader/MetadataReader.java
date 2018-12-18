@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -35,9 +36,9 @@ public class MetadataReader {
 
     QueryBuilder allQuery = QueryBuilders.matchAllQuery();
     SearchResponse searchResponse = esclient.prepareSearch(
-      getOptimizeIndexAliasForType(configurationService.getMetaDataType())
+      getOptimizeIndexAliasForType(ElasticsearchConstants.METADATA_TYPE)
     )
-      .setTypes(configurationService.getMetaDataType())
+      .setTypes(ElasticsearchConstants.METADATA_TYPE)
       .setQuery(allQuery)
       .get();
 

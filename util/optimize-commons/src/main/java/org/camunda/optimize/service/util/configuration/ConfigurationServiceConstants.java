@@ -49,15 +49,7 @@ public interface ConfigurationServiceConstants {
   String ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES = "$.es.security.ssl.certificate_authorities";
   String ELASTIC_SEARCH_SECURITY_SSL_VERIFICATION_MODE = "$.es.security.ssl.verification_mode";
 
-  String PROCESS_INSTANCE_TYPE = "$.import.data.process-instance.elasticsearchType";
-  String PROCESS_DEFINITION_TYPE = "$.import.data.process-definition.elasticsearchType";
-  String IMPORT_INDEX_TYPE = "$.import.indexType";
   String IMPORT_INDEX_AUTO_STORAGE_INTERVAL = "$.import.importIndexStorageIntervalInSec";
-  String LICENSE_TYPE = "$.es.licenseType";
-  String ALERT_TYPE = "$.es.alertType";
-  String REPORT_SHARE_TYPE = "$.es.reportShareType";
-  String DASHBOARD_SHARE_TYPE = "$.es.dashboardShareType";
-  String METADATA_TYPE = "$.es.metaDataType";
 
   String ENGINE_CONNECT_TIMEOUT = "$.engine-commons.connection.timeout";
   String ENGINE_READ_TIMEOUT = "$.engine-commons.read.timeout";

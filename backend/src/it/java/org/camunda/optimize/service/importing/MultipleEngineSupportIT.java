@@ -8,6 +8,7 @@ import org.camunda.optimize.service.util.configuration.EngineConfiguration;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.junit.After;
@@ -80,8 +81,8 @@ public class MultipleEngineSupportIT {
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     SearchResponse searchResponse = elasticSearchRule.getClient()
-      .prepareSearch(elasticSearchRule.getOptimizeIndex(configurationService.getProcessDefinitionType()))
-      .setTypes(configurationService.getProcessDefinitionType())
+      .prepareSearch(elasticSearchRule.getOptimizeIndex(ElasticsearchConstants.PROC_DEF_TYPE))
+      .setTypes(ElasticsearchConstants.PROC_DEF_TYPE)
       .setQuery(matchAllQuery())
       .setSize(100)
       .get();
@@ -110,8 +111,8 @@ public class MultipleEngineSupportIT {
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     SearchResponse searchResponse = elasticSearchRule.getClient()
-      .prepareSearch(elasticSearchRule.getOptimizeIndex(configurationService.getProcessDefinitionType()))
-      .setTypes(configurationService.getProcessDefinitionType())
+      .prepareSearch(elasticSearchRule.getOptimizeIndex(ElasticsearchConstants.PROC_DEF_TYPE))
+      .setTypes(ElasticsearchConstants.PROC_DEF_TYPE)
       .setQuery(matchAllQuery())
       .setSize(100)
       .get();
@@ -140,8 +141,8 @@ public class MultipleEngineSupportIT {
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     SearchResponse searchResponse = elasticSearchRule.getClient()
-      .prepareSearch(elasticSearchRule.getOptimizeIndex(configurationService.getProcessInstanceType()))
-      .setTypes(configurationService.getProcessInstanceType())
+      .prepareSearch(elasticSearchRule.getOptimizeIndex(ElasticsearchConstants.PROC_INSTANCE_TYPE))
+      .setTypes(ElasticsearchConstants.PROC_INSTANCE_TYPE)
       .setQuery(matchAllQuery())
       .setSize(100)
       .get();
@@ -183,8 +184,8 @@ public class MultipleEngineSupportIT {
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     SearchResponse searchResponse = elasticSearchRule.getClient()
-      .prepareSearch(elasticSearchRule.getOptimizeIndex(configurationService.getProcessInstanceType()))
-      .setTypes(configurationService.getProcessInstanceType())
+      .prepareSearch(elasticSearchRule.getOptimizeIndex(ElasticsearchConstants.PROC_INSTANCE_TYPE))
+      .setTypes(ElasticsearchConstants.PROC_INSTANCE_TYPE)
       .setQuery(matchAllQuery())
       .setSize(100)
       .get();

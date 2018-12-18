@@ -5,6 +5,7 @@ import org.camunda.optimize.service.es.reader.MetadataReader;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -38,7 +39,7 @@ public class MetadataServiceIT {
 
   @Test
   public void verifyNotStartingIfMetadataIsCorrupted() throws Exception {
-    String metaDataType = embeddedOptimizeRule.getConfigurationService().getMetaDataType();
+    String metaDataType = ElasticsearchConstants.METADATA_TYPE;
     embeddedOptimizeRule.stopOptimize();
     MetadataDto meta = new MetadataDto();
     meta.setSchemaVersion("TEST");
@@ -59,7 +60,7 @@ public class MetadataServiceIT {
 
   @Test
   public void verifyNotStartingIfVersionDoesNotMatch () throws Exception {
-    String metaDataType = embeddedOptimizeRule.getConfigurationService().getMetaDataType();
+    String metaDataType = ElasticsearchConstants.METADATA_TYPE;
     embeddedOptimizeRule.stopOptimize();
     elasticSearchRule.deleteOptimizeIndexes();
     MetadataDto meta = new MetadataDto();

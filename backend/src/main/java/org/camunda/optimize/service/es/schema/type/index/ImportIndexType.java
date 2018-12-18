@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.es.schema.type.index;
 
 import org.camunda.optimize.service.es.schema.StrictTypeMappingCreator;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
 
@@ -16,7 +17,7 @@ public class ImportIndexType extends StrictTypeMappingCreator {
 
   @Override
   public String getType() {
-    return configurationService.getImportIndexType();
+    return ElasticsearchConstants.IMPORT_INDEX_TYPE;
   }
 
   @Override

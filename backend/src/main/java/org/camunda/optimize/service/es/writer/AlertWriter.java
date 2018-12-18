@@ -7,6 +7,7 @@ import org.camunda.optimize.service.es.schema.type.AlertType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.support.WriteRequest;
@@ -49,8 +50,8 @@ public class AlertWriter {
     try {
       IndexResponse indexResponse = esclient
         .prepareIndex(
-          getOptimizeIndexAliasForType(configurationService.getAlertType()),
-          configurationService.getAlertType(),
+          getOptimizeIndexAliasForType(ElasticsearchConstants.ALERT_TYPE),
+          ElasticsearchConstants.ALERT_TYPE,
           id
         )
         .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
@@ -78,8 +79,8 @@ public class AlertWriter {
     try {
       UpdateResponse updateResponse = esclient
         .prepareUpdate(
-          getOptimizeIndexAliasForType(configurationService.getAlertType()),
-          configurationService.getAlertType(),
+          getOptimizeIndexAliasForType(ElasticsearchConstants.ALERT_TYPE),
+          ElasticsearchConstants.ALERT_TYPE,
           alertUpdate.getId()
         )
         .setDoc(objectMapper.writeValueAsString(alertUpdate), XContentType.JSON)
@@ -116,8 +117,8 @@ public class AlertWriter {
   public void deleteAlert(String alertId) {
     logger.debug("Deleting alert with id [{}]", alertId);
     DeleteResponse deleteResponse = esclient.prepareDelete(
-      getOptimizeIndexAliasForType(configurationService.getAlertType()),
-      configurationService.getAlertType(),
+      getOptimizeIndexAliasForType(ElasticsearchConstants.ALERT_TYPE),
+      ElasticsearchConstants.ALERT_TYPE,
       alertId
     )
       .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
@@ -137,8 +138,8 @@ public class AlertWriter {
     try {
       esclient
         .prepareUpdate(
-          getOptimizeIndexAliasForType(configurationService.getAlertType()),
-          configurationService.getAlertType(),
+          getOptimizeIndexAliasForType(ElasticsearchConstants.ALERT_TYPE),
+          ElasticsearchConstants.ALERT_TYPE,
           alertId
         )
         .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
@@ -162,7 +163,7 @@ public class AlertWriter {
     logger.debug("Deleting all alerts for report with id [{}]", reportId);
     BulkByScrollResponse bulkByScrollResponse = DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
       .filter(QueryBuilders.matchQuery(AlertType.REPORT_ID, reportId))
-      .source(getOptimizeIndexAliasForType(configurationService.getAlertType()))
+      .source(getOptimizeIndexAliasForType(ElasticsearchConstants.ALERT_TYPE))
       .refresh(true)
       .get();
 

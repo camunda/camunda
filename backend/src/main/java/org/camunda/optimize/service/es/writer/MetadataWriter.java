@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.Client;
@@ -40,8 +41,8 @@ public class MetadataWriter {
       String source = objectMapper.writeValueAsString(metadataDto);
       IndexResponse indexResponse = esclient
         .prepareIndex(
-          getOptimizeIndexAliasForType(configurationService.getMetaDataType()),
-          configurationService.getMetaDataType(),
+          getOptimizeIndexAliasForType(ElasticsearchConstants.METADATA_TYPE),
+          ElasticsearchConstants.METADATA_TYPE,
           ID
         )
         .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
