@@ -419,6 +419,12 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildCheckImportStatusRequest() {
+    this.path = "/status";
+    this.requestType = GET;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildCheckIsSharingEnabledRequest() {
     this.path = "share/isEnabled";
     this.requestType = GET;
