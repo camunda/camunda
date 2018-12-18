@@ -139,14 +139,6 @@ import:
 # everything that is related with configuring Elasticsearch or creating
 # a connection to it.
 es:
-  analyzer:
-    #Defines the name of the analyzer.
-    name: case_sensitive
-    #Tokenfilter applied to every token.
-    tokenfilter: standard
-    #Tokenizer used to process tokens within a query.
-    tokenizer: whitespace
-
   connection:
     #Maximum time without connection to Elasticsearch, Optimize should
     #wait until a time out triggers.

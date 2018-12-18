@@ -67,10 +67,7 @@ public interface ConfigurationServiceConstants {
 
   String DECISION_DEFINITION_ENDPOINT = "$.engine-commons.decision-definition.resource";
   String DECISION_DEFINITION_XML_ENDPOINT = "$.engine-commons.decision-definition.xml";
-
-  String ANALYZER_NAME = "$.es.analyzer.name";
-  String TOKENIZER = "$.es.analyzer.tokenizer";
-  String TOKEN_FILTER = "$.es.analyzer.tokenfilter";
+  
   String IMPORT_HANDLER_INTERVAL = "$.import.handler.backoff.interval";
   String MAXIMUM_BACK_OFF = "$.import.handler.backoff.max";
   String ES_REFRESH_INTERVAL = "$.es.settings.index.refresh_interval";

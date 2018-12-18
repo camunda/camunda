@@ -73,9 +73,6 @@ public class ConfigurationService {
   private String dashboardShareType;
   private String metaDataType;
 
-  private String analyzerName;
-  private String tokenizer;
-  private String tokenFilter;
   private String engineDateFormat;
   private String optimizeDateFormat;
   private Long importHandlerWait;
@@ -383,27 +380,6 @@ public class ConfigurationService {
 
   public String getDecisionDefinitionXmlEndpoint(String decisionDefinitionId) {
     return getDecisionDefinitionEndpoint() + "/" + decisionDefinitionId + getDecisionDefinitionXmlEndpoint();
-  }
-
-  public String getAnalyzerName() {
-    if (analyzerName == null) {
-      analyzerName = configJsonContext.read(ConfigurationServiceConstants.ANALYZER_NAME);
-    }
-    return analyzerName;
-  }
-
-  public String getTokenizer() {
-    if (tokenizer == null) {
-      tokenizer = configJsonContext.read(ConfigurationServiceConstants.TOKENIZER);
-    }
-    return tokenizer;
-  }
-
-  public String getTokenFilter() {
-    if (tokenFilter == null) {
-      tokenFilter = configJsonContext.read(ConfigurationServiceConstants.TOKEN_FILTER);
-    }
-    return tokenFilter;
   }
 
   public String getEngineDateFormat() {
@@ -996,18 +972,6 @@ public class ConfigurationService {
 
   public void setImportIndexAutoStorageIntervalInSec(Integer importIndexAutoStorageIntervalInSec) {
     this.importIndexAutoStorageIntervalInSec = importIndexAutoStorageIntervalInSec;
-  }
-
-  public void setAnalyzerName(String analyzerName) {
-    this.analyzerName = analyzerName;
-  }
-
-  public void setTokenizer(String tokenizer) {
-    this.tokenizer = tokenizer;
-  }
-
-  public void setTokenFilter(String tokenFilter) {
-    this.tokenFilter = tokenFilter;
   }
 
   public void setEngineDateFormat(String engineDateFormat) {
