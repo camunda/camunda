@@ -49,7 +49,7 @@ class Home extends React.Component {
   createDashboard = async () =>
     this.setState({redirect: `/dashboard/${await createDashboard()}/edit?new`});
   createReport = async () =>
-    this.setState({redirect: `/report/${await createReport(false)}/edit?new`});
+    this.setState({redirect: `/report/${await createReport(false, 'process')}/edit?new`});
 
   render() {
     if (this.state.redirect) {
