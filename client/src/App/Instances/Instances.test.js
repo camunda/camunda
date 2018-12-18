@@ -92,7 +92,7 @@ const instancesMock = [createInstance(), createInstance()];
 const instancesResponseMock = {totalCount: 2, workflowInstances: instancesMock};
 api.fetchWorkflowInstances = mockResolvedAsyncFn(instancesResponseMock);
 
-describe('Instances', () => {
+describe.skip('Instances', () => {
   afterEach(() => {
     api.fetchWorkflowInstances.mockClear();
     localStorage.setItem.mockClear();
