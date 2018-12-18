@@ -75,13 +75,13 @@
       <version>${slf4j.version}</version>
     </dependency>
 
+    <!-- Fix error message Status Log4j2 could not find a logging implementation.
+    The error comes from the elasticsearch java client. So this can be removed
+    as soon as this dependency is not needed anymore.-->
     <dependency>
-      <!-- Fix error message Status Log4j2 could not find a logging implementation.
-        The error comes from the elasticsearch java client. So this can be removed
-        as soon as this dependency is not needed anymore.-->
-      <groupId>org.slf4j</groupId>
-      <artifactId>log4j-over-slf4j</artifactId>
-      <version>${slf4j.version}</version>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-to-slf4j</artifactId>
+      <version>${elasticsearch.log4j.version}</version>
     </dependency>
 
     <!-- Jaxon -->
