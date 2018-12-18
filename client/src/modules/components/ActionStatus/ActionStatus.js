@@ -19,7 +19,7 @@ const isOperationScheduled = operationState => {
 const isOperationFailed = operationState =>
   operationState === OPERATION_STATE.FAILED;
 
-const ActionStatus = ({operationState, operationType, selected}) => {
+const ActionStatus = ({operationState, operationType, selected, ...props}) => {
   const isScheduled = isOperationScheduled(operationState);
   const isFailed = isOperationFailed(operationState);
 
@@ -29,9 +29,9 @@ const ActionStatus = ({operationState, operationType, selected}) => {
 
   return (
     <div>
-      {isScheduled && <Styled.ActionSpinner selected={selected} />}
+      {isScheduled && <Styled.ActionSpinner selected={selected} {...props} />}
       {isFailed && (
-        <StatusItems>
+        <StatusItems {...props}>
           <StatusItems.Item type={operationType} />
         </StatusItems>
       )}

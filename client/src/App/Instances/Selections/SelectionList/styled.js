@@ -1,8 +1,6 @@
 import styled from 'styled-components';
 import {themed, themeStyle, Colors} from 'modules/theme';
 
-import ContextualMessage from 'modules/components/ContextualMessage';
-
 const themedWith = (dark, light) => {
   return themeStyle({
     dark,
@@ -30,10 +28,6 @@ export const Li = styled.li`
   &:first-child {
     margin-top: 20px;
   }
-`;
-
-export const SelectionMessage = styled(ContextualMessage)`
-  margin-top: 18px;
 `;
 
 export const NoSelectionWrapper = themed(styled.div`
