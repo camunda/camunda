@@ -20,16 +20,35 @@ const dashboard = {
   reports: []
 };
 
-const report = {
+const processReport = {
   id: 'reportID',
   name: 'Some Report',
   lastModifier: 'Admin',
-  lastModified: '2017-11-11T11:11:11.1111+0200'
+  lastModified: '2017-11-11T11:11:11.1111+0200',
+  reportType: 'process',
+  combined: false
+};
+
+const combinedProcessReport = {
+  id: 'reportID',
+  name: 'Multiple reports',
+  lastModifier: 'Admin',
+  lastModified: '2017-11-11T11:11:11.1111+0200',
+  reportType: 'process',
+  combined: true
+};
+
+const decisionReport = {
+  id: 'reportID',
+  name: 'Some Decision Report',
+  lastModifier: 'Admin',
+  lastModified: '2017-11-11T11:11:11.1111+0200',
+  reportType: 'decision'
 };
 
 beforeAll(() => {
   loadDashboards.mockReturnValue([dashboard]);
-  loadReports.mockReturnValue([report]);
+  loadReports.mockReturnValue([processReport]);
   getReportIcon.mockReturnValue({Icon: () => {}, label: 'Icon'});
 });
 
@@ -63,7 +82,16 @@ it('should show a link that goes to the entity', () => {
 });
 
 it('should display only five reports', () => {
-  loadReports.mockReturnValueOnce([report, report, report, report, report, report, report, report]);
+  loadReports.mockReturnValueOnce([
+    processReport,
+    processReport,
+    processReport,
+    processReport,
+    processReport,
+    processReport,
+    processReport,
+    processReport
+  ]);
   const node = shallow(<Home {...props} />);
 
   expect(node.find('.reports li')).toHaveLength(5);
@@ -95,4 +123,20 @@ it('should contain a link to view all entities', () => {
 
   expect(node.find('.reports > Link').prop('to')).toBe('/reports');
   expect(node.find('.dashboards > Link').prop('to')).toBe('/dashboards');
+});
+
+it('should display combined tag for combined reports', () => {
+  loadReports.mockReturnValue([combinedProcessReport]);
+
+  const node = shallow(<Home {...props} />);
+
+  expect(node.find('.reports .dataTitle')).toIncludeText('Combined');
+});
+
+it('should display dmn tag for decision reports', () => {
+  loadReports.mockReturnValue([decisionReport]);
+
+  const node = shallow(<Home {...props} />);
+
+  expect(node.find('.reports .dataTitle')).toIncludeText('DMN');
 });

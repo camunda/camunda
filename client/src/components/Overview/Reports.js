@@ -140,6 +140,8 @@ class Reports extends React.Component {
                       <div className="data dataTitle">
                         <h3>{formatters.getHighlightedText(itemData.name, this.state.search)}</h3>
                         {itemData.combined && <span>Combined</span>}
+                        {itemData.reportType &&
+                          itemData.reportType === 'decision' && <span>DMN</span>}
                       </div>
                       <div className="extraInfo">
                         <span className="data custom">{getReportInfo(itemData)}</span>

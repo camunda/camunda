@@ -25,7 +25,7 @@ const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data))
 };
 
-const report = {
+const processReport = {
   id: 'reportID',
   name: 'Some Report',
   lastModifier: 'Admin',
@@ -34,8 +34,25 @@ const report = {
   combined: false
 };
 
+const combinedProcessReport = {
+  id: 'reportID',
+  name: 'Multiple reports',
+  lastModifier: 'Admin',
+  lastModified: '2017-11-11T11:11:11.1111+0200',
+  reportType: 'process',
+  combined: true
+};
+
+const decisionReport = {
+  id: 'reportID',
+  name: 'Some Decision Report',
+  lastModifier: 'Admin',
+  lastModified: '2017-11-11T11:11:11.1111+0200',
+  reportType: 'decision'
+};
+
 beforeAll(() => {
-  loadReports.mockReturnValue([report]);
+  loadReports.mockReturnValue([processReport]);
   getReportIcon.mockReturnValue({Icon: () => {}, label: 'Icon'});
 });
 
@@ -112,7 +129,7 @@ it('should show confirmation modal when deleting Report', async () => {
     .last()
     .simulate('click');
 
-  expect(node.state('deleting')).toEqual(report);
+  expect(node.state('deleting')).toEqual(processReport);
 });
 
 it('should duplicate reports', () => {
@@ -127,8 +144,8 @@ it('should duplicate reports', () => {
     .simulate('click', {target: {blur: jest.fn()}});
 
   expect(createReport).toHaveBeenCalledWith(false, 'process', {
-    ...report,
-    name: report.name + ' - Copy'
+    ...processReport,
+    name: processReport.name + ' - Copy'
   });
 });
 
@@ -208,7 +225,7 @@ it('should check for deletion conflicts', () => {
     .last()
     .simulate('click');
 
-  expect(checkDeleteConflict).toHaveBeenCalledWith(report.id);
+  expect(checkDeleteConflict).toHaveBeenCalledWith(processReport.id);
 });
 
 it('should have a Dropdown with more creation options', () => {
@@ -232,4 +249,20 @@ it('should reload the reports after deletion', async () => {
   await node.find('ConfirmationModal').prop('onConfirm')();
 
   expect(loadReports).toHaveBeenCalled();
+});
+
+it('should display combined tag for combined reports', () => {
+  loadReports.mockReturnValue([combinedProcessReport]);
+
+  const node = shallow(<Reports {...props} />);
+
+  expect(node.find('.dataTitle')).toIncludeText('Combined');
+});
+
+it('should display dmn tag for decision reports', () => {
+  loadReports.mockReturnValue([decisionReport]);
+
+  const node = shallow(<Reports {...props} />);
+
+  expect(node.find('.dataTitle')).toIncludeText('DMN');
 });
