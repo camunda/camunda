@@ -14,7 +14,9 @@ export default class ContextualMessage extends React.Component {
     return (
       <Styled.Message>
         <Styled.Dot />
-        <Styled.Text>{MESSAGES[this.props.type]}</Styled.Text>
+        <Styled.Text data-test="contextual-message-test">
+          {MESSAGES[this.props.type]}
+        </Styled.Text>
       </Styled.Message>
     );
   }

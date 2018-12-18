@@ -6,7 +6,7 @@ import {PANE_ID, EXPAND_STATE, DIRECTION} from 'modules/constants';
 import Pane from './Pane';
 import * as Styled from './styled';
 
-describe('Pane', () => {
+describe.skip('Pane', () => {
   const Foo = () => <div>Foo</div>;
   const mockProps = {
     handleExpand: jest.fn()

@@ -2,6 +2,7 @@
 
 exports[`Badge should contain passed number 1`] = `
 <Themed(styled.div)
+  data-test="badge"
   isActive={true}
   position={0}
 >

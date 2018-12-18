@@ -1,7 +1,6 @@
 import styled from 'styled-components';
 
 import {Colors} from 'modules/theme';
-import Panel from 'modules/components/Panel';
 import BadgeComponent from 'modules/components/Badge';
 import BasicCollapsablePanel from 'modules/components/CollapsablePanel';
 import BasicExpandButton from 'modules/components/ExpandButton';
@@ -22,7 +21,7 @@ export const CollapsablePanel = styled(BasicCollapsablePanel)`
   border-radius: 3px 0px 0 0;
 `;
 
-export const SelectionHeader = styled(Panel.Header)`
+export const SelectionHeader = styled(BasicCollapsablePanel.Header)`
   display: flex;
   justify-content: flex-start;
   padding-left: 45px;

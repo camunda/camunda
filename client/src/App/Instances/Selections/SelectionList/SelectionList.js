@@ -59,7 +59,7 @@ class SelectionList extends React.Component {
               const {selectionId, instancesMap, totalCount} = selection;
 
               return (
-                <Styled.Li key={selectionId}>
+                <Styled.Li data-test="selection-list-item" key={selectionId}>
                   <Selection
                     isOpen={openSelection === selectionId}
                     selectionId={selectionId}
@@ -74,7 +74,7 @@ class SelectionList extends React.Component {
               );
             })
           ) : (
-            <Styled.NoSelectionWrapper>
+            <Styled.NoSelectionWrapper data-test="empty-selection-list-message">
               {NO_SELECTIONS_MESSAGE}
             </Styled.NoSelectionWrapper>
           )}

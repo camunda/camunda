@@ -1,81 +1,150 @@
 import React from 'react';
-import {shallow} from 'enzyme';
+import {mount} from 'enzyme';
+
+import {createSelection, mockResolvedAsyncFn} from 'modules/testUtils';
+import {ThemeProvider} from 'modules/theme';
+import {SelectionProvider} from 'modules/contexts/SelectionContext';
+import * as instancesApi from 'modules/api/instances/instances';
+import {MESSAGES_TYPE, OPERATION_TYPE} from 'modules/constants';
+import {MESSAGES} from 'modules/components/ContextualMessage/constants';
 
 import SelectionList from './SelectionList';
-
 import {NO_SELECTIONS_MESSAGE} from './constants';
 
-import {xTimes, createSelection} from 'modules/testUtils';
+instancesApi.applyOperation = mockResolvedAsyncFn();
 
-import * as Styled from './styled';
-
-describe.skip('SelectionList', () => {
+describe('SelectionList', () => {
   let node;
-  let selections;
-
   beforeEach(async () => {
-    selections = [];
-
-    xTimes(1)(index =>
-      selections.push(
-        createSelection({
-          selectionId: index
-        })
-      )
-    );
-
-    node = shallow(
-      <SelectionList
-        selections={selections}
-        onDeleteSelection={jest.fn()}
-        onToggleSelection={jest.fn()}
-        onRetrySelection={jest.fn()}
-        onCancelSelection={jest.fn()}
-      />
+    node = mount(
+      <ThemeProvider>
+        <SelectionProvider getFilterQuery={jest.fn()}>
+          <SelectionList />
+        </SelectionProvider>
+      </ThemeProvider>
     );
   });
 
-  it('should render a message when no selection exists', () => {
-    //when
-    selections = [];
-    node.setProps({selections});
+  it('should render an empty list of selections', () => {
+    const liNodes = node.find('li[data-test="selection-list-item"]');
+
+    // 2 list nodes
+    expect(liNodes).toHaveLength(0);
+
+    // empty message
+    expect(
+      node.find('div[data-test="empty-selection-list-message"]').text()
+    ).toEqual(NO_SELECTIONS_MESSAGE);
+  });
+
+  it('should render list of selections', () => {
+    // given
+    const selections = [
+      createSelection({
+        selectionId: 1
+      }),
+      createSelection({
+        selectionId: 2
+      })
+    ];
+    const openSelection = 2;
+    node.find('BasicSelectionProvider').setState({selections, openSelection});
 
     // then
-    const NoSelectionWrapper = node.find(Styled.NoSelectionWrapper);
-    expect(NoSelectionWrapper).toHaveLength(1);
-    expect(NoSelectionWrapper.contains(NO_SELECTIONS_MESSAGE)).toBe(true);
-    expect(NoSelectionWrapper).toMatchSnapshot();
+    const liNodes = node.find('li[data-test="selection-list-item"]');
+
+    // 2 list nodes
+    expect(liNodes).toHaveLength(2);
+
+    // the second selection is open
+    expect(
+      liNodes
+        .at(0)
+        .find('Selection')
+        .prop('isOpen')
+    ).toBe(false);
+    expect(
+      liNodes
+        .at(1)
+        .find('Selection')
+        .prop('isOpen')
+    ).toBe(true);
+
+    // data props
+    selections.forEach((selection, idx) => {
+      expect(
+        liNodes
+          .at(idx)
+          .find('Selection')
+          .prop('selectionId')
+      ).toBe(selection.selectionId);
+      expect(
+        liNodes
+          .at(idx)
+          .find('Selection')
+          .prop('instances')
+      ).toEqual(selection.instancesMap);
+      expect(
+        liNodes
+          .at(idx)
+          .find('Selection')
+          .prop('instanceCount')
+      ).toBe(selection.totalCount);
+    });
   });
 
   it('should render contexual message when max. number of selections is reached', () => {
     // given
-    selections = [];
-    expect(node.find(Styled.MessageWrapper)).not.toExist();
-
-    // when
-    xTimes(10)(index => selections.push(createSelection(index)));
-    node.setProps({selections});
-
-    // then
-    expect(node.find(Styled.MessageWrapper)).toExist();
-  });
-
-  it('should render Selection when existent', () => {
-    expect(node.find(Styled.MessageWrapper));
-  });
-
-  it('should evaluate which Selection is currently open', () => {
-    //given
-    const SelectionId = 1;
-
-    // when
-    node.setProps({openSelection: SelectionId});
+    let selections = [];
+    for (let i = 1; i <= 10; i++) {
+      selections.push(createSelection({selectionId: i}));
+    }
+    node.find('BasicSelectionProvider').setState({selections});
 
     // then
-    expect(node.find('Selection').props().isOpen).toBe(true);
+    const expectedMessage = MESSAGES[MESSAGES_TYPE.DROP_SELECTION];
+    expect(
+      node.find('div[data-test="contextual-message-test"]').text()
+    ).toEqual(expectedMessage);
   });
 
-  it('should pass props to the Selection component', () => {
-    expect(node.find('Selection').props()).toMatchSnapshot();
+  it('should retry a selection', async () => {
+    // given
+    const selections = [
+      createSelection({
+        selectionId: 1
+      })
+    ];
+    const openSelection = 2;
+    node.find('BasicSelectionProvider').setState({selections, openSelection});
+
+    // when
+    await node.find('Selection').prop('onRetry')();
+
+    // then
+    expect(instancesApi.applyOperation).toHaveBeenCalledWith(
+      OPERATION_TYPE.UPDATE_RETRIES,
+      selections[0].queries
+    );
+  });
+
+  it('should cancel a selection', async () => {
+    // given
+    const selections = [
+      createSelection({
+        selectionId: 1
+      })
+    ];
+    const openSelection = 2;
+    node.find('BasicSelectionProvider').setState({selections, openSelection});
+
+    // when
+    await node.find('Selection').prop('onCancel')();
+
+    // then
+    expect(instancesApi.applyOperation).toHaveBeenCalledWith(
+      OPERATION_TYPE.CANCEL,
+      selections[0].queries
+    );
   });
 });

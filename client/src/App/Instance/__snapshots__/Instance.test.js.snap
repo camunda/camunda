@@ -2,7 +2,7 @@
 
 exports[`Instance render should render a the instance history 1`] = `
 <Fragment>
-  <WithSelection(HeaderSharedState)
+  <WithSelection(WithCollapsablePanel(HeaderSharedState))
     detail={
       <InstanceDetail
         instance={
