@@ -84,6 +84,16 @@ public class MessageSubscriptionState implements StateLifecycleListener {
         stateController.getColumnFamilyHandle(NAME_AND_CORRELATION_KEY_COLUMN_FAMILY_NAME);
   }
 
+  public MessageSubscription get(long elementInstanceKey, DirectBuffer messageName) {
+    final boolean found = readSubscription(elementInstanceKey, messageName, subscription);
+
+    if (found) {
+      return subscription;
+    } else {
+      return null;
+    }
+  }
+
   public void put(final MessageSubscription subscription) {
     try (final WriteOptions options = new WriteOptions();
         final ZbWriteBatch batch = new ZbWriteBatch()) {
@@ -231,6 +241,10 @@ public class MessageSubscriptionState implements StateLifecycleListener {
     updateSentTime(subscription, sentTime);
   }
 
+  public void resetSentTime(MessageSubscription subscription) {
+    updateSentTime(subscription, 0);
+  }
+
   public void updateSentTime(final MessageSubscription subscription, long sentTime) {
     try (final WriteOptions options = new WriteOptions();
         final ZbWriteBatch batch = new ZbWriteBatch()) {
@@ -251,9 +265,11 @@ public class MessageSubscriptionState implements StateLifecycleListener {
           valueBuffer.byteArray(),
           subscription.getLength());
 
-      keyLength = writeSentTimeKey(keyBuffer, subscription);
-      batch.put(
-          sentTimeColumnFamily, keyBuffer.byteArray(), keyLength, EXISTENCE, EXISTENCE.length);
+      if (sentTime > 0) {
+        keyLength = writeSentTimeKey(keyBuffer, subscription);
+        batch.put(
+            sentTimeColumnFamily, keyBuffer.byteArray(), keyLength, EXISTENCE, EXISTENCE.length);
+      }
 
       db.write(options, batch);
     } catch (RocksDBException e) {
@@ -308,7 +324,7 @@ public class MessageSubscriptionState implements StateLifecycleListener {
     return found;
   }
 
-  private void remove(final MessageSubscription subscription) {
+  public void remove(final MessageSubscription subscription) {
     try (final WriteOptions options = new WriteOptions();
         final ZbWriteBatch batch = new ZbWriteBatch()) {
       int keyLength = writeSubscriptionKey(keyBuffer, 0, subscription);

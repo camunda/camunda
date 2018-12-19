@@ -18,6 +18,7 @@
 package io.zeebe.broker.subscription.message.data;
 
 import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.msgpack.property.BooleanProperty;
 import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
@@ -32,13 +33,16 @@ public class WorkflowInstanceSubscriptionRecord extends UnpackedObject {
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
   private final StringProperty messageNameProp = new StringProperty("messageName", "");
   private final DocumentProperty payloadProp = new DocumentProperty("payload");
+  private final BooleanProperty closeOnCorrelateProp =
+      new BooleanProperty("closeOnCorrelate", true);
 
   public WorkflowInstanceSubscriptionRecord() {
     this.declareProperty(subscriptionPartitionIdProp)
         .declareProperty(workflowInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(messageNameProp)
-        .declareProperty(payloadProp);
+        .declareProperty(payloadProp)
+        .declareProperty(closeOnCorrelateProp);
   }
 
   public int getSubscriptionPartitionId() {
@@ -83,6 +87,15 @@ public class WorkflowInstanceSubscriptionRecord extends UnpackedObject {
 
   public WorkflowInstanceSubscriptionRecord setPayload(DirectBuffer payload) {
     payloadProp.setValue(payload);
+    return this;
+  }
+
+  public boolean shouldCloseOnCorrelate() {
+    return closeOnCorrelateProp.getValue();
+  }
+
+  public WorkflowInstanceSubscriptionRecord setCloseOnCorrelate(boolean closeOnCorrelate) {
+    this.closeOnCorrelateProp.setValue(closeOnCorrelate);
     return this;
   }
 }

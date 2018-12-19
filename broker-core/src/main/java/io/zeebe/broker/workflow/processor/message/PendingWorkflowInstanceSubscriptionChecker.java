@@ -46,8 +46,9 @@ public class PendingWorkflowInstanceSubscriptionChecker implements Runnable {
   }
 
   private boolean sendCommand(WorkflowInstanceSubscription subscription) {
-    boolean success = false;
+    final boolean success;
 
+    // can only be opening/closing as an opened subscription is not indexed in the sent time column
     if (subscription.isOpening()) {
       success = sendOpenCommand(subscription);
     } else {
@@ -66,7 +67,8 @@ public class PendingWorkflowInstanceSubscriptionChecker implements Runnable {
         subscription.getWorkflowInstanceKey(),
         subscription.getElementInstanceKey(),
         subscription.getMessageName(),
-        subscription.getCorrelationKey());
+        subscription.getCorrelationKey(),
+        subscription.shouldCloseOnCorrelate());
   }
 
   private boolean sendCloseCommand(WorkflowInstanceSubscription subscription) {

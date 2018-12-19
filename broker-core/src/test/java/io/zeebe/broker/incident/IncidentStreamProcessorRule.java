@@ -20,6 +20,7 @@ package io.zeebe.broker.incident;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -77,7 +78,8 @@ public class IncidentStreamProcessorRule extends ExternalResource {
     mockTimerEventScheduler = mock(DueDateTimerChecker.class);
 
     when(mockSubscriptionCommandSender.hasPartitionIds()).thenReturn(true);
-    when(mockSubscriptionCommandSender.openMessageSubscription(anyLong(), anyLong(), any(), any()))
+    when(mockSubscriptionCommandSender.openMessageSubscription(
+            anyLong(), anyLong(), any(), any(), anyBoolean()))
         .thenReturn(true);
     when(mockSubscriptionCommandSender.correlateMessageSubscription(
             anyInt(), anyLong(), anyLong(), any()))

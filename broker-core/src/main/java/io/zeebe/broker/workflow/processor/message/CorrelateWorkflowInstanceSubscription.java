@@ -83,23 +83,24 @@ public final class CorrelateWorkflowInstanceSubscription
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
 
-    this.subscriptionRecord = record.getValue();
+    subscriptionRecord = record.getValue();
     final long elementInstanceKey = subscriptionRecord.getElementInstanceKey();
 
     final WorkflowInstanceSubscription subscription =
         subscriptionState.getSubscription(elementInstanceKey, subscriptionRecord.getMessageName());
 
-    if (subscription == null) {
+    sideEffect.accept(this::sendAcknowledgeCommand);
+    if (subscription == null || subscription.isClosing()) {
       streamWriter.appendRejection(
-          record, RejectionType.NOT_APPLICABLE, "subscription is already correlated");
-
-      sideEffect.accept(this::sendAcknowledgeCommand);
+          record,
+          RejectionType.NOT_APPLICABLE,
+          "subscription was already correlated or is closing");
       return;
     }
 
-    subscriptionState.remove(subscription);
-
-    sideEffect.accept(this::sendAcknowledgeCommand);
+    if (subscription.shouldCloseOnCorrelate()) {
+      subscriptionState.remove(subscription);
+    }
 
     final boolean isOccurred =
         catchEventBehavior.occurEventForElement(

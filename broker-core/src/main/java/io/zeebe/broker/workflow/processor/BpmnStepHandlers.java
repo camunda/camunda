@@ -21,7 +21,6 @@ import io.zeebe.broker.incident.processor.IncidentState;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.workflow.model.BpmnStep;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
-import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.processor.activity.ActivateActivityHandler;
 import io.zeebe.broker.workflow.processor.activity.CompleteActivityHandler;
 import io.zeebe.broker.workflow.processor.activity.TerminateActivityHandler;
@@ -65,8 +64,7 @@ public class BpmnStepHandlers {
         BpmnStep.TERMINATE_CONTAINED_INSTANCES, new TerminateContainedElementsHandler(zeebeState));
 
     // flow nodes
-    stepHandlers.put(
-        BpmnStep.ACTIVATE_FLOW_NODE, new ActivateFlowNodeHandler<ExecutableFlowNode>());
+    stepHandlers.put(BpmnStep.ACTIVATE_FLOW_NODE, new ActivateFlowNodeHandler<>());
     stepHandlers.put(BpmnStep.COMPLETE_FLOW_NODE, new CompleteFlowNodeHandler());
     stepHandlers.put(BpmnStep.TAKE_SEQUENCE_FLOW, new TakeSequenceFlowHandler());
     stepHandlers.put(BpmnStep.CONSUME_TOKEN, new ConsumeTokenHandler());

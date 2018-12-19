@@ -42,6 +42,7 @@ public class WorkflowInstanceSubscription implements BufferReader, BufferWriter 
   private long elementInstanceKey;
   private int subscriptionPartitionId;
   private long commandSentTime;
+  private boolean closeOnCorrelate = true;
 
   private int state = STATE_OPENING;
 
@@ -58,13 +59,15 @@ public class WorkflowInstanceSubscription implements BufferReader, BufferWriter 
       DirectBuffer handlerNodeId,
       DirectBuffer messageName,
       DirectBuffer correlationKey,
-      final long commandSentTime) {
+      long commandSentTime,
+      boolean closeOnCorrelate) {
     this(workflowInstanceKey, elementInstanceKey);
 
     this.handlerNodeId.wrap(handlerNodeId);
     this.commandSentTime = commandSentTime;
     this.messageName.wrap(messageName);
     this.correlationKey.wrap(correlationKey);
+    this.closeOnCorrelate = closeOnCorrelate;
   }
 
   public DirectBuffer getMessageName() {
@@ -123,6 +126,14 @@ public class WorkflowInstanceSubscription implements BufferReader, BufferWriter 
     this.subscriptionPartitionId = subscriptionPartitionId;
   }
 
+  public boolean shouldCloseOnCorrelate() {
+    return closeOnCorrelate;
+  }
+
+  public void setCloseOnCorrelate(boolean closeOnCorrelate) {
+    this.closeOnCorrelate = closeOnCorrelate;
+  }
+
   public boolean isOpening() {
     return state == STATE_OPENING;
   }
@@ -157,6 +168,9 @@ public class WorkflowInstanceSubscription implements BufferReader, BufferWriter 
     this.state = buffer.getInt(offset, STATE_BYTE_ORDER);
     offset += Integer.BYTES;
 
+    this.closeOnCorrelate = buffer.getByte(offset) == 1;
+    offset += 1;
+
     offset = readIntoBuffer(buffer, offset, messageName);
     offset = readIntoBuffer(buffer, offset, correlationKey);
     offset = readIntoBuffer(buffer, offset, handlerNodeId);
@@ -166,7 +180,8 @@ public class WorkflowInstanceSubscription implements BufferReader, BufferWriter 
 
   @Override
   public int getLength() {
-    return Long.BYTES * 3
+    return 1
+        + Long.BYTES * 3
         + Integer.BYTES * 5
         + messageName.capacity()
         + correlationKey.capacity()
@@ -189,6 +204,9 @@ public class WorkflowInstanceSubscription implements BufferReader, BufferWriter 
 
     buffer.putInt(offset, state, STATE_BYTE_ORDER);
     offset += Integer.BYTES;
+
+    buffer.putByte(offset, (byte) (closeOnCorrelate ? 1 : 0));
+    offset += 1;
 
     offset = writeIntoBuffer(buffer, offset, messageName);
     offset = writeIntoBuffer(buffer, offset, correlationKey);

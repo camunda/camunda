@@ -22,7 +22,10 @@ import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
+import io.zeebe.broker.subscription.message.state.MessageState;
+import io.zeebe.broker.subscription.message.state.MessageSubscription;
 import io.zeebe.broker.subscription.message.state.MessageSubscriptionState;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
@@ -32,9 +35,14 @@ public class CorrelateMessageSubscriptionProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
 
   private final MessageSubscriptionState subscriptionState;
+  private final MessageCorrelator messageCorrelator;
 
-  public CorrelateMessageSubscriptionProcessor(final MessageSubscriptionState subscriptionState) {
+  public CorrelateMessageSubscriptionProcessor(
+      MessageState messageState,
+      MessageSubscriptionState subscriptionState,
+      SubscriptionCommandSender commandSender) {
     this.subscriptionState = subscriptionState;
+    this.messageCorrelator = new MessageCorrelator(messageState, subscriptionState, commandSender);
   }
 
   @Override
@@ -45,17 +53,23 @@ public class CorrelateMessageSubscriptionProcessor
       final Consumer<SideEffectProducer> sideEffect) {
 
     final MessageSubscriptionRecord subscriptionRecord = record.getValue();
-
-    final boolean removed =
-        subscriptionState.remove(
+    final MessageSubscription subscription =
+        subscriptionState.get(
             subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageName());
 
-    if (removed) {
+    if (subscription != null) {
+      if (subscription.shouldCloseOnCorrelate()) {
+        subscriptionState.remove(subscription);
+      } else {
+        subscriptionState.resetSentTime(subscription);
+        messageCorrelator.correlateNextMessage(subscription, subscriptionRecord, sideEffect);
+      }
+
       streamWriter.appendFollowUpEvent(
           record.getKey(), MessageSubscriptionIntent.CORRELATED, subscriptionRecord);
     } else {
       streamWriter.appendRejection(
-          record, RejectionType.NOT_APPLICABLE, "subscription is already correlated");
+          record, RejectionType.NOT_APPLICABLE, "subscription does not exist");
     }
   }
 }

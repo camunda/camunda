@@ -22,6 +22,7 @@ import static io.zeebe.broker.subscription.OpenWorkflowInstanceSubscriptionDecod
 import static io.zeebe.broker.subscription.OpenWorkflowInstanceSubscriptionDecoder.subscriptionPartitionIdNullValue;
 import static io.zeebe.broker.subscription.OpenWorkflowInstanceSubscriptionDecoder.workflowInstanceKeyNullValue;
 
+import io.zeebe.broker.subscription.BooleanType;
 import io.zeebe.broker.subscription.OpenWorkflowInstanceSubscriptionDecoder;
 import io.zeebe.broker.subscription.OpenWorkflowInstanceSubscriptionEncoder;
 import io.zeebe.broker.util.SbeBufferWriterReader;
@@ -41,6 +42,7 @@ public class OpenWorkflowInstanceSubscriptionCommand
   private int subscriptionPartitionId;
   private long workflowInstanceKey;
   private long elementInstanceKey;
+  private boolean closeOnCorrelate;
 
   private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
 
@@ -67,6 +69,7 @@ public class OpenWorkflowInstanceSubscriptionCommand
         .subscriptionPartitionId(subscriptionPartitionId)
         .workflowInstanceKey(workflowInstanceKey)
         .elementInstanceKey(elementInstanceKey)
+        .closeOnCorrelate(closeOnCorrelate ? BooleanType.TRUE : BooleanType.FALSE)
         .putMessageName(messageName, 0, messageName.capacity());
   }
 
@@ -77,6 +80,7 @@ public class OpenWorkflowInstanceSubscriptionCommand
     subscriptionPartitionId = decoder.subscriptionPartitionId();
     workflowInstanceKey = decoder.workflowInstanceKey();
     elementInstanceKey = decoder.elementInstanceKey();
+    closeOnCorrelate = decoder.closeOnCorrelate() == BooleanType.TRUE;
 
     offset = decoder.limit();
 
@@ -119,5 +123,13 @@ public class OpenWorkflowInstanceSubscriptionCommand
 
   public DirectBuffer getMessageName() {
     return messageName;
+  }
+
+  public boolean shouldCloseOnCorrelate() {
+    return closeOnCorrelate;
+  }
+
+  public void setCloseOnCorrelate(boolean closeOnCorrelate) {
+    this.closeOnCorrelate = closeOnCorrelate;
   }
 }

@@ -36,6 +36,7 @@ public class MessageSubscription implements BufferReader, BufferWriter {
   private long workflowInstanceKey;
   private long elementInstanceKey;
   private long commandSentTime;
+  private boolean closeOnCorrelate;
 
   public MessageSubscription() {}
 
@@ -43,12 +44,14 @@ public class MessageSubscription implements BufferReader, BufferWriter {
       long workflowInstanceKey,
       long elementInstanceKey,
       DirectBuffer messageName,
-      DirectBuffer correlationKey) {
+      DirectBuffer correlationKey,
+      boolean closeOnCorrelate) {
     this.workflowInstanceKey = workflowInstanceKey;
     this.elementInstanceKey = elementInstanceKey;
 
     this.messageName.wrap(messageName);
     this.correlationKey.wrap(correlationKey);
+    this.closeOnCorrelate = closeOnCorrelate;
   }
 
   public void setElementInstanceKey(long elementInstanceKey) {
@@ -91,6 +94,14 @@ public class MessageSubscription implements BufferReader, BufferWriter {
     return commandSentTime > 0;
   }
 
+  public boolean shouldCloseOnCorrelate() {
+    return closeOnCorrelate;
+  }
+
+  public void setCloseOnCorrelate(boolean closeOnCorrelate) {
+    this.closeOnCorrelate = closeOnCorrelate;
+  }
+
   @Override
   public void wrap(final DirectBuffer buffer, int offset, final int length) {
     this.workflowInstanceKey = buffer.getLong(offset, STATE_BYTE_ORDER);
@@ -102,6 +113,9 @@ public class MessageSubscription implements BufferReader, BufferWriter {
     this.commandSentTime = buffer.getLong(offset, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
+    this.closeOnCorrelate = buffer.getByte(offset) == 1;
+    offset += 1;
+
     offset = readIntoBuffer(buffer, offset, messageName);
     offset = readIntoBuffer(buffer, offset, correlationKey);
     readIntoBuffer(buffer, offset, messagePayload);
@@ -109,7 +123,8 @@ public class MessageSubscription implements BufferReader, BufferWriter {
 
   @Override
   public int getLength() {
-    return Long.BYTES * 3
+    return 1
+        + Long.BYTES * 3
         + Integer.BYTES * 3
         + messageName.capacity()
         + correlationKey.capacity()
@@ -126,6 +141,9 @@ public class MessageSubscription implements BufferReader, BufferWriter {
 
     buffer.putLong(offset, commandSentTime, STATE_BYTE_ORDER);
     offset += Long.BYTES;
+
+    buffer.putByte(offset, (byte) (closeOnCorrelate ? 1 : 0));
+    offset += 1;
 
     offset = writeIntoBuffer(buffer, offset, messageName);
     offset = writeIntoBuffer(buffer, offset, correlationKey);
