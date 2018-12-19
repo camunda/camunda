@@ -15,6 +15,8 @@
  */
 package io.zeebe.test;
 
+import static io.zeebe.broker.workflow.WorkflowServiceNames.WORKFLOW_REPOSITORY_SERVICE;
+
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
 import io.zeebe.broker.clustering.base.partitions.Partition;
@@ -211,6 +213,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
           .dependency(ClusterBaseLayerServiceNames.leaderPartitionServiceName(partitionName))
           .dependency(
               TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME))
+          .dependency(WORKFLOW_REPOSITORY_SERVICE)
           .install()
           .get(timeout, TimeUnit.SECONDS);
 

@@ -26,6 +26,7 @@ import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory.Builde
 import io.zeebe.broker.logstreams.processor.TypedEventStreamProcessorBuilder;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
+import io.zeebe.broker.logstreams.state.DefaultZeebeDbFactory;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.processor.MessageEventProcessors;
@@ -46,7 +47,11 @@ import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceGroupReference;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.ServerTransport;
 
@@ -101,22 +106,23 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
             .processorId(partitionId)
             .processorName(PROCESSOR_NAME);
 
-    final TypedStreamEnvironment streamEnvironment =
-        new TypedStreamEnvironment(partition.getLogStream(), clientApiTransport.getOutput());
-
-    final ZeebeState zeebeState = new ZeebeState(partitionId);
     final StateStorage stateStorage =
         partition.getStateStorageFactory().create(partitionId, PROCESSOR_NAME);
     final StateSnapshotController stateSnapshotController =
-        new StateSnapshotController(zeebeState, stateStorage);
-
-    final TypedStreamProcessor typedStreamProcessor =
-        createTypedStreamProcessor(
-            partitionServiceName, partitionId, streamEnvironment, zeebeState);
+        new StateSnapshotController(DefaultZeebeDbFactory.DEFAULT_DB_FACTORY, stateStorage);
 
     streamProcessorServiceBuilder
-        .processor(typedStreamProcessor)
         .snapshotController(stateSnapshotController)
+        .streamProcessorFactory(
+            (zeebeDb) -> {
+              final ZeebeState zeebeState = new ZeebeState(partitionId, zeebeDb);
+              final TypedStreamEnvironment streamEnvironment =
+                  new TypedStreamEnvironment(
+                      partition.getLogStream(), clientApiTransport.getOutput());
+
+              return createTypedStreamProcessor(
+                  partitionServiceName, partitionId, streamEnvironment, zeebeState);
+            })
         .build();
   }
 
@@ -126,10 +132,7 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
       TypedStreamEnvironment streamEnvironment,
       ZeebeState zeebeState) {
     final TypedEventStreamProcessorBuilder typedProcessorBuilder =
-        streamEnvironment
-            .newStreamProcessor()
-            .keyGenerator(zeebeState.getKeyGenerator())
-            .stateController(zeebeState);
+        streamEnvironment.newStreamProcessor().keyGenerator(zeebeState.getKeyGenerator());
 
     addDistributeDeploymentProcessors(zeebeState, streamEnvironment, typedProcessorBuilder);
     final BpmnStepProcessor stepProcessor =

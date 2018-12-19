@@ -18,6 +18,8 @@ package io.zeebe.logstreams.state;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.zeebe.db.impl.DefaultColumnFamily;
+import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.zeebe.logstreams.util.RocksDBWrapper;
 import io.zeebe.test.util.AutoCloseableRule;
 import java.io.File;
@@ -35,7 +37,6 @@ public class StateSnapshotControllerTest {
   private static final Predicate<StateSnapshotMetadata> TRUISM = (s) -> true;
 
   private StateStorage storage;
-  private StateController controller;
   private StateSnapshotController snapshotController;
 
   @Before
@@ -44,10 +45,11 @@ public class StateSnapshotControllerTest {
     final File runtimeDirectory = tempFolderRule.newFolder("runtime");
     storage = new StateStorage(runtimeDirectory, snapshotsDirectory);
 
-    controller = new StateController();
-    autoCloseableRule.manage(controller);
+    snapshotController =
+        new StateSnapshotController(
+            ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class), storage);
 
-    snapshotController = new StateSnapshotController(controller, storage);
+    autoCloseableRule.manage(snapshotController);
   }
 
   @Test
@@ -56,7 +58,7 @@ public class StateSnapshotControllerTest {
     final StateSnapshotMetadata metadata = new StateSnapshotMetadata(1, 1, 1, false);
 
     // then
-    assertThat(controller.isOpened()).isFalse();
+    assertThat(snapshotController.isDbOpened()).isFalse();
     assertThatThrownBy(() -> snapshotController.takeSnapshot(metadata))
         .isInstanceOf(IllegalStateException.class);
   }
@@ -64,11 +66,10 @@ public class StateSnapshotControllerTest {
   @Test
   public void shouldNotTakeSnapshotOnPreExistingLocation() throws Exception {
     // given
-    final File dbDir = storage.getRuntimeDirectory();
     final StateSnapshotMetadata metadata = new StateSnapshotMetadata(1, 1, 1, false);
 
     // when
-    controller.open(dbDir, false);
+    snapshotController.openDb();
     snapshotController.takeSnapshot(metadata);
     snapshotController.takeSnapshot(metadata);
 
@@ -79,18 +80,17 @@ public class StateSnapshotControllerTest {
   @Test
   public void shouldTakeSnapshot() throws Exception {
     // given
-    final File dbDir = storage.getRuntimeDirectory();
     final String key = "test";
     final int value = 3;
     final RocksDBWrapper wrapper = new RocksDBWrapper();
     final StateSnapshotMetadata metadata = new StateSnapshotMetadata(1, 1, 1, false);
 
     // when
-    wrapper.wrap(controller.open(dbDir, false));
+    wrapper.wrap(snapshotController.openDb());
     wrapper.putInt(key, value);
     snapshotController.takeSnapshot(metadata);
-    controller.close();
-    wrapper.wrap(controller.open(storage.getSnapshotDirectoryFor(metadata), true));
+    snapshotController.close();
+    wrapper.wrap(snapshotController.openDb());
 
     // then
     assertThat(wrapper.getInt(key)).isEqualTo(value);
@@ -114,7 +114,6 @@ public class StateSnapshotControllerTest {
   @Test
   public void shouldOpenNewDatabaseIfNoValidSnapshotsToRecoverFrom() throws Exception {
     // given
-    final File dbDir = storage.getRuntimeDirectory();
     final int term = 2;
     final long commitPosition = 3L;
     final StateSnapshotMetadata initial =
@@ -122,9 +121,9 @@ public class StateSnapshotControllerTest {
     final StateSnapshotMetadata expected = StateSnapshotMetadata.createInitial(term);
 
     // when
-    controller.open(dbDir, false);
+    snapshotController.openDb();
     snapshotController.takeSnapshot(initial);
-    controller.close();
+    snapshotController.close();
 
     // when
     final StateSnapshotMetadata recovered =
@@ -139,7 +138,6 @@ public class StateSnapshotControllerTest {
   public void shouldRemovePreExistingNewDatabaseOnRecoverIfNoSnapshotsToRecoverFrom()
       throws Exception {
     // given
-    final File dbDir = storage.getRuntimeDirectory();
     final int term = 0;
     final String key = "test";
     final int value = 1;
@@ -147,11 +145,11 @@ public class StateSnapshotControllerTest {
     final RocksDBWrapper wrapper = new RocksDBWrapper();
 
     // when
-    wrapper.wrap(controller.open(dbDir, false));
+    wrapper.wrap(snapshotController.openDb());
     wrapper.putInt(key, value);
-    controller.close();
+    snapshotController.close();
     final StateSnapshotMetadata recovered = snapshotController.recover(3L, term, TRUISM);
-    wrapper.wrap(controller.getDb());
+    wrapper.wrap(snapshotController.openDb());
 
     // then
     assertThat(recovered).isEqualTo(expected);
@@ -161,7 +159,6 @@ public class StateSnapshotControllerTest {
   @Test
   public void shouldRecoverFromSnapshotsOnlyIfPredicateAcceptsIt() throws Exception {
     // given
-    final File dbDir = storage.getRuntimeDirectory();
     final String key = "test";
     final int value = 1;
     final StateSnapshotMetadata good = new StateSnapshotMetadata(1, 1, 1, false);
@@ -174,12 +171,12 @@ public class StateSnapshotControllerTest {
     final RocksDBWrapper wrapper = new RocksDBWrapper();
 
     // when
-    wrapper.wrap(controller.open(dbDir, false));
+    wrapper.wrap(snapshotController.openDb());
     wrapper.putInt(key, value - 1);
     snapshotController.takeSnapshot(bad);
     wrapper.putInt(key, value);
     snapshotController.takeSnapshot(good);
-    controller.close();
+    snapshotController.close();
 
     // then
     assertThat(storage.listRecoverable(bad.getLastWrittenEventPosition())).contains(bad, good);
@@ -190,7 +187,7 @@ public class StateSnapshotControllerTest {
             bad.getLastWrittenEventPosition(),
             good.getLastWrittenEventTerm(),
             (s) -> s.equals(good));
-    wrapper.wrap(controller.getDb());
+    wrapper.wrap(snapshotController.openDb());
 
     // then
     assertThat(recovered).isEqualTo(good);
@@ -200,7 +197,6 @@ public class StateSnapshotControllerTest {
   @Test
   public void shouldPurgeAllOtherSnapshots() throws Exception {
     // given
-    final File dbDir = storage.getRuntimeDirectory();
     final String key = "test";
     final StateSnapshotMetadata[] others =
         new StateSnapshotMetadata[] {
@@ -212,7 +208,7 @@ public class StateSnapshotControllerTest {
     final RocksDBWrapper wrapper = new RocksDBWrapper();
 
     // when
-    wrapper.wrap(controller.open(dbDir, false));
+    wrapper.wrap(snapshotController.openDb());
     wrapper.putInt(key, 1);
     snapshotController.takeSnapshot(others[0]);
     wrapper.putInt(key, 2);
@@ -222,7 +218,7 @@ public class StateSnapshotControllerTest {
     wrapper.putInt(key, 4);
     snapshotController.takeSnapshot(expected);
     wrapper.putInt(key, 5);
-    controller.close();
+    snapshotController.close();
     snapshotController.purgeAllExcept(expected);
 
     // then
@@ -232,7 +228,7 @@ public class StateSnapshotControllerTest {
     final StateSnapshotMetadata recovered =
         snapshotController.recover(
             expected.getLastWrittenEventPosition(), expected.getLastWrittenEventTerm(), TRUISM);
-    wrapper.wrap(controller.getDb());
+    wrapper.wrap(snapshotController.openDb());
 
     // then
     assertThat(recovered).isEqualTo(expected);
@@ -242,7 +238,6 @@ public class StateSnapshotControllerTest {
   @Test
   public void shouldPurgeAllMatching() throws Exception {
     // given
-    final File dbDir = storage.getRuntimeDirectory();
     final String key = "test";
     final StateSnapshotMetadata[] snapshots =
         new StateSnapshotMetadata[] {
@@ -251,13 +246,13 @@ public class StateSnapshotControllerTest {
     final RocksDBWrapper wrapper = new RocksDBWrapper();
 
     // when
-    wrapper.wrap(controller.open(dbDir, false));
+    wrapper.wrap(snapshotController.openDb());
     wrapper.putInt(key, 1);
     snapshotController.takeSnapshot(snapshots[0]);
     wrapper.putInt(key, 2);
     snapshotController.takeSnapshot(snapshots[1]);
     wrapper.putInt(key, 3);
-    controller.close();
+    snapshotController.close();
     snapshotController.purgeAll(s -> s.getLastSuccessfulProcessedEventPosition() == 3);
 
     // then
@@ -269,7 +264,7 @@ public class StateSnapshotControllerTest {
             snapshots[1].getLastWrittenEventPosition(),
             snapshots[1].getLastWrittenEventTerm(),
             TRUISM);
-    wrapper.wrap(controller.getDb());
+    wrapper.wrap(snapshotController.openDb());
 
     // then
     assertThat(recovered).isEqualTo(snapshots[0]);
@@ -279,7 +274,6 @@ public class StateSnapshotControllerTest {
   @Test
   public void shouldPurgeAllSnapshots() throws Exception {
     // given
-    final File dbDir = storage.getRuntimeDirectory();
     final String key = "test";
     final StateSnapshotMetadata[] snapshots =
         new StateSnapshotMetadata[] {
@@ -288,13 +282,13 @@ public class StateSnapshotControllerTest {
     final RocksDBWrapper wrapper = new RocksDBWrapper();
 
     // when
-    wrapper.wrap(controller.open(dbDir, false));
+    wrapper.wrap(snapshotController.openDb());
     wrapper.putInt(key, 1);
     snapshotController.takeSnapshot(snapshots[0]);
     wrapper.putInt(key, 2);
     snapshotController.takeSnapshot(snapshots[1]);
     wrapper.putInt(key, 3);
-    controller.close();
+    snapshotController.close();
     snapshotController.purgeAll();
 
     // then
@@ -306,7 +300,7 @@ public class StateSnapshotControllerTest {
             snapshots[1].getLastWrittenEventPosition(),
             snapshots[1].getLastWrittenEventTerm(),
             TRUISM);
-    wrapper.wrap(controller.getDb());
+    wrapper.wrap(snapshotController.openDb());
 
     // then
     assertThat(recovered)

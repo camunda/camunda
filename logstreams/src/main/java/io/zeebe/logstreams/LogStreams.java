@@ -17,7 +17,6 @@ package io.zeebe.logstreams;
 
 import io.zeebe.logstreams.fs.FsSnapshotStorageBuilder;
 import io.zeebe.logstreams.impl.LogStreamBuilder;
-import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorBuilder;
 
 public class LogStreams {
@@ -29,8 +28,7 @@ public class LogStreams {
     return new FsSnapshotStorageBuilder(rootPath);
   }
 
-  public static StreamProcessorBuilder createStreamProcessor(
-      final String name, final int id, final StreamProcessor streamProcessor) {
-    return new StreamProcessorBuilder(id, name, streamProcessor);
+  public static StreamProcessorBuilder createStreamProcessor(final String name, final int id) {
+    return new StreamProcessorBuilder(id, name);
   }
 }

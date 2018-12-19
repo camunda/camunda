@@ -17,16 +17,12 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import io.zeebe.logstreams.state.StateController;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
 public class TypedEventStreamProcessorBuilder {
   protected final TypedStreamEnvironment environment;
@@ -35,7 +31,6 @@ public class TypedEventStreamProcessorBuilder {
   protected List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
 
   private KeyGenerator keyGenerator;
-  private StateController stateController;
 
   public TypedEventStreamProcessorBuilder(TypedStreamEnvironment environment) {
     this.environment = environment;
@@ -45,23 +40,6 @@ public class TypedEventStreamProcessorBuilder {
   public TypedEventStreamProcessorBuilder onEvent(
       ValueType valueType, Intent intent, TypedRecordProcessor<?> processor) {
     return onRecord(RecordType.EVENT, valueType, intent, processor);
-  }
-
-  public <T extends UnpackedObject> TypedEventStreamProcessorBuilder onEvent(
-      ValueType valueType,
-      Intent intent,
-      Predicate<T> activationFunction,
-      TypedRecordProcessor<T> processor) {
-    return onEvent(
-        valueType,
-        intent,
-        new DelegatingEventProcessor<T>(
-            r -> activationFunction.test(r.getValue()) ? processor : null));
-  }
-
-  public TypedEventStreamProcessorBuilder onEvent(
-      ValueType valueType, Intent intent, Consumer<? extends UnpackedObject> consumer) {
-    return onEvent(valueType, intent, new ConsumerProcessor<>(consumer));
   }
 
   private TypedEventStreamProcessorBuilder onRecord(
@@ -84,11 +62,6 @@ public class TypedEventStreamProcessorBuilder {
     return onCommand(valueType, intent, new CommandProcessorImpl<>(commandProcessor));
   }
 
-  public TypedEventStreamProcessorBuilder onRejection(
-      ValueType valueType, Intent intent, TypedRecordProcessor<?> processor) {
-    return onRecord(RecordType.COMMAND_REJECTION, valueType, intent, processor);
-  }
-
   public TypedEventStreamProcessorBuilder withListener(StreamProcessorLifecycleAware listener) {
     this.lifecycleListeners.add(listener);
     return this;
@@ -100,11 +73,6 @@ public class TypedEventStreamProcessorBuilder {
     return this;
   }
 
-  public TypedEventStreamProcessorBuilder stateController(StateController stateController) {
-    this.stateController = stateController;
-    return this;
-  }
-
   public TypedStreamProcessor build() {
 
     return new TypedStreamProcessor(
@@ -113,44 +81,6 @@ public class TypedEventStreamProcessorBuilder {
         lifecycleListeners,
         environment.getEventRegistry(),
         keyGenerator,
-        environment,
-        stateController);
-  }
-
-  private static class DelegatingEventProcessor<T extends UnpackedObject>
-      implements TypedRecordProcessor<T> {
-    private final Function<TypedRecord<T>, TypedRecordProcessor<T>> dispatcher;
-    private TypedRecordProcessor<T> selectedProcessor;
-
-    DelegatingEventProcessor(Function<TypedRecord<T>, TypedRecordProcessor<T>> dispatcher) {
-      this.dispatcher = dispatcher;
-    }
-
-    @Override
-    public void processRecord(
-        TypedRecord<T> record,
-        TypedResponseWriter responseWriter,
-        TypedStreamWriter streamWriter,
-        Consumer<SideEffectProducer> sideEffect) {
-      selectedProcessor = dispatcher.apply(record);
-      if (selectedProcessor != null) {
-        selectedProcessor.processRecord(record, responseWriter, streamWriter, sideEffect);
-      }
-    }
-  }
-
-  private static class ConsumerProcessor<T extends UnpackedObject>
-      implements TypedRecordProcessor<T> {
-    private final Consumer<T> consumer;
-
-    ConsumerProcessor(Consumer<T> consumer) {
-      this.consumer = consumer;
-    }
-
-    @Override
-    public void processRecord(
-        TypedRecord<T> record, TypedResponseWriter responseWriter, TypedStreamWriter streamWriter) {
-      consumer.accept(record.getValue());
-    }
+        environment);
   }
 }

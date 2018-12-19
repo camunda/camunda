@@ -24,6 +24,7 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.processor.EventFilter;
 import io.zeebe.logstreams.processor.StreamProcessor;
+import io.zeebe.logstreams.processor.StreamProcessorFactory;
 import io.zeebe.logstreams.spi.SnapshotController;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
@@ -73,10 +74,16 @@ public class StreamProcessorServiceFactory implements Service<StreamProcessorSer
 
     protected MetadataFilter customEventFilter;
     protected boolean readOnly = false;
+    private StreamProcessorFactory streamProcessorFactory;
 
     public Builder(Partition partition, ServiceName<Partition> serviceName) {
       this.logStream = partition.getLogStream();
       this.additionalDependencies.add(serviceName);
+    }
+
+    public Builder streamProcessorFactory(StreamProcessorFactory streamProcessorFactory) {
+      this.streamProcessorFactory = streamProcessorFactory;
+      return this;
     }
 
     public Builder processorId(int processorId) {
@@ -86,22 +93,6 @@ public class StreamProcessorServiceFactory implements Service<StreamProcessorSer
 
     public Builder processorName(String processorName) {
       this.processorName = processorName;
-      return this;
-    }
-
-    public Builder processor(StreamProcessor processor) {
-      this.streamProcessor = processor;
-      return this;
-    }
-
-    public Builder processor(TypedStreamProcessor processor) {
-      this.streamProcessor = processor;
-      this.customEventFilter = processor.buildTypeFilter();
-      return this;
-    }
-
-    public Builder eventFilter(MetadataFilter eventFilter) {
-      this.customEventFilter = eventFilter;
       return this;
     }
 
@@ -115,15 +106,8 @@ public class StreamProcessorServiceFactory implements Service<StreamProcessorSer
       return this;
     }
 
-    public Builder additionalDependencies(ServiceName<?>... additionalDependencies) {
-      for (ServiceName<?> serviceName : additionalDependencies) {
-        this.additionalDependencies.add(serviceName);
-      }
-      return this;
-    }
-
     public ActorFuture<StreamProcessorService> build() {
-      EnsureUtil.ensureNotNull("stream processor", streamProcessor);
+      EnsureUtil.ensureNotNull("stream processor factory", streamProcessorFactory);
       EnsureUtil.ensureNotNullOrEmpty("processor name", processorName);
       EnsureUtil.ensureGreaterThan("process id", processorId, -1);
 
@@ -133,7 +117,7 @@ public class StreamProcessorServiceFactory implements Service<StreamProcessorSer
       }
       final EventFilter eventFilter = new MetadataEventFilter(metadataFilter);
 
-      return LogStreams.createStreamProcessor(processorName, processorId, streamProcessor)
+      return LogStreams.createStreamProcessor(processorName, processorId)
           .actorScheduler(actorScheduler)
           .serviceContainer(serviceContainer)
           .snapshotController(snapshotController)
@@ -142,6 +126,7 @@ public class StreamProcessorServiceFactory implements Service<StreamProcessorSer
           .eventFilter(eventFilter)
           .readOnly(readOnly)
           .additionalDependencies(additionalDependencies)
+          .streamProcessorFactory(streamProcessorFactory)
           .build();
     }
   }

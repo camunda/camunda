@@ -17,16 +17,16 @@
  */
 package io.zeebe.broker.workflow.state;
 
-import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
+import static io.zeebe.db.impl.ZeebeDbConstants.ZB_DB_BYTE_ORDER;
 import static io.zeebe.util.buffer.BufferUtil.readIntoBuffer;
 import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
 
+import io.zeebe.db.DbValue;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class TimerInstance implements Persistable {
-  public static final int KEY_LENGTH = 2 * Long.BYTES;
+public class TimerInstance implements DbValue {
 
   private final DirectBuffer handlerNodeId = new UnsafeBuffer(0, 0);
   private long key;
@@ -81,16 +81,16 @@ public class TimerInstance implements Persistable {
 
   @Override
   public void write(MutableDirectBuffer buffer, int offset) {
-    buffer.putLong(offset, elementInstanceKey, STATE_BYTE_ORDER);
+    buffer.putLong(offset, elementInstanceKey, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
-    buffer.putLong(offset, dueDate, STATE_BYTE_ORDER);
+    buffer.putLong(offset, dueDate, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
-    buffer.putLong(offset, key, STATE_BYTE_ORDER);
+    buffer.putLong(offset, key, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
-    buffer.putInt(offset, repetitions, STATE_BYTE_ORDER);
+    buffer.putInt(offset, repetitions, ZB_DB_BYTE_ORDER);
     offset += Integer.BYTES;
 
     offset = writeIntoBuffer(buffer, offset, handlerNodeId);
@@ -99,36 +99,19 @@ public class TimerInstance implements Persistable {
 
   @Override
   public void wrap(DirectBuffer buffer, int offset, int length) {
-    elementInstanceKey = buffer.getLong(offset, STATE_BYTE_ORDER);
+    elementInstanceKey = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
-    dueDate = buffer.getLong(offset, STATE_BYTE_ORDER);
+    dueDate = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
-    key = buffer.getLong(offset, STATE_BYTE_ORDER);
+    key = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
-    repetitions = buffer.getInt(offset, STATE_BYTE_ORDER);
+    repetitions = buffer.getInt(offset, ZB_DB_BYTE_ORDER);
     offset += Integer.BYTES;
 
     offset = readIntoBuffer(buffer, offset, handlerNodeId);
     assert offset == length : "End offset differs from length";
-  }
-
-  @Override
-  public void writeKey(MutableDirectBuffer keyBuffer, int offset) {
-    int keyOffset = offset;
-    keyBuffer.putLong(keyOffset, elementInstanceKey, STATE_BYTE_ORDER);
-    keyOffset += Long.BYTES;
-
-    keyBuffer.putLong(keyOffset, key, STATE_BYTE_ORDER);
-    keyOffset += Long.BYTES;
-
-    assert (keyOffset - offset) == getKeyLength() : "End offset differs from getKeyLength()";
-  }
-
-  @Override
-  public int getKeyLength() {
-    return KEY_LENGTH;
   }
 }

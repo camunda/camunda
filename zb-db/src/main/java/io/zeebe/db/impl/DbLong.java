@@ -13,41 +13,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.logstreams.rocksdb;
+package io.zeebe.db.impl;
 
-import java.util.Map.Entry;
+import static io.zeebe.db.impl.ZeebeDbConstants.ZB_DB_BYTE_ORDER;
+
+import io.zeebe.db.DbKey;
+import io.zeebe.db.DbValue;
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 
-public class ZbRocksEntry implements Entry<DirectBuffer, DirectBuffer> {
-  private DirectBuffer key;
-  private DirectBuffer value;
+public class DbLong implements DbKey, DbValue {
 
-  public ZbRocksEntry() {}
+  private long longValue;
 
-  public ZbRocksEntry(final DirectBuffer key, final DirectBuffer value) {
-    wrap(key, value);
-  }
-
-  public ZbRocksEntry wrap(final DirectBuffer key, final DirectBuffer value) {
-    this.key = key;
-    this.value = value;
-
-    return this;
+  public void wrapLong(long value) {
+    longValue = value;
   }
 
   @Override
-  public DirectBuffer getKey() {
-    return key;
+  public void wrap(DirectBuffer buffer, int offset, int length) {
+    longValue = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
   }
 
   @Override
-  public DirectBuffer getValue() {
-    return value;
+  public int getLength() {
+    return Long.BYTES;
   }
 
   @Override
-  public DirectBuffer setValue(DirectBuffer value) {
-    this.value = value;
-    return this.value;
+  public void write(MutableDirectBuffer buffer, int offset) {
+    buffer.putLong(offset, longValue, ZB_DB_BYTE_ORDER);
+  }
+
+  public long getValue() {
+    return longValue;
   }
 }

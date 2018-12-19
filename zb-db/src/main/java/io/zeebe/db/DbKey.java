@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.logstreams.state;
+package io.zeebe.db;
 
-public interface StateLifecycleListener {
-  void onOpened(StateController stateController);
-}
+import io.zeebe.util.buffer.BufferReader;
+import io.zeebe.util.buffer.BufferWriter;
+
+/** The key which is used to store a value. */
+public interface DbKey extends BufferReader, BufferWriter {}

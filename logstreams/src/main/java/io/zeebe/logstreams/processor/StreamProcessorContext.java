@@ -27,7 +27,6 @@ public class StreamProcessorContext {
   protected int id;
   protected String name;
 
-  protected StreamProcessor streamProcessor;
   protected boolean isReadOnlyProcessor;
 
   protected LogStream logStream;
@@ -52,14 +51,6 @@ public class StreamProcessorContext {
 
   public void setLogStream(LogStream logstream) {
     this.logStream = logstream;
-  }
-
-  public StreamProcessor getStreamProcessor() {
-    return streamProcessor;
-  }
-
-  public void setStreamProcessor(StreamProcessor streamProcessor) {
-    this.streamProcessor = streamProcessor;
   }
 
   public String getName() {
@@ -164,5 +155,15 @@ public class StreamProcessorContext {
 
   public void resumeController() {
     resumeRunnable.run();
+  }
+
+  private StreamProcessorFactory streamProcessorFactory;
+
+  public void setStreamProcessorFactory(StreamProcessorFactory streamProcessorFactory) {
+    this.streamProcessorFactory = streamProcessorFactory;
+  }
+
+  public StreamProcessorFactory getStreamProcessorFactory() {
+    return streamProcessorFactory;
   }
 }

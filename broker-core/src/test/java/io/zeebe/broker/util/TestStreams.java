@@ -25,16 +25,21 @@ import io.zeebe.broker.logstreams.state.StateStorageFactory;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.workflow.data.TimerRecord;
+import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
-import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.log.BufferedLogStreamReader;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.zeebe.logstreams.log.LogStreamWriterImpl;
+import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.logstreams.processor.StreamProcessorController;
+import io.zeebe.logstreams.processor.StreamProcessorFactory;
 import io.zeebe.logstreams.spi.SnapshotController;
-import io.zeebe.logstreams.spi.SnapshotStorage;
-import io.zeebe.logstreams.state.StateController;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.msgpack.UnpackedObject;
@@ -60,9 +65,7 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -95,10 +98,6 @@ public class TestStreams {
   protected ActorScheduler actorScheduler;
 
   protected StateStorageFactory stateStorageFactory;
-
-  protected SnapshotStorage snapshotStorage;
-
-  protected StateStorage stateStorage;
 
   public TestStreams(
       final File storageDirectory,
@@ -194,14 +193,6 @@ public class TestStreams {
     return new FluentLogWriter(logStream);
   }
 
-  protected SnapshotStorage getSnapshotStorage() {
-    if (snapshotStorage == null) {
-      snapshotStorage =
-          LogStreams.createFsSnapshotStore(storageDirectory.getAbsolutePath()).build();
-    }
-    return snapshotStorage;
-  }
-
   protected StateStorageFactory getStateStorageFactory() {
     if (stateStorageFactory == null) {
       final File rocksDBDirectory = new File(storageDirectory, "state");
@@ -218,12 +209,13 @@ public class TestStreams {
   public StreamProcessorControl initStreamProcessor(
       final String log,
       final int streamProcessorId,
-      final StateController stateController,
-      final Supplier<StreamProcessor> factory) {
+      final ZeebeDbFactory zeebeDbFactory,
+      final StreamProcessorFactory streamProcessorFactory) {
     final LogStream stream = getLogStream(log);
 
     final StreamProcessorControlImpl control =
-        new StreamProcessorControlImpl(stream, stateController, factory, streamProcessorId);
+        new StreamProcessorControlImpl(
+            stream, zeebeDbFactory, streamProcessorFactory, streamProcessorId);
 
     closeables.manage(control);
 
@@ -232,24 +224,25 @@ public class TestStreams {
 
   protected class StreamProcessorControlImpl implements StreamProcessorControl, AutoCloseable {
 
-    private final Supplier<StreamProcessor> factory;
+    private final StreamProcessorFactory factory;
     private final int streamProcessorId;
     private final LogStream stream;
-    private final StateController stateController;
+    private final ZeebeDbFactory zeebeDbFactory;
 
-    protected SuspendableStreamProcessor currentStreamProcessor;
+    protected final SuspendableStreamProcessor currentStreamProcessor;
     protected StreamProcessorController currentController;
     protected StreamProcessorService currentStreamProcessorService;
     protected SnapshotController currentSnapshotController;
 
     public StreamProcessorControlImpl(
         final LogStream stream,
-        final StateController stateController,
-        final Supplier<StreamProcessor> factory,
+        final ZeebeDbFactory zeebeDbFactory,
+        final StreamProcessorFactory streamProcessorFactory,
         final int streamProcessorId) {
       this.stream = stream;
-      this.stateController = stateController;
-      this.factory = factory;
+      this.zeebeDbFactory = zeebeDbFactory;
+      this.currentStreamProcessor = new SuspendableStreamProcessor();
+      this.factory = streamProcessorFactory;
       this.streamProcessorId = streamProcessorId;
     }
 
@@ -274,7 +267,6 @@ public class TestStreams {
 
     @Override
     public void blockAfterEvent(final Predicate<LoggedEvent> test) {
-      ensureStreamProcessorBuilt();
       currentStreamProcessor.blockAfterEvent(test);
     }
 
@@ -354,7 +346,7 @@ public class TestStreams {
 
       currentStreamProcessorService = null;
       currentController = null;
-      currentStreamProcessor = null;
+      currentStreamProcessor.wrap(null);
     }
 
     @Override
@@ -369,36 +361,29 @@ public class TestStreams {
       start();
     }
 
-    private void ensureStreamProcessorBuilt() {
-      if (currentStreamProcessor == null) {
-        final StreamProcessor processor = factory.get();
-        currentStreamProcessor = new SuspendableStreamProcessor(processor);
-      }
-    }
-
     private StreamProcessorService buildStreamProcessorController() {
-      ensureStreamProcessorBuilt();
-
-      // stream processor names need to be unique for snapshots to work properly
-      // using the class name assumes that one stream processor class is not instantiated more than
-      // once in a test
-      final String name = currentStreamProcessor.wrappedProcessor.getClass().getSimpleName();
+      final String name = "processor";
 
       final StateStorage stateStorage = getStateStorageFactory().create(streamProcessorId, name);
-      currentSnapshotController = new StateSnapshotController(stateController, stateStorage);
+      currentSnapshotController = new StateSnapshotController(zeebeDbFactory, stateStorage);
 
-      return LogStreams.createStreamProcessor(name, streamProcessorId, currentStreamProcessor)
+      return LogStreams.createStreamProcessor(name, streamProcessorId)
           .logStream(stream)
           .snapshotController(currentSnapshotController)
           .actorScheduler(actorScheduler)
           .serviceContainer(serviceContainer)
+          .streamProcessorFactory(
+              zeebeDb -> {
+                currentStreamProcessor.wrap(factory.createProcessor(zeebeDb));
+                return currentStreamProcessor;
+              })
           .build()
           .join();
     }
   }
 
   public static class SuspendableStreamProcessor implements StreamProcessor {
-    protected final StreamProcessor wrappedProcessor;
+    protected StreamProcessor wrappedProcessor;
 
     protected AtomicReference<Predicate<LoggedEvent>> blockAfterCondition =
         new AtomicReference<>(null);
@@ -406,8 +391,8 @@ public class TestStreams {
     protected boolean blockAfterCurrentEvent;
     private StreamProcessorContext context;
 
-    public SuspendableStreamProcessor(final StreamProcessor wrappedProcessor) {
-      this.wrappedProcessor = wrappedProcessor;
+    public void wrap(StreamProcessor streamProcessor) {
+      wrappedProcessor = streamProcessor;
     }
 
     public void resume() {
@@ -491,11 +476,6 @@ public class TestStreams {
       this.logStream = logStream;
 
       metadata.protocolVersion(Protocol.PROTOCOL_VERSION);
-    }
-
-    public FluentLogWriter metadata(final Consumer<RecordMetadata> metadata) {
-      metadata.accept(this.metadata);
-      return this;
     }
 
     public FluentLogWriter intent(final Intent intent) {

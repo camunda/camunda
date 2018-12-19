@@ -19,12 +19,14 @@ package io.zeebe.broker.util;
 
 import io.zeebe.broker.logstreams.processor.TypedEventStreamProcessorBuilder;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
+import io.zeebe.broker.logstreams.state.DefaultZeebeDbFactory;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.transport.clientapi.BufferingServerOutput;
-import io.zeebe.broker.util.TestStreams.FluentLogWriter;
+import io.zeebe.db.ZeebeDb;
+import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.logstreams.state.StateController;
+import io.zeebe.logstreams.processor.StreamProcessorFactory;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.intent.Intent;
@@ -35,8 +37,6 @@ import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
@@ -58,6 +58,7 @@ public class StreamProcessorRule implements TestRule {
   private final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(clock);
   private final ServiceContainerRule serviceContainerRule =
       new ServiceContainerRule(actorSchedulerRule);
+  private final ZeebeDbFactory zeebeDbFactory;
 
   // things provisioned by this rule
   public static final String STREAM_NAME = "stream";
@@ -67,13 +68,20 @@ public class StreamProcessorRule implements TestRule {
   private TypedStreamEnvironment streamEnvironment;
 
   private final SetupRule rule;
+  private ZeebeState zeebeState;
 
   public StreamProcessorRule() {
     this(PARTITION_ID);
   }
 
   public StreamProcessorRule(int partitionId) {
+    this(partitionId, DefaultZeebeDbFactory.DEFAULT_DB_FACTORY);
+  }
+
+  public StreamProcessorRule(int partitionId, ZeebeDbFactory dbFactory) {
     rule = new SetupRule(partitionId);
+
+    zeebeDbFactory = dbFactory;
     chain =
         RuleChain.outerRule(tempFolder)
             .around(actorSchedulerRule)
@@ -90,42 +98,36 @@ public class StreamProcessorRule implements TestRule {
     return chain.apply(base, description);
   }
 
-  public StreamProcessorControl runStreamProcessor(
-      Supplier<StateController> stateFactory,
-      Function<TypedStreamEnvironment, StreamProcessor> factory) {
-    final StreamProcessorControl control = initStreamProcessor(stateFactory, factory);
-    control.start();
-    return control;
-  }
-
-  public StreamProcessorControl runStreamProcessor(
-      BiFunction<TypedEventStreamProcessorBuilder, ZeebeState, StreamProcessor> factory) {
+  public StreamProcessorControl runStreamProcessor(StreamProcessorFactory factory) {
     final StreamProcessorControl control = initStreamProcessor(factory);
     control.start();
     return control;
   }
 
-  public StreamProcessorControl initStreamProcessor(
-      Supplier<StateController> stateFactory,
-      Function<TypedStreamEnvironment, StreamProcessor> factory) {
-    return streams.initStreamProcessor(
-        STREAM_NAME, 0, stateFactory.get(), () -> factory.apply(streamEnvironment));
+  public StreamProcessorControl runStreamProcessor(
+      BiFunction<TypedEventStreamProcessorBuilder, ZeebeDb, StreamProcessor> factory) {
+    final StreamProcessorControl control = initStreamProcessor(factory);
+    control.start();
+    return control;
+  }
+
+  public StreamProcessorControl initStreamProcessor(StreamProcessorFactory factory) {
+    return streams.initStreamProcessor(STREAM_NAME, 0, zeebeDbFactory, factory);
   }
 
   public StreamProcessorControl initStreamProcessor(
-      BiFunction<TypedEventStreamProcessorBuilder, ZeebeState, StreamProcessor> factory) {
-    final ZeebeState zeebeState = new ZeebeState();
+      BiFunction<TypedEventStreamProcessorBuilder, ZeebeDb, StreamProcessor> factory) {
+
     return streams.initStreamProcessor(
         STREAM_NAME,
         0,
-        zeebeState,
-        () -> {
+        zeebeDbFactory,
+        (db) -> {
+          zeebeState = new ZeebeState(db);
           final TypedEventStreamProcessorBuilder processorBuilder =
-              streamEnvironment
-                  .newStreamProcessor()
-                  .keyGenerator(zeebeState.getKeyGenerator())
-                  .stateController(zeebeState);
-          return factory.apply(processorBuilder, zeebeState);
+              streamEnvironment.newStreamProcessor().keyGenerator(zeebeState.getKeyGenerator());
+
+          return factory.apply(processorBuilder, db);
         });
   }
 
@@ -135,6 +137,10 @@ public class StreamProcessorRule implements TestRule {
 
   public ActorScheduler getActorScheduler() {
     return actorSchedulerRule.get();
+  }
+
+  public ZeebeState getZeebeState() {
+    return zeebeState;
   }
 
   public RecordStream events() {
@@ -179,18 +185,6 @@ public class StreamProcessorRule implements TestRule {
         .write();
   }
 
-  public FluentLogWriter newRecord() {
-    return streams.newRecord(STREAM_NAME);
-  }
-
-  public void truncateLog(long position) {
-    streams.truncate(STREAM_NAME, position);
-  }
-
-  public BufferingServerOutput getOutput() {
-    return output;
-  }
-
   public void printAllRecords() {
     final LogStream logStream = streams.getLogStream(STREAM_NAME);
     LogStreamPrinter.printRecords(logStream);
@@ -233,5 +227,5 @@ public class StreamProcessorRule implements TestRule {
       LOG.info("Test failed, following records where exported:");
       printAllRecords();
     }
-  };
+  }
 }

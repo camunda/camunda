@@ -20,28 +20,23 @@ package io.zeebe.broker.workflow.state;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.logstreams.state.ZeebeState;
-import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.broker.util.ZeebeStateRule;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 public class TimerInstanceStateTest {
 
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-
-  @Rule public AutoCloseableRule closeables = new AutoCloseableRule();
+  @Rule public ZeebeStateRule stateRule = new ZeebeStateRule();
 
   private TimerInstanceState state;
 
   @Before
-  public void setUp() throws Exception {
-    final ZeebeState zeebeState = new ZeebeState();
-    zeebeState.open(folder.newFolder("rocksdb"), false);
+  public void setUp() {
+    final ZeebeState zeebeState = stateRule.getZeebeState();
     state = zeebeState.getWorkflowState().getTimerState();
-    closeables.manage(zeebeState);
   }
 
   @Test

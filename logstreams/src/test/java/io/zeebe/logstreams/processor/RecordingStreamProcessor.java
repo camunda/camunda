@@ -17,9 +17,9 @@ package io.zeebe.logstreams.processor;
 
 import static org.mockito.Mockito.spy;
 
+import io.zeebe.db.ZeebeDb;
 import io.zeebe.logstreams.impl.LoggedEventImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.state.StateController;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,16 +27,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class RecordingStreamProcessor implements StreamProcessor {
   private final List<LoggedEvent> events = new ArrayList<>();
-
   private final AtomicInteger processedEvents = new AtomicInteger(0);
-
-  private final StringValueSnapshot snapshot = new StringValueSnapshot();
-
-  private StateController stateController;
-
-  private StreamProcessorContext context = null;
-
-  private EventProcessor eventProcessor =
+  private final ZeebeDb zeebeDb;
+  private final EventProcessor eventProcessor =
       spy(
           new EventProcessor() {
             @Override
@@ -45,8 +38,10 @@ public class RecordingStreamProcessor implements StreamProcessor {
             };
           });
 
-  public void setStateController(StateController stateController) {
-    this.stateController = stateController;
+  private StreamProcessorContext context = null;
+
+  public RecordingStreamProcessor(ZeebeDb zeebeDb) {
+    this.zeebeDb = zeebeDb;
   }
 
   @Override
@@ -70,8 +65,8 @@ public class RecordingStreamProcessor implements StreamProcessor {
     return eventProcessor;
   }
 
-  public static RecordingStreamProcessor createSpy() {
-    return spy(new RecordingStreamProcessor());
+  public static RecordingStreamProcessor createSpy(ZeebeDb db) {
+    return spy(new RecordingStreamProcessor(db));
   }
 
   public void suspend() {
@@ -88,10 +83,6 @@ public class RecordingStreamProcessor implements StreamProcessor {
 
   public int getProcessedEventCount() {
     return processedEvents.get();
-  }
-
-  public StringValueSnapshot getSnapshot() {
-    return snapshot;
   }
 
   public EventProcessor getEventProcessorSpy() {

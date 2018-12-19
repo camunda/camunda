@@ -17,17 +17,16 @@
  */
 package io.zeebe.broker.subscription.message.state;
 
-import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
+import static io.zeebe.db.impl.ZeebeDbConstants.ZB_DB_BYTE_ORDER;
 import static io.zeebe.util.buffer.BufferUtil.readIntoBuffer;
 import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
 
-import io.zeebe.util.buffer.BufferReader;
-import io.zeebe.util.buffer.BufferWriter;
+import io.zeebe.db.DbValue;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class Message implements BufferWriter, BufferReader {
+public final class Message implements DbValue {
 
   private final DirectBuffer name = new UnsafeBuffer();
   private final DirectBuffer correlationKey = new UnsafeBuffer();
@@ -92,11 +91,11 @@ public final class Message implements BufferWriter, BufferReader {
     offset = readIntoBuffer(buffer, offset, payload);
     offset = readIntoBuffer(buffer, offset, id);
 
-    timeToLive = buffer.getLong(offset, STATE_BYTE_ORDER);
+    timeToLive = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
-    deadline = buffer.getLong(offset, STATE_BYTE_ORDER);
+    deadline = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
-    key = buffer.getLong(offset, STATE_BYTE_ORDER);
+    key = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
   }
 
   @Override
@@ -117,11 +116,11 @@ public final class Message implements BufferWriter, BufferReader {
     valueOffset = writeIntoBuffer(buffer, valueOffset, payload);
     valueOffset = writeIntoBuffer(buffer, valueOffset, id);
 
-    buffer.putLong(valueOffset, timeToLive, STATE_BYTE_ORDER);
+    buffer.putLong(valueOffset, timeToLive, ZB_DB_BYTE_ORDER);
     valueOffset += Long.BYTES;
-    buffer.putLong(valueOffset, deadline, STATE_BYTE_ORDER);
+    buffer.putLong(valueOffset, deadline, ZB_DB_BYTE_ORDER);
     valueOffset += Long.BYTES;
-    buffer.putLong(valueOffset, key, STATE_BYTE_ORDER);
+    buffer.putLong(valueOffset, key, ZB_DB_BYTE_ORDER);
     valueOffset += Long.BYTES;
     assert (valueOffset - offset) == getLength() : "End offset differs with getLength()";
   }

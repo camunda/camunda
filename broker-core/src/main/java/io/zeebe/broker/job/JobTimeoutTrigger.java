@@ -59,7 +59,7 @@ public class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
     final long now = currentTimeMillis();
     state.forEachTimedOutEntry(
         now,
-        (key, record, control) -> {
+        (key, record) -> {
           writer.appendFollowUpCommand(
               key, JobIntent.TIME_OUT, record, (m) -> m.valueType(ValueType.JOB));
           writer.flush();

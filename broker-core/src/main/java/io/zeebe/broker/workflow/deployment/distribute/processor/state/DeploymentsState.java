@@ -17,71 +17,39 @@
  */
 package io.zeebe.broker.workflow.deployment.distribute.processor.state;
 
-import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
-
+import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
 import io.zeebe.broker.workflow.deployment.distribute.processor.PendingDeploymentDistribution;
-import io.zeebe.broker.workflow.state.PersistenceHelper;
-import io.zeebe.logstreams.rocksdb.ZbRocksDb;
-import io.zeebe.logstreams.state.StateController;
-import io.zeebe.logstreams.state.StateLifecycleListener;
-import java.util.List;
+import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.ZeebeDb;
+import io.zeebe.db.impl.DbLong;
 import java.util.function.ObjLongConsumer;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
-import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.rocksdb.ColumnFamilyHandle;
 
-public class DeploymentsState implements StateLifecycleListener {
-  private static final byte[] PENDING_DEPLOYMENT_COLUMN_FAMILY_NAME =
-      "deploymentsStatePendingDeployment".getBytes();
-
-  public static final byte[][] COLUMN_FAMILY_NAMES = {PENDING_DEPLOYMENT_COLUMN_FAMILY_NAME};
-
+public class DeploymentsState {
   private final PendingDeploymentDistribution pendingDeploymentDistribution;
-  private final MutableDirectBuffer valueBuffer;
 
-  private ZbRocksDb db;
-  private ColumnFamilyHandle pendingDeploymentColumnFamily;
-  private PersistenceHelper persistenceHelper;
-  private StateController stateController;
+  private final DbLong deploymentKey;
+  private final ColumnFamily<DbLong, PendingDeploymentDistribution> pendingDeploymentColumnFamily;
 
-  public DeploymentsState() {
+  public DeploymentsState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
+
+    deploymentKey = new DbLong();
     pendingDeploymentDistribution = new PendingDeploymentDistribution(new UnsafeBuffer(0, 0), -1);
-    valueBuffer = new ExpandableArrayBuffer();
-  }
-
-  public static List<byte[]> getColumnFamilyNames() {
-    return Stream.of(COLUMN_FAMILY_NAMES).flatMap(Stream::of).collect(Collectors.toList());
-  }
-
-  @Override
-  public void onOpened(StateController stateController) {
-    db = stateController.getDb();
-    this.stateController = stateController;
-
     pendingDeploymentColumnFamily =
-        stateController.getColumnFamilyHandle(PENDING_DEPLOYMENT_COLUMN_FAMILY_NAME);
-    persistenceHelper = new PersistenceHelper(stateController);
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.PENDING_DEPLOYMENT, deploymentKey, pendingDeploymentDistribution);
   }
 
   public void putPendingDeployment(
       final long key, final PendingDeploymentDistribution pendingDeploymentDistribution) {
 
-    final int length = pendingDeploymentDistribution.getLength();
-    pendingDeploymentDistribution.write(valueBuffer, 0);
-
-    stateController.put(pendingDeploymentColumnFamily, key, valueBuffer.byteArray(), 0, length);
+    deploymentKey.wrapLong(key);
+    pendingDeploymentColumnFamily.put(deploymentKey, pendingDeploymentDistribution);
   }
 
   private PendingDeploymentDistribution getPending(final long key) {
-    final boolean successfulRead =
-        persistenceHelper.readInto(
-            pendingDeploymentDistribution, pendingDeploymentColumnFamily, key);
-
-    return successfulRead ? pendingDeploymentDistribution : null;
+    deploymentKey.wrapLong(key);
+    return pendingDeploymentColumnFamily.get(deploymentKey);
   }
 
   public PendingDeploymentDistribution getPendingDeployment(final long key) {
@@ -91,19 +59,15 @@ public class DeploymentsState implements StateLifecycleListener {
   public PendingDeploymentDistribution removePendingDeployment(final long key) {
     final PendingDeploymentDistribution pending = getPending(key);
     if (pending != null) {
-      stateController.delete(key);
+      pendingDeploymentColumnFamily.delete(deploymentKey);
     }
     return pending;
   }
 
   public void foreachPending(final ObjLongConsumer<PendingDeploymentDistribution> consumer) {
-    db.forEach(
-        pendingDeploymentColumnFamily,
-        (zbRocksEntry, iteratorControl) -> {
-          final DirectBuffer value = zbRocksEntry.getValue();
-          pendingDeploymentDistribution.wrap(value, 0, value.capacity());
-          consumer.accept(
-              pendingDeploymentDistribution, zbRocksEntry.getKey().getLong(0, STATE_BYTE_ORDER));
-        });
+
+    pendingDeploymentColumnFamily.forEach(
+        (deploymentKey, pendingDeployment) ->
+            consumer.accept(pendingDeployment, deploymentKey.getValue()));
   }
 }

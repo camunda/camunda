@@ -25,32 +25,27 @@ import static org.mockito.Mockito.when;
 
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.state.ZeebeState;
+import io.zeebe.broker.util.ZeebeStateRule;
 import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.util.AutoCloseableRule;
 import java.util.List;
 import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 public class ElementInstanceStateTest {
 
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-
-  @Rule public AutoCloseableRule closeables = new AutoCloseableRule();
+  @Rule public ZeebeStateRule stateRule = new ZeebeStateRule();
 
   private ElementInstanceState elementInstanceState;
 
   @Before
-  public void setUp() throws Exception {
-    final ZeebeState zeebeState = new ZeebeState();
-    zeebeState.open(folder.newFolder("rocksdb"), false);
+  public void setUp() {
+    final ZeebeState zeebeState = stateRule.getZeebeState();
     elementInstanceState = zeebeState.getWorkflowState().getElementInstanceState();
-    closeables.manage(zeebeState);
   }
 
   @Test

@@ -13,17 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.logstreams.rocksdb;
+package io.zeebe.db.impl.rocksdb;
 
-import io.zeebe.util.EnsureUtil;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksIterator;
 
-public class ZbRocksIterator extends RocksIterator {
+class RocksDbIterator extends RocksIterator {
   private static final Method SEEK_METHOD;
 
   static {
@@ -36,16 +33,8 @@ public class ZbRocksIterator extends RocksIterator {
     }
   }
 
-  public ZbRocksIterator(final RocksDB rocksDB, final long nativeHandle) {
+  RocksDbIterator(final RocksDB rocksDB, final long nativeHandle) {
     super(rocksDB, nativeHandle);
-  }
-
-  public DirectBuffer keyBuffer() {
-    return new UnsafeBuffer(super.key());
-  }
-
-  public DirectBuffer valueBuffer() {
-    return new UnsafeBuffer(super.value());
   }
 
   public void seek(byte[] target, int targetLength) {
@@ -53,18 +42,6 @@ public class ZbRocksIterator extends RocksIterator {
       SEEK_METHOD.invoke(this, nativeHandle_, target, targetLength);
     } catch (IllegalAccessException | InvocationTargetException e) {
       throw new RuntimeException(e);
-    }
-  }
-
-  public void seek(DirectBuffer target) {
-    assertBuffers(target);
-    seek(target.byteArray(), target.capacity());
-  }
-
-  private void assertBuffers(final DirectBuffer... buffers) {
-    for (final DirectBuffer buffer : buffers) {
-      EnsureUtil.ensureArrayBacked(buffer);
-      assert buffer.wrapAdjustment() == 0 : "only supports reading from offset 0";
     }
   }
 }

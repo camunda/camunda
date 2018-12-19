@@ -36,6 +36,7 @@ import io.zeebe.broker.job.JobTimeoutTrigger;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.response.ActivateJobsResponse;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.subscription.JobWorker;
 import io.zeebe.exporter.record.Record;
@@ -342,13 +343,19 @@ public class BrokerReprocessingTest {
 
     jobHandler.clear();
 
-    clientRule.getClient().newWorker().jobType("foo").handler(jobHandler).open();
-
     // then
-    TestUtil.doRepeatedly(() -> null)
-        .whileConditionHolds((o) -> jobHandler.getHandledJobs().isEmpty());
+    awaitGateway();
+    final ActivateJobsResponse jobsResponse =
+        clientRule
+            .getClient()
+            .newActivateJobsCommand()
+            .jobType("foo")
+            .amount(10)
+            .workerName("this")
+            .send()
+            .join();
 
-    assertThat(jobHandler.getHandledJobs()).isEmpty();
+    assertThat(jobsResponse.getJobs()).isEmpty();
   }
 
   @Test

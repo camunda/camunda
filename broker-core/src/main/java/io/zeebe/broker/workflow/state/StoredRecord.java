@@ -17,13 +17,12 @@
  */
 package io.zeebe.broker.workflow.state;
 
-import io.zeebe.util.buffer.BufferReader;
-import io.zeebe.util.buffer.BufferWriter;
+import io.zeebe.db.DbValue;
 import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class StoredRecord implements BufferReader, BufferWriter {
+public class StoredRecord implements DbValue {
 
   private static final int PURPOSE_OFFSET = 0;
   private static final int PURPOSE_LENGTH = BitUtil.SIZE_OF_BYTE;

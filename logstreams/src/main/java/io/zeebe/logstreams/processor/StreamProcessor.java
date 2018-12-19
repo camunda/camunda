@@ -16,7 +16,6 @@
 package io.zeebe.logstreams.processor;
 
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.state.StateController;
 
 /** Process events from a log stream. */
 public interface StreamProcessor {
@@ -51,9 +50,5 @@ public interface StreamProcessor {
    */
   default void onClose() {
     // no nothing
-  }
-
-  default StateController getStateController() {
-    return null;
   }
 }

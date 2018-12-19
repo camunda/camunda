@@ -25,6 +25,7 @@ import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setGatewayApiPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setManagementApiPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setReplicationApiPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setSubscriptionApiPort;
+import static io.zeebe.broker.workflow.WorkflowServiceNames.WORKFLOW_REPOSITORY_SERVICE;
 
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.TestLoggers;
@@ -73,7 +74,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
   public static final String DEFAULT_CONFIG_FILE = "zeebe.test.cfg.toml";
 
   protected static final Logger LOG = TestLoggers.TEST_LOGGER;
-  public static final int INSTALL_TIMEOUT = 5;
+  public static final int INSTALL_TIMEOUT = 15;
   public static final TimeUnit INSTALL_TIMEOUT_UNIT = TimeUnit.SECONDS;
   public static final String INSTALL_TIMEOUT_ERROR_MSG =
       "Deployment partition not installed into the container within %d %s.";
@@ -222,6 +223,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
       serviceContainer
           .createService(TestService.NAME, new TestService())
           .dependency(ClusterBaseLayerServiceNames.leaderPartitionServiceName(partitionName))
+          .dependency(WORKFLOW_REPOSITORY_SERVICE)
           .dependency(
               TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME))
           .install()

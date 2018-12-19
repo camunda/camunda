@@ -138,6 +138,12 @@
 
       <dependency>
         <groupId>io.zeebe</groupId>
+        <artifactId>zb-db</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
         <artifactId>zeebe-test</artifactId>
         <version>${project.version}</version>
       </dependency>

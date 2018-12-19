@@ -21,7 +21,7 @@ import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.logstreams.state.ZeebeState;
+import io.zeebe.broker.logstreams.state.DefaultZeebeDbFactory;
 import io.zeebe.broker.util.Records;
 import io.zeebe.broker.util.StreamProcessorControl;
 import io.zeebe.broker.util.TestStreams;
@@ -93,7 +93,10 @@ public class TypedStreamProcessorTest {
 
     final StreamProcessorControl streamProcessorControl =
         streams.initStreamProcessor(
-            STREAM_NAME, STREAM_PROCESSOR_ID, new ZeebeState(), () -> streamProcessor);
+            STREAM_NAME,
+            STREAM_PROCESSOR_ID,
+            DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
+            (db) -> streamProcessor);
     streamProcessorControl.start();
     final long firstEventPosition =
         streams

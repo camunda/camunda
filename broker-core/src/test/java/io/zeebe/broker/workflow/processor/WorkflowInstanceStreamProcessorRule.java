@@ -55,13 +55,10 @@ import java.io.ByteArrayOutputStream;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Rule;
 import org.junit.rules.ExternalResource;
-import org.junit.rules.TemporaryFolder;
 
 public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
 
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
   private final StreamProcessorRule environmentRule;
 
   private SubscriptionCommandSender mockSubscriptionCommandSender;
@@ -82,9 +79,6 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
 
   @Override
   protected void before() {
-    zeebeState = new ZeebeState();
-    workflowState = zeebeState.getWorkflowState();
-
     mockSubscriptionCommandSender = mock(SubscriptionCommandSender.class);
     mockTopologyManager = mock(TopologyManager.class);
     mockTimerEventScheduler = mock(DueDateTimerChecker.class);
@@ -102,7 +96,8 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
 
     streamProcessor =
         environmentRule.runStreamProcessor(
-            (typedEventStreamProcessorBuilder, zeebeState) -> {
+            (typedEventStreamProcessorBuilder, zeebeDb) -> {
+              zeebeState = new ZeebeState(zeebeDb);
               workflowState = zeebeState.getWorkflowState();
               WorkflowEventProcessors.addWorkflowProcessors(
                   typedEventStreamProcessorBuilder,

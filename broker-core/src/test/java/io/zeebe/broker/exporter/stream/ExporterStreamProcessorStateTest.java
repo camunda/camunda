@@ -21,6 +21,8 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.exporter.stream.ExporterRecord.ExporterPosition;
+import io.zeebe.broker.logstreams.state.DefaultZeebeDbFactory;
+import io.zeebe.db.ZeebeDb;
 import io.zeebe.test.util.AutoCloseableRule;
 import java.io.File;
 import java.util.HashMap;
@@ -28,6 +30,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import org.agrona.DirectBuffer;
 import org.assertj.core.api.Condition;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,18 +38,26 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
 public class ExporterStreamProcessorStateTest {
+
   private final AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
   private final TemporaryFolder temporaryFolder = new TemporaryFolder();
-  private final ExporterStreamProcessorState state = new ExporterStreamProcessorState();
+  private ExporterStreamProcessorState state;
 
   @Rule
   public final RuleChain chain = RuleChain.outerRule(temporaryFolder).around(autoCloseableRule);
 
+  private ZeebeDb<ExporterColumnFamilies> db;
+
   @Before
   public void setup() throws Exception {
     final File dbDirectory = temporaryFolder.newFolder();
-    state.open(dbDirectory, false);
-    autoCloseableRule.manage(state);
+    db = DefaultZeebeDbFactory.defaultFactory(ExporterColumnFamilies.class).createDb(dbDirectory);
+    state = new ExporterStreamProcessorState(db);
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    db.close();
   }
 
   @Test

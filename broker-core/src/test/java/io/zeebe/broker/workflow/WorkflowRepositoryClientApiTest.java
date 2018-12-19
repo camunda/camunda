@@ -250,7 +250,7 @@ public class WorkflowRepositoryClientApiTest {
 
   @Test
   @SuppressWarnings("unchecked")
-  public void shouldListWorkflowsIfNothingDeployed() {
+  public void shouldListWorkflowsIfNothingDeployed() throws Exception {
     final ControlMessageResponse requestWorkflowResponse =
         apiRule
             .createControlMessageRequest()

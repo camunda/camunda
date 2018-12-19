@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.logstreams.rocksdb;
+package io.zeebe.db.impl;
 
 import java.nio.ByteOrder;
 
-public class ZeebeStateConstants {
+public class ZeebeDbConstants {
 
   /**
    * The byte order is used to write primitive data types into rocks db key or value buffers.
@@ -32,5 +32,5 @@ public class ZeebeStateConstants {
    *
    * <p>We use {@link ByteOrder.BIG_ENDIAN} for the ascending ordering.
    */
-  public static final ByteOrder STATE_BYTE_ORDER = ByteOrder.BIG_ENDIAN;
+  public static final ByteOrder ZB_DB_BYTE_ORDER = ByteOrder.BIG_ENDIAN;
 }

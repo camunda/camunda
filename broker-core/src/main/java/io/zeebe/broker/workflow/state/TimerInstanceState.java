@@ -17,147 +17,82 @@
  */
 package io.zeebe.broker.workflow.state;
 
-import static io.zeebe.broker.workflow.state.PersistenceHelper.EXISTENCE;
-import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
-
-import io.zeebe.logstreams.rocksdb.ZbWriteBatch;
-import io.zeebe.logstreams.state.StateController;
+import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
+import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.ZeebeDb;
+import io.zeebe.db.impl.DbCompositeKey;
+import io.zeebe.db.impl.DbLong;
+import io.zeebe.db.impl.DbNil;
 import java.util.function.Consumer;
-import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.rocksdb.ColumnFamilyHandle;
-import org.rocksdb.RocksDB;
-import org.rocksdb.RocksDBException;
-import org.rocksdb.WriteOptions;
 
 public class TimerInstanceState {
 
-  private static final byte[] DEFAULT_COLUMN_FAMILY_NAME = "timerInstanceStateTimers".getBytes();
-  private static final byte[] DUE_DATES_COLUMN_FAMILY_NAME =
-      "timerInstanceStateDueDates".getBytes();
+  private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, TimerInstance>
+      timerInstanceColumnFamily;
+  private final TimerInstance timerInstance;
+  private final DbLong timerKey;
+  private final DbLong elementInstanceKey;
+  private final DbCompositeKey<DbLong, DbLong> elementAndTimerKey;
 
-  public static final byte[][] COLUMN_FAMILY_NAMES = {
-    DEFAULT_COLUMN_FAMILY_NAME, DUE_DATES_COLUMN_FAMILY_NAME
-  };
-
-  private final UnsafeBuffer defaultKeyBuffer =
-      new UnsafeBuffer(new byte[TimerInstance.KEY_LENGTH]);
-  private final UnsafeBuffer dueDateKeyBuffer =
-      new UnsafeBuffer(new byte[Long.BYTES + TimerInstance.KEY_LENGTH]);
-  private final UnsafeBuffer elementInstanceKeyPrefixBuffer =
-      new UnsafeBuffer(new byte[Long.BYTES]);
-
-  private final ExpandableArrayBuffer valueBuffer = new ExpandableArrayBuffer();
-
-  private final TimerInstance timer = new TimerInstance();
+  private final ColumnFamily<DbCompositeKey<DbLong, DbCompositeKey<DbLong, DbLong>>, DbNil>
+      dueDateColumnFamily;
+  private final DbLong dueDateKey;
+  private final DbCompositeKey<DbLong, DbCompositeKey<DbLong, DbLong>> dueDateCompositeKey;
+  private final ZeebeDb<ZbColumnFamilies> zeebeDb;
 
   private long nextDueDate;
 
-  /**
-   * <pre> activity instance key -> timer
-   */
-  private final ColumnFamilyHandle defaultColumnFamily;
+  public TimerInstanceState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
+    this.zeebeDb = zeebeDb;
 
-  /**
-   * <pre>due date | activity instance key -> []
-   *
-   * find timers which are before a given timestamp
-   */
-  private final ColumnFamilyHandle dueDatesColumnFamily;
+    timerInstance = new TimerInstance();
+    timerKey = new DbLong();
+    elementInstanceKey = new DbLong();
+    elementAndTimerKey = new DbCompositeKey<>(elementInstanceKey, timerKey);
+    timerInstanceColumnFamily =
+        zeebeDb.createColumnFamily(ZbColumnFamilies.TIMERS, elementAndTimerKey, timerInstance);
 
-  private final StateController db;
-
-  public TimerInstanceState(StateController db) {
-    this.db = db;
-
-    defaultColumnFamily = db.getColumnFamilyHandle(DEFAULT_COLUMN_FAMILY_NAME);
-    dueDatesColumnFamily = db.getColumnFamilyHandle(DUE_DATES_COLUMN_FAMILY_NAME);
+    dueDateKey = new DbLong();
+    dueDateCompositeKey = new DbCompositeKey<>(dueDateKey, elementAndTimerKey);
+    dueDateColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.TIMER_DUE_DATES, dueDateCompositeKey, DbNil.INSTANCE);
   }
 
   public void put(TimerInstance timer) {
-    try (final WriteOptions options = new WriteOptions();
-        final ZbWriteBatch batch = new ZbWriteBatch()) {
-      timer.writeKey(defaultKeyBuffer, 0);
-      final DirectBuffer valueBuffer = writeIntoValueBuffer(timer);
-      batch.put(defaultColumnFamily, defaultKeyBuffer, valueBuffer);
+    zeebeDb.batch(
+        () -> {
+          timerKey.wrapLong(timer.getKey());
+          elementInstanceKey.wrapLong(timer.getElementInstanceKey());
 
-      writeDueDateKey(dueDateKeyBuffer, timer);
-      batch.put(
-          dueDatesColumnFamily,
-          dueDateKeyBuffer.byteArray(),
-          dueDateKeyBuffer.capacity(),
-          EXISTENCE,
-          EXISTENCE.length);
+          timerInstanceColumnFamily.put(elementAndTimerKey, timer);
 
-      db.getDb().write(options, batch);
-    } catch (RocksDBException e) {
-      throw new RuntimeException(e);
-    }
+          dueDateKey.wrapLong(timer.getDueDate());
+          dueDateColumnFamily.put(dueDateCompositeKey, DbNil.INSTANCE);
+        });
   }
 
-  private void writeDueDateKey(MutableDirectBuffer buffer, TimerInstance timer) {
-    buffer.putLong(0, timer.getDueDate(), STATE_BYTE_ORDER);
-    timer.writeKey(buffer, Long.BYTES);
-  }
-
-  private DirectBuffer writeIntoValueBuffer(TimerInstance timer) {
-    timer.write(valueBuffer, 0);
-    return new UnsafeBuffer(valueBuffer, 0, timer.getLength());
-  }
-
-  public long findTimersWithDueDateBefore(final long timestamp, IteratorConsumer consumer) {
+  public long findTimersWithDueDateBefore(final long timestamp, TimerVisitor consumer) {
     nextDueDate = -1L;
 
-    db.whileTrue(
-        dueDatesColumnFamily,
-        (key, value) -> {
-          dueDateKeyBuffer.wrap(key);
-          final long dueDate = dueDateKeyBuffer.getLong(0, STATE_BYTE_ORDER);
+    dueDateColumnFamily.whileTrue(
+        (key, nil) -> {
+          final DbLong dueDate = key.getFirst();
 
           boolean consumed = false;
-          if (dueDate <= timestamp) {
-            final long elementInstanceKey = dueDateKeyBuffer.getLong(Long.BYTES, STATE_BYTE_ORDER);
-            final long timerKey = dueDateKeyBuffer.getLong(2 * Long.BYTES, STATE_BYTE_ORDER);
-            readTimer(elementInstanceKey, timerKey, timer);
-            consumed = consumer.accept(timer);
+          if (dueDate.getValue() <= timestamp) {
+            final DbCompositeKey<DbLong, DbLong> elementAndTimerKey = key.getSecond();
+            final TimerInstance timerInstance = timerInstanceColumnFamily.get(elementAndTimerKey);
+            consumed = consumer.visit(timerInstance);
           }
 
           if (!consumed) {
-            nextDueDate = dueDate;
+            nextDueDate = dueDate.getValue();
           }
           return consumed;
         });
 
     return nextDueDate;
-  }
-
-  private boolean readTimer(long elementInstanceKey, long timerKey, TimerInstance timer) {
-    this.timer.setElementInstanceKey(elementInstanceKey);
-    this.timer.setKey(timerKey);
-    this.timer.writeKey(defaultKeyBuffer, 0);
-
-    return readTimer(defaultKeyBuffer, timer);
-  }
-
-  private boolean readTimer(DirectBuffer keyBuffer, TimerInstance timer) {
-    final int readBytes =
-        db.get(
-            defaultColumnFamily,
-            keyBuffer.byteArray(),
-            0,
-            keyBuffer.capacity(),
-            valueBuffer.byteArray(),
-            0,
-            valueBuffer.capacity());
-
-    if (readBytes == RocksDB.NOT_FOUND) {
-      return false;
-    }
-
-    timer.wrap(valueBuffer, 0, readBytes);
-    return true;
   }
 
   /**
@@ -166,44 +101,37 @@ public class TimerInstanceState {
    */
   public void forEachTimerForElementInstance(
       long elementInstanceKey, Consumer<TimerInstance> action) {
-    elementInstanceKeyPrefixBuffer.putLong(0, elementInstanceKey, STATE_BYTE_ORDER);
-    db.whileEqualPrefix(
-        defaultColumnFamily,
-        elementInstanceKeyPrefixBuffer.byteArray(),
+    this.elementInstanceKey.wrapLong(elementInstanceKey);
+
+    timerInstanceColumnFamily.whileEqualPrefix(
+        this.elementInstanceKey,
         (key, value) -> {
-          if (readTimer(new UnsafeBuffer(key), timer)) {
-            action.accept(timer);
-          }
+          action.accept(value);
         });
   }
 
   public TimerInstance get(long elementInstanceKey, long timerKey) {
-    final boolean found = readTimer(elementInstanceKey, timerKey, timer);
-    if (found) {
-      return timer;
-    } else {
-      return null;
-    }
+    this.elementInstanceKey.wrapLong(elementInstanceKey);
+    this.timerKey.wrapLong(timerKey);
+
+    return timerInstanceColumnFamily.get(elementAndTimerKey);
   }
 
   public void remove(TimerInstance timer) {
-    try (final WriteOptions options = new WriteOptions();
-        final ZbWriteBatch batch = new ZbWriteBatch()) {
 
-      defaultKeyBuffer.putLong(0, timer.getElementInstanceKey(), STATE_BYTE_ORDER);
-      batch.delete(defaultColumnFamily, defaultKeyBuffer);
+    zeebeDb.batch(
+        () -> {
+          elementInstanceKey.wrapLong(timer.getElementInstanceKey());
+          timerKey.wrapLong(timer.getKey());
+          timerInstanceColumnFamily.delete(elementAndTimerKey);
 
-      writeDueDateKey(dueDateKeyBuffer, timer);
-      batch.delete(dueDatesColumnFamily, dueDateKeyBuffer);
-
-      db.getDb().write(options, batch);
-    } catch (RocksDBException e) {
-      throw new RuntimeException(e);
-    }
+          dueDateKey.wrapLong(timer.getDueDate());
+          dueDateColumnFamily.delete(dueDateCompositeKey);
+        });
   }
 
   @FunctionalInterface
-  public interface IteratorConsumer {
-    boolean accept(final TimerInstance timer);
+  public interface TimerVisitor {
+    boolean visit(final TimerInstance timer);
   }
 }

@@ -17,222 +17,121 @@
  */
 package io.zeebe.broker.subscription.message.state;
 
-import static io.zeebe.broker.workflow.state.PersistenceHelper.EXISTENCE;
-import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
-import static io.zeebe.util.buffer.BufferUtil.readIntoBuffer;
-import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
-
-import io.zeebe.logstreams.rocksdb.ZbRocksDb;
-import io.zeebe.logstreams.rocksdb.ZbWriteBatch;
-import io.zeebe.logstreams.state.StateController;
-import io.zeebe.logstreams.state.StateLifecycleListener;
-import io.zeebe.util.buffer.BufferUtil;
-import java.util.Arrays;
-import java.util.List;
+import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
+import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.ZeebeDb;
+import io.zeebe.db.impl.DbCompositeKey;
+import io.zeebe.db.impl.DbLong;
+import io.zeebe.db.impl.DbNil;
+import io.zeebe.db.impl.DbString;
 import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.rocksdb.ColumnFamilyHandle;
-import org.rocksdb.RocksDB;
-import org.rocksdb.RocksDBException;
-import org.rocksdb.WriteOptions;
 
-public class MessageSubscriptionState implements StateLifecycleListener {
+public class MessageSubscriptionState {
 
-  private static final String COLUMN_FAMILY_PREFIX = "msg-sub-";
+  private final ZeebeDb<ZbColumnFamilies> zeebeDb;
 
-  private static final byte[] SUBSCRIPTIONS_COLUMN_FAMILY_NAME =
-      (COLUMN_FAMILY_PREFIX + "by-key").getBytes();
-  private static final byte[] SENT_TIME_COLUMN_FAMILY_NAME =
-      (COLUMN_FAMILY_PREFIX + "by-sent-time").getBytes();
-  private static final byte[] NAME_AND_CORRELATION_KEY_COLUMN_FAMILY_NAME =
-      (COLUMN_FAMILY_PREFIX + "by-messageName-and-correlation-Key").getBytes();
-
-  public static final byte[][] COLUMN_FAMILY_NAMES = {
-    SUBSCRIPTIONS_COLUMN_FAMILY_NAME,
-    SENT_TIME_COLUMN_FAMILY_NAME,
-    NAME_AND_CORRELATION_KEY_COLUMN_FAMILY_NAME
-  };
-
-  private ZbRocksDb db;
   // (elementInstanceKey, messageName) => MessageSubscription
-  private ColumnFamilyHandle subscriptionColumnFamily;
+  private final DbLong elementInstanceKey;
+  private final DbString messageName;
+  private final MessageSubscription messageSubscription;
+  private final DbCompositeKey<DbLong, DbString> elementKeyAndMessageName;
+  private final ColumnFamily<DbCompositeKey<DbLong, DbString>, MessageSubscription>
+      subscriptionColumnFamily;
+
   // (sentTime, elementInstanceKey, messageName) => \0
-  private ColumnFamilyHandle sentTimeColumnFamily;
+  private final DbLong sentTime;
+  private final DbCompositeKey<DbLong, DbCompositeKey<DbLong, DbString>> sentTimeCompositeKey;
+  private final ColumnFamily<DbCompositeKey<DbLong, DbCompositeKey<DbLong, DbString>>, DbNil>
+      sentTimeColumnFamily;
+
   // (messageName, correlationKey, elementInstanceKey) => \0
-  private ColumnFamilyHandle messageNameAndCorrelationKeyColumnFamily;
+  private final DbString correlationKey;
+  private final DbCompositeKey<DbString, DbString> nameAndCorrelationKey;
+  private final DbCompositeKey<DbCompositeKey<DbString, DbString>, DbLong>
+      nameCorrelationAndElementInstanceKey;
+  private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbLong>, DbNil>
+      messageNameAndCorrelationKeyColumnFamily;
 
-  private final ExpandableArrayBuffer keyBuffer = new ExpandableArrayBuffer();
-  private final ExpandableArrayBuffer valueBuffer = new ExpandableArrayBuffer();
-  private final UnsafeBuffer bufferView = new UnsafeBuffer(0, 0);
+  public MessageSubscriptionState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
+    this.zeebeDb = zeebeDb;
 
-  private final MessageSubscription subscription = new MessageSubscription();
-
-  public static List<byte[]> getColumnFamilyNames() {
-    return Arrays.asList(COLUMN_FAMILY_NAMES);
-  }
-
-  @Override
-  public void onOpened(StateController stateController) {
-    db = stateController.getDb();
-
+    elementInstanceKey = new DbLong();
+    messageName = new DbString();
+    messageSubscription = new MessageSubscription();
+    elementKeyAndMessageName = new DbCompositeKey<>(elementInstanceKey, messageName);
     subscriptionColumnFamily =
-        stateController.getColumnFamilyHandle(SUBSCRIPTIONS_COLUMN_FAMILY_NAME);
-    sentTimeColumnFamily = stateController.getColumnFamilyHandle(SENT_TIME_COLUMN_FAMILY_NAME);
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.MESSAGE_SUBSCRIPTION_BY_KEY,
+            elementKeyAndMessageName,
+            messageSubscription);
+
+    sentTime = new DbLong();
+    sentTimeCompositeKey = new DbCompositeKey<>(sentTime, elementKeyAndMessageName);
+    sentTimeColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.MESSAGE_SUBSCRIPTION_BY_SENT_TIME,
+            sentTimeCompositeKey,
+            DbNil.INSTANCE);
+
+    correlationKey = new DbString();
+    nameAndCorrelationKey = new DbCompositeKey<>(messageName, correlationKey);
+    nameCorrelationAndElementInstanceKey =
+        new DbCompositeKey<>(nameAndCorrelationKey, elementInstanceKey);
     messageNameAndCorrelationKeyColumnFamily =
-        stateController.getColumnFamilyHandle(NAME_AND_CORRELATION_KEY_COLUMN_FAMILY_NAME);
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.MESSAGE_SUBSCRIPTION_BY_NAME_AND_CORRELATION_KEY,
+            nameCorrelationAndElementInstanceKey,
+            DbNil.INSTANCE);
   }
 
   public MessageSubscription get(long elementInstanceKey, DirectBuffer messageName) {
-    final boolean found = readSubscription(elementInstanceKey, messageName, subscription);
-
-    if (found) {
-      return subscription;
-    } else {
-      return null;
-    }
+    this.messageName.wrapBuffer(messageName);
+    this.elementInstanceKey.wrapLong(elementInstanceKey);
+    return subscriptionColumnFamily.get(elementKeyAndMessageName);
   }
 
   public void put(final MessageSubscription subscription) {
-    try (final WriteOptions options = new WriteOptions();
-        final ZbWriteBatch batch = new ZbWriteBatch()) {
-      int keyLength = writeSubscriptionKey(keyBuffer, 0, subscription);
-      subscription.write(valueBuffer, 0);
+    zeebeDb.batch(
+        () -> {
+          elementInstanceKey.wrapLong(subscription.getElementInstanceKey());
+          messageName.wrapBuffer(subscription.getMessageName());
+          subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
 
-      batch.put(
-          subscriptionColumnFamily,
-          keyBuffer.byteArray(),
-          keyLength,
-          valueBuffer.byteArray(),
-          subscription.getLength());
-
-      keyLength = writeMessageNameAndCorrelationKey(keyBuffer, subscription);
-      batch.put(
-          messageNameAndCorrelationKeyColumnFamily,
-          keyBuffer.byteArray(),
-          keyLength,
-          EXISTENCE,
-          EXISTENCE.length);
-
-      db.write(options, batch);
-    } catch (RocksDBException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  private int writeMessageNameAndCorrelationKey(
-      MutableDirectBuffer buffer, final MessageSubscription subscription) {
-    int offset = 0;
-
-    final DirectBuffer messageName = subscription.getMessageName();
-    buffer.putBytes(offset, messageName, 0, messageName.capacity());
-    offset += messageName.capacity();
-
-    final DirectBuffer correlationKey = subscription.getCorrelationKey();
-    buffer.putBytes(offset, correlationKey, 0, correlationKey.capacity());
-    offset += correlationKey.capacity();
-
-    buffer.putLong(offset, subscription.getElementInstanceKey(), STATE_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    assert (messageName.capacity() + correlationKey.capacity() + Long.BYTES) == offset
-        : "Offset problem: offset is not equal to expected key length";
-    return offset;
-  }
-
-  private int writeSentTimeKey(MutableDirectBuffer buffer, final MessageSubscription subscription) {
-    final int expectedLength = Long.BYTES + getSubscriptionKeyLength(subscription.getMessageName());
-    int offset = 0;
-
-    buffer.putLong(offset, subscription.getCommandSentTime(), STATE_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    offset = writeSubscriptionKey(buffer, offset, subscription);
-    assert offset == expectedLength : "End offset differs from expected length";
-
-    return offset;
-  }
-
-  private int writeSubscriptionKey(
-      MutableDirectBuffer buffer, int offset, final MessageSubscription subscription) {
-    return writeSubscriptionKey(
-        buffer, offset, subscription.getElementInstanceKey(), subscription.getMessageName());
-  }
-
-  private int writeSubscriptionKey(
-      MutableDirectBuffer buffer, int offset, long elementInstanceKey, DirectBuffer messageName) {
-    final int startOffset = offset;
-    final int expectedLength = getSubscriptionKeyLength(messageName);
-
-    buffer.putLong(offset, elementInstanceKey, STATE_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    offset = writeIntoBuffer(buffer, offset, messageName);
-    assert (offset - startOffset) == expectedLength : "End offset differs from expected length";
-
-    return offset;
-  }
-
-  private void wrapSubscriptionKey(
-      DirectBuffer source, int offset, final MessageSubscription subscription) {
-    subscription.setElementInstanceKey(source.getLong(offset, STATE_BYTE_ORDER));
-    offset += Long.BYTES;
-
-    readIntoBuffer(source, offset, subscription.getMessageName());
-  }
-
-  private int getSubscriptionKeyLength(DirectBuffer messageName) {
-    return Long.BYTES + Integer.BYTES + messageName.capacity();
-  }
-
-  private boolean readSubscription(
-      long elementInstanceKey, DirectBuffer messageName, MessageSubscription subscription) {
-    final int keyLength = writeSubscriptionKey(keyBuffer, 0, elementInstanceKey, messageName);
-    bufferView.wrap(keyBuffer, 0, keyLength);
-
-    final int readBytes = db.get(subscriptionColumnFamily, bufferView, valueBuffer);
-    if (readBytes != RocksDB.NOT_FOUND) {
-      subscription.wrap(valueBuffer, 0, readBytes);
-      return true;
-    }
-
-    return false;
+          correlationKey.wrapBuffer(subscription.getCorrelationKey());
+          messageNameAndCorrelationKeyColumnFamily.put(
+              nameCorrelationAndElementInstanceKey, DbNil.INSTANCE);
+        });
   }
 
   public void visitSubscriptions(
       final DirectBuffer messageName,
       final DirectBuffer correlationKey,
       MessageSubscriptionVisitor visitor) {
-    int offset = 0;
-    final int prefixLength = messageName.capacity() + correlationKey.capacity();
-    final MutableDirectBuffer prefixBuffer = new UnsafeBuffer(new byte[prefixLength]);
 
-    prefixBuffer.putBytes(offset, messageName, 0, messageName.capacity());
-    offset += messageName.capacity();
+    this.messageName.wrapBuffer(messageName);
+    this.correlationKey.wrapBuffer(correlationKey);
 
-    prefixBuffer.putBytes(offset, correlationKey, 0, correlationKey.capacity());
-
-    db.forEachPrefixed(
-        messageNameAndCorrelationKeyColumnFamily,
-        prefixBuffer,
-        (entry, control) -> {
-          final DirectBuffer keyBuffer = entry.getKey();
-          final long elementInstanceKey = keyBuffer.getLong(prefixLength, STATE_BYTE_ORDER);
-
-          final boolean found = readSubscription(elementInstanceKey, messageName, subscription);
-          if (!found) {
-            throw new IllegalStateException(
-                String.format(
-                    "Expected to find subscription with key %d, but no subscription found",
-                    elementInstanceKey));
-          }
-
-          final boolean visited = visitor.visit(subscription);
-          if (!visited) {
-            control.stop();
-          }
+    messageNameAndCorrelationKeyColumnFamily.whileEqualPrefix(
+        nameAndCorrelationKey,
+        (compositeKey, nil) -> {
+          return visitMessageSubscription(elementKeyAndMessageName, visitor);
         });
+  }
+
+  private Boolean visitMessageSubscription(
+      DbCompositeKey<DbLong, DbString> elementKeyAndMessageName,
+      MessageSubscriptionVisitor visitor) {
+    final MessageSubscription messageSubscription =
+        subscriptionColumnFamily.get(elementKeyAndMessageName);
+
+    if (messageSubscription == null) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected to find subscription with key %d and %s, but no subscription found",
+              elementKeyAndMessageName.getFirst().getValue(),
+              elementKeyAndMessageName.getSecond()));
+    }
+    return visitor.visit(messageSubscription);
   }
 
   public void updateToCorrelatingState(
@@ -246,101 +145,73 @@ public class MessageSubscriptionState implements StateLifecycleListener {
   }
 
   public void updateSentTime(final MessageSubscription subscription, long sentTime) {
-    try (final WriteOptions options = new WriteOptions();
-        final ZbWriteBatch batch = new ZbWriteBatch()) {
-      int keyLength;
+    zeebeDb.batch(
+        () -> {
+          elementInstanceKey.wrapLong(subscription.getElementInstanceKey());
+          messageName.wrapBuffer(subscription.getMessageName());
 
-      if (subscription.getCommandSentTime() > 0) {
-        keyLength = writeSentTimeKey(keyBuffer, subscription);
-        batch.delete(sentTimeColumnFamily, keyBuffer.byteArray(), keyLength);
-      }
+          removeSubscriptionFromSentTimeColumnFamily(subscription);
 
-      subscription.setCommandSentTime(sentTime);
-      keyLength = writeSubscriptionKey(keyBuffer, 0, subscription);
-      subscription.write(valueBuffer, 0);
-      batch.put(
-          subscriptionColumnFamily,
-          keyBuffer.byteArray(),
-          keyLength,
-          valueBuffer.byteArray(),
-          subscription.getLength());
+          subscription.setCommandSentTime(sentTime);
+          subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
 
-      if (sentTime > 0) {
-        keyLength = writeSentTimeKey(keyBuffer, subscription);
-        batch.put(
-            sentTimeColumnFamily, keyBuffer.byteArray(), keyLength, EXISTENCE, EXISTENCE.length);
-      }
-
-      db.write(options, batch);
-    } catch (RocksDBException e) {
-      throw new RuntimeException(e);
-    }
+          if (sentTime > 0) {
+            this.sentTime.wrapLong(subscription.getCommandSentTime());
+            sentTimeColumnFamily.put(sentTimeCompositeKey, DbNil.INSTANCE);
+          }
+        });
   }
 
   public void visitSubscriptionBefore(final long deadline, MessageSubscriptionVisitor visitor) {
-    db.forEach(
-        sentTimeColumnFamily,
-        (entry, control) -> {
-          final DirectBuffer keyBuffer = entry.getKey();
-          final long sentTime = keyBuffer.getLong(0, STATE_BYTE_ORDER);
-
-          boolean visited = false;
+    sentTimeColumnFamily.whileTrue(
+        (compositeKey, nil) -> {
+          final long sentTime = compositeKey.getFirst().getValue();
           if (sentTime < deadline) {
-            wrapSubscriptionKey(keyBuffer, Long.BYTES, subscription);
-            final boolean found =
-                readSubscription(
-                    subscription.getElementInstanceKey(),
-                    subscription.getMessageName(),
-                    subscription);
-
-            if (!found) {
-              throw new IllegalStateException(
-                  String.format(
-                      "No subscription found matching %d - %s",
-                      subscription.getElementInstanceKey(),
-                      BufferUtil.bufferAsString(subscription.getMessageName())));
-            }
-
-            visited = visitor.visit(subscription);
+            return visitMessageSubscription(compositeKey.getSecond(), visitor);
           }
-
-          if (!visited) {
-            control.stop();
-          }
+          return false;
         });
   }
 
   public boolean existSubscriptionForElementInstance(
       long elementInstanceKey, DirectBuffer messageName) {
-    final int keyLength = writeSubscriptionKey(keyBuffer, 0, elementInstanceKey, messageName);
-    return db.exists(subscriptionColumnFamily, keyBuffer.byteArray(), 0, keyLength);
+    this.elementInstanceKey.wrapLong(elementInstanceKey);
+    this.messageName.wrapBuffer(messageName);
+
+    return subscriptionColumnFamily.exists(elementKeyAndMessageName);
   }
 
   public boolean remove(long elementInstanceKey, DirectBuffer messageName) {
-    final boolean found = readSubscription(elementInstanceKey, messageName, subscription);
+    this.elementInstanceKey.wrapLong(elementInstanceKey);
+    this.messageName.wrapBuffer(messageName);
+
+    final MessageSubscription messageSubscription =
+        subscriptionColumnFamily.get(elementKeyAndMessageName);
+
+    final boolean found = messageSubscription != null;
     if (found) {
-      remove(subscription);
+      remove(messageSubscription);
     }
     return found;
   }
 
   public void remove(final MessageSubscription subscription) {
-    try (final WriteOptions options = new WriteOptions();
-        final ZbWriteBatch batch = new ZbWriteBatch()) {
-      int keyLength = writeSubscriptionKey(keyBuffer, 0, subscription);
-      batch.delete(subscriptionColumnFamily, keyBuffer.byteArray(), keyLength);
+    zeebeDb.batch(
+        () -> {
+          subscriptionColumnFamily.delete(elementKeyAndMessageName);
 
-      keyLength = writeMessageNameAndCorrelationKey(keyBuffer, subscription);
-      batch.delete(messageNameAndCorrelationKeyColumnFamily, keyBuffer.byteArray(), keyLength);
+          messageName.wrapBuffer(subscription.getMessageName());
+          correlationKey.wrapBuffer(subscription.getCorrelationKey());
+          messageNameAndCorrelationKeyColumnFamily.delete(nameCorrelationAndElementInstanceKey);
 
-      if (subscription.getCommandSentTime() > 0) {
-        keyLength = writeSentTimeKey(keyBuffer, subscription);
-        batch.delete(sentTimeColumnFamily, keyBuffer.byteArray(), keyLength);
-      }
+          removeSubscriptionFromSentTimeColumnFamily(subscription);
+        });
+  }
 
-      db.write(options, batch);
-    } catch (RocksDBException e) {
-      throw new RuntimeException(e);
+  private void removeSubscriptionFromSentTimeColumnFamily(MessageSubscription subscription) {
+    if (subscription.getCommandSentTime() > 0) {
+      sentTime.wrapLong(subscription.getCommandSentTime());
+      sentTimeColumnFamily.delete(sentTimeCompositeKey);
     }
   }
 
