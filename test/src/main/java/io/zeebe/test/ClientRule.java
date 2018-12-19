@@ -50,6 +50,10 @@ public class ClientRule extends ExternalResource {
 
   @Override
   protected void before() {
+    createClient();
+  }
+
+  public void createClient() {
     client = ZeebeClient.newClientBuilder().withProperties(properties.get()).build();
     determineDefaultPartition();
   }
@@ -77,6 +81,10 @@ public class ClientRule extends ExternalResource {
 
   @Override
   protected void after() {
+    destroyClient();
+  }
+
+  public void destroyClient() {
     client.close();
     client = null;
   }
