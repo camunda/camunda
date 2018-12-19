@@ -50,10 +50,7 @@ describe('modules/utils/filter.js', () => {
         completed: false
       };
 
-      expect(getInstanceStatePayload(filter)).toEqual({
-        running: false,
-        finished: false
-      });
+      expect(getInstanceStatePayload(filter)).toEqual({});
     });
 
     it('return running true when active is selected', () => {
@@ -65,8 +62,7 @@ describe('modules/utils/filter.js', () => {
       };
 
       expect(getInstanceStatePayload(filter)).toEqual({
-        running: true,
-        finished: false
+        running: true
       });
     });
 
@@ -79,8 +75,7 @@ describe('modules/utils/filter.js', () => {
       };
 
       expect(getInstanceStatePayload(filter)).toEqual({
-        running: true,
-        finished: false
+        running: true
       });
     });
 
@@ -93,8 +88,7 @@ describe('modules/utils/filter.js', () => {
       };
 
       expect(getInstanceStatePayload(filter)).toEqual({
-        running: true,
-        finished: false
+        running: true
       });
     });
 
@@ -107,7 +101,6 @@ describe('modules/utils/filter.js', () => {
       };
 
       expect(getInstanceStatePayload(filter)).toEqual({
-        running: false,
         finished: true
       });
     });
@@ -121,7 +114,6 @@ describe('modules/utils/filter.js', () => {
       };
 
       expect(getInstanceStatePayload(filter)).toEqual({
-        running: false,
         finished: true
       });
     });

@@ -64,6 +64,8 @@ export const DEFAULT_SORTING = {
   sortOrder: SORT_ORDER.DESC
 };
 
+export const DEFAULT_FIRST_ELEMENT = 0;
+
 export const DEFAULT_MAX_RESULTS = 50;
 export const DEFAULT_SELECTED_INSTANCES = {all: false, ids: [], excludeIds: []};
 

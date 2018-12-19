@@ -15,7 +15,7 @@ import * as apiDiagram from 'modules/api/diagram/diagram';
 import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 import {getFilterQueryString} from 'modules/utils/filter';
 import {DEFAULT_FILTER} from 'modules/constants';
-import {getDiagramNodes, groupedWorkflowsMock} from 'modules/testUtils';
+import {createDiagramNodes, groupedWorkflowsMock} from 'modules/testUtils';
 const InstancesContainerWrapped = InstancesContainer.WrappedComponent;
 
 // component mocks
@@ -182,7 +182,7 @@ describe('InstancesContainer', () => {
       groupedWorkflowsMock[0].workflows[2]
     );
     expect(InstancesNode.prop('diagramNodes')).toEqual(
-      formatDiagramNodes(getDiagramNodes())
+      formatDiagramNodes(createDiagramNodes())
     );
   });
   it('should pass data to Instances for full filter, with all versions', async () => {

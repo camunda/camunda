@@ -1,6 +1,6 @@
-import {getDiagramNodes} from 'modules/testUtils';
+import {createDiagramNodes} from 'modules/testUtils';
 
 export async function getNodesFromXML(xml) {
-  const nodes = getDiagramNodes();
+  const nodes = createDiagramNodes();
   return nodes;
 }

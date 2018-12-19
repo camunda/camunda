@@ -11,7 +11,8 @@ import {
   DEFAULT_FILTER,
   DEFAULT_SORTING,
   SORT_ORDER,
-  DEFAULT_MAX_RESULTS
+  DEFAULT_MAX_RESULTS,
+  DEFAULT_FIRST_ELEMENT
 } from 'modules/constants';
 
 import {
@@ -75,7 +76,7 @@ class Instances extends Component {
       statistics: [],
       workflowInstances: [],
       workflowInstancesLoaded: false,
-      firstElement: 0,
+      firstElement: DEFAULT_FIRST_ELEMENT,
       sorting: DEFAULT_SORTING
     };
   }
@@ -118,7 +119,9 @@ class Instances extends Component {
         workflowInstancesLoaded: true,
         workflowInstances: instances.workflowInstances,
         filterCount: instances.totalCount,
-        firstElement: hasFilterChanged ? 0 : this.state.firstElement
+        firstElement: hasFilterChanged
+          ? DEFAULT_FIRST_ELEMENT
+          : this.state.firstElement
       });
 
       // update local storage data
@@ -171,7 +174,7 @@ class Instances extends Component {
 
   fetchWorkflowInstances = async (
     sorting = DEFAULT_SORTING,
-    firstElement = 0
+    firstElement = DEFAULT_FIRST_ELEMENT
   ) => {
     const instances = await fetchWorkflowInstances({
       queries: [

@@ -245,7 +245,7 @@ export const createDiagramNode = (options = {}) => {
  * @return {Object} mocked diagramNode Object with a unique id
  * @param {*} customProps Obj with any type of custom property
  */
-export const getDiagramNodes = () => {
+export const createDiagramNodes = () => {
   return {
     taskD: createDiagramNode({
       $type: 'bpmn:ServiceTask',
@@ -254,4 +254,23 @@ export const getDiagramNodes = () => {
     }),
     demoProcess: createDiagramNode()
   };
+};
+
+export const createDiagramStatistics = () => {
+  return [
+    {
+      activityId: 'afterTimerTask',
+      active: 0,
+      canceled: 0,
+      incidents: 8,
+      completed: 0
+    },
+    {
+      activityId: 'lastTask',
+      active: 0,
+      canceled: 0,
+      incidents: 21,
+      completed: 0
+    }
+  ];
 };

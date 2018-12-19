@@ -78,11 +78,17 @@ function defaultFieldParser(name, value) {
  */
 export function getInstanceStatePayload(filter) {
   const {active, incidents, completed, canceled} = filter;
+  const result = {};
 
-  return {
-    running: active || incidents,
-    finished: completed || canceled
-  };
+  if (active || incidents) {
+    result.running = true;
+  }
+
+  if (completed || canceled) {
+    result.finished = true;
+  }
+
+  return result;
 }
 
 /**
