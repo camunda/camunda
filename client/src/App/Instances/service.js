@@ -59,7 +59,8 @@ export function getEmptyDiagramMessage(name) {
    To see a diagram, select a single version.`;
 }
 
-export function getTaskNodes(nodes) {
+export function getTaskNodes(bpmnElements) {
+  const nodes = formatDiagramNodes(bpmnElements);
   let taskNodes = [];
 
   for (let node in nodes) {

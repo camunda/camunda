@@ -19,7 +19,6 @@ import canceledLightIcon from 'modules/components/Icon/diagram-badge-single-inst
 import canceledDarkIcon from 'modules/components/Icon/diagram-badge-single-instance-canceled-dark.svg';
 import * as Styled from './styled';
 import DiagramControls from './DiagramControls';
-import * as api from 'modules/api/diagram';
 import {
   getDiagramColors,
   getFlowNodesDetails,
@@ -42,7 +41,7 @@ const iconMap = {
 class Diagram extends React.Component {
   static propTypes = {
     theme: PropTypes.string.isRequired,
-    workflowId: PropTypes.string.isRequired,
+    definitions: PropTypes.object.isRequired,
     // callback function called when flowNodesDetails is ready
     onFlowNodesDetailsReady: PropTypes.func,
     clickableFlowNodes: PropTypes.arrayOf(PropTypes.string),
@@ -69,7 +68,6 @@ class Diagram extends React.Component {
   constructor(props) {
     super(props);
     this.Viewer = null;
-    this.workflowXML = null;
     this.myRef = React.createRef();
   }
 
@@ -77,27 +75,26 @@ class Diagram extends React.Component {
     isViewerLoaded: false
   };
 
-  async componentDidMount() {
-    await this.fetchAndSetWorkflowXML();
+  componentDidMount() {
     this.initViewer();
   }
 
-  async componentDidUpdate({
+  componentDidUpdate({
     theme: prevTheme,
-    workflowId: prevWorkflowId,
+    definitions: prevDefinitions,
     selectedFlowNode,
     flowNodeStateOverlays: prevFlowNodeStateOverlays,
     flowNodesStatisticsOverlay: prevflowNodesStatisticsOverlay
   }) {
+    const hasNewDefinitions = this.props.definitions !== prevDefinitions;
     const hasNewTheme = this.props.theme !== prevTheme;
-    const hasNewWorkflowId = this.props.workflowId !== prevWorkflowId;
-    const hasSelectedFlowNodeChanged =
-      this.props.selectedFlowNode !== selectedFlowNode;
 
-    if (hasNewTheme || hasNewWorkflowId) {
-      hasNewWorkflowId && (await this.fetchAndSetWorkflowXML());
+    if (hasNewTheme || hasNewDefinitions) {
       return this.resetViewer();
     }
+
+    const hasSelectedFlowNodeChanged =
+      this.props.selectedFlowNode !== selectedFlowNode;
 
     // In case only the selectedFlowNode changed.
     // This also means that the Viewer is already initiated so we can safely
@@ -127,14 +124,12 @@ class Diagram extends React.Component {
       this.clearOverlaysByType(COMPLETED_STATISTICS_OVERLAY_ID);
       this.clearOverlaysByType(CANCELED_STATISTICS_OVERLAY_ID);
 
+      console.log(this.props.flowNodesStatisticsOverlay);
+
       this.addFlowNodesStatisticsOverlays(
         this.props.flowNodesStatisticsOverlay
       );
     }
-  }
-
-  async fetchAndSetWorkflowXML() {
-    this.workflowXML = await api.fetchWorkflowXML(this.props.workflowId);
   }
 
   handleDiagramLoad = e => {
@@ -175,7 +170,10 @@ class Diagram extends React.Component {
       bpmnRenderer: getDiagramColors(this.props.theme)
     });
 
-    this.Viewer.importXML(this.workflowXML, this.handleDiagramLoad);
+    this.Viewer.importDefinitions(
+      this.props.definitions,
+      this.handleDiagramLoad
+    );
   };
 
   detachViewer = () => {

@@ -59,12 +59,10 @@ class Instances extends Component {
       bpmnProcessId: PropTypes.string,
       name: PropTypes.string
     }),
-    diagramNodes: PropTypes.arrayOf(
-      PropTypes.shape({
-        id: PropTypes.string,
-        name: PropTypes.string
-      })
-    )
+    diagramModel: PropTypes.shape({
+      bpmnElements: PropTypes.object,
+      definitions: PropTypes.object
+    })
   };
 
   constructor(props) {
@@ -133,8 +131,9 @@ class Instances extends Component {
         isEqual(prevProps.diagramWorkflow, this.props.diagramWorkflow)
       ) {
         // refetch statiscs
-        this.setState({statistics: []});
-        this.fetchDiagramStatistics();
+        this.setState({statistics: []}, () => {
+          this.fetchDiagramStatistics();
+        });
       }
     }
   }
@@ -160,6 +159,7 @@ class Instances extends Component {
       return;
     }
 
+    console.log(this.props.filter);
     const filterWithWorkflowIds = getFilterWithWorkflowIds(
       this.props.filter,
       this.props.groupedWorkflowInstances
@@ -235,9 +235,12 @@ class Instances extends Component {
         ? this.props.groupedWorkflowInstances[this.props.filter.workflow]
         : this.props.diagramWorkflow
     );
-    const activityIds = getTaskNodes(this.props.diagramNodes).map(item => {
-      return {value: item.id, label: item.name};
-    });
+
+    const activityIds = getTaskNodes(this.props.diagramModel.bpmnElements).map(
+      item => {
+        return {value: item.id, label: item.name};
+      }
+    );
 
     return (
       <SelectionProvider
@@ -290,16 +293,19 @@ To see a diagram, select a Workflow in the Filters panel.`}
                       />
                     </Styled.EmptyMessageWrapper>
                   )}
-                  {!isEmpty(this.props.diagramWorkflow) && (
-                    <Diagram
-                      flowNodesStatisticsOverlay={this.state.statistics}
-                      onFlowNodesDetailsReady={this.fetchDiagramStatistics}
-                      onFlowNodeSelected={this.handleFlowNodeSelection}
-                      selectedFlowNode={this.props.filter.activityId}
-                      selectableFlowNodes={activityIds.map(item => item.value)}
-                      workflowId={this.props.diagramWorkflow.id}
-                    />
-                  )}
+                  {!isEmpty(this.props.diagramWorkflow) &&
+                    this.props.diagramModel && (
+                      <Diagram
+                        flowNodesStatisticsOverlay={this.state.statistics}
+                        onFlowNodesDetailsReady={this.fetchDiagramStatistics}
+                        onFlowNodeSelected={this.handleFlowNodeSelection}
+                        selectedFlowNode={this.props.filter.activityId}
+                        selectableFlowNodes={activityIds.map(
+                          item => item.value
+                        )}
+                        definitions={this.props.diagramModel.definitions}
+                      />
+                    )}
                 </SplitPane.Pane.Body>
               </Styled.Pane>
 

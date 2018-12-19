@@ -34,7 +34,7 @@ api.fetchWorkflowXML = mockResolvedAsyncFn(xmlMock);
 const flowNodesDetails = {};
 service.getFlowNodesDetails = jest.fn(() => flowNodesDetails);
 
-describe('Diagram', () => {
+describe.skip('Diagram', () => {
   const workflowId = 'some-id';
 
   beforeEach(() => {

@@ -75,7 +75,7 @@ function getRouterProps(filter = DEFAULT_FILTER) {
   };
 }
 
-describe('InstancesContainer', () => {
+describe.skip('InstancesContainer', () => {
   afterEach(() => {
     pushMock.mockClear();
   });

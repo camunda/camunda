@@ -11,11 +11,10 @@ import {fetchWorkflowXML} from 'modules/api/diagram';
 import {getFilterQueryString, getWorkflowByVersion} from 'modules/utils/filter';
 import {
   parseQueryString,
-  formatDiagramNodes,
   decodeFields,
   formatGroupedWorkflowInstances
 } from './service';
-import {getNodesFromXML} from 'modules/utils/bpmn';
+import {parseDiagramXML} from 'modules/utils/bpmn';
 
 class InstancesContainer extends Component {
   static propTypes = {
@@ -31,7 +30,7 @@ class InstancesContainer extends Component {
     this.state = {
       filter: {},
       groupedWorkflowInstances: {},
-      nodes: {},
+      diagramModel: {},
       currentWorkflow: {}
     };
   }
@@ -57,50 +56,46 @@ class InstancesContainer extends Component {
     }
   }
 
+  // TODO: set currentWorkflow in Instances
   validateAndSetUrlFilter = async () => {
     const {filter} = parseQueryString(this.props.location.search);
-    const validFilter = await this.getValidFilter(filter);
-    // update URL with new valid filter
-    if (!isEqual(filter, validFilter)) {
-      this.setFilterInURL(validFilter);
-    } else {
-      this.setState({
-        filter,
-        currentWorkflow: getWorkflowByVersion(
-          this.state.groupedWorkflowInstances[filter.workflow],
-          filter.version
-        )
-      });
-    }
-  };
 
-  updateLocalStorageFilter = () => {
-    this.props.storeStateLocally({filter: this.state.filter});
-  };
-
-  getValidFilter = async filter => {
+    // (1) empty filter
     if (!filter) {
-      return DEFAULT_FILTER;
+      return this.setFilterInURL(DEFAULT_FILTER);
     }
 
     let {workflow, version, activityId, ...otherFilters} = filter;
 
-    // stop validation
+    // (2) filter has no workflow
     if (!workflow || (workflow && !version)) {
-      return otherFilters;
+      return activityId
+        ? this.setFilterInURL(otherFilters)
+        : this.setState({
+            filter,
+            diagramModel: {},
+            currentWorkflow: {}
+          });
     }
 
-    // validate workflow
+    // (3) validate workflow
     const isWorkflowValid = Boolean(
       this.state.groupedWorkflowInstances[workflow]
     );
 
     if (!isWorkflowValid) {
-      return otherFilters;
+      return this.setFilterInURL(otherFilters);
     }
 
     if (version === 'all') {
-      return {...otherFilters, workflow, version};
+      // set filter in url without activity id
+      return activityId
+        ? this.setFilterInURL({...otherFilters, workflow, version})
+        : this.setState({
+            filter,
+            diagramModel: {},
+            currentWorkflow: {}
+          });
     }
 
     // check workflow & version combination
@@ -111,34 +106,45 @@ class InstancesContainer extends Component {
 
     // version is not valid for workflow
     if (!Boolean(workflowByVersion)) {
-      return otherFilters;
+      return this.setFilterInURL(otherFilters);
     }
 
+    // (4) diagramModel
     // refetch nodes for new workflow + version combination
-    const nodes = isEqual(workflowByVersion, this.state.currentWorkflow)
-      ? this.state.nodes
-      : await this.fetchDiagramNodes(workflowByVersion.id);
+    let {diagramModel} = this.state;
 
-    // check activityID
-    if (!activityId) {
-      return {...otherFilters, workflow, version};
-    } else {
-      const isActivityIdValid = Boolean(nodes[activityId]);
-      return isActivityIdValid
-        ? {...otherFilters, workflow, version, activityId}
-        : {...otherFilters, workflow, version};
+    if (!isEqual(workflowByVersion, this.state.currentWorkflow)) {
+      diagramModel = await this.fetchDiagramModel(workflowByVersion.id);
     }
+
+    const isActivityIdValid = Boolean(diagramModel.bpmnElements[activityId]);
+
+    if (activityId && !isActivityIdValid) {
+      return this.setFilterInURL({...otherFilters, workflow, version});
+    }
+
+    // no activity id
+    return this.setState({
+      diagramModel,
+      filter,
+      currentWorkflow: getWorkflowByVersion(
+        this.state.groupedWorkflowInstances[filter.workflow],
+        filter.version
+      )
+    });
   };
 
-  fetchDiagramNodes = async workflowId => {
+  isValidActivityId(bpmnElements, activityId) {
+    return Boolean(bpmnElements[activityId]);
+  }
+
+  updateLocalStorageFilter = () => {
+    this.props.storeStateLocally({filter: this.state.filter});
+  };
+
+  fetchDiagramModel = async workflowId => {
     const xml = await fetchWorkflowXML(workflowId);
-    const nodes = await getNodesFromXML(xml);
-
-    this.setState({
-      nodes
-    });
-
-    return nodes;
+    return await parseDiagramXML(xml);
   };
 
   setGroupedWorkflowInstances = (workflows = []) => {
@@ -161,7 +167,7 @@ class InstancesContainer extends Component {
         diagramWorkflow={this.state.currentWorkflow}
         groupedWorkflowInstances={this.state.groupedWorkflowInstances}
         onFilterChange={this.setFilterInURL}
-        diagramNodes={formatDiagramNodes(this.state.nodes)}
+        diagramModel={this.state.diagramModel}
       />
     );
   }
