@@ -1,4 +1,4 @@
-Licensing Information for Camunda Optimize extension 2.2.0
+Licensing Information for Camunda Optimize extension 2.3.0
 
 
 
@@ -31,18 +31,23 @@ Final
 Ulrike Liss
 Optimize 2.2.0
 Final
+4.0
+2018-12-19
+Andr� Fichtner
+Optimize 2.3.0
+Final
 
-This is a license book. It contains Camunda Optimize extension product license and other licensing information, including licensing information for third-party libraries which may be included in this release of Camunda Optimize extension 2.2.0
-(Document generated on: 2018-09-28)
+This is a license book. It contains Camunda Optimize extension product license and other licensing information, including licensing information for third-party libraries which may be included in this release of Camunda Optimize extension 2.3.0
+(Document generated on: 2018-12-19)
 
 Introduction
-This Licensing Information document is a part of the program documentation and is intended to help you understand the special license rights for the Camunda Optimize extension and separately licensed third-party library terms associated with the Camunda Optimize extension 2.2.0
+This Licensing Information document is a part of the program documentation and is intended to help you understand the special license rights for the Camunda Optimize extension and separately licensed third-party library terms associated with the Camunda Optimize extension 2.3.0
 
 
 Licensing Information
 
-Product License � Camunda Optimize extension 2.2.0
-This is a distribution of Camunda Optimize extension 2.2.0 (visit http://docs.camunda.org/). The
+Product License � Camunda Optimize extension 2.3.0
+This is a distribution of Camunda Optimize extension 2.3.0 (visit http://docs.camunda.org/). The
  software is released under a commercial license agreement (Enterprise Platform). If you have a commercial license agreement, this software is containing restrictions on use and disclosure and is protected by intellectual property laws. Except as expressly permitted in your license agreement or allowed by law, you may not use, copy, reproduce, translate, broadcast, modify, license, transmit, distribute, exhibit, perform, publish, or display any part, in any form, or by any means. Reverse engineering, disassembly, or decompilation of this software, unless required by law for interoperability, is prohibited.�
 
 Licenses for Third-Party Libraries
@@ -111,8 +116,8 @@ Copyright: various authors
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
-jetty-util: 9.2.1 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-util)
-Copyright: 1995-2017 Mort Bay Consulting Pty Ltd. 
+jetty-util: 9.4.12 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-util)
+Copyright: 1995-2018 Mort Bay Consulting Pty Ltd. 
 Licensed under Apache 2.0 or Eclipse
 ===========================================================================================
 [Backend / optimize]
@@ -121,13 +126,13 @@ Copyright: 2014 The Netty Project (http://netty.io/)
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
-jetty-security: 9.2.21 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-security)
-Copyright: 1995-2017 Mort Bay Consulting Pty Ltd. 
+jetty-security: 9.4.12 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-security)
+Copyright: 1995-2018 Mort Bay Consulting Pty Ltd. 
 Licensed under Apache 2.0 or Eclipse
 ===========================================================================================
 [Backend / Optimize]
-jetty-http: 9.2.21 (https://github.com/eclipse/jetty.project)
-Copyright: 1995-2017 Mort Bay Consulting Pty Ltd. 
+jetty-http: 9.4.12 (https://github.com/eclipse/jetty.project)
+Copyright: 1995-2018 Mort Bay Consulting Pty Ltd. 
 Licensed under Apache 2.0 or Eclipse
 ===========================================================================================
 [Backend / Optimize]
@@ -191,8 +196,8 @@ Copyright: various authors
 Licensed under Apache 2.0 or LGPL
 ===========================================================================================
 [Backend / Optimize]
-httpcore-nio: 4.4.5 and 4.4.4 (https://github.com/wso2/wso2-httpcore-nio
-Copyright: 
+httpcore-nio: 4.4.5 (https://github.com/wso2/wso2-httpcore-nio)
+Copyright: ?
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
@@ -226,8 +231,8 @@ Copyright: 2001-2018 The Apache Software Foundation
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
-jetty-continuation: 9.2.21 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-continuation)
-Copyright: 1995-2017 Mort Bay Consulting Pty Ltd. 
+jetty-continuation: 9.4.12 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-continuation)
+Copyright: 1995-2018 Mort Bay Consulting Pty Ltd. 
 Licensed under Apache 2.0 or Eclipse
 ===========================================================================================
 [Backend / Optimize]
@@ -385,8 +390,8 @@ spring-context: 4.3.4 (https://github.com/spring-projects/spring-framework/tree/
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
-jetty-io: 9.2.21 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-io)
-Copyright: 1995-2017 Mort Bay Consulting Pty Ltd. 
+jetty-io: 9.4.12 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-io)
+Copyright: 1995-2018 Mort Bay Consulting Pty Ltd. 
 Licensed under Apache 2.0 or Eclipse
 ===========================================================================================
 [Backend / Optimize]
@@ -437,8 +442,8 @@ jackson-dataformat-smile: 2.9.6 (https://github.com/FasterXML/jackson-dataformat
 Copyright: various authors 
 Licensed under Apache 2.0 ===========================================================================================
 [Backend / Optimize]
-jetty-server: 9.2.21 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-server)
-Copyright: 1995-2017 Mort Bay Consulting Pty Ltd. 
+jetty-server: 9.4.12 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-server)
+Copyright: 1995-2018 Mort Bay Consulting Pty Ltd. 
 Licensed under Apache 2.0 or Eclipse
 ===========================================================================================
 [Backend / Optimize]
@@ -452,8 +457,8 @@ Copyright: 2011 JSON-SMART authors
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
-jetty-servlets: 9.2.21 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-servlets)
-Copyright: 1995-2017 Mort Bay Consulting Pty Ltd. 
+jetty-servlets: 9.4.12 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-servlets)
+Copyright: 1995-2018 Mort Bay Consulting Pty Ltd. 
 Licensed under Apache 2.0 or Eclipse
 ===========================================================================================
 [Backend / Optimize]
@@ -496,49 +501,39 @@ javax.inject: 2.5.0 (https://github.com/javax-inject/javax-inject)
 Copyright: � 2009 The JSR-330 Expert Group
 Licensed under Apache 2.0
 ===========================================================================================
-[Backend / Optimize]
-websocket-server: 9.2.21 (https://github.com/websockets/ws/blob/master/LICENSE)
-Copyright: � 2011 Einar Otto Stangvik <einaros@gmail.com>
-Licensed under Apache 2.0
+ [Backend / Optimize]
+jetty-xml: 9.4.12 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-xml)
+Copyright: � 1995-2018 Mort Bay Consulting Pty. Ltd.
+Licensed under Apache 2.0 (or Eclipse)
 ===========================================================================================
 [Backend / Optimize]
-jetty-xml: 9.2.21 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-xml)
+websocket-api: 9.4.12 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-websocket/websocket-api/src/main/java/org/eclipse/jetty/websocket/api)
+Copyright: (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+Licensed under Apache 2.0 (or Eclipse)
+===========================================================================================
+[Backend / Optimize]
+jetty-jndi: 9.4.12 (https://github.com/jetty-project/jetty-jndi-examples)
 Copyright: � 1995-2018 Mort Bay Consulting Pty. Ltd.
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
-websocket-common: 9.2.21 (https://github.com/fukamachi/websocket-driver)
-Copyright: � 2014, Eitaro Fukamachi 
-Licensed under Apache 2.0
+javax-websocket-server-impl: 9.4.12 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-websocket/javax-websocket-server-impl)
+Copyright: (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+Licensed under Apache 2.0 (or Eclipse)
 ===========================================================================================
 [Backend / Optimize]
-websocket-api: 9.2.21 (https://github.com/websockets/ws)
-Copyright: � 2011 Einar Otto Stangvik <einaros@gmail.com>
-Licensed under Apache 2.0
+websocket-client: 9.4.12 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-websocket/websocket-client)
+Copyright: (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+Licensed under Apache 2.0 (or Eclipse)
 ===========================================================================================
 [Backend / Optimize]
-jetty-jndi: 9.2.21 (https://github.com/jetty-project/jetty-jndi-examples)
-Copyright: � �?
-Licensed under Apache 2.0
+javax-websocket-client-impl: 9.4.12 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-websocket/javax-websocket-client-impl)
+Copyright: (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+Licensed under Apache 2.0 (or Eclipse)
 ===========================================================================================
 [Backend / Optimize]
-javax-websocket-server-impl: 9.2.21 (https://github.com/TooTallNate/Java-WebSocket)
-Copyright: � 2010-2018 Nathan Rajlich 
-Licensed under Apache 2.0
-===========================================================================================
-[Backend / Optimize]
-websocket-client: 2.5.0 (https://github.com/websocket-client/websocket-client)
-Copyright: � 1991, 1999 Free Software Foundation, Inc.
-Licensed under Apache 2.0
-===========================================================================================
-[Backend / Optimize]
-javax-websocket-client-impl: 9.2.21 (https://github.com/TooTallNate/Java-WebSocket)
-Copyright: � 2010-2018 Nathan Rajlich
-Licensed under Apache 2.0
-===========================================================================================
-[Backend / Optimize]
-jetty-annotations: 9.2.21 (https://github.com/pablormier/embedded-jetty-annotations-example)
-Copyright: ?
+jetty-annotations: 9.4.12 (https://github.com/pablormier/embedded-jetty-annotations-example)
+Copyright: � 1995-2018 Mort Bay Consulting Pty. Ltd.
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
@@ -547,17 +542,49 @@ Copyright: � 2002-2017 the original author or authors.
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
-jetty-plus: 9.2.21 (https://github.com/eclipse/jetty.project)
-Copyright: � https://github.com/eclipse/jetty.project/blob/jetty-9.4.x/LICENSE-CONTRIBUTOR/ccla-exist.pdf Licensed under Apache 2.0
+jetty-plus: 9.4.12 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-plus)
+Copyright: � Copyright 1995-2018 Mort Bay Consulting Pty Ltd. 
+Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
-jetty-webapp: 9.2.21 (https://github.com/eclipse/jetty.project)
-Copyright: � https://github.com/eclipse/jetty.project/blob/jetty-9.4.x/LICENSE-CONTRIBUTOR/ccla-exist.pdf Licensed under Apache 2.0
+jetty-webapp: 9.4.12 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-webapp)
+Copyright: � Copyright 1995-2018 Mort Bay Consulting Pty Ltd. 
+Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 jackson-module-jaxb-annotations: 2.9.6 (https://github.com/FasterXML/jackson-modules-base/tree/d4c58848e9450fc1bd196a37ef31b88d8dbd5cce)
 Copyright: � Tatu Saloranta and Georgios Andrianakis
 Licensed under Apache 2.0
+===========================================================================================
+[Backend / Optimize]
+log4j-to-slf4j: 2.9.1 (https://github.com/apache/logging-log4j2)
+Copyright: 1999-2017 Apache Software Foundation
+Licensed under Apache 2.0
+===========================================================================================
+[Backend / Optimize]
+Jetty-client: 9.4.12 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-client/src/main/java/org/eclipse/jetty/client)
+Copyright: (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+Licensed under Apache 2.0
+===========================================================================================
+[Backend / Optimize]
+camunda-xml-model: 7.10.0 (https://github.com/camunda/camunda-xml-model)
+Copyright: (c) Camunda Services GmbH
+Licensed under Apache 2.0
+===========================================================================================
+Backend / Optimize]
+camunda-bpmn-model: 7.10.0 (https://github.com/camunda/camunda-bpmn-model)
+Copyright: (c) Camunda Services GmbH
+Licensed under Apache 2.0
+===========================================================================================
+[Backend / Optimize]
+websocket-server: 9.4.12 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-websocket/websocket-server)
+Copyright: (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+Licensed under Apache 2.0 (or Eclipse)
+===========================================================================================
+[Backend / Optimize]
+websocket-common: 9.4.12 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-websocket/websocket-common)
+Copyright: (c) 1995-2018 Mort Bay Consulting Pty. Ltd.
+Licensed under Apache 2.0 (or Eclipse)
 ===========================================================================================
 
 BSD-3-Clause
@@ -574,7 +601,7 @@ The following third-party libraries are licensed under the BSD-3-Clause license:
 
 ===========================================================================================
 [Backend / Optimize]
-Asm: 5.0.4 (https://gitlab.ow2.org/asm/asmdex)
+Asm: 6.2 (https://gitlab.ow2.org/asm/asmdex)
 Copyright: 2012 France T�l�com 
 Licensed under BSD-3-Clause
 ===========================================================================================
@@ -751,17 +778,17 @@ Copyright: (c) 2010-2017 Oracle and/or its affiliates. All rights reserved.
 Licensed under CDDL 1.0 (+GPLv2 with classpath exception)
 =========================================================================================
 [Backend / Optimize]
-jersey-entity-filtering: 2.26 (https://github.com/jersey/jersey/tree/master/examples/entity-filtering)
+jersey-entity-filtering: 2.27 (https://github.com/jersey/jersey/tree/master/examples/entity-filtering)
 Copyright: (c) 2013-2017 Oracle and/or its affiliates. All rights reserved.
 Licensed under CDDL 1.0 (+GPLv2 with classpath exception)
 ===========================================================================================
 [Backend / Optimize]
-jersey-container-servlet-core: 2.26 (https://github.com/jersey/jersey/tree/master/containers/jersey-servlet-core/src)
+jersey-container-servlet-core: 2.27 (https://github.com/jersey/jersey/tree/master/containers/jersey-servlet-core/src)
 Copyright: (c) 2012-2017 Oracle and/or its affiliates. All rights reserved. 
 Licensed under CDDL 1.0 (+GPLv2 with classpath exception)
 ===========================================================================================
 [Backend / Optimize]
-jersey-spring4: 2.26 (https://github.com/jersey/jersey/tree/master/ext/spring4)
+jersey-spring4: 2.27 (https://github.com/jersey/jersey/tree/master/ext/spring4)
 Copyright: (c) 2013-2017 Oracle and/or its affiliates. All rights reserved.
 Licensed under CDDL 1.0 (+GPLv2 with classpath exception)
 ===========================================================================================
@@ -781,8 +808,8 @@ Copyright: (c) 2010-2017 Oracle and/or its affiliates. All rights reserved.
 Licensed under CDDL 1.0 (+GPLv2 with classpath exception)
 ===========================================================================================
 [Backend / Optimize]
-jersey-server: 2.26 (https://github.com/jersey/jersey/tree/master/core-server)
-Copyright: (c) 2010-2017 Oracle and/or its affiliates. All rights reserved.
+jersey-server: 2.27 (https://github.com/jersey/jersey/tree/master/core-server)
+Copyright: (c) 2010-2018 Oracle and/or its affiliates. All rights reserved.
 Licensed under CDDL 1.0 (+GPLv2 with classpath exception)
 ===========================================================================================
 [Backend / Optimize]
@@ -791,8 +818,8 @@ Copyright: (c) 2007-2015 Oracle and/or its affiliates. All rights reserved.
 Licensed under CDDL 1.0 (+GPLv2 with classpath exception)
 ===========================================================================================
 [Backend / Optimize]
-jersey-media-json-jackson: 2.26 (https://github.com/jersey/jersey/tree/master/media/json-jackson)
-Copyright: (c) 2012-2017 Oracle and/or its affiliates. All rights reserved.
+jersey-media-json-jackson: 2.27 (https://github.com/jersey/jersey/tree/master/media/json-jackson)
+Copyright: (c) 2013-2017 Oracle and/or its affiliates. All rights reserved.
 Licensed under CDDL 1.0 (+GPLv2 with classpath exception)
 ===========================================================================================
 [Backend / Optimize]
@@ -821,7 +848,7 @@ Copyright: (c) 1997-2013 Oracle and/or its affiliates. All rights reserved.
 Licensed under CDDL 1.0 (+GPLv2 with classpath exception) or GPL
 ===========================================================================================
 [Backend / Optimize]
-jersey-common: 2.26 (https://github.com/jersey/jersey/tree/master/core-common)
+jersey-common: 2.27 (https://github.com/jersey/jersey/tree/master/core-common)
 Copyright: � 2012-2017 Oracle and/or its affiliates. All rights reserved.
 Licensed under CDDL 1.0 (+GPLv2 with classpath exception)
 ===========================================================================================
@@ -836,7 +863,7 @@ Copyright: � 2012-2017 Oracle and/or its affiliates. All rights reserved.
 Licensed under CDDL 1.0 (+GPLv2 with classpath exception)
 ===========================================================================================
 [Backend / Optimize]
-jersey-media-jaxb: 2.26 (https://github.com/jersey/jersey/tree/master/media/jaxb)
+jersey-media-jaxb: 2.27 (https://github.com/jersey/jersey/tree/master/media/jaxb)
 Copyright: � 2015-2017 Oracle and/or its affiliates. All rights reserved.
 Licensed under CDDL 1.0 (+GPLv2 with classpath exception) or GPL
 ===========================================================================================
@@ -856,12 +883,12 @@ Copyright: � 2010-2017 Oracle and/or its affiliates. All rights reserved.
 Licensed under CDDL 1.0 (+GPLv2 with classpath exception)
 ===========================================================================================
 [Backend / Optimize]
-jersey-client: 2.26 (https://github.com/jersey/jersey/tree/master/core-client/src/main/java/org/glassfish/jersey/client)
+jersey-client: 2.27 (https://github.com/jersey/jersey/tree/master/core-client/src/main/java/org/glassfish/jersey/client)
 Copyright: � 2012-2017 Oracle and/or its affiliates. All rights reserved. 
 Licensed under CDDL 1.0 (+GPLv2 with classpath exception)
 ===========================================================================================
 [Backend / Optimize]
-jersey-hk2: 2.26 (https://github.com/jersey/jersey/tree/master/inject/hk2)
+jersey-hk2: 2.27 (https://github.com/jersey/jersey/tree/master/inject/hk2)
 Copyright: � 2017 Oracle and/or its affiliates. All rights reserved.
 Licensed under CDDL 1.0 (+GPLv2 with classpath exception)
 ===========================================================================================
@@ -873,6 +900,11 @@ Licensed under the CDDL 1.0 (+GPLv2 with classpath exception)
 [Backend / Optimize]
 activation: 1.1.1 (https://glassfish.dev.java.net/public/CDDLv1.0.htm)
 Copyright: � several authors 
+Licensed under the CDDL 1.0 (+GPLv2 with classpath exception)
+===========================================================================================
+[Backend / Optimize]
+javax.websocket-client-api: 1.0 (https://javaee.github.io/glassfish/)
+Copyright: (c) Oracle and/or its affiliates. All rights reserved.
 Licensed under the CDDL 1.0 (+GPLv2 with classpath exception)
 ===========================================================================================
 
@@ -1238,7 +1270,7 @@ Copyright: (c) 2008-2011 Dr. Ullrich Hafner
 Licensed under MIT
 ===========================================================================================
 [Frontend / Optimize]
-whatwg-fetch: 2.0.3 (https://github.com/github/fetch)
+whatwg-fetch: 3.0.0 (https://github.com/github/fetch)
 Copyright: (c) 2014-2016 GitHub, Inc.
 Licensed under MIT
 ===========================================================================================
@@ -1332,6 +1364,33 @@ Saxen: 8.0.0 (https://github.com/nikku/saxen)
 Copyright: (c) 2012 Vopilovskii Konstantin and 2017-present Nico Rehwaldt
 Licensed under MIT
 ===========================================================================================
+[Frontend / Optimize]
+core-js: 2.5.7 (https://github.com/zloirock/core-js)
+Copyright: (c) 2014-2018 Denis Pushkarev
+Licensed under MIT
+===========================================================================================
+[Frontend / Optimize]
+performance-now: 2.1.0 (https://github.com/myrne/performance-now)
+Copyright: (c) 2013 Braveg1rl
+Licensed under MIT
+===========================================================================================
+[Frontend / Optimize]
+promise: 8.0.2 (https://github.com/then/promise)
+Copyright: (c) 2014 Forbes Lindesay
+Licensed under MIT
+===========================================================================================
+[Frontend / Optimize]
+raf: 3.4.0 (https://github.com/chrisdickinson/raf)
+Copyright: (c) 2013 Chris Dickinson <chris@neversaw.us>
+Licensed under MIT
+===========================================================================================
+[Frontend / Optimize]
+React-app-polyfill: 0.1.3 (https://github.com/facebook/create-react-app)
+Copyright: (c) 2013-present, Facebook, Inc.
+Licensed under MIT
+===========================================================================================
+
+
 
 LGPL 2.1
 The following license text for the LGPL 2.1 is cited only once. All libraries licenses under the LGPL 2.1 will be listed after the license text together with copyright notice and link to this license text.
@@ -1462,11 +1521,6 @@ logback-classic: 1.2.3 (https://github.com/qos-ch/logback/tree/master/logback-cl
 Copyright: 1999-2015, QOS.ch. All rights reserved
 Licensed under LGPL 2.1 or EPL 1.0
 ===========================================================================================
-[Backend / Optimize]
-websocket-client: 9.2.21 (https://github.com/websocket-client/websocket-client)
-Copyright: ?
-Licensed under LGPL 2.1 
-===========================================================================================
 
 BSD-2-Clause
 The following license text for the BSD-2-Clause license is cited only once. All libraries licenses under the BSD-2-Clause will be listed after the license text together with copyright notice and link to this license text.
@@ -1484,6 +1538,7 @@ HdrHistogram: 2.1.9 (https://github.com/HdrHistogram/HdrHistogram
 Copyright: (c) 2012, 2013, 2014, 2015, 2016 Gil Tene, 2014 Michael Barker, 2014 Matt Warren
 Licensed under BSD-2-Clause
 ===========================================================================================
+
 
 BSD-3-Clause
 The following license text for the BSD-3-Clause license is cited only once. All libraries licenses under the BSD-3-Clause will be listed after the license text together with copyright notice and link to this license text.
@@ -1503,13 +1558,23 @@ Copyright: (c) 2014, Jason Mulligan
 Licensed under BSD 3
 ===========================================================================================
 [Frontend / Optimize]
-asm-tree: 5.0.1 (https://github.com/usgs/pdl/blob/master/lib/asm-3.0.jar)
-Copyright: (c) 2000-2011 INRIA, France Telecom
-Licensed under BSD 3
-===========================================================================================
-[Frontend / Optimize]
 sm-commons: 5.0.1 (https://github.com/ZF-Commons/ZfcBase)
 Copyright: (c) 2013, ZF-Commons Contributors
+Licensed under BSD 3
+===========================================================================================
+[Backend/ Optimize]
+asm-commons: 6.2 (https://github.com/llbit/ow2-asm/tree/master/src/org/objectweb/asm/commons)
+Copyright: (c) (c) 2000-2011 INRIA, France Telecom
+Licensed under BSD 3
+===========================================================================================
+[Backend/ Optimize]
+asm-tree: 6.2 (https://github.com/llbit/ow2-asm/tree/master/src/org/objectweb/asm/tree)
+Copyright: (c) (c) 2000-2011 INRIA, France Telecom
+Licensed under BSD 3
+===========================================================================================
+[Backend/ Optimize]
+asm-analysis: 6.2 (https://github.com/llbit/ow2-asm/tree/master/src/org/objectweb/asm/tree/analysis)
+Copyright: (c) (c) 2000-2011 INRIA, France Telecom
 Licensed under BSD 3
 ===========================================================================================
 
