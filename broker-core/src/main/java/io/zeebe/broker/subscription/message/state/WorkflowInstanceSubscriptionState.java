@@ -17,216 +17,103 @@
  */
 package io.zeebe.broker.subscription.message.state;
 
-import static io.zeebe.broker.workflow.state.PersistenceHelper.EXISTENCE;
-import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
-import static io.zeebe.util.buffer.BufferUtil.readIntoBuffer;
-import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
-
+import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
 import io.zeebe.broker.workflow.state.WorkflowInstanceSubscription;
-import io.zeebe.logstreams.rocksdb.ZbRocksDb;
-import io.zeebe.logstreams.rocksdb.ZbWriteBatch;
-import io.zeebe.logstreams.state.StateController;
-import io.zeebe.logstreams.state.StateLifecycleListener;
-import java.util.Arrays;
-import java.util.List;
+import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.ZeebeDb;
+import io.zeebe.db.impl.DbCompositeKey;
+import io.zeebe.db.impl.DbLong;
+import io.zeebe.db.impl.DbNil;
+import io.zeebe.db.impl.DbString;
 import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.rocksdb.ColumnFamilyHandle;
-import org.rocksdb.RocksDB;
-import org.rocksdb.RocksDBException;
-import org.rocksdb.WriteOptions;
 
-public class WorkflowInstanceSubscriptionState implements StateLifecycleListener {
+public class WorkflowInstanceSubscriptionState {
 
-  private static final String COLUMN_FAMILY_PREFIX = "wf-sub-";
+  private final ZeebeDb<ZbColumnFamilies> zeebeDb;
 
-  private static final byte[] SUBSCRIPTIONS_COLUMN_FAMILY_NAME =
-      (COLUMN_FAMILY_PREFIX + "by-key").getBytes();
-  private static final byte[] SENT_TIME_COLUMN_FAMILY_NAME =
-      (COLUMN_FAMILY_PREFIX + "by-sent-time").getBytes();
-
-  public static final byte[][] COLUMN_FAMILY_NAMES = {
-    SUBSCRIPTIONS_COLUMN_FAMILY_NAME, SENT_TIME_COLUMN_FAMILY_NAME
-  };
-
-  private ZbRocksDb db;
   // (elementInstanceKey, messageName) => WorkflowInstanceSubscription
-  private ColumnFamilyHandle subscriptionColumnFamily;
+  private final DbLong elementInstanceKey;
+  private final DbString messageName;
+  private final DbCompositeKey<DbLong, DbString> elementKeyAndMessageName;
+  private final WorkflowInstanceSubscription workflowInstanceSubscription;
+  private final ColumnFamily<DbCompositeKey<DbLong, DbString>, WorkflowInstanceSubscription>
+      subscriptionColumnFamily;
+
   // (sentTime, elementInstanceKey, messageName) => \0
-  private ColumnFamilyHandle sentTimeColumnFamily;
+  private final DbLong sentTime;
+  private final DbCompositeKey<DbLong, DbCompositeKey<DbLong, DbString>> sentTimeCompositeKey;
+  private final ColumnFamily<DbCompositeKey<DbLong, DbCompositeKey<DbLong, DbString>>, DbNil>
+      sentTimeColumnFamily;
 
-  private final ExpandableArrayBuffer keyBuffer = new ExpandableArrayBuffer();
-  private final ExpandableArrayBuffer valueBuffer = new ExpandableArrayBuffer();
-  private final DirectBuffer bufferView = new UnsafeBuffer(0, 0);
-
-  private final WorkflowInstanceSubscription subscription = new WorkflowInstanceSubscription();
-
-  public static List<byte[]> getColumnFamilyNames() {
-    return Arrays.asList(COLUMN_FAMILY_NAMES);
-  }
-
-  @Override
-  public void onOpened(StateController stateController) {
-    this.db = stateController.getDb();
+  public WorkflowInstanceSubscriptionState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
+    elementInstanceKey = new DbLong();
+    messageName = new DbString();
+    elementKeyAndMessageName = new DbCompositeKey<>(elementInstanceKey, messageName);
+    workflowInstanceSubscription = new WorkflowInstanceSubscription();
 
     subscriptionColumnFamily =
-        stateController.getColumnFamilyHandle(SUBSCRIPTIONS_COLUMN_FAMILY_NAME);
-    sentTimeColumnFamily = stateController.getColumnFamilyHandle(SENT_TIME_COLUMN_FAMILY_NAME);
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.WORKFLOW_SUBSCRIPTION_BY_KEY,
+            elementKeyAndMessageName,
+            workflowInstanceSubscription);
+
+    sentTime = new DbLong();
+    sentTimeCompositeKey = new DbCompositeKey<>(sentTime, elementKeyAndMessageName);
+    sentTimeColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.WORKFLOW_SUBSCRIPTION_BY_SENT_TIME,
+            sentTimeCompositeKey,
+            DbNil.INSTANCE);
+
+    this.zeebeDb = zeebeDb;
   }
 
   public void put(final WorkflowInstanceSubscription subscription) {
-    try (final WriteOptions options = new WriteOptions();
-        final ZbWriteBatch batch = new ZbWriteBatch()) {
-      int keyLength = writeSubscriptionKey(keyBuffer, 0, subscription);
-      subscription.write(valueBuffer, 0);
-      batch.put(
-          subscriptionColumnFamily,
-          keyBuffer.byteArray(),
-          keyLength,
-          valueBuffer.byteArray(),
-          subscription.getLength());
+    zeebeDb.batch(
+        () -> {
+          wrapSubscriptionKeys(subscription.getElementInstanceKey(), subscription.getMessageName());
 
-      keyLength = writeSentTimeKey(keyBuffer, subscription);
-      batch.put(
-          sentTimeColumnFamily, keyBuffer.byteArray(), keyLength, EXISTENCE, EXISTENCE.length);
+          subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
 
-      db.write(options, batch);
-    } catch (RocksDBException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  private int writeSentTimeKey(
-      MutableDirectBuffer buffer, final WorkflowInstanceSubscription subscription) {
-    final int expectedLength = Long.BYTES + getSubscriptionKeyLength(subscription.getMessageName());
-    int offset = 0;
-
-    buffer.putLong(offset, subscription.getCommandSentTime(), STATE_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    offset = writeSubscriptionKey(buffer, offset, subscription);
-    assert offset == expectedLength : "End offset differs from expected length";
-
-    return offset;
-  }
-
-  private int writeSubscriptionKey(
-      MutableDirectBuffer buffer, int offset, final WorkflowInstanceSubscription subscription) {
-    return writeSubscriptionKey(
-        buffer, offset, subscription.getElementInstanceKey(), subscription.getMessageName());
-  }
-
-  private int writeSubscriptionKey(
-      MutableDirectBuffer buffer, int offset, long elementInstanceKey, DirectBuffer messageName) {
-    final int startOffset = offset;
-    final int expectedLength = getSubscriptionKeyLength(messageName);
-
-    buffer.putLong(offset, elementInstanceKey, STATE_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    offset = writeIntoBuffer(buffer, offset, messageName);
-    assert (offset - startOffset) == expectedLength : "End offset differs from expected length";
-
-    return offset;
-  }
-
-  private void wrapSubscriptionKey(
-      DirectBuffer source, final WorkflowInstanceSubscription subscription) {
-    int offset = 0;
-
-    subscription.setElementInstanceKey(source.getLong(offset, STATE_BYTE_ORDER));
-    offset += Long.BYTES;
-
-    readIntoBuffer(source, offset, subscription.getMessageName());
-  }
-
-  private int getSubscriptionKeyLength(DirectBuffer messageName) {
-    return Long.BYTES + Integer.BYTES + messageName.capacity();
-  }
-
-  private boolean readSubscription(
-      long elementInstanceKey,
-      DirectBuffer messageName,
-      WorkflowInstanceSubscription subscription) {
-    final int keyLength = writeSubscriptionKey(keyBuffer, 0, elementInstanceKey, messageName);
-    bufferView.wrap(keyBuffer, 0, keyLength);
-
-    final int readBytes = db.get(subscriptionColumnFamily, bufferView, valueBuffer);
-    if (readBytes != RocksDB.NOT_FOUND) {
-      subscription.wrap(valueBuffer, 0, readBytes);
-      return true;
-    }
-
-    return false;
+          sentTime.wrapLong(subscription.getCommandSentTime());
+          sentTimeColumnFamily.put(sentTimeCompositeKey, DbNil.INSTANCE);
+        });
   }
 
   public WorkflowInstanceSubscription getSubscription(
       long elementInstanceKey, DirectBuffer messageName) {
-    final boolean found = readSubscription(elementInstanceKey, messageName, subscription);
+    wrapSubscriptionKeys(elementInstanceKey, messageName);
 
-    if (found) {
-      return subscription;
-    } else {
-      return null;
-    }
+    final WorkflowInstanceSubscription workflowInstanceSubscription =
+        subscriptionColumnFamily.get(elementKeyAndMessageName);
+
+    return workflowInstanceSubscription;
   }
 
   public void visitElementSubscriptions(
       long elementInstanceKey, WorkflowInstanceSubscriptionVisitor visitor) {
-    final UnsafeBuffer prefix = new UnsafeBuffer(keyBuffer, 0, Long.BYTES);
-    prefix.putLong(0, elementInstanceKey, STATE_BYTE_ORDER);
+    this.elementInstanceKey.wrapLong(elementInstanceKey);
 
-    db.forEachPrefixed(
-        subscriptionColumnFamily,
-        prefix,
-        ((entry, control) -> {
-          wrapSubscriptionKey(entry.getKey(), subscription);
-          final boolean found =
-              readSubscription(
-                  subscription.getElementInstanceKey(),
-                  subscription.getMessageName(),
-                  subscription);
-          if (found) {
-            visitor.visit(subscription);
-          } else {
-            throw new IllegalStateException(
-                String.format("No subscription found with key %s", subscription));
-          }
-        }));
+    subscriptionColumnFamily.whileEqualPrefix(
+        this.elementInstanceKey,
+        (compositeKey, subscription) -> {
+          visitor.visit(subscription);
+        });
   }
 
   public void visitSubscriptionBefore(
       final long deadline, WorkflowInstanceSubscriptionVisitor visitor) {
 
-    db.forEach(
-        sentTimeColumnFamily,
-        (entry, control) -> {
-          final DirectBuffer keyBuffer = entry.getKey();
-          final long sentTime = keyBuffer.getLong(0, STATE_BYTE_ORDER);
-
-          boolean visited = false;
+    sentTimeColumnFamily.whileTrue(
+        (compositeKey, nil) -> {
+          final long sentTime = compositeKey.getFirst().getValue();
           if (sentTime < deadline) {
-            bufferView.wrap(keyBuffer, Long.BYTES, keyBuffer.capacity() - Long.BYTES);
-            wrapSubscriptionKey(bufferView, subscription);
+            final WorkflowInstanceSubscription workflowInstanceSubscription =
+                subscriptionColumnFamily.get(compositeKey.getSecond());
 
-            final boolean found =
-                readSubscription(
-                    subscription.getElementInstanceKey(),
-                    subscription.getMessageName(),
-                    subscription);
-            if (!found) {
-              throw new IllegalStateException(
-                  String.format("No subscription found with key %s", subscription));
-            }
-
-            visited = visitor.visit(subscription);
+            return visitor.visit(workflowInstanceSubscription);
           }
-
-          if (!visited) {
-            control.stop();
-          }
+          return false;
         });
   }
 
@@ -243,49 +130,36 @@ public class WorkflowInstanceSubscriptionState implements StateLifecycleListener
   }
 
   public void updateSentTime(final WorkflowInstanceSubscription subscription, long sentTime) {
-    try (final WriteOptions options = new WriteOptions();
-        final ZbWriteBatch batch = new ZbWriteBatch()) {
-      int keyLength;
+    zeebeDb.batch(
+        () -> {
+          wrapSubscriptionKeys(subscription.getElementInstanceKey(), subscription.getMessageName());
 
-      if (subscription.getCommandSentTime() > 0) {
-        keyLength = writeSentTimeKey(keyBuffer, subscription);
-        batch.delete(sentTimeColumnFamily, keyBuffer.byteArray(), keyLength);
-      }
+          if (subscription.getCommandSentTime() > 0) {
+            this.sentTime.wrapLong(subscription.getCommandSentTime());
+            sentTimeColumnFamily.delete(sentTimeCompositeKey);
+          }
 
-      subscription.setCommandSentTime(sentTime);
-      keyLength = writeSubscriptionKey(keyBuffer, 0, subscription);
-      subscription.write(valueBuffer, 0);
-      batch.put(
-          subscriptionColumnFamily,
-          keyBuffer.byteArray(),
-          keyLength,
-          valueBuffer.byteArray(),
-          subscription.getLength());
+          subscription.setCommandSentTime(sentTime);
+          subscriptionColumnFamily.put(elementKeyAndMessageName, subscription);
 
-      if (sentTime > 0) {
-        keyLength = writeSentTimeKey(keyBuffer, subscription);
-        batch.put(
-            sentTimeColumnFamily, keyBuffer.byteArray(), keyLength, EXISTENCE, EXISTENCE.length);
-      }
-
-      db.write(options, batch);
-    } catch (RocksDBException e) {
-      throw new RuntimeException(e);
-    }
+          if (sentTime > 0) {
+            this.sentTime.wrapLong(sentTime);
+            sentTimeColumnFamily.put(sentTimeCompositeKey, DbNil.INSTANCE);
+          }
+        });
   }
 
   public boolean existSubscriptionForElementInstance(
       long elementInstanceKey, DirectBuffer messageName) {
-    subscription.setElementInstanceKey(elementInstanceKey);
-    subscription.setMessageName(messageName);
-    final int keyLength = writeSubscriptionKey(keyBuffer, 0, subscription);
-    bufferView.wrap(keyBuffer, 0, keyLength);
+    wrapSubscriptionKeys(elementInstanceKey, messageName);
 
-    return db.exists(subscriptionColumnFamily, bufferView);
+    return subscriptionColumnFamily.exists(elementKeyAndMessageName);
   }
 
   public boolean remove(long elementInstanceKey, DirectBuffer messageName) {
-    final boolean found = readSubscription(elementInstanceKey, messageName, subscription);
+    final WorkflowInstanceSubscription subscription =
+        getSubscription(elementInstanceKey, messageName);
+    final boolean found = subscription != null;
     if (found) {
       remove(subscription);
     }
@@ -293,24 +167,24 @@ public class WorkflowInstanceSubscriptionState implements StateLifecycleListener
   }
 
   public void remove(final WorkflowInstanceSubscription subscription) {
-    try (final WriteOptions options = new WriteOptions();
-        final ZbWriteBatch batch = new ZbWriteBatch()) {
-      int keyLength = writeSubscriptionKey(keyBuffer, 0, subscription);
-      batch.delete(subscriptionColumnFamily, keyBuffer.byteArray(), keyLength);
+    zeebeDb.batch(
+        () -> {
+          wrapSubscriptionKeys(subscription.getElementInstanceKey(), subscription.getMessageName());
 
-      if (subscription.getCommandSentTime() > 0) {
-        keyLength = writeSentTimeKey(keyBuffer, subscription);
-        batch.delete(sentTimeColumnFamily, keyBuffer.byteArray(), keyLength);
-      }
+          subscriptionColumnFamily.delete(elementKeyAndMessageName);
 
-      db.write(options, batch);
-    } catch (RocksDBException e) {
-      throw new RuntimeException(e);
-    }
+          sentTime.wrapLong(subscription.getCommandSentTime());
+          sentTimeColumnFamily.delete(sentTimeCompositeKey);
+        });
   }
 
   @FunctionalInterface
   public interface WorkflowInstanceSubscriptionVisitor {
     boolean visit(WorkflowInstanceSubscription subscription);
+  }
+
+  private void wrapSubscriptionKeys(long elementInstanceKey, DirectBuffer messageName) {
+    this.elementInstanceKey.wrapLong(elementInstanceKey);
+    this.messageName.wrapBuffer(messageName);
   }
 }

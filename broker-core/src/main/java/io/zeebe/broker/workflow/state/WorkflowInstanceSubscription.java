@@ -17,18 +17,17 @@
  */
 package io.zeebe.broker.workflow.state;
 
-import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
+import static io.zeebe.db.impl.ZeebeDbConstants.ZB_DB_BYTE_ORDER;
 import static io.zeebe.util.buffer.BufferUtil.readIntoBuffer;
 import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
 
-import io.zeebe.util.buffer.BufferReader;
+import io.zeebe.db.DbValue;
 import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class WorkflowInstanceSubscription implements BufferReader, BufferWriter {
+public class WorkflowInstanceSubscription implements DbValue {
 
   private static final int STATE_OPENING = 0;
   private static final int STATE_OPENED = 1;
@@ -153,19 +152,19 @@ public class WorkflowInstanceSubscription implements BufferReader, BufferWriter 
   @Override
   public void wrap(final DirectBuffer buffer, int offset, final int length) {
     final int startOffset = offset;
-    this.workflowInstanceKey = buffer.getLong(offset, STATE_BYTE_ORDER);
+    this.workflowInstanceKey = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
-    this.elementInstanceKey = buffer.getLong(offset, STATE_BYTE_ORDER);
+    this.elementInstanceKey = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
-    this.subscriptionPartitionId = buffer.getInt(offset, STATE_BYTE_ORDER);
+    this.subscriptionPartitionId = buffer.getInt(offset, ZB_DB_BYTE_ORDER);
     offset += Integer.BYTES;
 
-    this.commandSentTime = buffer.getLong(offset, STATE_BYTE_ORDER);
+    this.commandSentTime = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
-    this.state = buffer.getInt(offset, STATE_BYTE_ORDER);
+    this.state = buffer.getInt(offset, ZB_DB_BYTE_ORDER);
     offset += Integer.BYTES;
 
     this.closeOnCorrelate = buffer.getByte(offset) == 1;
@@ -190,19 +189,19 @@ public class WorkflowInstanceSubscription implements BufferReader, BufferWriter 
 
   @Override
   public void write(final MutableDirectBuffer buffer, int offset) {
-    buffer.putLong(offset, workflowInstanceKey, STATE_BYTE_ORDER);
+    buffer.putLong(offset, workflowInstanceKey, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
-    buffer.putLong(offset, elementInstanceKey, STATE_BYTE_ORDER);
+    buffer.putLong(offset, elementInstanceKey, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
-    buffer.putInt(offset, subscriptionPartitionId, STATE_BYTE_ORDER);
+    buffer.putInt(offset, subscriptionPartitionId, ZB_DB_BYTE_ORDER);
     offset += Integer.BYTES;
 
-    buffer.putLong(offset, commandSentTime, STATE_BYTE_ORDER);
+    buffer.putLong(offset, commandSentTime, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
-    buffer.putInt(offset, state, STATE_BYTE_ORDER);
+    buffer.putInt(offset, state, ZB_DB_BYTE_ORDER);
     offset += Integer.BYTES;
 
     buffer.putByte(offset, (byte) (closeOnCorrelate ? 1 : 0));

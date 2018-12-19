@@ -23,7 +23,6 @@ import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
-import io.zeebe.logstreams.state.StateController;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
@@ -52,7 +51,6 @@ public class TypedStreamProcessor implements StreamProcessor {
   protected DelegatingEventProcessor eventProcessorWrapper;
   protected ActorControl actor;
   private StreamProcessorContext streamProcessorContext;
-  private StateController stateController;
 
   public TypedStreamProcessor(
       final ServerOutput output,
@@ -60,8 +58,7 @@ public class TypedStreamProcessor implements StreamProcessor {
       final List<StreamProcessorLifecycleAware> lifecycleListeners,
       final EnumMap<ValueType, Class<? extends UnpackedObject>> eventRegistry,
       final KeyGenerator keyGenerator,
-      final TypedStreamEnvironment environment,
-      final StateController stateController) {
+      final TypedStreamEnvironment environment) {
     this.output = output;
     this.recordProcessors = recordProcessors;
     this.keyGenerator = keyGenerator;
@@ -74,7 +71,6 @@ public class TypedStreamProcessor implements StreamProcessor {
     eventRegistry.forEach((t, c) -> eventCache.put(t, ReflectUtil.newInstance(c)));
     this.eventRegistry = eventRegistry;
     this.environment = environment;
-    this.stateController = stateController;
   }
 
   @Override
@@ -96,11 +92,6 @@ public class TypedStreamProcessor implements StreamProcessor {
   @Override
   public void onClose() {
     lifecycleListeners.forEach(e -> e.onClose());
-  }
-
-  @Override
-  public StateController getStateController() {
-    return stateController;
   }
 
   @Override

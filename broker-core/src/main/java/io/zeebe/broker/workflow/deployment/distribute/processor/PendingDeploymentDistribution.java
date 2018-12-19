@@ -17,16 +17,15 @@
  */
 package io.zeebe.broker.workflow.deployment.distribute.processor;
 
-import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
+import static io.zeebe.db.impl.ZeebeDbConstants.ZB_DB_BYTE_ORDER;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
-import io.zeebe.util.buffer.BufferReader;
-import io.zeebe.util.buffer.BufferWriter;
+import io.zeebe.db.DbValue;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class PendingDeploymentDistribution implements BufferReader, BufferWriter {
+public class PendingDeploymentDistribution implements DbValue {
 
   private static final int DEPLOYMENT_LENGTH_OFFSET = SIZE_OF_LONG;
   private static final int DEPLOYMENT_OFFSET = DEPLOYMENT_LENGTH_OFFSET + SIZE_OF_INT;
@@ -58,10 +57,10 @@ public class PendingDeploymentDistribution implements BufferReader, BufferWriter
 
   @Override
   public void wrap(DirectBuffer buffer, int offset, int length) {
-    this.sourcePosition = buffer.getLong(offset, STATE_BYTE_ORDER);
+    this.sourcePosition = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
-    final int deploymentSize = buffer.getInt(offset, STATE_BYTE_ORDER);
+    final int deploymentSize = buffer.getInt(offset, ZB_DB_BYTE_ORDER);
     offset += Integer.BYTES;
 
     deployment.wrap(buffer, offset, deploymentSize);
@@ -77,11 +76,11 @@ public class PendingDeploymentDistribution implements BufferReader, BufferWriter
   @Override
   public void write(MutableDirectBuffer buffer, int offset) {
     final int startOffset = offset;
-    buffer.putLong(offset, sourcePosition, STATE_BYTE_ORDER);
+    buffer.putLong(offset, sourcePosition, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
     final int deploymentSize = deployment.capacity();
-    buffer.putInt(offset, deploymentSize, STATE_BYTE_ORDER);
+    buffer.putInt(offset, deploymentSize, ZB_DB_BYTE_ORDER);
     offset += Integer.BYTES;
 
     buffer.putBytes(offset, deployment, 0, deploymentSize);

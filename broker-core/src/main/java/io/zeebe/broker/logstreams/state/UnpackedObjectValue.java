@@ -15,15 +15,37 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.state;
+package io.zeebe.broker.logstreams.state;
 
-import io.zeebe.util.buffer.BufferReader;
-import io.zeebe.util.buffer.BufferWriter;
+import io.zeebe.db.DbValue;
+import io.zeebe.msgpack.UnpackedObject;
+import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public interface Persistable extends BufferReader, BufferWriter {
+public class UnpackedObjectValue implements DbValue {
 
-  void writeKey(MutableDirectBuffer keyBuffer, int offset);
+  private UnpackedObject value;
 
-  int getKeyLength();
+  public void wrapObject(UnpackedObject value) {
+    this.value = value;
+  }
+
+  @Override
+  public void wrap(DirectBuffer buffer, int offset, int length) {
+    value.wrap(buffer, offset, length);
+  }
+
+  @Override
+  public int getLength() {
+    return value.getLength();
+  }
+
+  @Override
+  public void write(MutableDirectBuffer buffer, int offset) {
+    value.write(buffer, offset);
+  }
+
+  public UnpackedObject getObject() {
+    return value;
+  }
 }

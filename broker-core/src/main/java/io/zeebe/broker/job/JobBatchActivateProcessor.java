@@ -23,11 +23,14 @@ import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.msgpack.value.LongValue;
+import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
+import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.ExpandableArrayBuffer;
 
@@ -68,35 +71,62 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
     final long jobBatchKey = streamWriter.getKeyGenerator().nextKey();
 
     final AtomicInteger amount = new AtomicInteger(value.getAmount());
-    state.forEachActivatableJobs(
-        value.getType(),
-        (key, jobRecord, control) -> {
-          final int remainingAmount = amount.decrementAndGet();
-          if (remainingAmount >= 0) {
-            final long deadline = currentTimeMillis() + value.getTimeout();
-            value.jobKeys().add().setValue(key);
-            final JobRecord job = value.jobs().add();
+    collectJobsToActivate(value, amount);
 
-            // clone job record to modify it
-            final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(jobRecord.getLength());
-            jobRecord.write(buffer, 0);
-            job.wrap(buffer);
-
-            // set worker properties on job
-            job.setDeadline(deadline).setWorker(value.getWorker());
-
-            // update state and write follow up event for job record
-            state.activate(key, job);
-            streamWriter.appendFollowUpEvent(key, JobIntent.ACTIVATED, job);
-          }
-
-          if (remainingAmount < 1) {
-            control.stop();
-          }
-        });
+    // Collecting of jobs and update state and write ACTIVATED job events should be separate,
+    // since otherwise this will cause some problems (weird behavior) with the reusing of objects
+    //
+    // ArrayProperty.add will give always the same object - state.activate will
+    // set/use this object for writing the new job state
+    activateJobs(streamWriter, value);
 
     streamWriter.appendFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, value);
     responseWriter.writeEventOnCommand(jobBatchKey, JobBatchIntent.ACTIVATED, value, record);
+  }
+
+  private void collectJobsToActivate(JobBatchRecord value, AtomicInteger amount) {
+    final ValueArray<JobRecord> jobIterator = value.jobs();
+    final ValueArray<LongValue> jobKeyIterator = value.jobKeys();
+
+    // collect jobs for activation
+    state.forEachActivatableJobs(
+        value.getType(),
+        (key, jobRecord) -> {
+          final int remainingAmount = amount.decrementAndGet();
+          if (remainingAmount >= 0) {
+            final long deadline = currentTimeMillis() + value.getTimeout();
+            jobKeyIterator.add().setValue(key);
+            final JobRecord arrayValueJob = jobIterator.add();
+
+            // clone job record to modify and add it
+            final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(jobRecord.getLength());
+            jobRecord.write(buffer, 0);
+
+            arrayValueJob.wrap(buffer);
+            arrayValueJob.setDeadline(deadline).setWorker(value.getWorker());
+          }
+
+          return remainingAmount > 0;
+        });
+  }
+
+  private void activateJobs(TypedStreamWriter streamWriter, JobBatchRecord value) {
+    final Iterator<JobRecord> iterator = value.jobs().iterator();
+    final Iterator<LongValue> keyIt = value.jobKeys().iterator();
+    while (iterator.hasNext() && keyIt.hasNext()) {
+      final JobRecord next = iterator.next();
+      final LongValue next1 = keyIt.next();
+      final long key = next1.getValue();
+
+      final ExpandableArrayBuffer copy = new ExpandableArrayBuffer();
+      next.write(copy, 0);
+      final JobRecord jobRecord = new JobRecord();
+      jobRecord.wrap(copy, 0, next.getLength());
+
+      // update state and write follow up event for job record
+      state.activate(key, jobRecord);
+      streamWriter.appendFollowUpEvent(key, JobIntent.ACTIVATED, next);
+    }
   }
 
   private void rejectCommand(

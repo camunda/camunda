@@ -17,116 +17,89 @@
  */
 package io.zeebe.broker.exporter.stream;
 
-import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
-import static io.zeebe.util.StringUtil.getBytes;
-
 import io.zeebe.broker.exporter.stream.ExporterRecord.ExporterPosition;
-import io.zeebe.logstreams.state.StateController;
-import io.zeebe.util.LangUtil;
-import io.zeebe.util.buffer.BufferUtil;
-import java.nio.ByteBuffer;
+import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.ZeebeDb;
+import io.zeebe.db.impl.DbLong;
+import io.zeebe.db.impl.DbString;
 import org.agrona.DirectBuffer;
-import org.rocksdb.Options;
-import org.rocksdb.RocksDBException;
-import org.rocksdb.RocksIterator;
 
-public class ExporterStreamProcessorState extends StateController {
-  private final ByteBuffer longBuffer = ByteBuffer.allocate(Long.BYTES);
+public class ExporterStreamProcessorState {
+
+  private final DbString exporterId;
+  private final DbLong position;
+  private final ColumnFamily<DbString, DbLong> exporterPositionColumnFamily;
+
+  public ExporterStreamProcessorState(ZeebeDb<ExporterColumnFamilies> zeebeDb) {
+    exporterId = new DbString();
+    position = new DbLong();
+    exporterPositionColumnFamily =
+        zeebeDb.createColumnFamily(ExporterColumnFamilies.DEFAULT, exporterId, position);
+  }
 
   public void setPosition(final String exporterId, final long position) {
-    setPosition(toByteArray(exporterId), position);
+    this.exporterId.wrapString(exporterId);
+    setPosition(position);
   }
 
   public void setPosition(final DirectBuffer exporterId, final long position) {
-    setPosition(toByteArray(exporterId), position);
+    this.exporterId.wrapBuffer(exporterId);
+    setPosition(position);
   }
 
-  public void setPosition(final byte[] exporterId, final long position) {
-    final byte[] value = ofLong(longBuffer, position);
-
-    try {
-      getDb().put(exporterId, value);
-    } catch (RocksDBException e) {
-      LangUtil.rethrowUnchecked(e);
-    }
+  private void setPosition(long position) {
+    this.position.wrapLong(position);
+    exporterPositionColumnFamily.put(this.exporterId, this.position);
   }
 
   public void setPositionIfGreater(final String exporterId, final long position) {
-    setPositionIfGreater(toByteArray(exporterId), position);
+    this.exporterId.wrapString(exporterId);
+
+    setPositionIfGreater(position);
   }
 
   public void setPositionIfGreater(final DirectBuffer exporterId, final long position) {
-    setPositionIfGreater(toByteArray(exporterId), position);
+    this.exporterId.wrapBuffer(exporterId);
+
+    setPositionIfGreater(position);
   }
 
-  public void setPositionIfGreater(final byte[] exporterId, final long position) {
-    final byte[] value = ofLong(longBuffer, position);
+  private void setPositionIfGreater(long position) {
+    // not that performant then rocksdb merge but
+    // was currently simpler and easier to implement
+    // if necessary change it again to merge
 
-    try {
-      getDb().merge(exporterId, value);
-    } catch (final RocksDBException e) {
-      LangUtil.rethrowUnchecked(e);
+    final long oldPosition = getPosition();
+    if (oldPosition < position) {
+      setPosition(position);
     }
   }
 
   public long getPosition(final String exporterId) {
-    return getPosition(BufferUtil.wrapString(exporterId));
+    this.exporterId.wrapString(exporterId);
+    return getPosition();
   }
 
   public long getPosition(final DirectBuffer exporterId) {
-    return getPosition(toByteArray(exporterId));
+    this.exporterId.wrapBuffer(exporterId);
+    return getPosition();
   }
 
-  public long getPosition(final byte[] exporterId) {
-    long position = ExporterRecord.POSITION_UNKNOWN;
-
-    try {
-      final int bytesRead = getDb().get(exporterId, longBuffer.array());
-      if (bytesRead == Long.BYTES) {
-        position = toLong(longBuffer);
-      }
-    } catch (RocksDBException e) {
-      LangUtil.rethrowUnchecked(e);
-    }
-
-    return position;
+  private long getPosition() {
+    final DbLong zbLong = exporterPositionColumnFamily.get(exporterId);
+    return zbLong == null ? ExporterRecord.POSITION_UNKNOWN : zbLong.getValue();
   }
 
   public ExporterRecord newExporterRecord() {
     final ExporterRecord record = new ExporterRecord();
 
-    try (RocksIterator iterator = getDb().newIterator()) {
-      for (iterator.seekToFirst(); iterator.isValid(); iterator.next()) {
-        final ExporterPosition position = record.getPositions().add();
-        final long value = toLong(ByteBuffer.wrap(iterator.value()));
-
-        position.setId(BufferUtil.wrapArray(iterator.key()));
-        position.setPosition(value);
-      }
-    }
+    exporterPositionColumnFamily.forEach(
+        (idOfExporter, currentPosition) -> {
+          final ExporterPosition position = record.getPositions().add();
+          position.setId(idOfExporter.toString());
+          position.setPosition(currentPosition.getValue());
+        });
 
     return record;
-  }
-
-  private byte[] ofLong(final ByteBuffer buffer, final long value) {
-    buffer.order(STATE_BYTE_ORDER).putLong(0, value);
-    return buffer.array();
-  }
-
-  private long toLong(final ByteBuffer buffer) {
-    return buffer.order(STATE_BYTE_ORDER).getLong(0);
-  }
-
-  @Override
-  protected Options createOptions() {
-    return super.createOptions().setMergeOperatorName("max");
-  }
-
-  private byte[] toByteArray(final DirectBuffer value) {
-    return BufferUtil.bufferAsArray(value);
-  }
-
-  private byte[] toByteArray(final String value) {
-    return getBytes(value);
   }
 }

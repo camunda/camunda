@@ -22,31 +22,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.incident.processor.IncidentState;
 import io.zeebe.broker.logstreams.state.ZeebeState;
+import io.zeebe.broker.util.ZeebeStateRule;
 import io.zeebe.protocol.impl.record.value.incident.ErrorType;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 public class IncidentStateTest {
 
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
+  @Rule public ZeebeStateRule stateRule = new ZeebeStateRule();
 
   private IncidentState incidentState;
   private ZeebeState zeebeState;
 
   @Before
-  public void setUp() throws Exception {
-    zeebeState = new ZeebeState();
-    zeebeState.open(folder.newFolder("rocksdb"), false);
+  public void setUp() {
+    zeebeState = stateRule.getZeebeState();
     incidentState = zeebeState.getIncidentState();
-  }
-
-  @After
-  public void tearDown() {
-    zeebeState.close();
   }
 
   @Test

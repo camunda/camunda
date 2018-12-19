@@ -22,6 +22,7 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.logstreams.processor.TypedRecord;
+import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.util.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.broker.workflow.processor.deployment.DeploymentEventProcessors;
@@ -52,7 +53,8 @@ public class TransformingDeploymentCreateProcessorTest {
     MockitoAnnotations.initMocks(this);
     streamProcessor =
         rule.initStreamProcessor(
-            (typedEventStreamProcessorBuilder, zeebeState) -> {
+            (typedEventStreamProcessorBuilder, zeebeDb) -> {
+              final ZeebeState zeebeState = new ZeebeState(zeebeDb);
               workflowState = zeebeState.getWorkflowState();
               DeploymentEventProcessors.addTransformingDeploymentProcessor(
                   typedEventStreamProcessorBuilder, zeebeState);

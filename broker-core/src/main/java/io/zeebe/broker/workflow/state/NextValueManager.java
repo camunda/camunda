@@ -17,56 +17,48 @@
  */
 package io.zeebe.broker.workflow.state;
 
-import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
-
-import io.zeebe.logstreams.state.StateController;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.rocksdb.ColumnFamilyHandle;
+import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
+import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.ZeebeDb;
+import io.zeebe.db.impl.DbLong;
+import io.zeebe.db.impl.DbString;
 
 public class NextValueManager {
 
   private static final int INITIAL_VALUE = 0;
 
-  private final StateController rocksDbWrapper;
-  private final MutableDirectBuffer nextValueBuffer;
-
   private final long initialValue;
 
-  public NextValueManager(StateController rocksDbWrapper) {
-    this(rocksDbWrapper, INITIAL_VALUE);
+  private final ColumnFamily<DbString, DbLong> nextValueColumnFamily;
+  private final DbString nextValueKey;
+  private final DbLong nextValue;
+
+  public NextValueManager(ZeebeDb<ZbColumnFamilies> zeebeDb, ZbColumnFamilies columnFamily) {
+    this(INITIAL_VALUE, zeebeDb, columnFamily);
   }
 
-  /**
-   * Creates next value manager with state controller and an initial value. The first {@link
-   * #getNextValue(ColumnFamilyHandle, byte[])} call will return initial value + 1.
-   *
-   * @param rocksDbWrapper
-   * @param initialValue initial value to start with
-   */
-  public NextValueManager(StateController rocksDbWrapper, long initialValue) {
-    this.rocksDbWrapper = rocksDbWrapper;
-    nextValueBuffer = new UnsafeBuffer(new byte[Long.BYTES]);
+  public NextValueManager(
+      long initialValue, ZeebeDb<ZbColumnFamilies> zeebeDb, ZbColumnFamilies columnFamily) {
     this.initialValue = initialValue;
+
+    nextValueKey = new DbString();
+    nextValue = new DbLong();
+    nextValueColumnFamily = zeebeDb.createColumnFamily(columnFamily, nextValueKey, nextValue);
   }
 
-  public long getNextValue(ColumnFamilyHandle columnFamilyHandle, byte[] key) {
-    final byte[] generateKeyBytes = nextValueBuffer.byteArray();
-    final int readBytes =
-        rocksDbWrapper.get(
-            columnFamilyHandle, key, 0, key.length, generateKeyBytes, 0, generateKeyBytes.length);
+  public long getNextValue(String key) {
+    nextValueKey.wrapString(key);
+
+    final DbLong zbLong = nextValueColumnFamily.get(nextValueKey);
 
     long previousKey = initialValue;
-    final boolean keyWasFound = readBytes == generateKeyBytes.length;
-    if (keyWasFound) {
-      previousKey = nextValueBuffer.getLong(0, STATE_BYTE_ORDER);
+    if (zbLong != null) {
+      previousKey = zbLong.getValue();
     }
 
     final long nextKey = previousKey + 1;
-    nextValueBuffer.putLong(0, nextKey, STATE_BYTE_ORDER);
-
-    rocksDbWrapper.put(
-        columnFamilyHandle, key, 0, key.length, generateKeyBytes, 0, generateKeyBytes.length);
+    nextValue.wrapLong(nextKey);
+    nextValueColumnFamily.put(nextValueKey, nextValue);
 
     return nextKey;
   }

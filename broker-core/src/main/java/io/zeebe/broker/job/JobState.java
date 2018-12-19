@@ -17,362 +17,230 @@
  */
 package io.zeebe.broker.job;
 
-import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
-import static io.zeebe.util.StringUtil.getBytes;
-import static io.zeebe.util.buffer.BufferUtil.contentsEqual;
-
-import io.zeebe.logstreams.rocksdb.ZbRocksDb;
-import io.zeebe.logstreams.rocksdb.ZbRocksDb.IteratorControl;
-import io.zeebe.logstreams.rocksdb.ZbWriteBatch;
-import io.zeebe.logstreams.state.StateController;
-import io.zeebe.logstreams.state.StateLifecycleListener;
+import io.zeebe.broker.logstreams.state.UnpackedObjectValue;
+import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
+import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.ZeebeDb;
+import io.zeebe.db.impl.DbByte;
+import io.zeebe.db.impl.DbCompositeKey;
+import io.zeebe.db.impl.DbLong;
+import io.zeebe.db.impl.DbNil;
+import io.zeebe.db.impl.DbString;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.util.EnsureUtil;
-import io.zeebe.util.buffer.BufferWriter;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.rocksdb.ColumnFamilyHandle;
-import org.rocksdb.RocksDB;
-import org.rocksdb.RocksDBException;
-import org.rocksdb.WriteOptions;
 
-public class JobState implements StateLifecycleListener {
-  private static final byte[] JOBS_COLUMN_FAMILY_NAME = getBytes("jobStateJobs");
-  private static final byte[] STATES_COLUMN_FAMILY_NAME = getBytes("jobStateStates");
-  private static final byte[] DEADLINES_COLUMN_FAMILY_NAME = getBytes("jobStateDeadlines");
-  private static final byte[] ACTIVATABLE_COLUMN_FAMILY_NAME = getBytes("jobStateActivatable");
-  public static final byte[][] COLUMN_FAMILY_NAMES = {
-    JOBS_COLUMN_FAMILY_NAME,
-    STATES_COLUMN_FAMILY_NAME,
-    ACTIVATABLE_COLUMN_FAMILY_NAME,
-    DEADLINES_COLUMN_FAMILY_NAME
-  };
-
-  private static final DirectBuffer NULL = new UnsafeBuffer(new byte[] {0});
+public class JobState {
 
   // key => job record value
-  private ColumnFamilyHandle jobsColumnFamily;
+  private final UnpackedObjectValue jobRecord;
+  private final DbLong jobKey;
+  private final ColumnFamily<DbLong, UnpackedObjectValue> jobsColumnFamily;
+
   // key => job state
-  private ColumnFamilyHandle statesColumnFamily;
+  private final DbByte jobState;
+  private final ColumnFamily<DbLong, DbByte> statesJobColumnFamily;
+
   // type => [key]
-  private ColumnFamilyHandle activatableColumnFamily;
+  private final DbString jobTypeKey;
+  private final DbCompositeKey<DbString, DbLong> typeJobKey;
+  private final ColumnFamily<DbCompositeKey<DbString, DbLong>, DbNil> activatableColumnFamily;
+
   // timeout => key
-  private ColumnFamilyHandle deadlinesColumnFamily;
+  private final DbLong deadlineKey;
+  private final DbCompositeKey<DbLong, DbLong> deadlineJobKey;
+  private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil> deadlinesColumnFamily;
+  private final ZeebeDb<ZbColumnFamilies> zeebeDb;
 
-  private MutableDirectBuffer keyBuffer;
-  private MutableDirectBuffer valueBuffer;
+  public JobState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
+    jobRecord = new UnpackedObjectValue();
+    jobRecord.wrapObject(new JobRecord());
+    jobKey = new DbLong();
+    jobsColumnFamily = zeebeDb.createColumnFamily(ZbColumnFamilies.JOBS, jobKey, jobRecord);
 
-  private ZbRocksDb db;
+    jobState = new DbByte();
+    statesJobColumnFamily =
+        zeebeDb.createColumnFamily(ZbColumnFamilies.JOB_STATES, jobKey, jobState);
 
-  public static List<byte[]> getColumnFamilyNames() {
-    return Stream.of(COLUMN_FAMILY_NAMES).collect(Collectors.toList());
-  }
+    jobTypeKey = new DbString();
+    typeJobKey = new DbCompositeKey<>(jobTypeKey, jobKey);
+    activatableColumnFamily =
+        zeebeDb.createColumnFamily(ZbColumnFamilies.JOB_ACTIVATABLE, typeJobKey, DbNil.INSTANCE);
 
-  @Override
-  public void onOpened(StateController stateController) {
-    keyBuffer = new ExpandableArrayBuffer();
-    valueBuffer = new ExpandableArrayBuffer();
+    deadlineKey = new DbLong();
+    deadlineJobKey = new DbCompositeKey<>(deadlineKey, jobKey);
+    deadlinesColumnFamily =
+        zeebeDb.createColumnFamily(ZbColumnFamilies.JOB_DEADLINES, deadlineJobKey, DbNil.INSTANCE);
 
-    db = stateController.getDb();
-
-    jobsColumnFamily = stateController.getColumnFamilyHandle(JOBS_COLUMN_FAMILY_NAME);
-    statesColumnFamily = stateController.getColumnFamilyHandle(STATES_COLUMN_FAMILY_NAME);
-    activatableColumnFamily = stateController.getColumnFamilyHandle(ACTIVATABLE_COLUMN_FAMILY_NAME);
-    deadlinesColumnFamily = stateController.getColumnFamilyHandle(DEADLINES_COLUMN_FAMILY_NAME);
+    this.zeebeDb = zeebeDb;
   }
 
   public void create(final long key, final JobRecord record) {
     final DirectBuffer type = record.getType();
+    zeebeDb.batch(() -> createJob(key, record, type));
+  }
 
-    try (WriteOptions options = new WriteOptions();
-        ZbWriteBatch batch = new ZbWriteBatch()) {
-      DirectBuffer keyBuffer = getDefaultKey(key);
-      DirectBuffer valueBuffer = writeValue(record);
-      batch.put(jobsColumnFamily, keyBuffer, valueBuffer);
-
-      valueBuffer = writeStatesValue(State.ACTIVATABLE);
-      batch.put(statesColumnFamily, keyBuffer, valueBuffer);
-
-      keyBuffer = getActivatableKey(key, type);
-      batch.put(activatableColumnFamily, keyBuffer, NULL);
-
-      db.write(options, batch);
-    } catch (RocksDBException e) {
-      throw new RuntimeException(e);
-    }
+  private void createJob(long key, JobRecord record, DirectBuffer type) {
+    updateJobRecord(key, record);
+    updateJobState(State.ACTIVATABLE);
+    makeJobActivatable(type);
   }
 
   public void activate(final long key, final JobRecord record) {
     final DirectBuffer type = record.getType();
     final long deadline = record.getDeadline();
 
-    try (WriteOptions options = new WriteOptions();
-        ZbWriteBatch batch = new ZbWriteBatch()) {
-      DirectBuffer keyBuffer = getDefaultKey(key);
-      DirectBuffer valueBuffer = writeValue(record);
-      batch.put(jobsColumnFamily, keyBuffer, valueBuffer);
+    validateParameters(type, deadline);
 
-      valueBuffer = writeStatesValue(State.ACTIVATED);
-      batch.put(statesColumnFamily, keyBuffer, valueBuffer);
+    zeebeDb.batch(
+        () -> {
+          updateJobRecord(key, record);
 
-      keyBuffer = getActivatableKey(key, type);
-      batch.delete(activatableColumnFamily, keyBuffer);
+          updateJobState(State.ACTIVATED);
 
-      keyBuffer = getDeadlinesKey(key, deadline);
-      batch.put(deadlinesColumnFamily, keyBuffer, NULL);
+          makeJobNotActivatable(type);
 
-      db.write(options, batch);
-    } catch (RocksDBException e) {
-      throw new RuntimeException(e);
-    }
+          deadlineKey.wrapLong(deadline);
+          deadlinesColumnFamily.put(deadlineJobKey, DbNil.INSTANCE);
+        });
   }
 
   public void timeout(final long key, final JobRecord record) {
     final DirectBuffer type = record.getType();
     final long deadline = record.getDeadline();
+    validateParameters(type, deadline);
 
-    try (WriteOptions options = new WriteOptions();
-        ZbWriteBatch batch = new ZbWriteBatch()) {
+    zeebeDb.batch(
+        () -> {
+          createJob(key, record, type);
 
-      DirectBuffer keyBuffer = getDefaultKey(key);
-      DirectBuffer valueBuffer = writeValue(record);
-      batch.put(jobsColumnFamily, keyBuffer, valueBuffer);
-
-      valueBuffer = writeStatesValue(State.ACTIVATABLE);
-      batch.put(statesColumnFamily, keyBuffer, valueBuffer);
-
-      keyBuffer = getActivatableKey(key, type);
-      batch.put(activatableColumnFamily, keyBuffer, NULL);
-
-      keyBuffer = getDeadlinesKey(key, deadline);
-      batch.delete(deadlinesColumnFamily, keyBuffer);
-
-      db.write(options, batch);
-    } catch (RocksDBException e) {
-      throw new RuntimeException(e);
-    }
+          removeJobDeadline(deadline);
+        });
   }
 
   public void delete(long key, JobRecord record) {
     final DirectBuffer type = record.getType();
     final long deadline = record.getDeadline();
 
-    try (WriteOptions options = new WriteOptions();
-        ZbWriteBatch batch = new ZbWriteBatch()) {
-      DirectBuffer keyBuffer = getDefaultKey(key);
-      batch.delete(jobsColumnFamily, keyBuffer);
+    zeebeDb.batch(
+        () -> {
+          jobKey.wrapLong(key);
+          jobsColumnFamily.delete(jobKey);
 
-      batch.delete(statesColumnFamily, keyBuffer);
+          statesJobColumnFamily.delete(jobKey);
 
-      final DirectBuffer activatableKey = getActivatableKey(key, type);
-      batch.delete(activatableColumnFamily, activatableKey);
+          makeJobNotActivatable(type);
 
-      if (isInState(key, State.ACTIVATED)) {
-        keyBuffer = getDeadlinesKey(key, deadline);
-        batch.delete(deadlinesColumnFamily, keyBuffer);
-      }
-
-      db.write(options, batch);
-    } catch (RocksDBException e) {
-      throw new RuntimeException(e);
-    }
+          removeJobDeadline(deadline);
+        });
   }
 
   public void fail(long key, JobRecord updatedValue) {
     final DirectBuffer type = updatedValue.getType();
     final long deadline = updatedValue.getDeadline();
 
-    try (WriteOptions options = new WriteOptions();
-        ZbWriteBatch batch = new ZbWriteBatch()) {
+    validateParameters(type, deadline);
 
-      DirectBuffer keyBuffer = getDefaultKey(key);
-      DirectBuffer valueBuffer = writeValue(updatedValue);
-      batch.put(jobsColumnFamily, keyBuffer, valueBuffer);
+    zeebeDb.batch(
+        () -> {
+          updateJobRecord(key, updatedValue);
 
-      final State newState = updatedValue.getRetries() > 0 ? State.ACTIVATABLE : State.FAILED;
+          final State newState = updatedValue.getRetries() > 0 ? State.ACTIVATABLE : State.FAILED;
+          updateJobState(newState);
 
-      valueBuffer = writeStatesValue(newState);
-      batch.put(statesColumnFamily, keyBuffer, valueBuffer);
+          if (newState == State.ACTIVATABLE) {
+            makeJobActivatable(type);
+          }
 
-      if (newState == State.ACTIVATABLE) {
-        keyBuffer = getActivatableKey(key, type);
-        batch.put(activatableColumnFamily, keyBuffer, NULL);
-      }
+          removeJobDeadline(deadline);
+        });
+  }
 
-      keyBuffer = getDeadlinesKey(key, deadline);
-      batch.delete(deadlinesColumnFamily, keyBuffer);
-
-      db.write(options, batch);
-    } catch (RocksDBException e) {
-      throw new RuntimeException(e);
-    }
+  private void validateParameters(DirectBuffer type, long deadline) {
+    EnsureUtil.ensureNotNullOrEmpty("type", type);
+    EnsureUtil.ensureGreaterThan("deadline", deadline, 0);
   }
 
   public void resolve(long key, final JobRecord updatedValue) {
     final DirectBuffer type = updatedValue.getType();
 
-    try (WriteOptions options = new WriteOptions();
-        ZbWriteBatch batch = new ZbWriteBatch()) {
-      DirectBuffer keyBuffer = getDefaultKey(key);
-      DirectBuffer valueBuffer = writeValue(updatedValue);
-      batch.put(jobsColumnFamily, keyBuffer, valueBuffer);
-
-      valueBuffer = writeStatesValue(State.ACTIVATABLE);
-      batch.put(statesColumnFamily, keyBuffer, valueBuffer);
-
-      keyBuffer = getActivatableKey(key, type);
-      batch.put(activatableColumnFamily, keyBuffer, NULL);
-
-      db.write(options, batch);
-    } catch (RocksDBException e) {
-      throw new RuntimeException(e);
-    }
+    zeebeDb.batch(
+        () -> {
+          updateJobRecord(key, updatedValue);
+          updateJobState(State.ACTIVATABLE);
+          makeJobActivatable(type);
+        });
   }
 
-  public void forEachTimedOutEntry(final long upperBound, final IteratorConsumer callback) {
-    db.forEach(
-        deadlinesColumnFamily,
-        (e, c) -> {
-          final long deadline = e.getKey().getLong(0, STATE_BYTE_ORDER);
-          if (deadline < upperBound) {
-            final DirectBuffer keyBuffer = new UnsafeBuffer(e.getKey(), Long.BYTES, Long.BYTES);
+  public void forEachTimedOutEntry(
+      final long upperBound, final BiConsumer<Long, JobRecord> callback) {
 
-            final JobRecord job = getJob(keyBuffer);
-            final long jobKey = keyBuffer.getLong(0, STATE_BYTE_ORDER);
+    deadlinesColumnFamily.whileTrue(
+        (compositeKey, zbNil) -> {
+          final long deadline = compositeKey.getFirst().getValue();
+          final boolean isDue = deadline < upperBound;
+          if (isDue) {
+            final Long jobKey = compositeKey.getSecond().getValue();
+            final JobRecord job = getJob(jobKey);
+
             if (job == null) {
               throw new IllegalStateException(
                   String.format("Expected to find job with key %d, but no job found", jobKey));
             }
-            callback.accept(jobKey, job, c);
-
-          } else {
-            c.stop();
+            callback.accept(jobKey, job);
           }
+          return isDue;
         });
   }
 
   public boolean exists(long jobKey) {
-    final DirectBuffer dbKey = getDefaultKey(jobKey);
-    return db.exists(jobsColumnFamily, dbKey);
+    this.jobKey.wrapLong(jobKey);
+    return jobsColumnFamily.exists(this.jobKey);
   }
 
   public boolean isInState(long key, State state) {
-    final DirectBuffer keyBuffer = getDefaultKey(key);
-    if (db.exists(statesColumnFamily, keyBuffer, valueBuffer)) {
-      return valueBuffer.getByte(0) == state.value;
-    } else {
-      return false;
+    jobKey.wrapLong(key);
+
+    final DbByte storedState = statesJobColumnFamily.get(jobKey);
+    if (storedState != null) {
+      return storedState.getValue() == state.value;
     }
+    return false;
   }
 
-  public void forEachActivatableJobs(final DirectBuffer type, final IteratorConsumer callback) {
-    final DirectBuffer prefix = getActivatablePrefix(type);
+  public void forEachActivatableJobs(
+      final DirectBuffer type, final BiFunction<Long, JobRecord, Boolean> callback) {
+    jobTypeKey.wrapBuffer(type);
 
-    // iterate by prefix, and since we're looking for exactly the type, once we find the first one,
-    // it should iterate exactly over all those with that exact type, and once we hit a longer or
-    // different one it should stop.
-    db.forEachPrefixed(
-        activatableColumnFamily,
-        prefix,
-        (e, c) -> {
-          final DirectBuffer entryKey = e.getKey();
-          final DirectBuffer typeBuffer =
-              new UnsafeBuffer(entryKey, 0, entryKey.capacity() - Long.BYTES);
-          if (contentsEqual(type, typeBuffer)) {
-            final DirectBuffer keyBuffer =
-                new UnsafeBuffer(entryKey, typeBuffer.capacity(), Long.BYTES);
+    activatableColumnFamily.whileEqualPrefix(
+        jobTypeKey,
+        ((compositeKey, zbNil) -> {
+          final long jobKey = compositeKey.getSecond().getValue();
 
-            final JobRecord job = getJob(keyBuffer);
-            final long jobKey = keyBuffer.getLong(0, STATE_BYTE_ORDER);
-            if (job == null) {
-              throw new IllegalStateException(
-                  String.format("Expected to find job with key %d, but no job found", jobKey));
-            }
-            callback.accept(jobKey, job, c);
-
-          } else {
-            c.stop();
+          final JobRecord job = getJob(jobKey);
+          if (job == null) {
+            throw new IllegalStateException(
+                String.format("Expected to find job with key %d, but no job found", jobKey));
           }
-        });
+          return callback.apply(jobKey, job);
+        }));
   }
 
   public JobRecord updateJobRetries(final long jobKey, final int retries) {
     final JobRecord job = getJob(jobKey);
     if (job != null) {
       job.setRetries(retries);
-
-      final DirectBuffer keyBuffer = getDefaultKey(jobKey);
-      final DirectBuffer valueBuffer = writeValue(job);
-      db.put(jobsColumnFamily, keyBuffer, valueBuffer);
+      updateJobRecord(jobKey, job);
     }
     return job;
   }
 
   public JobRecord getJob(final long key) {
-    final DirectBuffer keyBuffer = getDefaultKey(key);
-    return getJob(keyBuffer);
-  }
-
-  private JobRecord getJob(final DirectBuffer keyBuffer) {
-    final int bytesRead = db.get(jobsColumnFamily, keyBuffer, valueBuffer);
-
-    if (bytesRead == RocksDB.NOT_FOUND) {
-      return null;
-    }
-
-    return readJob(valueBuffer, bytesRead);
-  }
-
-  private JobRecord readJob(final DirectBuffer buffer, final int length) {
-    final JobRecord record = new JobRecord();
-    record.wrap(buffer, 0, length);
-
-    return record;
-  }
-
-  private UnsafeBuffer getDefaultKey(final long key) {
-    keyBuffer.putLong(0, key, STATE_BYTE_ORDER);
-    return new UnsafeBuffer(keyBuffer, 0, Long.BYTES);
-  }
-
-  private UnsafeBuffer getActivatableKey(final long key, final DirectBuffer type) {
-    EnsureUtil.ensureNotNullOrEmpty("type", type);
-    final int typeLength = type.capacity();
-    keyBuffer.putBytes(0, type, 0, typeLength);
-    keyBuffer.putLong(typeLength, key, STATE_BYTE_ORDER);
-
-    return new UnsafeBuffer(keyBuffer, 0, typeLength + Long.BYTES);
-  }
-
-  private UnsafeBuffer getActivatablePrefix(final DirectBuffer type) {
-    EnsureUtil.ensureNotNullOrEmpty("type", type);
-    final int typeLength = type.capacity();
-    keyBuffer.putBytes(0, type, 0, typeLength);
-
-    return new UnsafeBuffer(keyBuffer, 0, typeLength);
-  }
-
-  private UnsafeBuffer getDeadlinesKey(final long key, final long deadline) {
-    EnsureUtil.ensureGreaterThan("deadline", deadline, 0);
-    keyBuffer.putLong(0, deadline, STATE_BYTE_ORDER);
-    keyBuffer.putLong(Long.BYTES, key, STATE_BYTE_ORDER);
-
-    return new UnsafeBuffer(keyBuffer, 0, Long.BYTES * 2);
-  }
-
-  private UnsafeBuffer writeValue(final BufferWriter writer) {
-    writer.write(valueBuffer, 0);
-    return new UnsafeBuffer(valueBuffer, 0, writer.getLength());
-  }
-
-  private DirectBuffer writeStatesValue(final State state) {
-    valueBuffer.putByte(0, state.value);
-    return new UnsafeBuffer(valueBuffer, 0, 1);
+    jobKey.wrapLong(key);
+    final UnpackedObjectValue unpackedObjectValue = jobsColumnFamily.get(jobKey);
+    return unpackedObjectValue == null ? null : (JobRecord) unpackedObjectValue.getObject();
   }
 
   public enum State {
@@ -387,8 +255,33 @@ public class JobState implements StateLifecycleListener {
     }
   }
 
-  @FunctionalInterface
-  public interface IteratorConsumer {
-    void accept(long key, JobRecord record, IteratorControl control);
+  private void updateJobRecord(long key, JobRecord updatedValue) {
+    jobKey.wrapLong(key);
+    jobRecord.wrapObject(updatedValue);
+    jobsColumnFamily.put(jobKey, jobRecord);
+  }
+
+  private void updateJobState(State newState) {
+    jobState.wrapByte(newState.value);
+    statesJobColumnFamily.put(jobKey, jobState);
+  }
+
+  private void makeJobActivatable(DirectBuffer type) {
+    EnsureUtil.ensureNotNullOrEmpty("type", type);
+
+    jobTypeKey.wrapBuffer(type);
+    activatableColumnFamily.put(typeJobKey, DbNil.INSTANCE);
+  }
+
+  private void makeJobNotActivatable(DirectBuffer type) {
+    EnsureUtil.ensureNotNullOrEmpty("type", type);
+
+    jobTypeKey.wrapBuffer(type);
+    activatableColumnFamily.delete(typeJobKey);
+  }
+
+  private void removeJobDeadline(long deadline) {
+    deadlineKey.wrapLong(deadline);
+    deadlinesColumnFamily.delete(deadlineJobKey);
   }
 }

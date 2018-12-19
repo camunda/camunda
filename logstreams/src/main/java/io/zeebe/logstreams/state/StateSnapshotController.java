@@ -15,32 +15,44 @@
  */
 package io.zeebe.logstreams.state;
 
+import static java.nio.file.FileVisitResult.CONTINUE;
+import static java.nio.file.FileVisitResult.SKIP_SUBTREE;
+
+import io.zeebe.db.ZeebeDb;
+import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.spi.SnapshotController;
+import io.zeebe.util.FileUtil;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Predicate;
-import org.rocksdb.Checkpoint;
-import org.rocksdb.RocksDB;
 import org.slf4j.Logger;
 
-/** Controls how snapshot/recovery operations are performed on a StateController */
+/** Controls how snapshot/recovery operations are performed */
 public class StateSnapshotController implements SnapshotController {
   private static final Logger LOG = Loggers.ROCKSDB_LOGGER;
 
-  private final StateController controller;
   private final StateStorage storage;
+  private final ZeebeDbFactory zeebeDbFactory;
+  private ZeebeDb db;
 
-  public StateSnapshotController(final StateController controller, final StateStorage storage) {
-    this.controller = controller;
+  public StateSnapshotController(final ZeebeDbFactory rocksDbFactory, final StateStorage storage) {
+    zeebeDbFactory = rocksDbFactory;
     this.storage = storage;
   }
 
   @Override
-  public void takeSnapshot(final StateSnapshotMetadata metadata) throws Exception {
-    if (!controller.isOpened()) {
-      throw new IllegalStateException("cannot take snapshot of closed RocksDB");
+  public void takeSnapshot(final StateSnapshotMetadata metadata) {
+    if (db == null) {
+      throw new IllegalStateException("Cannot create snapshot of not open database.");
     }
 
     if (exists(metadata)) {
@@ -48,9 +60,7 @@ public class StateSnapshotController implements SnapshotController {
     }
 
     final File snapshotDir = storage.getSnapshotDirectoryFor(metadata);
-    try (Checkpoint checkpoint = Checkpoint.create(controller.getDb())) {
-      checkpoint.createCheckpoint(snapshotDir.getAbsolutePath());
-    }
+    db.createSnapshot(snapshotDir);
   }
 
   @Override
@@ -71,20 +81,23 @@ public class StateSnapshotController implements SnapshotController {
     }
 
     if (runtimeDirectory.exists()) {
-      controller.delete(runtimeDirectory);
+      FileUtil.deleteFolder(runtimeDirectory.getAbsolutePath());
     }
 
     if (recoveredMetadata != null) {
       final File snapshotPath = storage.getSnapshotDirectoryFor(recoveredMetadata);
       copySnapshot(runtimeDirectory, snapshotPath);
-
-      controller.open(runtimeDirectory, true);
     } else {
       recoveredMetadata = StateSnapshotMetadata.createInitial(term);
-      controller.open(runtimeDirectory, false);
     }
 
     return recoveredMetadata;
+  }
+
+  @Override
+  public ZeebeDb openDb() {
+    db = zeebeDbFactory.createDb(storage.getRuntimeDirectory());
+    return db;
   }
 
   @Override
@@ -92,7 +105,7 @@ public class StateSnapshotController implements SnapshotController {
     final List<StateSnapshotMetadata> others = storage.list(matcher);
 
     for (final StateSnapshotMetadata other : others) {
-      controller.delete(storage.getSnapshotDirectoryFor(other));
+      FileUtil.deleteFolder(storage.getSnapshotDirectoryFor(other).getAbsolutePath());
       LOG.trace("Purged snapshot {}", other);
     }
   }
@@ -102,13 +115,69 @@ public class StateSnapshotController implements SnapshotController {
   }
 
   private void copySnapshot(File runtimeDirectory, File snapshotPath) throws Exception {
-    try {
-      final RocksDB snapshotDB = controller.open(snapshotPath, true);
-      try (Checkpoint checkpoint = Checkpoint.create(snapshotDB)) {
-        checkpoint.createCheckpoint(runtimeDirectory.getAbsolutePath());
+    final Path targetPath = runtimeDirectory.toPath();
+    final Path sourcePath = snapshotPath.toPath();
+    Files.walkFileTree(sourcePath, new SnapshotCopier(sourcePath, targetPath));
+  }
+
+  @Override
+  public void close() throws Exception {
+    if (db != null) {
+      db.close();
+      db = null;
+    }
+  }
+
+  public boolean isDbOpened() {
+    return db != null;
+  }
+
+  private static final class SnapshotCopier extends SimpleFileVisitor<Path> {
+
+    private final Path targetPath;
+    private final Path sourcePath;
+
+    SnapshotCopier(Path sourcePath, Path targetPath) {
+      this.sourcePath = sourcePath;
+      this.targetPath = targetPath;
+    }
+
+    @Override
+    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+        throws IOException {
+      final Path newDirectory = targetPath.resolve(sourcePath.relativize(dir));
+      try {
+        Files.copy(dir, newDirectory);
+      } catch (FileAlreadyExistsException ioException) {
+        LOG.error("Problem on copying snapshot to runtime.", ioException);
+        return SKIP_SUBTREE; // skip processing
       }
-    } finally {
-      controller.close();
+
+      return CONTINUE;
+    }
+
+    @Override
+    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+      final Path newFile = targetPath.resolve(sourcePath.relativize(file));
+
+      try {
+        Files.copy(file, newFile);
+      } catch (IOException ioException) {
+        LOG.error("Problem on copying snapshot to runtime.", ioException);
+      }
+
+      return CONTINUE;
+    }
+
+    @Override
+    public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
+      return CONTINUE;
+    }
+
+    @Override
+    public FileVisitResult visitFileFailed(Path file, IOException exc) {
+      LOG.error("Problem on copying snapshot to runtime.", exc);
+      return CONTINUE;
     }
   }
 }

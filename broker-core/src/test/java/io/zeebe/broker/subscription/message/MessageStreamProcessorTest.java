@@ -31,6 +31,7 @@ import static org.mockito.Mockito.when;
 
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
+import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.processor.MessageEventProcessors;
@@ -76,7 +77,8 @@ public class MessageStreamProcessorTest {
 
     streamProcessor =
         rule.runStreamProcessor(
-            (typedEventStreamProcessorBuilder, zeebeState) -> {
+            (typedEventStreamProcessorBuilder, zeebeDb) -> {
+              final ZeebeState zeebeState = new ZeebeState(zeebeDb);
               MessageEventProcessors.addMessageProcessors(
                   typedEventStreamProcessorBuilder,
                   zeebeState,
