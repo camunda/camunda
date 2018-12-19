@@ -116,17 +116,17 @@ class Dashboards extends React.Component {
                   </div>
                 </Link>
                 <div className="operations">
-                  <Link to={`/dashboard/${itemData.id}/edit`}>
-                    <Icon type="edit" className="editLink" />
+                  <Link title="Edit Dashboard" to={`/dashboard/${itemData.id}/edit`}>
+                    <Icon title="Edit Dashboard" type="edit" className="editLink" />
                   </Link>
-                  <Button onClick={this.duplicateDashboard(itemData)}>
+                  <Button title="Duplicate Dashboard" onClick={this.duplicateDashboard(itemData)}>
                     <Icon
                       type="copy-document"
                       title="Duplicate Dashboard"
                       className="duplicateIcon"
                     />
                   </Button>
-                  <Button onClick={this.showDeleteModalFor(itemData)}>
+                  <Button title="Delete Dashboard" onClick={this.showDeleteModalFor(itemData)}>
                     <Icon type="delete" title="Delete Dashboard" className="deleteIcon" />
                   </Button>
                 </div>

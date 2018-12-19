@@ -139,10 +139,10 @@ class Alerts extends React.Component {
                 </div>
               </span>
               <div className="operations">
-                <Button onClick={this.showEditModalFor(itemData)}>
-                  <Icon type="edit" className="editLink" />
+                <Button title="Edit Alert" onClick={this.showEditModalFor(itemData)}>
+                  <Icon title="Edit Alert" type="edit" className="editLink" />
                 </Button>
-                <Button onClick={this.showDeleteModalFor(itemData)}>
+                <Button title="Delete Alert" onClick={this.showDeleteModalFor(itemData)}>
                   <Icon type="delete" title="Delete Alert" className="deleteIcon" />
                 </Button>
               </div>

@@ -39,7 +39,7 @@ export default class DurationFilter extends React.Component {
         <Modal.Header>Add Duration Filter</Modal.Header>
         <Modal.Content>
           <Message type="warning">
-            Reports with an active Duration Filter will only show finished instances.
+            Reports with an active Duration Filter will only show completed instances.
           </Message>
           <div className="DurationFilter__inputs">
             <Labeled label="Only include process instances that ran for">

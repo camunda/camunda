@@ -104,7 +104,7 @@ export default class DateFilter extends React.Component {
         <Modal.Content>
           {this.props.filterType === 'endDate' && (
             <Message type="warning">
-              Reports with an active End Date Filter will only show finished instances.
+              Reports with an active End Date Filter will only show completed instances.
             </Message>
           )}
           <ButtonGroup className="DateFilter__mode-buttons">

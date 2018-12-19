@@ -107,8 +107,8 @@ class Home extends React.Component {
                 </div>
               </Link>
               <div className="operations">
-                <Link to={`/dashboard/${itemData.id}/edit`}>
-                  <Icon type="edit" className="editLink" />
+                <Link title="Edit Dashboard" to={`/dashboard/${itemData.id}/edit`}>
+                  <Icon title="Edit Dashboard" type="edit" className="editLink" />
                 </Link>
               </div>
             </li>
@@ -163,8 +163,8 @@ class Home extends React.Component {
                   </div>
                 </Link>
                 <div className="operations">
-                  <Link to={`/report/${itemData.id}/edit`}>
-                    <Icon type="edit" className="editLink" />
+                  <Link title="Edit Report" to={`/report/${itemData.id}/edit`}>
+                    <Icon title="Edit Report" type="edit" className="editLink" />
                   </Link>
                 </div>
               </li>

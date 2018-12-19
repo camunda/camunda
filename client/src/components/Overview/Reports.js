@@ -150,17 +150,17 @@ class Reports extends React.Component {
                     </div>
                   </Link>
                   <div className="operations">
-                    <Link to={`/report/${itemData.id}/edit`}>
-                      <Icon type="edit" className="editLink" />
+                    <Link title="Edit Report" to={`/report/${itemData.id}/edit`}>
+                      <Icon title="Edit Report" type="edit" className="editLink" />
                     </Link>
-                    <Button onClick={this.duplicateReport(itemData)}>
+                    <Button title="Duplicate Report" onClick={this.duplicateReport(itemData)}>
                       <Icon
                         type="copy-document"
                         title="Duplicate Report"
                         className="duplicateIcon"
                       />
                     </Button>
-                    <Button onClick={this.showDeleteModalFor(itemData)}>
+                    <Button title="Delete Report" onClick={this.showDeleteModalFor(itemData)}>
                       <Icon type="delete" title="Delete Report" className="deleteIcon" />
                     </Button>
                   </div>
