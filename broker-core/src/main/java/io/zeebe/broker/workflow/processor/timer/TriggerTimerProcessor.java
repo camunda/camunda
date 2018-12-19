@@ -69,7 +69,11 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
 
     final boolean isOccurred =
         catchEventBehavior.occurEventForElement(
-            elementInstanceKey, timer.getHandlerNodeId(), EMPTY_DOCUMENT, streamWriter);
+            elementInstanceKey,
+            timer.getBpmnId(),
+            timer.getHandlerNodeId(),
+            EMPTY_DOCUMENT,
+            streamWriter);
     if (isOccurred) {
       streamWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
 
@@ -113,7 +117,7 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
     final RepeatingInterval timer =
         new RepeatingInterval(repetitions, event.getTimer().getInterval());
     catchEventBehavior.subscribeToTimerEvent(
-        record.getElementInstanceKey(), event.getId(), timer, writer);
+        record.getElementInstanceKey(), event.getId(), record.getBpmnId(), timer, writer);
   }
 
   private ExecutableCatchEventElement getCatchEventById(

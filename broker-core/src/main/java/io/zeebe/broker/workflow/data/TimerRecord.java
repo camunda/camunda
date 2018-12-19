@@ -29,12 +29,14 @@ public class TimerRecord extends UnpackedObject {
   private final LongProperty dueDateProp = new LongProperty("dueDate");
   private final StringProperty handlerNodeId = new StringProperty("handlerNodeId");
   private final IntegerProperty repetitionsProp = new IntegerProperty("repetitions");
+  private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId");
 
   public TimerRecord() {
     this.declareProperty(elementInstanceKeyProp)
         .declareProperty(dueDateProp)
         .declareProperty(handlerNodeId)
-        .declareProperty(repetitionsProp);
+        .declareProperty(repetitionsProp)
+        .declareProperty(bpmnProcessIdProp);
   }
 
   public long getElementInstanceKey() {
@@ -70,6 +72,15 @@ public class TimerRecord extends UnpackedObject {
 
   public TimerRecord setRepetitions(int repetitions) {
     this.repetitionsProp.setValue(repetitions);
+    return this;
+  }
+
+  public DirectBuffer getBpmnId() {
+    return bpmnProcessIdProp.getValue();
+  }
+
+  public TimerRecord setBpmnId(DirectBuffer bpmnId) {
+    this.bpmnProcessIdProp.setValue(bpmnId);
     return this;
   }
 }

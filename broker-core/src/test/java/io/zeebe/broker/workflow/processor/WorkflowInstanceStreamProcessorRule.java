@@ -55,15 +55,21 @@ import java.io.ByteArrayOutputStream;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.Rule;
 import org.junit.rules.ExternalResource;
+import org.junit.rules.TemporaryFolder;
 
 public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
+
+  public static final int VERSION = 1;
+  public static final int WORKFLOW_KEY = 123;
+  public static final int DEPLOYMENT_KEY = 1;
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   private final StreamProcessorRule environmentRule;
 
   private SubscriptionCommandSender mockSubscriptionCommandSender;
   private TopologyManager mockTopologyManager;
-  private DueDateTimerChecker mockTimerEventScheduler;
 
   private StreamProcessorControl streamProcessor;
   private WorkflowState workflowState;
@@ -81,7 +87,6 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
   protected void before() {
     mockSubscriptionCommandSender = mock(SubscriptionCommandSender.class);
     mockTopologyManager = mock(TopologyManager.class);
-    mockTimerEventScheduler = mock(DueDateTimerChecker.class);
 
     when(mockSubscriptionCommandSender.hasPartitionIds()).thenReturn(true);
     when(mockSubscriptionCommandSender.openMessageSubscription(
@@ -104,7 +109,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
                   zeebeState,
                   mockSubscriptionCommandSender,
                   mockTopologyManager,
-                  mockTimerEventScheduler);
+                  new DueDateTimerChecker(workflowState));
 
               JobEventProcessors.addJobProcessors(typedEventStreamProcessorBuilder, zeebeState);
 
@@ -116,7 +121,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
     return streamProcessor;
   }
 
-  public void deploy(final BpmnModelInstance modelInstance) {
+  public void deploy(final BpmnModelInstance modelInstance, int deploymentKey, int version) {
     final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
     Bpmn.writeModelToStream(outStream, modelInstance);
     final DirectBuffer xmlBuffer = new UnsafeBuffer(outStream.toByteArray());
@@ -136,12 +141,16 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
     record
         .workflows()
         .add()
-        .setKey(1)
+        .setKey(WORKFLOW_KEY)
         .setResourceName(resourceName)
         .setBpmnProcessId(BufferUtil.wrapString(process.getId()))
-        .setVersion(1);
+        .setVersion(version);
 
-    workflowState.putDeployment(1, record);
+    workflowState.putDeployment(deploymentKey, record);
+  }
+
+  public void deploy(final BpmnModelInstance modelInstance) {
+    deploy(modelInstance, DEPLOYMENT_KEY, VERSION);
   }
 
   public TypedRecord<WorkflowInstanceRecord> createWorkflowInstance(final String processId) {
