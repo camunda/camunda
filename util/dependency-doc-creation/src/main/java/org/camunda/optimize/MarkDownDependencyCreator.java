@@ -65,8 +65,8 @@ public class MarkDownDependencyCreator {
       "\n" +
       "menu:\n" +
       "  main:\n" +
-      "    identifier: \"user-guide-introduction-back-end-third-party-libraries\"\n" +
-      "    parent: \"user-guide-introduction-third-party-libraries\"\n" +
+      "    identifier: \"technical-guide-back-end-third-party-libraries\"\n" +
+      "    parent: \"technical-guide-third-party-libraries\"\n" +
       "\n" +
       "---\n" +
       "\n";

@@ -206,7 +206,7 @@ export default function AlertModal(reports) {
                   <span className="AlertModal__configuration-warning">
                     Email notification service is not configured. Please check the{' '}
                     {
-                      <a href="https://docs.camunda.org/optimize/latest/technical-guide/configuration/#alerting">
+                      <a href="https://docs.camunda.org/optimize/latest/technical-guide/setup/configuration/#email">
                         Optimize documentation
                       </a>
                     }

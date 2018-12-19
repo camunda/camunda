@@ -4,31 +4,15 @@ const shell = require('shelljs');
 const url = require('url');
 const toPairs = require('lodash/toPairs');
 
-const licenseChecker = path.resolve(
-  __dirname,
-  '..',
-  'node_modules',
-  '.bin',
-  'license-checker'
-);
-const depJsonFile = path.resolve(
-  __dirname,
-  '..',
-  'dependencies.json'
-);
-const depMdFile = path.resolve(
-  __dirname,
-  '..',
-  'frontend-dependencies.md'
-);
+const licenseChecker = path.resolve(__dirname, '..', 'node_modules', '.bin', 'license-checker');
+const depJsonFile = path.resolve(__dirname, '..', 'dependencies.json');
+const depMdFile = path.resolve(__dirname, '..', 'frontend-dependencies.md');
 
 const npmLinkPrefix = 'https://www.npmjs.com/package/';
 
 shell.exec(`${licenseChecker} --out ${depJsonFile} --production --json --relativeLicensePath`);
 
-const dependencies = JSON.parse(
-  fs.readFileSync(depJsonFile)
-);
+const dependencies = JSON.parse(fs.readFileSync(depJsonFile));
 
 const lines = toPairs(dependencies)
   // no need to list optimize source code as dependency
@@ -50,7 +34,7 @@ function getLibraryLink(name, rawUrl, repository) {
   // removes version from name if any
   // for example: indexof@0.0.1 -> indexof, some-name -> some-name
   const matched = name.match(/^[^@]+/);
-  const packageName =  matched ? matched[0] : name;
+  const packageName = matched ? matched[0] : name;
 
   return npmLinkPrefix + packageName;
 }
@@ -62,8 +46,8 @@ weight: 90
 
 menu:
   main:
-    identifier: "user-guide-introduction-front-end-third-party-libraries"
-    parent: "user-guide-introduction-third-party-libraries"
+    identifier: "technical-guide-front-end-third-party-libraries"
+    parent: "technical-guide-third-party-libraries"
 
 ---
 `;

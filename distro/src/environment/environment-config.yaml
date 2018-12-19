@@ -7,7 +7,7 @@
 
 # Note: for all possible configuration options please have a look
 #       at the Optimize documentation:
-#       https://docs.camunda.org/optimize/latest/technical-guide/configuration/
+#       https://docs.camunda.org/optimize/latest/technical-guide/setup/configuration/
 
 container:
   # A host name or IP address, to identify a specific network interface on
