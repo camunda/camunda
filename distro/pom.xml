@@ -59,8 +59,8 @@
             </goals>
             <configuration>
               <descriptors>
-                <descriptor>assembly-distro-full.xml</descriptor>
-                <descriptor>assembly-distro-standalone.xml</descriptor>
+                <descriptor>assembly-distro-demo.xml</descriptor>
+                <descriptor>assembly-distro-production.xml</descriptor>
               </descriptors>
               <attach>true</attach>
               <finalName>camunda-optimize-${project.version}</finalName>

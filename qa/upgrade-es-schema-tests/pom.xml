@@ -35,7 +35,8 @@
               <goal>unpack</goal>
             </goals>
             <configuration>
-              <artifact>org.camunda.optimize:camunda-optimize:${upgrade.source.version}:tar.gz:full</artifact>
+              <!-- Note: from 2.3.0 onwards the classifier will be `production` instead of `standalone` -->
+              <artifact>org.camunda.optimize:camunda-optimize:${upgrade.source.version}:tar.gz:standalone</artifact>
               <outputDirectory>${project.build.directory}/prevVersion/</outputDirectory>
             </configuration>
           </execution>
