@@ -45,6 +45,7 @@ type PublishMessageCommandStep3 interface {
 
 	// Expected that object is JSON serializable
 	PayloadFromObject(interface{}) (PublishMessageCommandStep3, error)
+	PayloadFromObjectIgnoreOmitempty(interface{}) (PublishMessageCommandStep3, error)
 	PayloadFromMap(map[string]interface{}) (PublishMessageCommandStep3, error)
 }
 
@@ -66,7 +67,17 @@ func (cmd *PublishMessageCommand) MessageId(messageId string) PublishMessageComm
 }
 
 func (cmd *PublishMessageCommand) PayloadFromObject(payload interface{}) (PublishMessageCommandStep3, error) {
-	value, err := cmd.AsJson("payload", payload)
+	value, err := cmd.AsJson("payload", payload, false)
+	if err != nil {
+		return nil, err
+	}
+
+	cmd.request.Payload = value
+	return cmd, nil
+}
+
+func (cmd *PublishMessageCommand) PayloadFromObjectIgnoreOmitempty(payload interface{}) (PublishMessageCommandStep3, error) {
+	value, err := cmd.AsJson("payload", payload, true)
 	if err != nil {
 		return nil, err
 	}

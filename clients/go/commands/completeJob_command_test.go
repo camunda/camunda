@@ -148,6 +148,74 @@ func TestCompleteJobCommandWithPayloadFromObject(t *testing.T) {
 	}
 }
 
+func TestCompleteJobCommandWithPayloadFromObjectOmitempty(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	payload := "{}"
+
+	request := &pb.CompleteJobRequest{
+		JobKey:  123,
+		Payload: payload,
+	}
+	stub := &pb.CompleteJobResponse{}
+
+	client.EXPECT().CompleteJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout)
+
+	payloadCommand, err := command.JobKey(123).PayloadFromObject(DataType{Foo: ""})
+	if err != nil {
+		t.Error("Failed to set payload: ", err)
+	}
+
+	response, err := payloadCommand.Send()
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
+func TestCompleteJobCommandWithPayloadFromObjectIgnoreOmitempty(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	payload := "{\"foo\":\"\"}"
+
+	request := &pb.CompleteJobRequest{
+		JobKey:  123,
+		Payload: payload,
+	}
+	stub := &pb.CompleteJobResponse{}
+
+	client.EXPECT().CompleteJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout)
+
+	payloadCommand, err := command.JobKey(123).PayloadFromObjectIgnoreOmitempty(DataType{Foo: ""})
+	if err != nil {
+		t.Error("Failed to set payload: ", err)
+	}
+
+	response, err := payloadCommand.Send()
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
 func TestCompleteJobCommandWithPayloadFromMap(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

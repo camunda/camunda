@@ -21,7 +21,7 @@ import (
 
 type SerializerMixin interface {
 	Validate(string, string) error
-	AsJson(string, interface{}) (string, error)
+	AsJson(string, interface{}, bool) (string, error)
 }
 
 type JsonStringSerializer struct {
@@ -36,7 +36,10 @@ func (validator *JsonStringSerializer) Validate(name string, value string) error
 	return nil
 }
 
-func (validator *JsonStringSerializer) AsJson(name string, value interface{}) (string, error) {
+func (validator *JsonStringSerializer) AsJson(name string, value interface{}, ignoreOmitempty bool) (string, error) {
+	if ignoreOmitempty {
+		value = MapMarshal(value, "json", false, true)
+	}
 	b, err := json.Marshal(value)
 	if err != nil {
 		return "", fmt.Errorf("parameter %q requires a JSON object, got %q: %s", name, value, err)

@@ -36,6 +36,7 @@ type UpdatePayloadCommandStep2 interface {
 	PayloadFromStringer(fmt.Stringer) (DispatchUpdatePayloadCommand, error)
 	PayloadFromMap(map[string]interface{}) (DispatchUpdatePayloadCommand, error)
 	PayloadFromObject(interface{}) (DispatchUpdatePayloadCommand, error)
+	PayloadFromObjectIgnoreOmitempty(interface{}) (DispatchUpdatePayloadCommand, error)
 }
 
 type UpdatePayloadCommand struct {
@@ -66,7 +67,17 @@ func (cmd *UpdatePayloadCommand) PayloadFromStringer(payload fmt.Stringer) (Disp
 }
 
 func (cmd *UpdatePayloadCommand) PayloadFromObject(payload interface{}) (DispatchUpdatePayloadCommand, error) {
-	value, err := cmd.AsJson("payload", payload)
+	value, err := cmd.AsJson("payload", payload, false)
+	if err != nil {
+		return nil, err
+	}
+
+	cmd.request.Payload = value
+	return cmd, nil
+}
+
+func (cmd *UpdatePayloadCommand) PayloadFromObjectIgnoreOmitempty(payload interface{}) (DispatchUpdatePayloadCommand, error) {
+	value, err := cmd.AsJson("payload", payload, true)
 	if err != nil {
 		return nil, err
 	}
