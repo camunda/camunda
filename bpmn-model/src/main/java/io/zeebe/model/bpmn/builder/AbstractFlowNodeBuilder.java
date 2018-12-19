@@ -258,6 +258,10 @@ public abstract class AbstractFlowNodeBuilder<
     return createTarget(EventBasedGateway.class).builder();
   }
 
+  public EventBasedGatewayBuilder eventBasedGateway(String id) {
+    return createTarget(EventBasedGateway.class, id).builder();
+  }
+
   public ExclusiveGatewayBuilder exclusiveGateway(String id) {
     return createTarget(ExclusiveGateway.class, id).builder();
   }

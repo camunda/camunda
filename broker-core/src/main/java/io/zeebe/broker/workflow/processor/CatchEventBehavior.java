@@ -26,6 +26,7 @@ import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.broker.workflow.model.element.ExecutableCatchEvent;
+import io.zeebe.broker.workflow.model.element.ExecutableCatchEventSupplier;
 import io.zeebe.broker.workflow.model.element.ExecutableMessage;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.ElementInstanceState;
@@ -38,7 +39,6 @@ import io.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResult;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResults;
-import io.zeebe.protocol.impl.record.value.incident.ErrorType;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -72,8 +72,16 @@ public class CatchEventBehavior {
   }
 
   public void subscribeToEvents(
-      BpmnStepContext<?> context, final List<? extends ExecutableCatchEvent> events) {
-    for (final ExecutableCatchEvent event : events) {
+      BpmnStepContext<?> context, final ExecutableCatchEventSupplier supplier)
+      throws MessageCorrelationKeyException {
+
+    // validate all subscriptions first, in case an incident is raised
+    for (ExecutableCatchEvent event : supplier.getEvents()) {
+      validateEventSubscription(context, event);
+    }
+
+    // if all subscriptions are valid then open the subscriptions
+    for (final ExecutableCatchEvent event : supplier.getEvents()) {
       if (event.isTimer()) {
         subscribeToTimerEvent(
             context.getRecord().getKey(),
@@ -83,6 +91,12 @@ public class CatchEventBehavior {
       } else if (event.isMessage()) {
         subscribeToMessageEvent(context, event);
       }
+    }
+  }
+
+  private void validateEventSubscription(BpmnStepContext<?> context, ExecutableCatchEvent event) {
+    if (event.isMessage()) {
+      extractCorrelationKey(context, event.getMessage());
     }
   }
 
@@ -121,7 +135,7 @@ public class CatchEventBehavior {
       streamWriter.appendFollowUpEvent(
           elementInstanceKey, WorkflowInstanceIntent.EVENT_OCCURRED, workflowInstanceRecord);
 
-      // TODO (phil): while processing the event a token is consumed, so I need to spawn a new one
+      // TODO (saig0): While processing the event a token is consumed. We need to spawn a new one
       // here explicitly - see #1767
       elementInstanceState.getInstance(elementInstance.getParentKey()).spawnToken();
       elementInstanceState.flushDirtyState();
@@ -199,11 +213,6 @@ public class CatchEventBehavior {
   private void subscribeToMessageEvent(BpmnStepContext<?> context, ExecutableCatchEvent handler) {
     final ExecutableMessage message = handler.getMessage();
     final DirectBuffer extractedKey = extractCorrelationKey(context, message);
-
-    if (extractedKey == null) {
-      // TODO (Phil): improve incident handling #1736
-      throw new RuntimeException("Failed to extract the message correlation key");
-    }
 
     final long workflowInstanceKey = context.getValue().getWorkflowInstanceKey();
     final long elementInstanceKey = context.getRecord().getKey();
@@ -288,9 +297,7 @@ public class CatchEventBehavior {
     final String failureMessage =
         String.format(
             "Failed to extract the correlation-key by '%s': %s", expression, errorMessage);
-
-    context.raiseIncident(ErrorType.EXTRACT_VALUE_ERROR, failureMessage);
-    return null;
+    throw new MessageCorrelationKeyException(failureMessage);
   }
 
   private boolean sendCloseMessageSubscriptionCommand(
@@ -310,5 +317,12 @@ public class CatchEventBehavior {
       boolean closeOnCorrelate) {
     return subscriptionCommandSender.openMessageSubscription(
         workflowInstanceKey, elementInstanceKey, messageName, correlationKey, closeOnCorrelate);
+  }
+
+  public class MessageCorrelationKeyException extends RuntimeException {
+
+    public MessageCorrelationKeyException(String message) {
+      super(message);
+    }
   }
 }

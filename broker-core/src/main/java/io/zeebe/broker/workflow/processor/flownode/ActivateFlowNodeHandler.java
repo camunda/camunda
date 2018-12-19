@@ -20,6 +20,7 @@ package io.zeebe.broker.workflow.processor.flownode;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
+import io.zeebe.broker.workflow.processor.CatchEventBehavior.MessageCorrelationKeyException;
 import io.zeebe.msgpack.mapping.MappingException;
 import io.zeebe.protocol.impl.record.value.incident.ErrorType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -39,8 +40,11 @@ public class ActivateFlowNodeHandler<T extends ExecutableFlowNode> implements Bp
               context.getRecord().getKey(),
               WorkflowInstanceIntent.ELEMENT_ACTIVATED,
               context.getValue());
+
     } catch (MappingException e) {
       context.raiseIncident(ErrorType.IO_MAPPING_ERROR, e.getMessage());
+    } catch (MessageCorrelationKeyException e) {
+      context.raiseIncident(ErrorType.EXTRACT_VALUE_ERROR, e.getMessage());
     }
   }
 

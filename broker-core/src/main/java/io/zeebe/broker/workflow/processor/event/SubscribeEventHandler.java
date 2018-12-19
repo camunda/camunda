@@ -20,19 +20,25 @@ package io.zeebe.broker.workflow.processor.event;
 import io.zeebe.broker.workflow.model.element.ExecutableCatchEventSupplier;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
+import io.zeebe.broker.workflow.processor.CatchEventBehavior.MessageCorrelationKeyException;
+import io.zeebe.protocol.impl.record.value.incident.ErrorType;
 
 public class SubscribeEventHandler implements BpmnStepHandler<ExecutableCatchEventSupplier> {
 
   @Override
   public void handle(final BpmnStepContext<ExecutableCatchEventSupplier> context) {
-    final ExecutableCatchEventSupplier supplier = context.getElement();
 
     try {
-      context.getCatchEventBehavior().subscribeToEvents(context, supplier.getEvents());
+      context.getCatchEventBehavior().subscribeToEvents(context, context.getElement());
 
       context.getOutput().deferEvent(context.getRecord());
-    } catch (Exception e) {
-      // TODO (Phil): improve incident handling #1736
+
+    } catch (MessageCorrelationKeyException e) {
+      context.raiseIncident(ErrorType.EXTRACT_VALUE_ERROR, e.getMessage());
+
+      // TODO (saig0): While processing the event a token is consumed. If an incident is raised then
+      // we don't defer and spawn a token. So we need to spawn a new one here explicitly - see #1767
+      context.getFlowScopeInstance().spawnToken();
     }
   }
 }
