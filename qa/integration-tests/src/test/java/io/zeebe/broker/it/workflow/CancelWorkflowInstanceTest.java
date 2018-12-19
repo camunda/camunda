@@ -26,8 +26,11 @@ import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.cmd.ClientException;
+import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.test.util.record.RecordingExporter;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Before;
@@ -126,5 +129,32 @@ public class CancelWorkflowInstanceTest {
     // then
     assertJobCanceled();
     assertWorkflowInstanceCanceled("process");
+  }
+
+  @Test
+  public void shouldNotCancelElementInstance() {
+    // given
+    clientRule
+        .getClient()
+        .newCreateInstanceCommand()
+        .bpmnProcessId("process")
+        .latestVersion()
+        .send()
+        .join();
+
+    final Record<JobRecordValue> record =
+        RecordingExporter.jobRecords().withType("test").getFirst();
+
+    // when - then
+    final long elementInstanceKey = record.getValue().getHeaders().getElementInstanceKey();
+    assertThatThrownBy(
+            () -> {
+              clientRule.getClient().newCancelInstanceCommand(elementInstanceKey).send().join();
+            })
+        .isInstanceOf(ClientException.class)
+        .hasMessageContaining(
+            "Expected to find a workflow instance with key "
+                + elementInstanceKey
+                + " to cancel, but found a child element instance which cannot be canceled.");
   }
 }

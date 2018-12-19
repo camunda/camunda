@@ -193,7 +193,10 @@ public class WorkflowInstanceStreamProcessorTest {
 
     assertThat(rejection.getMetadata().getIntent()).isEqualTo(WorkflowInstanceIntent.CANCEL);
     assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
-        .isEqualTo("Workflow instance is not running");
+        .isEqualTo(
+            "Expected to find a running workflow instance with key "
+                + createdEvent.getKey()
+                + ", but found no workflow instance.");
   }
 
   @Test

@@ -136,6 +136,27 @@ public class CancelWorkflowInstanceTest {
   }
 
   @Test
+  public void shouldNotCancelElementInstance() {
+    // given
+    testClient.deploy(WORKFLOW);
+    testClient.createWorkflowInstance(PROCESS_ID);
+    final Record<WorkflowInstanceRecordValue> task =
+        testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+
+    // when
+    final ExecuteCommandResponse response = cancelWorkflowInstance(task.getKey());
+
+    // then
+    assertThat(response.getIntent()).isEqualTo(CANCEL);
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
+    assertThat(response.getRejectionReason())
+        .isEqualTo(
+            "Expected to find a workflow instance with key "
+                + task.getKey()
+                + " to cancel, but found a child element instance which cannot be canceled.");
+  }
+
+  @Test
   public void shouldCancelWorkflowInstanceWithEmbeddedSubProcess() {
     // given
     testClient.deploy(SUB_PROCESS_WORKFLOW);
@@ -286,7 +307,9 @@ public class CancelWorkflowInstanceTest {
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.getRejectionReason()).isEqualTo("Workflow instance is not running");
+    assertThat(response.getRejectionReason())
+        .isEqualTo(
+            "Expected to find a running workflow instance with key -1, but found no workflow instance.");
 
     final Record<WorkflowInstanceRecordValue> cancelCommand =
         testClient.receiveFirstWorkflowInstanceCommand(CANCEL);
@@ -316,7 +339,11 @@ public class CancelWorkflowInstanceTest {
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.getRejectionReason()).isEqualTo("Workflow instance is not running");
+    assertThat(response.getRejectionReason())
+        .isEqualTo(
+            "Expected to find a running workflow instance with key "
+                + workflowInstanceKey
+                + ", but found no workflow instance.");
 
     final Record<WorkflowInstanceRecordValue> cancelCommand =
         testClient.receiveFirstWorkflowInstanceCommand(CANCEL);
@@ -345,7 +372,11 @@ public class CancelWorkflowInstanceTest {
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.getRejectionReason()).isEqualTo("Workflow instance is not running");
+    assertThat(response.getRejectionReason())
+        .isEqualTo(
+            "Expected to find a running workflow instance with key "
+                + workflowInstanceKey
+                + ", but found no workflow instance.");
   }
 
   @Test
