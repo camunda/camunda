@@ -24,7 +24,6 @@ import io.zeebe.model.bpmn.instance.IntermediateThrowEvent;
 import io.zeebe.model.bpmn.instance.Message;
 import io.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.zeebe.model.bpmn.instance.ReceiveTask;
-import io.zeebe.model.bpmn.instance.StartEvent;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 import java.util.Arrays;
 import org.junit.runners.Parameterized.Parameters;
@@ -100,15 +99,6 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
         singletonList(
             expect(Message.class, "Must have exactly one zeebe:subscription extension element"))
       },
-      // not supported message events
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .message(b -> b.name("foo").zeebeCorrelationKey("correlationKey"))
-            .done(),
-        singletonList(
-            expect(StartEvent.class, "Start event must be one of the following types: none, timer"))
-      },
       {
         Bpmn.createExecutableProcess("process")
             .startEvent()
@@ -133,10 +123,7 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
             .subProcessDone()
             .endEvent()
             .done(),
-        Arrays.asList(
-            expect("subProcess", "Start events in subprocesses must be of type none"),
-            expect(
-                "subProcessStart", "Start event must be one of the following types: none, timer"))
+        Arrays.asList(expect("subProcess", "Start events in subprocesses must be of type none"))
       },
       {
         Bpmn.createExecutableProcess("process")

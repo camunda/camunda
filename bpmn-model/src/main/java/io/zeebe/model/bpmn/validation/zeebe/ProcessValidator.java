@@ -15,6 +15,8 @@
  */
 package io.zeebe.model.bpmn.validation.zeebe;
 
+import io.zeebe.model.bpmn.instance.EventDefinition;
+import io.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.zeebe.model.bpmn.instance.Process;
 import io.zeebe.model.bpmn.instance.StartEvent;
 import java.util.Collection;
@@ -33,8 +35,18 @@ public class ProcessValidator implements ModelElementValidator<Process> {
 
     final Collection<StartEvent> topLevelStartEvents =
         element.getChildElementsByType(StartEvent.class);
-    if (topLevelStartEvents.size() != 1) {
-      validationResultCollector.addError(0, "Must have exactly one start event");
+    if (topLevelStartEvents.size() == 0) {
+      validationResultCollector.addError(0, "Must have at least one start event");
+    } else if (topLevelStartEvents.size() > 1
+        && !topLevelStartEvents.stream().allMatch(this::isMessageEvent)) {
+      validationResultCollector.addError(
+          0, "Must be either one none/timer start event or multiple message start events");
     }
+  }
+
+  private boolean isMessageEvent(StartEvent startEvent) {
+    final Collection<EventDefinition> eventDefinitions = startEvent.getEventDefinitions();
+    return (eventDefinitions.size() != 0
+        && eventDefinitions.iterator().next() instanceof MessageEventDefinition);
   }
 }
