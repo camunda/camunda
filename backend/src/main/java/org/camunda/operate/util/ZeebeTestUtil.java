@@ -118,6 +118,33 @@ public abstract class ZeebeTestUtil {
       .open();
   }
 
+  public static void completeTask(ZeebeClient client, String jobType, String workerName, String payload, int count) {
+    final int[] countCompleted = { 0 };
+    JobWorker jobWorker = client.jobClient().newWorker()
+      .jobType(jobType)
+      .handler((jobClient, job) -> {
+        if (payload == null) {
+          jobClient.newCompleteCommand(job.getKey()).payload(job.getPayload()).send().join();
+        } else {
+          jobClient.newCompleteCommand(job.getKey()).payload(payload).send().join();
+        }
+        logger.debug("Complete task command was sent to Zeebe for jobKey [{}]", job.getKey());
+        countCompleted[0]++;
+      })
+      .name(workerName)
+      .timeout(Duration.ofSeconds(2))
+      .open();
+    int attemptsCount = 0;
+    while(countCompleted[0] < count && attemptsCount < 3) {
+      try {
+        Thread.sleep(200);
+      } catch (InterruptedException e) {
+      }
+      attemptsCount++;
+    }
+    jobWorker.close();
+  }
+
   /**
    * Returns jobKey.
    * @param client

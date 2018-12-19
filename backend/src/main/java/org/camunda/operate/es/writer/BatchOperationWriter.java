@@ -131,7 +131,7 @@ public class BatchOperationWriter {
 
       Script updateScript = new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, params);
       UpdateRequestBuilder updateRequestBuilder = esClient
-        .prepareUpdate(workflowInstanceTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, workflowInstanceId)
+        .prepareUpdate(workflowInstanceTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, workflowInstanceId)
         .setScript(updateScript);
       if (refreshImmediately) {
         updateRequestBuilder = updateRequestBuilder.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
@@ -172,7 +172,7 @@ public class BatchOperationWriter {
 
       Script updateScript = new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, jsonMap);
       return esClient
-        .prepareUpdate(workflowInstanceTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, workflowInstanceId)
+        .prepareUpdate(workflowInstanceTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, workflowInstanceId)
         .setScript(updateScript);
     } catch (IOException e) {
       logger.error("Error preparing the query to complete operation", e);
@@ -242,7 +242,7 @@ public class BatchOperationWriter {
 
       Script updateScript = new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, params);
       return esClient
-        .prepareUpdate(workflowInstanceTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+        .prepareUpdate(workflowInstanceTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
         .setScript(updateScript);
     } catch (IOException e) {
       logger.error("Error preparing the query to insert operation", e);

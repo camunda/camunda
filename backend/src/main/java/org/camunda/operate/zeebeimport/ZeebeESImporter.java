@@ -12,6 +12,7 @@
  */
 package org.camunda.operate.zeebeimport;
 
+import javax.annotation.PreDestroy;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -66,6 +67,8 @@ public class ZeebeESImporter extends Thread {
 
   private Set<Integer> partitionIds = new HashSet<>();
 
+  private boolean shutdown = false;
+
   @Autowired
   private OperateProperties operateProperties;
 
@@ -87,6 +90,11 @@ public class ZeebeESImporter extends Thread {
 
   @Autowired
   private ElasticsearchBulkProcessor elasticsearchBulkProcessor;
+
+  @PreDestroy
+  public void shutdown() {
+    shutdown = true;
+  }
 
   public long getLatestLoadedPosition(String aliasName, int partitionId) {
 
@@ -192,7 +200,7 @@ public class ZeebeESImporter extends Thread {
   public void run() {
     logger.debug("Start importing data");
 
-    while (true) {
+    while (!shutdown) {
       try {
 
         int entitiesCount = processNextEntitiesBatch();
@@ -202,7 +210,7 @@ public class ZeebeESImporter extends Thread {
           try {
             Thread.sleep(2000);
           } catch (InterruptedException e) {
-
+            Thread.currentThread().interrupt();
           }
         }
       } catch (Exception ex) {
@@ -211,7 +219,7 @@ public class ZeebeESImporter extends Thread {
         try {
           Thread.sleep(2000);
         } catch (InterruptedException e) {
-
+          Thread.currentThread().interrupt();
         }
       }
 

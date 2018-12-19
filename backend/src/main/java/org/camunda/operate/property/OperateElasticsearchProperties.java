@@ -19,14 +19,27 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
   public static final String EVENT_INDEX_PATTERN = "operate-event";
   public static final String WORKFLOW_INDEX_PATTERN = "operate-workflow";
 
-  private String importPositionIndexName = IMPORT_POSITION_INDEX_PATTERN + "_";
-  private String eventIndexName = EVENT_INDEX_PATTERN + "_";
-  private String workflowInstanceIndexName = WORKFLOW_INSTANCE_INDEX_PATTERN + "_";
-  private String workflowIndexName = WORKFLOW_INDEX_PATTERN + "_";
-  private String importPositionAlias = IMPORT_POSITION_INDEX_PATTERN;
-  private String workflowAlias = WORKFLOW_INDEX_PATTERN;
+  private String importPositionIndexName = IMPORT_POSITION_INDEX_PATTERN +"_";
+  private String eventIndexName = EVENT_INDEX_PATTERN +"_";
+  private String workflowInstanceIndexName = WORKFLOW_INSTANCE_INDEX_PATTERN +"_";
+  private String workflowIndexName = WORKFLOW_INDEX_PATTERN +"_";
+  private String importPositionAlias = IMPORT_POSITION_INDEX_PATTERN + "_alias";
+  private String workflowAlias = WORKFLOW_INDEX_PATTERN + "_alias";
 
   private int templateOrder = 30;
+
+  private boolean rolloverEnabled = true;
+
+  /**
+   * This format will be used to create timed indices. It must correspond to rolloverInterval parameter.
+   */
+  private String rolloverDateFormat = "yyyyMMdd";
+  /**
+   * Interval description for "date histogram" aggregation, which is used to group finished instances.
+   * @see <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-datehistogram-aggregation.html">Elasticsearch docs</a>
+   */
+  private String rolloverInterval = "1d";
+  private int rolloverBatchSize = 100;
 
   public String getWorkflowInstanceIndexName() {
     return workflowInstanceIndexName;
@@ -82,5 +95,37 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
 
   public void setTemplateOrder(int templateOrder) {
     this.templateOrder = templateOrder;
+  }
+
+  public boolean isRolloverEnabled() {
+    return rolloverEnabled;
+  }
+
+  public void setRolloverEnabled(boolean rolloverEnabled) {
+    this.rolloverEnabled = rolloverEnabled;
+  }
+
+  public String getRolloverDateFormat() {
+    return rolloverDateFormat;
+  }
+
+  public void setRolloverDateFormat(String rolloverDateFormat) {
+    this.rolloverDateFormat = rolloverDateFormat;
+  }
+
+  public String getRolloverInterval() {
+    return rolloverInterval;
+  }
+
+  public void setRolloverInterval(String rolloverInterval) {
+    this.rolloverInterval = rolloverInterval;
+  }
+
+  public int getRolloverBatchSize() {
+    return rolloverBatchSize;
+  }
+
+  public void setRolloverBatchSize(int rolloverBatchSize) {
+    this.rolloverBatchSize = rolloverBatchSize;
   }
 }

@@ -1,5 +1,6 @@
 package org.camunda.operate.data;
 
+import javax.annotation.PreDestroy;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import org.slf4j.Logger;
@@ -13,18 +14,25 @@ public abstract class AbstractDataGenerator implements DataGenerator {
 
   private static final Logger logger = LoggerFactory.getLogger(AbstractDataGenerator.class);
 
+  private boolean shutdown = false;
+
   @Autowired
   protected ZeebeClient client;
 
   protected boolean manuallyCalled = false;
 
-  protected ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(3);;
+  protected ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(3);
+
+  @PreDestroy
+  public void shutdown() {
+    shutdown = true;
+  }
 
   @Override
   public void createZeebeDataAsync(boolean manuallyCalled) {
     scheduler.execute(() -> {
       Boolean zeebeDataCreated = null;
-      while (zeebeDataCreated == null) {
+      while (zeebeDataCreated == null && !shutdown) {
         try {
           zeebeDataCreated = createZeebeData(manuallyCalled);
         } catch (Exception ex) {
@@ -32,7 +40,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
           try {
             Thread.sleep(2000);
           } catch (InterruptedException ex2) {
-            //
+            Thread.currentThread().interrupt();
           }
         }
       }

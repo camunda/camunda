@@ -23,6 +23,8 @@ import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.reader.WorkflowReader;
+import org.camunda.operate.rest.dto.WorkflowInstanceRequestDto;
+import org.camunda.operate.rest.dto.WorkflowInstanceResponseDto;
 import org.camunda.operate.rest.exception.NotFoundException;
 import org.elasticsearch.client.transport.TransportClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -187,6 +189,19 @@ public class ElasticsearchChecks {
       } catch (NotFoundException ex) {
         return false;
       }
+    };
+  }
+
+  @Bean(name = "workflowInstancesAreFinished")
+  public Predicate<Object[]> getWorkflowInstancesAreFinishedCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(1);
+      assertThat(objects[0]).isInstanceOf(List.class);
+      List<String> ids = (List<String>)objects[0];
+      final WorkflowInstanceRequestDto getFinishedQuery =
+        TestUtil.createGetAllFinishedQuery(q -> q.setIds(ids));
+      final WorkflowInstanceResponseDto responseDto = workflowInstanceReader.queryWorkflowInstances(getFinishedQuery, 0, ids.size());
+      return responseDto.getTotalCount() == ids.size();
     };
   }
 

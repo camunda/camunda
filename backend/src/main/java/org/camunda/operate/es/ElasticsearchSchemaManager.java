@@ -79,8 +79,10 @@ public class ElasticsearchSchemaManager {
         .get();
 
       //create main index
+      final Alias alias = new Alias(templateCreator.getAlias());
+      alias.writeIndex(true);
       esClient.admin().indices().prepareCreate(templateCreator.getMainIndexName())
-        .addAlias(new Alias(templateCreator.getAlias())).get();
+        .addAlias(alias).get();
 
     } catch (IOException e) {
       String message = String.format("Could not add mapping to the template [%s]", templateCreator.getTemplateName());

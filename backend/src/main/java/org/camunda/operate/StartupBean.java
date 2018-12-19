@@ -15,6 +15,7 @@ package org.camunda.operate;
 import javax.annotation.PostConstruct;
 import org.camunda.operate.data.DataGenerator;
 import org.camunda.operate.es.ElasticsearchSchemaManager;
+import org.camunda.operate.es.archiver.Archiver;
 import org.camunda.operate.zeebe.operation.OperationExecutor;
 import org.camunda.operate.zeebeimport.ZeebeESImporter;
 import org.slf4j.Logger;
@@ -39,6 +40,9 @@ public class StartupBean {
   @Autowired
   private OperationExecutor operationExecutor;
 
+  @Autowired
+  private Archiver archiver;
+
   @PostConstruct
   public void initApplication() {
     logger.info("INIT: Initialize Elasticsearch schema...");
@@ -54,6 +58,8 @@ public class StartupBean {
     zeebeESImporter.startImportingData();
     logger.info("INIT: Start operation executor...");
     operationExecutor.startExecuting();
+    logger.info("INIT: Start archiving data...");
+    archiver.startArchiving();
     logger.info("INIT: DONE");
   }
 

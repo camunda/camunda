@@ -12,7 +12,8 @@ import org.springframework.test.context.web.WebAppConfiguration;
 @RunWith(SpringRunner.class)
 @SpringBootTest(
   classes = {TestApplication.class},
-  properties = OperateProperties.PREFIX + ".startLoadingDataOnStartup = false")
+  properties = {OperateProperties.PREFIX + ".startLoadingDataOnStartup = false",
+    OperateProperties.PREFIX + ".elasticsearch.rolloverEnabled = false"})
 @WebAppConfiguration
 @TestExecutionListeners(listeners = DependencyInjectionTestExecutionListener.class, mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 public abstract class OperateIntegrationTest {

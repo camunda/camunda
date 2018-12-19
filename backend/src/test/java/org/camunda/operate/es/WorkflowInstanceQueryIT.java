@@ -7,7 +7,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
-import java.util.function.Consumer;
 import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
@@ -30,6 +29,7 @@ import org.camunda.operate.rest.dto.WorkflowInstanceResponseDto;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
+import org.camunda.operate.util.TestUtil;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -78,7 +78,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     createData();
 
     //query running instances
-    WorkflowInstanceRequestDto workflowInstanceQueryDto = createWorkflowInstanceQuery(q -> {
+    WorkflowInstanceRequestDto workflowInstanceQueryDto = TestUtil.createWorkflowInstanceQuery(q -> {
       q.setRunning(true);
       q.setActive(true);
       q.setIncidents(true);
@@ -116,7 +116,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     elasticsearchTestRule.persist(workflowInstance1, workflowInstance2, workflowInstance3);
 
     //when
-    WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(q -> {
+    WorkflowInstanceRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery(q -> {
       q.setStartDateAfter(date1.minus(1, ChronoUnit.DAYS));
       q.setStartDateBefore(date3);
     });
@@ -125,7 +125,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     //test inclusion for startDateAfter and exclusion for startDateBefore
     //when
-    query = createGetAllWorkflowInstancesQuery(q -> {
+    query = TestUtil.createGetAllWorkflowInstancesQuery(q -> {
       q.setStartDateAfter(date1);
       q.setStartDateBefore(date3);
     });
@@ -133,7 +133,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     requestAndAssertIds(query, "TEST CASE #2", workflowInstance1.getId(), workflowInstance2.getId());
 
     //when
-    query = createGetAllWorkflowInstancesQuery(q -> {
+    query = TestUtil.createGetAllWorkflowInstancesQuery(q -> {
       q.setStartDateAfter(date1.plus(1, ChronoUnit.MILLIS));
       q.setStartDateBefore(date3.plus(1, ChronoUnit.MILLIS));
     });
@@ -142,7 +142,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     //test combination of start date and end date
     //when
-    query = createGetAllWorkflowInstancesQuery(q -> {
+    query = TestUtil.createGetAllWorkflowInstancesQuery(q -> {
       q.setStartDateAfter(date2.minus(1, ChronoUnit.DAYS));
       q.setStartDateBefore(date3.plus(1, ChronoUnit.DAYS));
       q.setEndDateAfter(date4.minus(1, ChronoUnit.DAYS));
@@ -153,7 +153,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     //test inclusion for endDateAfter and exclusion for endDateBefore
     //when
-    query = createGetAllWorkflowInstancesQuery(q -> {
+    query = TestUtil.createGetAllWorkflowInstancesQuery(q -> {
       q.setEndDateAfter(date4);
       q.setEndDateBefore(date5);
     });
@@ -161,7 +161,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     requestAndAssertIds(query, "TEST CASE #5", workflowInstance2.getId());
 
     //when
-    query = createGetAllWorkflowInstancesQuery(q -> {
+    query = TestUtil.createGetAllWorkflowInstancesQuery(q -> {
       q.setEndDateAfter(date4);
       q.setEndDateBefore(date5.plus(1, ChronoUnit.MILLIS));
     });
@@ -213,7 +213,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     elasticsearchTestRule.persist(workflowInstance1, workflowInstance2);
 
     //given
-    WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(q -> q.setErrorMessage(errorMessage));
+    WorkflowInstanceRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery(q -> q.setErrorMessage(errorMessage));
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
         .content(mockMvcTestRule.json(query))
@@ -245,7 +245,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     elasticsearchTestRule.persist(data);
 
     //when
-    WorkflowInstanceRequestDto query = createWorkflowInstanceQuery(q -> {
+    WorkflowInstanceRequestDto query = TestUtil.createWorkflowInstanceQuery(q -> {
       q.setRunning(true);
       q.setActive(true);
       q.setActivityId(activityId);
@@ -311,7 +311,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     elasticsearchTestRule.persist(data);
 
     //when
-    WorkflowInstanceRequestDto query = createWorkflowInstanceQuery(q -> {
+    WorkflowInstanceRequestDto query = TestUtil.createWorkflowInstanceQuery(q -> {
       q.setRunning(true);
       q.setIncidents(true);
       q.setActivityId(activityId);
@@ -393,7 +393,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     elasticsearchTestRule.persist(data);
 
     //when
-    WorkflowInstanceRequestDto query = createWorkflowInstanceQuery(q -> {
+    WorkflowInstanceRequestDto query = TestUtil.createWorkflowInstanceQuery(q -> {
       q.setFinished(true);
       q.setCanceled(true);
       q.setActivityId(activityId);
@@ -485,7 +485,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     elasticsearchTestRule.persist(data);
 
     //when
-    WorkflowInstanceRequestDto query = createWorkflowInstanceQuery(q -> {
+    WorkflowInstanceRequestDto query = TestUtil.createWorkflowInstanceQuery(q -> {
       q.setRunning(true);
       q.setIncidents(true);
       q.setActive(true);
@@ -553,7 +553,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     elasticsearchTestRule.persist(workflowInstance1, workflowInstance2, workflowInstance3, workflowInstance4);
 
     //when
-    WorkflowInstanceRequestDto query = createWorkflowInstanceQuery(q -> {
+    WorkflowInstanceRequestDto query = TestUtil.createWorkflowInstanceQuery(q -> {
       q.setFinished(true);
       q.setCompleted(true);
       q.setActivityId(activityId);
@@ -586,7 +586,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     final WorkflowInstanceEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
     elasticsearchTestRule.persist(workflowInstance1, workflowInstance2, workflowInstance3);
 
-    WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(q ->
+    WorkflowInstanceRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery(q ->
       q.setIds(Arrays.asList(workflowInstance1.getId(), workflowInstance2.getId()))
     );
 
@@ -653,49 +653,49 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     elasticsearchTestRule.persist(workflowInstance1, workflowInstance2, workflowInstance3);
 
     //when
-    WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(q ->
+    WorkflowInstanceRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery(q ->
       q.setVariablesQuery(new VariablesQueryDto(strName, stringValue))
     );
     //then
     requestAndAssertIds(query, "TEST CASE #1", workflowInstance1.getId(), workflowInstance3.getId());
 
     //when
-    query = createGetAllWorkflowInstancesQuery(q ->
+    query = TestUtil.createGetAllWorkflowInstancesQuery(q ->
       q.setVariablesQuery(new VariablesQueryDto(intName, intValue))
     );
     //then
     requestAndAssertIds(query, "TEST CASE #2", workflowInstance1.getId(), workflowInstance3.getId());
 
     //when
-    query = createGetAllWorkflowInstancesQuery(q ->
+    query = TestUtil.createGetAllWorkflowInstancesQuery(q ->
       q.setVariablesQuery(new VariablesQueryDto(longName, longValue))
     );
     //then
     requestAndAssertIds(query, "TEST CASE #3", workflowInstance1.getId(), workflowInstance2.getId());
 
     //when
-    query = createGetAllWorkflowInstancesQuery(q ->
+    query = TestUtil.createGetAllWorkflowInstancesQuery(q ->
       q.setVariablesQuery(new VariablesQueryDto(boolName, boolValue))
     );
     //then
     requestAndAssertIds(query, "TEST CASE #4", workflowInstance1.getId(), workflowInstance3.getId());
 
     //when
-    query = createGetAllWorkflowInstancesQuery(q ->
+    query = TestUtil.createGetAllWorkflowInstancesQuery(q ->
       q.setVariablesQuery(new VariablesQueryDto(floatName, floatValue))
     );
     //then
     requestAndAssertIds(query, "TEST CASE #5", workflowInstance2.getId(), workflowInstance3.getId());
 
     //when
-    query = createGetAllWorkflowInstancesQuery(q ->
+    query = TestUtil.createGetAllWorkflowInstancesQuery(q ->
       q.setVariablesQuery(new VariablesQueryDto(doubleName, doubleValue))
     );
     //then
     requestAndAssertIds(query, "TEST CASE #6", workflowInstance1.getId(), workflowInstance3.getId());
 
     //when
-    query = createGetAllWorkflowInstancesQuery(q ->
+    query = TestUtil.createGetAllWorkflowInstancesQuery(q ->
       q.setVariablesQuery(new VariablesQueryDto(nullName, null))
     );
     //then
@@ -705,7 +705,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   @Test
   public void testQueryByVariableValuesFailOnNullVariableName() throws Exception {
     //when
-    WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(q ->
+    WorkflowInstanceRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery(q ->
       q.setVariablesQuery(new VariablesQueryDto(null, "someValue"))
     );
     MockHttpServletRequestBuilder request = post(query(0, 100))
@@ -730,7 +730,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     final WorkflowInstanceEntity workflowInstance4 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
     elasticsearchTestRule.persist(workflowInstance1, workflowInstance2, workflowInstance3, workflowInstance4);
 
-    WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(q ->
+    WorkflowInstanceRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery(q ->
       q.setExcludeIds(Arrays.asList(workflowInstance1.getId(), workflowInstance3.getId()))
     );
 
@@ -769,7 +769,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     elasticsearchTestRule.persist(workflowInstance1, workflowInstance2, workflowInstance3, workflowInstance4);
 
-    WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(q -> q.setWorkflowIds(Arrays.asList(wfId1, wfId3)));
+    WorkflowInstanceRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery(q -> q.setWorkflowIds(Arrays.asList(wfId1, wfId3)));
 
     //when
     MockHttpServletRequestBuilder request = post(query(0, 100))
@@ -809,7 +809,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     elasticsearchTestRule.persist(workflowInstance1, workflowInstance2, workflowInstance3);
 
-    WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(q -> {
+    WorkflowInstanceRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery(q -> {
       q.setBpmnProcessId(bpmnProcessId1);
       q.setWorkflowVersion(version1);
     });
@@ -836,7 +836,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   @Test
   public void testQueryByWorkflowVersionFail() throws Exception {
     //when
-    WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(q -> {
+    WorkflowInstanceRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery(q -> {
       q.setWorkflowVersion(1);
     });
     MockHttpServletRequestBuilder request = post(query(0, 100))
@@ -871,7 +871,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     elasticsearchTestRule.persist(workflowInstance1, workflowInstance2, workflowInstance3);
 
-    WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(q -> q.setBpmnProcessId(bpmnProcessId1));
+    WorkflowInstanceRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery(q -> q.setBpmnProcessId(bpmnProcessId1));
 
     //when
     MockHttpServletRequestBuilder request = post(query(0, 100))
@@ -897,7 +897,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     createData();
 
     //query running instances
-    WorkflowInstanceRequestDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
+    WorkflowInstanceRequestDto workflowInstanceQueryDto = TestUtil.createGetAllWorkflowInstancesQuery();
 
     //page 1
     MockHttpServletRequestBuilder request = post(query(0, 3))
@@ -928,7 +928,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     createData();
 
     //query running instances
-    WorkflowInstanceRequestDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
+    WorkflowInstanceRequestDto workflowInstanceQueryDto = TestUtil.createGetAllWorkflowInstancesQuery();
     workflowInstanceQueryDto.setSorting(sorting);
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
@@ -1067,39 +1067,11 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     testSorting(sorting, comparator);
   }
 
-  private WorkflowInstanceRequestDto createGetAllWorkflowInstancesQuery() {
-    return
-      createWorkflowInstanceQuery(q -> {
-      q.setRunning(true);
-      q.setActive(true);
-      q.setIncidents(true);
-      q.setFinished(true);
-      q.setCompleted(true);
-      q.setCanceled(true);
-    });
-  }
-
-  private WorkflowInstanceRequestDto createGetAllWorkflowInstancesQuery(Consumer<WorkflowInstanceQueryDto> filtersSupplier) {
-    final WorkflowInstanceRequestDto workflowInstanceQuery = createGetAllWorkflowInstancesQuery();
-    filtersSupplier.accept(workflowInstanceQuery.getQueries().get(0));
-
-    return workflowInstanceQuery;
-  }
-
-  private WorkflowInstanceRequestDto createGetAllFinishedQuery() {
-    return
-      createWorkflowInstanceQuery(q -> {
-        q.setFinished(true);
-        q.setCompleted(true);
-        q.setCanceled(true);
-      });
-  }
-
   @Test
   public void testQueryAllFinished() throws Exception {
     createData();
 
-    WorkflowInstanceRequestDto workflowInstanceQueryDto = createGetAllFinishedQuery();
+    WorkflowInstanceRequestDto workflowInstanceQueryDto = TestUtil.createGetAllFinishedQuery();
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(mockMvcTestRule.json(workflowInstanceQueryDto))
@@ -1126,7 +1098,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   public void testQueryFinishedAndRunning() throws Exception {
     createData();
 
-    WorkflowInstanceRequestDto workflowInstanceQueryDto = createGetAllWorkflowInstancesQuery();
+    WorkflowInstanceRequestDto workflowInstanceQueryDto = TestUtil.createGetAllWorkflowInstancesQuery();
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(mockMvcTestRule.json(workflowInstanceQueryDto))
@@ -1147,7 +1119,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   public void testQueryWithTwoFragments() throws Exception {
     createData();
 
-    WorkflowInstanceRequestDto workflowInstanceQueryDto = createWorkflowInstanceQuery(q -> {
+    WorkflowInstanceRequestDto workflowInstanceQueryDto = TestUtil.createWorkflowInstanceQuery(q -> {
       q.setRunning(true);    //1st fragment
       q.setActive(true);
       q.setIncidents(true);
@@ -1178,7 +1150,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   public void testQueryFinishedCompleted() throws Exception {
     createData();
 
-    WorkflowInstanceRequestDto workflowInstanceQueryDto = createWorkflowInstanceQuery(q -> {
+    WorkflowInstanceRequestDto workflowInstanceQueryDto = TestUtil.createWorkflowInstanceQuery(q -> {
       q.setFinished(true);
       q.setCompleted(true);
     });
@@ -1205,7 +1177,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   public void testQueryFinishedCanceled() throws Exception {
     createData();
 
-    WorkflowInstanceRequestDto workflowInstanceQueryDto = createWorkflowInstanceQuery(q -> {
+    WorkflowInstanceRequestDto workflowInstanceQueryDto = TestUtil.createWorkflowInstanceQuery(q -> {
       q.setFinished(true);
       q.setCanceled(true);
     });
@@ -1232,7 +1204,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   public void testQueryRunningWithIncidents() throws Exception {
     createData();
 
-    WorkflowInstanceRequestDto workflowInstanceQueryDto = createWorkflowInstanceQuery(q -> {
+    WorkflowInstanceRequestDto workflowInstanceQueryDto = TestUtil.createWorkflowInstanceQuery(q -> {
       q.setRunning(true);
       q.setIncidents(true);
     });
@@ -1269,7 +1241,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   public void testQueryRunningWithoutIncidents() throws Exception {
     createData();
 
-    WorkflowInstanceRequestDto workflowInstanceQueryDto = createWorkflowInstanceQuery(q -> {
+    WorkflowInstanceRequestDto workflowInstanceQueryDto = TestUtil.createWorkflowInstanceQuery(q -> {
       q.setRunning(true);
       q.setActive(true);
     });
@@ -1378,15 +1350,6 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   private String query(int firstResult, int maxResults) {
     return String.format("%s?firstResult=%d&maxResults=%d", QUERY_INSTANCES_URL, firstResult, maxResults);
   }
-
-  private WorkflowInstanceRequestDto createWorkflowInstanceQuery(Consumer<WorkflowInstanceQueryDto> filtersSupplier) {
-    WorkflowInstanceRequestDto request = new WorkflowInstanceRequestDto();
-    WorkflowInstanceQueryDto query = new WorkflowInstanceQueryDto();
-    filtersSupplier.accept(query);
-    request.getQueries().add(query);
-    return request;
-  }
-
 
 }
 

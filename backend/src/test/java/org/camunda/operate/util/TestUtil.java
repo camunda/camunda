@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
@@ -26,6 +27,8 @@ import org.camunda.operate.entities.SequenceFlowEntity;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
+import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
+import org.camunda.operate.rest.dto.WorkflowInstanceRequestDto;
 
 public abstract class TestUtil {
 
@@ -137,4 +140,45 @@ public abstract class TestUtil {
     return sequenceFlowEntity;
   }
 
+  public static WorkflowInstanceRequestDto createWorkflowInstanceQuery(Consumer<WorkflowInstanceQueryDto> filtersSupplier) {
+    WorkflowInstanceRequestDto request = new WorkflowInstanceRequestDto();
+    WorkflowInstanceQueryDto query = new WorkflowInstanceQueryDto();
+    filtersSupplier.accept(query);
+    request.getQueries().add(query);
+    return request;
+  }
+
+  public static WorkflowInstanceRequestDto createGetAllWorkflowInstancesQuery() {
+    return
+      createWorkflowInstanceQuery(q -> {
+        q.setRunning(true);
+        q.setActive(true);
+        q.setIncidents(true);
+        q.setFinished(true);
+        q.setCompleted(true);
+        q.setCanceled(true);
+      });
+  }
+
+  public static WorkflowInstanceRequestDto createGetAllWorkflowInstancesQuery(Consumer<WorkflowInstanceQueryDto> filtersSupplier) {
+    final WorkflowInstanceRequestDto workflowInstanceQuery = createGetAllWorkflowInstancesQuery();
+    filtersSupplier.accept(workflowInstanceQuery.getQueries().get(0));
+
+    return workflowInstanceQuery;
+  }
+
+  public static WorkflowInstanceRequestDto createGetAllFinishedQuery(Consumer<WorkflowInstanceQueryDto> filtersSupplier) {
+    final WorkflowInstanceRequestDto workflowInstanceQuery = createGetAllFinishedQuery();
+    filtersSupplier.accept(workflowInstanceQuery.getQueries().get(0));
+    return workflowInstanceQuery;
+  }
+
+  public static WorkflowInstanceRequestDto createGetAllFinishedQuery() {
+    return
+      createWorkflowInstanceQuery(q -> {
+        q.setFinished(true);
+        q.setCompleted(true);
+        q.setCanceled(true);
+      });
+  }
 }

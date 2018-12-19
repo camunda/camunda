@@ -59,9 +59,9 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     jobWorkers.add(progressSimpleTask("timerTaskInterrupted"));
     jobWorkers.add(progressSimpleTask("lastTask"));
 
-    sendMessages("clientMessage", "{\"messageVar\": \"someValue\"}", 50);
-    sendMessages("interruptMessageTask", "{\"messageVar2\": \"someValue2\"}", 50);
-    sendMessages("dataReceived", "{\"messageVar3\": \"someValue3\"}", 50);
+    sendMessages("clientMessage", "{\"messageVar\": \"someValue\"}", 20);
+    sendMessages("interruptMessageTask", "{\"messageVar2\": \"someValue2\"}", 20);
+    sendMessages("dataReceived", "{\"messageVar3\": \"someValue3\"}", 20);
 
   }
 
@@ -69,7 +69,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     for (int i = 0; i<count; i++) {
       client.workflowClient().newPublishMessageCommand()
         .messageName(messageName)
-        .correlationKey(String.valueOf(random.nextInt(9)))
+        .correlationKey(String.valueOf(random.nextInt(7)))
         .payload(payload)
         .timeToLive(Duration.ofSeconds(30))
         .messageId(UUID.randomUUID().toString())
@@ -174,12 +174,12 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
       if (version < 2) {
         instanceKey = ZeebeTestUtil.startWorkflowInstance(client, "eventBasedGatewayProcess",
-          "{\"clientId\": \"" + random.nextInt(12) + "\"\n}");
+          "{\"clientId\": \"" + random.nextInt(10) + "\"\n}");
         workflowInstanceKeys.add(instanceKey);
       }
 
       instanceKey = ZeebeTestUtil.startWorkflowInstance(client, "complexProcess",
-      "{\"clientId\": \"" + random.nextInt(12) + "\"\n}");
+      "{\"clientId\": \"" + random.nextInt(10) + "\"\n}");
       workflowInstanceKeys.add(instanceKey);
     }
   }
