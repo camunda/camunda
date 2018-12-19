@@ -24,7 +24,7 @@ import (
 )
 
 type DataType struct {
-	Foo string `json:"foo"`
+	Foo string `json:"foo,omitempty"`
 }
 
 func (cmd DataType) String() string {
@@ -228,6 +228,84 @@ func TestCreateWorkflowInstanceCommandWithPayloadFromObject(t *testing.T) {
 	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout)
 
 	payloadCommand, err := command.WorkflowKey(123).PayloadFromObject(DataType{Foo: "bar"})
+	if err != nil {
+		t.Error("Failed to set payload: ", err)
+	}
+
+	response, err := payloadCommand.Send()
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
+func TestCreateWorkflowInstanceCommandWithPayloadFromObjectOmitempty(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	payload := "{}"
+
+	request := &pb.CreateWorkflowInstanceRequest{
+		WorkflowKey: 123,
+		Payload:     payload,
+	}
+	stub := &pb.CreateWorkflowInstanceResponse{
+		WorkflowKey:         123,
+		BpmnProcessId:       "foo",
+		Version:             4545,
+		WorkflowInstanceKey: 5632,
+	}
+
+	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout)
+
+	payloadCommand, err := command.WorkflowKey(123).PayloadFromObject(DataType{Foo: ""})
+	if err != nil {
+		t.Error("Failed to set payload: ", err)
+	}
+
+	response, err := payloadCommand.Send()
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
+func TestCreateWorkflowInstanceCommandWithPayloadFromObjectIgnoreOmitempty(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	payload := "{\"foo\":\"\"}"
+
+	request := &pb.CreateWorkflowInstanceRequest{
+		WorkflowKey: 123,
+		Payload:     payload,
+	}
+	stub := &pb.CreateWorkflowInstanceResponse{
+		WorkflowKey:         123,
+		BpmnProcessId:       "foo",
+		Version:             4545,
+		WorkflowInstanceKey: 5632,
+	}
+
+	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout)
+
+	payloadCommand, err := command.WorkflowKey(123).PayloadFromObjectIgnoreOmitempty(DataType{Foo: ""})
 	if err != nil {
 		t.Error("Failed to set payload: ", err)
 	}

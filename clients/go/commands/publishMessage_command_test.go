@@ -212,6 +212,76 @@ func TestPublishMessageCommandWithPayloadFromObject(t *testing.T) {
 	}
 }
 
+func TestPublishMessageCommandWithPayloadFromObjectOmitempty(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	payload := "{}"
+
+	request := &pb.PublishMessageRequest{
+		Name:           "foo",
+		CorrelationKey: "bar",
+		Payload:        payload,
+	}
+	stub := &pb.PublishMessageResponse{}
+
+	client.EXPECT().PublishMessage(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewPublishMessageCommand(client, utils.DefaultTestTimeout)
+
+	payloadCommand, err := command.MessageName("foo").CorrelationKey("bar").PayloadFromObject(DataType{Foo: ""})
+	if err != nil {
+		t.Error("Failed to set payload: ", err)
+	}
+
+	response, err := payloadCommand.Send()
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
+func TestPublishMessageCommandWithPayloadFromObjectIgnoreOmitempty(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	payload := "{\"foo\":\"\"}"
+
+	request := &pb.PublishMessageRequest{
+		Name:           "foo",
+		CorrelationKey: "bar",
+		Payload:        payload,
+	}
+	stub := &pb.PublishMessageResponse{}
+
+	client.EXPECT().PublishMessage(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewPublishMessageCommand(client, utils.DefaultTestTimeout)
+
+	payloadCommand, err := command.MessageName("foo").CorrelationKey("bar").PayloadFromObjectIgnoreOmitempty(DataType{Foo: ""})
+	if err != nil {
+		t.Error("Failed to set payload: ", err)
+	}
+
+	response, err := payloadCommand.Send()
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
 func TestPublishMessageCommandWithPayloadFromMap(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

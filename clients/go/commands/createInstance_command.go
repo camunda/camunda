@@ -50,6 +50,7 @@ type CreateInstanceCommandStep3 interface {
 
 	// Expected that object is JSON serializable
 	PayloadFromObject(interface{}) (DispatchCreateInstanceCommand, error)
+	PayloadFromObjectIgnoreOmitempty(interface{}) (DispatchCreateInstanceCommand, error)
 	PayloadFromMap(map[string]interface{}) (DispatchCreateInstanceCommand, error)
 }
 
@@ -76,7 +77,17 @@ func (cmd *CreateInstanceCommand) PayloadFromStringer(payload fmt.Stringer) (Dis
 }
 
 func (cmd *CreateInstanceCommand) PayloadFromObject(payload interface{}) (DispatchCreateInstanceCommand, error) {
-	value, err := cmd.AsJson("payload", payload)
+	value, err := cmd.AsJson("payload", payload, false)
+	if err != nil {
+		return nil, err
+	}
+
+	cmd.request.Payload = value
+	return cmd, err
+}
+
+func (cmd *CreateInstanceCommand) PayloadFromObjectIgnoreOmitempty(payload interface{}) (DispatchCreateInstanceCommand, error) {
+	value, err := cmd.AsJson("payload", payload, true)
 	if err != nil {
 		return nil, err
 	}

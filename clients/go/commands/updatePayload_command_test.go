@@ -124,6 +124,74 @@ func TestUpdatePayloadCommandWithPayloadFromObject(t *testing.T) {
 	}
 }
 
+func TestUpdatePayloadCommandWithPayloadFromObjectOmitempty(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	payload := "{}"
+
+	request := &pb.UpdateWorkflowInstancePayloadRequest{
+		ElementInstanceKey: 123,
+		Payload:            payload,
+	}
+	stub := &pb.UpdateWorkflowInstancePayloadResponse{}
+
+	client.EXPECT().UpdateWorkflowInstancePayload(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewUpdatePayloadCommand(client, utils.DefaultTestTimeout)
+
+	payloadCommand, err := command.ElementInstanceKey(123).PayloadFromObject(DataType{Foo: ""})
+	if err != nil {
+		t.Error("Failed to set payload: ", err)
+	}
+
+	response, err := payloadCommand.Send()
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
+func TestUpdatePayloadCommandWithPayloadFromObjectIgnoreOmitempty(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	payload := "{\"foo\":\"\"}"
+
+	request := &pb.UpdateWorkflowInstancePayloadRequest{
+		ElementInstanceKey: 123,
+		Payload:            payload,
+	}
+	stub := &pb.UpdateWorkflowInstancePayloadResponse{}
+
+	client.EXPECT().UpdateWorkflowInstancePayload(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewUpdatePayloadCommand(client, utils.DefaultTestTimeout)
+
+	payloadCommand, err := command.ElementInstanceKey(123).PayloadFromObjectIgnoreOmitempty(DataType{Foo: ""})
+	if err != nil {
+		t.Error("Failed to set payload: ", err)
+	}
+
+	response, err := payloadCommand.Send()
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
 func TestUpdatePayloadCommandWithPayloadFromMap(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

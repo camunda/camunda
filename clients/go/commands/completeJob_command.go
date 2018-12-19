@@ -37,6 +37,7 @@ type CompleteJobCommandStep2 interface {
 	PayloadFromStringer(fmt.Stringer) (DispatchCompleteJobCommand, error)
 	PayloadFromMap(map[string]interface{}) (DispatchCompleteJobCommand, error)
 	PayloadFromObject(interface{}) (DispatchCompleteJobCommand, error)
+	PayloadFromObjectIgnoreOmitempty(interface{}) (DispatchCompleteJobCommand, error)
 }
 
 type CompleteJobCommand struct {
@@ -67,7 +68,17 @@ func (cmd *CompleteJobCommand) PayloadFromStringer(payload fmt.Stringer) (Dispat
 }
 
 func (cmd *CompleteJobCommand) PayloadFromObject(payload interface{}) (DispatchCompleteJobCommand, error) {
-	value, err := cmd.AsJson("payload", payload)
+	value, err := cmd.AsJson("payload", payload, false)
+	if err != nil {
+		return nil, err
+	}
+
+	cmd.request.Payload = value
+	return cmd, nil
+}
+
+func (cmd *CompleteJobCommand) PayloadFromObjectIgnoreOmitempty(payload interface{}) (DispatchCompleteJobCommand, error) {
+	value, err := cmd.AsJson("payload", payload, true)
 	if err != nil {
 		return nil, err
 	}
