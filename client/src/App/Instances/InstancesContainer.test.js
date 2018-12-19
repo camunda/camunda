@@ -5,7 +5,6 @@ import InstancesContainer from './InstancesContainer';
 import Instances from './Instances';
 
 import {
-  formatDiagramNodes,
   parseQueryString,
   decodeFields,
   formatGroupedWorkflowInstances
@@ -75,7 +74,7 @@ function getRouterProps(filter = DEFAULT_FILTER) {
   };
 }
 
-describe.skip('InstancesContainer', () => {
+describe('InstancesContainer', () => {
   afterEach(() => {
     pushMock.mockClear();
   });
@@ -137,7 +136,7 @@ describe.skip('InstancesContainer', () => {
     expect(InstancesNode.props().onFilterChange).toBe(
       node.instance().setFilterInURL
     );
-    expect(InstancesNode.props().diagramNodes).toEqual([]);
+    expect(InstancesNode.props().diagramModel).toEqual({});
   });
 
   it('should pass data to Instances for full filter, without workflow data', async () => {
@@ -159,7 +158,7 @@ describe.skip('InstancesContainer', () => {
       decodeFields(fullFilterWithoutWorkflow)
     );
     expect(InstancesNode.prop('diagramWorkflow')).toEqual({});
-    expect(InstancesNode.prop('diagramNodes')).toEqual([]);
+    expect(InstancesNode.prop('diagramModel')).toEqual({});
   });
   it('should pass data to Instances for full filter, with workflow data', async () => {
     const node = mount(
@@ -181,9 +180,10 @@ describe.skip('InstancesContainer', () => {
     expect(InstancesNode.prop('diagramWorkflow')).toEqual(
       groupedWorkflowsMock[0].workflows[2]
     );
-    expect(InstancesNode.prop('diagramNodes')).toEqual(
-      formatDiagramNodes(createDiagramNodes())
+    expect(InstancesNode.prop('diagramModel').bpmnElements).toEqual(
+      createDiagramNodes()
     );
+    expect(InstancesNode.prop('diagramModel').definitions).toEqual({});
   });
   it('should pass data to Instances for full filter, with all versions', async () => {
     const {activityId, version, ...rest} = fullFilterWithWorkflow;
@@ -209,7 +209,7 @@ describe.skip('InstancesContainer', () => {
       })
     );
     expect(InstancesNode.prop('diagramWorkflow')).toEqual({});
-    expect(InstancesNode.prop('diagramNodes')).toEqual([]);
+    expect(InstancesNode.prop('diagramModel')).toEqual({});
   });
 
   describe('should fix an invalid filter in url', () => {
