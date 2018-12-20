@@ -9,7 +9,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>qa</artifactId>
-    <version>2.3.0-SNAPSHOT</version>
+    <version>2.3.0</version>
   </parent>
 
   <artifactId>upgrade-optimize-data</artifactId>
@@ -152,8 +152,8 @@
                   <target name="generate-engine-data" description="Generate process instances">
                     <echo message="Generating engine data..." />
                     <exec dir="${project.build.directory}/../../../qa/data-generation" executable="/bin/bash" failonerror="true">
-                      <arg value="-c"/>
-                      <arg value="set -o pipefail; mvn clean compile exec:java -Dexec.args='--numberOfProcessInstances 10' | sed 's/^/[ENGINE DATA GENARATION]:  /'" />
+                      <arg value="-c" />
+                      <arg value="set -o pipefail; mvn clean compile exec:java -Dexec.args='--numberOfProcessInstances 10' | sed 's/^/[ENGINE DATA GENARATION]: /'" />
                     </exec>
                   </target>
                 </configuration>
@@ -186,7 +186,7 @@
                     <echo message="Generating optimize data" />
                     <exec executable="/bin/bash" failonerror="true">
                       <arg value="-c" />
-                      <arg value="set -o pipefail; mvn exec:java -Dexec.mainClass='org.camunda.optimize.data.upgrade.OptimizeDataGenerator' -s ../../settings.xml | sed 's/^/[OPTIMIZE DATA GENARATION]:  /'" />
+                      <arg value="set -o pipefail; mvn exec:java -Dexec.mainClass='org.camunda.optimize.data.upgrade.OptimizeDataGenerator' -s ../../settings.xml | sed 's/^/[OPTIMIZE DATA GENARATION]: /'" />
                     </exec>
 
                     <echo message="Killing Optimize ${project.previousVersion}..." />
@@ -214,7 +214,7 @@
 
                     <exec executable="/bin/bash">
                       <arg value="-c" />
-                      <arg value="set -o pipefail; java -jar ${project.build.directory}/prevVersion/upgrade/upgrade-optimize.jar --skip-warning | sed 's/^/[OPTIMIZE MIGRATION SCRIPT]:  /'" />
+                      <arg value="set -o pipefail; java -jar ${project.build.directory}/prevVersion/upgrade/upgrade-optimize.jar --skip-warning | sed 's/^/[OPTIMIZE MIGRATION SCRIPT]: /'" />
                     </exec>
 
                     <echo message="Starting Optimize ${project.version}..." />
@@ -228,7 +228,7 @@
                     <echo message="Running post migration tests..." />
                     <exec executable="/bin/bash" failonerror="true">
                       <arg value="-c" />
-                      <arg value="set -o pipefail; mvn verify -DskipTests=false -s ../../settings.xml | sed 's/^/[POST MIGRATION TESTS]:  /'" />
+                      <arg value="set -o pipefail; mvn verify -DskipTests=false -s ../../settings.xml | sed 's/^/[POST MIGRATION TESTS]: /'" />
                     </exec>
 
                     <echo message="Killing Optimize ${project.version}" />
