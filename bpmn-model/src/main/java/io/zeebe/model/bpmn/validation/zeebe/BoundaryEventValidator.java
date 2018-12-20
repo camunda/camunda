@@ -63,7 +63,7 @@ public class BoundaryEventValidator implements ModelElementValidator<BoundaryEve
 
   private SupportLevel getSupportLevel(EventDefinition eventDefinition) {
     if (eventDefinition instanceof MessageEventDefinition) {
-      return SupportLevel.Interrupting;
+      return SupportLevel.All;
     } else if (eventDefinition instanceof TimerEventDefinition) {
       final TimerEventDefinition timerEventDefinition = (TimerEventDefinition) eventDefinition;
       if (timerEventDefinition.getTimeCycle() != null) {

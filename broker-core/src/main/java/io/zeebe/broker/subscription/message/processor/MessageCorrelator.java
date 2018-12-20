@@ -58,9 +58,7 @@ public class MessageCorrelator {
     this.sideEffect = sideEffect;
 
     messageState.visitMessages(
-        subscriptionRecord.getMessageName(),
-        subscriptionRecord.getCorrelationKey(),
-        this::correlateMessage);
+        subscription.getMessageName(), subscription.getCorrelationKey(), this::correlateMessage);
   }
 
   private boolean correlateMessage(final Message message) {

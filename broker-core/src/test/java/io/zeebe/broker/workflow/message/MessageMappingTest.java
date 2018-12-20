@@ -99,8 +99,8 @@ public class MessageMappingTest {
     return new Object[][] {
       {"intermediate message catch event", CATCH_EVENT_WORKFLOW},
       {"receive task", RECEIVE_TASK_WORKFLOW},
-      {"boundary event", BOUNDARY_EVENT_WORKFLOW},
       {"event-based gateway", EVENT_BASED_GATEWAY_WORKFLOW},
+      {"boundary event", BOUNDARY_EVENT_WORKFLOW},
     };
   }
 
@@ -200,11 +200,11 @@ public class MessageMappingTest {
   }
 
   private void assertCompletedPayload(String payload) {
-    final Record<WorkflowInstanceRecordValue> competedEvent =
+    final Record<WorkflowInstanceRecordValue> completedEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
             .withElementId(PROCESS_ID)
             .getFirst();
 
-    assertWorkflowInstancePayload(competedEvent, payload);
+    assertWorkflowInstancePayload(completedEvent, payload);
   }
 }
