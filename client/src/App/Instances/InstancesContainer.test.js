@@ -14,7 +14,11 @@ import * as apiDiagram from 'modules/api/diagram/diagram';
 import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 import {getFilterQueryString} from 'modules/utils/filter';
 import {DEFAULT_FILTER} from 'modules/constants';
-import {createDiagramNodes, groupedWorkflowsMock} from 'modules/testUtils';
+import {
+  createDiagramNodes,
+  groupedWorkflowsMock,
+  createDefinitions
+} from 'modules/testUtils';
 const InstancesContainerWrapped = InstancesContainer.WrappedComponent;
 
 // component mocks
@@ -161,6 +165,10 @@ describe('InstancesContainer', () => {
     expect(InstancesNode.prop('diagramModel')).toEqual({});
   });
   it('should pass data to Instances for full filter, with workflow data', async () => {
+    const definitionsMock = {
+      bpmnElements: createDiagramNodes(),
+      definitions: createDefinitions()
+    };
     const node = mount(
       <InstancesContainerWrapped
         {...localStorageProps}
@@ -180,10 +188,10 @@ describe('InstancesContainer', () => {
     expect(InstancesNode.prop('diagramWorkflow')).toEqual(
       groupedWorkflowsMock[0].workflows[2]
     );
-    expect(InstancesNode.prop('diagramModel').bpmnElements).toEqual(
-      createDiagramNodes()
-    );
-    expect(InstancesNode.prop('diagramModel').definitions).toEqual({});
+    expect(InstancesNode.prop('diagramModel')).toEqual(definitionsMock);
+    // expect(InstancesNode.prop('diagramModel').definitions).toEqual(
+    //   createDefinitions()
+    // );
   });
   it('should pass data to Instances for full filter, with all versions', async () => {
     const {activityId, version, ...rest} = fullFilterWithWorkflow;
