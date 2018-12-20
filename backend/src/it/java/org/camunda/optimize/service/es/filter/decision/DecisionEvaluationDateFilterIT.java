@@ -10,6 +10,7 @@ import org.camunda.optimize.test.util.DecisionReportDataBuilder;
 import org.junit.Test;
 
 import javax.ws.rs.core.Response;
+import java.sql.SQLException;
 import java.time.OffsetDateTime;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
@@ -76,17 +77,22 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
   }
 
   @Test
-  public void resultFilterByFixedEvaluationDateRange() {
+  public void resultFilterByFixedEvaluationDateRange() throws SQLException {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto = engineRule.deployDecisionDefinition();
     // this one is from before the filter StartDate
     engineRule.startDecisionInstance(decisionDefinitionDto.getId());
-    final OffsetDateTime beforeDateTime = OffsetDateTime.now();
+    OffsetDateTime evaluationTimeOfFirstRun = OffsetDateTime.now().minusSeconds(2L);
+    engineDatabaseRule.changeDecisionInstanceEvaluationDate(decisionDefinitionDto.getId(), evaluationTimeOfFirstRun);
+    OffsetDateTime evaluationTimeAfterFirstRun = evaluationTimeOfFirstRun.plusSeconds(1L);
+
+    decisionDefinitionDto = engineRule.deployDecisionDefinition();
     engineRule.startDecisionInstance(decisionDefinitionDto.getId());
     engineRule.startDecisionInstance(decisionDefinitionDto.getId());
     engineRule.startDecisionInstance(decisionDefinitionDto.getId());
     engineRule.startDecisionInstance(decisionDefinitionDto.getId());
     engineRule.startDecisionInstance(decisionDefinitionDto.getId());
+
 
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -95,7 +101,10 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
       decisionDefinitionDto.getKey(), ALL_VERSIONS
     );
-    reportData.setFilter(Lists.newArrayList(createFixedEvaluationDateFilter(beforeDateTime, OffsetDateTime.now())));
+    reportData.setFilter(Lists.newArrayList(createFixedEvaluationDateFilter(
+      evaluationTimeAfterFirstRun,
+      OffsetDateTime.now()
+    )));
 
     RawDataDecisionReportResultDto result = evaluateRawReport(reportData);
 

@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.es.schema.type.CombinedReportType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.delete.DeleteResponse;
@@ -76,7 +77,7 @@ public class ReportWriter {
     logger.debug("Writing new combined report to Elasticsearch");
     final String id = IdGenerator.getNextId();
     reportDefinitionDto.setId(id);
-    final OffsetDateTime now = OffsetDateTime.now();
+    final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     reportDefinitionDto.setCreated(now);
     reportDefinitionDto.setLastModified(now);
     reportDefinitionDto.setOwner(userId);

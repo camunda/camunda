@@ -363,6 +363,17 @@ public class EngineDatabaseRule extends TestWatcher {
     connection.commit();
   }
 
+  public void changeDecisionInstanceEvaluationDate(String decisionDefinitionId,
+                                                   OffsetDateTime newEvaluationDateTime) throws SQLException {
+    final String sql = "UPDATE ACT_HI_DECINST " +
+      "SET EVAL_TIME_ = ? WHERE DEC_DEF_ID_ = ?";
+    final PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setTimestamp(1, java.sql.Timestamp.valueOf(newEvaluationDateTime.toLocalDateTime()));
+    statement.setString(2, decisionDefinitionId);
+    statement.executeUpdate();
+    connection.commit();
+  }
+
   public List<String> getDecisionInstanceIdsWithEvaluationDateEqualTo(OffsetDateTime evaluationDateTime)
     throws SQLException {
     final List<String> result = new ArrayList<>();
