@@ -97,6 +97,23 @@ describe('InstancesContainer', () => {
     expect(api.fetchGroupedWorkflowInstances).toHaveBeenCalled();
   });
 
+  it('should fetch the the fetchWorkflowXML', async () => {
+    // given
+    const node = mount(
+      <InstancesContainerWrapped
+        {...localStorageProps}
+        {...getRouterProps(fullFilterWithWorkflow)}
+      />
+    );
+
+    //when
+    await flushPromises();
+    node.update();
+
+    // then
+    expect(apiDiagram.fetchWorkflowXML).toHaveBeenCalled();
+  });
+
   it('should write the filter to local storage', async () => {
     // given
     const node = mount(<InstancesContainer {...getRouterProps()} />);
@@ -189,9 +206,6 @@ describe('InstancesContainer', () => {
       groupedWorkflowsMock[0].workflows[2]
     );
     expect(InstancesNode.prop('diagramModel')).toEqual(definitionsMock);
-    // expect(InstancesNode.prop('diagramModel').definitions).toEqual(
-    //   createDefinitions()
-    // );
   });
   it('should pass data to Instances for full filter, with all versions', async () => {
     const {activityId, version, ...rest} = fullFilterWithWorkflow;
