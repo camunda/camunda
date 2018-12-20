@@ -1,5 +1,9 @@
 import {createDiagramNodes, createDefinitions} from 'modules/testUtils';
 
-export async function parseDiagramXML(xml) {
-  return {bpmnElements: createDiagramNodes(), definitions: createDefinitions()};
-}
+const bpmnElements = createDiagramNodes();
+
+export const parsedDiagram = {bpmnElements, definitions: createDefinitions()};
+
+export const parseDiagramXML = jest.fn(async xml => {
+  return {bpmnElements, definitions: createDefinitions()};
+});

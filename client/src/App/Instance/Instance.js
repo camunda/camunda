@@ -88,6 +88,7 @@ export default class Instance extends Component {
    * @param {string} activityInstanceId: id of the selected activiy instance
    */
   handleActivityInstanceSelection = activityInstanceId => {
+    // get the first flow node id (i.e. activity id) corresponding to the flowNodeId
     const flowNodeId = !activityInstanceId
       ? null
       : this.state.instance.activities.find(
@@ -151,10 +152,9 @@ export default class Instance extends Component {
             <DiagramPanel instance={instance}>
               {diagramModel && (
                 <Diagram
-                  onDiagramLoaded={this.handleFlowNodesDetailsReady}
+                  onFlowNodeSelected={this.handleFlowNodeSelection}
                   selectableFlowNodes={selectableFlowNodes}
                   selectedFlowNode={selection.flowNodeId}
-                  onFlowNodeSelected={this.handleFlowNodeSelection}
                   flowNodeStateOverlays={flowNodeStateOverlays}
                   definitions={diagramModel.definitions}
                 />

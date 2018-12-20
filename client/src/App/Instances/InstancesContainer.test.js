@@ -19,6 +19,7 @@ import {
   groupedWorkflowsMock,
   createDefinitions
 } from 'modules/testUtils';
+import {parsedDiagram} from 'modules/utils/bpmn';
 const InstancesContainerWrapped = InstancesContainer.WrappedComponent;
 
 // component mocks
@@ -183,11 +184,8 @@ describe('InstancesContainer', () => {
     expect(InstancesNode.prop('diagramWorkflow')).toEqual({});
     expect(InstancesNode.prop('diagramModel')).toEqual({});
   });
+
   it('should pass data to Instances for full filter, with workflow data', async () => {
-    const definitionsMock = {
-      bpmnElements: createDiagramNodes(),
-      definitions: createDefinitions()
-    };
     const node = mount(
       <InstancesContainerWrapped
         {...localStorageProps}
@@ -207,7 +205,7 @@ describe('InstancesContainer', () => {
     expect(InstancesNode.prop('diagramWorkflow')).toEqual(
       groupedWorkflowsMock[0].workflows[2]
     );
-    expect(InstancesNode.prop('diagramModel')).toEqual(definitionsMock);
+    expect(InstancesNode.prop('diagramModel')).toEqual(parsedDiagram);
   });
   it('should pass data to Instances for full filter, with all versions', async () => {
     const {activityId, version, ...rest} = fullFilterWithWorkflow;
