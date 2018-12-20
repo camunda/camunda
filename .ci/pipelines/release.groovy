@@ -54,6 +54,8 @@ void runRelease(params) {
 
 
   sh ("""
+    # This is needed to not abort the job in case 'git diff' returns a status different from 0
+    set +e
     # auto-update previousVersion property
     if [ ! -z \"\${PREVIOUS_VERSION}\" ]; then
       sed -i "s/project.previousVersion>.*</project.previousVersion>${params.RELEASE_VERSION}</g" pom.xml
