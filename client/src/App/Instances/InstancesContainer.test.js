@@ -111,7 +111,9 @@ describe('InstancesContainer', () => {
     node.update();
 
     // then
-    expect(apiDiagram.fetchWorkflowXML).toHaveBeenCalled();
+    expect(apiDiagram.fetchWorkflowXML).toHaveBeenCalledWith(
+      groupedWorkflowsMock[0].workflows[2].id
+    );
   });
 
   it('should write the filter to local storage', async () => {
