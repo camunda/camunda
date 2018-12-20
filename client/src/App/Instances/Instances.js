@@ -109,6 +109,14 @@ class Instances extends Component {
         return this.setState({sorting: DEFAULT_SORTING});
       }
 
+      // reset firstElement when filter changes
+      if (
+        hasFilterChanged &&
+        this.state.firstElement !== DEFAULT_FIRST_ELEMENT
+      ) {
+        return this.setState({firstElement: DEFAULT_FIRST_ELEMENT});
+      }
+
       const instances = await this.fetchWorkflowInstances(
         this.state.sorting,
         this.state.firstElement
@@ -117,10 +125,7 @@ class Instances extends Component {
       this.setState({
         workflowInstancesLoaded: true,
         workflowInstances: instances.workflowInstances,
-        filterCount: instances.totalCount,
-        firstElement: hasFilterChanged
-          ? DEFAULT_FIRST_ELEMENT
-          : this.state.firstElement
+        filterCount: instances.totalCount
       });
 
       // update local storage data

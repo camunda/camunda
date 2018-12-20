@@ -236,11 +236,11 @@ describe('Instances', () => {
 
       // we change the filter
       node.setProps({filter: DEFAULT_FILTER});
+
       await flushPromises();
       node.update();
 
-      // todo: check this: the instances are fetched 3 times: initial mount, firstElement change, filter change
-      expect(api.fetchWorkflowInstances).toHaveBeenCalledTimes(4);
+      expect(api.fetchWorkflowInstances).toHaveBeenCalledTimes(3);
       expect(node.find(ListView).prop('firstElement')).toBe(
         DEFAULT_FIRST_ELEMENT
       );
@@ -306,10 +306,9 @@ describe('Instances', () => {
       // when
       await flushPromises();
       node.update();
-
       expect(localStorage.setItem).toHaveBeenCalledTimes(1);
       expect(localStorage.setItem.mock.calls[0][1]).toEqual(
-        `{\"filterCount\":${instancesResponseMock.totalCount}}`
+        `{"filterCount":${instancesResponseMock.totalCount}}`
       );
       // updates the new filterCount
       expect(node.find(ListView).prop('filterCount')).toEqual(2);
