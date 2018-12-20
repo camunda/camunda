@@ -151,7 +151,7 @@ export default class Instance extends Component {
             <DiagramPanel instance={instance}>
               {diagramModel && (
                 <Diagram
-                  onFlowNodesDetailsReady={this.handleFlowNodesDetailsReady}
+                  onDiagramLoaded={this.handleFlowNodesDetailsReady}
                   selectableFlowNodes={selectableFlowNodes}
                   selectedFlowNode={selection.flowNodeId}
                   onFlowNodeSelected={this.handleFlowNodeSelection}

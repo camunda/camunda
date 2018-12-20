@@ -9,7 +9,7 @@ exports[`DiagramPanel should render pane header and body 1`] = `
   }
   hasShiftableControls={false}
   onFlowNodeSelected={[MockFunction]}
-  onFlowNodesDetailsReady={[MockFunction]}
+  onDiagramLoaded={[MockFunction]}
   selectableFlowNodes={
     Array [
       "foo",
@@ -190,7 +190,7 @@ exports[`DiagramPanel should render pane header and body 1`] = `
         ]
       }
       onFlowNodeSelected={[MockFunction]}
-      onFlowNodesDetailsReady={[MockFunction]}
+      onDiagramLoaded={[MockFunction]}
       selectableFlowNodes={
         Array [
           "foo",

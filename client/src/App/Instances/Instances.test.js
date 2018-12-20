@@ -476,12 +476,10 @@ describe('Instances', () => {
       node.update();
 
       const DiagramNode = node.find(Diagram);
-      const onFlowNodesDetailsReady = DiagramNode.prop(
-        'onFlowNodesDetailsReady'
-      );
+      const onDiagramLoaded = DiagramNode.prop('onDiagramLoaded');
 
       // when the diagram finished loading
-      onFlowNodesDetailsReady();
+      onDiagramLoaded();
       await flushPromises();
       node.update();
 

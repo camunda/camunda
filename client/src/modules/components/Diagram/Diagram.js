@@ -39,7 +39,7 @@ class Diagram extends React.Component {
     theme: PropTypes.string.isRequired,
     definitions: PropTypes.object.isRequired,
     // callback function called when flowNodesDetails is ready
-    onFlowNodesDetailsReady: PropTypes.func,
+    onDiagramLoaded: PropTypes.func,
     clickableFlowNodes: PropTypes.arrayOf(PropTypes.string),
     selectableFlowNodes: PropTypes.arrayOf(PropTypes.string),
     selectedFlowNode: PropTypes.string,
@@ -133,10 +133,10 @@ class Diagram extends React.Component {
     this.setState({isViewerLoaded: true});
     this.handleZoomReset();
 
-    // in case onFlowNodesDetailsReady callback function is provided
+    // in case onDiagramLoaded callback function is provided
     // call it with flowNodesDetails
-    if (typeof this.props.onFlowNodesDetailsReady === 'function') {
-      this.props.onFlowNodesDetailsReady();
+    if (typeof this.props.onDiagramLoaded === 'function') {
+      this.props.onDiagramLoaded();
     }
 
     if (this.props.selectableFlowNodes) {

@@ -204,12 +204,12 @@ describe.skip('Diagram', () => {
 
     it('should import the xml in the Viewer and reset zoom', async () => {
       // given
-      const onFlowNodesDetailsReady = jest.fn();
+      const onDiagramLoaded = jest.fn();
       const node = shallow(
         <Diagram
           workflowId={workflowId}
           theme={'light'}
-          onFlowNodesDetailsReady={onFlowNodesDetailsReady}
+          onDiagramLoaded={onDiagramLoaded}
         />
       );
       const nodeInstance = node.instance();
@@ -223,7 +223,7 @@ describe.skip('Diagram', () => {
       expect(service.getFlowNodesDetails).toBeCalledWith(
         nodeInstance.Viewer.elementRegistry
       );
-      expect(onFlowNodesDetailsReady).toBeCalledWith(flowNodesDetails);
+      expect(onDiagramLoaded).toBeCalledWith(flowNodesDetails);
       expect(handleZoomResetSpy).toHaveBeenCalledTimes(1);
     });
 

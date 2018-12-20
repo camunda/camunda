@@ -16,7 +16,7 @@ const mockInstance = createInstance({id: 'foo'});
 
 const mockProps = {
   instance: mockInstance,
-  onFlowNodesDetailsReady: jest.fn(),
+  onDiagramLoaded: jest.fn(),
   selectableFlowNodes: ['foo'],
   selectedFlowNode: 'foo',
   onFlowNodeSelected: jest.fn(),
@@ -63,9 +63,7 @@ describe.skip('DiagramPanel', () => {
     const DiagramNode = PaneBodyNode.find(Diagram);
     expect(DiagramNode).toHaveLength(1);
     expect(DiagramNode.prop('workflowId')).toBe(mockInstance.workflowId);
-    expect(DiagramNode.prop('onFlowNodesDetailsReady')).toBe(
-      mockProps.onFlowNodesDetailsReady
-    );
+    expect(DiagramNode.prop('onDiagramLoaded')).toBe(mockProps.onDiagramLoaded);
     expect(DiagramNode.prop('selectableFlowNodes')).toBe(
       mockProps.selectableFlowNodes
     );
