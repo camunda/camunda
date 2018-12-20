@@ -22,9 +22,4 @@
     </constructor-arg>
   </bean>
 
-  <bean id="objectMapper"
-        class="com.fasterxml.jackson.databind.ObjectMapper"
-        factory-method="createOptimizeMapper"
-        factory-bean="objectMapperFactory"
-  />
 </beans>

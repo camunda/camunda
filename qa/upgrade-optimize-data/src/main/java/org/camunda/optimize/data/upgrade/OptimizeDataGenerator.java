@@ -9,22 +9,24 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DimensionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.ExecutedFlowNodeFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.StartDateFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.ExecutedFlowNodeFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.startDate.FixedDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.data.BooleanVariableFilterSubDataDto;
-import org.camunda.optimize.rest.providers.OptimizeObjectMapperProvider;
-import org.camunda.optimize.test.util.ReportDataHelper;
+import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutedFlowNodeFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
+import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import javax.ws.rs.client.Client;
@@ -46,15 +48,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.rest.util.AuthenticationUtil.OPTIMIZE_AUTHORIZATION;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.DATE_UNIT_DAY;
-import static org.camunda.optimize.test.util.ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport;
-import static org.camunda.optimize.test.util.ReportDataHelper
-  .createAverageProcessInstanceDurationGroupByStartDateReport;
-import static org.camunda.optimize.test.util.ReportDataHelper
-  .createAverageProcessInstanceDurationGroupByVariableWithProcessPart;
-import static org.camunda.optimize.test.util.ReportDataHelper.createAvgPiDurationAsNumberGroupByNone;
-import static org.camunda.optimize.test.util.ReportDataHelper.createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport;
-import static org.camunda.optimize.test.util.ReportDataHelper.createPiFrequencyCountGroupedByNone;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createAverageProcessInstanceDurationGroupByStartDateReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createAverageProcessInstanceDurationGroupByVariableWithProcessPart;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createAvgPiDurationAsNumberGroupByNone;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone;
 
 public class OptimizeDataGenerator {
   private static Client client;
@@ -65,7 +64,7 @@ public class OptimizeDataGenerator {
   public static void main(String[] args) throws Exception {
     ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext("optimizeDataUpgradeContext.xml");
 
-    OptimizeObjectMapperProvider provider = ctx.getBean(OptimizeObjectMapperProvider.class);
+    OptimizeObjectMapperContextResolver provider = ctx.getBean(OptimizeObjectMapperContextResolver.class);
 
     client = ClientBuilder.newClient().register(provider);
 
@@ -83,13 +82,13 @@ public class OptimizeDataGenerator {
   }
 
   private static void generateAlerts() throws Exception {
-    SingleReportDataDto reportData = createPiFrequencyCountGroupedByNone(
+    ProcessReportDataDto reportData = createPiFrequencyCountGroupedByNone(
       processDefinitionKey,
       processDefinitionVersion
     );
-    reportData.setVisualization("number");
+    reportData.setVisualization(ProcessVisualization.NUMBER);
 
-    WebTarget target = client.target("http://localhost:8090/api/report/single");
+    WebTarget target = client.target("http://localhost:8090/api/report");
     List<String> reports = createAndUpdateReports(
       target,
       Collections.singletonList(reportData),
@@ -125,7 +124,7 @@ public class OptimizeDataGenerator {
   private static void createAlert(AlertCreationDto alertCreation) {
     WebTarget target = client.target("http://localhost:8090/api/alert");
     target.request()
-      .header(OPTIMIZE_AUTHORIZATION, authCookie)
+      .cookie(OPTIMIZE_AUTHORIZATION, authCookie)
       .post(Entity.json(alertCreation));
   }
 
@@ -145,13 +144,13 @@ public class OptimizeDataGenerator {
 
     target = client.target("http://localhost:8090/api/dashboard/" + dashboardId);
     target.request()
-      .header(OPTIMIZE_AUTHORIZATION, authCookie)
+      .cookie(OPTIMIZE_AUTHORIZATION, authCookie)
       .put(Entity.json(dashboard));
   }
 
   private static String createEmptyDashboard(WebTarget target) {
     return target.request()
-      .header(OPTIMIZE_AUTHORIZATION, authCookie)
+      .cookie(OPTIMIZE_AUTHORIZATION, authCookie)
       .post(Entity.json(""))
       .readEntity(IdDto.class).getId();
   }
@@ -204,24 +203,26 @@ public class OptimizeDataGenerator {
   }
 
   private static List<String> generateReports() {
-    WebTarget target = client.target("http://localhost:8090/api/report/single");
+    WebTarget target = client.target("http://localhost:8090/api/report");
 
-    List<SingleReportDataDto> reportDefinitions = createDifferentReports();
+    List<ProcessReportDataDto> reportDefinitions = createDifferentReports();
 
-    List<FilterDto> filters = prepareFilters();
+    List<ProcessFilterDto> filters = prepareFilters();
 
     return createAndUpdateReports(target, reportDefinitions, filters);
   }
 
-  private static List<String> createAndUpdateReports(WebTarget target, List<SingleReportDataDto> reportDefinitions,
-                                                     List<FilterDto> filters) {
+  private static List<String> createAndUpdateReports(WebTarget target, List<ProcessReportDataDto> reportDefinitions,
+                                                     List<ProcessFilterDto> filters) {
     CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
     combinedReportData.setReportIds(new ArrayList<>());
     List<String> reportIds = new ArrayList<>();
-    for (SingleReportDataDto reportData : reportDefinitions) {
-      String id = createEmptyReport(target);
+    for (ProcessReportDataDto reportData : reportDefinitions) {
+      String id = createEmptySingleProcessReport(target);
       reportIds.add(id);
-      if (reportData.getVisualization().equals("bar")) {
+      // there are two reports expected matching this criteria
+      if (reportData.getVisualization().equals(ProcessVisualization.BAR)
+        && reportData.getGroupBy().getType().equals(ProcessGroupByType.START_DATE)) {
         combinedReportData.getReportIds().add(id);
       }
       reportData.setConfiguration("{}");
@@ -230,16 +231,18 @@ public class OptimizeDataGenerator {
       SingleReportDefinitionDto reportUpdate = prepareReportUpdate(reportData, id);
       updateReport(id, reportUpdate);
     }
-    combinedReportData.setConfiguration("{}");
-    reportIds.add(createCombinedReport(combinedReportData));
+    if (!combinedReportData.getReportIds().isEmpty()) {
+      combinedReportData.setConfiguration("{}");
+      reportIds.add(createCombinedReport(combinedReportData));
+    }
     return reportIds;
   }
 
   private static String createCombinedReport(CombinedReportDataDto data) {
-    WebTarget target = client.target("http://localhost:8090/api/report/combined");
+    WebTarget target = client.target("http://localhost:8090/api/report");
     Response response = target.request()
-      .header(OPTIMIZE_AUTHORIZATION, authCookie)
-      .post(Entity.json(""));
+      .cookie(OPTIMIZE_AUTHORIZATION, authCookie)
+      .post(Entity.json(new CombinedReportDefinitionDto(data)));
     String id = response.readEntity(IdDto.class).getId();
 
     CombinedReportDefinitionDto combinedReportDefinition = new CombinedReportDefinitionDto();
@@ -262,8 +265,8 @@ public class OptimizeDataGenerator {
     return report;
   }
 
-  private static List<FilterDto> prepareFilters() {
-    List<FilterDto> filters = new ArrayList<>();
+  private static List<ProcessFilterDto> prepareFilters() {
+    List<ProcessFilterDto> filters = new ArrayList<>();
 
     StartDateFilterDto dateFilter = prepareStartDateFilter();
     VariableFilterDto variableFilter = prepareBooleanVariableFilter();
@@ -302,20 +305,16 @@ public class OptimizeDataGenerator {
   private static VariableFilterDto prepareBooleanVariableFilter() {
     VariableFilterDto variableFilter = new VariableFilterDto();
 
-    BooleanVariableFilterDataDto booleanVariableFilterDataDto = new BooleanVariableFilterDataDto();
+    BooleanVariableFilterDataDto booleanVariableFilterDataDto = new BooleanVariableFilterDataDto("true");
     booleanVariableFilterDataDto.setName("var");
-
-    BooleanVariableFilterSubDataDto booleanVariableFilterSubDataDto = new BooleanVariableFilterSubDataDto();
-    booleanVariableFilterSubDataDto.setValue("true");
-    booleanVariableFilterDataDto.setData(booleanVariableFilterSubDataDto);
 
     variableFilter.setData(booleanVariableFilterDataDto);
 
     return variableFilter;
   }
 
-  private static List<SingleReportDataDto> createDifferentReports() {
-    List<SingleReportDataDto> reportDefinitions = new ArrayList<>();
+  private static List<ProcessReportDataDto> createDifferentReports() {
+    List<ProcessReportDataDto> reportDefinitions = new ArrayList<>();
 
     reportDefinitions.add(
       createAvgPiDurationAsNumberGroupByNone(
@@ -334,40 +333,51 @@ public class OptimizeDataGenerator {
       )
     );
 
-    SingleReportDataDto reportDataDto =
+    ProcessReportDataDto reportDataDto =
       createAverageProcessInstanceDurationGroupByStartDateReport(
         processDefinitionKey,
         processDefinitionVersion,
-        DATE_UNIT_DAY
+        GroupByDateUnit.DAY
       );
-    reportDataDto.setVisualization("bar");
+    reportDataDto.setVisualization(ProcessVisualization.BAR);
+    reportDefinitions.add(reportDataDto);
+
+    reportDataDto =
+      createAverageProcessInstanceDurationGroupByStartDateReport(
+        processDefinitionKey,
+        processDefinitionVersion,
+        GroupByDateUnit.DAY
+      );
+    reportDataDto.setVisualization(ProcessVisualization.BAR);
     reportDefinitions.add(reportDataDto);
 
     reportDataDto = createAverageProcessInstanceDurationGroupByVariableWithProcessPart(
       processDefinitionKey,
       processDefinitionVersion,
       "var",
-      "string",
+      VariableType.STRING,
       "startNode",
       "endNode"
     );
-    reportDataDto.setVisualization("bar");
+    reportDataDto.setVisualization(ProcessVisualization.BAR);
     reportDefinitions.add(reportDataDto);
 
     return reportDefinitions;
   }
 
-  private static String createEmptyReport(WebTarget target) {
+  private static String createEmptySingleProcessReport(WebTarget target) {
     Response response = target.request()
-      .header(OPTIMIZE_AUTHORIZATION, authCookie)
-      .post(Entity.json(""));
+      .cookie(OPTIMIZE_AUTHORIZATION, authCookie)
+      .post(Entity.json(new SingleReportDefinitionDto(new ProcessReportDataDto())));
     return response.readEntity(IdDto.class).getId();
   }
 
-  private static void updateReport(String id, ReportDefinitionDto report) {
+  private static void
+
+  updateReport(String id, ReportDefinitionDto report) {
     WebTarget target = client.target("http://localhost:8090/api/report/" + id);
     target.request()
-      .header(OPTIMIZE_AUTHORIZATION, authCookie)
+      .cookie(OPTIMIZE_AUTHORIZATION, authCookie)
       .put(Entity.json(report));
   }
 

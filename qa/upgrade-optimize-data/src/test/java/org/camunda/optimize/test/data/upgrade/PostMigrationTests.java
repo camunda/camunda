@@ -1,10 +1,7 @@
 package org.camunda.optimize.test.data.upgrade;
 
 import org.camunda.optimize.dto.engine.CredentialsDto;
-import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
-import org.camunda.optimize.rest.providers.OptimizeObjectMapperProvider;
+import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -28,7 +25,7 @@ public class PostMigrationTests {
   public static void init() {
     ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext("optimizeDataUpgradeContext.xml");
 
-    OptimizeObjectMapperProvider provider = ctx.getBean(OptimizeObjectMapperProvider.class);
+    OptimizeObjectMapperContextResolver provider = ctx.getBean(OptimizeObjectMapperContextResolver.class);
 
     client = ClientBuilder.newClient().register(provider);
     authenticateDemo();
