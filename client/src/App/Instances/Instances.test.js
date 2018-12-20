@@ -11,6 +11,7 @@ import SplitPane from 'modules/components/SplitPane';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import {SelectionProvider} from 'modules/contexts/SelectionContext';
+import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 import {
   xTimes,
   createFilter,
@@ -20,7 +21,8 @@ import {
   flushPromises,
   mockResolvedAsyncFn,
   createInstance,
-  createDiagramStatistics
+  createDiagramStatistics,
+  createDefinitions
 } from 'modules/testUtils';
 import * as service from './service';
 import {
@@ -79,14 +81,20 @@ const mockProps = {
   filter: filterMock,
   onFilterChange: jest.fn(),
   diagramWorkflow: groupedWorkflowsMock[0].workflows[2],
-  diagramNodes: service.formatDiagramNodes(createDiagramNodes())
+  diagramModel: {
+    bpmnElements: createDiagramNodes(),
+    definitions: createDefinitions()
+  }
 };
 
 const defaultFilterMockProps = {
   ...mockProps,
   filter: DEFAULT_FILTER,
   diagramWorkflow: {},
-  diagramNodes: []
+  diagramModel: {
+    bpmnElements: {},
+    definitions: {}
+  }
 };
 
 const mockFilterCount = 1;
@@ -104,7 +112,7 @@ const statisticsMock = createDiagramStatistics();
 api.fetchWorkflowInstances = mockResolvedAsyncFn(instancesResponseMock);
 api.fetchWorkflowInstancesStatistics = mockResolvedAsyncFn(statisticsMock);
 
-describe.skip('Instances', () => {
+describe('Instances', () => {
   afterEach(() => {
     api.fetchWorkflowInstances.mockClear();
     api.fetchWorkflowInstancesStatistics.mockClear();
@@ -116,7 +124,9 @@ describe.skip('Instances', () => {
     // given
     const node = mount(
       <ThemeProvider>
-        <Instances {...mockProps} />
+        <CollapsablePanelProvider>
+          <Instances {...mockProps} />
+        </CollapsablePanelProvider>
       </ThemeProvider>
     );
 
@@ -128,7 +138,7 @@ describe.skip('Instances', () => {
 
   describe('selections fetching', () => {
     it('should re fetch selections when diagram is loaded & filter changes', async () => {
-      // given shalow render as we can only call setProps() on the root element
+      // given shalow render as we need to call setProps() on the root element
       const node = shallow(
         <Instances.WrappedComponent {...mockProps} {...localStorageProps} />
       );
@@ -152,7 +162,9 @@ describe.skip('Instances', () => {
     it('should fetch instances with default data', async () => {
       const node = mount(
         <ThemeProvider>
-          <Instances {...mockProps} />
+          <CollapsablePanelProvider>
+            <Instances {...mockProps} />
+          </CollapsablePanelProvider>
         </ThemeProvider>
       );
 
@@ -181,7 +193,7 @@ describe.skip('Instances', () => {
         ...DEFAULT_FILTER,
         ...getInstanceStatePayload(DEFAULT_FILTER)
       };
-      // shalow render as we can only call setProps() on the root element
+      // shalow render as we need to call setProps() on the root element
       const node = shallow(
         <Instances.WrappedComponent {...mockProps} {...localStorageProps} />
       );
@@ -199,7 +211,7 @@ describe.skip('Instances', () => {
     });
 
     it('should reset the firstElement when filter changes', async () => {
-      // shalow render as we can only call setProps() on the root element
+      // shalow render as we need to call setProps() on the root element
       const node = shallow(
         <Instances.WrappedComponent {...mockProps} {...localStorageProps} />
       );
@@ -235,7 +247,7 @@ describe.skip('Instances', () => {
     });
 
     it('should reset sorting when no finished filter is active', async () => {
-      // shalow render as we can only call setProps() on the root element
+      // shalow render as we need to call setProps() on the root element
       const sortingMock = {sortBy: 'endDate', sortOrder: 'desc'};
       const node = shallow(
         <Instances.WrappedComponent {...mockProps} {...localStorageProps} />
@@ -272,7 +284,9 @@ describe.skip('Instances', () => {
     it('should read the filterCount from localStorage', () => {
       const node = mount(
         <ThemeProvider>
-          <Instances {...mockProps} {...localStorageProps} />
+          <CollapsablePanelProvider>
+            <Instances {...mockProps} {...localStorageProps} />
+          </CollapsablePanelProvider>
         </ThemeProvider>
       );
       expect(localStorageProps.getStateLocally).toHaveBeenCalled();
@@ -283,7 +297,9 @@ describe.skip('Instances', () => {
       // given
       const node = mount(
         <ThemeProvider>
-          <Instances {...mockProps} />
+          <CollapsablePanelProvider>
+            <Instances {...mockProps} />
+          </CollapsablePanelProvider>
         </ThemeProvider>
       );
 
@@ -305,7 +321,9 @@ describe.skip('Instances', () => {
       // given
       const node = mount(
         <ThemeProvider>
-          <Instances {...mockProps} />
+          <CollapsablePanelProvider>
+            <Instances {...mockProps} />
+          </CollapsablePanelProvider>
         </ThemeProvider>
       );
 
@@ -316,7 +334,9 @@ describe.skip('Instances', () => {
       // given
       const node = mount(
         <ThemeProvider>
-          <Instances {...mockProps} />
+          <CollapsablePanelProvider>
+            <Instances {...mockProps} />
+          </CollapsablePanelProvider>
         </ThemeProvider>
       );
 
@@ -342,7 +362,9 @@ describe.skip('Instances', () => {
       // given
       const node = mount(
         <ThemeProvider>
-          <Instances {...mockProps} />
+          <CollapsablePanelProvider>
+            <Instances {...mockProps} />
+          </CollapsablePanelProvider>
         </ThemeProvider>
       );
       const FiltersNode = node.find(Filters);
@@ -358,7 +380,9 @@ describe.skip('Instances', () => {
       // given
       const node = mount(
         <ThemeProvider>
-          <Instances {...mockProps} />
+          <CollapsablePanelProvider>
+            <Instances {...mockProps} />
+          </CollapsablePanelProvider>
         </ThemeProvider>
       );
       const FiltersNode = node.find(Filters);
@@ -380,7 +404,9 @@ describe.skip('Instances', () => {
       // given
       const node = mount(
         <ThemeProvider>
-          <Instances {...defaultFilterMockProps} />
+          <CollapsablePanelProvider>
+            <Instances {...defaultFilterMockProps} />
+          </CollapsablePanelProvider>
         </ThemeProvider>
       );
       // expect no Diagram, general title and an empty message
@@ -394,7 +420,9 @@ describe.skip('Instances', () => {
       // given
       const node = mount(
         <ThemeProvider>
-          <Instances {...mockProps} />
+          <CollapsablePanelProvider>
+            <Instances {...mockProps} />
+          </CollapsablePanelProvider>
         </ThemeProvider>
       );
 
@@ -412,7 +440,9 @@ describe.skip('Instances', () => {
       // given
       const node = mount(
         <ThemeProvider>
-          <Instances {...mockProps} />
+          <CollapsablePanelProvider>
+            <Instances {...mockProps} />
+          </CollapsablePanelProvider>
         </ThemeProvider>
       );
 
@@ -427,14 +457,18 @@ describe.skip('Instances', () => {
         filterMock.activityId
       );
       expect(DiagramNode.prop('selectableFlowNodes')).toEqual(['taskD']);
-      expect(DiagramNode.prop('workflowId')).toBe(mockProps.diagramWorkflow.id);
+      expect(DiagramNode.prop('definitions')).toBe(
+        mockProps.diagramModel.definitions
+      );
     });
 
     it('should fetch the statistics for diagram', async () => {
       // given
       const node = mount(
         <ThemeProvider>
-          <Instances {...mockProps} />
+          <CollapsablePanelProvider>
+            <Instances {...mockProps} />
+          </CollapsablePanelProvider>
         </ThemeProvider>
       );
 
@@ -459,7 +493,9 @@ describe.skip('Instances', () => {
       // given
       const node = mount(
         <ThemeProvider>
-          <Instances {...mockProps} />
+          <CollapsablePanelProvider>
+            <Instances {...mockProps} />
+          </CollapsablePanelProvider>
         </ThemeProvider>
       );
 
@@ -487,7 +523,9 @@ describe.skip('Instances', () => {
       // given
       const node = mount(
         <ThemeProvider>
-          <Instances {...mockProps} />
+          <CollapsablePanelProvider>
+            <Instances {...mockProps} />
+          </CollapsablePanelProvider>
         </ThemeProvider>
       );
 
@@ -497,7 +535,9 @@ describe.skip('Instances', () => {
     it('should pass the right data to ListView', async () => {
       const node = mount(
         <ThemeProvider>
-          <Instances {...mockProps} />
+          <CollapsablePanelProvider>
+            <Instances {...mockProps} />
+          </CollapsablePanelProvider>
         </ThemeProvider>
       );
       // when
@@ -519,7 +559,9 @@ describe.skip('Instances', () => {
     it('should be able to trigger fetching', () => {
       const node = mount(
         <ThemeProvider>
-          <Instances {...mockProps} />
+          <CollapsablePanelProvider>
+            <Instances {...mockProps} />
+          </CollapsablePanelProvider>
         </ThemeProvider>
       );
 
@@ -537,7 +579,9 @@ describe.skip('Instances', () => {
       const sortMock = {sortBy: 'id', sortOrder: 'desc'};
       const node = mount(
         <ThemeProvider>
-          <Instances {...mockProps} />
+          <CollapsablePanelProvider>
+            <Instances {...mockProps} />
+          </CollapsablePanelProvider>
         </ThemeProvider>
       );
 
@@ -561,7 +605,9 @@ describe.skip('Instances', () => {
       const firstResultMock = 2;
       const node = mount(
         <ThemeProvider>
-          <Instances {...mockProps} />
+          <CollapsablePanelProvider>
+            <Instances {...mockProps} />
+          </CollapsablePanelProvider>
         </ThemeProvider>
       );
 
@@ -586,7 +632,9 @@ describe.skip('Instances', () => {
     it('should render the Selections', () => {
       const node = mount(
         <ThemeProvider>
-          <Instances {...mockProps} />
+          <CollapsablePanelProvider>
+            <Instances {...mockProps} />
+          </CollapsablePanelProvider>
         </ThemeProvider>
       );
 
@@ -597,7 +645,9 @@ describe.skip('Instances', () => {
       // given
       const node = mount(
         <ThemeProvider>
-          <Instances {...mockProps} />
+          <CollapsablePanelProvider>
+            <Instances {...mockProps} />
+          </CollapsablePanelProvider>
         </ThemeProvider>
       );
 
@@ -613,7 +663,9 @@ describe.skip('Instances', () => {
       // given
       const node = mount(
         <ThemeProvider>
-          <Instances {...mockProps} />
+          <CollapsablePanelProvider>
+            <Instances {...mockProps} />
+          </CollapsablePanelProvider>
         </ThemeProvider>
       );
       // when
@@ -636,7 +688,9 @@ describe.skip('Instances', () => {
       // given
       const node = mount(
         <ThemeProvider>
-          <Instances {...mockProps} />
+          <CollapsablePanelProvider>
+            <Instances {...mockProps} />
+          </CollapsablePanelProvider>
         </ThemeProvider>
       );
       const SplitPaneNode = node.find(SplitPane);
@@ -649,7 +703,9 @@ describe.skip('Instances', () => {
       // given
       const node = mount(
         <ThemeProvider>
-          <Instances {...mockProps} />
+          <CollapsablePanelProvider>
+            <Instances {...mockProps} />
+          </CollapsablePanelProvider>
         </ThemeProvider>
       );
       const SplitPanes = node.find(SplitPane.Pane);
@@ -661,7 +717,9 @@ describe.skip('Instances', () => {
       const node = mount(
         <Router>
           <ThemeProvider>
-            <Instances {...mockProps} />
+            <CollapsablePanelProvider>
+              <Instances {...mockProps} />
+            </CollapsablePanelProvider>
           </ThemeProvider>
         </Router>
       );

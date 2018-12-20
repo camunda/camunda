@@ -274,3 +274,15 @@ export const createDiagramStatistics = () => {
     }
   ];
 };
+
+export const createDefinitions = () => {
+  return {
+    $type: 'bpmn:Definitions',
+    diagrams: ['ModdleElement'],
+    exporter: 'Zeebe Modeler',
+    exporterVersion: '0.4.0',
+    id: 'Definitions_0hir062',
+    rootElements: [],
+    targetNamespace: ''
+  };
+};
