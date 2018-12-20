@@ -7,6 +7,7 @@ import withSharedState from 'modules/components/withSharedState';
 import SplitPane from 'modules/components/SplitPane';
 import Diagram from 'modules/components/Diagram';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
+
 import {
   DEFAULT_FILTER,
   DEFAULT_SORTING,
@@ -159,7 +160,6 @@ class Instances extends Component {
       return;
     }
 
-    console.log(this.props.filter);
     const filterWithWorkflowIds = getFilterWithWorkflowIds(
       this.props.filter,
       this.props.groupedWorkflowInstances

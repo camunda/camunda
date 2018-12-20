@@ -23,7 +23,7 @@ const mockProps = {
   flowNodeStateOverlays: [{}]
 };
 
-describe('DiagramPanel', () => {
+describe.skip('DiagramPanel', () => {
   it('should render pane header and body', () => {
     // given
     const formattedStartDate = formatDate(mockInstance.startDate);

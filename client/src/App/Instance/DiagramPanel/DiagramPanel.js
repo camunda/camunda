@@ -2,7 +2,6 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import SplitPane from 'modules/components/SplitPane';
-import Diagram from 'modules/components/Diagram';
 import StateIcon from 'modules/components/StateIcon';
 import {formatDate} from 'modules/utils/date';
 import {getWorkflowName} from 'modules/utils/instance';
@@ -15,7 +14,6 @@ export default class DiagramPanel extends React.Component {
   static propTypes = {
     instance: PropTypes.shape({
       id: PropTypes.string.isRequired,
-      workflowId: PropTypes.string.isRequired,
       startDate: PropTypes.string.isRequired,
       endDate: PropTypes.string,
       state: PropTypes.string.isRequired,
@@ -23,11 +21,7 @@ export default class DiagramPanel extends React.Component {
       workflowVersion: PropTypes.number
     }).isRequired,
     paneId: PropTypes.string,
-    onFlowNodesDetailsReady: PropTypes.func,
-    selectableFlowNodes: PropTypes.arrayOf(PropTypes.string),
-    selectedFlowNode: PropTypes.string,
-    onFlowNodeSelected: PropTypes.func,
-    flowNodeStateOverlays: PropTypes.array
+    children: PropTypes.node
   };
 
   render() {
@@ -57,14 +51,7 @@ export default class DiagramPanel extends React.Component {
         </Styled.SplitPaneHeader>
         <SplitPane.Pane.Body>
           <DiagramBar instance={instance} />
-          <Diagram
-            workflowId={instance.workflowId}
-            onFlowNodesDetailsReady={this.props.onFlowNodesDetailsReady}
-            selectableFlowNodes={this.props.selectableFlowNodes}
-            selectedFlowNode={this.props.selectedFlowNode}
-            onFlowNodeSelected={this.props.onFlowNodeSelected}
-            flowNodeStateOverlays={this.props.flowNodeStateOverlays}
-          />
+          {this.props.children}
         </SplitPane.Pane.Body>
       </SplitPane.Pane>
     );

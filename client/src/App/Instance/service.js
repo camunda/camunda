@@ -1,4 +1,57 @@
-import {ACTIVITY_STATE, FLOW_NODE_TYPE} from 'modules/constants';
+import {
+  ACTIVITY_STATE,
+  FLOW_NODE_TYPE,
+  UNNAMED_ACTIVITY
+} from 'modules/constants';
+
+export function getElementType(element) {
+  if (element.$type === 'label') {
+    return null;
+  }
+  if (element.$instanceOf('bpmn:Task')) {
+    return FLOW_NODE_TYPE.TASK;
+  }
+
+  if (element.$instanceOf('bpmn:StartEvent')) {
+    return FLOW_NODE_TYPE.START_EVENT;
+  }
+
+  if (element.$instanceOf('bpmn:EndEvent')) {
+    return FLOW_NODE_TYPE.END_EVENT;
+  }
+
+  if (element.$instanceOf('bpmn:Event')) {
+    return FLOW_NODE_TYPE.EVENT;
+  }
+
+  if (element.$instanceOf('bpmn:ExclusiveGateway')) {
+    return FLOW_NODE_TYPE.EXCLUSIVE_GATEWAY;
+  }
+
+  if (element.$instanceOf('bpmn:ParallelGateway')) {
+    return FLOW_NODE_TYPE.PARALLEL_GATEWAY;
+  }
+}
+
+/**
+ * @returns { flowNodeId : { name , type }}
+ * @param {*} elementRegistry (bpmn elementRegistry)
+ */
+export function getFlowNodesDetails(elements) {
+  const flowNodeDetails = {};
+
+  Object.entries(elements).forEach(([id, element]) => {
+    const type = getElementType(element);
+    if (!!type) {
+      flowNodeDetails[id] = {
+        name: element.name || UNNAMED_ACTIVITY,
+        type
+      };
+    }
+  });
+
+  return flowNodeDetails;
+}
 
 export function getFlowNodeStateOverlays(activitiesDetails = {}) {
   // {Array} of flow node state overlays to be added the diagram.

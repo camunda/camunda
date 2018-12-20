@@ -19,11 +19,7 @@ import canceledLightIcon from 'modules/components/Icon/diagram-badge-single-inst
 import canceledDarkIcon from 'modules/components/Icon/diagram-badge-single-instance-canceled-dark.svg';
 import * as Styled from './styled';
 import DiagramControls from './DiagramControls';
-import {
-  getDiagramColors,
-  getFlowNodesDetails,
-  getOverlaysByState
-} from './service';
+import {getDiagramColors, getOverlaysByState} from './service';
 
 const iconMap = {
   [ACTIVITY_STATE.INCIDENT]: {light: incidentIcon, dark: incidentIcon},
@@ -124,8 +120,6 @@ class Diagram extends React.Component {
       this.clearOverlaysByType(COMPLETED_STATISTICS_OVERLAY_ID);
       this.clearOverlaysByType(CANCELED_STATISTICS_OVERLAY_ID);
 
-      console.log(this.props.flowNodesStatisticsOverlay);
-
       this.addFlowNodesStatisticsOverlays(
         this.props.flowNodesStatisticsOverlay
       );
@@ -142,8 +136,7 @@ class Diagram extends React.Component {
     // in case onFlowNodesDetailsReady callback function is provided
     // call it with flowNodesDetails
     if (typeof this.props.onFlowNodesDetailsReady === 'function') {
-      const elementRegistry = this.Viewer.get('elementRegistry');
-      this.props.onFlowNodesDetailsReady(getFlowNodesDetails(elementRegistry));
+      this.props.onFlowNodesDetailsReady();
     }
 
     if (this.props.selectableFlowNodes) {

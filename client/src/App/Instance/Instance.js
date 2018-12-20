@@ -3,15 +3,18 @@ import PropTypes from 'prop-types';
 
 import SplitPane from 'modules/components/SplitPane';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
+import Diagram from 'modules/components/Diagram';
 import * as api from 'modules/api/instances';
+import {fetchWorkflowXML} from 'modules/api/diagram';
 import {PAGE_TITLE} from 'modules/constants';
 import {getWorkflowName} from 'modules/utils/instance';
+import {parseDiagramXML} from 'modules/utils/bpmn';
 
 import InstanceDetail from './InstanceDetail';
 import Header from '../Header';
 import DiagramPanel from './DiagramPanel';
 import InstanceHistory from './InstanceHistory';
-import {getFlowNodeStateOverlays} from './service';
+import {getFlowNodeStateOverlays, getFlowNodesDetails} from './service';
 import * as Styled from './styled';
 
 export default class Instance extends Component {
@@ -25,11 +28,11 @@ export default class Instance extends Component {
 
   state = {
     instance: null,
-    activitiesDetails: {},
     selection: {
       activityInstanceId: null,
       flowNodeId: null
     },
+    diagramModel: {},
     loaded: false
   };
 
@@ -42,37 +45,48 @@ export default class Instance extends Component {
       getWorkflowName(instance)
     );
 
+    const diagramXml = await fetchWorkflowXML(instance.workflowId);
+    const diagramModel = await parseDiagramXML(diagramXml);
+
     this.setState({
       loaded: true,
-      instance
+      instance,
+      diagramModel
     });
   }
 
-  handleFlowNodesDetailsReady = flowNodesDetails => {
+  /**
+   * Converts a bpmn elements object to a map of activities details,
+   * in the following shape: activityId -> details.
+   * @param {object} elements: bpmn elements
+   */
+
+  elementsToActivitiesDetails = elements => {
     const {instance} = this.state;
-    const activitiesDetails = instance.activities.reduce(
-      (map, {id, ...activity}) => {
-        // ignore activities that don't have mathincg flow node details
-        // e.g. sub process
-        if (!flowNodesDetails[activity.activityId]) {
-          return map;
+    const flowNodesDetails = getFlowNodesDetails(elements);
+
+    return instance.activities.reduce((map, {id, ...activity}) => {
+      // ignore activities that don't have mathincg flow node details
+      // e.g. sub process
+      if (!flowNodesDetails[activity.activityId]) {
+        return map;
+      }
+
+      return {
+        ...map,
+        [id]: {
+          ...activity,
+          ...flowNodesDetails[activity.activityId],
+          id
         }
-
-        return {
-          ...map,
-          [id]: {
-            ...activity,
-            ...flowNodesDetails[activity.activityId],
-            id
-          }
-        };
-      },
-      {}
-    );
-
-    this.setState({activitiesDetails});
+      };
+    }, {});
   };
 
+  /**
+   * Handles selecting an activity instance in the instance log
+   * @param {string} activityInstanceId: id of the selected activiy instance
+   */
   handleActivityInstanceSelection = activityInstanceId => {
     const flowNodeId = !activityInstanceId
       ? null
@@ -88,6 +102,10 @@ export default class Instance extends Component {
     });
   };
 
+  /**
+   * Handles selecting a flow node from the diagram
+   * @param {string} flowNodeId: id of the selected flow node
+   */
   handleFlowNodeSelection = flowNodeId => {
     // get the first activity instance corresponding to the flowNodeId
     const activityInstanceId = !flowNodeId
@@ -105,41 +123,47 @@ export default class Instance extends Component {
   };
 
   render() {
-    if (!this.state.loaded) {
+    const {loaded, diagramModel, instance, selection} = this.state;
+
+    if (!loaded) {
       return 'Loading';
     }
 
+    const activitiesDetails = this.elementsToActivitiesDetails(
+      diagramModel.bpmnElements
+    );
+
     // Get extra information for the diagram
-    const selectableFlowNodes = Object.values(this.state.activitiesDetails).map(
+    const selectableFlowNodes = Object.values(activitiesDetails).map(
       activity => activity.activityId
     );
 
-    const flowNodeStateOverlays = getFlowNodeStateOverlays(
-      this.state.activitiesDetails
-    );
+    const flowNodeStateOverlays = getFlowNodeStateOverlays(activitiesDetails);
 
     return (
       <Fragment>
-        <Header detail={<InstanceDetail instance={this.state.instance} />} />
+        <Header detail={<InstanceDetail instance={instance} />} />
         <Styled.Instance>
           <VisuallyHiddenH1>
             {`Camunda Operate Instance ${this.state.instance.id}`}
           </VisuallyHiddenH1>
           <SplitPane titles={{top: 'Workflow', bottom: 'Instance Details'}}>
-            <DiagramPanel
-              instance={this.state.instance}
-              onFlowNodesDetailsReady={this.handleFlowNodesDetailsReady}
-              selectableFlowNodes={selectableFlowNodes}
-              selectedFlowNode={this.state.selection.flowNodeId}
-              onFlowNodeSelected={this.handleFlowNodeSelection}
-              flowNodeStateOverlays={flowNodeStateOverlays}
-            />
+            <DiagramPanel instance={instance}>
+              {diagramModel && (
+                <Diagram
+                  onFlowNodesDetailsReady={this.handleFlowNodesDetailsReady}
+                  selectableFlowNodes={selectableFlowNodes}
+                  selectedFlowNode={selection.flowNodeId}
+                  onFlowNodeSelected={this.handleFlowNodeSelection}
+                  flowNodeStateOverlays={flowNodeStateOverlays}
+                  definitions={diagramModel.definitions}
+                />
+              )}
+            </DiagramPanel>
             <InstanceHistory
-              instance={this.state.instance}
-              activitiesDetails={this.state.activitiesDetails}
-              selectedActivityInstanceId={
-                this.state.selection.activityInstanceId
-              }
+              instance={instance}
+              activitiesDetails={activitiesDetails}
+              selectedActivityInstanceId={selection.activityInstanceId}
               onActivityInstanceSelected={this.handleActivityInstanceSelection}
             />
           </SplitPane>
