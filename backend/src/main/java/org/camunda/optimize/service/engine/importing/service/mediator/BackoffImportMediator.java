@@ -4,6 +4,7 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
+import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionFetchException;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.BeanHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -66,6 +67,9 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
   private boolean getNextPageWithErrorCheck() {
     try {
       return importNextEnginePage();
+    } catch (OptimizeDecisionDefinitionFetchException e) {
+      logger.info(e.getMessage());
+      return false;
     } catch (Exception e) {
       logger.error(
           "Was not able to produce next page. Maybe a problem with the connection to the engine [{}]?",

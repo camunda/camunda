@@ -12,7 +12,7 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.DecisionInstanceElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionFetchException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,7 +114,7 @@ public class DecisionInstanceImportService {
           "Couldn't obtain version for decisionDefinitionId [%s]. It hasn't been imported yet",
           engineEntity.getDecisionDefinitionId()
         );
-        return new OptimizeRuntimeException(message);
+        return new OptimizeDecisionDefinitionFetchException(message);
       });
   }
 
