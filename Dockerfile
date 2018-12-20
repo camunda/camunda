@@ -4,7 +4,7 @@ WORKDIR /build
 ARG REPO=camunda-optimize
 ARG VERSION=2.0.0
 ARG SNAPSHOT=false
-ARG DISTRO=standalone
+ARG DISTRO=production
 
 # Nexus credentials
 ARG USERNAME
