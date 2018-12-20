@@ -72,8 +72,7 @@
                   <goal>unpack</goal>
                 </goals>
                 <configuration>
-                  <!-- Note: from 2.3.0 onwards the classifier will be `production` instead of `standalone` -->
-                  <artifact>org.camunda.optimize:camunda-optimize:${project.previousVersion}:tar.gz:standalone</artifact>
+                  <artifact>org.camunda.optimize:camunda-optimize:${project.previousVersion}:tar.gz:production</artifact>
                   <outputDirectory>${project.build.directory}/prevVersion/</outputDirectory>
                 </configuration>
               </execution>
