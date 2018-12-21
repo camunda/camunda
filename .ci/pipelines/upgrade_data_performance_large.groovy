@@ -190,7 +190,7 @@ pipeline {
       steps {
         container('maven') {
           sh 'mvn -T\$LIMITS_CPU -DskipTests -Dskip.fe.build -Dskip.docker -s settings.xml clean install -B'
-          sh 'mvn -Dupgrade.source.version=${OPTIMIZE_SOURCE_VERSION} -Dupgrade.target.version=${OPTIMIZE_TARGET_VERSION} -Dupgrade.timeout.seconds=${UPGRADE_TIMEOUT} -Pstatic-data-upgrade-es-schema-tests -pl qa/upgrade-es-schema-tests -s settings.xml clean verify -B'
+          sh 'mvn -Dupgrade.timeout.seconds=${UPGRADE_TIMEOUT} -Pstatic-data-upgrade-es-schema-tests -pl qa/upgrade-es-schema-tests -s settings.xml clean verify -B'
         }
       }
       post {
