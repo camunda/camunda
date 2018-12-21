@@ -24,6 +24,7 @@ public class VersionChecker {
     supportedEngines.add("7.8.13");
     supportedEngines.add("7.9.7");
     supportedEngines.add("7.10.0");
+    supportedEngines.add("7.11.0");
   }
 
   public static void checkEngineVersionSupport(String engineRestPath, EngineContext engineContext) {
