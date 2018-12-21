@@ -1,7 +1,7 @@
-pipelineJob('camunda-optimize-release') {
+pipelineJob('camunda-optimize-release-test') {
 
-  displayName 'Release Camunda Optimize'
-  description 'Release Camunda Optimize to Camunda Nexus and tag GitHub repository.'
+  displayName 'Test Camunda Optimize Release Build'
+  description 'Run Camunda Optimize release without committing the changes to github or uploading the artefacts.'
 
   definition {
     cpsScm {
@@ -23,7 +23,11 @@ pipelineJob('camunda-optimize-release') {
     stringParam('RELEASE_VERSION', '2.3.0', 'Version to release. Applied to pom.xml and Git tag.')
     stringParam('DEVELOPMENT_VERSION', '2.4.0-SNAPSHOT', 'Next development version.')
     stringParam('BRANCH', 'master', 'The branch used for the release checkout.')
-    booleanParam('PUSH_CHANGES', true, 'Should the changes be pushed to remote locations.')
+    booleanParam('PUSH_CHANGES', false, 'Should the changes be pushed to remote locations.')
+  }
+  
+  triggers {
+    cron('H 4 * * *')
   }
 
 }
