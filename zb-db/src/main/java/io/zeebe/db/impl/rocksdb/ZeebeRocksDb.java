@@ -55,6 +55,8 @@ class ZeebeRocksDb<ColumnFamilyNames extends Enum<ColumnFamilyNames>> extends Ro
     }
   }
 
+  private boolean activePrefixIteration;
+
   public static <ColumnFamilyNames extends Enum<ColumnFamilyNames>>
       ZeebeRocksDb<ColumnFamilyNames> openZbDb(
           final DBOptions options,
@@ -367,6 +369,12 @@ class ZeebeRocksDb<ColumnFamilyNames extends Enum<ColumnFamilyNames>> extends Ro
       KeyType keyInstance,
       ValueType valueInstance,
       KeyValuePairVisitor<KeyType, ValueType> visitor) {
+    if (activePrefixIteration) {
+      throw new IllegalStateException(
+          "Currently nested prefix iterations are not supported! This will cause unexpected behavior.");
+    }
+
+    activePrefixIteration = true;
     try (RocksDbReadOptions options =
             new RocksDbReadOptions().setPrefixSameAsStart(true).setTotalOrderSeek(false);
         RocksDbIterator iterator = newIterator(columnFamilyHandle, options)) {
@@ -383,6 +391,8 @@ class ZeebeRocksDb<ColumnFamilyNames extends Enum<ColumnFamilyNames>> extends Ro
           shouldVisitNext = visit(keyInstance, valueInstance, visitor, iterator);
         }
       }
+    } finally {
+      activePrefixIteration = false;
     }
   }
 
