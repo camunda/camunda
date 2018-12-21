@@ -1,3 +1,5 @@
+import {FLOW_NODE_TYPE} from 'modules/constants';
+
 /**
  * flushes promises in queue
  */
@@ -236,7 +238,8 @@ export const createDiagramNode = (options = {}) => {
   return {
     id: 'StartEvent_1',
     name: 'Start Event',
-    type: 'bpmn:StartEvent',
+    $type: 'bpmn:StartEvent',
+    expectedType: FLOW_NODE_TYPE.START_EVENT,
     $instanceOf: type => type === 'bpmn:StartEvent',
     ...options
   };
@@ -252,37 +255,43 @@ export const createDiagramNodes = () => {
       $type: 'bpmn:ServiceTask',
       id: 'taskD',
       name: 'task D',
+      expectedType: FLOW_NODE_TYPE.TASK,
       $instanceOf: type => type === 'bpmn:Task'
     }),
     StartEvent_1: createDiagramNode(),
     EndEvent_042s0oc: createDiagramNode({
       id: 'EndEvent_042s0oc',
       name: 'End Event',
-      type: 'bpmn:EndEvent',
+      $type: 'bpmn:EndEvent',
+      expectedType: FLOW_NODE_TYPE.END_EVENT,
       $instanceOf: type => type === 'bpmn:EndEvent'
     }),
     timerCatchEvent: createDiagramNode({
       id: 'timerCatchEvent',
       name: 'Timer Catch Event',
-      type: 'bpmn:IntermediateCatchEvent',
+      $type: 'bpmn:IntermediateCatchEvent',
+      expectedType: FLOW_NODE_TYPE.EVENT,
       $instanceOf: type => type === 'bpmn:Event'
     }),
     messageCatchEvent: createDiagramNode({
       id: 'messageCatchEvent',
       name: 'Message Catch Event',
-      type: 'bpmn:IntermediateCatchEvent',
+      $type: 'bpmn:IntermediateCatchEvent',
+      expectedType: FLOW_NODE_TYPE.EVENT,
       $instanceOf: type => type === 'bpmn:Event'
     }),
     parallelGateway: createDiagramNode({
       id: 'parallelGateway',
       name: 'Parallel Gateway',
-      type: 'bpmn:ParallelGateway',
+      $type: 'bpmn:ParallelGateway',
+      expectedType: FLOW_NODE_TYPE.PARALLEL_GATEWAY,
       $instanceOf: type => type === 'bpmn:ParallelGateway'
     }),
     exclusiveGateway: createDiagramNode({
       id: 'exclusiveGateway',
       name: 'Exclusive Gateway',
-      type: 'bpmn:ExclusiveGateway',
+      $type: 'bpmn:ExclusiveGateway',
+      expectedType: FLOW_NODE_TYPE.EXCLUSIVE_GATEWAY,
       $instanceOf: type => type === 'bpmn:ExclusiveGateway'
     })
   };

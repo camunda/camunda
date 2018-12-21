@@ -1,5 +1,6 @@
 import React from 'react';
-import {shallow} from 'enzyme';
+import {MemoryRouter} from 'react-router-dom';
+import {shallow, mount} from 'enzyme';
 
 import {
   mockResolvedAsyncFn,
@@ -13,15 +14,19 @@ import {
 import {INSTANCE_STATE, PAGE_TITLE} from 'modules/constants';
 import * as instancesApi from 'modules/api/instances/instances';
 import * as diagramApi from 'modules/api/diagram/diagram';
+import StateIconIncident from 'modules/components/Icon/state-icon-incident.svg';
 import {getWorkflowName} from 'modules/utils/instance';
 import {parseDiagramXML, parsedDiagram} from 'modules/utils/bpmn';
+import {ThemeProvider} from 'modules/theme';
 
 import Instance from './Instance';
 
+// mock data
+
 const xmlMock = '<foo />';
-diagramApi.fetchWorkflowXML = mockResolvedAsyncFn(xmlMock);
 
 const diagramNodes = createDiagramNodes();
+
 const activities = createActivities();
 
 const INCIDENT = createIncident({
@@ -29,6 +34,7 @@ const INCIDENT = createIncident({
   activityId: 'taskA',
   activityInstanceId: '4294983744'
 });
+
 const INSTANCE = createInstance({
   id: '4294980768',
   state: INSTANCE_STATE.ACTIVE,
@@ -36,47 +42,89 @@ const INSTANCE = createInstance({
   activities: activities
 });
 
-// mock api
-instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(INSTANCE);
+// mock modules
 
 jest.mock('modules/utils/bpmn');
 
-jest.mock('modules/components/Diagram', () => {
-  return function Diagram(props) {
-    return <div {...props} />;
+jest.mock('../Header', () => {
+  /* eslint react/prop-types: 0  */
+  return function Header(props) {
+    return <div>{props.detail}</div>;
   };
 });
 
-jest.mock('./DiagramPanel', () => {
-  return function DiagramPanel(props) {
-    return <div {...props} />;
+jest.mock('modules/components/Diagram', () => {
+  return function Diagram() {
+    return <div />;
   };
 });
 
 jest.mock('./InstanceHistory', () => {
-  return function InstanceHistory(props) {
-    return <div {...props} />;
+  return function InstanceHistory() {
+    return <div />;
   };
 });
 
-const component = (
-  <Instance
-    match={{params: {id: INSTANCE.id}, isExact: true, path: '', url: ''}}
-  />
-);
+// helper render function
+
+const shallowRenderComponent = (customProps = {}) =>
+  shallow(
+    <Instance
+      match={{params: {id: INSTANCE.id}, isExact: true, path: '', url: ''}}
+      {...customProps}
+    />
+  );
 
 describe('Instance', () => {
   beforeEach(() => {
-    instancesApi.fetchWorkflowInstance.mockClear();
-    diagramApi.fetchWorkflowXML.mockClear();
+    instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(INSTANCE);
+    diagramApi.fetchWorkflowXML = mockResolvedAsyncFn(xmlMock);
   });
 
-  it.skip('should render properly', () => {});
+  it('should render properly', async () => {
+    // given
+    const node = mount(
+      <ThemeProvider>
+        <MemoryRouter>
+          <Instance
+            match={{
+              params: {id: INSTANCE.id},
+              isExact: true,
+              path: '',
+              url: ''
+            }}
+          />
+        </MemoryRouter>
+      </ThemeProvider>
+    );
+    await flushPromises();
+    node.update();
+
+    // then
+
+    // Header
+    expect(node.find('Header').text()).toEqual(
+      expect.stringContaining('Instance')
+    );
+    expect(node.find('Header').text()).toEqual(
+      expect.stringContaining(INSTANCE.id)
+    );
+    expect(node.find('Header').text()).toEqual(
+      expect.stringContaining(StateIconIncident)
+    );
+
+    // Diagram
+    expect(node.find('DiagramPanel')).toHaveLength(1);
+    expect(node.find('Diagram')).toHaveLength(1);
+
+    // InstanceHistory
+    expect(node.find('InstanceHistory')).toHaveLength(1);
+  });
 
   describe('handleActivityInstanceSelection', () => {
     it('should update the state.selection according to the value', async () => {
       // given
-      const node = shallow(component);
+      const node = shallowRenderComponent();
       await flushPromises();
       node.update();
       const randomIndex = 1;
@@ -100,7 +148,7 @@ describe('Instance', () => {
   describe('handleFlowNodeSelection', () => {
     it('should update the state.selection according to the value', async () => {
       // given
-      const node = shallow(component);
+      const node = shallowRenderComponent();
       await flushPromises();
       node.update();
       const randomIndex = 2;
@@ -122,7 +170,7 @@ describe('Instance', () => {
   describe('data fetching', () => {
     it('should fetch instance & diagram information', async () => {
       // given
-      const node = shallow(component);
+      const node = shallowRenderComponent();
       await flushPromises();
       node.update();
 
@@ -157,8 +205,53 @@ describe('Instance', () => {
       );
     });
 
-    it.skip('should provide activities details map from bpmn elements', async () => {});
+    it('should provide activities details map from bpmn elements', async () => {
+      // given
+      // only take the 2 first activities
+      const mockActivities = activities.slice(0, 2);
+      instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn({
+        ...INSTANCE,
+        activities: activities.slice(0, 2)
+      });
+      const node = shallowRenderComponent();
+      await flushPromises();
+      node.update();
 
-    it.skip('should provide the selectable flow nodes to the diagram', async () => {});
+      // then
+      const activitiesDetails = node
+        .find('InstanceHistory')
+        .prop('activitiesDetails');
+      mockActivities.forEach(activity => {
+        const {id, activityId} = activity;
+        const activityDetails = activitiesDetails[id];
+        expect(activityDetails).toBeTruthy();
+        expect(activityDetails).toMatchObject(activity);
+        expect(activityDetails.type).toBe(
+          diagramNodes[activityId].expectedType
+        );
+        expect(activityDetails.name).toBe(diagramNodes[activityId].name);
+      });
+    });
+
+    it('should provide the selectable flow nodes to the diagram', async () => {
+      // given
+      // only take the 2 first activities
+      const mockActivities = activities.slice(0, 2);
+      instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn({
+        ...INSTANCE,
+        activities: activities.slice(0, 2)
+      });
+      const node = shallowRenderComponent();
+      await flushPromises();
+      node.update();
+
+      // then
+      const selectableFlowNodes = node
+        .find('Diagram')
+        .prop('selectableFlowNodes');
+      mockActivities.forEach(({activityId}) => {
+        expect(selectableFlowNodes.includes(activityId)).toBe(true);
+      });
+    });
   });
 });
