@@ -133,6 +133,27 @@ plugin:
     # If empty, the standard Optimize authentication mechanism is used.
     basePackages: []
 
+email:
+  #A switch to control email sending process.
+  enabled: false
+  # Username of your smtp server
+  username: ''
+  # Corresponding password to the given user of your smtp server
+  password: ''
+  # Email address that can be used to send alerts
+  address: ''
+  # The smtp server name
+  hostname: ''
+  # The smtp server port. This one is also used as SSL port for the security connection.
+  port: 587
+  # States how the connection to the server should be secured.
+  # Possible values are 'NONE', 'STARTTLS' or 'SSL/TLS'
+  securityProtocol: 'NONE'
+
+sharing:
+  # decides if the sharing feature of Optimize can be used in the UI.
+  enabled: true
+
 historyCleanup:
   # switch for the cleanup, defaults to false
   enabled: false

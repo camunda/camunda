@@ -254,6 +254,7 @@ export:
     offset: 0
 
 sharing:
+  # decides if the sharing feature of Optimize can be used in the UI.
   enabled: true
 
 historyCleanup:
