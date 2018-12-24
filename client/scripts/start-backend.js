@@ -49,7 +49,7 @@ function startBackend() {
     'java',
     [
       '-cp',
-      'optimize-backend-2.3.0-SNAPSHOT.jar',
+      'optimize-backend-2.4.0-SNAPSHOT.jar',
       'org.camunda.optimize.Main',
       '-Xms1g',
       '-Xmx1g',
