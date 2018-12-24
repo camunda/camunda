@@ -17,12 +17,12 @@ LICENSE_DIR=`find ${GET_BACKEND_DIR} -iname "licenses.xml"`
 cd ${BASEDIR}
 
 # create the back-end dependencies md file
-mvn clean install -DskipTests  -s ${SETTINGS_PATH} -B --fail-at-end
+mvn clean install -DskipTests -Dskip.docker -s ${SETTINGS_PATH} -B --fail-at-end
 mvn exec:java -Dexec.mainClass="org.camunda.optimize.MarkDownDependencyCreator" -Dexec.args=${LICENSE_DIR} -s ${SETTINGS_PATH} -B --fail-at-end
 
 # create front-end dependencies md file
 cd ../../client
-mvn clean install -DskipTests  -s ${SETTINGS_PATH} -B --fail-at-end
+mvn clean install -DskipTests -Dskip.docker -s ${SETTINGS_PATH} -B --fail-at-end
 
 export PATH=$(pwd)/.node/node/:$PATH
 ./.node/node/yarn/dist/bin/yarn
