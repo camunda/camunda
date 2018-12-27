@@ -8,9 +8,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -32,6 +29,25 @@ public class FlowNodeRestServiceIT {
     createProcessDefinition("aKey", "1");
     FlowNodeIdsToNamesRequestDto flowNodeIdsToNamesRequestDto = new FlowNodeIdsToNamesRequestDto();
     flowNodeIdsToNamesRequestDto.setProcessDefinitionKey("aKey");
+    flowNodeIdsToNamesRequestDto.setProcessDefinitionVersion("1");
+
+    // when
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetFlowNodeNames(flowNodeIdsToNamesRequestDto)
+            .withoutAuthentication()
+            .execute();
+
+    // then the status code is not authorized
+    assertThat(response.getStatus(), is(200));
+  }
+
+  @Test
+  public void getFlowNodesWithNullNullParameter() {
+    //given
+    createProcessDefinition("aKey", "1");
+    FlowNodeIdsToNamesRequestDto flowNodeIdsToNamesRequestDto = new FlowNodeIdsToNamesRequestDto();
+    flowNodeIdsToNamesRequestDto.setProcessDefinitionKey(null);
     flowNodeIdsToNamesRequestDto.setProcessDefinitionVersion("1");
 
     // when

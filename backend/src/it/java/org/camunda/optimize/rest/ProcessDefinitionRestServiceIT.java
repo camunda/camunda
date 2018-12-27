@@ -160,6 +160,19 @@ public class ProcessDefinitionRestServiceIT {
   }
 
   @Test
+  public void getProcessDefinitionXmlWithNullParameter() {
+    //given
+    ProcessDefinitionOptimizeDto expectedDto = addProcessDefinitionToElasticsearch(KEY);
+
+    // when
+    String actualXml =
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildGetProcessDefinitionXmlRequest(null, expectedDto.getVersion())
+        .execute(String.class, 404);
+  }
+
+  @Test
   public void getProcessDefinitionXmlWithoutAuthentication() {
     // when
     Response response =

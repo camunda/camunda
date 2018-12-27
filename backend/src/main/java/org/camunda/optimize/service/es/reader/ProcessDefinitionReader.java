@@ -156,6 +156,10 @@ public class ProcessDefinitionReader {
 
   private Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionWithXml(String processDefinitionKey,
                                                                              String processDefinitionVersion) {
+    if (processDefinitionKey == null || processDefinitionVersion == null) {
+      return Optional.empty();
+    }
+
     processDefinitionVersion = convertToValidVersion(processDefinitionKey, processDefinitionVersion);
     SearchResponse response = esclient.prepareSearch(
       getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_DEF_TYPE))
