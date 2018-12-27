@@ -49,7 +49,7 @@ public class ReportRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public IdDto createNewReport(@Context ContainerRequestContext requestContext,
-                               ReportDefinitionDto<?> reportDefinitionDto) {
+                               ReportDefinitionDto reportDefinitionDto) {
     String userId = getRequestUser(requestContext);
     return reportService.createNewReportAndReturnId(userId, reportDefinitionDto);
   }

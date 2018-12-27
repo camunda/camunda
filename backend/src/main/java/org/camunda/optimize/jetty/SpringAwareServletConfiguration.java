@@ -1,10 +1,10 @@
 package org.camunda.optimize.jetty;
 
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.servlets.GzipFilter;
 import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
@@ -85,8 +85,7 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
     NotFoundErrorHandler errorMapper = new NotFoundErrorHandler();
     context.setErrorHandler(errorMapper);
 
-    initGzipFilterHolder(context);
-    //initJSRewriteHandler(context);
+    initGzipHandler(context);
   }
 
   private void addSingleSignOnFilter(ServletContextHandler context) {
@@ -105,18 +104,14 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
     );
   }
 
-  private void initJSRewriteHandler(ServletContextHandler context) {
-
-    context.addFilter(GzipForwardPatternRule.class, "/*", EnumSet.of(DispatcherType.REQUEST));
-  }
-
-  private void initGzipFilterHolder(ServletContextHandler context) {
-    FilterHolder gzipFilterHolder = new FilterHolder(GzipFilter.class);
-    gzipFilterHolder.setInitParameter("deflateCompressionLevel", "9");
-    gzipFilterHolder.setInitParameter("minGzipSize", "0");
-    gzipFilterHolder.setInitParameter("mimeTypes", COMPRESSED_MIME_TYPES);
-
-    context.addFilter(gzipFilterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+  private void initGzipHandler(ServletContextHandler context) {
+    GzipHandler gzipHandler = new GzipHandler();
+    gzipHandler.setCompressionLevel(9);
+    gzipHandler.setMinGzipSize(0);
+    gzipHandler.setIncludedMimeTypes(COMPRESSED_MIME_TYPES);
+    gzipHandler.setDispatcherTypes(EnumSet.of(DispatcherType.REQUEST));
+    gzipHandler.setIncludedPaths("/*");
+    context.setGzipHandler(gzipHandler);
   }
 
   public ServletContextHandler getServletContextHandler() {
