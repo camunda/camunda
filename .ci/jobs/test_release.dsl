@@ -1,7 +1,7 @@
 pipelineJob('camunda-optimize-release-test') {
 
   displayName 'Test Camunda Optimize Release Build'
-  description 'Run Camunda Optimize release without committing the changes to github or uploading the artefacts.'
+  description 'Run Camunda Optimize release without committing the changes to github or uploading the artifacts.'
 
   definition {
     cpsScm {
@@ -20,8 +20,8 @@ pipelineJob('camunda-optimize-release-test') {
   }
 
   parameters {
-    stringParam('RELEASE_VERSION', '2.3.0', 'Version to release. Applied to pom.xml and Git tag.')
-    stringParam('DEVELOPMENT_VERSION', '2.4.0-SNAPSHOT', 'Next development version.')
+    stringParam('RELEASE_VERSION', '3.0.0', 'Version to release. Applied to pom.xml and Git tag.')
+    stringParam('DEVELOPMENT_VERSION', '3.1.0-SNAPSHOT', 'Next development version.')
     stringParam('BRANCH', 'master', 'The branch used for the release checkout.')
     booleanParam('PUSH_CHANGES', false, 'Should the changes be pushed to remote locations.')
   }
