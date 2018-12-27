@@ -17,24 +17,60 @@
  */
 package io.zeebe.broker.workflow.processor.subprocess;
 
+import io.zeebe.broker.workflow.model.element.ExecutableCatchEventElement;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElementContainer;
-import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
+import io.zeebe.broker.workflow.state.IndexedRecord;
+import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import java.util.List;
 
 public class TriggerStartEventHandler implements BpmnStepHandler<ExecutableFlowElementContainer> {
+
+  private WorkflowState workflowState;
+
+  public TriggerStartEventHandler(WorkflowState workflowState) {
+    this.workflowState = workflowState;
+  }
 
   @Override
   public void handle(BpmnStepContext<ExecutableFlowElementContainer> context) {
     final ExecutableFlowElementContainer element = context.getElement();
-    final ExecutableFlowNode startEvent = element.getStartEvent();
 
     final WorkflowInstanceRecord value = context.getValue();
-    value.setElementId(startEvent.getId());
+
+    if (element.getStartEvents().get(0).isNone()) {
+      // if none start event
+
+      value.setElementId(element.getStartEvents().get(0).getId());
+    } else {
+      // if timer start event
+
+      final long wfInstanceKey = context.getRecord().getValue().getWorkflowInstanceKey();
+      final List<IndexedRecord> deferredTokens =
+          workflowState.getElementInstanceState().getDeferredTokens(wfInstanceKey);
+
+      if (deferredTokens.size() > 0) {
+        // if there are deferred tokens
+
+        value.setElementId(deferredTokens.get(0).getValue().getElementId());
+        workflowState.getElementInstanceState().consumeToken(wfInstanceKey);
+      } else {
+        // if there are no tokens for the timer start event
+
+        throw new RuntimeException(
+            "Workflow has multiple start events but no deferred token was found");
+      }
+    }
+
     value.setScopeInstanceKey(context.getRecord().getKey());
 
     context.getOutput().appendNewEvent(WorkflowInstanceIntent.EVENT_TRIGGERING, value);
+  }
+
+  public static boolean isNoneStartEvent(ExecutableCatchEventElement startEvent) {
+    return !startEvent.isTimer() && !startEvent.isMessage();
   }
 }

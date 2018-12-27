@@ -33,6 +33,7 @@ import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.Workflow;
 import io.zeebe.protocol.intent.DeploymentIntent;
+import java.util.List;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
@@ -88,8 +89,8 @@ public class TransformingDeploymentCreateProcessor
   private void createTimerIfTimerStartEvent(
       TypedRecord<DeploymentRecord> record, TypedStreamWriter streamWriter) {
     for (Workflow workflow : record.getValue().workflows()) {
-      final ExecutableCatchEventElement startEvent =
-          workflowState.getWorkflowByKey(workflow.getKey()).getWorkflow().getStartEvent();
+      final List<ExecutableCatchEventElement> startEvents =
+          workflowState.getWorkflowByKey(workflow.getKey()).getWorkflow().getStartEvents();
 
       workflowState
           .getTimerState()
@@ -104,13 +105,15 @@ public class TransformingDeploymentCreateProcessor
                 }
               });
 
-      if (startEvent.isTimer()) {
-        catchEventBehavior.subscribeToTimerEvent(
-            NO_ELEMENT_INSTANCE,
-            workflow.getKey(),
-            startEvent.getId(),
-            startEvent.getTimer(),
-            streamWriter);
+      for (ExecutableCatchEventElement startEvent : startEvents) {
+        if (startEvent.isTimer()) {
+          catchEventBehavior.subscribeToTimerEvent(
+              NO_ELEMENT_INSTANCE,
+              workflow.getKey(),
+              startEvent.getId(),
+              startEvent.getTimer(),
+              streamWriter);
+        }
       }
     }
   }
