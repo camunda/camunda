@@ -11,6 +11,7 @@ import org.springframework.web.socket.server.standard.SpringConfigurator;
 
 import javax.websocket.CloseReason;
 import javax.websocket.OnClose;
+import javax.websocket.OnError;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
@@ -68,6 +69,11 @@ public class StatusWebSocket {
       StatusNotifier job = statusReportJobs.remove(session.getId());
       engineImportSchedulerFactory.getImportSchedulers().forEach(s -> s.unsubscribe(job));
     }
+  }
+
+  @OnError
+  public void onError(Throwable t) {
+    logger.error("Web socket connection terminated prematurely!", t);
   }
 
 }
