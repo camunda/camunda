@@ -45,7 +45,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     DecisionDefinitionEngineDto decisionDefinitionDto2 = deployAndStartSimpleDecisionDefinition("key");
     engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -74,7 +74,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
     engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -120,7 +120,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
     engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -169,7 +169,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
     engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -202,7 +202,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     DecisionDefinitionEngineDto decisionDefinitionDto2 = deployAndStartSimpleDecisionDefinition("key");
     engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -231,7 +231,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     // other decision definition
     deployAndStartSimpleDecisionDefinition("key2");
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -264,7 +264,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       createInputs(inputVariableValueToFilterFor + 100.0, "Misc")
     );
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when

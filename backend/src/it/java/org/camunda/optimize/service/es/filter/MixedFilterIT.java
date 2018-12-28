@@ -93,7 +93,7 @@ public class MixedFilterIT {
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
     OffsetDateTime start = engineRule.getHistoricProcessInstance(instanceEngineDto.getId()).getStartTime();
     OffsetDateTime end = engineRule.getHistoricProcessInstance(instanceEngineDto.getId()).getEndTime();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when

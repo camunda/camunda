@@ -41,7 +41,8 @@ public class ProcessDefinitionRetrievalIT {
       // given
       deploySimpleServiceTaskProcessDefinition(PROCESS_DEFINITION_KEY + System.currentTimeMillis());
     }
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.getConfigurationService().setEngineImportProcessDefinitionXmlMaxPageSize(11);
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -60,7 +61,7 @@ public class ProcessDefinitionRetrievalIT {
     // given
     String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
     String processDefinitionId = deploySimpleServiceTaskProcessDefinition(processId);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -92,7 +93,7 @@ public class ProcessDefinitionRetrievalIT {
       .done();
     // @formatter:on
     String processDefinitionId = engineRule.deployProcessAndGetId(modelInstance);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -116,7 +117,7 @@ public class ProcessDefinitionRetrievalIT {
     // given
     String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
     String processDefinitionId = deploySimpleServiceTaskProcessDefinition(processId);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     addProcessDefinitionWithoutXmlToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -140,7 +141,7 @@ public class ProcessDefinitionRetrievalIT {
     String processDefinitionId = deploySimpleServiceTaskProcessDefinition(processId);
     engineRule.startProcessInstance(processDefinitionId);
     engineRule.startProcessInstance(processDefinitionId);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -170,7 +171,7 @@ public class ProcessDefinitionRetrievalIT {
     // @formatter:on
     ProcessDefinitionEngineDto processDefinition = engineRule.deployProcessAndGetProcessDefinition(modelInstance);
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -206,7 +207,7 @@ public class ProcessDefinitionRetrievalIT {
     // @formatter:on
     ProcessDefinitionEngineDto processDefinition = engineRule.deployProcessAndGetProcessDefinition(modelInstance);
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when

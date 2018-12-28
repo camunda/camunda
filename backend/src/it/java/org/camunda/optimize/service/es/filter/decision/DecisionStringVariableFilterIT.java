@@ -35,7 +35,7 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
       createInputs(200.0, categoryInputValueToFilterFor)
     );
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -79,7 +79,7 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
       createInputs(300.0, "Software License Costs")
     );
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -121,7 +121,7 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
       createInputs(200.0, categoryInputValueToExclude)
     );
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when

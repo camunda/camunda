@@ -24,7 +24,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import java.io.IOException;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
@@ -50,7 +49,7 @@ import static org.junit.Assert.assertTrue;
 
 public class ImportIT  {
 
-  public static final String HTTP_LOCALHOST = "http://localhost:8080";
+  private static final String HTTP_LOCALHOST = "http://localhost:8080";
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
@@ -67,7 +66,7 @@ public class ImportIT  {
     deployAndStartSimpleServiceTask();
 
     //when
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //then
@@ -80,7 +79,7 @@ public class ImportIT  {
     deployAndStartSimpleServiceTask();
 
     //when
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //then
@@ -102,7 +101,7 @@ public class ImportIT  {
     deployAndStartSimpleServiceTask();
 
     //when
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     engineConfiguration.getAuthentication().setEnabled(false);
@@ -120,7 +119,7 @@ public class ImportIT  {
 
     // when
     engineRule.finishAllUserTasks();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // then
@@ -137,7 +136,7 @@ public class ImportIT  {
     createStartAndCancelUserTaskProcess();
 
     // when
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // then
@@ -145,7 +144,7 @@ public class ImportIT  {
     assertThat(idsResp.getHits().getAt(0).getSourceAsMap().get(ProcessInstanceType.STATE), is(CanceledInstancesOnlyQueryFilter.EXTERNALLY_TERMINATED));
   }
 
-  public ProcessInstanceEngineDto deployAndStartUserTaskProcess() {
+  private ProcessInstanceEngineDto deployAndStartUserTaskProcess() {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .startEvent()
       .userTask()
@@ -165,7 +164,7 @@ public class ImportIT  {
   public void runningProcessesIndexedAfterFinish() {
     // given
     deployAndStartUserTaskProcess();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
 
     //then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
@@ -178,7 +177,7 @@ public class ImportIT  {
 
     // when
     engineRule.finishAllUserTasks();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // then
@@ -190,14 +189,14 @@ public class ImportIT  {
   }
 
   @Test
-  public void deletionOfProcessInstancesDoesNotDistortProcessInstanceImport() throws IOException {
+  public void deletionOfProcessInstancesDoesNotDistortProcessInstanceImport() {
     // given
     ProcessInstanceEngineDto firstProcInst = createImportAndDeleteTwoProcessInstances();
 
     // when
     engineRule.startProcessInstance(firstProcInst.getDefinitionId());
     engineRule.startProcessInstance(firstProcInst.getDefinitionId());
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // then
@@ -205,7 +204,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void deletionOfProcessInstancesDoesNotDistortActivityInstanceImport() throws IOException {
+  public void deletionOfProcessInstancesDoesNotDistortActivityInstanceImport() {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("aVariable", "aStringVariable");
@@ -216,7 +215,7 @@ public class ImportIT  {
     engineRule.startProcessInstance(firstProcInst.getDefinitionId(),variables);
     variables.put("thirdVar", "bar");
     engineRule.startProcessInstance(firstProcInst.getDefinitionId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // then
@@ -241,7 +240,7 @@ public class ImportIT  {
     engineRule.deployAndStartProcess(processModel);
 
     //when
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //then
@@ -263,9 +262,9 @@ public class ImportIT  {
     engineRule.deployAndStartProcess(processModel);
 
     //when
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     engineRule.finishAllUserTasks();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //then
@@ -286,7 +285,7 @@ public class ImportIT  {
         .endEvent()
       .done();
     engineRule.deployAndStartProcess(processModel);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
 
     //when
     HistoricActivityInstanceEngineDto startEvent =
@@ -331,13 +330,13 @@ public class ImportIT  {
     // sleep in order to avoid the timestamp import backoff window that modifies the latestTimestamp stored
     Thread.sleep(currentTimeBackOff);
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     List<Long> firstRoundIndexes =  embeddedOptimizeRule.getImportIndexes();
 
     // then
     embeddedOptimizeRule.resetImportStartIndexes();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     List<Long> secondsRoundIndexes = embeddedOptimizeRule.getImportIndexes();
 
@@ -354,7 +353,7 @@ public class ImportIT  {
     deployAndStartSimpleServiceTask();
     engineRule.deployAndStartDecisionDefinition();
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -375,7 +374,7 @@ public class ImportIT  {
     deployAndStartSimpleServiceTask();
     deployAndStartSimpleServiceTask();
     deployAndStartSimpleServiceTask();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     List<Long> firstRoundIndexes = embeddedOptimizeRule.getImportIndexes();
@@ -395,7 +394,7 @@ public class ImportIT  {
   public void afterRestartOfOptimizeAlsoNewDataIsImported() throws Exception {
     // given
     deployAndStartSimpleServiceTask();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     List<Long> firstRoundIndexes = embeddedOptimizeRule.getImportIndexes();
 
@@ -405,7 +404,7 @@ public class ImportIT  {
     // when
     embeddedOptimizeRule.stopOptimize();
     embeddedOptimizeRule.startOptimize();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     List<Long> secondsRoundIndexes = embeddedOptimizeRule.getImportIndexes();
 
@@ -419,13 +418,13 @@ public class ImportIT  {
   public void afterRestartOfOptimizeOnlyNewActivitiesAreImported() throws Exception {
     // given
     deployAndStartSimpleServiceTask();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
     embeddedOptimizeRule.stopOptimize();
     embeddedOptimizeRule.startOptimize();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // then
@@ -436,7 +435,7 @@ public class ImportIT  {
   public void itIsPossibleToResetTheImportIndex() throws Exception {
     // given
     deployAndStartSimpleServiceTask();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     embeddedOptimizeRule.resetImportStartIndexes();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -460,7 +459,8 @@ public class ImportIT  {
     startTwoProcessInstancesWithSameEndTime();
 
     // when
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromLastIndex();
+    embeddedOptimizeRule.importAllEngineEntitiesFromLastIndex();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // then
@@ -552,14 +552,14 @@ public class ImportIT  {
       .get();
   }
 
-  private ProcessInstanceEngineDto createImportAndDeleteTwoProcessInstances() throws IOException {
+  private ProcessInstanceEngineDto createImportAndDeleteTwoProcessInstances() {
     return createImportAndDeleteTwoProcessInstancesWithVariables(new HashMap<>());
   }
 
-  private ProcessInstanceEngineDto createImportAndDeleteTwoProcessInstancesWithVariables(Map<String, Object> variables) throws IOException {
+  private ProcessInstanceEngineDto createImportAndDeleteTwoProcessInstancesWithVariables(Map<String, Object> variables) {
     ProcessInstanceEngineDto firstProcInst = deployAndStartSimpleServiceTaskWithVariables(variables);
     ProcessInstanceEngineDto secondProcInst = engineRule.startProcessInstance(firstProcInst.getDefinitionId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     engineRule.deleteHistoricProcessInstance(firstProcInst.getId());
     engineRule.deleteHistoricProcessInstance(secondProcInst.getId());

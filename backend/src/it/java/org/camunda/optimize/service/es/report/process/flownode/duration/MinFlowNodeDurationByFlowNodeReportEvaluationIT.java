@@ -62,7 +62,7 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
     ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 20L);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -94,7 +94,7 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 10L);
     processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 30L);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -118,7 +118,7 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 10L);
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 200L);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -157,7 +157,7 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     processInstanceDto = engineRule.startProcessInstance(latestDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 40L);
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
@@ -185,7 +185,7 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     processInstanceDto = engineRule.startProcessInstance(latestDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 40L);
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
@@ -210,7 +210,7 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     processInstanceDto = engineRule.startProcessInstance(processDefinition2.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 40L);
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
@@ -238,7 +238,7 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 20L);
     processInstanceDto = engineRule.startProcessInstance(processDefinition2.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 100L);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -294,7 +294,7 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     String processDefinitionId = engineRule.deployProcessAndGetId(miProcess);
     engineRule.startProcessInstance(processDefinitionId);
     engineDatabaseRule.changeActivityDurationForProcessDefinition(subProcessDefinition.getId(), 10L);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -318,7 +318,7 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
       processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
       engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), i);
     }
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -338,7 +338,7 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     ProcessInstanceEngineDto processInstance = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstance.getId(), 10L);
     OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -372,7 +372,7 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     ProcessInstanceEngineDto processInstance = engineRule.startProcessInstance(processDefinition.getId(), variables);
     engineDatabaseRule.changeActivityDuration(processInstance.getId(), 10L);
     engineRule.startProcessInstance(processDefinition.getId());
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -406,7 +406,7 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     engineDatabaseRule.changeActivityDuration(processInstance.getId(), 10L);
     variables.put("goToTask1", false);
     engineRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when

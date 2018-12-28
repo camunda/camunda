@@ -77,7 +77,7 @@ public class RawProcessDataReportEvaluationIT {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     deployAndStartSimpleProcess();
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -102,7 +102,7 @@ public class RawProcessDataReportEvaluationIT {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     deployAndStartSimpleProcess();
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -136,7 +136,7 @@ public class RawProcessDataReportEvaluationIT {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -168,7 +168,7 @@ public class RawProcessDataReportEvaluationIT {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     String reportId = createAndStoreDefaultReportDefinition(
       processInstance.getProcessDefinitionKey(),
@@ -222,7 +222,7 @@ public class RawProcessDataReportEvaluationIT {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
     ProcessInstanceEngineDto processInstance2 = engineRule.startProcessInstance(processInstance.getDefinitionId());
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -263,7 +263,7 @@ public class RawProcessDataReportEvaluationIT {
 
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcessWithVariables(variables);
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -298,7 +298,7 @@ public class RawProcessDataReportEvaluationIT {
     ProcessInstanceEngineDto processInstanceDto3 =
       engineRule.startProcessInstance(processInstance.getDefinitionId());
     engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto3.getId(), OffsetDateTime.now().minusDays(1));
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -341,7 +341,7 @@ public class RawProcessDataReportEvaluationIT {
     ProcessInstanceEngineDto processInstanceDto3 =
       engineRule.startProcessInstance(processInstanceDto1.getDefinitionId());
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     final Object[] processInstanceIdsOrderedAsc = Lists.newArrayList(
       processInstanceDto1.getId(), processInstanceDto2.getId(), processInstanceDto3.getId()
@@ -367,7 +367,7 @@ public class RawProcessDataReportEvaluationIT {
     // given
     ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleProcess();
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -401,7 +401,7 @@ public class RawProcessDataReportEvaluationIT {
       processInstanceDto1.getDefinitionId(), toImmutableMap(new SimpleEntry<>("otherVar", 0))
     );
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     final Object[] processInstanceIdsOrderedAsc = Lists.newArrayList(
       processInstanceDto1.getId(), processInstanceDto2.getId(), processInstanceDto3.getId(), processInstanceDto4.getId()
@@ -427,7 +427,7 @@ public class RawProcessDataReportEvaluationIT {
     // given
     ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleProcess();
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -453,7 +453,7 @@ public class RawProcessDataReportEvaluationIT {
     variables.clear();
     variables.put("varName2", "value2");
     engineRule.startProcessInstance(processInstance.getDefinitionId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -486,7 +486,7 @@ public class RawProcessDataReportEvaluationIT {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     deployAndStartSimpleProcess();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -511,7 +511,7 @@ public class RawProcessDataReportEvaluationIT {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -552,7 +552,7 @@ public class RawProcessDataReportEvaluationIT {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -596,7 +596,7 @@ public class RawProcessDataReportEvaluationIT {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcessWithVariables(variables);
 
     engineRule.startProcessInstance(processInstance.getDefinitionId());
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -632,7 +632,7 @@ public class RawProcessDataReportEvaluationIT {
     ProcessInstanceEngineDto processInstance = engineRule.startProcessInstance(processDefinition.getId(), variables);
     variables.put("goToTask1", false);
     engineRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when

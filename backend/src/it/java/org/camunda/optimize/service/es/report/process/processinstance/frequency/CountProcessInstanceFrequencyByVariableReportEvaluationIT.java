@@ -58,7 +58,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar");
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -139,7 +139,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar");
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcess(variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     String reportId = createAndStoreDefaultReportDefinition(
         processInstance.getProcessDefinitionKey(),
@@ -178,7 +178,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
     variables.put("foo", "bar2");
     deployAndStartSimpleServiceTaskProcess(variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -209,7 +209,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
     variables.put("foo", "bar2");
     deployAndStartSimpleServiceTaskProcess(variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -240,7 +240,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     variables.put("foo", "bar2");
     engineRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
     engineRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -271,7 +271,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
     variables.put("foo", 1);
     engineRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -301,7 +301,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     variables.put("foo2", "bar1");
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
     engineRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -336,7 +336,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     variables.put("doubleVar", 5.5);
     variables.put("stringVar", "aString");
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     for (Map.Entry<String, Object> entry : variables.entrySet()) {
@@ -384,7 +384,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     variables.put("foo", "bar");
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcess(variables);
     OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when

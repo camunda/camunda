@@ -1,7 +1,9 @@
 package org.camunda.optimize.service.engine.importing;
 
 import org.camunda.optimize.service.engine.importing.service.ImportObserver;
+import org.camunda.optimize.service.engine.importing.service.mediator.DecisionDefinitionXmlEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.EngineImportMediator;
+import org.camunda.optimize.service.engine.importing.service.mediator.ProcessDefinitionXmlEngineImportMediator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +21,6 @@ public class EngineImportScheduler extends Thread {
 
   private String engineAlias;
   private volatile boolean isEnabled = true;
-  private boolean shouldPerformBackoff = true;
   private boolean isImporting = false;
 
   public EngineImportScheduler(List<EngineImportMediator> importMediators,
@@ -65,12 +66,12 @@ public class EngineImportScheduler extends Thread {
       .collect(Collectors.toList());
   }
 
-  public void scheduleUntilImportIsFinished() {
-    shouldPerformBackoff = false;
-    do {
-      scheduleNextRound();
-    } while (this.isImporting);
-    shouldPerformBackoff = true;
+  public void scheduleNextRoundScrollBasedOnly() {
+    List<EngineImportMediator> currentImportRound = obtainActiveMediators();
+    currentImportRound = currentImportRound.stream()
+      .filter(e -> e instanceof ProcessDefinitionXmlEngineImportMediator || e instanceof DecisionDefinitionXmlEngineImportMediator)
+    .collect(Collectors.toList());
+    scheduleCurrentImportRound(currentImportRound);
   }
 
   public void scheduleNextRound() {
@@ -103,25 +104,21 @@ public class EngineImportScheduler extends Thread {
   }
 
   private void doBackoff() {
-    if (shouldPerformBackoff) {
-      long timeToSleep = calculateTimeToSleep();
-      try {
-        logger.debug("No imports to schedule. Scheduler is sleeping for [{}] ms.", timeToSleep);
-        Thread.sleep(timeToSleep);
-      } catch (InterruptedException e) {
-        logger.error("Scheduler was interrupted while sleeping.", e);
-      }
+    long timeToSleep = calculateTimeToSleep();
+    try {
+      logger.debug("No imports to schedule. Scheduler is sleeping for [{}] ms.", timeToSleep);
+      Thread.sleep(timeToSleep);
+    } catch (InterruptedException e) {
+      logger.error("Scheduler was interrupted while sleeping.", e);
     }
   }
 
   private long calculateTimeToSleep() {
-    long timeToSleepInMs = importMediators
+    return importMediators
       .stream()
       .map(EngineImportMediator::getBackoffTimeInMs)
       .min(Long::compare)
       .orElse(5000L);
-
-    return timeToSleepInMs;
   }
 
   private void scheduleCurrentImportRound(List<EngineImportMediator> currentImportRound) {

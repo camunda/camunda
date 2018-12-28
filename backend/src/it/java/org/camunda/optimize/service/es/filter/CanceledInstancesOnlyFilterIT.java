@@ -50,7 +50,7 @@ public class CanceledInstancesOnlyFilterIT {
     );
 
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -87,7 +87,7 @@ public class CanceledInstancesOnlyFilterIT {
             CanceledInstancesOnlyQueryFilter.INTERNALLY_TERMINATED
     );
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -118,7 +118,7 @@ public class CanceledInstancesOnlyFilterIT {
     engineRule.externallyTerminateProcessInstance(firstProcInst.getId());
     engineRule.externallyTerminateProcessInstance(secondProcInst.getId());
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when

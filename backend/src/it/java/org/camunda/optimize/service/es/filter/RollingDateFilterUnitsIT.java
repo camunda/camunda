@@ -37,7 +37,7 @@ public class RollingDateFilterUnitsIT extends AbstractRollingDateFilterIT {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     OffsetDateTime processInstanceStartTime =
         engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // the clock of the engine and the clock of the computer running

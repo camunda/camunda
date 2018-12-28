@@ -69,22 +69,19 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     getOptimize().startImportSchedulers();
   }
 
-  public void scheduleAllJobsAndImportEngineEntities() {
+  public void importAllEngineEntitiesFromScratch() {
     try {
       resetImportStartIndexes();
     } catch (Exception e) {
       //nothing to do
     }
-    resetBackoffAndScheduleAllImportsAndWaitUntilFinished();
+    importAllEngineEntitiesFromLastIndex();
   }
 
-  public void resetBackoffAndScheduleAllImportsAndWaitUntilFinished() {
+  public void importAllEngineEntitiesFromLastIndex() {
     for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
       if (scheduler.isEnabled()) {
-        logger.debug("scheduling first import round");
-        scheduleImportAndWaitUntilIsFinished(scheduler);
-        // we need another round for the scroll based import index handler
-        logger.debug("scheduling second import round");
+        logger.debug("scheduling import round");
         scheduleImportAndWaitUntilIsFinished(scheduler);
       }
     }
@@ -112,7 +109,9 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   private void scheduleImportAndWaitUntilIsFinished(EngineImportScheduler scheduler) {
     resetImportBackoff();
-    scheduler.scheduleUntilImportIsFinished();
+    scheduler.scheduleNextRound();
+    makeSureAllScheduledJobsAreFinished();
+    scheduler.scheduleNextRoundScrollBasedOnly();
     makeSureAllScheduledJobsAreFinished();
   }
 
@@ -205,7 +204,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     return getOptimize().getAuthenticationToken();
   }
 
-  public String getAuthorizationCookieValue() {
+  private String getAuthorizationCookieValue() {
     return AuthenticationUtil.createOptimizeAuthCookieValue(getAuthenticationToken());
   }
 

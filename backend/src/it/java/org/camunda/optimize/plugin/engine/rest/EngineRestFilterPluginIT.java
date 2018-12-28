@@ -74,7 +74,7 @@ public class EngineRestFilterPluginIT {
     deployAndStartSimpleServiceTask();
 
     // when
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     engineConfiguration.getAuthentication().setEnabled(false);

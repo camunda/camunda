@@ -135,7 +135,7 @@ public class ExportServiceIT {
     //given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     currentReport.setProcessDefinitionKey(processInstance.getProcessDefinitionKey());

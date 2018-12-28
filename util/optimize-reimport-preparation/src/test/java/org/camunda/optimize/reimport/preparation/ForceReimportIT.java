@@ -71,7 +71,7 @@ public class ForceReimportIT {
             .execute(IdDto.class, 200);
     addLicense();
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -161,7 +161,7 @@ public class ForceReimportIT {
   }
 
   private AlertCreationDto setupBasicAlert(String reportId) {
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     return createSimpleAlert(reportId);

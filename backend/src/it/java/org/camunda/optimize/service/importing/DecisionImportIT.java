@@ -50,7 +50,7 @@ public class DecisionImportIT {
     engineRule.deployDecisionDefinition();
 
     //when
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //then
@@ -63,7 +63,7 @@ public class DecisionImportIT {
     engineRule.deployAndStartDecisionDefinition();
 
     //when
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //then
@@ -81,7 +81,7 @@ public class DecisionImportIT {
     engineRule.startDecisionInstance(decisionDefinitionEngineDto.getId());
 
     //when
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //then
@@ -96,7 +96,7 @@ public class DecisionImportIT {
     engineRule.deployAndStartDecisionDefinition();
 
     // when
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 

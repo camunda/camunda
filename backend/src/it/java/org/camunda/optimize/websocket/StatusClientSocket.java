@@ -32,7 +32,7 @@ public class StatusClientSocket {
     ObjectMapper objectMapper = new ObjectMapper();
     StatusWithProgressDto dto = objectMapper.readValue(message, StatusWithProgressDto.class);
     assertThat(dto.getIsImporting(), is(notNullValue()));
-    assertThat(dto.getIsImporting().get(ENGINE_ALIAS), is(false));
+    assertThat(dto.getIsImporting().get(ENGINE_ALIAS), is(true));
     latch.countDown();
   }
 

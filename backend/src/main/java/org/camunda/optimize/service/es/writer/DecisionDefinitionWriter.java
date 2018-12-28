@@ -7,6 +7,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
@@ -40,13 +41,12 @@ public class DecisionDefinitionWriter {
   }
 
   public void importProcessDefinitions(List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos)
-    throws ExecutionException, InterruptedException {
+    throws ExecutionException {
     logger.debug("Writing [{}] decision definitions to elasticsearch", decisionDefinitionOptimizeDtos.size());
     writeDecisionDefinitionInformation(decisionDefinitionOptimizeDtos);
   }
 
-  private void writeDecisionDefinitionInformation(List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos)
-    throws ExecutionException, InterruptedException {
+  private void writeDecisionDefinitionInformation(List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos) {
     final BulkRequestBuilder bulkRequest = esclient.prepareBulk();
     for (DecisionDefinitionOptimizeDto decisionDefinition : decisionDefinitionOptimizeDtos) {
       final String id = decisionDefinition.getId();
@@ -73,7 +73,9 @@ public class DecisionDefinitionWriter {
     }
 
     if (bulkRequest.numberOfActions() > 0) {
-      final BulkResponse response = bulkRequest.execute().get();
+      final BulkResponse response = bulkRequest
+        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
+        .get();
       if (response.hasFailures()) {
         logger.warn(
           "There were failures while writing decision definition information. Received error message: {}",

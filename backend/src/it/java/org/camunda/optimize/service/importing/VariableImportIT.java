@@ -47,7 +47,7 @@ public class VariableImportIT {
     // when
     engineRule.startProcessInstance(firstProcInst.getDefinitionId());
     engineRule.startProcessInstance(firstProcInst.getDefinitionId());
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // then
@@ -68,7 +68,7 @@ public class VariableImportIT {
     Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariables();
     ProcessInstanceEngineDto instanceDto =
       engineRule.deployAndStartProcessWithVariables(processModel, variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
@@ -91,8 +91,8 @@ public class VariableImportIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", complexVariableDto);
     ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -116,7 +116,7 @@ public class VariableImportIT {
     Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariables();
     ProcessInstanceEngineDto instanceDto =
       engineRule.deployAndStartProcessWithVariables(processModel, variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
@@ -149,7 +149,7 @@ public class VariableImportIT {
     variables.put("stringVar", "aStringValue");
     ProcessInstanceEngineDto instanceDto =
       engineRule.deployAndStartProcessWithVariables(processModel, variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
@@ -180,7 +180,7 @@ public class VariableImportIT {
     variables.put("stringVar", "aStringValue");
     ProcessInstanceEngineDto instanceDto =
       engineRule.deployAndStartProcessWithVariables(processModel, variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
@@ -217,7 +217,7 @@ public class VariableImportIT {
 
     ProcessInstanceEngineDto instanceDto =
       engineRule.deployAndStartProcess(processModel);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
@@ -269,11 +269,11 @@ public class VariableImportIT {
     variables.put("stringVar", "aStringValue");
     ProcessInstanceEngineDto instanceDto =
       engineRule.deployAndStartProcessWithVariables(processModel, variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     engineRule.finishAllUserTasks(instanceDto.getId());
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
@@ -306,7 +306,7 @@ public class VariableImportIT {
     ProcessInstanceEngineDto instanceDto =
       engineRule.deployAndStartProcessWithVariables(processModel, variables);
     engineRule.deleteVariableInstanceForProcessInstance("stringVar", instanceDto.getId());
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
@@ -342,7 +342,7 @@ public class VariableImportIT {
   private ProcessInstanceEngineDto createImportAndDeleteTwoProcessInstancesWithVariables(Map<String, Object> variables) throws IOException {
     ProcessInstanceEngineDto firstProcInst = deployAndStartSimpleServiceTaskWithVariables(variables);
     ProcessInstanceEngineDto secondProcInst = engineRule.startProcessInstance(firstProcInst.getDefinitionId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     engineRule.deleteHistoricProcessInstance(firstProcInst.getId());
     engineRule.deleteHistoricProcessInstance(secondProcInst.getId());

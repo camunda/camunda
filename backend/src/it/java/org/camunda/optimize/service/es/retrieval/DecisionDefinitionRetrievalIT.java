@@ -26,7 +26,8 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
       // given
       deployAndStartSimpleDecisionDefinition(DECISION_DEFINITION_KEY + i);
     }
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.getConfigurationService().setEngineImportDecisionDefinitionXmlMaxPageSize(11);
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -46,7 +47,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
       deployAndStartSimpleDecisionDefinition(decisionDefinitionKey);
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -71,7 +72,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     final DmnModelInstance modelInstance = createSimpleDmnModel(decisionDefinitionKey);
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineRule.deployDecisionDefinition(modelInstance);
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -96,7 +97,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
       deployAndStartSimpleDecisionDefinition(decisionDefinitionKey);
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
 
     addDecisionDefinitionWithoutXmlToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -121,7 +122,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     final DmnModelInstance modelInstance = createSimpleDmnModel(decisionDefinitionKey);
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineRule.deployDecisionDefinition(modelInstance);
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -152,7 +153,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto2 =
       engineRule.deployDecisionDefinition(modelInstance2);
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when

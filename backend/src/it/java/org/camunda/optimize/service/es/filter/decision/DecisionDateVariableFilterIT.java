@@ -36,7 +36,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
       createInputsWithDate(200.0, "2019-06-06T00:00:00+00:00")
     );
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -76,7 +76,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
       createInputsWithDate(200.0, "2019-06-06T00:00:00+00:00")
     );
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -121,7 +121,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
       createInputsWithDate(300.0, "2019-06-06T00:00:00+00:00")
     );
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when

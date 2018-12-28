@@ -633,7 +633,7 @@ public class SharingServiceIT extends AbstractSharingIT {
   public void errorMessageIsWellStructured () {
     //given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess("aProcess");
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     String reportId = this.createNewReport();

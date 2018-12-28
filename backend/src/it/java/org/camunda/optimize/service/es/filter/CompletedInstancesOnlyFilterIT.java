@@ -45,7 +45,7 @@ public class CompletedInstancesOnlyFilterIT {
     engineRule.finishAllUserTasks(firstProcInst.getId());
     engineRule.finishAllUserTasks(secondProcInst.getId());
     
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when

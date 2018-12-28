@@ -42,7 +42,7 @@ public class DurationFilterIT extends AbstractDurationFilterIT {
   public void testValidationExceptionOnNullFilterField() throws Exception {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     ProcessReportDataDto reportData =

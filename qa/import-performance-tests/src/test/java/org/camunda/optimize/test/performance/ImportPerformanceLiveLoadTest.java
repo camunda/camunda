@@ -42,7 +42,7 @@ public class ImportPerformanceLiveLoadTest extends AbstractImportTest {
     waitForDataGenerationTaskToComplete(optimizeStartTime, dataGenerationTask1);
 
     // AND wait for data import to finish
-    embeddedOptimizeRule.resetBackoffAndScheduleAllImportsAndWaitUntilFinished();
+    embeddedOptimizeRule.importAllEngineEntitiesFromLastIndex();
     progressReporterExecutorService.shutdown();
 
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();

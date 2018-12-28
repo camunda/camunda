@@ -225,7 +225,7 @@ public class AuthenticationExtractorPluginIT {
 
   private void deployAndImportTestDefinition() {
     deploySimpleProcessDefinition();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
   }
 

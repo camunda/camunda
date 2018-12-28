@@ -42,7 +42,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     DecisionDefinitionEngineDto decisionDefinitionDto2 = engineRule.deployAndStartDecisionDefinition();
     engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -83,7 +83,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     DecisionDefinitionEngineDto decisionDefinitionDto2 = engineRule.deployAndStartDecisionDefinition();
     engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -126,7 +126,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     DecisionDefinitionEngineDto decisionDefinitionDto2 = engineRule.deployAndStartDecisionDefinition();
     engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -171,7 +171,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
     );
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -208,7 +208,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
     );
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -245,7 +245,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       otherDecisionDefinition.getId(), createInputs(100.0, "Misc")
     );
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when

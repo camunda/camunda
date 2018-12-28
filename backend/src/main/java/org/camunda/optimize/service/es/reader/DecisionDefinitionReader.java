@@ -58,10 +58,10 @@ public class DecisionDefinitionReader {
   }
 
   public List<DecisionDefinitionOptimizeDto> getDecisionDefinitionsAsService(final boolean withXml) {
-    return getDecisionDefinitions(null, withXml);
+    return getFullyImportedDecisionDefinitions(null, withXml);
   }
 
-  public List<DecisionDefinitionOptimizeDto> getDecisionDefinitions(final String userId, final boolean withXml) {
+  public List<DecisionDefinitionOptimizeDto> getFullyImportedDecisionDefinitions(final String userId, final boolean withXml) {
     logger.debug("Fetching decision definitions");
     // the front-end needs the xml to work properly. Therefore, we only want to expose definitions
     // where the import is complete including the xml
@@ -90,6 +90,33 @@ public class DecisionDefinitionReader {
     }
 
     return definitionsResult;
+  }
+
+  /**
+   * This function retrieves all decision definitions independent of if
+   * the respective xml was already imported or not.
+   */
+  public List<DecisionDefinitionOptimizeDto> getAllDecisionDefinitionWithoutXml() {
+    logger.debug("Fetching all decision definitions including those where the xml hasn't been fetched yet.");
+    final QueryBuilder query = QueryBuilders.matchAllQuery();
+
+    String[] fieldsToExclude = new String[]{DecisionDefinitionType.DECISION_DEFINITION_XML};
+
+    SearchResponse scrollResp = esClient
+      .prepareSearch(getOptimizeIndexAliasForType(DECISION_DEFINITION_TYPE))
+      .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
+      .setQuery(query)
+      .setFetchSource(null, fieldsToExclude)
+      .setSize(ElasticsearchConstants.LIST_FETCH_LIMIT)
+      .get();
+
+    return ElasticsearchHelper.retrieveAllScrollResults(
+      scrollResp,
+      DecisionDefinitionOptimizeDto.class,
+      objectMapper,
+      esClient,
+      configurationService.getElasticsearchScrollTimeout()
+    );
   }
 
   public Optional<String> getDecisionDefinitionXml(final String userId,
@@ -121,8 +148,8 @@ public class DecisionDefinitionReader {
     return definitionOptimizeDto;
   }
 
-  private List<DecisionDefinitionOptimizeDto> getDecisionDefinitions(String userId) {
-    return this.getDecisionDefinitions(userId, false);
+  private List<DecisionDefinitionOptimizeDto> getFullyImportedDecisionDefinitions(String userId) {
+    return this.getFullyImportedDecisionDefinitions(userId, false);
   }
 
   private List<DecisionDefinitionOptimizeDto> filterAuthorizedDecisionDefinitions(final String userId,
@@ -189,7 +216,7 @@ public class DecisionDefinitionReader {
 
   private Map<String, DecisionDefinitionGroupOptimizeDto> getKeyToDecisionDefinitionMap(String userId) {
     Map<String, DecisionDefinitionGroupOptimizeDto> resultMap = new HashMap<>();
-    List<DecisionDefinitionOptimizeDto> allDefinitions = getDecisionDefinitions(userId);
+    List<DecisionDefinitionOptimizeDto> allDefinitions = getFullyImportedDecisionDefinitions(userId);
     for (DecisionDefinitionOptimizeDto decisionDefinition : allDefinitions) {
       String key = decisionDefinition.getKey();
       if (!resultMap.containsKey(key)) {

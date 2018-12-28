@@ -223,7 +223,7 @@ public class ReportAuthorizationIT {
     deployAndStartSimpleProcessDefinition(authorizedProcessDefinitionKey);
     grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, authorizedProcessDefinitionKey);
     deployAndStartSimpleProcessDefinition(notAuthorizedProcessDefinitionKey);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     String authorizedReportId = createNewSingleMapReport(authorizedProcessDefinitionKey);
@@ -283,7 +283,7 @@ public class ReportAuthorizationIT {
         throw new IllegalStateException("Uncovered definitionResourceType: " + definitionResourceType);
     }
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
   }
 

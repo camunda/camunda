@@ -34,7 +34,7 @@ public class DecisionBooleanVariableFilterIT extends AbstractDecisionDefinitionI
       createInputs(2000.0, "Misc")
     );
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when

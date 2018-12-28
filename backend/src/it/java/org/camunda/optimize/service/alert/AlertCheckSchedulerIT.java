@@ -57,7 +57,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
     engineRule.startProcessInstance(processDefinition.getId());
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     String reportId = createAndStoreNumberReport(processDefinition);
@@ -269,7 +269,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
     engineRule.startProcessInstance(processDefinition.getId());
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     return createAndStoreNumberReport(processDefinition);

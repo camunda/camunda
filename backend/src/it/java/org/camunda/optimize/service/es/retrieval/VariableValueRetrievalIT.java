@@ -11,9 +11,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -54,7 +51,7 @@ public class VariableValueRetrievalIT {
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", "value3");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -78,7 +75,7 @@ public class VariableValueRetrievalIT {
         engineRule.startProcessInstance(processDefinition.getId(), variables);
       }
     );
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -97,7 +94,7 @@ public class VariableValueRetrievalIT {
     variables.put("var2", "value2");
     variables.put("var3", "value3");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -118,7 +115,7 @@ public class VariableValueRetrievalIT {
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", "value2");
     engineRule.startProcessInstance(processDefinition2.getId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -138,7 +135,7 @@ public class VariableValueRetrievalIT {
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", true);
     engineRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -158,7 +155,7 @@ public class VariableValueRetrievalIT {
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", "value1");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -183,7 +180,7 @@ public class VariableValueRetrievalIT {
     variables.put("doubleVar", 5.5);
     variables.put("stringVar", "aString");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     for (String name : variables.keySet()) {
@@ -234,7 +231,7 @@ public class VariableValueRetrievalIT {
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", "value3");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -263,7 +260,7 @@ public class VariableValueRetrievalIT {
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", "value3");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -292,7 +289,7 @@ public class VariableValueRetrievalIT {
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", "value3");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -321,7 +318,7 @@ public class VariableValueRetrievalIT {
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", "ball");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -349,7 +346,7 @@ public class VariableValueRetrievalIT {
     variables.put("var", "doSomething");
     variables.put("foo", "oooo");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -376,7 +373,7 @@ public class VariableValueRetrievalIT {
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", "oooo");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -407,7 +404,7 @@ public class VariableValueRetrievalIT {
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", "tsoi-zhiv");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -437,7 +434,7 @@ public class VariableValueRetrievalIT {
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", "oobaro");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -462,7 +459,7 @@ public class VariableValueRetrievalIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", "fooo");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -485,7 +482,7 @@ public class VariableValueRetrievalIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", 2);
     engineRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -508,7 +505,7 @@ public class VariableValueRetrievalIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", "foo");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -531,7 +528,7 @@ public class VariableValueRetrievalIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", "foo");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when

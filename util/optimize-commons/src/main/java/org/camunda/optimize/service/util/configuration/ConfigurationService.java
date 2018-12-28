@@ -973,6 +973,10 @@ public class ConfigurationService {
     this.engineImportProcessDefinitionXmlMaxPageSize = engineImportProcessDefinitionXmlMaxPageSize;
   }
 
+  public void setEngineImportDecisionDefinitionXmlMaxPageSize(Integer engineImportDecisionDefinitionXmlMaxPageSize) {
+    this.engineImportDecisionDefinitionXmlMaxPageSize = engineImportDecisionDefinitionXmlMaxPageSize;
+  }
+
   public void setProcessDefinitionXmlEndpoint(String processDefinitionXmlEndpoint) {
     this.processDefinitionXmlEndpoint = processDefinitionXmlEndpoint;
   }

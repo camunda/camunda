@@ -153,7 +153,7 @@ public class QueryPerformanceTest {
     logger.info("Start importing engine data...");
     ExecutorService executor = Executors.newSingleThreadExecutor();
     executor.execute(
-      () -> embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities()
+      () -> embeddedOptimizeRule.importAllEngineEntitiesFromScratch()
     );
 
     executor.shutdown();

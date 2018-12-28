@@ -68,7 +68,7 @@ public class DurationFilterParametrizedIT extends AbstractDurationFilterIT {
       processInstance = deployAndStartSimpleProcess();
     }
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when

@@ -35,7 +35,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
       createInputs(Double.valueOf(categoryInputValueToFilterFor), "Misc")
     );
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -80,7 +80,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
       createInputs(Double.valueOf(secondCategoryInputValueToFilterFor), "Misc")
     );
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -122,7 +122,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
       createInputs(Double.valueOf(categoryInputValueToExclude), "Misc")
     );
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -161,7 +161,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
       createInputs(Double.valueOf(categoryInputValueToFilterFor), "Misc")
     );
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -195,7 +195,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
       createInputs(200.0, "Misc")
     );
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when

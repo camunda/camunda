@@ -120,7 +120,7 @@ public class BranchAnalysisQueryIT {
     //given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
@@ -159,7 +159,7 @@ public class BranchAnalysisQueryIT {
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     startSimpleGatewayProcessAndTakeTask2(processDefinition);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
@@ -188,7 +188,7 @@ public class BranchAnalysisQueryIT {
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessWithUserTask();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     startSimpleGatewayProcessAndTakeTask2(processDefinition);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
@@ -219,7 +219,7 @@ public class BranchAnalysisQueryIT {
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     ProcessDefinitionEngineDto processDefinition2 = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask2(processDefinition2);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
@@ -249,7 +249,7 @@ public class BranchAnalysisQueryIT {
     ProcessInstanceEngineDto processInstance = startSimpleGatewayProcessAndTakeTask1(processDefinition);
     OffsetDateTime now =
         engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
@@ -287,7 +287,7 @@ public class BranchAnalysisQueryIT {
     ProcessInstanceEngineDto processInstance = startSimpleGatewayProcessAndTakeTask1(processDefinition);
     OffsetDateTime now =
         engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
@@ -323,7 +323,7 @@ public class BranchAnalysisQueryIT {
     //given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
@@ -378,7 +378,7 @@ public class BranchAnalysisQueryIT {
     startBypassProcessAndTakeLongWayWithoutTask(processDefinition);
     startBypassProcessAndTakeShortcut(processDefinition);
     startBypassProcessAndTakeLongWayWithTask(processDefinition);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
@@ -432,7 +432,7 @@ public class BranchAnalysisQueryIT {
     //given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
@@ -467,7 +467,7 @@ public class BranchAnalysisQueryIT {
     //given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
@@ -531,7 +531,7 @@ public class BranchAnalysisQueryIT {
     ProcessInstanceEngineDto instanceEngineDto = engineRule.deployAndStartProcessWithVariables(modelInstance, variables);
     variables.put("takeShortcut", false);
     engineRule.startProcessInstance(instanceEngineDto.getDefinitionId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
@@ -581,7 +581,7 @@ public class BranchAnalysisQueryIT {
     ProcessInstanceEngineDto instanceEngineDto = engineRule.deployAndStartProcessWithVariables(modelInstance, variables);
     variables.put("takeShortcut", false);
     engineRule.startProcessInstance(instanceEngineDto.getDefinitionId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
@@ -634,7 +634,7 @@ public class BranchAnalysisQueryIT {
     ProcessInstanceEngineDto instanceEngineDto = engineRule.deployAndStartProcessWithVariables(modelInstance, variables);
     variables.put("anotherRound", false);
     engineRule.startProcessInstance(instanceEngineDto.getDefinitionId(), variables);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when

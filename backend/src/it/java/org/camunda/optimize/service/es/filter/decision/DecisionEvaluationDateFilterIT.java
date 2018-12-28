@@ -32,7 +32,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     engineRule.startDecisionInstance(decisionDefinitionDto.getId());
     engineRule.startDecisionInstance(decisionDefinitionDto.getId());
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -59,7 +59,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     engineRule.startDecisionInstance(decisionDefinitionDto.getId());
     engineRule.startDecisionInstance(decisionDefinitionDto.getId());
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -94,7 +94,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     engineRule.startDecisionInstance(decisionDefinitionDto.getId());
 
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -120,7 +120,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     DecisionDefinitionEngineDto decisionDefinitionDto = engineRule.deployDecisionDefinition();
     engineRule.startDecisionInstance(decisionDefinitionDto.getId());
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -143,7 +143,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     DecisionDefinitionEngineDto decisionDefinitionDto = engineRule.deployDecisionDefinition();
     engineRule.startDecisionInstance(decisionDefinitionDto.getId());
 
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when

@@ -79,7 +79,7 @@ public class ExecutedFlowNodeQueryFilterIT {
     ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
     engineRule.startProcessInstance(processDefinition.getId());
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -100,7 +100,7 @@ public class ExecutedFlowNodeQueryFilterIT {
     ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
     engineRule.startProcessInstance(processDefinition.getId());
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -126,7 +126,7 @@ public class ExecutedFlowNodeQueryFilterIT {
     instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
     engineRule.startProcessInstance(processDefinition.getId());
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -152,7 +152,7 @@ public class ExecutedFlowNodeQueryFilterIT {
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
     engineRule.startProcessInstance(processDefinition.getId());
     engineRule.startProcessInstance(processDefinition.getId());
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -179,7 +179,7 @@ public class ExecutedFlowNodeQueryFilterIT {
     instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
     engineRule.startProcessInstance(processDefinition.getId());
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -208,7 +208,7 @@ public class ExecutedFlowNodeQueryFilterIT {
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
     engineRule.startProcessInstance(processDefinition.getId());
     engineRule.startProcessInstance(processDefinition.getId());
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -257,7 +257,7 @@ public class ExecutedFlowNodeQueryFilterIT {
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
     engineRule.startProcessInstance(processDefinition.getId());
     engineRule.startProcessInstance(processDefinition.getId());
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -292,7 +292,7 @@ public class ExecutedFlowNodeQueryFilterIT {
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
     engineRule.startProcessInstance(processDefinition.getId(), takePathA);
     engineRule.startProcessInstance(processDefinition.getId(), takePathB);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -332,7 +332,7 @@ public class ExecutedFlowNodeQueryFilterIT {
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
     engineRule.startProcessInstance(processDefinition.getId(), takePathA);
     engineRule.startProcessInstance(processDefinition.getId(), takePathB);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -371,7 +371,7 @@ public class ExecutedFlowNodeQueryFilterIT {
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
     engineRule.startProcessInstance(processDefinition.getId(), takePathA);
     engineRule.startProcessInstance(processDefinition.getId(), takePathB);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
@@ -419,7 +419,7 @@ public class ExecutedFlowNodeQueryFilterIT {
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
     instanceEngineDto = engineRule.startProcessInstance(processDefinition2.getId());
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when

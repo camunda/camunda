@@ -77,7 +77,7 @@ public class MultipleEngineSupportIT {
 
     // when
     embeddedOptimizeRule.updateImportIndex();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     SearchResponse searchResponse = elasticSearchRule.getClient()
@@ -107,7 +107,7 @@ public class MultipleEngineSupportIT {
 
     // when
     embeddedOptimizeRule.updateImportIndex();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     SearchResponse searchResponse = elasticSearchRule.getClient()
@@ -137,7 +137,7 @@ public class MultipleEngineSupportIT {
 
     // when
     embeddedOptimizeRule.updateImportIndex();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     SearchResponse searchResponse = elasticSearchRule.getClient()
@@ -180,7 +180,7 @@ public class MultipleEngineSupportIT {
 
     // when
     embeddedOptimizeRule.updateImportIndex();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     SearchResponse searchResponse = elasticSearchRule.getClient()
@@ -290,7 +290,7 @@ public class MultipleEngineSupportIT {
     deployAndStartSimpleProcessDefinitionForAllEngines();
     deployAndStartUserTaskProcessForAllEngines();
     deployAndStartDecisionDefinitionForAllEngines();
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
