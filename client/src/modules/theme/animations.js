@@ -16,7 +16,14 @@ const Animations = {
   100% {
     opacity: 1;
   }
-`
+`,
+  fold: (minValue, maxValue) => keyframes`
+  0% {
+    max-height: ${minValue.toString() + 'px'};
+  }
+  100% {
+    max-height: ${maxValue.toString() + 'px'}
+  }`
 };
 
 export default Animations;

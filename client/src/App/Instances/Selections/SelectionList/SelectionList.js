@@ -1,8 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import {CSSTransition, TransitionGroup} from 'react-transition-group';
 
 import Selection from 'modules/components/Selection';
-import ContextualMessage from 'modules/components/ContextualMessage';
 import {withSelection} from 'modules/contexts/SelectionContext';
 import {getSelectionById} from 'modules/utils/selection';
 import {applyOperation} from 'modules/api/instances';
@@ -40,6 +40,7 @@ class SelectionList extends React.Component {
   };
 
   render() {
+    const transitionTiming = 200;
     const {
       selections,
       openSelection,
@@ -50,35 +51,52 @@ class SelectionList extends React.Component {
       <React.Fragment>
         {selections.length === 10 && (
           <Styled.MessageWrapper>
-            <ContextualMessage type={MESSAGES_TYPE.DROP_SELECTION} />
+            <Styled.SelectionMessage type={MESSAGES_TYPE.DROP_SELECTION} />
           </Styled.MessageWrapper>
         )}
 
         <Styled.Ul>
-          {selections.length ? (
-            selections.map(selection => {
-              const {selectionId, instancesMap, totalCount} = selection;
+          <TransitionGroup>
+            {selections.length ? (
+              selections.map(selection => {
+                const {selectionId, instancesMap, totalCount} = selection;
 
-              return (
-                <Styled.Li data-test="selection-list-item" key={selectionId}>
-                  <Selection
-                    isOpen={openSelection === selectionId}
-                    selectionId={selectionId}
-                    instances={instancesMap}
-                    instanceCount={totalCount}
-                    onRetry={() => this.handleRetrySelection(selectionId)}
-                    onCancel={() => this.handleCancelSelection(selectionId)}
-                    onToggle={() => onToggleSelection(selectionId)}
-                    onDelete={() => onDeleteSelection(selectionId)}
-                  />
-                </Styled.Li>
-              );
-            })
-          ) : (
-            <Styled.NoSelectionWrapper data-test="empty-selection-list-message">
-              {NO_SELECTIONS_MESSAGE}
-            </Styled.NoSelectionWrapper>
-          )}
+                return (
+                  <CSSTransition
+                    key={selectionId}
+                    classNames="transition"
+                    timeout={transitionTiming}
+                  >
+                    <Styled.Li
+                      data-test="selection-list-item"
+                      key={selectionId}
+                      transitionTiming={transitionTiming}
+                    >
+                      <Selection
+                        isOpen={openSelection === selectionId}
+                        selectionId={selectionId}
+                        instances={instancesMap}
+                        instanceCount={totalCount}
+                        onRetry={() => this.handleRetrySelection(selectionId)}
+                        onCancel={() => this.handleCancelSelection(selectionId)}
+                        onToggle={() => onToggleSelection(selectionId)}
+                        onDelete={() => onDeleteSelection(selectionId)}
+                      />
+                    </Styled.Li>
+                  </CSSTransition>
+                );
+              })
+            ) : (
+              <CSSTransition classNames="transition" timeout={transitionTiming}>
+                <Styled.NoSelectionWrapper
+                  data-test="empty-selection-list-message"
+                  transitionTiming={transitionTiming}
+                >
+                  {NO_SELECTIONS_MESSAGE}
+                </Styled.NoSelectionWrapper>
+              </CSSTransition>
+            )}
+          </TransitionGroup>
         </Styled.Ul>
       </React.Fragment>
     );

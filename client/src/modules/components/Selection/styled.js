@@ -23,6 +23,7 @@ export const iconStyle = css`
 `;
 
 export const Dl = styled.dl`
+  margin: 0px;
   width: 442px;
 `;
 

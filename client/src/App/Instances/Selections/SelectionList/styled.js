@@ -1,5 +1,7 @@
-import styled from 'styled-components';
-import {themed, themeStyle, Colors} from 'modules/theme';
+import styled, {css} from 'styled-components';
+import {themed, themeStyle, Colors, Animations} from 'modules/theme';
+
+import ContextualMessage from 'modules/components/ContextualMessage';
 
 const themedWith = (dark, light) => {
   return themeStyle({
@@ -7,6 +9,38 @@ const themedWith = (dark, light) => {
     light
   });
 };
+
+const addSelectionTransitionStyles = css`
+  &.transition-enter {
+    opacity: 0;
+  }
+  &.transition-enter-active {
+    opacity: 1;
+    transition: opacity ${({transitionTiming}) => transitionTiming + 'ms'};
+    overflow: hidden;
+    animation-name: ${Animations.fold(0, 474)};
+    animation-duration: ${({transitionTiming}) => transitionTiming + 'ms'};
+  }
+  &.transition-enter-done {
+    opacity: 1;
+    transition: opacity ${({transitionTiming}) => transitionTiming + 'ms'};
+  }
+  &.transition-exit {
+    opacity: 0;
+    transition: opacity ${({transitionTiming}) => transitionTiming + 'ms'};
+  }
+  &.transition-exit-active {
+    opacity: 0;
+    max-height: 0px;
+    overflow: hidden;
+    animation-name: ${Animations.fold(474, 0)};
+    animation-duration: ${({transitionTiming}) => transitionTiming + 'ms'};
+  }
+  &.transition-exit-done {
+    opacity: 0;
+    max-height: 0px;
+  }
+`;
 
 export const Ul = styled.ul`
   padding-left: 35px;
@@ -18,7 +52,7 @@ export const Ul = styled.ul`
 export const MessageWrapper = styled.div`
   display: flex;
   justify-content: flex-end;
-  margin-top: 20px;
+  /* margin-top: 20px; */
   padding-right: 40px;
 `;
 
@@ -28,6 +62,12 @@ export const Li = styled.li`
   &:first-child {
     margin-top: 20px;
   }
+  ${addSelectionTransitionStyles};
+`;
+
+export const SelectionMessage = styled(ContextualMessage)`
+  margin-top: 20px;
+  height: 23px;
 `;
 
 export const NoSelectionWrapper = themed(styled.div`
@@ -36,7 +76,7 @@ export const NoSelectionWrapper = themed(styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 18px;
+  margin-top: 20px;
 
   color: ${themedWith('#ffffff', Colors.uiLight06)};
   opacity: ${themedWith(0.9, 1)};
@@ -46,4 +86,5 @@ export const NoSelectionWrapper = themed(styled.div`
 
   text-align: center;
   font-size: 13px;
+  ${addSelectionTransitionStyles};
 `);
