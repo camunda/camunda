@@ -27,9 +27,44 @@ export const Dl = styled.dl`
   width: 442px;
 `;
 
+const openSelectionTransitionStyle = css`
+  &.transition-enter {
+    opacity: 0;
+  }
+  &.transition-enter-active {
+    opacity: 1;
+    transition: opacity ${({transitionTiming}) => transitionTiming.enter + 'ms'};
+    overflow: hidden;
+    animation-name: ${Animations.fold(0, 474)};
+    animation-duration: ${({transitionTiming}) =>
+      transitionTiming.enter + 'ms'};
+  }
+  &.transition-enter-done {
+    opacity: 1;
+    transition: opacity ${({transitionTiming}) => transitionTiming.enter + 'ms'};
+  }
+  &.transition-exit {
+    opacity: 0;
+    transition: opacity ${({transitionTiming}) => transitionTiming.exit + 'ms'};
+  }
+  &.transition-exit-active {
+    opacity: 0;
+    max-height: 0px;
+    overflow: hidden;
+    animation-name: ${Animations.fold(474, 0)};
+    animation-duration: ${({transitionTiming}) => transitionTiming.exit + 'ms'};
+  }
+  &.transition-exit-done {
+    opacity: 0;
+    max-height: 0px;
+  }
+`;
+
 export const Dd = styled.dd`
   padding: 0;
   margin: 0;
+
+  ${openSelectionTransitionStyle};
 `;
 
 const hoverSelector = () => {
@@ -164,10 +199,18 @@ export const OptionLabel = styled.label`
   margin-left: 8px;
 `;
 
-const fadeInAnimation = () =>
-  css`
-    animation: 0.8s ${Animations.Selection};
-  `;
+const addInstanceTransitionStyles = css`
+  &.transition-enter {
+    opacity: 0;
+  }
+  &.transition-enter-active {
+    opacity: 1;
+    transition: opacity ${({transitionTiming}) => transitionTiming + 'ms'};
+  }
+  &.transition-enter-done {
+    opacity: 1;
+  }
+`;
 
 export const Li = themed(styled.li`
   display: flex;
@@ -177,9 +220,9 @@ export const Li = themed(styled.li`
   color: ${themedWith('#ffffff', Colors.uiDark04)};
   font-size: 13px;
 
-  ${({isNew}) => isNew && fadeInAnimation};
+  ${addInstanceTransitionStyles};
 
-  opacity: 1;
+  /* opacity: 1; */
 
   & * {
     top: 1px;

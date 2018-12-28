@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import {CSSTransition, TransitionGroup} from 'react-transition-group';
 
 import StateIcon from 'modules/components/StateIcon';
 import Dropdown from 'modules/components/Dropdown';
@@ -134,29 +135,40 @@ export default class Selection extends React.Component {
 
   renderBody = () => {
     const instances = [...this.props.instances];
-    const {numberOfNewInstances} = this.state;
+    const transitionTiming = 800;
     return (
       <ul>
-        {instances.map(([_, instanceDetails], index) => {
-          const {state, type} = getLatestOperation(instanceDetails.operations);
-          return (
-            <Styled.Li key={index} isNew={index < numberOfNewInstances}>
-              <Styled.StatusCell>
-                <StateIcon instance={instanceDetails} />
-              </Styled.StatusCell>
-              <Styled.NameCell>
-                {getWorkflowName(instanceDetails)}
-              </Styled.NameCell>
-              <Styled.IdCell>{instanceDetails.id}</Styled.IdCell>
-              <Styled.ActionStatusCell>
-                <Styled.InstanceActionStatus
-                  operationState={this.state.operationState || state}
-                  operationType={type}
-                />
-              </Styled.ActionStatusCell>
-            </Styled.Li>
-          );
-        })}
+        <TransitionGroup>
+          {instances.map(([_, instanceDetails], index) => {
+            const {state, type} = getLatestOperation(
+              instanceDetails.operations
+            );
+            return (
+              <CSSTransition
+                data-test="addInstanceTransition"
+                classNames="transition"
+                key={index}
+                timeout={transitionTiming}
+              >
+                <Styled.Li key={index} transitionTiming={transitionTiming}>
+                  <Styled.StatusCell>
+                    <StateIcon instance={instanceDetails} />
+                  </Styled.StatusCell>
+                  <Styled.NameCell>
+                    {getWorkflowName(instanceDetails)}
+                  </Styled.NameCell>
+                  <Styled.IdCell>{instanceDetails.id}</Styled.IdCell>
+                  <Styled.ActionStatusCell>
+                    <Styled.InstanceActionStatus
+                      operationState={this.state.operationState || state}
+                      operationType={type}
+                    />
+                  </Styled.ActionStatusCell>
+                </Styled.Li>
+              </CSSTransition>
+            );
+          })}
+        </TransitionGroup>
       </ul>
     );
   };
@@ -178,20 +190,28 @@ export default class Selection extends React.Component {
 
   render() {
     const idString = `selection-${this.props.selectionId}`;
-
+    const transitionTiming = {enter: 200, exit: 100};
     return (
       <Styled.Dl role="presentation">
         {this.renderHeader(idString)}
-        {this.props.isOpen && (
+        <CSSTransition
+          data-test="openSelectionTransition"
+          classNames="transition"
+          in={this.props.isOpen}
+          timeout={transitionTiming}
+          mountOnEnter
+          unmountOnExit
+        >
           <Styled.Dd
             role="region"
             id={idString}
+            transitionTiming={transitionTiming}
             aria-labelledby={`${idString}-toggle`}
           >
             {this.renderBody(idString)}
             {this.renderFooter()}
           </Styled.Dd>
-        )}
+        </CSSTransition>
       </Styled.Dl>
     );
   }
