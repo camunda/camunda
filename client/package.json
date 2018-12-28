@@ -38,7 +38,7 @@
     "jest-enzyme": "^7.0.0",
     "jest-junit": "^5.2.0",
     "lint-staged": "^8.0.4",
-    "prettier": "^1.14.3",
+    "prettier": "^1.15.3",
     "react-scripts": "2.0.5",
     "react-styleguidist": "^8.0.1"
   },
