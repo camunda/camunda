@@ -9,7 +9,8 @@ import {
   LabeledInput,
   Select,
   ErrorMessage,
-  Typeahead
+  Typeahead,
+  Message
 } from 'components';
 import {emailNotificationIsEnabled} from './service';
 
@@ -203,14 +204,14 @@ export default function AlertModal(reports) {
             <div className="AlertModal__topSection">
               <div className="AlertModal__inputGroup">
                 {!emailNotificationIsEnabled && (
-                  <span className="AlertModal__configuration-warning">
-                    Email notification service is not configured. Please check the{' '}
-                    {
-                      <a href="https://docs.camunda.org/optimize/latest/technical-guide/setup/configuration/#email">
-                        Optimize documentation
-                      </a>
-                    }
-                  </span>
+                  <Message type="warning">
+                    The email notification service is not configured. Optimize won't be able to
+                    inform you about critical values. Please check out the{' '}
+                    <a href="https://docs.camunda.org/optimize/latest/technical-guide/setup/configuration/#email">
+                      Optimize documentation
+                    </a>{' '}
+                    on how to enable the notification service.
+                  </Message>
                 )}
                 <LabeledInput
                   id="name-input"

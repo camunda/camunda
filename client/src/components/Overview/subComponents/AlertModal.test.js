@@ -124,11 +124,8 @@ it('should disable the submit button if the check interval is negative', () => {
 it('should show warning that email is not configured', async () => {
   service.emailNotificationIsEnabled.mockReturnValue(false);
   const node = await shallow(<AlertModal reports={reports} />);
-  await node.update();
 
-  expect(
-    node.find('.AlertModal__configuration-warning').hasClass('AlertModal__configuration-warning')
-  ).toBe(true);
+  expect(node.find('Message').exists()).toBe(true);
 });
 
 it('should not display warning if email is configured', async () => {
