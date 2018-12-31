@@ -22,6 +22,7 @@ import io.zeebe.broker.exporter.record.RecordImpl;
 import io.zeebe.broker.exporter.record.value.IncidentRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.JobBatchRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.JobRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.MessageStartEventSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.MessageSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.RaftRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.TimerRecordValueImpl;
@@ -31,6 +32,7 @@ import io.zeebe.broker.exporter.record.value.deployment.DeployedWorkflowImpl;
 import io.zeebe.broker.exporter.record.value.deployment.DeploymentResourceImpl;
 import io.zeebe.broker.exporter.record.value.job.HeadersImpl;
 import io.zeebe.broker.exporter.record.value.raft.RaftMemberImpl;
+import io.zeebe.broker.subscription.message.data.MessageStartEventSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.workflow.data.TimerRecord;
@@ -115,6 +117,9 @@ public class ExporterRecordMapper {
         break;
       case TIMER:
         valueSupplier = this::ofTimerRecord;
+        break;
+      case MESSAGE_START_EVENT_SUBSCRIPTION:
+        valueSupplier = this::ofMessageStartEventSubscriptionRecord;
         break;
       default:
         return null;
@@ -256,6 +261,18 @@ public class ExporterRecordMapper {
         asString(record.getCorrelationKey()),
         record.getWorkflowInstanceKey(),
         record.getElementInstanceKey());
+  }
+
+  private MessageStartEventSubscriptionRecordValueImpl ofMessageStartEventSubscriptionRecord(
+      final LoggedEvent event) {
+    final MessageStartEventSubscriptionRecord record = new MessageStartEventSubscriptionRecord();
+    event.readValue(record);
+
+    return new MessageStartEventSubscriptionRecordValueImpl(
+        objectMapper,
+        record.getWorkflowKey(),
+        asString(record.getStartEventId()),
+        asString(record.getMessageName()));
   }
 
   private WorkflowInstanceRecordValue ofWorkflowInstanceRecord(final LoggedEvent event) {

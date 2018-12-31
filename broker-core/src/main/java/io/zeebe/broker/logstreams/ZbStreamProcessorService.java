@@ -32,11 +32,11 @@ import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.processor.MessageEventProcessors;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.transport.controlmessage.ControlMessageHandlerManager;
-import io.zeebe.broker.workflow.deployment.distribute.processor.DeploymentCreatedProcessor;
 import io.zeebe.broker.workflow.deployment.distribute.processor.DeploymentDistributeProcessor;
 import io.zeebe.broker.workflow.processor.BpmnStepProcessor;
 import io.zeebe.broker.workflow.processor.CatchEventBehavior;
 import io.zeebe.broker.workflow.processor.WorkflowEventProcessors;
+import io.zeebe.broker.workflow.processor.deployment.DeploymentCreatedProcessor;
 import io.zeebe.broker.workflow.processor.deployment.DeploymentEventProcessors;
 import io.zeebe.broker.workflow.processor.timer.DueDateTimerChecker;
 import io.zeebe.broker.workflow.repository.WorkflowRepository;
@@ -162,10 +162,8 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
             managementApi,
             logStreamWriter);
 
-    typedEventStreamProcessorBuilder
-        .onEvent(ValueType.DEPLOYMENT, DeploymentIntent.CREATED, new DeploymentCreatedProcessor())
-        .onCommand(
-            ValueType.DEPLOYMENT, DeploymentIntent.DISTRIBUTE, deploymentDistributeProcessor);
+    typedEventStreamProcessorBuilder.onCommand(
+        ValueType.DEPLOYMENT, DeploymentIntent.DISTRIBUTE, deploymentDistributeProcessor);
   }
 
   private BpmnStepProcessor addWorkflowProcessors(
@@ -203,6 +201,11 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
     } else {
       DeploymentEventProcessors.addDeploymentCreateProcessor(typedProcessorBuilder, workflowState);
     }
+
+    typedProcessorBuilder.onEvent(
+        ValueType.DEPLOYMENT,
+        DeploymentIntent.CREATED,
+        new DeploymentCreatedProcessor(workflowState));
   }
 
   private void addIncidentProcessors(

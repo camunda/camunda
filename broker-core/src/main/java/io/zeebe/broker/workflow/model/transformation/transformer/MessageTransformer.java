@@ -41,7 +41,7 @@ public class MessageTransformer implements ModelElementTransformer<Message> {
     final ExecutableMessage executableElement = new ExecutableMessage(id);
 
     final ExtensionElements extensionElements = element.getExtensionElements();
-    // If there are no extension elements to a message, the message is not referenced anywhere.
+
     if (extensionElements != null) {
       final ZeebeSubscription subscription =
           extensionElements.getElementsQuery().filterByType(ZeebeSubscription.class).singleResult();
@@ -50,8 +50,10 @@ public class MessageTransformer implements ModelElementTransformer<Message> {
       final JsonPathQuery query = queryCompiler.compile(subscription.getCorrelationKey());
 
       executableElement.setCorrelationKey(query);
-      executableElement.setMessageName(BufferUtil.wrapString(element.getName()));
+    }
 
+    if (element.getName() != null) {
+      executableElement.setMessageName(BufferUtil.wrapString(element.getName()));
       context.addMessage(executableElement);
     }
   }

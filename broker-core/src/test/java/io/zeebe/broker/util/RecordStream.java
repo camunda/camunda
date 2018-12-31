@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.util;
 
+import io.zeebe.broker.subscription.message.data.MessageStartEventSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.workflow.data.TimerRecord;
@@ -80,6 +81,13 @@ public class RecordStream extends StreamWrapper<LoggedEvent, RecordStream> {
     return new TypedRecordStream<>(
         filter(Records::isMessageSubscriptionRecord)
             .map(e -> CopiedTypedEvent.toTypedEvent(e, MessageSubscriptionRecord.class)));
+  }
+
+  public TypedRecordStream<MessageStartEventSubscriptionRecord>
+      onlyMessageStartEventSubscriptionRecords() {
+    return new TypedRecordStream<>(
+        filter(Records::isMessageStartEventSubscriptionRecord)
+            .map(e -> CopiedTypedEvent.toTypedEvent(e, MessageStartEventSubscriptionRecord.class)));
   }
 
   public TypedRecordStream<WorkflowInstanceSubscriptionRecord>

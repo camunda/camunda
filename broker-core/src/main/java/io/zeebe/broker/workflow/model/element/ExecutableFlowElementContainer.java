@@ -29,10 +29,21 @@ import java.util.List;
  */
 public class ExecutableFlowElementContainer extends ExecutableActivity {
 
-  private List<ExecutableCatchEventElement> startEvents = new ArrayList<>();
+  private final List<ExecutableCatchEventElement> startEvents;
 
   public ExecutableFlowElementContainer(String id) {
     super(id);
+    startEvents = new ArrayList<>();
+  }
+
+  public ExecutableCatchEventElement getStartEvent() {
+    // return non-message start event
+    for (ExecutableCatchEventElement startEvent : startEvents) {
+      if (!startEvent.isMessage()) {
+        return startEvent;
+      }
+    }
+    return null;
   }
 
   public List<ExecutableCatchEventElement> getStartEvents() {
@@ -40,6 +51,6 @@ public class ExecutableFlowElementContainer extends ExecutableActivity {
   }
 
   public void addStartEvent(ExecutableCatchEventElement startEvent) {
-    startEvents.add(startEvent);
+    this.startEvents.add(startEvent);
   }
 }

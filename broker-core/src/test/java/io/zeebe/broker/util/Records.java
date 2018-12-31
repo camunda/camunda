@@ -73,6 +73,10 @@ public class Records {
     return isRecordOfType(event, ValueType.MESSAGE_SUBSCRIPTION);
   }
 
+  public static boolean isMessageStartEventSubscriptionRecord(final LoggedEvent event) {
+    return isRecordOfType(event, ValueType.MESSAGE_START_EVENT_SUBSCRIPTION);
+  }
+
   public static boolean isWorkflowInstanceSubscriptionRecord(final LoggedEvent event) {
     return isRecordOfType(event, ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
   }

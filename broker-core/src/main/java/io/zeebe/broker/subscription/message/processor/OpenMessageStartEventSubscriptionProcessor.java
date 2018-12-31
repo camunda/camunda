@@ -15,25 +15,36 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.deployment.distribute.processor;
+package io.zeebe.broker.subscription.message.processor;
 
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
-import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.broker.subscription.message.data.MessageStartEventSubscriptionRecord;
+import io.zeebe.broker.subscription.message.state.MessageStartEventSubscriptionState;
+import io.zeebe.protocol.intent.MessageStartEventSubscriptionIntent;
 
-public class DeploymentCreatedProcessor implements TypedRecordProcessor<DeploymentRecord> {
+public class OpenMessageStartEventSubscriptionProcessor
+    implements TypedRecordProcessor<MessageStartEventSubscriptionRecord> {
+
+  private final MessageStartEventSubscriptionState subscriptionState;
+
+  public OpenMessageStartEventSubscriptionProcessor(
+      MessageStartEventSubscriptionState subscriptionState) {
+    this.subscriptionState = subscriptionState;
+  }
 
   @Override
   public void processRecord(
-      final TypedRecord<DeploymentRecord> event,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
-    final DeploymentRecord deploymentEvent = event.getValue();
+      TypedRecord<MessageStartEventSubscriptionRecord> record,
+      TypedResponseWriter responseWriter,
+      TypedStreamWriter streamWriter) {
 
-    streamWriter.appendFollowUpCommand(
-        event.getKey(), DeploymentIntent.DISTRIBUTE, deploymentEvent);
+    final MessageStartEventSubscriptionRecord subscription = record.getValue();
+    subscriptionState.put(subscription);
+
+    streamWriter.appendFollowUpEvent(
+        record.getKey(), MessageStartEventSubscriptionIntent.OPENED, subscription);
   }
 }

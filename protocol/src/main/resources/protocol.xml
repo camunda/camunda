@@ -43,6 +43,7 @@
       <validValue name="EXPORTER">13</validValue>
       <validValue name="JOB_BATCH">14</validValue>
       <validValue name="TIMER">15</validValue>
+      <validValue name="MESSAGE_START_EVENT_SUBSCRIPTION">16</validValue>
     </enum>
 
     <enum name="ControlMessageType" encodingType="uint8"
