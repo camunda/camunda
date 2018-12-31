@@ -30,9 +30,9 @@ import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.record.RecordingExporter;
-import java.util.ArrayList;
-import java.util.List;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -102,16 +102,19 @@ public class CancelWorkflowInstanceTest {
             .send()
             .join();
 
-    final List<ActivatedJob> jobEvents = new ArrayList<>();
-
-    clientRule
-        .getClient()
-        .newWorker()
-        .jobType("test")
-        .handler((c, job) -> jobEvents.add(job))
-        .open();
-
-    waitUntil(() -> jobEvents.size() > 0);
+    final ActivatedJob job =
+        TestUtil.doRepeatedly(
+                () ->
+                    clientRule
+                        .getClient()
+                        .newActivateJobsCommand()
+                        .jobType("test")
+                        .amount(1)
+                        .send()
+                        .join())
+            .until(response -> !response.getJobs().isEmpty())
+            .getJobs()
+            .get(0);
 
     clientRule
         .getClient()
@@ -119,10 +122,12 @@ public class CancelWorkflowInstanceTest {
         .send()
         .join();
 
+    waitUntil(() -> RecordingExporter.jobRecords(JobIntent.CANCEL).exists());
+
     // when
     assertThatThrownBy(
             () -> {
-              clientRule.getClient().newCompleteCommand(jobEvents.get(0).getKey()).send().join();
+              clientRule.getClient().newCompleteCommand(job.getKey()).send().join();
             })
         .isInstanceOf(ClientException.class);
 
