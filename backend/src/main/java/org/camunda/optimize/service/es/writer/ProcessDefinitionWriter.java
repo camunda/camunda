@@ -8,6 +8,7 @@ import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.slf4j.Logger;
@@ -27,7 +28,7 @@ public class ProcessDefinitionWriter {
   private final Logger logger = LoggerFactory.getLogger(ProcessDefinitionWriter.class);
 
   @Autowired
-  private Client esclient;
+  private TransportClient esclient;
   @Autowired
   private ConfigurationService configurationService;
   @Autowired

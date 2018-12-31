@@ -9,6 +9,7 @@ import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.slf4j.Logger;
@@ -27,12 +28,12 @@ import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.get
 public class DecisionDefinitionWriter {
   private static final Logger logger = LoggerFactory.getLogger(DecisionDefinitionWriter.class);
 
-  private final Client esclient;
+  private final TransportClient esclient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
 
   @Autowired
-  public DecisionDefinitionWriter(final Client esclient,
+  public DecisionDefinitionWriter(final TransportClient esclient,
                                   final ConfigurationService configurationService,
                                   final ObjectMapper objectMapper) {
     this.esclient = esclient;

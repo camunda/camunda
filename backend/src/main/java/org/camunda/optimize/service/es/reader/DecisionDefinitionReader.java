@@ -11,6 +11,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -38,12 +39,12 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 public class DecisionDefinitionReader {
   private static final Logger logger = LoggerFactory.getLogger(DecisionDefinitionReader.class);
 
-  private final Client esClient;
+  private final TransportClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
   private final SessionService sessionService;
 
-  public DecisionDefinitionReader(final Client esClient,
+  public DecisionDefinitionReader(final TransportClient esClient,
                                   final ConfigurationService configurationService,
                                   final ObjectMapper objectMapper,
                                   final SessionService sessionService) {

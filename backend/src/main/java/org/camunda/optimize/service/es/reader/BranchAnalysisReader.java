@@ -15,6 +15,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.slf4j.Logger;
@@ -45,7 +46,7 @@ public class BranchAnalysisReader {
   private final Logger logger = LoggerFactory.getLogger(BranchAnalysisReader.class);
 
   @Autowired
-  private Client esclient;
+  private TransportClient esclient;
   @Autowired
   private ConfigurationService configurationService;
 

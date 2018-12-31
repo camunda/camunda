@@ -11,6 +11,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -44,13 +45,13 @@ public class CollectionReader {
   public static final String EVERYTHING_ELSE_COLLECTION_ID = "everythingElse";
   public static final String EVERYTHING_ELSE_COLLECTION_NAME = "Everything Else";
 
-  private final Client esclient;
+  private final TransportClient esclient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
   private final ReportReader reportReader;
 
   @Autowired
-  public CollectionReader(final Client esclient, final ConfigurationService configurationService,
+  public CollectionReader(final TransportClient esclient, final ConfigurationService configurationService,
                           final ObjectMapper objectMapper,
                           final ReportReader reportReader) {
     this.esclient = esclient;

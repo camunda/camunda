@@ -97,7 +97,6 @@ public class SchemaInitializerIT {
     // when there is a new mapping and I update the mapping
     MyUpdatedEventType updatedEventType = new MyUpdatedEventType(embeddedOptimizeRule.getConfigurationService());
     embeddedOptimizeRule.getElasticSearchSchemaManager().addMapping(updatedEventType);
-    embeddedOptimizeRule.getSchemaInitializer().setInitialized(false);
     embeddedOptimizeRule.getSchemaInitializer().initializeSchema();
 
     // then the mapping contains the new fields

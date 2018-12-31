@@ -44,8 +44,8 @@ public class ResilienceTest {
   private File esFolder;
   private Logger logger = LoggerFactory.getLogger(getClass());
 
-  public static final int ES_TRANSPORT_PORT = 9302;
-  public static final int ES_HTTP_PORT = 9202;
+  private static final int ES_TRANSPORT_PORT = 9302;
+  private static final int ES_HTTP_PORT = 9202;
   public static final long TIMEOUT_CONNECTION_STATUS = 10_000;
 
   @After
@@ -152,7 +152,7 @@ public class ResilienceTest {
     assertThat(response.getLocation().getPath(), is("/license.html"));
   }
 
-  public Node elasticSearchTestNode() throws NodeValidationException, IOException, InterruptedException {
+  private Node elasticSearchTestNode() throws NodeValidationException, InterruptedException {
     ArrayList<Class<? extends Plugin>> classpathPlugins = new ArrayList<>();
     classpathPlugins.add(Netty4Plugin.class);
 
@@ -178,7 +178,7 @@ public class ResilienceTest {
     return node;
   }
 
-  public boolean elasticsearchIsUpRunning(Node node) {
+  private boolean elasticsearchIsUpRunning(Node node) {
     ClusterHealthStatus status = node
         .client()
         .admin()
@@ -192,7 +192,11 @@ public class ResilienceTest {
 
   private static class MyNode extends Node {
     public MyNode(Settings preparedSettings, Collection<Class<? extends Plugin>> classpathPlugins) {
-      super(InternalSettingsPreparer.prepareEnvironment(preparedSettings, null), classpathPlugins);
+      super(InternalSettingsPreparer.prepareEnvironment(preparedSettings, null), classpathPlugins, true);
+    }
+
+    @Override
+    protected void registerDerivedNodeNameWithLogger(String s) {
     }
   }
 

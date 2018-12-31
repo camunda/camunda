@@ -2,7 +2,7 @@ package org.camunda.optimize.service.es;
 
 import org.camunda.optimize.service.util.NamedThreadFactory;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.index.reindex.WorkingBulkByScrollTask;
+import org.elasticsearch.index.reindex.BulkByScrollTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,15 +28,15 @@ public class EsBulkByScrollTaskActionProgressReporter {
   public void start() {
     executorService.scheduleAtFixedRate(
       () -> {
-        final List<WorkingBulkByScrollTask.Status> currentTasksStatus = esClient.admin()
+        final List<BulkByScrollTask.Status> currentTasksStatus = esClient.admin()
           .cluster().prepareListTasks()
           .setActions(action)
           .setDetailed(true)
           .get()
           .getTasks()
           .stream()
-          .filter(taskInfo -> taskInfo.getStatus() instanceof WorkingBulkByScrollTask.Status)
-          .map(taskInfo -> (WorkingBulkByScrollTask.Status) taskInfo.getStatus())
+          .filter(taskInfo -> taskInfo.getStatus() instanceof BulkByScrollTask.Status)
+          .map(taskInfo -> (BulkByScrollTask.Status) taskInfo.getStatus())
           .collect(Collectors.toList());
 
         currentTasksStatus

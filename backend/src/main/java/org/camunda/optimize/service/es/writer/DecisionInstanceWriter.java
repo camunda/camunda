@@ -8,6 +8,7 @@ import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
@@ -31,12 +32,12 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 public class DecisionInstanceWriter {
   private static final Logger logger = LoggerFactory.getLogger(DecisionInstanceWriter.class);
 
-  private final Client esClient;
+  private final TransportClient esClient;
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter dateTimeFormatter;
 
   @Autowired
-  public DecisionInstanceWriter(final Client esClient,
+  public DecisionInstanceWriter(final TransportClient esClient,
                                 final ObjectMapper objectMapper,
                                 final DateTimeFormatter dateTimeFormatter) {
     this.esClient = esClient;

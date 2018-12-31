@@ -13,6 +13,7 @@ import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
@@ -33,7 +34,7 @@ public class ImportIndexWriter {
   private final Logger logger = LoggerFactory.getLogger(ImportIndexWriter.class);
 
   @Autowired
-  private Client esclient;
+  private TransportClient esclient;
   @Autowired
   private ConfigurationService configurationService;
   @Autowired

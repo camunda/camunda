@@ -10,6 +10,7 @@ import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
@@ -33,7 +34,7 @@ public abstract class AbstractActivityInstanceWriter {
   protected final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired
-  private Client esclient;
+  private TransportClient esclient;
   @Autowired
   private ConfigurationService configurationService;
   @Autowired

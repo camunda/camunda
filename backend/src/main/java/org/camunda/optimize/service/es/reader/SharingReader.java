@@ -11,6 +11,7 @@ import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -36,7 +37,7 @@ public class SharingReader {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired
-  private Client esclient;
+  private TransportClient esclient;
   @Autowired
   private ConfigurationService configurationService;
   @Autowired

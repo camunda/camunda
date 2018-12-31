@@ -20,6 +20,7 @@ import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.engine.DocumentMissingException;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
@@ -54,12 +55,12 @@ public class ReportWriter {
   private static final String DEFAULT_REPORT_NAME = "New Report";
 
 
-  private final Client esClient;
+  private final TransportClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
 
   @Autowired
-  public ReportWriter(final Client esClient,
+  public ReportWriter(final TransportClient esClient,
                       final ConfigurationService configurationService,
                       final ObjectMapper objectMapper) {
     this.esClient = esClient;

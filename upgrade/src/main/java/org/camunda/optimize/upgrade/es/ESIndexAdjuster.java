@@ -269,7 +269,7 @@ public class ESIndexAdjuster {
     try {
       HashMap mapping = objectMapper.readValue(mappingAndSettings, HashMap.class);
       HashMap settings = objectMapper.readValue(
-        IndexSettingsBuilder.buildAsString(configurationService, objectMapper),
+        IndexSettingsBuilder.buildAsString(configurationService),
         HashMap.class
       );
 

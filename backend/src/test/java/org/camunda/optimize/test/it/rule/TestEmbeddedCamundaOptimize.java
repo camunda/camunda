@@ -274,7 +274,6 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   public void initializeSchema() {
     ElasticSearchSchemaInitializer schemaInitializer =
       getApplicationContext().getBean(ElasticSearchSchemaInitializer.class);
-    schemaInitializer.setInitialized(false);
     schemaInitializer.initializeSchema();
   }
 

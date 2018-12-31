@@ -13,6 +13,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -41,7 +42,7 @@ public class ProcessDefinitionReader {
   private final Logger logger = LoggerFactory.getLogger(ProcessDefinitionReader.class);
 
   @Autowired
-  private Client esclient;
+  private TransportClient esclient;
 
   @Autowired
   private ConfigurationService configurationService;

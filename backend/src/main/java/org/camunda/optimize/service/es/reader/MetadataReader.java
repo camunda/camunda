@@ -4,11 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +20,7 @@ import java.io.IOException;
 import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_TYPE;
 
 
 @Component
@@ -25,7 +28,7 @@ public class MetadataReader {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired
-  private Client esclient;
+  private TransportClient esclient;
   @Autowired
   private ConfigurationService configurationService;
   @Autowired
@@ -34,13 +37,14 @@ public class MetadataReader {
   public Optional<MetadataDto> readMetadata() {
     Optional<MetadataDto> result = Optional.empty();
 
-    QueryBuilder allQuery = QueryBuilders.matchAllQuery();
-    SearchResponse searchResponse = esclient.prepareSearch(
-      getOptimizeIndexAliasForType(ElasticsearchConstants.METADATA_TYPE)
-    )
-      .setTypes(ElasticsearchConstants.METADATA_TYPE)
-      .setQuery(allQuery)
-      .get();
+    SearchRequest searchRequest =
+      new SearchRequest(getOptimizeIndexAliasForType(METADATA_TYPE));
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+    searchSourceBuilder.query(QueryBuilders.matchAllQuery());
+    searchRequest.types(METADATA_TYPE);
+    searchRequest.source(searchSourceBuilder);
+
+    SearchResponse searchResponse = esclient.search(searchRequest).actionGet();
 
     long totalHits = searchResponse.getHits().getTotalHits();
     if (totalHits == 1) {

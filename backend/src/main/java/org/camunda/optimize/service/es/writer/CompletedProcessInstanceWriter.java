@@ -9,7 +9,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
@@ -37,7 +37,7 @@ public class CompletedProcessInstanceWriter {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired
-  private Client esClient;
+  private TransportClient esClient;
   @Autowired
   private ConfigurationService configurationService;
   @Autowired

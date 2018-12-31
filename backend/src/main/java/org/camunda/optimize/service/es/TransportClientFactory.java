@@ -1,13 +1,9 @@
 package org.camunda.optimize.service.es;
 
-import com.carrotsearch.hppc.cursors.ObjectObjectCursor;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
-import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.cluster.block.ClusterBlockException;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
@@ -23,14 +19,11 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.concurrent.TimeUnit;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.OPTIMIZE_INDEX_PREFIX;
 
+public class TransportClientFactory implements FactoryBean<TransportClient>, DisposableBean {
 
-public class TransportClientFactory implements FactoryBean<Client>, DisposableBean {
-
-  public static final String INDEX_READ_ONLY_SETTING = "index.blocks.read_only_allow_delete";
   private final Logger logger = LoggerFactory.getLogger(TransportClientFactory.class);
-  private SchemaInitializingClient instance;
+  private TransportClient instance;
   @Autowired
   private ConfigurationService configurationService;
   @Autowired
@@ -47,28 +40,21 @@ public class TransportClientFactory implements FactoryBean<Client>, DisposableBe
   }
 
   @Override
-  public Client getObject() {
+  public TransportClient getObject() {
     if (instance == null) {
       logger.info("Starting Elasticsearch client...");
       Settings defaultSettings = createDefaultSettings();
 
       try {
-        TransportClient internalClient;
+        TransportClient transportClient;
         if (configurationService.getElasticsearchSecuritySSLEnabled()) {
-          internalClient = createSecuredTransportClient();
+          transportClient = createSecuredTransportClient();
         } else {
-          internalClient = createDefaultTransportClient();
+          transportClient = createDefaultTransportClient();
         }
 
-        waitForElasticsearch(internalClient);
-
-        instance = new SchemaInitializingClient(internalClient);
-        elasticSearchSchemaInitializer.useClient(internalClient, configurationService);
-        instance.setElasticSearchSchemaInitializer(elasticSearchSchemaInitializer);
-
-        unblockIndices(internalClient);
-
-        elasticSearchSchemaInitializer.initializeSchema();
+        waitForElasticsearch(transportClient);
+        instance = transportClient;
       } catch (Exception e) {
         logger.error("Can't connect to Elasticsearch. Please check the connection!", e);
       }
@@ -77,24 +63,6 @@ public class TransportClientFactory implements FactoryBean<Client>, DisposableBe
     return instance;
   }
 
-  private void unblockIndices(TransportClient internalClient) throws InterruptedException {
-    GetSettingsResponse response = internalClient.admin().indices().prepareGetSettings("_all").get();
-    boolean indexBlocked = false;
-    for (ObjectObjectCursor<String, Settings> cursor : response.getIndexToSettings()) {
-      if (Boolean.parseBoolean(cursor.value.get(INDEX_READ_ONLY_SETTING))
-        && cursor.key.contains(OPTIMIZE_INDEX_PREFIX)) {
-        indexBlocked = true;
-        logger.info("Found blocked Optimize Elasticsearch indices");
-        break;
-      }
-    }
-
-    if (indexBlocked) {
-      logger.info("Unblocking Elasticsearch indices...");
-      internalClient.admin().indices().prepareUpdateSettings(OPTIMIZE_INDEX_PREFIX + "*")
-        .setSettings(Settings.builder().put(INDEX_READ_ONLY_SETTING, false)).get();
-    }
-  }
 
   private void waitForElasticsearch(TransportClient internalClient) throws InterruptedException {
     while (internalClient.connectedNodes().size() == 0) {
@@ -140,7 +108,7 @@ public class TransportClientFactory implements FactoryBean<Client>, DisposableBe
         .put("xpack.security.user", xpackUser)
         .put("xpack.ssl.key", configurationService.getElasticsearchSecuritySSLKey())
         .put("xpack.ssl.certificate", configurationService.getElasticsearchSecuritySSLCertificate())
-        .putArray(
+        .putList(
           "xpack.ssl.certificate_authorities",
           configurationService.getElasticsearchSecuritySSLCertificateAuthorities()
         )
@@ -172,7 +140,7 @@ public class TransportClientFactory implements FactoryBean<Client>, DisposableBe
 
   @Override
   public Class<?> getObjectType() {
-    return Client.class;
+    return TransportClient.class;
   }
 
   @Override

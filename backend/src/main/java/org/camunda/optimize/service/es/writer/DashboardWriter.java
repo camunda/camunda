@@ -16,6 +16,7 @@ import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.engine.DocumentMissingException;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -43,12 +44,12 @@ public class DashboardWriter {
   private static final String DEFAULT_DASHBOARD_NAME = "New Dashboard";
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  private Client esclient;
+  private TransportClient esclient;
   private ConfigurationService configurationService;
   private ObjectMapper objectMapper;
 
   @Autowired
-  public DashboardWriter(Client esclient, ConfigurationService configurationService, ObjectMapper objectMapper) {
+  public DashboardWriter(TransportClient esclient, ConfigurationService configurationService, ObjectMapper objectMapper) {
     this.esclient = esclient;
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;

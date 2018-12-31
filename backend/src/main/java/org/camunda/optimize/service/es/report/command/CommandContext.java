@@ -5,10 +5,11 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.service.es.filter.QueryFilterEnhancer;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
 
 public class CommandContext {
 
-  private Client esclient;
+  private TransportClient esclient;
   private ConfigurationService configurationService;
   private ObjectMapper objectMapper;
   private QueryFilterEnhancer queryFilterEnhancer;
@@ -18,7 +19,7 @@ public class CommandContext {
     return esclient;
   }
 
-  public void setEsclient(Client esclient) {
+  public void setEsclient(TransportClient esclient) {
     this.esclient = esclient;
   }
 

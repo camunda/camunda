@@ -247,6 +247,13 @@
       <version>1.1.0</version>
     </dependency>
 
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>27.0.1-jre</version>
+      <!-- or, for Android: -->
+    </dependency>
+
     <!--testing-->
     <dependency>
       <groupId>org.camunda.bpm.model</groupId>
@@ -651,7 +658,7 @@
                 <configuration>
                   <environmentVariables>
                     <CAMBPM_VERSION>${camunda.engine.version}</CAMBPM_VERSION>
-                    <ES_VERSION>${elasticsearch.version}</ES_VERSION>
+                    <ES_VERSION>${elasticsearch.test.version}</ES_VERSION>
                   </environmentVariables>
                   <skip>${skip.docker}</skip>
                   <executable>docker-compose</executable>

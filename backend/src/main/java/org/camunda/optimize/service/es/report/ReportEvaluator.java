@@ -52,6 +52,7 @@ import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -133,7 +134,7 @@ public class ReportEvaluator {
   @Autowired
   private DecisionQueryFilterEnhancer decisionQueryFilterEnhancer;
   @Autowired
-  private Client esclient;
+  private TransportClient esclient;
 
   private static void addCountProcessInstanceFrequencyReports() {
     possibleCommands.put(

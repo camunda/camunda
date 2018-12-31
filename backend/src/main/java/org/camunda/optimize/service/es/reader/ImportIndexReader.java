@@ -6,6 +6,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +23,7 @@ public class ImportIndexReader {
   private final Logger logger = LoggerFactory.getLogger(ImportIndexReader.class);
 
   @Autowired
-  private Client esclient;
+  private TransportClient esclient;
 
   @Autowired
   private ObjectMapper objectMapper;

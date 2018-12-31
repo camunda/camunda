@@ -144,7 +144,7 @@
                 </goals>
                 <configuration>
                   <environmentVariables>
-                    <ES_VERSION>${elasticsearch.version}</ES_VERSION>
+                    <ES_VERSION>${elasticsearch.test.version}</ES_VERSION>
                   </environmentVariables>
                   <executable>docker-compose</executable>
                   <workingDirectory>.</workingDirectory>

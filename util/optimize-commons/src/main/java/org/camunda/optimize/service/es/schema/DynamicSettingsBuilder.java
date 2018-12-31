@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.schema;
 
+import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 
@@ -38,7 +39,7 @@ public class DynamicSettingsBuilder {
 
   public static String createDynamicSettingsAsString() throws IOException {
     XContentBuilder dynamicSettings = createDynamicSettings(a -> a);
-    return dynamicSettings.string();
+    return Strings.toString(dynamicSettings);
   }
 
 }

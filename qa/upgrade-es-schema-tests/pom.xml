@@ -180,7 +180,7 @@
                 <configuration>
                   <environmentVariables>
                     <CAMBPM_VERSION>${camunda.engine.version}</CAMBPM_VERSION>
-                    <ES_VERSION>${elasticsearch.version}</ES_VERSION>
+                    <ES_VERSION>${elasticsearch.test.version}</ES_VERSION>
                   </environmentVariables>
                   <skip>${skip.docker}</skip>
                   <executable>docker-compose</executable>

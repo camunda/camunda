@@ -102,6 +102,9 @@ public class AlertService {
         schedulerFactoryBean.setApplicationContext(applicationContext);
         schedulerFactoryBean.setQuartzProperties(configurationService.getQuartzProperties());
         schedulerFactoryBean.afterPropertiesSet();
+        // we need to set this to make sure that there are no further threads running
+        // after the quartz scheduler has been stopped.
+        schedulerFactoryBean.setWaitForJobsToCompleteOnShutdown(true);
         schedulerFactoryBean.start();
       }
     } catch (Exception e) {
@@ -118,8 +121,8 @@ public class AlertService {
   @PreDestroy
   public void destroy() {
     if (schedulerFactoryBean != null) {
-      schedulerFactoryBean.stop();
       try {
+        schedulerFactoryBean.stop();
         schedulerFactoryBean.destroy();
       } catch (Exception e) {
         logger.error("Can't destroy scheduler", e);

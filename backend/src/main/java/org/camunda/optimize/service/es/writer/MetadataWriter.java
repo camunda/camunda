@@ -9,6 +9,7 @@ import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,12 +26,12 @@ public class MetadataWriter {
   public static final String ID = "1";
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  private Client esclient;
+  private TransportClient esclient;
   private ConfigurationService configurationService;
   private ObjectMapper objectMapper;
 
   @Autowired
-  public MetadataWriter(Client esclient, ConfigurationService configurationService, ObjectMapper objectMapper) {
+  public MetadataWriter(TransportClient esclient, ConfigurationService configurationService, ObjectMapper objectMapper) {
     this.esclient = esclient;
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;
