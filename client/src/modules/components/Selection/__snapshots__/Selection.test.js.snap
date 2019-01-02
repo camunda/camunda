@@ -292,8 +292,8 @@ exports[`Selection should contain Actions 1`] = `
                       mountOnEnter={true}
                       timeout={
                         Object {
-                          "enter": 500,
-                          "exit": 200,
+                          "enter": 50,
+                          "exit": 20,
                         }
                       }
                       unmountOnExit={true}
@@ -312,8 +312,8 @@ exports[`Selection should contain Actions 1`] = `
                         onExiting={[Function]}
                         timeout={
                           Object {
-                            "enter": 500,
-                            "exit": 200,
+                            "enter": 50,
+                            "exit": 20,
                           }
                         }
                         unmountOnExit={true}
@@ -1874,8 +1874,8 @@ exports[`Selection should contain a Header 1`] = `
                                 mountOnEnter={true}
                                 timeout={
                                   Object {
-                                    "enter": 500,
-                                    "exit": 200,
+                                    "enter": 50,
+                                    "exit": 20,
                                   }
                                 }
                                 unmountOnExit={true}
@@ -1894,8 +1894,8 @@ exports[`Selection should contain a Header 1`] = `
                                   onExiting={[Function]}
                                   timeout={
                                     Object {
-                                      "enter": 500,
-                                      "exit": 200,
+                                      "enter": 50,
+                                      "exit": 20,
                                     }
                                   }
                                   unmountOnExit={true}
