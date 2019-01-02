@@ -369,4 +369,58 @@ public class TimerStartEventTest {
                 .exists())
         .isTrue();
   }
+
+  public void shouldTriggerAtSpecifiedTimeDate() {
+    // given
+    final Instant triggerTime = brokerRule.getClock().getCurrentTime().plusMillis(2000);
+    final BpmnModelInstance model =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start_2")
+            .timerWithDate(triggerTime.toString())
+            .endEvent("end_2")
+            .done();
+
+    testClient.deploy(model);
+
+    // when
+    brokerRule.getClock().addTime(Duration.ofSeconds(2));
+
+    // then
+    final TimerRecordValue timerRecord =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGERED).getFirst().getValue();
+
+    Assertions.assertThat(timerRecord)
+        .hasDueDate(triggerTime.toEpochMilli())
+        .hasHandlerFlowNodeId("start_2")
+        .hasElementInstanceKey(NO_ELEMENT_INSTANCE);
+
+    assertThat(
+            RecordingExporter.workflowInstanceRecords(EVENT_ACTIVATED)
+                .withElementId("end_2")
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldTriggerIfTimeDatePassedOnDeployment() {
+    // given
+    final Instant triggerTime = brokerRule.getClock().getCurrentTime().minusMillis(2000);
+    final BpmnModelInstance model =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start_2")
+            .timerWithDate(triggerTime.toString())
+            .endEvent("end_2")
+            .done();
+
+    testClient.deploy(model);
+
+    // then
+    final TimerRecordValue timerRecord =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGERED).getFirst().getValue();
+
+    Assertions.assertThat(timerRecord)
+        .hasDueDate(triggerTime.toEpochMilli())
+        .hasHandlerFlowNodeId("start_2")
+        .hasElementInstanceKey(NO_ELEMENT_INSTANCE);
+  }
 }

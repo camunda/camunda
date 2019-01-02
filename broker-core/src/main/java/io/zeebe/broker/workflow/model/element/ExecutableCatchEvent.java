@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.workflow.model.element;
 
-import io.zeebe.model.bpmn.util.time.RepeatingInterval;
+import io.zeebe.model.bpmn.util.time.Timer;
 
 public interface ExecutableCatchEvent extends ExecutableFlowElement {
   boolean isTimer();
@@ -34,5 +34,5 @@ public interface ExecutableCatchEvent extends ExecutableFlowElement {
     return true;
   }
 
-  RepeatingInterval getTimer();
+  Timer getTimer();
 }

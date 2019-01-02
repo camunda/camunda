@@ -18,7 +18,7 @@ package io.zeebe.model.bpmn.util.time;
 import java.time.format.DateTimeParseException;
 import java.util.Objects;
 
-public class RepeatingInterval {
+public class RepeatingInterval implements Timer {
   public static final String INTERVAL_DESGINATOR = "/";
   public static final int INFINITE = -1;
 
@@ -30,12 +30,19 @@ public class RepeatingInterval {
     this.interval = interval;
   }
 
+  @Override
   public int getRepetitions() {
     return repetitions;
   }
 
+  @Override
   public Interval getInterval() {
     return interval;
+  }
+
+  @Override
+  public long getDueDate(long fromEpochMillis) {
+    return getInterval().toEpochMilli(fromEpochMillis);
   }
 
   @Override

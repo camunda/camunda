@@ -53,7 +53,7 @@ public class ZeebeEventBasedGatewayValidationTest extends AbstractZeebeValidatio
         singletonList(
             expect(
                 IntermediateCatchEvent.class,
-                "Intermediate timer catch event must have a time duration."))
+                "Intermediate timer catch event must have either a time duration or a time date."))
       },
       {
         Bpmn.createExecutableProcess("process")

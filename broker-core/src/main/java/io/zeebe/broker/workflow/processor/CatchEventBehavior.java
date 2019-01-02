@@ -35,7 +35,7 @@ import io.zeebe.broker.workflow.state.StoredRecord;
 import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
 import io.zeebe.broker.workflow.state.TimerInstance;
 import io.zeebe.broker.workflow.state.WorkflowInstanceSubscription;
-import io.zeebe.model.bpmn.util.time.RepeatingInterval;
+import io.zeebe.model.bpmn.util.time.Timer;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResult;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResults;
@@ -195,14 +195,12 @@ public class CatchEventBehavior {
       long elementInstanceKey,
       long workflowKey,
       DirectBuffer handlerNodeId,
-      RepeatingInterval timer,
+      Timer timer,
       TypedStreamWriter writer) {
-    final long nowMs = ActorClock.currentTimeMillis();
-    final long dueDate = timer.getInterval().toEpochMilli(nowMs);
 
     timerRecord
         .setRepetitions(timer.getRepetitions())
-        .setDueDate(dueDate)
+        .setDueDate(timer.getDueDate(ActorClock.currentTimeMillis()))
         .setElementInstanceKey(elementInstanceKey)
         .setHandlerNodeId(handlerNodeId)
         .setWorkflowKey(workflowKey);
