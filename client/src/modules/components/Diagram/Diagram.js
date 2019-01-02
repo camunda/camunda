@@ -126,6 +126,8 @@ class Diagram extends React.Component {
     }
   }
 
+  // 1- state.isViewerLoaded => true
+  // 2- canvas.resized() && canvas.zoom('fit-viewport', 'auto')
   handleDiagramLoad = e => {
     if (e) {
       return console.log('Error rendering diagram:', e);
@@ -140,15 +142,12 @@ class Diagram extends React.Component {
     }
 
     if (this.props.selectableFlowNodes) {
+      this.props.onFlowNodeSelected && this.addElementClickListeners();
       this.handleSelectableFlowNodes(this.props.selectableFlowNodes);
     }
 
     if (this.props.selectedFlowNode) {
       this.handleSelectedFlowNode(this.props.selectedFlowNode);
-    }
-
-    if (this.props.selectableFlowNodes && this.props.onFlowNodeSelected) {
-      this.addElementClickListeners();
     }
 
     if (this.props.flowNodeStateOverlays) {

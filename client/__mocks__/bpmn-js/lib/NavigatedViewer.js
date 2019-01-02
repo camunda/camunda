@@ -18,7 +18,7 @@ class Viewer {
     this.overlays = {add: jest.fn(), remove: jest.fn()};
   }
 
-  importXML = jest.fn((_, callback) => {
+  importDefinitions = jest.fn((_, callback) => {
     callback();
   });
 
