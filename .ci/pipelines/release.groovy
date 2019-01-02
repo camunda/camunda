@@ -81,7 +81,7 @@ pipeline {
       cloud 'optimize-ci'
       label "optimize-ci-build_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
       defaultContainer 'jnlp'
-      yamlFile '.ci/podSpecs/mavenDindAgent.yml'
+      yamlFile '.ci/podSpecs/builderAgent.yml'
     }
   }
 

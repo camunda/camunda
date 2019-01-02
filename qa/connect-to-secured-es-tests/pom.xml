@@ -146,6 +146,7 @@
                   <environmentVariables>
                     <ES_VERSION>${elasticsearch.test.version}</ES_VERSION>
                   </environmentVariables>
+                  <skip>${skip.docker}</skip>
                   <executable>docker-compose</executable>
                   <workingDirectory>.</workingDirectory>
                   <arguments>
@@ -165,6 +166,7 @@
                   <goal>exec</goal>
                 </goals>
                 <configuration>
+                  <skip>${skip.docker}</skip>
                   <executable>docker-compose</executable>
                   <workingDirectory>.</workingDirectory>
                   <arguments>

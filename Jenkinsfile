@@ -14,13 +14,152 @@ def static PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize
 
 /************************ START OF PIPELINE ***********************/
 
+String camBpmPodspec(String camBpmDockerImage, boolean secured = false) {
+    String footer = (secured) ? """
+      - name: ELASTIC_PASSWORD
+        value: optimize
+      - name: xpack.ssl.certificate_authorities
+        value: /usr/share/elasticsearch/config/certs/ca/ca.crt
+      - name: xpack.ssl.certificate
+        value: /usr/share/elasticsearch/config/certs/optimize/optimize.crt
+      - name: xpack.ssl.key
+        value: /usr/share/elasticsearch/config/certs/optimize/optimize.key
+      - name: xpack.security.transport.ssl.verification_mode
+        value: certificate
+      - name: xpack.security.transport.ssl.enabled
+        value: true
+      - name: xpack.security.http.ssl.enabled
+        value: true
+    volumeMounts:
+    - name: es-config
+      mountPath: /usr/share/elasticsearch/config/certs/ca/ca.crt
+      subPath: ca.crt
+    - name: es-config
+      mountPath: /usr/share/elasticsearch/config/certs/ca/ca.key
+      subPath: ca.key
+    - name: es-config
+      mountPath: /usr/share/elasticsearch/config/certs/optimize/optimize.crt
+      subPath: optimize.crt
+    - name: es-config
+      mountPath: /usr/share/elasticsearch/config/certs/optimize/optimize.key
+      subPath: optimize.key
+    """ : ""
+    return """
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    agent: optimize-ci-build
+spec:
+  nodeSelector:
+    cloud.google.com/gke-nodepool: slaves
+  volumes:
+  - name: cambpm-config
+    configMap:
+      # Defined in: https://github.com/camunda-ci/k8s-infrastructure/tree/master/infrastructure/ci-30-162810/deployments/optimize
+      name: ci-optimize-cambpm-config
+  - name: es-config
+    configMap:
+      # Defined in: https://github.com/camunda-ci/k8s-infrastructure/tree/master/infrastructure/ci-30-162810/deployments/optimize
+      name: ci-optimize-es-config
+  imagePullSecrets:
+  - name: registry-camunda-cloud-secret
+  initContainers:
+    - name: init-sysctl
+      image: busybox
+      imagePullPolicy: Always
+      command: ["sysctl", "-w", "vm.max_map_count=262144"]
+      securityContext:
+        privileged: true
+  containers:
+  - name: maven
+    image: maven:3.5.3-jdk-8-slim
+    command: ["cat"]
+    tty: true
+    env:
+      - name: LIMITS_CPU
+        valueFrom:
+          resourceFieldRef:
+            resource: limits.cpu
+      # every JVM process will get a 1/2 of HEAP from total memory
+      - name: JAVA_TOOL_OPTIONS
+        value: |
+          -XX:+UnlockExperimentalVMOptions
+          -XX:+UseCGroupMemoryLimitForHeap
+          -XX:MaxRAMFraction=\$(LIMITS_CPU)
+      - name: TZ
+        value: Europe/Berlin
+    resources:
+      limits:
+        cpu: 3
+        memory: 3Gi
+      requests:
+        cpu: 3
+        memory: 3Gi
+  - name: cambpm
+    image: ${camBpmDockerImage}
+    tty: true
+    env:
+      - name: JAVA_TOOL_OPTIONS
+        value: |
+          -XX:+UnlockExperimentalVMOptions
+          -XX:+UseCGroupMemoryLimitForHeap
+          -XX:MaxRAMFraction=1
+      - name: TZ
+        value: Europe/Berlin
+    resources:
+      limits:
+        cpu: 1
+        memory: 1Gi
+      requests:
+        cpu: 1
+        memory: 1Gi
+    volumeMounts:
+    - name: cambpm-config
+      mountPath: /camunda/conf/bpm-platform.xml
+      subPath: bpm-platform.xml
+    - name: cambpm-config
+      mountPath: /camunda/conf/tomcat-users.xml
+      subPath: tomcat-users.xml
+    - name: cambpm-config
+      mountPath: /camunda/webapps/manager/META-INF/context.xml
+      subPath: context.xml
+  - name: elasticsearch
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.0.0
+    securityContext:
+      privileged: true
+      capabilities:
+        add: ["IPC_LOCK"]
+    resources:
+      requests:
+        cpu: 1
+        memory: 1Gi
+    ports:
+      - containerPort: 9200
+        name: http
+        protocol: TCP
+      - containerPort: 9300
+        name: transport
+        protocol: TCP
+    env:
+      - name: ES_NODE_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ES_JAVA_OPTS
+        value: "-Xms512m -Xmx512m"
+      - name: cluster.name
+        value: elasticsearch
+    """ + footer
+}
+
 pipeline {
   agent {
     kubernetes {
       cloud 'optimize-ci'
       label "optimize-ci-build_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
       defaultContainer 'jnlp'
-      yamlFile '.ci/podSpecs/mavenDindAgent.yml'
+      yamlFile '.ci/podSpecs/builderAgent.yml'
     }
   }
 
@@ -41,12 +180,11 @@ pipeline {
     stage('Build') {
       steps {
         container('maven') {
-          // prepare maven container
-          installDockerBinaries()
-          setupPermissionsForHostDirs('upgrade')
-
           runMaven('install -Pproduction -Dskip.docker -DskipTests -T\$LIMITS_CPU')
+          // Loops with symbolic links cause stashing to fail
+          sh ('rm -fr client/node_modules')
         }
+        stash name: "optimize-stash"
       }
     }
     stage('Unit tests') {
@@ -54,7 +192,7 @@ pipeline {
         stage('Backend') {
           steps {
             container('maven') {
-              runMaven('test -Dskip.fe.build -T\$LIMITS_CPU')
+              runMaven('test -Dskip.fe.build -Dskip.docker -T\$LIMITS_CPU')
             }
           }
           post {
@@ -65,11 +203,11 @@ pipeline {
         }
         stage('Frontend') {
           steps {
-            container('maven') {
+            container('node') {
               sh('''
                 cd ./client
-                export PATH=$(pwd)/.node/node/:$PATH
-                ./.node/node/yarn/dist/bin/yarn test:ci
+                yarn
+                yarn test:ci
               ''')
             }
           }
@@ -85,6 +223,7 @@ pipeline {
       environment {
         CAM_REGISTRY = credentials('repository-camunda-cloud')
       }
+      failFast true
       parallel {
         stage('Migration') {
           agent {
@@ -92,7 +231,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-migration_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yamlFile '.ci/podSpecs/mavenDindAgent.yml'
+              yaml camBpmPodspec('camunda/camunda-bpm-platform:7.10.0')
             }
           }
           steps {
@@ -113,7 +252,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-data-upgrade_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yamlFile '.ci/podSpecs/mavenDindAgent.yml'
+              yaml camBpmPodspec('camunda/camunda-bpm-platform:7.10.0')
             }
           }
           steps {
@@ -126,7 +265,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-security_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yamlFile '.ci/podSpecs/mavenDindAgent.yml'
+              yaml camBpmPodspec('camunda/camunda-bpm-platform:7.11.0-SNAPSHOT', true)
             }
           }
           steps {
@@ -144,10 +283,11 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-latest_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yamlFile '.ci/podSpecs/mavenDindAgent.yml'
+              yaml camBpmPodspec('camunda/camunda-bpm-platform:7.11.0-SNAPSHOT')
             }
           }
           steps {
+            unstash name: "optimize-stash"
             integrationTestSteps('latest')
           }
           post {
@@ -155,7 +295,7 @@ pipeline {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
             }
             failure {
-              archiveTestArtifacts('backend', 'latest')
+              archiveArtifacts( artifacts: "latest/**/*" )
             }
           }
         }
@@ -165,10 +305,11 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-7.9_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yamlFile '.ci/podSpecs/mavenDindAgent.yml'
+              yaml camBpmPodspec('registry.camunda.cloud/camunda-bpm-platform-ee:7.9.7')
             }
           }
           steps {
+            unstash name: "optimize-stash"
             integrationTestSteps('7.9')
           }
           post {
@@ -186,10 +327,11 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-7.8_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yamlFile '.ci/podSpecs/mavenDindAgent.yml'
+              yaml camBpmPodspec('registry.camunda.cloud/camunda-bpm-platform-ee:7.8.13')
             }
           }
           steps {
+            unstash name: "optimize-stash"
             integrationTestSteps('7.8')
           }
           post {
@@ -314,64 +456,43 @@ void buildNotification(String buildStatus) {
 
 void integrationTestSteps(String engineVersion = 'latest') {
   container('maven') {
-    installDockerBinaries()
-    dockerRegistryLogin()
-    setupPermissionsForHostDirs('backend')
-
-    runMaven("install -Pproduction,it,engine-${engineVersion} -pl backend -am -T\$LIMITS_CPU")
+    runMaven("install -Dskip.docker -Dskip.fe.build -Pproduction,it,engine-${engineVersion} -pl backend -am -T\$LIMITS_CPU")
   }
 }
 
 void securityTestSteps() {
   container('maven') {
-    installDockerBinaries()
-    dockerRegistryLogin()
-    setupPermissionsForHostDirs('qa/connect-to-secured-es-tests')
 
     // build all required artifacts for security tests
     runMaven("install -Dskip.docker -DskipTests -Pproduction,it -pl backend,qa/connect-to-secured-es-tests -am -T\$LIMITS_CPU")
     // run migration tests
-    runMaven("verify -f qa/connect-to-secured-es-tests/pom.xml -Psecured-es-it")
+    runMaven("verify -Dskip.docker -f qa/connect-to-secured-es-tests/pom.xml -Psecured-es-it")
   }
 }
 
 void migrationTestSteps(String engineVersion = 'latest') {
   container('maven') {
-    installDockerBinaries()
-    dockerRegistryLogin()
     sh ("""apt-get update && apt-get install -y jq""")
-    setupPermissionsForHostDirs('backend')
 
     // build all required artifacts for migration tests
     runMaven("install -Dskip.docker -DskipTests -Pproduction,it,engine-${engineVersion} -pl backend,upgrade -am -T\$LIMITS_CPU")
     // run migration tests
-    runMaven("verify -f qa/upgrade-es-schema-tests/pom.xml -Pupgrade-es-schema-tests")
+    runMaven("verify -Dskip.docker -f qa/upgrade-es-schema-tests/pom.xml -Pupgrade-es-schema-tests")
   }
 }
 
 void dataUpgradeTestSteps(String engineVersion = 'latest') {
   container('maven') {
-    installDockerBinaries()
-    dockerRegistryLogin()
     sh ("""apt-get update && apt-get install -y jq""")
-    setupPermissionsForHostDirs('qa/upgrade-optimize-data')
 
     runMaven("install -Dskip.docker -DskipTests -Pproduction,it,engine-${engineVersion} -pl backend,upgrade,distro -am -T\$LIMITS_CPU")
 
-    runMaven("verify -f qa/upgrade-optimize-data/pom.xml -Pupgrade-optimize-data")
+    runMaven("verify -Dskip.docker -f qa/upgrade-optimize-data/pom.xml -Pupgrade-optimize-data")
   }
 }
 
 void dockerRegistryLogin() {
   sh ("""echo '${CAM_REGISTRY_PSW}' | docker login -u ${CAM_REGISTRY_USR} registry.camunda.cloud --password-stdin""")
-}
-
-void setupPermissionsForHostDirs(String directory) {
-  sh("""#!/bin/bash -ex
-    mkdir -p ${directory}/target/{es_logs,cambpm_logs}
-    # must be 1000 so ES and CamBPM can write to the mounted volumes defined in docker-compose.yml
-    chown -R 1000:1000 ${directory}/target/{es_logs,cambpm_logs}
-  """)
 }
 
 void archiveTestArtifacts(String srcDirectory, String destDirectory = null) {
@@ -396,19 +517,6 @@ void archiveTestArtifacts(String srcDirectory, String destDirectory = null) {
     allowEmptyResults: true,
     onlyIfSuccessful: false
   )
-}
-
-void installDockerBinaries() {
-  sh("""
-    curl -sSL https://github.com/docker/compose/releases/download/1.21.2/docker-compose-Linux-x86_64 -o /usr/local/bin/docker-compose
-    chmod +x /usr/local/bin/docker-compose
-    docker-compose version
-
-    curl -sSL https://download.docker.com/linux/static/stable/x86_64/docker-18.03.1-ce.tgz | \
-      tar xvzf -  --strip-components=1 -C /usr/local/bin/
-    docker info
-    docker version
-  """)
 }
 
 void runMaven(String cmd) {
