@@ -1,5 +1,28 @@
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 import {themed, themeStyle} from 'modules/theme';
+import Menu from './Menu';
+
+const openDropdownTransitionStyle = css`
+  &.transition-enter {
+    opacity: 0;
+  }
+  &.transition-enter-active {
+    opacity: 1;
+    transition: opacity ${({transitionTiming}) => transitionTiming.enter + 'ms'}
+      ease-out;
+  }
+  &.transition-enter-done {
+    opacity: 1;
+  }
+  &.transition-exit {
+    opacity: 0;
+    transition: opacity ${({transitionTiming}) => transitionTiming.exit + 'ms'};
+  }
+`;
+
+export const MenuComponent = styled(Menu)`
+  ${openDropdownTransitionStyle};
+`;
 
 export const Dropdown = styled.div`
   position: relative;

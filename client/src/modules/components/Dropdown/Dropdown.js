@@ -1,11 +1,11 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import {CSSTransition} from 'react-transition-group';
 
 import {ReactComponent as Down} from 'modules/components/Icon/down.svg';
 
 import {DROPDOWN_PLACEMENT} from 'modules/constants';
 
-import Menu from './Menu';
 import SubMenu from './SubMenu';
 import Option from './Option';
 import SubOption from './SubOption';
@@ -106,6 +106,10 @@ export default class Dropdown extends React.Component {
   render() {
     const {isOpen} = this.state;
     const {placement} = this.props;
+    const transitionTiming = {
+      enter: 50,
+      exit: 20
+    };
     return (
       <Styled.Dropdown ref={this.setRef}>
         <Styled.Button
@@ -118,15 +122,23 @@ export default class Dropdown extends React.Component {
           {this.renderLabel()}
           <Down />
         </Styled.Button>
-        {isOpen && (
-          <Menu
+
+        <CSSTransition
+          in={isOpen}
+          mountOnEnter
+          unmountOnExit
+          classNames="transition"
+          timeout={transitionTiming}
+        >
+          <Styled.MenuComponent
+            transitionTiming={transitionTiming}
             onKeyDown={this.handleKeyPress}
             onStateChange={this.handleStateChange}
             placement={placement}
           >
             {this.renderChildrenWithProps()}
-          </Menu>
-        )}
+          </Styled.MenuComponent>
+        </CSSTransition>
       </Styled.Dropdown>
     );
   }

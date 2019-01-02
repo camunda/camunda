@@ -13,14 +13,27 @@ export default class Menu extends React.Component {
       PropTypes.arrayOf(PropTypes.node),
       PropTypes.node
     ]),
-    onStateChange: PropTypes.func
+    onStateChange: PropTypes.func,
+    transitionTiming: PropTypes.object,
+    className: PropTypes.string
   };
 
   render() {
-    const {onKeyDown, placement, children} = this.props;
+    const {
+      onKeyDown,
+      placement,
+      children,
+      transitionTiming,
+      className
+    } = this.props;
 
     return (
-      <Styled.Ul placement={placement} data-test="menu">
+      <Styled.Ul
+        placement={placement}
+        className={className}
+        transitionTiming={transitionTiming}
+        data-test="menu"
+      >
         {React.Children.map(children, (child, index) => (
           <Styled.Li onKeyDown={onKeyDown} placement={placement} key={index}>
             {child}

@@ -1,5 +1,6 @@
 import React from 'react';
-import {shallow} from 'enzyme';
+import {mount} from 'enzyme';
+import {ThemeProvider} from 'modules/theme';
 
 import {ReactComponent as Batch} from 'modules/components/Icon/batch.svg';
 import {DROPDOWN_PLACEMENT} from 'modules/constants';
@@ -14,39 +15,49 @@ const buttonStyles = {
 
 const stringLabel = 'Some Label';
 
+const mockOnOpen = jest.fn();
+const mockOnClick = jest.fn();
+
+const mountDropDown = placement => {
+  return mount(
+    <ThemeProvider>
+      <Dropdown
+        placement={placement}
+        label={stringLabel}
+        buttonStyle={buttonStyles}
+        onOpen={mockOnOpen}
+      >
+        <Dropdown.Option
+          disabled={false}
+          data-test={'dropdown-option'}
+          onClick={mockOnClick}
+          label="Create New Selection"
+        />
+      </Dropdown>
+    </ThemeProvider>
+  );
+};
+
 describe('Dropdown', () => {
   let node;
 
   beforeEach(() => {
-    node = shallow(
-      <Dropdown
-        placement={DROPDOWN_PLACEMENT.TOP}
-        label={stringLabel}
-        buttonStyle={buttonStyles}
-        onOpen={jest.fn()}
-      >
-        <Dropdown.Option
-          disabled={false}
-          onClick={jest.fn()}
-          label="Create New Selection"
-        />
-      </Dropdown>
-    );
-  });
-
-  it('should be closed initially', () => {
-    expect(node.state().isOpen).toBe(false);
+    node = mountDropDown(DROPDOWN_PLACEMENT.TOP);
+    mockOnOpen.mockClear();
   });
 
   it('should show/hide child contents when isOpen/closed', () => {
     //given
-    expect(node.find(Dropdown.Option)).not.toExist();
+    expect(node.find('[data-test="dropdown-option"]')).not.toExist();
 
     //when
-    node.setState({isOpen: true});
+    node
+      .find('button')
+      .find("[data-test='dropdown-toggle']")
+      .simulate('click');
 
     //then
-    expect(node.find(Dropdown.Option)).toExist();
+    expect(node.find('[data-test="dropdown-option"]')).toExist();
   });
 
   it('should render string label', () => {
@@ -56,28 +67,39 @@ describe('Dropdown', () => {
 
   it('should render icon label', () => {
     node.setProps({label: <Batch />});
-    expect(node.find(Styled.Button).contains(<Batch />));
+    expect(node.find("[data-test='dropdown-toggle']").contains(<Batch />));
   });
 
   it('should pass "bottom" as default placement', () => {
-    node = shallow(<Dropdown label={stringLabel} buttonStyle={buttonStyles} />);
-    expect(node.instance().props.placement).toBe(DROPDOWN_PLACEMENT.BOTTOM);
+    node = mountDropDown();
+    expect(node.find(Dropdown).instance().props.placement).toBe(
+      DROPDOWN_PLACEMENT.BOTTOM
+    );
   });
 
   it('should isOpen/close on click of the button', () => {
     //given
-    node.find(Styled.Button).simulate('click');
-    expect(node.state().isOpen).toBe(true);
+    node
+      .find('button')
+      .find("[data-test='dropdown-toggle']")
+      .simulate('click');
+    expect(node.find(Dropdown).state().isOpen).toBe(true);
     //when
-    node.find(Styled.Button).simulate('click');
+    node
+      .find('button')
+      .find("[data-test='dropdown-toggle']")
+      .simulate('click');
     //then
-    expect(node.state().isOpen).toBe(false);
+    expect(node.find(Dropdown).state().isOpen).toBe(false);
   });
 
   it('should close the dropdown when clicking anywhere', async () => {
     //given
-    const onCloseSpy = jest.spyOn(node.instance(), 'onClose');
-    await node.instance().componentDidMount();
+    const onCloseSpy = jest.spyOn(node.find(Dropdown).instance(), 'onClose');
+    await node
+      .find(Dropdown)
+      .instance()
+      .componentDidMount();
     //when
     document.body.click();
     //then
@@ -85,15 +107,11 @@ describe('Dropdown', () => {
   });
 
   it('should call onOpen on the initial click', () => {
-    const onOpenSpy = jest.spyOn(node.instance().props, 'onOpen');
     // when clicking to open
-    node.find(Styled.Button).simulate('click');
-    expect(onOpenSpy).toHaveBeenCalled();
-
-    // when clicking to close
-    node.find(Styled.Button).simulate('click');
-    expect(onOpenSpy).toHaveBeenCalledTimes(1);
-
-    onOpenSpy.mockRestore();
+    node
+      .find('button')
+      .find("[data-test='dropdown-toggle']")
+      .simulate('click');
+    expect(mockOnOpen).toHaveBeenCalledTimes(1);
   });
 });

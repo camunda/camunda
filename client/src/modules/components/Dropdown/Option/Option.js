@@ -43,6 +43,7 @@ export default class Option extends React.Component {
         disabled={disabled}
         onClick={() => this.handleOnClick()}
         className={className}
+        data-test="dropdown-option"
       >
         {!children ? (
           <Styled.OptionButton disabled={disabled}>{label}</Styled.OptionButton>
