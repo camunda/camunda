@@ -40,7 +40,6 @@ import io.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResult;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResults;
-import io.zeebe.msgpack.value.DocumentValue;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -87,8 +86,8 @@ public class CatchEventBehavior {
       if (event.isTimer()) {
         subscribeToTimerEvent(
             context.getRecord().getKey(),
+            context.getRecord().getValue().getWorkflowKey(),
             event.getId(),
-            context.getRecord().getValue().getBpmnProcessId(),
             event.getTimer(),
             context.getOutput().getStreamWriter());
       } else if (event.isMessage()) {
@@ -105,7 +104,6 @@ public class CatchEventBehavior {
 
   public boolean occurEventForElement(
       long elementInstanceKey,
-      DirectBuffer bpmnId,
       DirectBuffer eventHandlerId,
       DirectBuffer eventPayload,
       TypedStreamWriter streamWriter) {
@@ -146,26 +144,22 @@ public class CatchEventBehavior {
 
       return true;
 
-    } else if (isStartEvent(elementInstanceKey, bpmnId)) {
-      // if the event is a timer start event
-
-      final DeployedWorkflow latestWorkflow =
-          state.getWorkflowState().getLatestWorkflowVersionByProcessId(bpmnId);
-
-      if (latestWorkflow != null) {
-        workflowInstanceRecord.reset();
-        workflowInstanceRecord.setVersion(latestWorkflow.getVersion());
-        workflowInstanceRecord.setWorkflowKey(latestWorkflow.getKey());
-        workflowInstanceRecord.setBpmnProcessId(bpmnId);
-        workflowInstanceRecord.setPayload(eventPayload);
-        streamWriter.appendNewCommand(WorkflowInstanceIntent.CREATE, workflowInstanceRecord);
-        return true;
-      }
-      return false;
     } else {
       // ignore the event if the element is left
       return false;
     }
+  }
+
+  public void occurStartEvent(
+      long workflowKey, DirectBuffer eventPayload, TypedStreamWriter streamWriter) {
+    final DeployedWorkflow workflow = state.getWorkflowState().getWorkflowByKey(workflowKey);
+
+    workflowInstanceRecord.reset();
+    workflowInstanceRecord.setVersion(workflow.getVersion());
+    workflowInstanceRecord.setWorkflowKey(workflow.getKey());
+    workflowInstanceRecord.setBpmnProcessId(workflow.getBpmnProcessId());
+    workflowInstanceRecord.setPayload(eventPayload);
+    streamWriter.appendNewCommand(WorkflowInstanceIntent.CREATE, workflowInstanceRecord);
   }
 
   public void deferEvent(BpmnStepContext<?> context) {
@@ -199,8 +193,8 @@ public class CatchEventBehavior {
 
   public void subscribeToTimerEvent(
       long elementInstanceKey,
+      long workflowKey,
       DirectBuffer handlerNodeId,
-      DirectBuffer bpmnId,
       RepeatingInterval timer,
       TypedStreamWriter writer) {
     final long nowMs = ActorClock.currentTimeMillis();
@@ -211,7 +205,7 @@ public class CatchEventBehavior {
         .setDueDate(dueDate)
         .setElementInstanceKey(elementInstanceKey)
         .setHandlerNodeId(handlerNodeId)
-        .setBpmnId(bpmnId);
+        .setWorkflowKey(workflowKey);
     writer.appendNewCommand(TimerIntent.CREATE, timerRecord);
   }
 
@@ -223,12 +217,12 @@ public class CatchEventBehavior {
             elementInstanceKey, t -> unsubscribeFromTimerEvent(t, writer));
   }
 
-  private void unsubscribeFromTimerEvent(TimerInstance timer, TypedStreamWriter writer) {
+  public void unsubscribeFromTimerEvent(TimerInstance timer, TypedStreamWriter writer) {
     timerRecord
         .setElementInstanceKey(timer.getElementInstanceKey())
         .setDueDate(timer.getDueDate())
         .setHandlerNodeId(timer.getHandlerNodeId())
-        .setBpmnId(timer.getBpmnId());
+        .setWorkflowKey(timer.getWorkflowKey());
 
     writer.appendFollowUpCommand(timer.getKey(), TimerIntent.CANCEL, timerRecord);
   }
@@ -347,11 +341,5 @@ public class CatchEventBehavior {
     public MessageCorrelationKeyException(String message) {
       super(message);
     }
-  }
-
-  private boolean isStartEvent(long elementInstanceKey, DirectBuffer bpmnId) {
-    return elementInstanceKey == -1
-        && bpmnId != null
-        && !bpmnId.equals(DocumentValue.EMPTY_DOCUMENT);
   }
 }

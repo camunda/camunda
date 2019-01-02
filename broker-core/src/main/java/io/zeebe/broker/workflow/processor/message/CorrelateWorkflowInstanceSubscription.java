@@ -105,7 +105,6 @@ public final class CorrelateWorkflowInstanceSubscription
     final boolean isOccurred =
         catchEventBehavior.occurEventForElement(
             elementInstanceKey,
-            null,
             subscription.getHandlerNodeId(),
             record.getValue().getPayload(),
             streamWriter);

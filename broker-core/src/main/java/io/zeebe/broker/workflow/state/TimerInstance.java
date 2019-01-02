@@ -28,8 +28,10 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public class TimerInstance implements DbValue {
 
+  public static final int NO_ELEMENT_INSTANCE = -1;
+
   private final DirectBuffer handlerNodeId = new UnsafeBuffer(0, 0);
-  private final DirectBuffer bpmnId = new UnsafeBuffer(0, 0);
+  private long workflowKey;
   private long key;
   private long elementInstanceKey;
   private long dueDate;
@@ -75,17 +77,17 @@ public class TimerInstance implements DbValue {
     this.repetitions = repetitions;
   }
 
-  public DirectBuffer getBpmnId() {
-    return this.bpmnId;
+  public long getWorkflowKey() {
+    return this.workflowKey;
   }
 
-  public void setBpmnId(DirectBuffer bpmnId) {
-    this.bpmnId.wrap(bpmnId);
+  public void setWorkflowKey(long workflowKey) {
+    this.workflowKey = workflowKey;
   }
 
   @Override
   public int getLength() {
-    return 3 * Long.BYTES + 3 * Integer.BYTES + handlerNodeId.capacity() + bpmnId.capacity();
+    return 4 * Long.BYTES + 2 * Integer.BYTES + handlerNodeId.capacity();
   }
 
   @Override
@@ -99,10 +101,11 @@ public class TimerInstance implements DbValue {
     buffer.putLong(offset, key, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
+    buffer.putLong(offset, workflowKey, ZB_DB_BYTE_ORDER);
+    offset += Long.BYTES;
+
     buffer.putInt(offset, repetitions, ZB_DB_BYTE_ORDER);
     offset += Integer.BYTES;
-
-    offset = writeIntoBuffer(buffer, offset, bpmnId);
 
     offset = writeIntoBuffer(buffer, offset, handlerNodeId);
     assert offset == getLength() : "End offset differs from getLength()";
@@ -119,10 +122,11 @@ public class TimerInstance implements DbValue {
     key = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
+    workflowKey = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
+    offset += Long.BYTES;
+
     repetitions = buffer.getInt(offset, ZB_DB_BYTE_ORDER);
     offset += Integer.BYTES;
-
-    offset = readIntoBuffer(buffer, offset, bpmnId);
 
     offset = readIntoBuffer(buffer, offset, handlerNodeId);
     assert offset == length : "End offset differs from length";
