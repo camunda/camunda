@@ -26,7 +26,7 @@ exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
           "endDate": "2018-10-10T09:20:38.658Z",
           "id": "id_0",
           "startDate": "2018-10-10T09:20:38.658Z",
-          "state": "ACTIVE",
+          "state": "COMPLETED",
         },
       ],
       "bpmnProcessId": "someKey",

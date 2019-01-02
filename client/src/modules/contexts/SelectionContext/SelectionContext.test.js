@@ -26,7 +26,7 @@ describe('SelectionContext', () => {
     return <div>foo</div>;
   });
 
-  function createNode(customProps = {}) {
+  function mountNode(customProps = {}) {
     return mount(
       <SelectionProvider {...mockFunctions} {...customProps}>
         <Foo />
@@ -65,7 +65,7 @@ describe('SelectionContext', () => {
       ],
       totalCount: 2
     });
-    const node = createNode({getStateLocally: mockGetStateLocally});
+    const node = mountNode({getStateLocally: mockGetStateLocally});
 
     // when
     await flushPromises();
@@ -94,7 +94,7 @@ describe('SelectionContext', () => {
 
   it('should reset selected instances when filter changes', () => {
     // given
-    const node = createNode({filter: FILTER_SELECTION.running});
+    const node = mountNode({filter: FILTER_SELECTION.running});
     let fooNode = node.find('Foo');
     const {onSelectedInstancesUpdate} = fooNode.props();
     onSelectedInstancesUpdate({all: true});
@@ -112,7 +112,7 @@ describe('SelectionContext', () => {
   describe('handleSelectedInstancesUpdate', () => {
     it('should update selected instances', () => {
       // given
-      const node = createNode();
+      const node = mountNode();
       let fooNode = node.find('Foo');
       const {onSelectedInstancesUpdate} = fooNode.props();
 
@@ -129,7 +129,7 @@ describe('SelectionContext', () => {
   describe('handleSelectedInstancesReset', () => {
     it('should reset selected instances', () => {
       // given
-      const node = createNode();
+      const node = mountNode();
       let fooNode = node.find('Foo');
       const {
         onSelectedInstancesUpdate,
@@ -164,7 +164,7 @@ describe('SelectionContext', () => {
           totalCount: 2
         }
       );
-      const wrapper = createNode({getFilterQuery: () => filterQuery});
+      const wrapper = mountNode({getFilterQuery: () => filterQuery});
       const node = wrapper.find('BasicSelectionProvider');
       await flushPromises();
       node.instance().handleSelectedInstancesUpdate(selectedInstances);
@@ -252,7 +252,7 @@ describe('SelectionContext', () => {
       instancesApi.fetchWorkflowInstancesBySelection = mockResolvedAsyncFn(
         mockResponse
       );
-      const wrapper = createNode({
+      const wrapper = mountNode({
         getFilterQuery: () => filterQuery,
         getStateLocally: () => mockLocalStorage
       });
@@ -341,7 +341,7 @@ describe('SelectionContext', () => {
       instancesApi.fetchWorkflowInstancesBySelection = mockResolvedAsyncFn(
         mockResponse
       );
-      const wrapper = createNode({
+      const wrapper = mountNode({
         getFilterQuery: () => filterQuery,
         getStateLocally: () => mockLocalStorage
       });
@@ -400,7 +400,7 @@ describe('SelectionContext', () => {
       instancesApi.fetchWorkflowInstancesBySelection = mockResolvedAsyncFn(
         mockResponse
       );
-      const wrapper = createNode({
+      const wrapper = mountNode({
         getFilterQuery: () => filterQuery,
         getStateLocally: () => mockLocalStorage
       });
@@ -448,7 +448,7 @@ describe('SelectionContext', () => {
       instancesApi.fetchWorkflowInstancesBySelection = mockResolvedAsyncFn(
         mockResponse
       );
-      const wrapper = createNode({
+      const wrapper = mountNode({
         getFilterQuery: () => filterQuery,
         getStateLocally: () => mockLocalStorage
       });
