@@ -38,11 +38,6 @@
       <plugin>
         <class>org.camunda.connect.plugin.impl.ConnectProcessEnginePlugin</class>
       </plugin>
-
-      <!-- allow access to H2 db -->
-      <plugin>
-        <class>org.camunda.bpm.platform.plugin.database.connection.DatabaseConnectionPlugin</class>
-      </plugin>
     </plugins>
   </process-engine>
 
@@ -77,12 +72,6 @@
       <plugin>
         <class>org.camunda.connect.plugin.impl.ConnectProcessEnginePlugin</class>
       </plugin>
-
-      <!-- allow access to H2 db -->
-      <plugin>
-        <class>org.camunda.bpm.platform.plugin.database.connection.DatabaseConnectionPlugin</class>
-      </plugin>
-
     </plugins>
   </process-engine>
 

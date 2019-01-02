@@ -31,7 +31,7 @@ services:
       timeout: 5s
       retries: 3
   cambpm:
-    image: registry.camunda.cloud/camunda-bpm-platform-ee:${CAMBPM_VERSION:-7.10.0-alpha5}
+    image: registry.camunda.cloud/camunda-bpm-platform-ee:${CAMBPM_VERSION:-7.10.1}
     container_name: cambpm
     environment:
       - TZ=Europe/Berlin
@@ -41,7 +41,6 @@ services:
       - 9092:9092
     volumes:
       - "./backend/target/cambpm_logs:/camunda/logs"
-      - "./backend/target/qa-libs/engine-database-connection.jar:/camunda/lib/engine-database-connection.jar"
       - "./backend/src/it/resources/tomcat/bpm-platform.h2.xml:/camunda/conf/bpm-platform.xml"
       - "./backend/src/it/resources/tomcat/tomcat-users.xml:/camunda/conf/tomcat-users.xml"
       - "./backend/src/it/resources/tomcat/context.xml:/camunda/webapps/manager/META-INF/context.xml"

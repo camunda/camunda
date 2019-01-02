@@ -586,6 +586,7 @@
           <groupId>org.camunda.optimize</groupId>
           <artifactId>engine-database-connection</artifactId>
           <version>${project.version}</version>
+          <type>war</type>
           <scope>test</scope>
         </dependency>
       </dependencies>
@@ -781,6 +782,14 @@
                   <type>war</type>
                   <properties>
                     <context>purge</context>
+                  </properties>
+                </deployable>
+                <deployable>
+                  <groupId>org.camunda.optimize</groupId>
+                  <artifactId>engine-database-connection</artifactId>
+                  <type>war</type>
+                  <properties>
+                    <context>engine-database-connection</context>
                   </properties>
                 </deployable>
               </deployables>
