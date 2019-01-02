@@ -35,10 +35,6 @@ public class SubscribeEventHandler implements BpmnStepHandler<ExecutableCatchEve
 
     } catch (MessageCorrelationKeyException e) {
       context.raiseIncident(ErrorType.EXTRACT_VALUE_ERROR, e.getMessage());
-
-      // TODO (saig0): While processing the event a token is consumed. If an incident is raised then
-      // we don't defer and spawn a token. So we need to spawn a new one here explicitly - see #1767
-      context.getFlowScopeInstance().spawnToken();
     }
   }
 }

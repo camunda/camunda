@@ -31,7 +31,6 @@ import io.zeebe.broker.workflow.model.element.ExecutableMessage;
 import io.zeebe.broker.workflow.state.DeployedWorkflow;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.ElementInstanceState;
-import io.zeebe.broker.workflow.state.IndexedRecord;
 import io.zeebe.broker.workflow.state.StoredRecord;
 import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
 import io.zeebe.broker.workflow.state.TimerInstance;
@@ -44,7 +43,6 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceReco
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.sched.clock.ActorClock;
-import java.util.List;
 import org.agrona.DirectBuffer;
 
 public class CatchEventBehavior {
@@ -137,11 +135,6 @@ public class CatchEventBehavior {
       streamWriter.appendFollowUpEvent(
           elementInstanceKey, WorkflowInstanceIntent.EVENT_OCCURRED, workflowInstanceRecord);
 
-      // TODO (saig0): While processing the event a token is consumed. We need to spawn a new one
-      // here explicitly - see #1767
-      elementInstanceState.getInstance(elementInstance.getParentKey()).spawnToken();
-      elementInstanceState.flushDirtyState();
-
       return true;
 
     } else {
@@ -173,25 +166,28 @@ public class CatchEventBehavior {
     }
 
     context.getOutput().deferEvent(context.getRecord());
+
+    // spawn a new token to continue at the event
+    context.getFlowScopeInstance().spawnToken();
   }
 
   public void triggerDeferredEvent(BpmnStepContext<?> context) {
     final TypedRecord<WorkflowInstanceRecord> record = context.getRecord();
     final long elementInstanceKey = record.getKey();
     final long scopeInstanceKey = record.getValue().getScopeInstanceKey();
-    final List<IndexedRecord> deferredTokens =
-        state.getWorkflowState().getElementInstanceState().getDeferredTokens(scopeInstanceKey);
 
-    for (IndexedRecord token : deferredTokens) {
-      if (token.getKey() == elementInstanceKey
-          && token.getState() == WorkflowInstanceIntent.EVENT_OCCURRED) {
+    final StoredRecord token =
+        state.getWorkflowState().getElementInstanceState().getTokenEvent(elementInstanceKey);
 
-        context
-            .getOutput()
-            .appendNewEvent(WorkflowInstanceIntent.EVENT_TRIGGERING, token.getValue());
+    if (token != null
+        && token.getPurpose() == Purpose.DEFERRED_TOKEN
+        && token.getRecord().getState() == WorkflowInstanceIntent.EVENT_OCCURRED) {
 
-        context.getOutput().consumeDeferredEvent(scopeInstanceKey, elementInstanceKey);
-      }
+      context
+          .getOutput()
+          .appendNewEvent(WorkflowInstanceIntent.EVENT_TRIGGERING, token.getRecord().getValue());
+
+      context.getOutput().consumeDeferredEvent(scopeInstanceKey, elementInstanceKey);
     }
   }
 

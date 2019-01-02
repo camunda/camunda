@@ -94,47 +94,17 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
     metrics.close();
   }
 
-  public void onEventConsumed(TypedRecord<WorkflowInstanceRecord> record) {
-
-    if (isFlowTriggeringEvent(record)) {
-      final long scopeKey = record.getValue().getScopeInstanceKey();
-      workflowState.getElementInstanceState().consumeToken(scopeKey);
-    }
-    // else: element instances remain in the index until a final state is published
-  }
-
-  private static boolean isFlowTriggeringEvent(TypedRecord<WorkflowInstanceRecord> record) {
-    final WorkflowInstanceIntent state = (WorkflowInstanceIntent) record.getMetadata().getIntent();
-    final long scopeKey = record.getValue().getScopeInstanceKey();
-
-    return WorkflowInstanceLifecycle.isTokenState(state)
-        || (WorkflowInstanceLifecycle.isFinalState(state) && scopeKey >= 0);
-  }
-
   public void onEventProduced(
       long key, WorkflowInstanceIntent state, WorkflowInstanceRecord value) {
 
     if (WorkflowInstanceLifecycle.isElementInstanceState(state)) {
       onElementInstanceEventProduced(key, state, value);
-    } else if (state == WorkflowInstanceIntent.PAYLOAD_UPDATED) {
-      // current hack: PAYLOAD_UPDATED can be part of both, element instance and token lifecycle
-      //   => we should improve that when we redesign incidents and payloads
-      if (elementInstanceState.getInstance(key) != null) {
-        onElementInstanceEventProduced(key, state, value);
-      } else {
-        // ignore => the only use case for payload updates of token events is currently incidents;
-        //   see ExclusiveSplitHandler.raiseIncident for explanation why we don't count another
-        // token here
-      }
-    } else {
-      onTokenEventProduced(key, state, value);
     }
   }
 
   public void deferTokenEvent(TypedRecord<WorkflowInstanceRecord> event) {
     final long scopeKey = event.getValue().getScopeInstanceKey();
     elementInstanceState.storeTokenEvent(scopeKey, event, Purpose.DEFERRED_TOKEN);
-    elementInstanceState.spawnToken(scopeKey); // the token remains active
   }
 
   public void storeFailedToken(TypedRecord<WorkflowInstanceRecord> event) {
@@ -144,15 +114,6 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
 
   public void consumeStoredRecord(long scopeKey, long key, Purpose purpose) {
     elementInstanceState.removeStoredRecord(scopeKey, key, purpose);
-    if (purpose == Purpose.DEFERRED_TOKEN) {
-      elementInstanceState.consumeToken(scopeKey);
-    }
-  }
-
-  private void onTokenEventProduced(
-      long key, WorkflowInstanceIntent state, WorkflowInstanceRecord value) {
-    final long scopeKey = value.getScopeInstanceKey();
-    elementInstanceState.spawnToken(scopeKey);
   }
 
   private void onElementInstanceEventProduced(
@@ -184,14 +145,6 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
 
   private void removeElementInstance(long key, WorkflowInstanceRecord value) {
     elementInstanceState.removeInstance(key);
-
-    final long scopeInstanceKey = value.getScopeInstanceKey();
-
-    // a final state is triggers continued execution, i.e. we count a new token
-    if (scopeInstanceKey >= 0) // i.e. not root scope
-    {
-      elementInstanceState.spawnToken(scopeInstanceKey);
-    }
   }
 
   private void createNewElementInstance(

@@ -40,25 +40,28 @@ public class ParallelMergeHandler implements BpmnStepHandler<ExecutableSequenceF
 
   @Override
   public void handle(BpmnStepContext<ExecutableSequenceFlow> context) {
-
-    final EventOutput eventOutput = context.getOutput();
-
     final ElementInstance scopeInstance = context.getFlowScopeInstance();
-    eventOutput.deferEvent(context.getRecord());
-
+    final EventOutput eventOutput = context.getOutput();
     final ExecutableSequenceFlow sequenceFlow = context.getElement();
     final ExecutableFlowNode gateway = sequenceFlow.getTarget();
 
-    final List<IndexedRecord> mergeableRecords = getMergeableRecords(gateway, scopeInstance);
+    eventOutput.deferEvent(context.getRecord());
 
+    final List<IndexedRecord> mergeableRecords = getMergeableRecords(gateway, scopeInstance);
     if (mergeableRecords.size() == gateway.getIncoming().size()) {
 
+      // consume all deferred tokens and spawn a new one to continue after the gateway
       mergeableRecords.forEach(
-          r -> eventOutput.consumeDeferredEvent(scopeInstance.getKey(), r.getKey()));
+          r -> {
+            eventOutput.consumeDeferredEvent(scopeInstance.getKey(), r.getKey());
+            context.getFlowScopeInstance().consumeToken();
+          });
 
       final WorkflowInstanceRecord value = context.getValue();
       value.setElementId(gateway.getId());
       context.getOutput().appendNewEvent(WorkflowInstanceIntent.GATEWAY_ACTIVATED, value);
+
+      context.getFlowScopeInstance().spawnToken();
     }
   }
 

@@ -27,8 +27,12 @@ public class PropagateTerminationHandler implements BpmnStepHandler<ExecutableFl
   @Override
   public void handle(BpmnStepContext<ExecutableFlowNode> context) {
     final ElementInstance flowScopeInstance = context.getFlowScopeInstance();
-    final int activeExecutionPaths = flowScopeInstance.getNumberOfActiveExecutionPaths();
 
+    // consume the current token
+    flowScopeInstance.consumeToken();
+
+    // and check for other tokens of the flow scope
+    final int activeExecutionPaths = flowScopeInstance.getNumberOfActiveExecutionPaths();
     if (activeExecutionPaths > 0) {
       context.getCatchEventBehavior().triggerDeferredEvent(context);
 

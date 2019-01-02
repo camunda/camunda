@@ -21,7 +21,6 @@ import io.zeebe.broker.workflow.model.element.ExecutableExclusiveGateway;
 import io.zeebe.broker.workflow.model.element.ExecutableSequenceFlow;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
-import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.msgpack.el.CompiledJsonCondition;
 import io.zeebe.msgpack.el.JsonConditionException;
 import io.zeebe.msgpack.el.JsonConditionInterpreter;
@@ -47,27 +46,11 @@ public class ExclusiveSplitHandler implements BpmnStepHandler<ExecutableExclusiv
         context.getOutput().appendNewEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, value);
       } else {
         final String errorMessage = "All conditions evaluated to false and no default flow is set.";
-        raiseIncident(context, errorMessage);
+        context.raiseIncident(ErrorType.CONDITION_ERROR, errorMessage);
       }
     } catch (JsonConditionException e) {
-      raiseIncident(context, e.getMessage());
+      context.raiseIncident(ErrorType.CONDITION_ERROR, e.getMessage());
     }
-  }
-
-  private void raiseIncident(
-      BpmnStepContext<ExecutableExclusiveGateway> context, final String errorMessage) {
-    context.raiseIncident(ErrorType.CONDITION_ERROR, errorMessage);
-
-    // TODO: this is a hack to avoid that we believe this token is consumed when the incident is
-    // raised (because no follow-up token event is published), which could wrongfully lead to
-    // scope completion on a parallel branch.
-    // Ideas to resolve this:
-    //     - explicitly represent incidents in the index, so we can consider them when checking if a
-    // scope can complete etc.
-    //     - rework incident concept via https://github.com/zeebe-io/zeebe/issues/1033; maybe this
-    // will also then go away
-    final ElementInstance flowScopeInstance = context.getFlowScopeInstance();
-    flowScopeInstance.spawnToken();
   }
 
   private ExecutableSequenceFlow getSequenceFlowWithFulfilledCondition(
