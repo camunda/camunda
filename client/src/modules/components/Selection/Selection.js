@@ -26,21 +26,7 @@ export default class Selection extends React.Component {
     onDelete: PropTypes.func.isRequired
   };
 
-  state = {operationState: '', numberOfNewInstances: 0};
-
-  componentDidUpdate(prevProps) {
-    const {instances: newInstances} = this.props;
-    const {instances: prevInstances, isOpen: wasOpen} = prevProps;
-
-    if (newInstances.size > prevInstances.size) {
-      const numberOfNewInstances = Math.abs(
-        newInstances.size - prevInstances.size
-      );
-      this.setState({numberOfNewInstances});
-    } else if (!this.props.isOpen && wasOpen) {
-      this.setState({numberOfNewInstances: 0});
-    }
-  }
+  state = {operationState: ''};
 
   operationsMap = {
     [OPERATION_TYPE.CANCEL]: {
@@ -81,9 +67,10 @@ export default class Selection extends React.Component {
   };
 
   renderActions = () => (
-    <Styled.Actions>
+    <Styled.Actions data-test="actions">
       <Styled.DropdownWrapper onClick={evt => evt && evt.stopPropagation()}>
         <Dropdown
+          data-test="batch-operations"
           aria-label="Batch Operations"
           label={<Styled.BatchIcon />}
           buttonStyles={Styled.dropDownButtonStyles}
@@ -113,6 +100,7 @@ export default class Selection extends React.Component {
         {this.renderArrowIcon(isOpen)}
         <Styled.Heading role="heading">
           <Styled.SelectionToggle
+            data-test="selection-toggle"
             onClick={onToggle}
             isOpen={isOpen}
             id={`${idString}-toggle`}

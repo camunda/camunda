@@ -1,130 +1,1106 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`Selection should contain Actions 1`] = `
-<styled.div>
-  <styled.div
-    onClick={[Function]}
+<styled.div
+  data-test="actions"
+>
+  <StyledComponent
+    data-test="actions"
+    forwardedClass={
+      Object {
+        "$$typeof": Symbol(react.forward_ref),
+        "attrs": undefined,
+        "componentStyle": ComponentStyle {
+          "componentId": "sc-iAyFgw",
+          "isStatic": true,
+          "lastClassName": "hoTBy",
+          "rules": Array [
+            "
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  margin-right: 24px;
+",
+          ],
+        },
+        "displayName": "styled.div",
+        "render": [Function],
+        "styledComponentId": "sc-iAyFgw",
+        "target": "div",
+        "toString": [Function],
+        "warnTooManyClasses": [Function],
+        "withComponent": [Function],
+      }
+    }
+    forwardedRef={null}
   >
-    <Dropdown
-      aria-label="Batch Operations"
-      buttonStyles={
-        Array [
-          "
+    <div
+      className="sc-iAyFgw hoTBy"
+      data-test="actions"
+    >
+      <styled.div
+        onClick={[Function]}
+      >
+        <StyledComponent
+          forwardedClass={
+            Object {
+              "$$typeof": Symbol(react.forward_ref),
+              "attrs": undefined,
+              "componentStyle": ComponentStyle {
+                "componentId": "sc-hSdWYo",
+                "isStatic": true,
+                "lastClassName": "cURpgQ",
+                "rules": Array [
+                  "
+  display: flex;
+  align-items: center;
+  position: relative;
+  top: 1px;
+  height: 26px;
+  z-index: 1;
+  padding: 0 2px;
+  margin-right: 10px;
+  border-right: 1px solid ",
+                  "rgba(255, 255, 255, 0.15)",
+                  ";
+",
+                ],
+              },
+              "displayName": "styled.div",
+              "render": [Function],
+              "styledComponentId": "sc-hSdWYo",
+              "target": "div",
+              "toString": [Function],
+              "warnTooManyClasses": [Function],
+              "withComponent": [Function],
+            }
+          }
+          forwardedRef={null}
+          onClick={[Function]}
+        >
+          <div
+            className="sc-hSdWYo cURpgQ"
+            onClick={[Function]}
+          >
+            <Dropdown
+              aria-label="Batch Operations"
+              buttonStyles={
+                Array [
+                  "
   color: #fff;
 ",
-        ]
-      }
-      label={<ForwardRef />}
-      placement="bottom"
-    >
-      <Option
-        data-test="CANCEL-dropdown-option"
-        key="CANCEL"
-        label={
-          <div>
-            <ForwardRef />
-             
-            Cancel
+                ]
+              }
+              data-test="batch-operations"
+              label={<ForwardRef />}
+              placement="bottom"
+            >
+              <styled.div>
+                <StyledComponent
+                  forwardedClass={
+                    Object {
+                      "$$typeof": Symbol(react.forward_ref),
+                      "attrs": undefined,
+                      "componentStyle": ComponentStyle {
+                        "componentId": "sc-VigVT",
+                        "isStatic": true,
+                        "lastClassName": "idjcJz",
+                        "rules": Array [
+                          "
+  position: relative;
+  height: 20px;
+",
+                        ],
+                      },
+                      "displayName": "styled.div",
+                      "render": [Function],
+                      "styledComponentId": "sc-VigVT",
+                      "target": "div",
+                      "toString": [Function],
+                      "warnTooManyClasses": [Function],
+                      "withComponent": [Function],
+                    }
+                  }
+                  forwardedRef={[Function]}
+                >
+                  <div
+                    className="sc-VigVT idjcJz"
+                  >
+                    <Themed(styled.button)
+                      buttonStyles={
+                        Array [
+                          "
+  color: #fff;
+",
+                        ]
+                      }
+                      data-test="dropdown-toggle"
+                      onClick={[Function]}
+                      onKeyDown={[Function]}
+                    >
+                      <Themed
+                        buttonStyles={
+                          Array [
+                            "
+  color: #fff;
+",
+                          ]
+                        }
+                        data-test="dropdown-toggle"
+                        forwardedRef={null}
+                        onClick={[Function]}
+                        onKeyDown={[Function]}
+                      >
+                        <styled.button
+                          buttonStyles={
+                            Array [
+                              "
+  color: #fff;
+",
+                            ]
+                          }
+                          data-test="dropdown-toggle"
+                          onClick={[Function]}
+                          onKeyDown={[Function]}
+                          theme="dark"
+                        >
+                          <StyledComponent
+                            buttonStyles={
+                              Array [
+                                "
+  color: #fff;
+",
+                              ]
+                            }
+                            data-test="dropdown-toggle"
+                            forwardedClass={
+                              Object {
+                                "$$typeof": Symbol(react.forward_ref),
+                                "attrs": undefined,
+                                "componentStyle": ComponentStyle {
+                                  "componentId": "sc-jTzLTM",
+                                  "isStatic": false,
+                                  "lastClassName": "dvberr",
+                                  "rules": Array [
+                                    "
+  /* Positioning */
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  /* Display & Box Model */
+  border: none;
+
+  /* Color */
+  color: ",
+                                    [Function],
+                                    ";
+
+  background: none;
+
+  /* Text */
+  font-family: IBMPlexSans;
+  font-size: 15px;
+  font-weight: 600;
+
+  /* Other */
+  cursor: ",
+                                    [Function],
+                                    ";
+
+  & > svg {
+    vertical-align: text-bottom;
+  }
+
+  ",
+                                    [Function],
+                                    ";
+",
+                                  ],
+                                },
+                                "displayName": "styled.button",
+                                "render": [Function],
+                                "styledComponentId": "sc-jTzLTM",
+                                "target": "button",
+                                "toString": [Function],
+                                "warnTooManyClasses": [Function],
+                                "withComponent": [Function],
+                              }
+                            }
+                            forwardedRef={null}
+                            onClick={[Function]}
+                            onKeyDown={[Function]}
+                            theme="dark"
+                          >
+                            <button
+                              className="sc-jTzLTM dvberr"
+                              data-test="dropdown-toggle"
+                              onClick={[Function]}
+                              onKeyDown={[Function]}
+                            >
+                              <Styled(ReactComponent)>
+                                <StyledComponent
+                                  forwardedClass={
+                                    Object {
+                                      "$$typeof": Symbol(react.forward_ref),
+                                      "attrs": undefined,
+                                      "componentStyle": ComponentStyle {
+                                        "componentId": "sc-jDwBTQ",
+                                        "isStatic": true,
+                                        "lastClassName": "bzkBfM",
+                                        "rules": Array [
+                                          "
+  color: '#ffffff';
+",
+                                        ],
+                                      },
+                                      "displayName": "Styled(ReactComponent)",
+                                      "render": [Function],
+                                      "styledComponentId": "sc-jDwBTQ",
+                                      "target": [Function],
+                                      "toString": [Function],
+                                      "warnTooManyClasses": [Function],
+                                      "withComponent": [Function],
+                                      Symbol(Symbol.hasInstance): [Function],
+                                    }
+                                  }
+                                  forwardedRef={null}
+                                >
+                                  <ReactComponent
+                                    className="sc-jDwBTQ bzkBfM"
+                                  >
+                                    <svg
+                                      className="sc-jDwBTQ bzkBfM"
+                                    >
+                                      batch.svg
+                                    </svg>
+                                  </ReactComponent>
+                                </StyledComponent>
+                              </Styled(ReactComponent)>
+                              <ReactComponent>
+                                <svg>
+                                  down.svg
+                                </svg>
+                              </ReactComponent>
+                            </button>
+                          </StyledComponent>
+                        </styled.button>
+                      </Themed>
+                    </Themed(styled.button)>
+                  </div>
+                </StyledComponent>
+              </styled.div>
+            </Dropdown>
           </div>
-        }
-        onClick={[Function]}
-      />
-      <Option
-        data-test="UPDATE_RETRIES-dropdown-option"
-        key="UPDATE_RETRIES"
-        label={
-          <div>
-            <ForwardRef />
-             
-            Retry
-          </div>
-        }
-        onClick={[Function]}
-      />
-    </Dropdown>
-  </styled.div>
-  <styled.button
-    aria-label="Drop Selection 1"
-    onClick={[MockFunction]}
-  >
-    <Styled(ReactComponent) />
-  </styled.button>
+        </StyledComponent>
+      </styled.div>
+      <styled.button
+        aria-label="Drop Selection 1"
+        onClick={[MockFunction]}
+      >
+        <StyledComponent
+          aria-label="Drop Selection 1"
+          forwardedClass={
+            Object {
+              "$$typeof": Symbol(react.forward_ref),
+              "attrs": undefined,
+              "componentStyle": ComponentStyle {
+                "componentId": "sc-eHgmQL",
+                "isStatic": true,
+                "lastClassName": "FKvSH",
+                "rules": Array [
+                  "
+  background: transparent;
+  border-radius: 12px;
+  width: 16px;
+  height: 16px;
+  padding: 0px;
+  z-index: 3;
+",
+                ],
+              },
+              "displayName": "styled.button",
+              "render": [Function],
+              "styledComponentId": "sc-eHgmQL",
+              "target": "button",
+              "toString": [Function],
+              "warnTooManyClasses": [Function],
+              "withComponent": [Function],
+            }
+          }
+          forwardedRef={null}
+          onClick={[MockFunction]}
+        >
+          <button
+            aria-label="Drop Selection 1"
+            className="sc-eHgmQL FKvSH"
+            onClick={[MockFunction]}
+          >
+            <Styled(ReactComponent)>
+              <StyledComponent
+                forwardedClass={
+                  Object {
+                    "$$typeof": Symbol(react.forward_ref),
+                    "attrs": undefined,
+                    "componentStyle": ComponentStyle {
+                      "componentId": "sc-cvbbAY",
+                      "isStatic": true,
+                      "lastClassName": "eBfAqH",
+                      "rules": Array [
+                        "
+  opacity: 0.45;
+  cursor: pointer;
+",
+                      ],
+                    },
+                    "displayName": "Styled(ReactComponent)",
+                    "render": [Function],
+                    "styledComponentId": "sc-cvbbAY",
+                    "target": [Function],
+                    "toString": [Function],
+                    "warnTooManyClasses": [Function],
+                    "withComponent": [Function],
+                    Symbol(Symbol.hasInstance): [Function],
+                  }
+                }
+                forwardedRef={null}
+              >
+                <ReactComponent
+                  className="sc-cvbbAY eBfAqH"
+                >
+                  <svg
+                    className="sc-cvbbAY eBfAqH"
+                  >
+                    remove-item.svg
+                  </svg>
+                </ReactComponent>
+              </StyledComponent>
+            </Styled(ReactComponent)>
+          </button>
+        </StyledComponent>
+      </styled.button>
+    </div>
+  </StyledComponent>
 </styled.div>
 `;
 
 exports[`Selection should contain Instances 1`] = `
 <ul>
-  <Themed(styled.li)
-    isNew={false}
-    key="0"
+  <TransitionGroup
+    childFactory={[Function]}
+    component="div"
   >
-    <styled.div>
-      <Themed(StateIcon)
-        instance={
-          Object {
-            "activities": Array [
-              Object {
-                "activityId": "activityId_0",
-                "endDate": "2018-10-10T09:20:38.658Z",
-                "id": "id_0",
-                "startDate": "2018-10-10T09:20:38.658Z",
-                "state": "ACTIVE",
-              },
-            ],
-            "bpmnProcessId": "someKey",
-            "endDate": null,
-            "id": "id_1",
-            "incidents": Array [
-              Object {
-                "activityId": Object {},
-                "activityInstanceId": Object {},
-                "errorMessage": "",
-                "errorType": "",
-                "id": "id_2",
-                "jobId": "jobId_0",
-                "state": "ACTIVE",
-              },
-            ],
-            "operations": Array [
-              Object {
-                "endDate": "2018-10-10T09:20:38.661Z",
-                "errorMessage": "string",
-                "startDate": "2018-10-10T09:20:38.661Z",
-                "state": "SCHEDULED",
-                "type": "UPDATE_RETRIES",
-              },
-            ],
-            "sequenceFlows": Array [],
-            "startDate": "2018-06-21",
-            "state": "ACTIVE",
-            "workflowId": "2",
-            "workflowName": "someWorkflowName",
-            "workflowVersion": 1,
-          }
-        }
-      />
-    </styled.div>
-    <styled.div>
-      someWorkflowName
-    </styled.div>
-    <styled.div>
-      id_1
-    </styled.div>
-    <styled.div>
-      <Styled(ActionStatus)
-        operationState="SCHEDULED"
-        operationType="UPDATE_RETRIES"
-      />
-    </styled.div>
-  </Themed(styled.li)>
+    <div>
+      <CSSTransition
+        classNames="transition"
+        data-test="addInstanceTransition"
+        in={true}
+        key=".$0"
+        onExited={[Function]}
+        timeout={800}
+      >
+        <Transition
+          appear={false}
+          data-test="addInstanceTransition"
+          enter={true}
+          exit={true}
+          in={true}
+          mountOnEnter={false}
+          onEnter={[Function]}
+          onEntered={[Function]}
+          onEntering={[Function]}
+          onExit={[Function]}
+          onExited={[Function]}
+          onExiting={[Function]}
+          timeout={800}
+          unmountOnExit={false}
+        >
+          <Themed(styled.li)
+            data-test="addInstanceTransition"
+            key="0"
+            transitionTiming={800}
+          >
+            <Themed
+              data-test="addInstanceTransition"
+              forwardedRef={null}
+              transitionTiming={800}
+            >
+              <styled.li
+                data-test="addInstanceTransition"
+                theme="dark"
+                transitionTiming={800}
+              >
+                <StyledComponent
+                  data-test="addInstanceTransition"
+                  forwardedClass={
+                    Object {
+                      "$$typeof": Symbol(react.forward_ref),
+                      "attrs": undefined,
+                      "componentStyle": ComponentStyle {
+                        "componentId": "sc-iRbamj",
+                        "isStatic": false,
+                        "lastClassName": "jVOHUR",
+                        "rules": Array [
+                          "
+  display: flex;
+  align-items: center;
+  height: 31px;
+  /* padding-left: 10px; */
+  color: ",
+                          [Function],
+                          ";
+  font-size: 13px;
+
+  ",
+                          "
+  &.transition-enter {
+    opacity: 0;
+  }
+  &.transition-enter-active {
+    opacity: 1;
+    transition: opacity ",
+                          [Function],
+                          ";
+  }
+  &.transition-enter-done {
+    opacity: 1;
+  }
+",
+                          ";
+
+  /* opacity: 1; */
+
+  & * {
+    top: 1px;
+  }
+
+  & > div {
+    padding-left: 10px;
+  }
+
+  &:nth-child(even) {
+    background: ",
+                          [Function],
+                          ";
+
+    border-bottom: 1px solid ",
+                          [Function],
+                          ";
+  }
+
+  &:nth-child(odd) {
+    background: ",
+                          [Function],
+                          ";
+    border-bottom: 1px solid ",
+                          [Function],
+                          ";
+  }
+",
+                        ],
+                      },
+                      "displayName": "styled.li",
+                      "render": [Function],
+                      "styledComponentId": "sc-iRbamj",
+                      "target": "li",
+                      "toString": [Function],
+                      "warnTooManyClasses": [Function],
+                      "withComponent": [Function],
+                    }
+                  }
+                  forwardedRef={null}
+                  theme="dark"
+                  transitionTiming={800}
+                >
+                  <li
+                    className="sc-iRbamj jVOHUR"
+                    data-test="addInstanceTransition"
+                  >
+                    <styled.div>
+                      <StyledComponent
+                        forwardedClass={
+                          Object {
+                            "$$typeof": Symbol(react.forward_ref),
+                            "attrs": undefined,
+                            "componentStyle": ComponentStyle {
+                              "componentId": "sc-jlyJG",
+                              "isStatic": true,
+                              "lastClassName": "JeNHG",
+                              "rules": Array [
+                                "
+  width: 25px;
+",
+                              ],
+                            },
+                            "displayName": "styled.div",
+                            "render": [Function],
+                            "styledComponentId": "sc-jlyJG",
+                            "target": "div",
+                            "toString": [Function],
+                            "warnTooManyClasses": [Function],
+                            "withComponent": [Function],
+                          }
+                        }
+                        forwardedRef={null}
+                      >
+                        <div
+                          className="sc-jlyJG JeNHG"
+                        >
+                          <Themed(StateIcon)
+                            instance={
+                              Object {
+                                "activities": Array [
+                                  Object {
+                                    "activityId": "activityId_0",
+                                    "endDate": "2018-10-10T09:20:38.658Z",
+                                    "id": "id_0",
+                                    "startDate": "2018-10-10T09:20:38.658Z",
+                                    "state": "ACTIVE",
+                                  },
+                                ],
+                                "bpmnProcessId": "someKey",
+                                "endDate": null,
+                                "id": "id_1",
+                                "incidents": Array [
+                                  Object {
+                                    "activityId": Object {},
+                                    "activityInstanceId": Object {},
+                                    "errorMessage": "",
+                                    "errorType": "",
+                                    "id": "id_2",
+                                    "jobId": "jobId_0",
+                                    "state": "ACTIVE",
+                                  },
+                                ],
+                                "operations": Array [
+                                  Object {
+                                    "endDate": "2018-10-10T09:20:38.661Z",
+                                    "errorMessage": "string",
+                                    "startDate": "2018-10-10T09:20:38.661Z",
+                                    "state": "SCHEDULED",
+                                    "type": "UPDATE_RETRIES",
+                                  },
+                                ],
+                                "sequenceFlows": Array [],
+                                "startDate": "2018-06-21",
+                                "state": "ACTIVE",
+                                "workflowId": "2",
+                                "workflowName": "someWorkflowName",
+                                "workflowVersion": 1,
+                              }
+                            }
+                          >
+                            <Themed
+                              forwardedRef={null}
+                              instance={
+                                Object {
+                                  "activities": Array [
+                                    Object {
+                                      "activityId": "activityId_0",
+                                      "endDate": "2018-10-10T09:20:38.658Z",
+                                      "id": "id_0",
+                                      "startDate": "2018-10-10T09:20:38.658Z",
+                                      "state": "ACTIVE",
+                                    },
+                                  ],
+                                  "bpmnProcessId": "someKey",
+                                  "endDate": null,
+                                  "id": "id_1",
+                                  "incidents": Array [
+                                    Object {
+                                      "activityId": Object {},
+                                      "activityInstanceId": Object {},
+                                      "errorMessage": "",
+                                      "errorType": "",
+                                      "id": "id_2",
+                                      "jobId": "jobId_0",
+                                      "state": "ACTIVE",
+                                    },
+                                  ],
+                                  "operations": Array [
+                                    Object {
+                                      "endDate": "2018-10-10T09:20:38.661Z",
+                                      "errorMessage": "string",
+                                      "startDate": "2018-10-10T09:20:38.661Z",
+                                      "state": "SCHEDULED",
+                                      "type": "UPDATE_RETRIES",
+                                    },
+                                  ],
+                                  "sequenceFlows": Array [],
+                                  "startDate": "2018-06-21",
+                                  "state": "ACTIVE",
+                                  "workflowId": "2",
+                                  "workflowName": "someWorkflowName",
+                                  "workflowVersion": 1,
+                                }
+                              }
+                            >
+                              <StateIcon
+                                instance={
+                                  Object {
+                                    "activities": Array [
+                                      Object {
+                                        "activityId": "activityId_0",
+                                        "endDate": "2018-10-10T09:20:38.658Z",
+                                        "id": "id_0",
+                                        "startDate": "2018-10-10T09:20:38.658Z",
+                                        "state": "ACTIVE",
+                                      },
+                                    ],
+                                    "bpmnProcessId": "someKey",
+                                    "endDate": null,
+                                    "id": "id_1",
+                                    "incidents": Array [
+                                      Object {
+                                        "activityId": Object {},
+                                        "activityInstanceId": Object {},
+                                        "errorMessage": "",
+                                        "errorType": "",
+                                        "id": "id_2",
+                                        "jobId": "jobId_0",
+                                        "state": "ACTIVE",
+                                      },
+                                    ],
+                                    "operations": Array [
+                                      Object {
+                                        "endDate": "2018-10-10T09:20:38.661Z",
+                                        "errorMessage": "string",
+                                        "startDate": "2018-10-10T09:20:38.661Z",
+                                        "state": "SCHEDULED",
+                                        "type": "UPDATE_RETRIES",
+                                      },
+                                    ],
+                                    "sequenceFlows": Array [],
+                                    "startDate": "2018-06-21",
+                                    "state": "ACTIVE",
+                                    "workflowId": "2",
+                                    "workflowName": "someWorkflowName",
+                                    "workflowVersion": 1,
+                                  }
+                                }
+                                theme="dark"
+                              >
+                                <Styled(ReactComponent)
+                                  theme="dark"
+                                >
+                                  <StyledComponent
+                                    forwardedClass={
+                                      Object {
+                                        "$$typeof": Symbol(react.forward_ref),
+                                        "attrs": undefined,
+                                        "componentStyle": ComponentStyle {
+                                          "componentId": "sc-bdVaJa",
+                                          "isStatic": true,
+                                          "lastClassName": "gRHdRX",
+                                          "rules": Array [
+                                            "
+  ",
+                                            "
+  position: relative;
+  top: 3px;
+  margin-right: 5px;
+",
+                                            ";
+  color: ",
+                                            "#ff3d3d",
+                                            ";
+",
+                                          ],
+                                        },
+                                        "displayName": "Styled(ReactComponent)",
+                                        "render": [Function],
+                                        "styledComponentId": "sc-bdVaJa",
+                                        "target": [Function],
+                                        "toString": [Function],
+                                        "warnTooManyClasses": [Function],
+                                        "withComponent": [Function],
+                                        Symbol(Symbol.hasInstance): [Function],
+                                      }
+                                    }
+                                    forwardedRef={null}
+                                    theme="dark"
+                                  >
+                                    <ReactComponent
+                                      className="sc-bdVaJa gRHdRX"
+                                      theme="dark"
+                                    >
+                                      <svg
+                                        className="sc-bdVaJa gRHdRX"
+                                        theme="dark"
+                                      >
+                                        state-icon-incident.svg
+                                      </svg>
+                                    </ReactComponent>
+                                  </StyledComponent>
+                                </Styled(ReactComponent)>
+                              </StateIcon>
+                            </Themed>
+                          </Themed(StateIcon)>
+                        </div>
+                      </StyledComponent>
+                    </styled.div>
+                    <styled.div>
+                      <StyledComponent
+                        forwardedClass={
+                          Object {
+                            "$$typeof": Symbol(react.forward_ref),
+                            "attrs": undefined,
+                            "componentStyle": ComponentStyle {
+                              "componentId": "sc-gipzik",
+                              "isStatic": true,
+                              "lastClassName": "guIFiZ",
+                              "rules": Array [
+                                "
+  width: 50%;
+",
+                              ],
+                            },
+                            "displayName": "styled.div",
+                            "render": [Function],
+                            "styledComponentId": "sc-gipzik",
+                            "target": "div",
+                            "toString": [Function],
+                            "warnTooManyClasses": [Function],
+                            "withComponent": [Function],
+                          }
+                        }
+                        forwardedRef={null}
+                      >
+                        <div
+                          className="sc-gipzik guIFiZ"
+                        >
+                          someWorkflowName
+                        </div>
+                      </StyledComponent>
+                    </styled.div>
+                    <styled.div>
+                      <StyledComponent
+                        forwardedClass={
+                          Object {
+                            "$$typeof": Symbol(react.forward_ref),
+                            "attrs": undefined,
+                            "componentStyle": ComponentStyle {
+                              "componentId": "sc-csuQGl",
+                              "isStatic": true,
+                              "lastClassName": "hMOCmG",
+                              "rules": Array [
+                                "
+  width: 50%;
+",
+                              ],
+                            },
+                            "displayName": "styled.div",
+                            "render": [Function],
+                            "styledComponentId": "sc-csuQGl",
+                            "target": "div",
+                            "toString": [Function],
+                            "warnTooManyClasses": [Function],
+                            "withComponent": [Function],
+                          }
+                        }
+                        forwardedRef={null}
+                      >
+                        <div
+                          className="sc-csuQGl hMOCmG"
+                        >
+                          id_1
+                        </div>
+                      </StyledComponent>
+                    </styled.div>
+                    <styled.div>
+                      <StyledComponent
+                        forwardedClass={
+                          Object {
+                            "$$typeof": Symbol(react.forward_ref),
+                            "attrs": undefined,
+                            "componentStyle": ComponentStyle {
+                              "componentId": "sc-Rmtcm",
+                              "isStatic": true,
+                              "lastClassName": "jIaTlA",
+                              "rules": Array [
+                                "
+  width: 185px;
+",
+                              ],
+                            },
+                            "displayName": "styled.div",
+                            "render": [Function],
+                            "styledComponentId": "sc-Rmtcm",
+                            "target": "div",
+                            "toString": [Function],
+                            "warnTooManyClasses": [Function],
+                            "withComponent": [Function],
+                          }
+                        }
+                        forwardedRef={null}
+                      >
+                        <div
+                          className="sc-Rmtcm jIaTlA"
+                        >
+                          <Styled(ActionStatus)
+                            operationState="SCHEDULED"
+                            operationType="UPDATE_RETRIES"
+                          >
+                            <StyledComponent
+                              forwardedClass={
+                                Object {
+                                  "$$typeof": Symbol(react.forward_ref),
+                                  "attrs": undefined,
+                                  "componentStyle": ComponentStyle {
+                                    "componentId": "sc-bRBYWo",
+                                    "isStatic": true,
+                                    "lastClassName": "SPKUn",
+                                    "rules": Array [
+                                      "
+  margin-right: 97px;
+",
+                                    ],
+                                  },
+                                  "displayName": "Styled(ActionStatus)",
+                                  "render": [Function],
+                                  "styledComponentId": "sc-bRBYWo",
+                                  "target": [Function],
+                                  "toString": [Function],
+                                  "warnTooManyClasses": [Function],
+                                  "withComponent": [Function],
+                                  Symbol(Symbol.hasInstance): [Function],
+                                }
+                              }
+                              forwardedRef={null}
+                              operationState="SCHEDULED"
+                              operationType="UPDATE_RETRIES"
+                            >
+                              <ActionStatus
+                                className="sc-bRBYWo SPKUn"
+                                operationState="SCHEDULED"
+                                operationType="UPDATE_RETRIES"
+                              >
+                                <div>
+                                  <Themed(Styled(Spinner))
+                                    className="sc-bRBYWo SPKUn"
+                                  >
+                                    <Themed
+                                      className="sc-bRBYWo SPKUn"
+                                      forwardedRef={null}
+                                    >
+                                      <Styled(Spinner)
+                                        className="sc-bRBYWo SPKUn"
+                                        theme="dark"
+                                      >
+                                        <StyledComponent
+                                          className="sc-bRBYWo SPKUn"
+                                          forwardedClass={
+                                            Object {
+                                              "$$typeof": Symbol(react.forward_ref),
+                                              "attrs": undefined,
+                                              "componentStyle": ComponentStyle {
+                                                "componentId": "sc-kGXeez",
+                                                "isStatic": false,
+                                                "lastClassName": "jtyeHR",
+                                                "rules": Array [
+                                                  "
+  margin: 0 5px;
+ border: 3px solid ",
+                                                  [Function],
+                                                  ";
+    border-right-color: transparent;
+  }
+",
+                                                ],
+                                              },
+                                              "displayName": "Styled(Spinner)",
+                                              "render": [Function],
+                                              "styledComponentId": "sc-kGXeez",
+                                              "target": [Function],
+                                              "toString": [Function],
+                                              "warnTooManyClasses": [Function],
+                                              "withComponent": [Function],
+                                              Symbol(Symbol.hasInstance): [Function],
+                                            }
+                                          }
+                                          forwardedRef={null}
+                                          theme="dark"
+                                        >
+                                          <Spinner
+                                            className="sc-bRBYWo SPKUn sc-kGXeez jtyeHR"
+                                            theme="dark"
+                                          >
+                                            <Themed(styled.div)
+                                              className="sc-bRBYWo SPKUn sc-kGXeez jtyeHR"
+                                              theme="dark"
+                                            >
+                                              <Themed
+                                                className="sc-bRBYWo SPKUn sc-kGXeez jtyeHR"
+                                                forwardedRef={null}
+                                                theme="dark"
+                                              >
+                                                <styled.div
+                                                  className="sc-bRBYWo SPKUn sc-kGXeez jtyeHR"
+                                                  theme="dark"
+                                                >
+                                                  <StyledComponent
+                                                    className="sc-bRBYWo SPKUn sc-kGXeez jtyeHR"
+                                                    forwardedClass={
+                                                      Object {
+                                                        "$$typeof": Symbol(react.forward_ref),
+                                                        "attrs": undefined,
+                                                        "componentStyle": ComponentStyle {
+                                                          "componentId": "sc-kgoBCf",
+                                                          "isStatic": false,
+                                                          "lastClassName": "dMBKvn",
+                                                          "rules": Array [
+                                                            "
+  border-radius: 50%;
+
+  // intentionally sized based on the parent's font-size
+  width: 1em;
+  height: 1em;
+
+  position: relative;
+
+  border: 3px solid
+    ",
+                                                            [Function],
+                                                            ";
+  border-right-color: transparent;
+
+  animation: ",
+                                                            Keyframes {
+                                                              "id": "sc-keyframes-iECmZH",
+                                                              "inject": [Function],
+                                                              "name": "iECmZH",
+                                                              "rules": Array [
+                                                                "@-webkit-keyframes iECmZH{0%{-webkit-transform:rotate(0deg);-ms-transform:rotate(0deg);transform:rotate(0deg);}100%{-webkit-transform:rotate(360deg);-ms-transform:rotate(360deg);transform:rotate(360deg);}}",
+                                                                "@keyframes iECmZH{0%{-webkit-transform:rotate(0deg);-ms-transform:rotate(0deg);transform:rotate(0deg);}100%{-webkit-transform:rotate(360deg);-ms-transform:rotate(360deg);transform:rotate(360deg);}}",
+                                                              ],
+                                                              "toString": [Function],
+                                                            },
+                                                            " 0.65s infinite linear;
+",
+                                                          ],
+                                                        },
+                                                        "displayName": "styled.div",
+                                                        "render": [Function],
+                                                        "styledComponentId": "sc-kgoBCf",
+                                                        "target": "div",
+                                                        "toString": [Function],
+                                                        "warnTooManyClasses": [Function],
+                                                        "withComponent": [Function],
+                                                      }
+                                                    }
+                                                    forwardedRef={null}
+                                                    theme="dark"
+                                                  >
+                                                    <div
+                                                      className="sc-bRBYWo SPKUn sc-kGXeez jtyeHR sc-kgoBCf dMBKvn"
+                                                    />
+                                                  </StyledComponent>
+                                                </styled.div>
+                                              </Themed>
+                                            </Themed(styled.div)>
+                                          </Spinner>
+                                        </StyledComponent>
+                                      </Styled(Spinner)>
+                                    </Themed>
+                                  </Themed(Styled(Spinner))>
+                                </div>
+                              </ActionStatus>
+                            </StyledComponent>
+                          </Styled(ActionStatus)>
+                        </div>
+                      </StyledComponent>
+                    </styled.div>
+                  </li>
+                </StyledComponent>
+              </styled.li>
+            </Themed>
+          </Themed(styled.li)>
+        </Transition>
+      </CSSTransition>
+    </div>
+  </TransitionGroup>
 </ul>
 `;
 
 exports[`Selection should contain a Footer 1`] = `
 <styled.footer>
-  <styled.div>
-    144 more Instances
-  </styled.div>
+  <StyledComponent
+    forwardedClass={
+      Object {
+        "$$typeof": Symbol(react.forward_ref),
+        "attrs": undefined,
+        "componentStyle": ComponentStyle {
+          "componentId": "sc-hzDkRC",
+          "isStatic": true,
+          "lastClassName": "NuwBO",
+          "rules": Array [
+            "
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  height: 32px;
+  padding: 8px 21px 7px 0;
+  color: #ffffff;
+  background: ",
+            "#4d90ff",
+            ";
+  border-radius: 0 0 0 3px;
+  border-width: 1px 0 1px 1px;
+  border-style: solid;
+  border-color: #659fff;
+",
+          ],
+        },
+        "displayName": "styled.footer",
+        "render": [Function],
+        "styledComponentId": "sc-hzDkRC",
+        "target": "footer",
+        "toString": [Function],
+        "warnTooManyClasses": [Function],
+        "withComponent": [Function],
+      }
+    }
+    forwardedRef={null}
+  >
+    <footer
+      className="sc-hzDkRC NuwBO"
+    >
+      <styled.div>
+        <StyledComponent
+          forwardedClass={
+            Object {
+              "$$typeof": Symbol(react.forward_ref),
+              "attrs": undefined,
+              "componentStyle": ComponentStyle {
+                "componentId": "sc-jhAzac",
+                "isStatic": true,
+                "lastClassName": "bnoyiH",
+                "rules": Array [
+                  "
+  font-size: 13px;
+",
+                ],
+              },
+              "displayName": "styled.div",
+              "render": [Function],
+              "styledComponentId": "sc-jhAzac",
+              "target": "div",
+              "toString": [Function],
+              "warnTooManyClasses": [Function],
+              "withComponent": [Function],
+            }
+          }
+          forwardedRef={null}
+        >
+          <div
+            className="sc-jhAzac bnoyiH"
+          >
+            144 more Instances
+          </div>
+        </StyledComponent>
+      </styled.div>
+    </footer>
+  </StyledComponent>
 </styled.footer>
 `;
 
@@ -132,82 +1108,833 @@ exports[`Selection should contain a Header 1`] = `
 <Themed(styled.dt)
   isOpen={true}
 >
-  <Themed(styled.div)
+  <Themed
+    forwardedRef={null}
     isOpen={true}
   >
-    <ReactComponent />
-  </Themed(styled.div)>
-  <Themed(styled.span)
-    role="heading"
-  >
-    <Themed(styled.button)
-      aria-controls="selection-1"
-      aria-expanded={true}
-      aria-label="Selection 1, holding 145 Instances"
-      id="selection-1-toggle"
+    <styled.dt
       isOpen={true}
-      onClick={[MockFunction]}
+      theme="dark"
     >
-      <styled.div>
-        Selection 
-        1
-      </styled.div>
-      <Styled(Badge)
+      <StyledComponent
+        forwardedClass={
+          Object {
+            "$$typeof": Symbol(react.forward_ref),
+            "attrs": undefined,
+            "componentStyle": ComponentStyle {
+              "componentId": "sc-eNQAEJ",
+              "isStatic": false,
+              "lastClassName": "yIfNK",
+              "rules": Array [
+                "
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  position: relative;
+
+  ",
+                [Function],
+                "
+
+  background: ",
+                [Function],
+                ";
+  border-style: solid;
+  border-width: 1px 0 1px 1px;
+  border-color: ",
+                [Function],
+                ";
+  border-radius: 3px 0 0 ",
+                [Function],
+                ";
+",
+              ],
+            },
+            "displayName": "styled.dt",
+            "render": [Function],
+            "styledComponentId": "sc-eNQAEJ",
+            "target": "dt",
+            "toString": [Function],
+            "warnTooManyClasses": [Function],
+            "withComponent": [Function],
+          }
+        }
+        forwardedRef={null}
         isOpen={true}
-        type="SELECTIONS"
+        theme="dark"
       >
-        145
-      </Styled(Badge)>
-    </Themed(styled.button)>
-  </Themed(styled.span)>
-  <styled.div>
-    <styled.div
-      onClick={[Function]}
-    >
-      <Dropdown
-        aria-label="Batch Operations"
-        buttonStyles={
-          Array [
-            "
+        <dt
+          className="sc-eNQAEJ yIfNK"
+        >
+          <Themed(styled.div)
+            isOpen={true}
+          >
+            <Themed
+              forwardedRef={null}
+              isOpen={true}
+            >
+              <styled.div
+                isOpen={true}
+                theme="dark"
+              >
+                <StyledComponent
+                  forwardedClass={
+                    Object {
+                      "$$typeof": Symbol(react.forward_ref),
+                      "attrs": undefined,
+                      "componentStyle": ComponentStyle {
+                        "componentId": "sc-jWBwVP",
+                        "isStatic": false,
+                        "lastClassName": "cciqrB",
+                        "rules": Array [
+                          "
+  position: relative;
+  top: 1px;
+  padding-left: 10px;
+  cursor: pointer;
+
+  color: ",
+                          [Function],
+                          ";
+",
+                        ],
+                      },
+                      "displayName": "styled.div",
+                      "render": [Function],
+                      "styledComponentId": "sc-jWBwVP",
+                      "target": "div",
+                      "toString": [Function],
+                      "warnTooManyClasses": [Function],
+                      "withComponent": [Function],
+                    }
+                  }
+                  forwardedRef={null}
+                  isOpen={true}
+                  theme="dark"
+                >
+                  <div
+                    className="sc-jWBwVP cciqrB"
+                  >
+                    <ReactComponent>
+                      <svg>
+                        down.svg
+                      </svg>
+                    </ReactComponent>
+                  </div>
+                </StyledComponent>
+              </styled.div>
+            </Themed>
+          </Themed(styled.div)>
+          <Themed(styled.span)
+            role="heading"
+          >
+            <Themed
+              forwardedRef={null}
+              role="heading"
+            >
+              <styled.span
+                role="heading"
+                theme="dark"
+              >
+                <StyledComponent
+                  forwardedClass={
+                    Object {
+                      "$$typeof": Symbol(react.forward_ref),
+                      "attrs": undefined,
+                      "componentStyle": ComponentStyle {
+                        "componentId": "sc-hMqMXs",
+                        "isStatic": true,
+                        "lastClassName": "QdRpQ",
+                        "rules": Array [
+                          "
+  display: flex;
+  align-items: flex-start;
+",
+                        ],
+                      },
+                      "displayName": "styled.span",
+                      "render": [Function],
+                      "styledComponentId": "sc-hMqMXs",
+                      "target": "span",
+                      "toString": [Function],
+                      "warnTooManyClasses": [Function],
+                      "withComponent": [Function],
+                    }
+                  }
+                  forwardedRef={null}
+                  role="heading"
+                  theme="dark"
+                >
+                  <span
+                    className="sc-hMqMXs QdRpQ"
+                    role="heading"
+                  >
+                    <Themed(styled.button)
+                      aria-controls="selection-1"
+                      aria-expanded={true}
+                      aria-label="Selection 1, holding 145 Instances"
+                      data-test="selection-toggle"
+                      id="selection-1-toggle"
+                      isOpen={true}
+                      onClick={[MockFunction]}
+                    >
+                      <Themed
+                        aria-controls="selection-1"
+                        aria-expanded={true}
+                        aria-label="Selection 1, holding 145 Instances"
+                        data-test="selection-toggle"
+                        forwardedRef={null}
+                        id="selection-1-toggle"
+                        isOpen={true}
+                        onClick={[MockFunction]}
+                      >
+                        <styled.button
+                          aria-controls="selection-1"
+                          aria-expanded={true}
+                          aria-label="Selection 1, holding 145 Instances"
+                          data-test="selection-toggle"
+                          id="selection-1-toggle"
+                          isOpen={true}
+                          onClick={[MockFunction]}
+                          theme="dark"
+                        >
+                          <StyledComponent
+                            aria-controls="selection-1"
+                            aria-expanded={true}
+                            aria-label="Selection 1, holding 145 Instances"
+                            data-test="selection-toggle"
+                            forwardedClass={
+                              Object {
+                                "$$typeof": Symbol(react.forward_ref),
+                                "attrs": undefined,
+                                "componentStyle": ComponentStyle {
+                                  "componentId": "sc-kEYyzF",
+                                  "isStatic": false,
+                                  "lastClassName": "dlQUmI",
+                                  "rules": Array [
+                                    "
+  /* Positioning */
+  background: transparent;
+  position: absolute;
+  width: 100%;
+  bottom: -1px;
+  left: 0px;
+
+  /* Color */
+  color: ",
+                                    [Function],
+                                    ";
+
+  /* Display & Box Model */
+  display: flex;
+  align-items: center;
+  border-radius: 3px 0 0 ",
+                                    [Function],
+                                    ";
+  height: 32px;
+  padding-left: 9px;
+  padding-right: 21px;
+
+  /* Text */
+  font-size: 15px;
+  font-weight: 600;
+
+  /* Other */
+  cursor: ",
+                                    [Function],
+                                    ";
+",
+                                  ],
+                                },
+                                "displayName": "styled.button",
+                                "render": [Function],
+                                "styledComponentId": "sc-kEYyzF",
+                                "target": "button",
+                                "toString": [Function],
+                                "warnTooManyClasses": [Function],
+                                "withComponent": [Function],
+                              }
+                            }
+                            forwardedRef={null}
+                            id="selection-1-toggle"
+                            isOpen={true}
+                            onClick={[MockFunction]}
+                            theme="dark"
+                          >
+                            <button
+                              aria-controls="selection-1"
+                              aria-expanded={true}
+                              aria-label="Selection 1, holding 145 Instances"
+                              className="sc-kEYyzF dlQUmI"
+                              data-test="selection-toggle"
+                              id="selection-1-toggle"
+                              onClick={[MockFunction]}
+                            >
+                              <styled.div>
+                                <StyledComponent
+                                  forwardedClass={
+                                    Object {
+                                      "$$typeof": Symbol(react.forward_ref),
+                                      "attrs": undefined,
+                                      "componentStyle": ComponentStyle {
+                                        "componentId": "sc-kkGfuU",
+                                        "isStatic": true,
+                                        "lastClassName": "bZmEPh",
+                                        "rules": Array [
+                                          "
+  padding-left: 25px;
+  line-height: 16px;
+",
+                                        ],
+                                      },
+                                      "displayName": "styled.div",
+                                      "render": [Function],
+                                      "styledComponentId": "sc-kkGfuU",
+                                      "target": "div",
+                                      "toString": [Function],
+                                      "warnTooManyClasses": [Function],
+                                      "withComponent": [Function],
+                                    }
+                                  }
+                                  forwardedRef={null}
+                                >
+                                  <div
+                                    className="sc-kkGfuU bZmEPh"
+                                  >
+                                    Selection 
+                                    1
+                                  </div>
+                                </StyledComponent>
+                              </styled.div>
+                              <Styled(Badge)
+                                isOpen={true}
+                                type="SELECTIONS"
+                              >
+                                <StyledComponent
+                                  forwardedClass={
+                                    Object {
+                                      "$$typeof": Symbol(react.forward_ref),
+                                      "attrs": undefined,
+                                      "componentStyle": ComponentStyle {
+                                        "componentId": "sc-brqgnP",
+                                        "isStatic": false,
+                                        "lastClassName": "eiPcjr",
+                                        "rules": Array [
+                                          "
+  ",
+                                          [Function],
+                                          ";
+",
+                                        ],
+                                      },
+                                      "displayName": "Styled(Badge)",
+                                      "render": [Function],
+                                      "styledComponentId": "sc-brqgnP",
+                                      "target": [Function],
+                                      "toString": [Function],
+                                      "warnTooManyClasses": [Function],
+                                      "withComponent": [Function],
+                                      Symbol(Symbol.hasInstance): [Function],
+                                    }
+                                  }
+                                  forwardedRef={null}
+                                  isOpen={true}
+                                  type="SELECTIONS"
+                                >
+                                  <Badge
+                                    className="sc-brqgnP eiPcjr"
+                                    isActive={true}
+                                    isOpen={true}
+                                    position={0}
+                                    type="SELECTIONS"
+                                  >
+                                    <Themed(styled.div)
+                                      className="sc-brqgnP eiPcjr"
+                                      data-test="badge"
+                                      isActive={true}
+                                      isOpen={true}
+                                      position={0}
+                                      type="SELECTIONS"
+                                    >
+                                      <Themed
+                                        className="sc-brqgnP eiPcjr"
+                                        data-test="badge"
+                                        forwardedRef={null}
+                                        isActive={true}
+                                        isOpen={true}
+                                        position={0}
+                                        type="SELECTIONS"
+                                      >
+                                        <styled.div
+                                          className="sc-brqgnP eiPcjr"
+                                          data-test="badge"
+                                          isActive={true}
+                                          isOpen={true}
+                                          position={0}
+                                          theme="dark"
+                                          type="SELECTIONS"
+                                        >
+                                          <StyledComponent
+                                            className="sc-brqgnP eiPcjr"
+                                            data-test="badge"
+                                            forwardedClass={
+                                              Object {
+                                                "$$typeof": Symbol(react.forward_ref),
+                                                "attrs": undefined,
+                                                "componentStyle": ComponentStyle {
+                                                  "componentId": "sc-kpOJdX",
+                                                  "isStatic": false,
+                                                  "lastClassName": "eXfWCe",
+                                                  "rules": Array [
+                                                    "
+  padding: 0 6px;
+  min-width: 17px;
+
+  border-radius: 8.5px;
+  ",
+                                                    "
+  display: inline-block;
+  height: 17px;
+  margin-left: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  ",
+                                                    [Function],
+                                                    ";
+  ",
+                                                    [Function],
+                                                    ";
+",
+                                                    ";
+",
+                                                  ],
+                                                },
+                                                "displayName": "styled.div",
+                                                "render": [Function],
+                                                "styledComponentId": "sc-kpOJdX",
+                                                "target": "div",
+                                                "toString": [Function],
+                                                "warnTooManyClasses": [Function],
+                                                "withComponent": [Function],
+                                              }
+                                            }
+                                            forwardedRef={null}
+                                            isActive={true}
+                                            isOpen={true}
+                                            position={0}
+                                            theme="dark"
+                                            type="SELECTIONS"
+                                          >
+                                            <div
+                                              className="sc-brqgnP eiPcjr sc-kpOJdX eXfWCe"
+                                              data-test="badge"
+                                              type="SELECTIONS"
+                                            >
+                                              145
+                                            </div>
+                                          </StyledComponent>
+                                        </styled.div>
+                                      </Themed>
+                                    </Themed(styled.div)>
+                                  </Badge>
+                                </StyledComponent>
+                              </Styled(Badge)>
+                            </button>
+                          </StyledComponent>
+                        </styled.button>
+                      </Themed>
+                    </Themed(styled.button)>
+                  </span>
+                </StyledComponent>
+              </styled.span>
+            </Themed>
+          </Themed(styled.span)>
+          <styled.div
+            data-test="actions"
+          >
+            <StyledComponent
+              data-test="actions"
+              forwardedClass={
+                Object {
+                  "$$typeof": Symbol(react.forward_ref),
+                  "attrs": undefined,
+                  "componentStyle": ComponentStyle {
+                    "componentId": "sc-iAyFgw",
+                    "isStatic": true,
+                    "lastClassName": "hoTBy",
+                    "rules": Array [
+                      "
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  margin-right: 24px;
+",
+                    ],
+                  },
+                  "displayName": "styled.div",
+                  "render": [Function],
+                  "styledComponentId": "sc-iAyFgw",
+                  "target": "div",
+                  "toString": [Function],
+                  "warnTooManyClasses": [Function],
+                  "withComponent": [Function],
+                }
+              }
+              forwardedRef={null}
+            >
+              <div
+                className="sc-iAyFgw hoTBy"
+                data-test="actions"
+              >
+                <styled.div
+                  onClick={[Function]}
+                >
+                  <StyledComponent
+                    forwardedClass={
+                      Object {
+                        "$$typeof": Symbol(react.forward_ref),
+                        "attrs": undefined,
+                        "componentStyle": ComponentStyle {
+                          "componentId": "sc-hSdWYo",
+                          "isStatic": true,
+                          "lastClassName": "cURpgQ",
+                          "rules": Array [
+                            "
+  display: flex;
+  align-items: center;
+  position: relative;
+  top: 1px;
+  height: 26px;
+  z-index: 1;
+  padding: 0 2px;
+  margin-right: 10px;
+  border-right: 1px solid ",
+                            "rgba(255, 255, 255, 0.15)",
+                            ";
+",
+                          ],
+                        },
+                        "displayName": "styled.div",
+                        "render": [Function],
+                        "styledComponentId": "sc-hSdWYo",
+                        "target": "div",
+                        "toString": [Function],
+                        "warnTooManyClasses": [Function],
+                        "withComponent": [Function],
+                      }
+                    }
+                    forwardedRef={null}
+                    onClick={[Function]}
+                  >
+                    <div
+                      className="sc-hSdWYo cURpgQ"
+                      onClick={[Function]}
+                    >
+                      <Dropdown
+                        aria-label="Batch Operations"
+                        buttonStyles={
+                          Array [
+                            "
   color: #fff;
 ",
-          ]
-        }
-        label={<ForwardRef />}
-        placement="bottom"
-      >
-        <Option
-          data-test="CANCEL-dropdown-option"
-          key="CANCEL"
-          label={
-            <div>
-              <ForwardRef />
-               
-              Cancel
-            </div>
-          }
-          onClick={[Function]}
-        />
-        <Option
-          data-test="UPDATE_RETRIES-dropdown-option"
-          key="UPDATE_RETRIES"
-          label={
-            <div>
-              <ForwardRef />
-               
-              Retry
-            </div>
-          }
-          onClick={[Function]}
-        />
-      </Dropdown>
-    </styled.div>
-    <styled.button
-      aria-label="Drop Selection 1"
-      onClick={[MockFunction]}
-    >
-      <Styled(ReactComponent) />
-    </styled.button>
-  </styled.div>
+                          ]
+                        }
+                        data-test="batch-operations"
+                        label={<ForwardRef />}
+                        placement="bottom"
+                      >
+                        <styled.div>
+                          <StyledComponent
+                            forwardedClass={
+                              Object {
+                                "$$typeof": Symbol(react.forward_ref),
+                                "attrs": undefined,
+                                "componentStyle": ComponentStyle {
+                                  "componentId": "sc-VigVT",
+                                  "isStatic": true,
+                                  "lastClassName": "idjcJz",
+                                  "rules": Array [
+                                    "
+  position: relative;
+  height: 20px;
+",
+                                  ],
+                                },
+                                "displayName": "styled.div",
+                                "render": [Function],
+                                "styledComponentId": "sc-VigVT",
+                                "target": "div",
+                                "toString": [Function],
+                                "warnTooManyClasses": [Function],
+                                "withComponent": [Function],
+                              }
+                            }
+                            forwardedRef={[Function]}
+                          >
+                            <div
+                              className="sc-VigVT idjcJz"
+                            >
+                              <Themed(styled.button)
+                                buttonStyles={
+                                  Array [
+                                    "
+  color: #fff;
+",
+                                  ]
+                                }
+                                data-test="dropdown-toggle"
+                                onClick={[Function]}
+                                onKeyDown={[Function]}
+                              >
+                                <Themed
+                                  buttonStyles={
+                                    Array [
+                                      "
+  color: #fff;
+",
+                                    ]
+                                  }
+                                  data-test="dropdown-toggle"
+                                  forwardedRef={null}
+                                  onClick={[Function]}
+                                  onKeyDown={[Function]}
+                                >
+                                  <styled.button
+                                    buttonStyles={
+                                      Array [
+                                        "
+  color: #fff;
+",
+                                      ]
+                                    }
+                                    data-test="dropdown-toggle"
+                                    onClick={[Function]}
+                                    onKeyDown={[Function]}
+                                    theme="dark"
+                                  >
+                                    <StyledComponent
+                                      buttonStyles={
+                                        Array [
+                                          "
+  color: #fff;
+",
+                                        ]
+                                      }
+                                      data-test="dropdown-toggle"
+                                      forwardedClass={
+                                        Object {
+                                          "$$typeof": Symbol(react.forward_ref),
+                                          "attrs": undefined,
+                                          "componentStyle": ComponentStyle {
+                                            "componentId": "sc-jTzLTM",
+                                            "isStatic": false,
+                                            "lastClassName": "dvberr",
+                                            "rules": Array [
+                                              "
+  /* Positioning */
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  /* Display & Box Model */
+  border: none;
+
+  /* Color */
+  color: ",
+                                              [Function],
+                                              ";
+
+  background: none;
+
+  /* Text */
+  font-family: IBMPlexSans;
+  font-size: 15px;
+  font-weight: 600;
+
+  /* Other */
+  cursor: ",
+                                              [Function],
+                                              ";
+
+  & > svg {
+    vertical-align: text-bottom;
+  }
+
+  ",
+                                              [Function],
+                                              ";
+",
+                                            ],
+                                          },
+                                          "displayName": "styled.button",
+                                          "render": [Function],
+                                          "styledComponentId": "sc-jTzLTM",
+                                          "target": "button",
+                                          "toString": [Function],
+                                          "warnTooManyClasses": [Function],
+                                          "withComponent": [Function],
+                                        }
+                                      }
+                                      forwardedRef={null}
+                                      onClick={[Function]}
+                                      onKeyDown={[Function]}
+                                      theme="dark"
+                                    >
+                                      <button
+                                        className="sc-jTzLTM dvberr"
+                                        data-test="dropdown-toggle"
+                                        onClick={[Function]}
+                                        onKeyDown={[Function]}
+                                      >
+                                        <Styled(ReactComponent)>
+                                          <StyledComponent
+                                            forwardedClass={
+                                              Object {
+                                                "$$typeof": Symbol(react.forward_ref),
+                                                "attrs": undefined,
+                                                "componentStyle": ComponentStyle {
+                                                  "componentId": "sc-jDwBTQ",
+                                                  "isStatic": true,
+                                                  "lastClassName": "bzkBfM",
+                                                  "rules": Array [
+                                                    "
+  color: '#ffffff';
+",
+                                                  ],
+                                                },
+                                                "displayName": "Styled(ReactComponent)",
+                                                "render": [Function],
+                                                "styledComponentId": "sc-jDwBTQ",
+                                                "target": [Function],
+                                                "toString": [Function],
+                                                "warnTooManyClasses": [Function],
+                                                "withComponent": [Function],
+                                                Symbol(Symbol.hasInstance): [Function],
+                                              }
+                                            }
+                                            forwardedRef={null}
+                                          >
+                                            <ReactComponent
+                                              className="sc-jDwBTQ bzkBfM"
+                                            >
+                                              <svg
+                                                className="sc-jDwBTQ bzkBfM"
+                                              >
+                                                batch.svg
+                                              </svg>
+                                            </ReactComponent>
+                                          </StyledComponent>
+                                        </Styled(ReactComponent)>
+                                        <ReactComponent>
+                                          <svg>
+                                            down.svg
+                                          </svg>
+                                        </ReactComponent>
+                                      </button>
+                                    </StyledComponent>
+                                  </styled.button>
+                                </Themed>
+                              </Themed(styled.button)>
+                            </div>
+                          </StyledComponent>
+                        </styled.div>
+                      </Dropdown>
+                    </div>
+                  </StyledComponent>
+                </styled.div>
+                <styled.button
+                  aria-label="Drop Selection 1"
+                  onClick={[MockFunction]}
+                >
+                  <StyledComponent
+                    aria-label="Drop Selection 1"
+                    forwardedClass={
+                      Object {
+                        "$$typeof": Symbol(react.forward_ref),
+                        "attrs": undefined,
+                        "componentStyle": ComponentStyle {
+                          "componentId": "sc-eHgmQL",
+                          "isStatic": true,
+                          "lastClassName": "FKvSH",
+                          "rules": Array [
+                            "
+  background: transparent;
+  border-radius: 12px;
+  width: 16px;
+  height: 16px;
+  padding: 0px;
+  z-index: 3;
+",
+                          ],
+                        },
+                        "displayName": "styled.button",
+                        "render": [Function],
+                        "styledComponentId": "sc-eHgmQL",
+                        "target": "button",
+                        "toString": [Function],
+                        "warnTooManyClasses": [Function],
+                        "withComponent": [Function],
+                      }
+                    }
+                    forwardedRef={null}
+                    onClick={[MockFunction]}
+                  >
+                    <button
+                      aria-label="Drop Selection 1"
+                      className="sc-eHgmQL FKvSH"
+                      onClick={[MockFunction]}
+                    >
+                      <Styled(ReactComponent)>
+                        <StyledComponent
+                          forwardedClass={
+                            Object {
+                              "$$typeof": Symbol(react.forward_ref),
+                              "attrs": undefined,
+                              "componentStyle": ComponentStyle {
+                                "componentId": "sc-cvbbAY",
+                                "isStatic": true,
+                                "lastClassName": "eBfAqH",
+                                "rules": Array [
+                                  "
+  opacity: 0.45;
+  cursor: pointer;
+",
+                                ],
+                              },
+                              "displayName": "Styled(ReactComponent)",
+                              "render": [Function],
+                              "styledComponentId": "sc-cvbbAY",
+                              "target": [Function],
+                              "toString": [Function],
+                              "warnTooManyClasses": [Function],
+                              "withComponent": [Function],
+                              Symbol(Symbol.hasInstance): [Function],
+                            }
+                          }
+                          forwardedRef={null}
+                        >
+                          <ReactComponent
+                            className="sc-cvbbAY eBfAqH"
+                          >
+                            <svg
+                              className="sc-cvbbAY eBfAqH"
+                            >
+                              remove-item.svg
+                            </svg>
+                          </ReactComponent>
+                        </StyledComponent>
+                      </Styled(ReactComponent)>
+                    </button>
+                  </StyledComponent>
+                </styled.button>
+              </div>
+            </StyledComponent>
+          </styled.div>
+        </dt>
+      </StyledComponent>
+    </styled.dt>
+  </Themed>
 </Themed(styled.dt)>
 `;

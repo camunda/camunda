@@ -109,6 +109,7 @@ export default class Dropdown extends React.Component {
     return (
       <Styled.Dropdown ref={this.setRef}>
         <Styled.Button
+          data-test="dropdown-toggle"
           onKeyDown={this.handleKeyPress}
           buttonStyles={this.props.buttonStyles}
           disabled={this.props.disabled}

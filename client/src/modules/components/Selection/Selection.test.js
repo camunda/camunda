@@ -1,7 +1,8 @@
 import React from 'react';
-import {shallow} from 'enzyme';
+import {mount} from 'enzyme';
 
 import {createInstance} from 'modules/testUtils';
+import {ThemeProvider} from 'modules/theme';
 
 import StateIcon from 'modules/components/StateIcon';
 
@@ -17,11 +18,9 @@ const mockOnRetry = jest.fn();
 const mockOnCancel = jest.fn();
 const mockOnDelete = jest.fn();
 
-describe('Selection', () => {
-  let node;
-  const isOpen = true;
-  beforeEach(() => {
-    node = shallow(
+const mountSelection = isOpen => {
+  return mount(
+    <ThemeProvider>
       <Selection
         isOpen={isOpen}
         selectionId={1}
@@ -32,7 +31,15 @@ describe('Selection', () => {
         onCancel={mockOnCancel}
         onDelete={mockOnDelete}
       />
-    );
+    </ThemeProvider>
+  );
+};
+
+describe('Selection', () => {
+  let node;
+  let isOpen = true;
+  beforeEach(() => {
+    node = mountSelection(isOpen);
   });
 
   it('should contain a Header', () => {
@@ -72,18 +79,15 @@ describe('Selection', () => {
   });
 
   it('should only have Header when closed', () => {
-    //given
-    node.setProps({isOpen: false});
-
     // when
-    node.update();
+    let isOpen = false;
+    node = mountSelection(isOpen);
 
     // then
-    expect(node.find(Styled.SelectionToggle)).toExist();
-
-    expect(node.find(Styled.Dd)).not.toExist();
-    expect(node.find(Styled.Footer)).not.toExist();
-    expect(node.find(Styled.Actions)).not.toExist();
+    expect(node.find("[data-test='selection-toggle']")).toExist();
+    expect(node.find('dd')).not.toExist();
+    expect(node.find('footer')).not.toExist();
+    expect(node.find("[data-test='actions']")).not.toExist();
   });
 
   it('should call the passed toggle method', () => {
@@ -97,56 +101,22 @@ describe('Selection', () => {
   });
 
   it('should call the passed retry method', () => {
-    node.find(Dropdown).simulate('click');
+    node
+      .find('button')
+      .find("[data-test='dropdown-toggle']")
+      .simulate('click');
+
     node.find('[data-test="UPDATE_RETRIES-dropdown-option"]').simulate('click');
     expect(mockOnRetry).toHaveBeenCalled();
   });
 
   it('should call the passed cancel method', () => {
-    node.find(Dropdown).simulate('click');
+    node
+      .find('button')
+      .find("[data-test='dropdown-toggle']")
+      .simulate('click');
+
     node.find('[data-test="CANCEL-dropdown-option"]').simulate('click');
     expect(mockOnCancel).toHaveBeenCalled();
-  });
-
-  describe('newInstances', () => {
-    let newMockInstance = createInstance();
-    let newMockMap;
-
-    beforeEach(() => {
-      newMockMap = new Map([['1', mockInstance], ['2', newMockInstance]]);
-      node.setProps({instances: newMockMap});
-      node.update();
-    });
-
-    it('should store a count of instances which are subsequently added', () => {
-      expect(node.instance().state.numberOfNewInstances).toBe(1);
-    });
-
-    it('should reset the newInstances count when closed ', () => {
-      //given
-      node.setProps({isOpen: false});
-
-      // when
-      node.update();
-
-      // then
-      expect(node.instance().state.numberOfNewInstances).toBe(0);
-    });
-
-    it("should tell the instance when it's new", () => {
-      expect(
-        node
-          .find('ul')
-          .childAt(0)
-          .props().isNew
-      ).toBe(true);
-
-      expect(
-        node
-          .find('ul')
-          .childAt(1)
-          .props().isNew
-      ).toBe(false);
-    });
   });
 });
