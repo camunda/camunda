@@ -11,9 +11,9 @@ exports[`Selection should contain Actions 1`] = `
         "$$typeof": Symbol(react.forward_ref),
         "attrs": undefined,
         "componentStyle": ComponentStyle {
-          "componentId": "sc-iAyFgw",
+          "componentId": "sc-hSdWYo",
           "isStatic": true,
-          "lastClassName": "hoTBy",
+          "lastClassName": "cvTSBf",
           "rules": Array [
             "
   display: flex;
@@ -25,7 +25,7 @@ exports[`Selection should contain Actions 1`] = `
         },
         "displayName": "styled.div",
         "render": [Function],
-        "styledComponentId": "sc-iAyFgw",
+        "styledComponentId": "sc-hSdWYo",
         "target": "div",
         "toString": [Function],
         "warnTooManyClasses": [Function],
@@ -35,7 +35,7 @@ exports[`Selection should contain Actions 1`] = `
     forwardedRef={null}
   >
     <div
-      className="sc-iAyFgw hoTBy"
+      className="sc-hSdWYo cvTSBf"
       data-test="actions"
     >
       <styled.div
@@ -47,9 +47,9 @@ exports[`Selection should contain Actions 1`] = `
               "$$typeof": Symbol(react.forward_ref),
               "attrs": undefined,
               "componentStyle": ComponentStyle {
-                "componentId": "sc-hSdWYo",
+                "componentId": "sc-eHgmQL",
                 "isStatic": true,
-                "lastClassName": "cURpgQ",
+                "lastClassName": "cIplFI",
                 "rules": Array [
                   "
   display: flex;
@@ -68,7 +68,7 @@ exports[`Selection should contain Actions 1`] = `
               },
               "displayName": "styled.div",
               "render": [Function],
-              "styledComponentId": "sc-hSdWYo",
+              "styledComponentId": "sc-eHgmQL",
               "target": "div",
               "toString": [Function],
               "warnTooManyClasses": [Function],
@@ -79,7 +79,7 @@ exports[`Selection should contain Actions 1`] = `
           onClick={[Function]}
         >
           <div
-            className="sc-hSdWYo cURpgQ"
+            className="sc-eHgmQL cIplFI"
             onClick={[Function]}
           >
             <Dropdown
@@ -91,7 +91,6 @@ exports[`Selection should contain Actions 1`] = `
 ",
                 ]
               }
-              data-test="batch-operations"
               label={<ForwardRef />}
               placement="bottom"
             >
@@ -102,9 +101,9 @@ exports[`Selection should contain Actions 1`] = `
                       "$$typeof": Symbol(react.forward_ref),
                       "attrs": undefined,
                       "componentStyle": ComponentStyle {
-                        "componentId": "sc-VigVT",
+                        "componentId": "sc-jTzLTM",
                         "isStatic": true,
-                        "lastClassName": "idjcJz",
+                        "lastClassName": "bANBNU",
                         "rules": Array [
                           "
   position: relative;
@@ -114,7 +113,7 @@ exports[`Selection should contain Actions 1`] = `
                       },
                       "displayName": "styled.div",
                       "render": [Function],
-                      "styledComponentId": "sc-VigVT",
+                      "styledComponentId": "sc-jTzLTM",
                       "target": "div",
                       "toString": [Function],
                       "warnTooManyClasses": [Function],
@@ -124,7 +123,7 @@ exports[`Selection should contain Actions 1`] = `
                   forwardedRef={[Function]}
                 >
                   <div
-                    className="sc-VigVT idjcJz"
+                    className="sc-jTzLTM bANBNU"
                   >
                     <Themed(styled.button)
                       buttonStyles={
@@ -178,9 +177,9 @@ exports[`Selection should contain Actions 1`] = `
                                 "$$typeof": Symbol(react.forward_ref),
                                 "attrs": undefined,
                                 "componentStyle": ComponentStyle {
-                                  "componentId": "sc-jTzLTM",
+                                  "componentId": "sc-fjdhpX",
                                   "isStatic": false,
-                                  "lastClassName": "dvberr",
+                                  "lastClassName": "bhkkZY",
                                   "rules": Array [
                                     "
   /* Positioning */
@@ -220,7 +219,7 @@ exports[`Selection should contain Actions 1`] = `
                                 },
                                 "displayName": "styled.button",
                                 "render": [Function],
-                                "styledComponentId": "sc-jTzLTM",
+                                "styledComponentId": "sc-fjdhpX",
                                 "target": "button",
                                 "toString": [Function],
                                 "warnTooManyClasses": [Function],
@@ -233,7 +232,7 @@ exports[`Selection should contain Actions 1`] = `
                             theme="dark"
                           >
                             <button
-                              className="sc-jTzLTM dvberr"
+                              className="sc-fjdhpX bhkkZY"
                               data-test="dropdown-toggle"
                               onClick={[Function]}
                               onKeyDown={[Function]}
@@ -245,9 +244,9 @@ exports[`Selection should contain Actions 1`] = `
                                       "$$typeof": Symbol(react.forward_ref),
                                       "attrs": undefined,
                                       "componentStyle": ComponentStyle {
-                                        "componentId": "sc-jDwBTQ",
+                                        "componentId": "sc-gPEVay",
                                         "isStatic": true,
-                                        "lastClassName": "bzkBfM",
+                                        "lastClassName": "eETiP",
                                         "rules": Array [
                                           "
   color: '#ffffff';
@@ -256,7 +255,7 @@ exports[`Selection should contain Actions 1`] = `
                                       },
                                       "displayName": "Styled(ReactComponent)",
                                       "render": [Function],
-                                      "styledComponentId": "sc-jDwBTQ",
+                                      "styledComponentId": "sc-gPEVay",
                                       "target": [Function],
                                       "toString": [Function],
                                       "warnTooManyClasses": [Function],
@@ -267,10 +266,10 @@ exports[`Selection should contain Actions 1`] = `
                                   forwardedRef={null}
                                 >
                                   <ReactComponent
-                                    className="sc-jDwBTQ bzkBfM"
+                                    className="sc-gPEVay eETiP"
                                   >
                                     <svg
-                                      className="sc-jDwBTQ bzkBfM"
+                                      className="sc-gPEVay eETiP"
                                     >
                                       batch.svg
                                     </svg>
@@ -287,6 +286,39 @@ exports[`Selection should contain Actions 1`] = `
                         </styled.button>
                       </Themed>
                     </Themed(styled.button)>
+                    <CSSTransition
+                      classNames="transition"
+                      in={false}
+                      mountOnEnter={true}
+                      timeout={
+                        Object {
+                          "enter": 500,
+                          "exit": 200,
+                        }
+                      }
+                      unmountOnExit={true}
+                    >
+                      <Transition
+                        appear={false}
+                        enter={true}
+                        exit={true}
+                        in={false}
+                        mountOnEnter={true}
+                        onEnter={[Function]}
+                        onEntered={[Function]}
+                        onEntering={[Function]}
+                        onExit={[Function]}
+                        onExited={[Function]}
+                        onExiting={[Function]}
+                        timeout={
+                          Object {
+                            "enter": 500,
+                            "exit": 200,
+                          }
+                        }
+                        unmountOnExit={true}
+                      />
+                    </CSSTransition>
                   </div>
                 </StyledComponent>
               </styled.div>
@@ -305,9 +337,9 @@ exports[`Selection should contain Actions 1`] = `
               "$$typeof": Symbol(react.forward_ref),
               "attrs": undefined,
               "componentStyle": ComponentStyle {
-                "componentId": "sc-eHgmQL",
+                "componentId": "sc-cvbbAY",
                 "isStatic": true,
-                "lastClassName": "FKvSH",
+                "lastClassName": "dRXNWI",
                 "rules": Array [
                   "
   background: transparent;
@@ -321,7 +353,7 @@ exports[`Selection should contain Actions 1`] = `
               },
               "displayName": "styled.button",
               "render": [Function],
-              "styledComponentId": "sc-eHgmQL",
+              "styledComponentId": "sc-cvbbAY",
               "target": "button",
               "toString": [Function],
               "warnTooManyClasses": [Function],
@@ -333,7 +365,7 @@ exports[`Selection should contain Actions 1`] = `
         >
           <button
             aria-label="Drop Selection 1"
-            className="sc-eHgmQL FKvSH"
+            className="sc-cvbbAY dRXNWI"
             onClick={[MockFunction]}
           >
             <Styled(ReactComponent)>
@@ -343,9 +375,9 @@ exports[`Selection should contain Actions 1`] = `
                     "$$typeof": Symbol(react.forward_ref),
                     "attrs": undefined,
                     "componentStyle": ComponentStyle {
-                      "componentId": "sc-cvbbAY",
+                      "componentId": "sc-jWBwVP",
                       "isStatic": true,
-                      "lastClassName": "eBfAqH",
+                      "lastClassName": "geluLa",
                       "rules": Array [
                         "
   opacity: 0.45;
@@ -355,7 +387,7 @@ exports[`Selection should contain Actions 1`] = `
                     },
                     "displayName": "Styled(ReactComponent)",
                     "render": [Function],
-                    "styledComponentId": "sc-cvbbAY",
+                    "styledComponentId": "sc-jWBwVP",
                     "target": [Function],
                     "toString": [Function],
                     "warnTooManyClasses": [Function],
@@ -366,10 +398,10 @@ exports[`Selection should contain Actions 1`] = `
                 forwardedRef={null}
               >
                 <ReactComponent
-                  className="sc-cvbbAY eBfAqH"
+                  className="sc-jWBwVP geluLa"
                 >
                   <svg
-                    className="sc-cvbbAY eBfAqH"
+                    className="sc-jWBwVP geluLa"
                   >
                     remove-item.svg
                   </svg>
@@ -437,9 +469,9 @@ exports[`Selection should contain Instances 1`] = `
                       "$$typeof": Symbol(react.forward_ref),
                       "attrs": undefined,
                       "componentStyle": ComponentStyle {
-                        "componentId": "sc-iRbamj",
+                        "componentId": "sc-jlyJG",
                         "isStatic": false,
-                        "lastClassName": "jVOHUR",
+                        "lastClassName": "heQgUx",
                         "rules": Array [
                           "
   display: flex;
@@ -501,7 +533,7 @@ exports[`Selection should contain Instances 1`] = `
                       },
                       "displayName": "styled.li",
                       "render": [Function],
-                      "styledComponentId": "sc-iRbamj",
+                      "styledComponentId": "sc-jlyJG",
                       "target": "li",
                       "toString": [Function],
                       "warnTooManyClasses": [Function],
@@ -513,7 +545,7 @@ exports[`Selection should contain Instances 1`] = `
                   transitionTiming={800}
                 >
                   <li
-                    className="sc-iRbamj jVOHUR"
+                    className="sc-jlyJG heQgUx"
                     data-test="addInstanceTransition"
                   >
                     <styled.div>
@@ -523,9 +555,9 @@ exports[`Selection should contain Instances 1`] = `
                             "$$typeof": Symbol(react.forward_ref),
                             "attrs": undefined,
                             "componentStyle": ComponentStyle {
-                              "componentId": "sc-jlyJG",
+                              "componentId": "sc-gipzik",
                               "isStatic": true,
-                              "lastClassName": "JeNHG",
+                              "lastClassName": "jbuueO",
                               "rules": Array [
                                 "
   width: 25px;
@@ -534,7 +566,7 @@ exports[`Selection should contain Instances 1`] = `
                             },
                             "displayName": "styled.div",
                             "render": [Function],
-                            "styledComponentId": "sc-jlyJG",
+                            "styledComponentId": "sc-gipzik",
                             "target": "div",
                             "toString": [Function],
                             "warnTooManyClasses": [Function],
@@ -544,7 +576,7 @@ exports[`Selection should contain Instances 1`] = `
                         forwardedRef={null}
                       >
                         <div
-                          className="sc-jlyJG JeNHG"
+                          className="sc-gipzik jbuueO"
                         >
                           <Themed(StateIcon)
                             instance={
@@ -746,40 +778,6 @@ exports[`Selection should contain Instances 1`] = `
                             "$$typeof": Symbol(react.forward_ref),
                             "attrs": undefined,
                             "componentStyle": ComponentStyle {
-                              "componentId": "sc-gipzik",
-                              "isStatic": true,
-                              "lastClassName": "guIFiZ",
-                              "rules": Array [
-                                "
-  width: 50%;
-",
-                              ],
-                            },
-                            "displayName": "styled.div",
-                            "render": [Function],
-                            "styledComponentId": "sc-gipzik",
-                            "target": "div",
-                            "toString": [Function],
-                            "warnTooManyClasses": [Function],
-                            "withComponent": [Function],
-                          }
-                        }
-                        forwardedRef={null}
-                      >
-                        <div
-                          className="sc-gipzik guIFiZ"
-                        >
-                          someWorkflowName
-                        </div>
-                      </StyledComponent>
-                    </styled.div>
-                    <styled.div>
-                      <StyledComponent
-                        forwardedClass={
-                          Object {
-                            "$$typeof": Symbol(react.forward_ref),
-                            "attrs": undefined,
-                            "componentStyle": ComponentStyle {
                               "componentId": "sc-csuQGl",
                               "isStatic": true,
                               "lastClassName": "hMOCmG",
@@ -803,7 +801,7 @@ exports[`Selection should contain Instances 1`] = `
                         <div
                           className="sc-csuQGl hMOCmG"
                         >
-                          id_1
+                          someWorkflowName
                         </div>
                       </StyledComponent>
                     </styled.div>
@@ -816,10 +814,10 @@ exports[`Selection should contain Instances 1`] = `
                             "componentStyle": ComponentStyle {
                               "componentId": "sc-Rmtcm",
                               "isStatic": true,
-                              "lastClassName": "jIaTlA",
+                              "lastClassName": "kqlPcX",
                               "rules": Array [
                                 "
-  width: 185px;
+  width: 50%;
 ",
                               ],
                             },
@@ -835,7 +833,41 @@ exports[`Selection should contain Instances 1`] = `
                         forwardedRef={null}
                       >
                         <div
-                          className="sc-Rmtcm jIaTlA"
+                          className="sc-Rmtcm kqlPcX"
+                        >
+                          id_1
+                        </div>
+                      </StyledComponent>
+                    </styled.div>
+                    <styled.div>
+                      <StyledComponent
+                        forwardedClass={
+                          Object {
+                            "$$typeof": Symbol(react.forward_ref),
+                            "attrs": undefined,
+                            "componentStyle": ComponentStyle {
+                              "componentId": "sc-bRBYWo",
+                              "isStatic": true,
+                              "lastClassName": "cxlfn",
+                              "rules": Array [
+                                "
+  width: 185px;
+",
+                              ],
+                            },
+                            "displayName": "styled.div",
+                            "render": [Function],
+                            "styledComponentId": "sc-bRBYWo",
+                            "target": "div",
+                            "toString": [Function],
+                            "warnTooManyClasses": [Function],
+                            "withComponent": [Function],
+                          }
+                        }
+                        forwardedRef={null}
+                      >
+                        <div
+                          className="sc-bRBYWo cxlfn"
                         >
                           <Styled(ActionStatus)
                             operationState="SCHEDULED"
@@ -847,9 +879,9 @@ exports[`Selection should contain Instances 1`] = `
                                   "$$typeof": Symbol(react.forward_ref),
                                   "attrs": undefined,
                                   "componentStyle": ComponentStyle {
-                                    "componentId": "sc-bRBYWo",
+                                    "componentId": "sc-hzDkRC",
                                     "isStatic": true,
-                                    "lastClassName": "SPKUn",
+                                    "lastClassName": "kKNFUc",
                                     "rules": Array [
                                       "
   margin-right: 97px;
@@ -858,7 +890,7 @@ exports[`Selection should contain Instances 1`] = `
                                   },
                                   "displayName": "Styled(ActionStatus)",
                                   "render": [Function],
-                                  "styledComponentId": "sc-bRBYWo",
+                                  "styledComponentId": "sc-hzDkRC",
                                   "target": [Function],
                                   "toString": [Function],
                                   "warnTooManyClasses": [Function],
@@ -871,32 +903,32 @@ exports[`Selection should contain Instances 1`] = `
                               operationType="UPDATE_RETRIES"
                             >
                               <ActionStatus
-                                className="sc-bRBYWo SPKUn"
+                                className="sc-hzDkRC kKNFUc"
                                 operationState="SCHEDULED"
                                 operationType="UPDATE_RETRIES"
                               >
                                 <div>
                                   <Themed(Styled(Spinner))
-                                    className="sc-bRBYWo SPKUn"
+                                    className="sc-hzDkRC kKNFUc"
                                   >
                                     <Themed
-                                      className="sc-bRBYWo SPKUn"
+                                      className="sc-hzDkRC kKNFUc"
                                       forwardedRef={null}
                                     >
                                       <Styled(Spinner)
-                                        className="sc-bRBYWo SPKUn"
+                                        className="sc-hzDkRC kKNFUc"
                                         theme="dark"
                                       >
                                         <StyledComponent
-                                          className="sc-bRBYWo SPKUn"
+                                          className="sc-hzDkRC kKNFUc"
                                           forwardedClass={
                                             Object {
                                               "$$typeof": Symbol(react.forward_ref),
                                               "attrs": undefined,
                                               "componentStyle": ComponentStyle {
-                                                "componentId": "sc-kGXeez",
+                                                "componentId": "sc-kpOJdX",
                                                 "isStatic": false,
-                                                "lastClassName": "jtyeHR",
+                                                "lastClassName": "kVoQta",
                                                 "rules": Array [
                                                   "
   margin: 0 5px;
@@ -910,7 +942,7 @@ exports[`Selection should contain Instances 1`] = `
                                               },
                                               "displayName": "Styled(Spinner)",
                                               "render": [Function],
-                                              "styledComponentId": "sc-kGXeez",
+                                              "styledComponentId": "sc-kpOJdX",
                                               "target": [Function],
                                               "toString": [Function],
                                               "warnTooManyClasses": [Function],
@@ -922,32 +954,32 @@ exports[`Selection should contain Instances 1`] = `
                                           theme="dark"
                                         >
                                           <Spinner
-                                            className="sc-bRBYWo SPKUn sc-kGXeez jtyeHR"
+                                            className="sc-hzDkRC kKNFUc sc-kpOJdX kVoQta"
                                             theme="dark"
                                           >
                                             <Themed(styled.div)
-                                              className="sc-bRBYWo SPKUn sc-kGXeez jtyeHR"
+                                              className="sc-hzDkRC kKNFUc sc-kpOJdX kVoQta"
                                               theme="dark"
                                             >
                                               <Themed
-                                                className="sc-bRBYWo SPKUn sc-kGXeez jtyeHR"
+                                                className="sc-hzDkRC kKNFUc sc-kpOJdX kVoQta"
                                                 forwardedRef={null}
                                                 theme="dark"
                                               >
                                                 <styled.div
-                                                  className="sc-bRBYWo SPKUn sc-kGXeez jtyeHR"
+                                                  className="sc-hzDkRC kKNFUc sc-kpOJdX kVoQta"
                                                   theme="dark"
                                                 >
                                                   <StyledComponent
-                                                    className="sc-bRBYWo SPKUn sc-kGXeez jtyeHR"
+                                                    className="sc-hzDkRC kKNFUc sc-kpOJdX kVoQta"
                                                     forwardedClass={
                                                       Object {
                                                         "$$typeof": Symbol(react.forward_ref),
                                                         "attrs": undefined,
                                                         "componentStyle": ComponentStyle {
-                                                          "componentId": "sc-kgoBCf",
+                                                          "componentId": "sc-kGXeez",
                                                           "isStatic": false,
-                                                          "lastClassName": "dMBKvn",
+                                                          "lastClassName": "kyYmHA",
                                                           "rules": Array [
                                                             "
   border-radius: 50%;
@@ -981,7 +1013,7 @@ exports[`Selection should contain Instances 1`] = `
                                                         },
                                                         "displayName": "styled.div",
                                                         "render": [Function],
-                                                        "styledComponentId": "sc-kgoBCf",
+                                                        "styledComponentId": "sc-kGXeez",
                                                         "target": "div",
                                                         "toString": [Function],
                                                         "warnTooManyClasses": [Function],
@@ -992,7 +1024,7 @@ exports[`Selection should contain Instances 1`] = `
                                                     theme="dark"
                                                   >
                                                     <div
-                                                      className="sc-bRBYWo SPKUn sc-kGXeez jtyeHR sc-kgoBCf dMBKvn"
+                                                      className="sc-hzDkRC kKNFUc sc-kpOJdX kVoQta sc-kGXeez kyYmHA"
                                                     />
                                                   </StyledComponent>
                                                 </styled.div>
@@ -1030,9 +1062,9 @@ exports[`Selection should contain a Footer 1`] = `
         "$$typeof": Symbol(react.forward_ref),
         "attrs": undefined,
         "componentStyle": ComponentStyle {
-          "componentId": "sc-hzDkRC",
+          "componentId": "sc-jhAzac",
           "isStatic": true,
-          "lastClassName": "NuwBO",
+          "lastClassName": "iNJIOT",
           "rules": Array [
             "
   display: flex;
@@ -1053,7 +1085,7 @@ exports[`Selection should contain a Footer 1`] = `
         },
         "displayName": "styled.footer",
         "render": [Function],
-        "styledComponentId": "sc-hzDkRC",
+        "styledComponentId": "sc-jhAzac",
         "target": "footer",
         "toString": [Function],
         "warnTooManyClasses": [Function],
@@ -1063,7 +1095,7 @@ exports[`Selection should contain a Footer 1`] = `
     forwardedRef={null}
   >
     <footer
-      className="sc-hzDkRC NuwBO"
+      className="sc-jhAzac iNJIOT"
     >
       <styled.div>
         <StyledComponent
@@ -1072,9 +1104,9 @@ exports[`Selection should contain a Footer 1`] = `
               "$$typeof": Symbol(react.forward_ref),
               "attrs": undefined,
               "componentStyle": ComponentStyle {
-                "componentId": "sc-jhAzac",
+                "componentId": "sc-fBuWsC",
                 "isStatic": true,
-                "lastClassName": "bnoyiH",
+                "lastClassName": "kymtsK",
                 "rules": Array [
                   "
   font-size: 13px;
@@ -1083,7 +1115,7 @@ exports[`Selection should contain a Footer 1`] = `
               },
               "displayName": "styled.div",
               "render": [Function],
-              "styledComponentId": "sc-jhAzac",
+              "styledComponentId": "sc-fBuWsC",
               "target": "div",
               "toString": [Function],
               "warnTooManyClasses": [Function],
@@ -1093,7 +1125,7 @@ exports[`Selection should contain a Footer 1`] = `
           forwardedRef={null}
         >
           <div
-            className="sc-jhAzac bnoyiH"
+            className="sc-fBuWsC kymtsK"
           >
             144 more Instances
           </div>
@@ -1122,9 +1154,9 @@ exports[`Selection should contain a Header 1`] = `
             "$$typeof": Symbol(react.forward_ref),
             "attrs": undefined,
             "componentStyle": ComponentStyle {
-              "componentId": "sc-eNQAEJ",
+              "componentId": "sc-hMqMXs",
               "isStatic": false,
-              "lastClassName": "yIfNK",
+              "lastClassName": "bWxrSK",
               "rules": Array [
                 "
   height: 32px;
@@ -1153,7 +1185,7 @@ exports[`Selection should contain a Header 1`] = `
             },
             "displayName": "styled.dt",
             "render": [Function],
-            "styledComponentId": "sc-eNQAEJ",
+            "styledComponentId": "sc-hMqMXs",
             "target": "dt",
             "toString": [Function],
             "warnTooManyClasses": [Function],
@@ -1165,7 +1197,7 @@ exports[`Selection should contain a Header 1`] = `
         theme="dark"
       >
         <dt
-          className="sc-eNQAEJ yIfNK"
+          className="sc-hMqMXs bWxrSK"
         >
           <Themed(styled.div)
             isOpen={true}
@@ -1184,9 +1216,9 @@ exports[`Selection should contain a Header 1`] = `
                       "$$typeof": Symbol(react.forward_ref),
                       "attrs": undefined,
                       "componentStyle": ComponentStyle {
-                        "componentId": "sc-jWBwVP",
+                        "componentId": "sc-brqgnP",
                         "isStatic": false,
-                        "lastClassName": "cciqrB",
+                        "lastClassName": "cWMNEU",
                         "rules": Array [
                           "
   position: relative;
@@ -1202,7 +1234,7 @@ exports[`Selection should contain a Header 1`] = `
                       },
                       "displayName": "styled.div",
                       "render": [Function],
-                      "styledComponentId": "sc-jWBwVP",
+                      "styledComponentId": "sc-brqgnP",
                       "target": "div",
                       "toString": [Function],
                       "warnTooManyClasses": [Function],
@@ -1214,7 +1246,7 @@ exports[`Selection should contain a Header 1`] = `
                   theme="dark"
                 >
                   <div
-                    className="sc-jWBwVP cciqrB"
+                    className="sc-brqgnP cWMNEU"
                   >
                     <ReactComponent>
                       <svg>
@@ -1243,9 +1275,9 @@ exports[`Selection should contain a Header 1`] = `
                       "$$typeof": Symbol(react.forward_ref),
                       "attrs": undefined,
                       "componentStyle": ComponentStyle {
-                        "componentId": "sc-hMqMXs",
+                        "componentId": "sc-kEYyzF",
                         "isStatic": true,
-                        "lastClassName": "QdRpQ",
+                        "lastClassName": "bPqAKy",
                         "rules": Array [
                           "
   display: flex;
@@ -1255,7 +1287,7 @@ exports[`Selection should contain a Header 1`] = `
                       },
                       "displayName": "styled.span",
                       "render": [Function],
-                      "styledComponentId": "sc-hMqMXs",
+                      "styledComponentId": "sc-kEYyzF",
                       "target": "span",
                       "toString": [Function],
                       "warnTooManyClasses": [Function],
@@ -1267,7 +1299,7 @@ exports[`Selection should contain a Header 1`] = `
                   theme="dark"
                 >
                   <span
-                    className="sc-hMqMXs QdRpQ"
+                    className="sc-kEYyzF bPqAKy"
                     role="heading"
                   >
                     <Themed(styled.button)
@@ -1309,9 +1341,9 @@ exports[`Selection should contain a Header 1`] = `
                                 "$$typeof": Symbol(react.forward_ref),
                                 "attrs": undefined,
                                 "componentStyle": ComponentStyle {
-                                  "componentId": "sc-kEYyzF",
+                                  "componentId": "sc-kkGfuU",
                                   "isStatic": false,
-                                  "lastClassName": "dlQUmI",
+                                  "lastClassName": "gOftby",
                                   "rules": Array [
                                     "
   /* Positioning */
@@ -1349,7 +1381,7 @@ exports[`Selection should contain a Header 1`] = `
                                 },
                                 "displayName": "styled.button",
                                 "render": [Function],
-                                "styledComponentId": "sc-kEYyzF",
+                                "styledComponentId": "sc-kkGfuU",
                                 "target": "button",
                                 "toString": [Function],
                                 "warnTooManyClasses": [Function],
@@ -1366,7 +1398,7 @@ exports[`Selection should contain a Header 1`] = `
                               aria-controls="selection-1"
                               aria-expanded={true}
                               aria-label="Selection 1, holding 145 Instances"
-                              className="sc-kEYyzF dlQUmI"
+                              className="sc-kkGfuU gOftby"
                               data-test="selection-toggle"
                               id="selection-1-toggle"
                               onClick={[MockFunction]}
@@ -1378,9 +1410,9 @@ exports[`Selection should contain a Header 1`] = `
                                       "$$typeof": Symbol(react.forward_ref),
                                       "attrs": undefined,
                                       "componentStyle": ComponentStyle {
-                                        "componentId": "sc-kkGfuU",
+                                        "componentId": "sc-iAyFgw",
                                         "isStatic": true,
-                                        "lastClassName": "bZmEPh",
+                                        "lastClassName": "eUtjbh",
                                         "rules": Array [
                                           "
   padding-left: 25px;
@@ -1390,7 +1422,7 @@ exports[`Selection should contain a Header 1`] = `
                                       },
                                       "displayName": "styled.div",
                                       "render": [Function],
-                                      "styledComponentId": "sc-kkGfuU",
+                                      "styledComponentId": "sc-iAyFgw",
                                       "target": "div",
                                       "toString": [Function],
                                       "warnTooManyClasses": [Function],
@@ -1400,7 +1432,7 @@ exports[`Selection should contain a Header 1`] = `
                                   forwardedRef={null}
                                 >
                                   <div
-                                    className="sc-kkGfuU bZmEPh"
+                                    className="sc-iAyFgw eUtjbh"
                                   >
                                     Selection 
                                     1
@@ -1417,9 +1449,9 @@ exports[`Selection should contain a Header 1`] = `
                                       "$$typeof": Symbol(react.forward_ref),
                                       "attrs": undefined,
                                       "componentStyle": ComponentStyle {
-                                        "componentId": "sc-brqgnP",
+                                        "componentId": "sc-cMljjf",
                                         "isStatic": false,
-                                        "lastClassName": "eiPcjr",
+                                        "lastClassName": "dlgNML",
                                         "rules": Array [
                                           "
   ",
@@ -1430,7 +1462,7 @@ exports[`Selection should contain a Header 1`] = `
                                       },
                                       "displayName": "Styled(Badge)",
                                       "render": [Function],
-                                      "styledComponentId": "sc-brqgnP",
+                                      "styledComponentId": "sc-cMljjf",
                                       "target": [Function],
                                       "toString": [Function],
                                       "warnTooManyClasses": [Function],
@@ -1443,14 +1475,14 @@ exports[`Selection should contain a Header 1`] = `
                                   type="SELECTIONS"
                                 >
                                   <Badge
-                                    className="sc-brqgnP eiPcjr"
+                                    className="sc-cMljjf dlgNML"
                                     isActive={true}
                                     isOpen={true}
                                     position={0}
                                     type="SELECTIONS"
                                   >
                                     <Themed(styled.div)
-                                      className="sc-brqgnP eiPcjr"
+                                      className="sc-cMljjf dlgNML"
                                       data-test="badge"
                                       isActive={true}
                                       isOpen={true}
@@ -1458,7 +1490,7 @@ exports[`Selection should contain a Header 1`] = `
                                       type="SELECTIONS"
                                     >
                                       <Themed
-                                        className="sc-brqgnP eiPcjr"
+                                        className="sc-cMljjf dlgNML"
                                         data-test="badge"
                                         forwardedRef={null}
                                         isActive={true}
@@ -1467,7 +1499,7 @@ exports[`Selection should contain a Header 1`] = `
                                         type="SELECTIONS"
                                       >
                                         <styled.div
-                                          className="sc-brqgnP eiPcjr"
+                                          className="sc-cMljjf dlgNML"
                                           data-test="badge"
                                           isActive={true}
                                           isOpen={true}
@@ -1476,16 +1508,16 @@ exports[`Selection should contain a Header 1`] = `
                                           type="SELECTIONS"
                                         >
                                           <StyledComponent
-                                            className="sc-brqgnP eiPcjr"
+                                            className="sc-cMljjf dlgNML"
                                             data-test="badge"
                                             forwardedClass={
                                               Object {
                                                 "$$typeof": Symbol(react.forward_ref),
                                                 "attrs": undefined,
                                                 "componentStyle": ComponentStyle {
-                                                  "componentId": "sc-kpOJdX",
+                                                  "componentId": "sc-dxgOiQ",
                                                   "isStatic": false,
-                                                  "lastClassName": "eXfWCe",
+                                                  "lastClassName": "cNcWBT",
                                                   "rules": Array [
                                                     "
   padding: 0 6px;
@@ -1513,7 +1545,7 @@ exports[`Selection should contain a Header 1`] = `
                                                 },
                                                 "displayName": "styled.div",
                                                 "render": [Function],
-                                                "styledComponentId": "sc-kpOJdX",
+                                                "styledComponentId": "sc-dxgOiQ",
                                                 "target": "div",
                                                 "toString": [Function],
                                                 "warnTooManyClasses": [Function],
@@ -1528,7 +1560,7 @@ exports[`Selection should contain a Header 1`] = `
                                             type="SELECTIONS"
                                           >
                                             <div
-                                              className="sc-brqgnP eiPcjr sc-kpOJdX eXfWCe"
+                                              className="sc-cMljjf dlgNML sc-dxgOiQ cNcWBT"
                                               data-test="badge"
                                               type="SELECTIONS"
                                             >
@@ -1561,9 +1593,9 @@ exports[`Selection should contain a Header 1`] = `
                   "$$typeof": Symbol(react.forward_ref),
                   "attrs": undefined,
                   "componentStyle": ComponentStyle {
-                    "componentId": "sc-iAyFgw",
+                    "componentId": "sc-hSdWYo",
                     "isStatic": true,
-                    "lastClassName": "hoTBy",
+                    "lastClassName": "cvTSBf",
                     "rules": Array [
                       "
   display: flex;
@@ -1575,7 +1607,7 @@ exports[`Selection should contain a Header 1`] = `
                   },
                   "displayName": "styled.div",
                   "render": [Function],
-                  "styledComponentId": "sc-iAyFgw",
+                  "styledComponentId": "sc-hSdWYo",
                   "target": "div",
                   "toString": [Function],
                   "warnTooManyClasses": [Function],
@@ -1585,7 +1617,7 @@ exports[`Selection should contain a Header 1`] = `
               forwardedRef={null}
             >
               <div
-                className="sc-iAyFgw hoTBy"
+                className="sc-hSdWYo cvTSBf"
                 data-test="actions"
               >
                 <styled.div
@@ -1597,9 +1629,9 @@ exports[`Selection should contain a Header 1`] = `
                         "$$typeof": Symbol(react.forward_ref),
                         "attrs": undefined,
                         "componentStyle": ComponentStyle {
-                          "componentId": "sc-hSdWYo",
+                          "componentId": "sc-eHgmQL",
                           "isStatic": true,
-                          "lastClassName": "cURpgQ",
+                          "lastClassName": "cIplFI",
                           "rules": Array [
                             "
   display: flex;
@@ -1618,7 +1650,7 @@ exports[`Selection should contain a Header 1`] = `
                         },
                         "displayName": "styled.div",
                         "render": [Function],
-                        "styledComponentId": "sc-hSdWYo",
+                        "styledComponentId": "sc-eHgmQL",
                         "target": "div",
                         "toString": [Function],
                         "warnTooManyClasses": [Function],
@@ -1629,7 +1661,7 @@ exports[`Selection should contain a Header 1`] = `
                     onClick={[Function]}
                   >
                     <div
-                      className="sc-hSdWYo cURpgQ"
+                      className="sc-eHgmQL cIplFI"
                       onClick={[Function]}
                     >
                       <Dropdown
@@ -1641,7 +1673,6 @@ exports[`Selection should contain a Header 1`] = `
 ",
                           ]
                         }
-                        data-test="batch-operations"
                         label={<ForwardRef />}
                         placement="bottom"
                       >
@@ -1652,9 +1683,9 @@ exports[`Selection should contain a Header 1`] = `
                                 "$$typeof": Symbol(react.forward_ref),
                                 "attrs": undefined,
                                 "componentStyle": ComponentStyle {
-                                  "componentId": "sc-VigVT",
+                                  "componentId": "sc-jTzLTM",
                                   "isStatic": true,
-                                  "lastClassName": "idjcJz",
+                                  "lastClassName": "bANBNU",
                                   "rules": Array [
                                     "
   position: relative;
@@ -1664,7 +1695,7 @@ exports[`Selection should contain a Header 1`] = `
                                 },
                                 "displayName": "styled.div",
                                 "render": [Function],
-                                "styledComponentId": "sc-VigVT",
+                                "styledComponentId": "sc-jTzLTM",
                                 "target": "div",
                                 "toString": [Function],
                                 "warnTooManyClasses": [Function],
@@ -1674,7 +1705,7 @@ exports[`Selection should contain a Header 1`] = `
                             forwardedRef={[Function]}
                           >
                             <div
-                              className="sc-VigVT idjcJz"
+                              className="sc-jTzLTM bANBNU"
                             >
                               <Themed(styled.button)
                                 buttonStyles={
@@ -1728,9 +1759,9 @@ exports[`Selection should contain a Header 1`] = `
                                           "$$typeof": Symbol(react.forward_ref),
                                           "attrs": undefined,
                                           "componentStyle": ComponentStyle {
-                                            "componentId": "sc-jTzLTM",
+                                            "componentId": "sc-fjdhpX",
                                             "isStatic": false,
-                                            "lastClassName": "dvberr",
+                                            "lastClassName": "bhkkZY",
                                             "rules": Array [
                                               "
   /* Positioning */
@@ -1770,7 +1801,7 @@ exports[`Selection should contain a Header 1`] = `
                                           },
                                           "displayName": "styled.button",
                                           "render": [Function],
-                                          "styledComponentId": "sc-jTzLTM",
+                                          "styledComponentId": "sc-fjdhpX",
                                           "target": "button",
                                           "toString": [Function],
                                           "warnTooManyClasses": [Function],
@@ -1783,7 +1814,7 @@ exports[`Selection should contain a Header 1`] = `
                                       theme="dark"
                                     >
                                       <button
-                                        className="sc-jTzLTM dvberr"
+                                        className="sc-fjdhpX bhkkZY"
                                         data-test="dropdown-toggle"
                                         onClick={[Function]}
                                         onKeyDown={[Function]}
@@ -1795,9 +1826,9 @@ exports[`Selection should contain a Header 1`] = `
                                                 "$$typeof": Symbol(react.forward_ref),
                                                 "attrs": undefined,
                                                 "componentStyle": ComponentStyle {
-                                                  "componentId": "sc-jDwBTQ",
+                                                  "componentId": "sc-gPEVay",
                                                   "isStatic": true,
-                                                  "lastClassName": "bzkBfM",
+                                                  "lastClassName": "eETiP",
                                                   "rules": Array [
                                                     "
   color: '#ffffff';
@@ -1806,7 +1837,7 @@ exports[`Selection should contain a Header 1`] = `
                                                 },
                                                 "displayName": "Styled(ReactComponent)",
                                                 "render": [Function],
-                                                "styledComponentId": "sc-jDwBTQ",
+                                                "styledComponentId": "sc-gPEVay",
                                                 "target": [Function],
                                                 "toString": [Function],
                                                 "warnTooManyClasses": [Function],
@@ -1817,10 +1848,10 @@ exports[`Selection should contain a Header 1`] = `
                                             forwardedRef={null}
                                           >
                                             <ReactComponent
-                                              className="sc-jDwBTQ bzkBfM"
+                                              className="sc-gPEVay eETiP"
                                             >
                                               <svg
-                                                className="sc-jDwBTQ bzkBfM"
+                                                className="sc-gPEVay eETiP"
                                               >
                                                 batch.svg
                                               </svg>
@@ -1837,6 +1868,39 @@ exports[`Selection should contain a Header 1`] = `
                                   </styled.button>
                                 </Themed>
                               </Themed(styled.button)>
+                              <CSSTransition
+                                classNames="transition"
+                                in={false}
+                                mountOnEnter={true}
+                                timeout={
+                                  Object {
+                                    "enter": 500,
+                                    "exit": 200,
+                                  }
+                                }
+                                unmountOnExit={true}
+                              >
+                                <Transition
+                                  appear={false}
+                                  enter={true}
+                                  exit={true}
+                                  in={false}
+                                  mountOnEnter={true}
+                                  onEnter={[Function]}
+                                  onEntered={[Function]}
+                                  onEntering={[Function]}
+                                  onExit={[Function]}
+                                  onExited={[Function]}
+                                  onExiting={[Function]}
+                                  timeout={
+                                    Object {
+                                      "enter": 500,
+                                      "exit": 200,
+                                    }
+                                  }
+                                  unmountOnExit={true}
+                                />
+                              </CSSTransition>
                             </div>
                           </StyledComponent>
                         </styled.div>
@@ -1855,9 +1919,9 @@ exports[`Selection should contain a Header 1`] = `
                         "$$typeof": Symbol(react.forward_ref),
                         "attrs": undefined,
                         "componentStyle": ComponentStyle {
-                          "componentId": "sc-eHgmQL",
+                          "componentId": "sc-cvbbAY",
                           "isStatic": true,
-                          "lastClassName": "FKvSH",
+                          "lastClassName": "dRXNWI",
                           "rules": Array [
                             "
   background: transparent;
@@ -1871,7 +1935,7 @@ exports[`Selection should contain a Header 1`] = `
                         },
                         "displayName": "styled.button",
                         "render": [Function],
-                        "styledComponentId": "sc-eHgmQL",
+                        "styledComponentId": "sc-cvbbAY",
                         "target": "button",
                         "toString": [Function],
                         "warnTooManyClasses": [Function],
@@ -1883,7 +1947,7 @@ exports[`Selection should contain a Header 1`] = `
                   >
                     <button
                       aria-label="Drop Selection 1"
-                      className="sc-eHgmQL FKvSH"
+                      className="sc-cvbbAY dRXNWI"
                       onClick={[MockFunction]}
                     >
                       <Styled(ReactComponent)>
@@ -1893,9 +1957,9 @@ exports[`Selection should contain a Header 1`] = `
                               "$$typeof": Symbol(react.forward_ref),
                               "attrs": undefined,
                               "componentStyle": ComponentStyle {
-                                "componentId": "sc-cvbbAY",
+                                "componentId": "sc-jWBwVP",
                                 "isStatic": true,
-                                "lastClassName": "eBfAqH",
+                                "lastClassName": "geluLa",
                                 "rules": Array [
                                   "
   opacity: 0.45;
@@ -1905,7 +1969,7 @@ exports[`Selection should contain a Header 1`] = `
                               },
                               "displayName": "Styled(ReactComponent)",
                               "render": [Function],
-                              "styledComponentId": "sc-cvbbAY",
+                              "styledComponentId": "sc-jWBwVP",
                               "target": [Function],
                               "toString": [Function],
                               "warnTooManyClasses": [Function],
@@ -1916,10 +1980,10 @@ exports[`Selection should contain a Header 1`] = `
                           forwardedRef={null}
                         >
                           <ReactComponent
-                            className="sc-cvbbAY eBfAqH"
+                            className="sc-jWBwVP geluLa"
                           >
                             <svg
-                              className="sc-cvbbAY eBfAqH"
+                              className="sc-jWBwVP geluLa"
                             >
                               remove-item.svg
                             </svg>

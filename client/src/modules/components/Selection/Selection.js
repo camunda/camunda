@@ -70,7 +70,6 @@ export default class Selection extends React.Component {
     <Styled.Actions data-test="actions">
       <Styled.DropdownWrapper onClick={evt => evt && evt.stopPropagation()}>
         <Dropdown
-          data-test="batch-operations"
           aria-label="Batch Operations"
           label={<Styled.BatchIcon />}
           buttonStyles={Styled.dropDownButtonStyles}
