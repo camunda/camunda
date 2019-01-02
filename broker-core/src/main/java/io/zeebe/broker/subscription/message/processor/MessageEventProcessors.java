@@ -46,7 +46,11 @@ public class MessageEventProcessors {
         .onCommand(
             ValueType.MESSAGE,
             MessageIntent.PUBLISH,
-            new PublishMessageProcessor(messageState, subscriptionState, subscriptionCommandSender))
+            new PublishMessageProcessor(
+                messageState,
+                subscriptionState,
+                startEventSubscriptionState,
+                subscriptionCommandSender))
         .onCommand(
             ValueType.MESSAGE, MessageIntent.DELETE, new DeleteMessageProcessor(messageState))
         .onCommand(

@@ -44,19 +44,19 @@ public class TriggerStartEventHandler implements BpmnStepHandler<ExecutableFlowE
 
     if (element.getStartEvents().get(0).isNone()) {
       // if none start event
-
       value.setElementId(element.getStartEvents().get(0).getId());
     } else {
-      // if timer start event
+      // if timer/message start event
 
       final long wfInstanceKey = context.getRecord().getValue().getWorkflowInstanceKey();
       final List<IndexedRecord> deferredTokens =
           workflowState.getElementInstanceState().getDeferredTokens(wfInstanceKey);
 
       if (deferredTokens.size() > 0) {
-
         final IndexedRecord deferredToken = deferredTokens.get(0);
-        value.setElementId(deferredToken.getValue().getElementId());
+        final WorkflowInstanceRecord tokenValue = deferredToken.getValue();
+        value.setElementId(tokenValue.getElementId());
+        value.setPayload(tokenValue.getPayload());
         workflowState
             .getElementInstanceState()
             .removeStoredRecord(wfInstanceKey, deferredToken.getKey(), Purpose.DEFERRED_TOKEN);

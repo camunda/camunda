@@ -19,6 +19,8 @@ import static io.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
 import static java.util.Collections.singletonList;
 
 import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.zeebe.model.bpmn.instance.EndEvent;
 import io.zeebe.model.bpmn.instance.IntermediateThrowEvent;
 import io.zeebe.model.bpmn.instance.Message;
@@ -136,6 +138,19 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
             .done(),
         singletonList(expect("task", "Cannot reference the same message name as a boundary event"))
       },
+      {
+        getProcessWithMultipleStartEventsWithSameMessage(),
+        singletonList(
+            expect("start-message", "A message cannot be referred by more than one start event"))
+      },
     };
+  }
+
+  private static BpmnModelInstance getProcessWithMultipleStartEventsWithSameMessage() {
+    final ProcessBuilder process = Bpmn.createExecutableProcess();
+    final String messageName = "messageName";
+    process.startEvent("start1").message(m -> m.id("start-message").name(messageName)).endEvent();
+    process.startEvent("start2").message(messageName).endEvent();
+    return process.done();
   }
 }

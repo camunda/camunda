@@ -49,14 +49,13 @@ public class MessageValidator implements ModelElementValidator<Message> {
         validationResultCollector.addError(
             0, "Must have exactly one zeebe:subscription extension element");
       }
-    } else if (isReferedByStartEvent(element)) {
-      if (element.getName() == null || element.getName().isEmpty()) {
-        validationResultCollector.addError(0, "Name must be present and not empty");
-      }
+    } else {
+      validateIfReferredByStartEvent(element, validationResultCollector);
     }
   }
 
-  private boolean isReferedByStartEvent(Message element) {
+  private void validateIfReferredByStartEvent(
+      Message element, ValidationResultCollector validationResultCollector) {
     final Collection<StartEvent> startEvents =
         element
             .getParentElement()
@@ -64,13 +63,24 @@ public class MessageValidator implements ModelElementValidator<Message> {
             .stream()
             .flatMap(p -> p.getChildElementsByType(StartEvent.class).stream())
             .collect(Collectors.toList());
-    return startEvents
-        .stream()
-        .flatMap(i -> i.getEventDefinitions().stream())
-        .anyMatch(
-            e ->
-                e instanceof MessageEventDefinition
-                    && ((MessageEventDefinition) e).getMessage() == element);
+    final long numReferredStartEvents =
+        startEvents
+            .stream()
+            .flatMap(i -> i.getEventDefinitions().stream())
+            .filter(
+                e ->
+                    e instanceof MessageEventDefinition
+                        && ((MessageEventDefinition) e).getMessage() == element)
+            .count();
+
+    if (numReferredStartEvents > 1) {
+      validationResultCollector.addError(
+          0, "A message cannot be referred by more than one start event");
+    } else if (numReferredStartEvents == 1) {
+      if (element.getName() == null || element.getName().isEmpty()) {
+        validationResultCollector.addError(0, "Name must be present and not empty");
+      }
+    }
   }
 
   private boolean isReferedByCatchEvent(Message element) {

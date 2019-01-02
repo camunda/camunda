@@ -21,6 +21,7 @@ public enum BpmnStep {
 
   // flow element container (process, sub process)
   TRIGGER_START_EVENT,
+  CREATE_INSTANCE_ON_START_EVENT,
   COMPLETE_PROCESS,
   TERMINATE_CONTAINED_INSTANCES,
 

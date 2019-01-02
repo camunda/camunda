@@ -43,12 +43,22 @@ public class BpmnStepGuards {
     final Predicate<BpmnStepContext<?>> availableFlowScopeGuard =
         c -> c.getFlowScopeInstance() != null;
 
-    stepGuards.put(WorkflowInstanceIntent.ELEMENT_READY, noConcurrentTransitionGuard);
-    stepGuards.put(WorkflowInstanceIntent.ELEMENT_ACTIVATED, noConcurrentTransitionGuard);
-    stepGuards.put(WorkflowInstanceIntent.ELEMENT_COMPLETING, noConcurrentTransitionGuard);
+    final Predicate<BpmnStepContext<?>> isStartEvent =
+        c -> c.getRecord().getValue().getWorkflowInstanceKey() == -1;
+
+    stepGuards.put(
+        WorkflowInstanceIntent.ELEMENT_READY, noConcurrentTransitionGuard.and(hasElementInstances));
+    stepGuards.put(
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+        noConcurrentTransitionGuard.and(hasElementInstances));
+    stepGuards.put(
+        WorkflowInstanceIntent.ELEMENT_COMPLETING,
+        noConcurrentTransitionGuard.and(hasElementInstances));
     stepGuards.put(WorkflowInstanceIntent.ELEMENT_COMPLETED, scopeActiveGuard);
-    stepGuards.put(WorkflowInstanceIntent.ELEMENT_TERMINATING, c -> true);
-    stepGuards.put(WorkflowInstanceIntent.ELEMENT_TERMINATED, availableFlowScopeGuard);
+    stepGuards.put(WorkflowInstanceIntent.ELEMENT_TERMINATING, hasElementInstances);
+    stepGuards.put(
+        WorkflowInstanceIntent.ELEMENT_TERMINATED,
+        availableFlowScopeGuard.and(hasElementInstances));
 
     stepGuards.put(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, scopeActiveGuard);
 
@@ -56,7 +66,7 @@ public class BpmnStepGuards {
 
     stepGuards.put(WorkflowInstanceIntent.EVENT_ACTIVATING, scopeActiveGuard);
     stepGuards.put(WorkflowInstanceIntent.EVENT_ACTIVATED, scopeActiveGuard);
-    stepGuards.put(WorkflowInstanceIntent.EVENT_OCCURRED, scopeActiveGuard);
+    stepGuards.put(WorkflowInstanceIntent.EVENT_OCCURRED, isStartEvent.or(scopeActiveGuard));
     stepGuards.put(WorkflowInstanceIntent.EVENT_TRIGGERING, scopeActiveGuard);
     stepGuards.put(WorkflowInstanceIntent.EVENT_TRIGGERED, scopeActiveGuard);
   }
@@ -67,6 +77,6 @@ public class BpmnStepGuards {
       throw new RuntimeException("no guard found for state: " + context.getState());
     }
 
-    return hasElementInstances.test(context) && guard.test(context);
+    return guard.test(context);
   }
 }
