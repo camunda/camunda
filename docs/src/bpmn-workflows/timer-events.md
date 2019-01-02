@@ -55,3 +55,26 @@ XML representation:
   </bpmn:timerEventDefinition>
 </bpmn:boundaryEvent>
 ```
+
+## Timer Start Events
+
+![workflow](/bpmn-workflows/timer-start-event.png)
+
+A timer start event can be used to periodically create an instance of a workflow. A workflow can have 
+multiple timer start events along with other types of start events, with the sole exception of the none 
+start event, which can only be used once and by itself. The interval is expressed in the same way as 
+in timer boundary events:
+* `R/PT5S` - every 5 seconds, infinitely.
+* `R5/PT1H` - every hour, 5 times.
+
+Note that subprocesses cannot have timer start events. 
+
+XML representation:
+
+```xml
+ <bpmn:startEvent id="timer-start">
+  <bpmn:timerEventDefinition>
+    <bpmn:timeCycle>R3/PT10H</bpmn:timeCycle>
+  </bpmn:timerEventDefinition>
+</bpmn:startEvent>
+```
