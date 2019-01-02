@@ -34,8 +34,6 @@ export const xTimes = x => method => {
   }
 };
 
-const getRandomInt = n => Math.floor(Math.random() * n);
-
 const createRandomId = function* createRandomId(type) {
   let idx = 0;
   while (true) {
@@ -130,15 +128,12 @@ export const createOperation = (options = {}) => {
  * @param {*} customProps Obj with any type of custom property
  */
 export const createActivity = (options = {}) => {
-  const possibleStates = ['ACTIVE', 'INCIDENT', 'COMPLETED', 'CANCELED'];
-  const randomState = possibleStates[getRandomInt(3)];
-
   return {
     activityId: randomActivityIdIterator.next().value,
     endDate: '2018-10-10T09:20:38.658Z',
     id: randomIdIterator.next().value,
     startDate: '2018-10-10T09:20:38.658Z',
-    state: randomState,
+    state: 'ACTIVE',
     ...options
   };
 };
