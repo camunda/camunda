@@ -1,53 +1,82 @@
 import React from 'react';
-import {shallow} from 'enzyme';
+import {mount} from 'enzyme';
+
+import {HashRouter as Router} from 'react-router-dom';
+import {ThemeProvider} from 'modules/contexts/ThemeContext';
 
 import MetricTile from './MetricTile';
 
 import * as Styled from './styled';
 
-const mockProps = {
+const mockDefaultProps = {
   type: 'active',
   value: 123,
   label: 'Active',
   expandFilters: jest.fn()
 };
 
-describe.skip('<MetricTile>', () => {
-  it('should show the value and name prop', () => {
-    const node = shallow(<MetricTile {...mockProps} />);
+const mountNode = mockCustomProps => {
+  return mount(
+    <Router>
+      <ThemeProvider>
+        <MetricTile {...mockDefaultProps} {...mockCustomProps} />
+      </ThemeProvider>
+    </Router>
+  );
+};
+
+describe('<MetricTile>', () => {
+  let node;
+  let metricTileNode;
+
+  beforeEach(() => {
+    node = mountNode();
+    metricTileNode = node.find(Styled.MetricTile);
+  });
+
+  it('should mount the tile', () => {
     expect(node.find(Styled.MetricTile).prop('onClick')).toBe(
-      mockProps.expandFilters
+      mockDefaultProps.expandFilters
+    );
+    expect(node.find(Styled.Metric).contains(123)).toEqual(true);
+    expect(node.find(Styled.Label).contains('Active')).toEqual(true);
+  });
+
+  it('should show the value and name prop', () => {
+    expect(node.find(Styled.MetricTile).prop('onClick')).toBe(
+      mockDefaultProps.expandFilters
     );
     expect(node.find(Styled.Metric).contains(123)).toEqual(true);
     expect(node.find(Styled.Label).contains('Active')).toEqual(true);
   });
 
   it('should contain a link to instances view', () => {
-    const node = shallow(<MetricTile {...mockProps} />);
-    expect(node.props().to).toContain('/instances');
+    expect(metricTileNode.props().to).toContain('/instances');
   });
 
   it('should return a link with the active filters in place', () => {
-    const node = shallow(<MetricTile {...mockProps} />);
-    expect(node.props().to).toEqual('/instances?filter={"active":true}');
-    expect(node.props().title).toEqual('View 123 Active');
+    expect(metricTileNode.props().to).toEqual(
+      '/instances?filter={"active":true}'
+    );
+    expect(metricTileNode.props().title).toEqual('View 123 Active');
   });
 
   it('should return a link with the running filters in place', () => {
-    const node = shallow(
-      <MetricTile {...mockProps} type="running" label="Running" />
-    );
-    expect(node.props().to).toEqual(
+    const node = mountNode({type: 'running', label: 'Running'});
+    const metricTileNode = node.find(Styled.MetricTile);
+    expect(metricTileNode.props().to).toEqual(
       '/instances?filter={"active":true,"incidents":true}'
     );
-    expect(node.props().title).toEqual('View 123 Running');
+    expect(metricTileNode.props().title).toEqual('View 123 Running');
   });
 
   it('should return a link with the incidents filters in place', () => {
-    const node = shallow(
-      <MetricTile {...mockProps} type="incidents" label="Incidents" />
+    const node = mountNode({type: 'incidents', label: 'Incidents'});
+    const metricTileNode = node.find(Styled.MetricTile);
+
+    expect(metricTileNode.props().to).toEqual(
+      '/instances?filter={"incidents":true}'
     );
-    expect(node.props().to).toEqual('/instances?filter={"incidents":true}');
-    expect(node.props().title).toEqual('View 123 Incidents');
+    expect(metricTileNode.props().title).toEqual('View 123 Incidents');
   });
 });
