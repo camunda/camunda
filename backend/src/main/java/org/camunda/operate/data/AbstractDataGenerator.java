@@ -59,7 +59,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
 
   public boolean shouldCreateData(boolean manuallyCalled) {
     if (!manuallyCalled) {    //when called manually, always create the data
-      final Workflows workflows = client.workflowClient().newWorkflowRequest().send().join();
+      final Workflows workflows = client.newWorkflowRequest().send().join();
       if (workflows != null && workflows.getWorkflows().size() > 0) {
         //data already exists
         logger.debug("Data already exists in Zeebe.");

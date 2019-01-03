@@ -280,32 +280,32 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     List<WorkflowInstanceEntity> instances = new ArrayList<>();
 
     WorkflowInstanceEntity inst = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", ActivityType.START_EVENT));
+    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", null));
     inst.getActivities().add(createActivityInstance(ActivityState.ACTIVE, "taskA", null));
     inst.getActivities().add(createActivityInstance(ActivityState.ACTIVE, "taskA", null));    //duplicated on purpose, to be sure, that we sount workflow instances, but not activity inctanses
     instances.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", ActivityType.START_EVENT));
+    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", null));
     inst.getActivities().add(createActivityInstance(ActivityState.ACTIVE, "taskA", null));
     instances.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.CANCELED, workflowId);
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", ActivityType.START_EVENT));
+    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", null));
     inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskA", null));
     inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskB", null));
     inst.getActivities().add(createActivityInstance(ActivityState.TERMINATED, "taskC", null));
     instances.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.CANCELED, workflowId);
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", ActivityType.START_EVENT));
+    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", null));
     inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskA", null));
     inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskB", null));
     inst.getActivities().add(createActivityInstance(ActivityState.TERMINATED, "taskC", null));
     instances.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", ActivityType.START_EVENT));
+    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", null));
     inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskA", null));
     inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskB", null));
     ActivityInstanceEntity task = createActivityInstance(ActivityState.INCIDENT, "taskC", null);
@@ -315,7 +315,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     instances.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", ActivityType.START_EVENT));
+    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", null));
     inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskA", null));
     inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskB", null));
     task = createActivityInstance(ActivityState.INCIDENT, "taskC", null);
@@ -325,7 +325,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     instances.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.CANCELED, workflowId);
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", ActivityType.START_EVENT));
+    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", null));
     inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskA", null));
     inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskB", null));
     inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskC", null));
@@ -333,7 +333,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     instances.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", ActivityType.START_EVENT));
+    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", null));
     inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskA", null));
     inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskB", null));
     inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskC", null));
@@ -342,7 +342,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     instances.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", ActivityType.START_EVENT));
+    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", null));
     inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskA", null));
     inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskB", null));
     inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskC", null));
@@ -353,7 +353,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     instances.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.COMPLETED, workflowId);
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", ActivityType.START_EVENT));
+    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", null));
     inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskA", null));
     inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskB", null));
     inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskC", null));
@@ -363,7 +363,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     instances.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.COMPLETED, workflowId);
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", ActivityType.START_EVENT));
+    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", null));
     inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskA", null));
     inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskB", null));
     inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskC", null));

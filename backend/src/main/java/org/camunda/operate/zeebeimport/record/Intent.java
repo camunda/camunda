@@ -6,8 +6,6 @@ public enum Intent implements io.zeebe.protocol.intent.Intent {
 
   RESOLVED,
 
-  START_EVENT_OCCURRED,
-  END_EVENT_OCCURRED,
   SEQUENCE_FLOW_TAKEN,
   GATEWAY_ACTIVATED,
 
@@ -20,7 +18,10 @@ public enum Intent implements io.zeebe.protocol.intent.Intent {
 
   PAYLOAD_UPDATED,
 
-  CATCH_EVENT_TRIGGERED,
+  EVENT_TRIGGERING,
+  EVENT_TRIGGERED,
+  EVENT_ACTIVATING,
+  EVENT_ACTIVATED,
 
   //JOB
   ACTIVATED,

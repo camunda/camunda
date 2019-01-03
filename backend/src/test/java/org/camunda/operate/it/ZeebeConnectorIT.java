@@ -18,7 +18,7 @@ import org.camunda.operate.rest.HealthCheckRestService;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
-import org.camunda.operate.util.OperateZeebeBrokerRule;
+import org.camunda.operate.util.OperateZeebeRule;
 import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.util.ZeebeClientRule;
 import org.camunda.operate.zeebeimport.ZeebeESImporter;
@@ -46,7 +46,7 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
   @Autowired
   private OperateProperties operateProperties;
 
-  private OperateZeebeBrokerRule brokerRule;
+  private OperateZeebeRule operateZeebeRule;
 
   private ZeebeClientRule clientRule;
 
@@ -62,8 +62,8 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
 
   @After
   public void cleanup() {
-    if (brokerRule != null) {
-      brokerRule.after();
+    if (operateZeebeRule != null) {
+      operateZeebeRule.after();
     }
     if (clientRule != null) {
       clientRule.after();
@@ -90,13 +90,13 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
 
     //when 2
     //Zeebe is started
-    brokerRule = new OperateZeebeBrokerRule(EmbeddedBrokerRule.DEFAULT_CONFIG_FILE);
-    clientRule = new ZeebeClientRule(brokerRule);
-    brokerRule.before();
+    operateZeebeRule = new OperateZeebeRule(EmbeddedBrokerRule.DEFAULT_CONFIG_FILE);
+    clientRule = new ZeebeClientRule(operateZeebeRule.getBrokerRule());
+    operateZeebeRule.before();
     clientRule.before();
 
     String workerName = TestUtil.createRandomString(10);
-    operateProperties.getZeebeElasticsearch().setPrefix(brokerRule.getPrefix());
+    operateProperties.getZeebeElasticsearch().setPrefix(operateZeebeRule.getPrefix());
     try {
       FieldSetter.setField(zeebeESImporter, ZeebeESImporter.class.getDeclaredField("zeebeClient"), clientRule.getClient());
     } catch (NoSuchFieldException e) {
@@ -113,9 +113,9 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
   public void testRecoverAfterZeebeRestart() throws Exception {
     //when 1
     //Zeebe is started
-    brokerRule = new OperateZeebeBrokerRule(EmbeddedBrokerRule.DEFAULT_CONFIG_FILE);
-    clientRule = new ZeebeClientRule(brokerRule);
-    brokerRule.before();
+    operateZeebeRule = new OperateZeebeRule(EmbeddedBrokerRule.DEFAULT_CONFIG_FILE);
+    clientRule = new ZeebeClientRule(operateZeebeRule.getBrokerRule());
+    operateZeebeRule.before();
     clientRule.before();
 
     //then 1
@@ -124,9 +124,9 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
 
     //when 2
     //Zeebe is restarted
-    brokerRule.after();
+    operateZeebeRule.after();
     clientRule.after();
-    brokerRule.before();
+    operateZeebeRule.before();
     clientRule.before();
 
     //then 2

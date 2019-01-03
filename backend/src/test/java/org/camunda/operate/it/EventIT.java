@@ -101,7 +101,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
     });
 
     //then
-    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.START_EVENT_OCCURRED, 1, processId, workflowId, workflowInstanceKey, initialPayload, "start");
+    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.EVENT_TRIGGERED, 1, processId, workflowId, workflowInstanceKey, initialPayload, "start");
     assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_READY, 1, processId, workflowId, workflowInstanceKey, initialPayload, "taskA");
     assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_ACTIVATED, 1, processId, workflowId, workflowInstanceKey, initialPayload, "taskA");
     assertEvent(eventEntities, EventSourceType.JOB, EventType.CREATED, 1, processId, workflowId, workflowInstanceKey, initialPayload, "taskA");
@@ -131,13 +131,13 @@ public class EventIT extends OperateZeebeIntegrationTest {
 
     String finalPayload = "{\"a\":\"b\",\"goToTaskC\":true,\"b\": \"d\"}";
     assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED, 1, processId, workflowId, workflowInstanceKey, finalPayload, "taskC");
-    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.END_EVENT_OCCURRED, 1, processId, workflowId, workflowInstanceKey, finalPayload, "end1");
+    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.EVENT_ACTIVATED, 1, processId, workflowId, workflowInstanceKey, finalPayload, "end1");
     assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED, 1, processId, workflowId, workflowInstanceKey, finalPayload, "processWithGateway");
 
   }
 
   @Test
-  public void testWorkflowInstanceCanceled() {
+  public void testWorkflowInstanceCanceledOnIncident() {
     // having
     String activityId = "taskA";
 

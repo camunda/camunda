@@ -34,7 +34,7 @@ public abstract class ZeebeTestUtil {
     if (classpathResources.length == 0) {
       return null;
     }
-    DeployWorkflowCommandStep1 deployWorkflowCommandStep1 = client.workflowClient().newDeployCommand();
+    DeployWorkflowCommandStep1 deployWorkflowCommandStep1 = client.newDeployCommand();
     for (String classpathResource: classpathResources) {
       deployWorkflowCommandStep1 = deployWorkflowCommandStep1.addResourceFromClasspath(classpathResource);
     }
@@ -53,7 +53,7 @@ public abstract class ZeebeTestUtil {
    * @return workflow id
    */
   public static String deployWorkflow(ZeebeClient client, BpmnModelInstance workflowModel, String resourceName) {
-    DeployWorkflowCommandStep1 deployWorkflowCommandStep1 = client.workflowClient().newDeployCommand()
+    DeployWorkflowCommandStep1 deployWorkflowCommandStep1 = client.newDeployCommand()
       .addWorkflowModel(workflowModel, resourceName);
     final DeploymentEvent deploymentEvent =
       ((DeployWorkflowCommandStep1.DeployWorkflowCommandBuilderStep2)deployWorkflowCommandStep1)
@@ -71,7 +71,7 @@ public abstract class ZeebeTestUtil {
    * @return workflow instance id
    */
   public static long startWorkflowInstance(ZeebeClient client, String bpmnProcessId, String payload) {
-    final CreateWorkflowInstanceCommandStep1.CreateWorkflowInstanceCommandStep3 createWorkflowInstanceCommandStep3 = client.workflowClient()
+    final CreateWorkflowInstanceCommandStep1.CreateWorkflowInstanceCommandStep3 createWorkflowInstanceCommandStep3 = client
       .newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
     if (payload != null) {
       createWorkflowInstanceCommandStep3.payload(payload);
@@ -98,12 +98,12 @@ public abstract class ZeebeTestUtil {
   }
 
   public static void cancelWorkflowInstance(ZeebeClient client, long workflowInstanceKey) {
-    client.workflowClient().newCancelInstanceCommand(workflowInstanceKey).send().join();
+    client.newCancelInstanceCommand(workflowInstanceKey).send().join();
 
   }
 
   public static JobWorker completeTask(ZeebeClient client, String jobType, String workerName, String payload) {
-    return client.jobClient().newWorker()
+    return client.newWorker()
       .jobType(jobType)
       .handler((jobClient, job) -> {
         if (payload == null) {
@@ -120,7 +120,7 @@ public abstract class ZeebeTestUtil {
 
   public static void completeTask(ZeebeClient client, String jobType, String workerName, String payload, int count) {
     final int[] countCompleted = { 0 };
-    JobWorker jobWorker = client.jobClient().newWorker()
+    JobWorker jobWorker = client.newWorker()
       .jobType(jobType)
       .handler((jobClient, job) -> {
         if (payload == null) {
@@ -155,7 +155,7 @@ public abstract class ZeebeTestUtil {
    */
   public static Long failTask(ZeebeClient client, String jobType, String workerName, int numberOfFailures, String errorMessage) {
     final FailJobHandler jobHandler = new FailJobHandler(numberOfFailures, errorMessage);
-    JobWorker jobWorker = client.jobClient().newWorker()
+    JobWorker jobWorker = client.newWorker()
       .jobType(jobType)
       .handler(jobHandler)
       .name(workerName)
@@ -211,8 +211,8 @@ public abstract class ZeebeTestUtil {
   }
 
   public static void resolveIncident(ZeebeClient client, long jobKey, long incidentKey) {
-    client.jobClient().newUpdateRetriesCommand(jobKey).retries(3).send().join();
-    client.workflowClient().newResolveIncidentCommand(incidentKey).send().join();
+    client.newUpdateRetriesCommand(jobKey).retries(3).send().join();
+    client.newResolveIncidentCommand(incidentKey).send().join();
   }
 
 //  public static void updatePayload(ZeebeClient client, Long key, String workflowInstanceId, String newPayload, String bpmnProcessId, String workflowId) {
@@ -228,7 +228,7 @@ public abstract class ZeebeTestUtil {
 //    workflowInstanceEvent.setWorkflowInstanceKey(workflowInstanceKey);
 //    workflowInstanceEvent.setPayload(newPayload);
 //    workflowInstanceEvent.setPartitionId(partitionId);
-//    client.workflowClient().newUpdatePayloadCommand(workflowInstanceEvent).payload(newPayload).send().join();
+//    client.newUpdatePayloadCommand(workflowInstanceEvent).payload(newPayload).send().join();
 //  }
 
 }

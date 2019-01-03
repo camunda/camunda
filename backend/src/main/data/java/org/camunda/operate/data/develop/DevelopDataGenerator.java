@@ -67,7 +67,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
   private void sendMessages(String messageName, String payload, int count) {
     for (int i = 0; i<count; i++) {
-      client.workflowClient().newPublishMessageCommand()
+      client.newPublishMessageCommand()
         .messageName(messageName)
         .correlationKey(String.valueOf(random.nextInt(7)))
         .payload(payload)
@@ -79,7 +79,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
   @Override
   protected JobWorker progressOrderProcessCheckPayment() {
-    return client.jobClient()
+    return client
       .newWorker()
       .jobType("checkPayment")
       .handler((jobClient, job) -> {
@@ -107,7 +107,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   }
 
   private JobWorker progressSimpleTask(String taskType) {
-    return client.jobClient().newWorker()
+    return client.newWorker()
       .jobType(taskType)
       .handler((jobClient, job) ->
       {
@@ -132,7 +132,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   }
 
   private JobWorker progressDemoProcessTaskA() {
-    return client.jobClient().newWorker()
+    return client.newWorker()
       .jobType("taskA")
       .handler((jobClient, job) -> {
         final int scenarioCount = random.nextInt(2);
@@ -192,6 +192,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
     ZeebeTestUtil.deployWorkflow(client, "develop/complexProcess_v_2.bpmn");
 
+    ZeebeTestUtil.deployWorkflow(client, "develop/eventBasedGatewayProcess_v_2.bpmn");
 
   }
 

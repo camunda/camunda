@@ -218,7 +218,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
   public void completeTask(long workflowInstanceKey, String jobType, String payload) {
     final CompleteJobHandler completeJobHandler = new CompleteJobHandler(payload, workflowInstanceKey);
-    JobWorker jobWorker = client.jobClient().newWorker()
+    JobWorker jobWorker = client.newWorker()
       .jobType(jobType)
       .handler(completeJobHandler)
       .name("operate")
@@ -242,7 +242,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
   public void failTask(long workflowInstanceKey, String jobType, String errorMessage) {
     final FailJobHandler failJobHandler = new FailJobHandler(workflowInstanceKey, errorMessage);
-    JobWorker jobWorker = client.jobClient().newWorker()
+    JobWorker jobWorker = client.newWorker()
       .jobType(jobType)
       .handler(failJobHandler)
       .name("operate")
@@ -289,7 +289,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
     //start more instances after 1 minute
     scheduler.schedule(() ->
-        startWorkflowInstances(1)
+        startWorkflowInstances(2)
       , 1, TimeUnit.MINUTES);
 
     scheduler.schedule(() -> {
@@ -323,7 +323,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       long workflowInstanceKey = iterator.next();
       if (random.nextInt(15) == 1) {
         try {
-          client.workflowClient().newCancelInstanceCommand(workflowInstanceKey).send().join();
+          client.newCancelInstanceCommand(workflowInstanceKey).send().join();
         } catch (ClientException ex) {
           logger.error("Error occurred when cancelling workflow instance:", ex);
         }
@@ -333,7 +333,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   }
 
   protected JobWorker progressOrderProcessCheckPayment() {
-    return client.jobClient()
+    return client
       .newWorker()
       .jobType("checkPayment")
       .handler((jobClient, job) -> {
@@ -383,7 +383,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   }
 
   private JobWorker progressOrderProcessCheckItems() {
-    return client.jobClient().newWorker()
+    return client.newWorker()
       .jobType("checkItems")
       .handler((jobClient, job) -> {
         if (!canProgress(job.getHeaders().getWorkflowInstanceKey()))
@@ -406,7 +406,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   }
 
   private JobWorker progressOrderProcessShipArticles() {
-    return client.jobClient().newWorker()
+    return client.newWorker()
       .jobType("shipArticles")
       .handler((jobClient, job) -> {
         if (!canProgress(job.getHeaders().getWorkflowInstanceKey()))
@@ -427,7 +427,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   }
 
   private JobWorker progressFlightRegistrationRegisterCabinBag() {
-    return client.jobClient().newWorker()
+    return client.newWorker()
       .jobType("registerCabinBag")
       .handler((jobClient, job) -> {
         if (!canProgress(job.getHeaders().getWorkflowInstanceKey()))
@@ -450,7 +450,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   }
 
   private JobWorker progressFlightRegistrationDetermineWeight() {
-    return client.jobClient().newWorker()
+    return client.newWorker()
       .jobType("determineLuggageWeight")
       .handler((jobClient, job) -> {
         if (!canProgress(job.getHeaders().getWorkflowInstanceKey()))
@@ -463,7 +463,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   }
 
   private JobWorker progressSimpleTask(String taskType) {
-    return client.jobClient().newWorker()
+    return client.newWorker()
       .jobType(taskType)
       .handler((jobClient, job) ->
       {
@@ -490,7 +490,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   }
 
   private JobWorker progressReviewLoanRequestTask() {
-    return client.jobClient().newWorker()
+    return client.newWorker()
       .jobType("reviewLoanRequest")
       .handler((jobClient, job) -> {
         if (!canProgress(job.getHeaders().getWorkflowInstanceKey()))
@@ -516,7 +516,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   }
 
   private JobWorker progressCheckSchufaTask() {
-    return client.jobClient().newWorker()
+    return client.newWorker()
       .jobType("checkSchufa")
       .handler((jobClient, job) -> {
         if (!canProgress(job.getHeaders().getWorkflowInstanceKey()))

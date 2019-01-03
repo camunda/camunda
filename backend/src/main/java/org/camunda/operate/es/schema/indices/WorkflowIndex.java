@@ -16,6 +16,9 @@ public class WorkflowIndex extends AbstractIndexCreator {
   public static final String VERSION = "version";
   public static final String BPMN_XML = "bpmnXml";
   public static final String RESOURCE_NAME = "resourceName";
+  public static final String ACTIVITIES = "activities";
+  public static final String ACTIVITY_NAME = "name";
+  public static final String ACTIVITY_TYPE = "type";
 
   @Autowired
   private OperateProperties operateProperties;
@@ -32,7 +35,7 @@ public class WorkflowIndex extends AbstractIndexCreator {
 
   @Override
   protected XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
-    return xContentBuilder
+    XContentBuilder newBuilder = xContentBuilder
       .startObject(ID)
         .field("type", "keyword")
       .endObject()
@@ -57,7 +60,28 @@ public class WorkflowIndex extends AbstractIndexCreator {
       .endObject()
       .startObject(PARTITION_ID)
         .field("type", "integer")
+      .endObject()
+      .startObject(ACTIVITIES)
+        .field("type", "nested")
+        .startObject("properties");
+          addNestedActivitiesField(newBuilder)
+        .endObject()
       .endObject();
+    return newBuilder;
+  }
+
+  private XContentBuilder addNestedActivitiesField(XContentBuilder builder) throws IOException {
+    builder
+      .startObject(ID)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(ACTIVITY_NAME)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(ACTIVITY_TYPE)
+        .field("type", "keyword")
+      .endObject();
+    return builder;
   }
 
 }

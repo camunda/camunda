@@ -27,6 +27,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.camunda.operate.entities.ActivityEntity;
+import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.OperateZeebeEntity;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.zeebeimport.record.value.DeploymentRecordValueImpl;
@@ -104,8 +106,8 @@ public class DeploymentEventTransformer implements AbstractRecordTransformer {
       workflowEntity.setResourceName(resourceName);
 
       InputStream is = new ByteArrayInputStream(byteArray);
-      String workflowName = extractWorkflowName(is);
-      workflowEntity.setName(workflowName);
+      final WorkflowEntity diagramData = extractDiagramData(is);
+      workflowEntity.setName(diagramData.getName());
     }
 
     return workflowEntity;
@@ -115,13 +117,13 @@ public class DeploymentEventTransformer implements AbstractRecordTransformer {
     return resources.stream().collect(Collectors.toMap(DeploymentResource::getResourceName, Function.identity()));
   }
 
-  public String extractWorkflowName(InputStream xmlInputStream) {
+  public WorkflowEntity extractDiagramData(InputStream xmlInputStream) {
     SAXParser saxParser = getSAXParser();
-    ExtractNameSaxHandler handler = new ExtractNameSaxHandler();
+    BpmnXmlParserHandler handler = new BpmnXmlParserHandler();
 
     try {
       saxParser.parse(xmlInputStream, handler);
-      return handler.getWorkflowName();
+      return handler.getWorkflowEntity();
     } catch (SAXException | IOException e) {
       // just return null
     }
@@ -141,21 +143,21 @@ public class DeploymentEventTransformer implements AbstractRecordTransformer {
     }
   }
 
-  public static class ExtractNameSaxHandler extends DefaultHandler {
+  public static class BpmnXmlParserHandler extends DefaultHandler {
 
-    private String workflowName;
+    WorkflowEntity workflowEntity = new WorkflowEntity();
 
     @Override
     public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
       if (localName.equalsIgnoreCase("process")) {
         if (attributes.getValue("name") != null) {
-          this.workflowName = attributes.getValue("name");
+          workflowEntity.setName(attributes.getValue("name"));
         }
       }
     }
 
-    public String getWorkflowName() {
-      return workflowName;
+    public WorkflowEntity getWorkflowEntity() {
+      return workflowEntity;
     }
   }
 

@@ -1,6 +1,5 @@
 package org.camunda.operate.entities;
 
-
 public class WorkflowEntity extends OperateZeebeEntity {
 
   private String name;
@@ -85,7 +84,6 @@ public class WorkflowEntity extends OperateZeebeEntity {
   @Override
   public String toString() {
     return "WorkflowEntity{" + "name='" + name + '\'' + ", version=" + version + ", bpmnProcessId='" + bpmnProcessId + '\'' + ", bpmnXml='" + bpmnXml + '\''
-      + ", resourceName='" + resourceName + '\'' + "} " + super
-      .toString();
+      + ", resourceName='" + resourceName + '\'' + "} " + super.toString();
   }
 }

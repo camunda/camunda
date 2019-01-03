@@ -104,7 +104,7 @@ public abstract class TestUtil {
   }
 
   public static ActivityInstanceEntity createActivityInstance(ActivityState state) {
-    return createActivityInstance(state, "start", ActivityType.START_EVENT);
+    return createActivityInstance(state, "start", null);
   }
 
   public static ActivityInstanceEntity createActivityInstance(ActivityState state, String activityId, ActivityType activityType) {

@@ -18,8 +18,6 @@ import java.util.stream.Collectors;
 import org.junit.rules.ExternalResource;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
-import io.zeebe.client.api.clients.JobClient;
-import io.zeebe.client.api.clients.WorkflowClient;
 import io.zeebe.client.api.commands.PartitionInfo;
 import io.zeebe.client.api.commands.Topology;
 import io.zeebe.client.cmd.ClientException;
@@ -88,11 +86,4 @@ public class ZeebeClientRule extends ExternalResource {
       .collect(Collectors.toList());
   }
 
-  public WorkflowClient getWorkflowClient() {
-    return getClient().workflowClient();
-  }
-
-  public JobClient getJobClient() {
-    return getClient().jobClient();
-  }
 }

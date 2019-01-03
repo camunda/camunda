@@ -498,6 +498,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     String processId = "demoProcess";
     final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskA");
 
     //when
     cancelWorkflowInstance(workflowInstanceKey);
@@ -514,7 +515,46 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     final List<ActivityInstanceEntity> activities = workflowInstanceEntity.getActivities();
     assertThat(activities.size()).isGreaterThan(0);
     final ActivityInstanceEntity lastActivity = activities.get(activities.size() - 1);
-    assertThat(lastActivity.getState().equals(ActivityState.TERMINATED));
+    assertThat(lastActivity.getState()).isEqualTo(ActivityState.TERMINATED);
+    assertThat(lastActivity.getEndDate()).isNotNull();
+    assertThat(lastActivity.getEndDate()).isAfterOrEqualTo(testStartTime);
+    assertThat(lastActivity.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
+
+  }
+
+
+  @Test
+  public void testWorkflowInstanceCanceledOnMessageEvent() {
+    // having
+    final OffsetDateTime testStartTime = OffsetDateTime.now();
+
+    String processId = "eventProcess";
+    final String workflowId = deployWorkflow("messageEventProcess_v_1.bpmn");
+//    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"clientId\": \"5\"}");
+
+        try {
+          Thread.sleep(1000L);
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
+
+    //when
+    cancelWorkflowInstance(workflowInstanceKey);
+
+    //then
+    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
+    assertThat(workflowInstanceEntity.getId()).isEqualTo(IdTestUtil.getId(workflowInstanceKey));
+    assertThat(workflowInstanceEntity.getKey()).isEqualTo(workflowInstanceKey);
+    assertThat(workflowInstanceEntity.getState()).isEqualTo(WorkflowInstanceState.CANCELED);
+    assertThat(workflowInstanceEntity.getEndDate()).isNotNull();
+    assertThat(workflowInstanceEntity.getEndDate()).isAfterOrEqualTo(testStartTime);
+    assertThat(workflowInstanceEntity.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
+
+    final List<ActivityInstanceEntity> activities = workflowInstanceEntity.getActivities();
+    assertThat(activities.size()).isGreaterThan(0);
+    final ActivityInstanceEntity lastActivity = activities.get(activities.size() - 1);
+    assertThat(lastActivity.getState()).isEqualTo(ActivityState.TERMINATED);
     assertThat(lastActivity.getEndDate()).isNotNull();
     assertThat(lastActivity.getEndDate()).isAfterOrEqualTo(testStartTime);
     assertThat(lastActivity.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());

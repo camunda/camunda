@@ -20,6 +20,7 @@ package org.camunda.operate.zeebeimport.record.value;
 import java.util.Objects;
 import org.camunda.operate.zeebeimport.record.RecordValueWithPayloadImpl;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.BpmnElementType;
 
 public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
     implements WorkflowInstanceRecordValue {
@@ -29,6 +30,7 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
   private long workflowKey;
   private long workflowInstanceKey;
   private long scopeInstanceKey;
+  private BpmnElementType bpmnElementType;
 
   public WorkflowInstanceRecordValueImpl() {
   }
@@ -64,56 +66,53 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public BpmnElementType getBpmnElementType() {
+    return bpmnElementType;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o)
       return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
+    if (o == null || getClass() != o.getClass())
       return false;
-    }
-    if (!super.equals(o)) {
+    if (!super.equals(o))
       return false;
-    }
-    final WorkflowInstanceRecordValueImpl that = (WorkflowInstanceRecordValueImpl) o;
-    return version == that.version
-        && workflowKey == that.workflowKey
-        && workflowInstanceKey == that.workflowInstanceKey
-        && scopeInstanceKey == that.scopeInstanceKey
-        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
-        && Objects.equals(elementId, that.elementId);
+
+    WorkflowInstanceRecordValueImpl that = (WorkflowInstanceRecordValueImpl) o;
+
+    if (version != that.version)
+      return false;
+    if (workflowKey != that.workflowKey)
+      return false;
+    if (workflowInstanceKey != that.workflowInstanceKey)
+      return false;
+    if (scopeInstanceKey != that.scopeInstanceKey)
+      return false;
+    if (bpmnProcessId != null ? !bpmnProcessId.equals(that.bpmnProcessId) : that.bpmnProcessId != null)
+      return false;
+    if (elementId != null ? !elementId.equals(that.elementId) : that.elementId != null)
+      return false;
+    return bpmnElementType == that.bpmnElementType;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(
-        super.hashCode(),
-        bpmnProcessId, elementId,
-        version,
-        workflowKey,
-        workflowInstanceKey,
-        scopeInstanceKey);
+    int result = super.hashCode();
+    result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
+    result = 31 * result + (elementId != null ? elementId.hashCode() : 0);
+    result = 31 * result + version;
+    result = 31 * result + (int) (workflowKey ^ (workflowKey >>> 32));
+    result = 31 * result + (int) (workflowInstanceKey ^ (workflowInstanceKey >>> 32));
+    result = 31 * result + (int) (scopeInstanceKey ^ (scopeInstanceKey >>> 32));
+    result = 31 * result + (bpmnElementType != null ? bpmnElementType.hashCode() : 0);
+    return result;
   }
 
   @Override
   public String toString() {
-    return "WorkflowInstanceRecordValueImpl{"
-        + "bpmnProcessId='"
-        + bpmnProcessId
-        + '\''
-        + ", elementId='"
-        + elementId
-        + '\''
-        + ", version="
-        + version
-        + ", workflowKey="
-        + workflowKey
-        + ", workflowInstanceKey="
-        + workflowInstanceKey
-        + ", scopeInstanceKey="
-        + scopeInstanceKey
-        + ", payload='"
-        + getPayload()
-        + '\''
-        + '}';
+    return "WorkflowInstanceRecordValueImpl{" + "bpmnProcessId='" + bpmnProcessId + '\'' + ", elementId='" + elementId + '\'' + ", version=" + version
+      + ", workflowKey=" + workflowKey + ", workflowInstanceKey=" + workflowInstanceKey + ", scopeInstanceKey=" + scopeInstanceKey + ", bpmnElementType="
+      + bpmnElementType + "} " + super.toString();
   }
 }

@@ -15,6 +15,7 @@ package org.camunda.operate.util;
 import java.util.function.Predicate;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.zeebeimport.ZeebeESImporter;
+import org.camunda.operate.zeebeimport.cache.WorkflowCache;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 import org.mockito.internal.util.reflection.FieldSetter;
@@ -25,6 +26,7 @@ import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.subscription.JobWorker;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.test.ClientRule;
 import io.zeebe.test.EmbeddedBrokerRule;
 import static org.assertj.core.api.Assertions.fail;
 
@@ -33,12 +35,12 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   @MockBean
   protected ZeebeClient mockedZeebeClient;    //we don't want to create ZeebeClient, we will rather use the one from test rule
 
-  public final OperateZeebeBrokerRule brokerRule;
-
-  public final ZeebeClientRule clientRule;
-
   @Rule
-  public RuleChain chain;
+  public final OperateZeebeRule zeebeRule;
+
+  public ClientRule clientRule;
+
+  public EmbeddedBrokerRule brokerRule;
 
   @Rule
   public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
@@ -48,6 +50,9 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
 
   @Autowired
   private ZeebeESImporter zeebeESImporter;
+
+  @Autowired
+  private WorkflowCache workflowCache;
 
   @Autowired
   @Qualifier("workflowIsDeployedCheck")
@@ -70,8 +75,12 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   private String workerName;
 
   protected void before() {
+    clientRule = zeebeRule.getClientRule();
+    brokerRule = zeebeRule.getBrokerRule();
+
     workerName = TestUtil.createRandomString(10);
-    operateProperties.getZeebeElasticsearch().setPrefix(brokerRule.getPrefix());
+    operateProperties.getZeebeElasticsearch().setPrefix(zeebeRule.getPrefix());
+    workflowCache.clearCache();
     try {
       FieldSetter.setField(zeebeESImporter, ZeebeESImporter.class.getDeclaredField("zeebeClient"), getClient());
     } catch (NoSuchFieldException e) {
@@ -92,11 +101,8 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
 
   public OperateZeebeIntegrationTest(
     final String configFileClasspathLocation) {
-    brokerRule = new OperateZeebeBrokerRule(configFileClasspathLocation);
+    zeebeRule = new OperateZeebeRule(configFileClasspathLocation);
 
-    clientRule = new ZeebeClientRule(brokerRule);
-
-    chain = RuleChain.outerRule(brokerRule).around(clientRule);
   }
 
   public ZeebeClient getClient() {

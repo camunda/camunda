@@ -17,6 +17,7 @@ import java.util.LinkedHashMap;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.es.reader.WorkflowReader;
 import org.camunda.operate.rest.exception.NotFoundException;
+import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.zeebeimport.transformers.DeploymentEventTransformer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -28,7 +29,7 @@ import io.zeebe.client.api.commands.Workflows;
 @Component
 public class WorkflowCache {
 
-  private LinkedHashMap<String, WorkflowData> cache = new LinkedHashMap<>();
+  private LinkedHashMap<String, WorkflowEntity> cache = new LinkedHashMap<>();
 
   private static final int CACHE_MAX_SIZE = 100;
 
@@ -41,12 +42,27 @@ public class WorkflowCache {
   @Autowired
   private DeploymentEventTransformer deploymentEventTransformer;
 
+  public WorkflowEntity getWorkflow(String workflowId, String bpmnProcessId) {
+    final WorkflowEntity cachedWorkflowData = cache.get(workflowId);
+    if (cachedWorkflowData != null) {
+      return cachedWorkflowData;
+    } else {
+      final WorkflowEntity newValue = findWorkflow(workflowId, bpmnProcessId);
+      if (newValue != null) {
+        putToCache(workflowId, newValue);
+        return newValue;
+      } else {
+        return null;
+      }
+    }
+  }
+
   public String getWorkflowName(String workflowId, String bpmnProcessId) {
-    final WorkflowData cachedWorkflowData = cache.get(workflowId);
+    final WorkflowEntity cachedWorkflowData = cache.get(workflowId);
     if (cachedWorkflowData != null) {
       return cachedWorkflowData.getName();
     } else {
-      final WorkflowData newValue = findWorkflow(workflowId, bpmnProcessId);
+      final WorkflowEntity newValue = findWorkflow(workflowId, bpmnProcessId);
       if (newValue != null) {
         putToCache(workflowId, newValue);
         return newValue.getName();
@@ -57,11 +73,11 @@ public class WorkflowCache {
   }
 
   public Integer getWorkflowVersion(String workflowId, String bpmnProcessId) {
-    final WorkflowData cachedWorkflowData = cache.get(workflowId);
+    final WorkflowEntity cachedWorkflowData = cache.get(workflowId);
     if (cachedWorkflowData != null) {
       return cachedWorkflowData.getVersion();
     } else {
-      final WorkflowData newValue = findWorkflow(workflowId, bpmnProcessId);
+      final WorkflowEntity newValue = findWorkflow(workflowId, bpmnProcessId);
       if (newValue != null) {
         putToCache(workflowId, newValue);
         return newValue.getVersion();
@@ -71,28 +87,30 @@ public class WorkflowCache {
     }
   }
 
-  private WorkflowData findWorkflow(String workflowId, String bpmnProcessId) {
-    WorkflowData workflow = null;
+  private WorkflowEntity findWorkflow(String workflowId, String bpmnProcessId) {
+    WorkflowEntity workflow = null;
     try {
       //find in Operate
-      final WorkflowEntity workflowEntity = workflowReader.getWorkflow(workflowId);
-      workflow = new WorkflowData(Long.valueOf(workflowEntity.getId()), workflowEntity.getName(), workflowEntity.getVersion());
+      workflow = workflowReader.getWorkflow(workflowId);
     } catch (NotFoundException nfe) {
       //request from Zeebe
-      final Workflows workflows = zeebeClient.workflowClient().newWorkflowRequest().bpmnProcessId(bpmnProcessId).send().join();
+      final Workflows workflows = zeebeClient.newWorkflowRequest().bpmnProcessId(bpmnProcessId).send().join();
       for (Workflow workflowFromZeebe : workflows.getWorkflows()) {
         if (workflowFromZeebe.getWorkflowKey() == Long.valueOf(workflowId)) {
           //get BPMN XML
-          final WorkflowResource workflowResource = zeebeClient.workflowClient().newResourceRequest().workflowKey(workflowFromZeebe.getWorkflowKey()).send().join();
-          String workflowName = deploymentEventTransformer.extractWorkflowName(workflowResource.getBpmnXmlAsStream());
-          workflow = new WorkflowData(workflowFromZeebe.getWorkflowKey(), workflowName, workflowFromZeebe.getVersion());
+          final WorkflowResource workflowResource = zeebeClient.newResourceRequest().workflowKey(workflowFromZeebe.getWorkflowKey()).send().join();
+          workflow = deploymentEventTransformer.extractDiagramData(workflowResource.getBpmnXmlAsStream());
+          workflow.setKey(workflowFromZeebe.getWorkflowKey());
+          workflow.setVersion(workflowFromZeebe.getVersion());
+          workflow.setBpmnProcessId(workflowFromZeebe.getBpmnProcessId());
+          workflow.setId(workflowId);
         }
       }
     }
     return workflow;
   }
 
-  public void putToCache(String workflowId, WorkflowData workflow) {
+  public void putToCache(String workflowId, WorkflowEntity workflow) {
     if (cache.size() >= CACHE_MAX_SIZE) {
       //remove 1st element
       final Iterator<String> iterator = cache.keySet().iterator();
@@ -104,67 +122,8 @@ public class WorkflowCache {
     cache.put(workflowId, workflow);
   }
 
-  public static class WorkflowData {
-    private long key;
-    private String name;
-    private int version;
-
-    public WorkflowData() {
-    }
-
-    public WorkflowData(long key, String name, int version) {
-      this.key = key;
-      this.name = name;
-      this.version = version;
-    }
-
-    public long getKey() {
-      return key;
-    }
-
-    public void setKey(long key) {
-      this.key = key;
-    }
-
-    public String getName() {
-      return name;
-    }
-
-    public void setName(String name) {
-      this.name = name;
-    }
-
-    public int getVersion() {
-      return version;
-    }
-
-    public void setVersion(int version) {
-      this.version = version;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o)
-        return true;
-      if (o == null || getClass() != o.getClass())
-        return false;
-
-      WorkflowData that = (WorkflowData) o;
-
-      if (key != that.key)
-        return false;
-      if (version != that.version)
-        return false;
-      return name != null ? name.equals(that.name) : that.name == null;
-    }
-
-    @Override
-    public int hashCode() {
-      int result = (int) (key ^ (key >>> 32));
-      result = 31 * result + (name != null ? name.hashCode() : 0);
-      result = 31 * result + version;
-      return result;
-    }
+  public void clearCache() {
+    cache.clear();
   }
 
 }

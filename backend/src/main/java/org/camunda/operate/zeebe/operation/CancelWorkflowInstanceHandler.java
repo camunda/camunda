@@ -49,7 +49,7 @@ public class CancelWorkflowInstanceHandler extends AbstractOperationHandler impl
     }
 
     try {
-      zeebeClient.workflowClient().newCancelInstanceCommand(workflowInstance.getKey()).send().join();
+      zeebeClient.newCancelInstanceCommand(workflowInstance.getKey()).send().join();
       //mark operation as sent
       markAsSentOperationsOfCurrentType(workflowInstance);
     } catch (ClientException ex) {
