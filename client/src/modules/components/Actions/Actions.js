@@ -90,6 +90,7 @@ export default class Actions extends React.Component {
           operationState={this.state.operationState}
           operationType={this.state.operationType}
           selected={this.props.selected}
+          instance={this.props.instance}
         />
         {this.renderActionButtons()}
       </Styled.Actions>

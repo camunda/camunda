@@ -147,6 +147,7 @@ export default class Selection extends React.Component {
                   <Styled.IdCell>{instanceDetails.id}</Styled.IdCell>
                   <Styled.ActionStatusCell>
                     <Styled.InstanceActionStatus
+                      instance={instanceDetails}
                       operationState={this.state.operationState || state}
                       operationType={type}
                     />

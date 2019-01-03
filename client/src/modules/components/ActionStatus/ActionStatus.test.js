@@ -15,18 +15,31 @@ describe('ActionStatus', () => {
     it('should render a spinner', () => {
       // when
       node = shallow(
-        <ActionStatus operationState={OPERATION_STATE.SCHEDULED} />
+        <ActionStatus
+          operationState={OPERATION_STATE.SCHEDULED}
+          instance={{id: 'foo'}}
+        />
       );
       //then
       expect(node.find(Styled.ActionSpinner)).toExist();
 
       // when
-      node = shallow(<ActionStatus operationState={OPERATION_STATE.LOCKED} />);
+      node = shallow(
+        <ActionStatus
+          operationState={OPERATION_STATE.LOCKED}
+          instance={{id: 'foo'}}
+        />
+      );
       //then
       expect(node.find(Styled.ActionSpinner)).toExist();
 
       // when
-      node = shallow(<ActionStatus operationState={OPERATION_STATE.SENT} />);
+      node = shallow(
+        <ActionStatus
+          operationState={OPERATION_STATE.SENT}
+          instance={{id: 'foo'}}
+        />
+      );
       //then
       expect(node.find(Styled.ActionSpinner)).toExist();
     });
@@ -41,6 +54,7 @@ describe('ActionStatus', () => {
         <ActionStatus
           operationState={OPERATION_STATE.FAILED}
           operationType={OPERATION_TYPE.UPDATE_RETRIES}
+          instance={{id: 'foo'}}
         />
       );
 
@@ -57,6 +71,7 @@ describe('ActionStatus', () => {
         <ActionStatus
           operationState={OPERATION_STATE.FAILED}
           operationType={OPERATION_TYPE.CANCEL}
+          instance={{id: 'foo'}}
         />
       );
 
