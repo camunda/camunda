@@ -10,20 +10,22 @@ import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisOutcomeDto
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.ValidationHelper;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.NestedQueryBuilder;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,6 +37,7 @@ import java.util.Set;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_VERSION;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -45,16 +48,18 @@ public class BranchAnalysisReader {
 
   private final Logger logger = LoggerFactory.getLogger(BranchAnalysisReader.class);
 
-  @Autowired
-  private TransportClient esclient;
-  @Autowired
-  private ConfigurationService configurationService;
-
-  @Autowired
+  private RestHighLevelClient esClient;
   private ProcessDefinitionReader processDefinitionReader;
+  private ProcessQueryFilterEnhancer queryFilterEnhancer;
 
   @Autowired
-  private ProcessQueryFilterEnhancer queryFilterEnhancer;
+  public BranchAnalysisReader(RestHighLevelClient esClient,
+                              ProcessDefinitionReader processDefinitionReader,
+                              ProcessQueryFilterEnhancer queryFilterEnhancer) {
+    this.esClient = esClient;
+    this.processDefinitionReader = processDefinitionReader;
+    this.queryFilterEnhancer = queryFilterEnhancer;
+  }
 
   public BranchAnalysisDto branchAnalysis(String userId, BranchAnalysisQueryDto request) {
     ValidationHelper.validate(request);
@@ -152,15 +157,29 @@ public class BranchAnalysisReader {
   private long executeQuery(BranchAnalysisQueryDto request, BoolQueryBuilder query) {
     queryFilterEnhancer.addFilterToQuery(query, request.getFilter());
 
-    SearchResponse sr = esclient
-        .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE))
-        .setTypes(ElasticsearchConstants.PROC_INSTANCE_TYPE)
-        .setQuery(query)
-        .setFetchSource(false)
-        .setSize(0)
-        .get();
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(query)
+      .size(0)
+      .fetchSource(false);
+    SearchRequest searchRequest =
+      new SearchRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
+        .types(PROC_INSTANCE_TYPE)
+        .source(searchSourceBuilder);
 
-    return sr.getHits().getTotalHits();
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format(
+        "Was not able to perform branch analysis on process definition with key [%s] and version [%s}]",
+        request.getProcessDefinitionKey(),
+        request.getProcessDefinitionVersion()
+      );
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    return searchResponse.getHits().getTotalHits();
   }
 
   private List<FlowNode> fetchGatewayOutcomes(BpmnModelInstance bpmnModelInstance, String gatewayActivityId) {

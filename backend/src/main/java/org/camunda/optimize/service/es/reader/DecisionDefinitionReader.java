@@ -8,16 +8,18 @@ import org.camunda.optimize.service.es.schema.type.DecisionDefinitionType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
@@ -33,25 +35,28 @@ import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.get
 import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.DECISION_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.DecisionDefinitionType.DECISION_DEFINITION_VERSION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @Component
 public class DecisionDefinitionReader {
   private static final Logger logger = LoggerFactory.getLogger(DecisionDefinitionReader.class);
 
-  private final TransportClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
   private final SessionService sessionService;
+  private final RestHighLevelClient esClient;
 
-  public DecisionDefinitionReader(final TransportClient esClient,
-                                  final ConfigurationService configurationService,
-                                  final ObjectMapper objectMapper,
-                                  final SessionService sessionService) {
-    this.esClient = esClient;
+  @Autowired
+  public DecisionDefinitionReader(
+    final ConfigurationService configurationService,
+    final ObjectMapper objectMapper,
+    final SessionService sessionService,
+    RestHighLevelClient esClient) {
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;
     this.sessionService = sessionService;
+    this.esClient = esClient;
   }
 
   public List<DecisionDefinitionOptimizeDto> getDecisionDefinitionsAsService() {
@@ -62,7 +67,8 @@ public class DecisionDefinitionReader {
     return getFullyImportedDecisionDefinitions(null, withXml);
   }
 
-  public List<DecisionDefinitionOptimizeDto> getFullyImportedDecisionDefinitions(final String userId, final boolean withXml) {
+  public List<DecisionDefinitionOptimizeDto> getFullyImportedDecisionDefinitions(final String userId,
+                                                                                 final boolean withXml) {
     logger.debug("Fetching decision definitions");
     // the front-end needs the xml to work properly. Therefore, we only want to expose definitions
     // where the import is complete including the xml
@@ -70,13 +76,23 @@ public class DecisionDefinitionReader {
 
     String[] fieldsToExclude = withXml ? null : new String[]{DecisionDefinitionType.DECISION_DEFINITION_XML};
 
-    SearchResponse scrollResp = esClient
-      .prepareSearch(getOptimizeIndexAliasForType(DECISION_DEFINITION_TYPE))
-      .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
-      .setQuery(query)
-      .setFetchSource(null, fieldsToExclude)
-      .setSize(ElasticsearchConstants.LIST_FETCH_LIMIT)
-      .get();
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(query)
+      .size(LIST_FETCH_LIMIT)
+      .fetchSource(null, fieldsToExclude);
+    SearchRequest searchRequest =
+      new SearchRequest(getOptimizeIndexAliasForType(DECISION_DEFINITION_TYPE))
+        .types(DECISION_DEFINITION_TYPE)
+        .source(searchSourceBuilder)
+        .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+
+    SearchResponse scrollResp;
+    try {
+      scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      logger.error("Was not able to retrieve decision definitions!", e);
+      throw new OptimizeRuntimeException("Was not able to retrieve decision definitions!", e);
+    }
 
     List<DecisionDefinitionOptimizeDto> definitionsResult = ElasticsearchHelper.retrieveAllScrollResults(
       scrollResp,
@@ -103,13 +119,23 @@ public class DecisionDefinitionReader {
 
     String[] fieldsToExclude = new String[]{DecisionDefinitionType.DECISION_DEFINITION_XML};
 
-    SearchResponse scrollResp = esClient
-      .prepareSearch(getOptimizeIndexAliasForType(DECISION_DEFINITION_TYPE))
-      .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
-      .setQuery(query)
-      .setFetchSource(null, fieldsToExclude)
-      .setSize(ElasticsearchConstants.LIST_FETCH_LIMIT)
-      .get();
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(query)
+      .size(LIST_FETCH_LIMIT)
+      .fetchSource(null, fieldsToExclude);
+    SearchRequest searchRequest =
+      new SearchRequest(getOptimizeIndexAliasForType(DECISION_DEFINITION_TYPE))
+        .types(DECISION_DEFINITION_TYPE)
+        .source(searchSourceBuilder)
+        .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+
+    SearchResponse scrollResp;
+    try {
+      scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      logger.error("Was not able to retrieve decision definitions!", e);
+      throw new OptimizeRuntimeException("Was not able to retrieve decision definitions!", e);
+    }
 
     return ElasticsearchHelper.retrieveAllScrollResults(
       scrollResp,
@@ -155,11 +181,10 @@ public class DecisionDefinitionReader {
 
   private List<DecisionDefinitionOptimizeDto> filterAuthorizedDecisionDefinitions(final String userId,
                                                                                   final List<DecisionDefinitionOptimizeDto> decisionDefinitions) {
-    final List<DecisionDefinitionOptimizeDto> result = decisionDefinitions
+    return decisionDefinitions
       .stream()
       .filter(def -> isAuthorizedToSeeDecisionDefinition(userId, def))
       .collect(Collectors.toList());
-    return result;
   }
 
   private boolean isAuthorizedToSeeDecisionDefinition(final String userId,
@@ -178,35 +203,62 @@ public class DecisionDefinitionReader {
   private Optional<DecisionDefinitionOptimizeDto> getDecisionDefinition(final String decisionDefinitionKey,
                                                                         final String decisionDefinitionVersion) {
     String validVersion = convertToValidVersion(decisionDefinitionKey, decisionDefinitionVersion);
-    SearchResponse response = esClient.prepareSearch(
-      getOptimizeIndexAliasForType(DECISION_DEFINITION_TYPE))
-      .setQuery(
-        QueryBuilders.boolQuery()
-          .must(termQuery(DECISION_DEFINITION_KEY, decisionDefinitionKey))
-          .must(termQuery(DECISION_DEFINITION_VERSION, validVersion))
-      )
-      .setSize(1)
-      .get();
+    QueryBuilder query = QueryBuilders.boolQuery()
+      .must(termQuery(DECISION_DEFINITION_KEY, decisionDefinitionKey))
+      .must(termQuery(DECISION_DEFINITION_VERSION, validVersion));
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+    searchSourceBuilder.query(query);
+    searchSourceBuilder.size(1);
+    SearchRequest searchRequest =
+      new SearchRequest(getOptimizeIndexAliasForType(DECISION_DEFINITION_TYPE))
+        .source(searchSourceBuilder);
+
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format(
+        "Was not able to fetch decision definition with key [%s] and version [%s]",
+        decisionDefinitionKey,
+        decisionDefinitionVersion
+      );
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
 
     DecisionDefinitionOptimizeDto definitionOptimizeDto = null;
-    if (response.getHits().getTotalHits() > 0L) {
-      String responseAsString = response.getHits().getAt(0).getSourceAsString();
+    if (searchResponse.getHits().getTotalHits() > 0L) {
+      String responseAsString = searchResponse.getHits().getAt(0).getSourceAsString();
       definitionOptimizeDto = parseDecisionDefinition(responseAsString);
     }
     return Optional.ofNullable(definitionOptimizeDto);
   }
 
   private String getLatestVersionToKey(String key) {
-    SearchResponse response = esClient
-      .prepareSearch(getOptimizeIndexAliasForType(DECISION_DEFINITION_TYPE))
-      .setTypes(DECISION_DEFINITION_TYPE)
-      .setQuery(termQuery(DECISION_DEFINITION_KEY, key))
-      .addSort(DECISION_DEFINITION_VERSION, SortOrder.DESC)
-      .setSize(1)
-      .get();
+    logger.debug("Fetching latest decision definition for key [{}]", key);
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(termQuery(DECISION_DEFINITION_KEY, key))
+      .sort(DECISION_DEFINITION_VERSION, SortOrder.DESC)
+      .size(1);
+    SearchRequest searchRequest =
+      new SearchRequest(getOptimizeIndexAliasForType(DECISION_DEFINITION_TYPE))
+        .types(DECISION_DEFINITION_TYPE)
+        .source(searchSourceBuilder);
 
-    if (response.getHits().getHits().length == 1) {
-      Map<String, Object> sourceAsMap = response.getHits().getAt(0).getSourceAsMap();
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format(
+        "Was not able to fetch latest decision definition for key [%s]",
+        key
+      );
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    if (searchResponse.getHits().getHits().length == 1) {
+      Map<String, Object> sourceAsMap = searchResponse.getHits().getAt(0).getSourceAsMap();
       if (sourceAsMap.containsKey(DECISION_DEFINITION_VERSION)) {
         return sourceAsMap.get(DECISION_DEFINITION_VERSION).toString();
       }

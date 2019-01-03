@@ -2,11 +2,10 @@ package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,33 +15,38 @@ import java.io.IOException;
 import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_TYPE;
 
 @Component
 public class ImportIndexReader {
 
   private final Logger logger = LoggerFactory.getLogger(ImportIndexReader.class);
 
-  @Autowired
-  private TransportClient esclient;
 
-  @Autowired
+  private RestHighLevelClient esClient;
   private ObjectMapper objectMapper;
 
   @Autowired
-  private ConfigurationService configurationService;
+  public ImportIndexReader(RestHighLevelClient esClient, ObjectMapper objectMapper) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+  }
 
   public Optional<AllEntitiesBasedImportIndexDto> getImportIndex(String id) {
     logger.debug("Fetching import index of type [{}]", id);
+
+    GetRequest getRequest = new GetRequest(
+      getOptimizeIndexAliasForType(IMPORT_INDEX_TYPE),
+      IMPORT_INDEX_TYPE,
+      id
+    )
+      .realtime(false);
+
     GetResponse getResponse = null;
     try {
-      getResponse = esclient
-        .prepareGet(
-          getOptimizeIndexAliasForType(ElasticsearchConstants.IMPORT_INDEX_TYPE),
-          ElasticsearchConstants.IMPORT_INDEX_TYPE,
-          id)
-        .setRealtime(false)
-        .get();
-    } catch (Exception ignored) {}
+      getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
+    } catch (Exception ignored) {    }
+
 
     if (getResponse != null && getResponse.isExists()) {
       try {

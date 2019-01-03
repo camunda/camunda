@@ -5,13 +5,16 @@ import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,21 +32,36 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_
 public class DashboardReader {
   private static final Logger logger = LoggerFactory.getLogger(DashboardReader.class);
 
-  @Autowired
-  private TransportClient esclient;
-  @Autowired
+  private RestHighLevelClient esClient;
   private ConfigurationService configurationService;
-  @Autowired
   private ObjectMapper objectMapper;
+
+  @Autowired
+  public DashboardReader(RestHighLevelClient esClient,
+                         ConfigurationService configurationService,
+                         ObjectMapper objectMapper) {
+    this.esClient = esClient;
+    this.configurationService = configurationService;
+    this.objectMapper = objectMapper;
+  }
 
   public DashboardDefinitionDto getDashboard(String dashboardId) {
     logger.debug("Fetching dashboard with id [{}]", dashboardId);
-    GetResponse getResponse = esclient
-      .prepareGet(
-        getOptimizeIndexAliasForType(DASHBOARD_TYPE), DASHBOARD_TYPE, dashboardId
-      )
-      .setRealtime(false)
-      .get();
+    GetRequest getRequest = new GetRequest(
+      getOptimizeIndexAliasForType(DASHBOARD_TYPE),
+      DASHBOARD_TYPE,
+      dashboardId
+    )
+      .realtime(false);
+
+    GetResponse getResponse;
+    try {
+      getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format("Could not fetch dashboard with id [%s]", dashboardId);
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
 
     if (getResponse.isExists()) {
       String responseAsString = getResponse.getSourceAsString();
@@ -70,31 +88,50 @@ public class DashboardReader {
         ScoreMode.None
       ));
 
-    SearchResponse searchResponse = esclient
-      .prepareSearch(getOptimizeIndexAliasForType(DASHBOARD_TYPE))
-      .setTypes(DASHBOARD_TYPE)
-      .setQuery(getCombinedReportsBySimpleReportIdQuery)
-      .setSize(LIST_FETCH_LIMIT)
-      .get();
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+    searchSourceBuilder.query(getCombinedReportsBySimpleReportIdQuery);
+    searchSourceBuilder.size(LIST_FETCH_LIMIT);
+    SearchRequest searchRequest =
+      new SearchRequest(getOptimizeIndexAliasForType(DASHBOARD_TYPE))
+        .types(DASHBOARD_TYPE)
+        .source(searchSourceBuilder);
+
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format("Was not able to fetch dashboards for report with id [%s]", reportId);
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
 
     return ElasticsearchHelper.mapHits(searchResponse.getHits(), DashboardDefinitionDto.class, objectMapper);
   }
 
   public List<DashboardDefinitionDto> getAllDashboards() {
     logger.debug("Fetching all available dashboards");
-    SearchResponse scrollResp = esclient
-      .prepareSearch(getOptimizeIndexAliasForType(DASHBOARD_TYPE))
-      .setTypes(DASHBOARD_TYPE)
-      .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
-      .setQuery(QueryBuilders.matchAllQuery())
-      .setSize(LIST_FETCH_LIMIT)
-      .get();
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(QueryBuilders.matchAllQuery())
+      .size(LIST_FETCH_LIMIT);
+    SearchRequest searchRequest =
+      new SearchRequest(getOptimizeIndexAliasForType(DASHBOARD_TYPE))
+        .types(DASHBOARD_TYPE)
+        .source(searchSourceBuilder)
+        .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+
+    SearchResponse scrollResp;
+    try {
+      scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      logger.error("Was not able to retrieve dashboards!", e);
+      throw new OptimizeRuntimeException("Was not able to retrieve dashboards!", e);
+    }
 
     return ElasticsearchHelper.retrieveAllScrollResults(
       scrollResp,
       DashboardDefinitionDto.class,
       objectMapper,
-      esclient,
+      esClient,
       configurationService.getElasticsearchScrollTimeout()
     );
   }

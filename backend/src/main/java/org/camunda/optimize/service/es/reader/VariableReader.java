@@ -3,12 +3,14 @@ package org.camunda.optimize.service.es.reader;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.Client;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -22,11 +24,13 @@ import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,6 +42,7 @@ import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ST
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getAllVariableTypeFieldLabels;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameFieldLabel;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldLabel;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.prefixQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -52,17 +57,20 @@ public class VariableReader {
   private final Logger logger = LoggerFactory.getLogger(VariableReader.class);
 
   private static final String FILTER_FOR_NAME_AGGREGATION = "filterForName";
-  public static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
+  private static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
   private static final String NAMES_AGGREGATION = "names";
   private static final String VALUE_AGGREGATION = "values";
   private static final String STRING_VARIABLE_VALUE_NGRAM = "nGramField";
   private static final String STRING_VARIABLE_VALUE_LOWERCASE = "lowercaseField";
 
+  private RestHighLevelClient esClient;
+  private ConfigurationService configurationService;
 
   @Autowired
-  private TransportClient esclient;
-  @Autowired
-  private ConfigurationService configurationService;
+  public VariableReader(RestHighLevelClient esClient, ConfigurationService configurationService) {
+    this.esClient = esClient;
+    this.configurationService = configurationService;
+  }
 
   public List<VariableRetrievalDto> getVariables(String processDefinitionKey,
                                                  String processDefinitionVersion,
@@ -73,21 +81,34 @@ public class VariableReader {
 
     BoolQueryBuilder query = buildProcessDefinitionBaseQuery(processDefinitionKey, processDefinitionVersion);
 
-    SearchRequestBuilder requestBuilder =
-      esclient
-          .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE))
-          .setTypes(ElasticsearchConstants.PROC_INSTANCE_TYPE)
-          .setQuery(query);
-    addVariableAggregation(requestBuilder, namePrefix);
-    SearchResponse response = requestBuilder.get();
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(query)
+      .size(0);
+    SearchRequest searchRequest =
+      new SearchRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
+        .types(PROC_INSTANCE_TYPE)
+        .source(searchSourceBuilder);
 
 
-    Aggregations aggregations = response.getAggregations();
+    addVariableAggregation(searchSourceBuilder, namePrefix);
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format(
+        "Was not able to fetch variables process definition with key [%s] and version [%s]",
+        processDefinitionKey,
+        processDefinitionVersion
+      );
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+    Aggregations aggregations = searchResponse.getAggregations();
     return extractVariables(aggregations);
   }
 
-  public BoolQueryBuilder buildProcessDefinitionBaseQuery(String processDefinitionKey,
-                                                          String processDefinitionVersion) {
+  private BoolQueryBuilder buildProcessDefinitionBaseQuery(String processDefinitionKey,
+                                                           String processDefinitionVersion) {
     BoolQueryBuilder query;
     query =
       QueryBuilders.boolQuery()
@@ -122,7 +143,7 @@ public class VariableReader {
     return responseDtoList;
   }
 
-  private void addVariableAggregation(SearchRequestBuilder requestBuilder, String namePrefix) {
+  private void addVariableAggregation(SearchSourceBuilder requestBuilder, String namePrefix) {
     String securedNamePrefix = namePrefix == null ? "" : namePrefix;
     for (String variableFieldLabel : getAllVariableTypeFieldLabels()) {
       FilterAggregationBuilder filterAllVariablesWithCertainPrefixInName = filter(
@@ -136,7 +157,7 @@ public class VariableReader {
       NestedAggregationBuilder checkoutVariables = nested(variableFieldLabel, variableFieldLabel);
 
       requestBuilder
-        .addAggregation(
+        .aggregation(
           checkoutVariables
             .subAggregation(
               filterAllVariablesWithCertainPrefixInName
@@ -161,15 +182,29 @@ public class VariableReader {
 
     BoolQueryBuilder query = buildProcessDefinitionBaseQuery(processDefinitionKey, processDefinitionVersion);
 
-    SearchResponse response =
-      esclient
-          .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE))
-          .setTypes(ElasticsearchConstants.PROC_INSTANCE_TYPE)
-          .setQuery(query)
-          .addAggregation(getVariableValueAggregation(name, variableFieldLabel, valueFilter))
-          .get();
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(query)
+      .aggregation(getVariableValueAggregation(name, variableFieldLabel, valueFilter))
+      .size(0);
+    SearchRequest searchRequest =
+      new SearchRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
+        .types(PROC_INSTANCE_TYPE)
+        .source(searchSourceBuilder);
 
-    Aggregations aggregations = response.getAggregations();
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format(
+        "Was not able to fetch variable values for variable [%s] and type [%s]",
+        name,
+        type
+      );
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    Aggregations aggregations = searchResponse.getAggregations();
     return extractVariableValues(aggregations, variableFieldLabel);
   }
 

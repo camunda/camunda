@@ -7,28 +7,34 @@ import org.camunda.optimize.service.es.schema.type.DashboardShareType;
 import org.camunda.optimize.service.es.schema.type.ReportShareType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.Client;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_SHARE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.REPORT_SHARE_TYPE;
 
 
 @Component
@@ -36,29 +42,43 @@ public class SharingReader {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  @Autowired
-  private TransportClient esclient;
-  @Autowired
+  private RestHighLevelClient esClient;
   private ConfigurationService configurationService;
-  @Autowired
   private ObjectMapper objectMapper;
+
+  @Autowired
+  public SharingReader(RestHighLevelClient esClient, ConfigurationService configurationService,
+                       ObjectMapper objectMapper) {
+    this.esClient = esClient;
+    this.configurationService = configurationService;
+    this.objectMapper = objectMapper;
+  }
 
   private Optional<ReportShareDto> findReportShareByQuery(QueryBuilder query) {
     Optional<ReportShareDto> result = Optional.empty();
 
-    SearchResponse scrollResp = esclient
-      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.REPORT_SHARE_TYPE))
-      .setTypes(ElasticsearchConstants.REPORT_SHARE_TYPE)
-      .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
-      .setQuery(query)
-      .setSize(20)
-      .get();
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+    searchSourceBuilder.query(query);
+    searchSourceBuilder.size(1);
+    SearchRequest searchRequest =
+      new SearchRequest(getOptimizeIndexAliasForType(REPORT_SHARE_TYPE))
+        .types(REPORT_SHARE_TYPE)
+        .source(searchSourceBuilder);
 
-    if (scrollResp.getHits().getTotalHits() != 0) {
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = "Was not able to fetch report share.";
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    if (searchResponse.getHits().getTotalHits() != 0) {
       try {
         result = Optional.of(
           objectMapper.readValue(
-            scrollResp.getHits().getAt(0).getSourceAsString(),
+            searchResponse.getHits().getAt(0).getSourceAsString(),
               ReportShareDto.class
           )
         );
@@ -69,17 +89,24 @@ public class SharingReader {
     return result;
   }
 
-  public Optional<ReportShareDto> findReportShare(String shareId) {
+  public Optional<ReportShareDto> getReportShare(String shareId) {
     Optional<ReportShareDto> result = Optional.empty();
-    logger.debug("Fetching share with id [{}]", shareId);
-    GetResponse getResponse = esclient
-      .prepareGet(
-          getOptimizeIndexAliasForType(ElasticsearchConstants.REPORT_SHARE_TYPE),
-          ElasticsearchConstants.REPORT_SHARE_TYPE,
-          shareId
-      )
-      .setRealtime(false)
-      .get();
+    logger.debug("Fetching report share with id [{}]", shareId);
+    GetRequest getRequest = new GetRequest(
+      getOptimizeIndexAliasForType(REPORT_SHARE_TYPE),
+      REPORT_SHARE_TYPE,
+      shareId
+    )
+      .realtime(false);
+
+    GetResponse getResponse;
+    try {
+      getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format("Could not fetch report share with id [%s]", shareId);
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
 
     if (getResponse.isExists()) {
       try {
@@ -95,15 +122,22 @@ public class SharingReader {
 
   public Optional<DashboardShareDto> findDashboardShare(String shareId) {
     Optional<DashboardShareDto> result = Optional.empty();
-    logger.debug("Fetching share with id [{}]", shareId);
-    GetResponse getResponse = esclient
-      .prepareGet(
-          getOptimizeIndexAliasForType(ElasticsearchConstants.DASHBOARD_SHARE_TYPE),
-          ElasticsearchConstants.DASHBOARD_SHARE_TYPE,
-          shareId
-      )
-      .setRealtime(false)
-      .get();
+    logger.debug("Fetching dashboard share with id [{}]", shareId);
+    GetRequest getRequest = new GetRequest(
+      getOptimizeIndexAliasForType(DASHBOARD_SHARE_TYPE),
+      DASHBOARD_SHARE_TYPE,
+      shareId
+    )
+      .realtime(false);
+
+    GetResponse getResponse;
+    try {
+      getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format("Could not fetch dashboard share with id [%s]", shareId);
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
 
     if (getResponse.isExists()) {
       try {
@@ -127,22 +161,16 @@ public class SharingReader {
 
   public Optional<DashboardShareDto> findShareForDashboard(String dashboardId) {
     logger.debug("Fetching share for resource [{}]", dashboardId);
-    BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-    boolQueryBuilder = boolQueryBuilder
-        .must(QueryBuilders.termQuery(DashboardShareType.DASHBOARD_ID, dashboardId));
 
+    SearchResponse searchResponse = performSearchShareForDashboardIdRequest(dashboardId);
+    return extractDashboardShareFromResponse(dashboardId, searchResponse);
+  }
+
+  private Optional<DashboardShareDto> extractDashboardShareFromResponse(String dashboardId,
+                                                                        SearchResponse searchResponse) {
     Optional<DashboardShareDto> result = Optional.empty();
-
-    SearchResponse scrollResp = esclient
-        .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.DASHBOARD_SHARE_TYPE))
-        .setTypes(ElasticsearchConstants.DASHBOARD_SHARE_TYPE)
-        .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
-        .setQuery(boolQueryBuilder)
-        .setSize(20)
-        .get();
-
-    if (scrollResp.getHits().getTotalHits() != 0) {
-      String firstHitSource = scrollResp.getHits().getAt(0).getSourceAsString();
+    if (searchResponse.getHits().getTotalHits() != 0) {
+      String firstHitSource = searchResponse.getHits().getAt(0).getSourceAsString();
       try {
         result = Optional.of(
             objectMapper.readValue(firstHitSource, DashboardShareDto.class)
@@ -156,31 +184,59 @@ public class SharingReader {
     return result;
   }
 
-  private Map<String, ReportShareDto> findReportSharesByQuery(QueryBuilder query) {
-    Map<String, ReportShareDto> result = new HashMap<>();
-    SearchResponse scrollResp = esclient
-        .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.REPORT_SHARE_TYPE))
-        .setTypes(ElasticsearchConstants.REPORT_SHARE_TYPE)
-        .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
-        .setQuery(query)
-        .setSize(20)
-        .get();
+  private SearchResponse performSearchShareForDashboardIdRequest(String dashboardId) {
+    BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+    boolQueryBuilder = boolQueryBuilder
+        .must(QueryBuilders.termQuery(DashboardShareType.DASHBOARD_ID, dashboardId));
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+    searchSourceBuilder.query(boolQueryBuilder);
+    searchSourceBuilder.size(1);
+    SearchRequest searchRequest =
+      new SearchRequest(getOptimizeIndexAliasForType(DASHBOARD_SHARE_TYPE))
+        .types(DASHBOARD_SHARE_TYPE)
+        .source(searchSourceBuilder);
 
-    do {
-      for (SearchHit hit : scrollResp.getHits().getHits()) {
-        try {
-          ReportShareDto reportShareDto = objectMapper.readValue(hit.getSourceAsString(), ReportShareDto.class);
-          result.put(reportShareDto.getReportId(), reportShareDto);
-        } catch (IOException e) {
-          logger.error("cant't map sharing hit", e);
-        }
-      }
-      scrollResp = esclient
-          .prepareSearchScroll(scrollResp.getScrollId())
-          .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
-          .get();
-    } while (scrollResp.getHits().getHits().length != 0);
-    return result;
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format("Was not able to fetch share for dashboard with id [%s]", dashboardId);
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+    return searchResponse;
+  }
+
+  private Map<String, ReportShareDto> findReportSharesByQuery(QueryBuilder query) {
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(query)
+      .size(LIST_FETCH_LIMIT);
+    SearchRequest searchRequest =
+      new SearchRequest(getOptimizeIndexAliasForType(REPORT_SHARE_TYPE))
+        .types(REPORT_SHARE_TYPE)
+        .source(searchSourceBuilder)
+        .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+
+    SearchResponse scrollResp;
+    try {
+      scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      logger.error("Was not able to retrieve report shares!", e);
+      throw new OptimizeRuntimeException("Was not able to retrieve report shares!", e);
+    }
+
+    List<ReportShareDto> reportShareDtos = ElasticsearchHelper.retrieveAllScrollResults(
+      scrollResp,
+      ReportShareDto.class,
+      objectMapper,
+      esClient,
+      configurationService.getElasticsearchScrollTimeout()
+    );
+
+    return reportShareDtos.stream().collect(Collectors.toMap(
+      ReportShareDto::getReportId,
+      Function.identity()
+    ));
   }
 
   public Map<String, ReportShareDto> findShareForReports(List<String> reports) {
@@ -198,30 +254,34 @@ public class SharingReader {
   }
 
   private Map<String, DashboardShareDto> findDashboardSharesByQuery(BoolQueryBuilder query) {
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(query)
+      .size(LIST_FETCH_LIMIT);
+    SearchRequest searchRequest =
+      new SearchRequest(getOptimizeIndexAliasForType(DASHBOARD_SHARE_TYPE))
+        .types(DASHBOARD_SHARE_TYPE)
+        .source(searchSourceBuilder)
+        .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 
-    Map<String, DashboardShareDto> result = new HashMap<>();
-    SearchResponse scrollResp = esclient
-      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.DASHBOARD_SHARE_TYPE))
-      .setTypes(ElasticsearchConstants.DASHBOARD_SHARE_TYPE)
-      .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
-      .setQuery(query)
-      .setSize(20)
-      .get();
+    SearchResponse scrollResp;
+    try {
+      scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      logger.error("Was not able to retrieve dashboard shares!", e);
+      throw new OptimizeRuntimeException("Was not able to retrieve dashboard shares!", e);
+    }
 
-    do {
-      for (SearchHit hit : scrollResp.getHits().getHits()) {
-        try {
-          DashboardShareDto dashboardShareDto = objectMapper.readValue(hit.getSourceAsString(), DashboardShareDto.class);
-          result.put(dashboardShareDto.getDashboardId(), dashboardShareDto);
-        } catch (IOException e) {
-          logger.error("cant't map sharing hit", e);
-        }
-      }
-      scrollResp = esclient
-        .prepareSearchScroll(scrollResp.getScrollId())
-        .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
-        .get();
-    } while (scrollResp.getHits().getHits().length != 0);
-    return result;
+    List<DashboardShareDto> dashboardShareDtos = ElasticsearchHelper.retrieveAllScrollResults(
+      scrollResp,
+      DashboardShareDto.class,
+      objectMapper,
+      esClient,
+      configurationService.getElasticsearchScrollTimeout()
+    );
+
+    return dashboardShareDtos.stream().collect(Collectors.toMap(
+      DashboardShareDto::getDashboardId,
+      Function.identity()
+    ));
   }
 }

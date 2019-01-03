@@ -3,7 +3,9 @@ package org.camunda.optimize.service.es.reader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.Client;
+import org.elasticsearch.action.search.SearchScrollRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -25,23 +27,31 @@ public class ElasticsearchHelper {
   public static <T> List<T> retrieveAllScrollResults(final SearchResponse initialScrollResponse,
                                                      final Class<T> itemClass,
                                                      final ObjectMapper objectMapper,
-                                                     final Client esclient,
+                                                     final RestHighLevelClient esclient,
                                                      final Integer scrollingTimeout) {
     final List<T> results = new ArrayList<>();
 
     SearchResponse currentScrollResp = initialScrollResponse;
-    do {
+    while (currentScrollResp != null && currentScrollResp.getHits().getHits().length != 0) {
       results.addAll(mapHits(currentScrollResp.getHits(), itemClass, objectMapper));
 
       if (currentScrollResp.getHits().getTotalHits() > results.size()) {
-        currentScrollResp = esclient
-          .prepareSearchScroll(currentScrollResp.getScrollId())
-          .setScroll(new TimeValue(scrollingTimeout))
-          .get();
+        SearchScrollRequest scrollRequest = new SearchScrollRequest(currentScrollResp.getScrollId());
+        scrollRequest.scroll(TimeValue.timeValueSeconds(scrollingTimeout));
+        try {
+          currentScrollResp = esclient.scroll(scrollRequest, RequestOptions.DEFAULT);
+        } catch (IOException e) {
+          String reason = String.format(
+            "Could not scroll through entries for class [%s].",
+            itemClass.getSimpleName()
+          );
+          logger.error(reason, e);
+          throw new OptimizeRuntimeException(reason, e);
+        }
       } else {
         currentScrollResp = null;
       }
-    } while (currentScrollResp != null && currentScrollResp.getHits().getHits().length != 0);
+    }
 
     return results;
   }

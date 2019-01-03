@@ -3,12 +3,10 @@ package org.camunda.optimize.service.es.reader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
@@ -27,12 +25,15 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_TY
 public class MetadataReader {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  @Autowired
-  private TransportClient esclient;
-  @Autowired
-  private ConfigurationService configurationService;
-  @Autowired
+  private RestHighLevelClient esClient;
   private ObjectMapper objectMapper;
+
+  @Autowired
+  public MetadataReader(RestHighLevelClient esClient,
+                        ObjectMapper objectMapper) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+  }
 
   public Optional<MetadataDto> readMetadata() {
     Optional<MetadataDto> result = Optional.empty();
@@ -44,7 +45,13 @@ public class MetadataReader {
     searchRequest.types(METADATA_TYPE);
     searchRequest.source(searchSourceBuilder);
 
-    SearchResponse searchResponse = esclient.search(searchRequest).actionGet();
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      logger.error("Was not able to retrieve collections!", e);
+      throw new OptimizeRuntimeException("Was not able to retrieve collections!", e);
+    }
 
     long totalHits = searchResponse.getHits().getTotalHits();
     if (totalHits == 1) {

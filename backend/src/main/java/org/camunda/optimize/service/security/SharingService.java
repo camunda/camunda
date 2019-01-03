@@ -148,7 +148,7 @@ public class SharingService {
   }
 
   public ReportResultDto evaluateReportShare(String shareId) {
-    Optional<ReportShareDto> optionalReportShare = sharingReader.findReportShare(shareId);
+    Optional<ReportShareDto> optionalReportShare = sharingReader.getReportShare(shareId);
 
     return optionalReportShare
       .map(this::constructReportShare)

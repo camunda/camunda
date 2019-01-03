@@ -3,10 +3,10 @@ package org.camunda.optimize.service.es.reader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.util.EsHelper;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,27 +23,28 @@ public class TimestampBasedImportIndexReader {
 
   private final Logger logger = LoggerFactory.getLogger(TimestampBasedImportIndexReader.class);
 
-  @Autowired
-  private TransportClient esclient;
-
-  @Autowired
-  private ConfigurationService configurationService;
-
-  @Autowired
+  private RestHighLevelClient esClient;
   private ObjectMapper objectMapper;
+
+  @Autowired
+  public TimestampBasedImportIndexReader(RestHighLevelClient esClient, ObjectMapper objectMapper) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+  }
 
   public Optional<TimestampBasedImportIndexDto> getImportIndex(String typeIndexComesFrom, String engineAlias) {
     logger.debug("Fetching definition based import index of type '{}'", typeIndexComesFrom);
-    TimestampBasedImportIndexDto dto;
+
     GetResponse getResponse = null;
+    TimestampBasedImportIndexDto dto;
     try {
-      getResponse = esclient
-        .prepareGet(
-          getOptimizeIndexAliasForType(TIMESTAMP_BASED_IMPORT_INDEX_TYPE),
-          TIMESTAMP_BASED_IMPORT_INDEX_TYPE,
-          EsHelper.constructKey(typeIndexComesFrom, engineAlias))
-        .setFetchSource(true)
-        .get();
+      GetRequest getRequest = new GetRequest(
+        getOptimizeIndexAliasForType(TIMESTAMP_BASED_IMPORT_INDEX_TYPE),
+        TIMESTAMP_BASED_IMPORT_INDEX_TYPE,
+        EsHelper.constructKey(typeIndexComesFrom, engineAlias)
+      )
+        .realtime(false);
+      getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
     } catch (Exception ignored) {}
 
     if (getResponse != null && getResponse.isExists()) {
@@ -57,10 +58,10 @@ public class TimestampBasedImportIndexReader {
     } else {
       logger.debug(
         "Was not able to retrieve definition based import index from [{}] " +
-        "for type [{}] and engine [{}] from elasticsearch.",
-          getOptimizeIndexAliasForType(TIMESTAMP_BASED_IMPORT_INDEX_TYPE),
-          typeIndexComesFrom,
-          engineAlias
+          "for type [{}] and engine [{}] from elasticsearch.",
+        getOptimizeIndexAliasForType(TIMESTAMP_BASED_IMPORT_INDEX_TYPE),
+        typeIndexComesFrom,
+        engineAlias
       );
       return Optional.empty();
     }

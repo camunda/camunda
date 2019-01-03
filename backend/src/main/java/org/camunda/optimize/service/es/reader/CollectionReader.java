@@ -8,13 +8,17 @@ import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefini
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.Client;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,20 +45,20 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_
 
 @Component
 public class CollectionReader {
-  private static final Logger logger = LoggerFactory.getLogger(CollectionReader.class);
   public static final String EVERYTHING_ELSE_COLLECTION_ID = "everythingElse";
   public static final String EVERYTHING_ELSE_COLLECTION_NAME = "Everything Else";
-
-  private final TransportClient esclient;
+  private static final Logger logger = LoggerFactory.getLogger(CollectionReader.class);
+  private final RestHighLevelClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
   private final ReportReader reportReader;
 
   @Autowired
-  public CollectionReader(final TransportClient esclient, final ConfigurationService configurationService,
+  public CollectionReader(RestHighLevelClient esClient,
+                          final ConfigurationService configurationService,
                           final ObjectMapper objectMapper,
                           final ReportReader reportReader) {
-    this.esclient = esclient;
+    this.esClient = esClient;
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;
     this.reportReader = reportReader;
@@ -62,12 +66,21 @@ public class CollectionReader {
 
   public SimpleCollectionDefinitionDto getCollection(String collectionId) {
     logger.debug("Fetching collection with id [{}]", collectionId);
-    GetResponse getResponse = esclient
-      .prepareGet(
-        getOptimizeIndexAliasForType(COLLECTION_TYPE), COLLECTION_TYPE, collectionId
-      )
-      .setRealtime(false)
-      .get();
+    GetRequest getRequest = new GetRequest(
+      getOptimizeIndexAliasForType(COLLECTION_TYPE),
+      COLLECTION_TYPE,
+      collectionId
+    )
+      .realtime(false);
+
+    GetResponse getResponse;
+    try {
+      getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format("Could not fetch collection with id [%s]", collectionId);
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
 
     if (getResponse.isExists()) {
       String responseAsString = getResponse.getSourceAsString();
@@ -168,20 +181,30 @@ public class CollectionReader {
 
   private List<SimpleCollectionDefinitionDto> getAllCollections() {
     logger.debug("Fetching all available collections");
-    SearchResponse scrollResp = esclient
-      .prepareSearch(getOptimizeIndexAliasForType(COLLECTION_TYPE))
-      .setTypes(COLLECTION_TYPE)
-      .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
-      .setQuery(QueryBuilders.matchAllQuery())
-      .addSort(NAME, SortOrder.ASC)
-      .setSize(LIST_FETCH_LIMIT)
-      .get();
+
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(QueryBuilders.matchAllQuery())
+      .sort(NAME, SortOrder.ASC)
+      .size(LIST_FETCH_LIMIT);
+    SearchRequest searchRequest =
+      new SearchRequest(getOptimizeIndexAliasForType(COLLECTION_TYPE))
+        .types(COLLECTION_TYPE)
+        .source(searchSourceBuilder)
+        .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+
+    SearchResponse scrollResp;
+    try {
+      scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      logger.error("Was not able to retrieve collections!", e);
+      throw new OptimizeRuntimeException("Was not able to retrieve collections!", e);
+    }
 
     return ElasticsearchHelper.retrieveAllScrollResults(
       scrollResp,
       SimpleCollectionDefinitionDto.class,
       objectMapper,
-      esclient,
+      esClient,
       configurationService.getElasticsearchScrollTimeout()
     );
   }
@@ -189,19 +212,28 @@ public class CollectionReader {
   public List<SimpleCollectionDefinitionDto> findFirstCollectionsForReport(String reportId) {
     logger.debug("Fetching collections using report with id {}", reportId);
 
-    final QueryBuilder getCombinedReportsBySimpleReportIdQuery = QueryBuilders.boolQuery()
+    final QueryBuilder getCollectionByReportIdQuery = QueryBuilders.boolQuery()
       .filter(QueryBuilders.nestedQuery(
         DATA,
         QueryBuilders.termQuery("data.entities", reportId),
         ScoreMode.None
       ));
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(getCollectionByReportIdQuery)
+      .size(LIST_FETCH_LIMIT);
+    SearchRequest searchRequest =
+      new SearchRequest(getOptimizeIndexAliasForType(COLLECTION_TYPE))
+        .types(COLLECTION_TYPE)
+        .source(searchSourceBuilder);
 
-    SearchResponse searchResponse = esclient
-      .prepareSearch(getOptimizeIndexAliasForType(COLLECTION_TYPE))
-      .setTypes(COLLECTION_TYPE)
-      .setQuery(getCombinedReportsBySimpleReportIdQuery)
-      .setSize(LIST_FETCH_LIMIT)
-      .get();
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format("Was not able to fetch collections for report with id [%s]", reportId);
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
 
     return ElasticsearchHelper.mapHits(searchResponse.getHits(), SimpleCollectionDefinitionDto.class, objectMapper);
   }

@@ -10,13 +10,14 @@ import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,23 +36,27 @@ import java.util.stream.Collectors;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_VERSION;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @Component
 public class ProcessDefinitionReader {
   private final Logger logger = LoggerFactory.getLogger(ProcessDefinitionReader.class);
 
-  @Autowired
-  private TransportClient esclient;
-
-  @Autowired
+  private RestHighLevelClient esClient;
   private ConfigurationService configurationService;
-
-  @Autowired
   private ObjectMapper objectMapper;
+  private SessionService sessionService;
 
   @Autowired
-  private SessionService sessionService;
+  public ProcessDefinitionReader(RestHighLevelClient esClient, ConfigurationService configurationService,
+                                 ObjectMapper objectMapper, SessionService sessionService) {
+    this.esClient = esClient;
+    this.configurationService = configurationService;
+    this.objectMapper = objectMapper;
+    this.sessionService = sessionService;
+  }
 
   public List<ProcessDefinitionOptimizeDto> getProcessDefinitionsAsService() {
     return this.getProcessDefinitions(null, false);
@@ -69,19 +74,29 @@ public class ProcessDefinitionReader {
 
     String[] fieldsToExclude = withXml ? null : new String[]{ProcessDefinitionType.PROCESS_DEFINITION_XML};
 
-    SearchResponse scrollResp = esclient
-      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_DEF_TYPE))
-      .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
-      .setQuery(query)
-      .setFetchSource(null, fieldsToExclude)
-      .setSize(ElasticsearchConstants.LIST_FETCH_LIMIT)
-      .get();
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(query)
+      .size(LIST_FETCH_LIMIT)
+      .fetchSource(null, fieldsToExclude);
+    SearchRequest searchRequest =
+      new SearchRequest(getOptimizeIndexAliasForType(PROC_DEF_TYPE))
+        .types(PROC_DEF_TYPE)
+        .source(searchSourceBuilder)
+        .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+
+    SearchResponse scrollResp;
+    try {
+      scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      logger.error("Was not able to retrieve process definitions!", e);
+      throw new OptimizeRuntimeException("Was not able to retrieve process definitions!", e);
+    }
 
     List<ProcessDefinitionOptimizeDto> definitionsResult = ElasticsearchHelper.retrieveAllScrollResults(
       scrollResp,
       ProcessDefinitionOptimizeDto.class,
       objectMapper,
-      esclient,
+      esClient,
       configurationService.getElasticsearchScrollTimeout()
     );
 
@@ -162,19 +177,33 @@ public class ProcessDefinitionReader {
     }
 
     processDefinitionVersion = convertToValidVersion(processDefinitionKey, processDefinitionVersion);
-    SearchResponse response = esclient.prepareSearch(
-      getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_DEF_TYPE))
-      .setQuery(
-        QueryBuilders.boolQuery()
-          .must(termQuery(PROCESS_DEFINITION_KEY, processDefinitionKey))
-          .must(termQuery(PROCESS_DEFINITION_VERSION, processDefinitionVersion))
-      )
-      .setSize(1)
-      .get();
+    QueryBuilder query = QueryBuilders.boolQuery()
+      .must(termQuery(PROCESS_DEFINITION_KEY, processDefinitionKey))
+      .must(termQuery(PROCESS_DEFINITION_VERSION, processDefinitionVersion));
+
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+    searchSourceBuilder.query(query);
+    searchSourceBuilder.size(1);
+    SearchRequest searchRequest =
+      new SearchRequest(getOptimizeIndexAliasForType(PROC_DEF_TYPE))
+        .source(searchSourceBuilder);
+
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format(
+        "Was not able to fetch process definition with key [%s] and version [%s]",
+        processDefinitionKey,
+        processDefinitionVersion
+      );
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
 
     ProcessDefinitionOptimizeDto xml = null;
-    if (response.getHits().getTotalHits() > 0L) {
-      String responseAsString = response.getHits().getAt(0).getSourceAsString();
+    if (searchResponse.getHits().getTotalHits() > 0L) {
+      String responseAsString = searchResponse.getHits().getAt(0).getSourceAsString();
       try {
         xml = objectMapper.readValue(responseAsString, ProcessDefinitionOptimizeDto.class);
       } catch (IOException e) {
@@ -191,16 +220,30 @@ public class ProcessDefinitionReader {
   }
 
   private String getLatestVersionToKey(String key) {
-    SearchResponse response = esclient
-      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_DEF_TYPE))
-      .setTypes(ElasticsearchConstants.PROC_DEF_TYPE)
-      .setQuery(termQuery(PROCESS_DEFINITION_KEY, key))
-      .addSort(PROCESS_DEFINITION_VERSION, SortOrder.DESC)
-      .setSize(1)
-      .get();
+    logger.debug("Fetching latest process definition for key [{}]", key);
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(termQuery(PROCESS_DEFINITION_KEY, key))
+      .sort(PROCESS_DEFINITION_VERSION, SortOrder.DESC)
+      .size(1);
+    SearchRequest searchRequest =
+      new SearchRequest(getOptimizeIndexAliasForType(PROC_DEF_TYPE))
+        .types(PROC_DEF_TYPE)
+        .source(searchSourceBuilder);
 
-    if (response.getHits().getHits().length == 1) {
-      Map<String, Object> sourceAsMap = response.getHits().getAt(0).getSourceAsMap();
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format(
+        "Was not able to fetch latest decision definition for key [%s]",
+        key
+      );
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    if (searchResponse.getHits().getHits().length == 1) {
+      Map<String, Object> sourceAsMap = searchResponse.getHits().getAt(0).getSourceAsMap();
       if (sourceAsMap.containsKey(PROCESS_DEFINITION_VERSION)) {
         return sourceAsMap.get(PROCESS_DEFINITION_VERSION).toString();
       }
