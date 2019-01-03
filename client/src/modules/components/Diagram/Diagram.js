@@ -6,10 +6,7 @@ import {themed} from 'modules/theme';
 import {
   ACTIVITY_STATE,
   FLOW_NODE_STATE_OVERLAY_ID,
-  ACTIVE_STATISTICS_OVERLAY_ID,
-  INCIDENTS_STATISTICS_OVERLAY_ID,
-  CANCELED_STATISTICS_OVERLAY_ID,
-  COMPLETED_STATISTICS_OVERLAY_ID
+  STATISTICS_OVERLAY_ID
 } from 'modules/constants';
 import incidentIcon from 'modules/components/Icon/diagram-badge-single-instance-incident.svg';
 import activeIcon from 'modules/components/Icon/diagram-badge-single-instance-active.svg';
@@ -19,11 +16,17 @@ import canceledLightIcon from 'modules/components/Icon/diagram-badge-single-inst
 import canceledDarkIcon from 'modules/components/Icon/diagram-badge-single-instance-canceled-dark.svg';
 import * as Styled from './styled';
 import DiagramControls from './DiagramControls';
-import {getDiagramColors, getOverlaysByState} from './service';
+import {getDiagramColors} from './service';
 
 const iconMap = {
-  [ACTIVITY_STATE.INCIDENT]: {light: incidentIcon, dark: incidentIcon},
-  [ACTIVITY_STATE.ACTIVE]: {light: activeIcon, dark: activeIcon},
+  [ACTIVITY_STATE.INCIDENT]: {
+    light: incidentIcon,
+    dark: incidentIcon
+  },
+  [ACTIVITY_STATE.ACTIVE]: {
+    light: activeIcon,
+    dark: activeIcon
+  },
   [ACTIVITY_STATE.COMPLETED]: {
     light: completedLightIcon,
     dark: completedDarkIcon
@@ -50,7 +53,7 @@ class Diagram extends React.Component {
         state: PropTypes.oneOf(Object.keys(ACTIVITY_STATE)).isRequired
       })
     ),
-    flowNodesStatisticsOverlay: PropTypes.arrayOf(
+    flowNodesStatistics: PropTypes.arrayOf(
       PropTypes.shape({
         activityId: PropTypes.string.isRequired,
         active: PropTypes.number,
@@ -80,7 +83,7 @@ class Diagram extends React.Component {
     definitions: prevDefinitions,
     selectedFlowNode,
     flowNodeStateOverlays: prevFlowNodeStateOverlays,
-    flowNodesStatisticsOverlay: prevflowNodesStatisticsOverlay
+    flowNodesStatistics: prevflowNodesStatistics
   }) {
     const hasNewDefinitions = this.props.definitions !== prevDefinitions;
     const hasNewTheme = this.props.theme !== prevTheme;
@@ -109,20 +112,9 @@ class Diagram extends React.Component {
     }
 
     // Clear overlays for statistics
-    if (
-      !isEqual(
-        prevflowNodesStatisticsOverlay,
-        this.props.flowNodesStatisticsOverlay
-      )
-    ) {
-      this.clearOverlaysByType(ACTIVE_STATISTICS_OVERLAY_ID);
-      this.clearOverlaysByType(INCIDENTS_STATISTICS_OVERLAY_ID);
-      this.clearOverlaysByType(COMPLETED_STATISTICS_OVERLAY_ID);
-      this.clearOverlaysByType(CANCELED_STATISTICS_OVERLAY_ID);
-
-      this.addFlowNodesStatisticsOverlays(
-        this.props.flowNodesStatisticsOverlay
-      );
+    if (!isEqual(prevflowNodesStatistics, this.props.flowNodesStatistics)) {
+      this.clearOverlaysByType(STATISTICS_OVERLAY_ID);
+      this.props.flowNodesStatistics.forEach(this.addSatisticOverlays);
     }
   }
 
@@ -132,7 +124,9 @@ class Diagram extends React.Component {
     if (e) {
       return console.log('Error rendering diagram:', e);
     }
-    this.setState({isViewerLoaded: true});
+    this.setState({
+      isViewerLoaded: true
+    });
     this.handleZoomReset();
 
     // in case onDiagramLoaded callback function is provided
@@ -244,8 +238,7 @@ class Diagram extends React.Component {
 
     // Only select the flownode if it's selectable and if it's not already selected.
     if (isSelectableElement && element.id !== selectedFlowNode) {
-      this.props.onFlowNodeSelected(element.id);
-      // if it's already selected, deselect it
+      return this.props.onFlowNodeSelected(element.id);
     } else if (selectedFlowNode) {
       this.props.onFlowNodeSelected(null);
     }
@@ -271,17 +264,34 @@ class Diagram extends React.Component {
     // Note that we also pass the type 'flow-node-state' to
     // the overlay to be able to clear all overlays of such type. (cf. clearOverlaysByType)
     this.Viewer.get('overlays').add(id, FLOW_NODE_STATE_OVERLAY_ID, {
-      position: {bottom: 17, left: -7},
+      position: {
+        bottom: 17,
+        left: -7
+      },
       html: img
     });
   };
 
-  addStatisticsOverlayByState = (id, state, count, overlayId) => {
+  addSatisticOverlays = statistic => {
+    const states = ['active', 'incidents', 'canceled', 'completed'];
+
     const positions = {
-      active: {bottom: 9, left: 0},
-      incidents: {bottom: 9, right: 0},
-      canceled: {top: -16, left: 0},
-      completed: {bottom: 1, left: 17}
+      active: {
+        bottom: 9,
+        left: 0
+      },
+      incidents: {
+        bottom: 9,
+        right: 0
+      },
+      canceled: {
+        top: -16,
+        left: 0
+      },
+      completed: {
+        bottom: 1,
+        left: 17
+      }
     };
 
     const icons = {
@@ -291,71 +301,59 @@ class Diagram extends React.Component {
       completed: iconMap[ACTIVITY_STATE.COMPLETED]
     };
 
-    const img = document.createElement('img');
-    const span = document.createElement('span');
-    const div = document.createElement('div');
+    states.forEach(state => {
+      if (!statistic[state]) {
+        return;
+      }
 
-    Object.assign(img, {
-      src: icons[state][this.props.theme],
-      width: 24,
-      height: 24
-    });
+      const img = document.createElement('img');
+      const span = document.createElement('span');
+      const div = document.createElement('div');
 
-    Object.assign(span, {
-      style: Styled.span
-    });
-    Object.assign(div, {
-      style: Styled.getInlineStyle(state, this.props.theme)
-    });
-
-    var newContent = document.createTextNode(count);
-    span.appendChild(newContent);
-    div.appendChild(img);
-    div.appendChild(span);
-
-    this.Viewer.get('overlays').add(id, overlayId, {
-      position: positions[state],
-      html: div
-    });
-  };
-
-  addFlowNodesStatisticsOverlays = statistics => {
-    const overlaysByState = getOverlaysByState(statistics);
-
-    const overlayIds = {
-      active: ACTIVE_STATISTICS_OVERLAY_ID,
-      incidents: INCIDENTS_STATISTICS_OVERLAY_ID,
-      completed: COMPLETED_STATISTICS_OVERLAY_ID,
-      canceled: CANCELED_STATISTICS_OVERLAY_ID
-    };
-
-    for (let state in overlaysByState) {
-      const nodes = overlaysByState[state];
-      nodes.forEach(item => {
-        this.addStatisticsOverlayByState(
-          item.id,
-          state,
-          item.count,
-          overlayIds[state]
-        );
+      Object.assign(img, {
+        src: icons[state][this.props.theme],
+        width: 24,
+        height: 24
       });
-    }
+
+      Object.assign(span, {
+        style: Styled.span
+      });
+      Object.assign(div, {
+        style: Styled.getInlineStyle(state, this.props.theme)
+      });
+
+      var newContent = document.createTextNode(statistic[state]);
+      span.appendChild(newContent);
+      div.appendChild(img);
+      div.appendChild(span);
+
+      this.Viewer.get('overlays').add(
+        statistic.activityId,
+        STATISTICS_OVERLAY_ID,
+        {
+          position: positions[state],
+          html: div
+        }
+      );
+    });
   };
 
   clearOverlaysByType = type => {
-    this.Viewer.get('overlays').remove({type});
+    this.Viewer.get('overlays').remove({
+      type
+    });
   };
 
   render() {
     return (
       <Styled.Diagram>
         <Styled.DiagramCanvas ref={this.myRef} />
-
         <DiagramControls
           handleZoomIn={this.handleZoomIn}
           handleZoomOut={this.handleZoomOut}
           handleZoomReset={this.handleZoomReset}
-        />
+        />{' '}
       </Styled.Diagram>
     );
   }

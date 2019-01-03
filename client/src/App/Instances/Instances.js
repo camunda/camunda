@@ -301,7 +301,7 @@ To see a diagram, select a Workflow in the Filters panel.`}
                   {!isEmpty(this.props.diagramWorkflow) &&
                     this.props.diagramModel && (
                       <Diagram
-                        flowNodesStatisticsOverlay={this.state.statistics}
+                        flowNodesStatistics={this.state.statistics}
                         onDiagramLoaded={this.fetchDiagramStatistics}
                         onFlowNodeSelected={this.handleFlowNodeSelection}
                         selectedFlowNode={this.props.filter.activityId}

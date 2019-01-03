@@ -93,7 +93,37 @@ describe('Diagram', () => {
     );
   });
 
-  describe('selected flownode', () => {
+  describe("viewer's theme", () => {
+    it('should initiate dark BPMNViewer if theme is dark', () => {
+      // given
+      const node = shallowRenderNode({theme: 'dark'});
+      const nodeInstance = node.instance();
+
+      //then
+      const {container, bpmnRenderer} = nodeInstance.Viewer;
+      expect(container).toBe(nodeInstance.myRef.current);
+      expect(bpmnRenderer).toEqual({
+        defaultFillColor: Colors.uiDark02,
+        defaultStrokeColor: Colors.darkDiagram
+      });
+    });
+
+    it('should initiate light BPMNViewer if theme is light', () => {
+      // given
+      const node = shallowRenderNode({theme: 'light'});
+      const nodeInstance = node.instance();
+
+      //then
+      const {container, bpmnRenderer} = nodeInstance.Viewer;
+      expect(container).toBe(nodeInstance.myRef.current);
+      expect(bpmnRenderer).toEqual({
+        defaultFillColor: Colors.uiLight04,
+        defaultStrokeColor: Colors.uiLight06
+      });
+    });
+  });
+
+  describe('selected flownode marker', () => {
     it('should remove marker when an already selected node gets selected', () => {
       // given
       const node = shallowRenderNode({selectedFlowNode: 'nodeA'});
@@ -118,13 +148,9 @@ describe('Diagram', () => {
       // then
       expect(canvas.addMarker).toHaveBeenCalledWith('nodeA', 'op-selected');
     });
-
-    it.skip('should handle selecting a selectable flownode', () => {});
-
-    it.skip('should handle selecting a non-selectable flownode', () => {});
   });
 
-  describe('selectable flownodes', () => {
+  describe('selectable flownodes markers', () => {
     it('should add a marker for each selectable flownode', () => {
       // given
       const node = shallowRenderNode({selectableFlowNodes: ['nodeA', 'nodeB']});
@@ -139,116 +165,69 @@ describe('Diagram', () => {
     });
   });
 
-  describe.skip('selected flownode markers', () => {
-    it('should remove previous node and add the new one', async () => {
+  describe('flownode selection interaction', () => {
+    it('should select a selectable flownode that is not selected', () => {
       // given
-      const node = shallow(<Diagram workflowId={workflowId} theme={'dark'} />);
-      await flushPromises();
-      const removeMarkerSpy = jest.spyOn(node.instance(), 'removeMarker');
-      const addMarkerSpy = jest.spyOn(node.instance(), 'addMarker');
-
-      // when
-      node.instance().handleSelectedFlowNode('foo', 'bar');
-
-      // then
-      expect(removeMarkerSpy).toBeCalledWith('bar', 'op-selected');
-      expect(addMarkerSpy).toBeCalledWith('foo', 'op-selected');
-    });
-
-    it("should not remove previous node if it's not provided", async () => {
-      // given
-      const node = shallow(<Diagram workflowId={workflowId} theme={'dark'} />);
-      await flushPromises();
-      const removeMarkerSpy = jest.spyOn(node.instance(), 'removeMarker');
-      const addMarkerSpy = jest.spyOn(node.instance(), 'addMarker');
-
-      // when
-      node.instance().handleSelectedFlowNode('foo');
-
-      // then
-      expect(removeMarkerSpy).not.toBeCalled();
-      expect(addMarkerSpy).toBeCalledWith('foo', 'op-selected');
-    });
-
-    it("should not add new node if it's not provided", async () => {
-      // given
-      const node = shallow(<Diagram workflowId={workflowId} theme={'dark'} />);
-      await flushPromises();
-      const removeMarkerSpy = jest.spyOn(node.instance(), 'removeMarker');
-      const addMarkerSpy = jest.spyOn(node.instance(), 'addMarker');
-
-      // when
-      node.instance().handleSelectedFlowNode(null, 'bar');
-
-      // then
-      expect(removeMarkerSpy).toBeCalledWith('bar', 'op-selected');
-      expect(addMarkerSpy).not.toBeCalled();
-    });
-  });
-
-  describe.skip('flownode selection interaction', () => {
-    it('should select flownode', async () => {
-      // given
-      const selectableFlowNodes = ['foo', 'bar'];
       const onFlowNodeSelected = jest.fn();
-      const node = shallow(
-        <Diagram
-          workflowId={workflowId}
-          theme={'dark'}
-          selectableFlowNodes={selectableFlowNodes}
-          onFlowNodeSelected={onFlowNodeSelected}
-        />
-      );
-      await flushPromises();
+      const node = shallowRenderNode({
+        selectableFlowNodes: ['nodeA', 'nodeB'],
+        selectedFlowNode: null,
+        onFlowNodeSelected
+      });
 
       // when
-      node.instance().handleElementClick({element: {id: 'foo'}});
+      node.instance().handleElementClick({element: {id: 'nodeA'}});
 
       // then
-      expect(onFlowNodeSelected).toBeCalledWith('foo');
+      expect(onFlowNodeSelected).toHaveBeenCalledWith('nodeA');
     });
 
-    it("should not select element if it's not selectable", async () => {
+    it('should deselect a selectable flownode that is already selected', () => {
       // given
-      const selectableFlowNodes = ['bar'];
       const onFlowNodeSelected = jest.fn();
-      const node = shallow(
-        <Diagram
-          workflowId={workflowId}
-          theme={'dark'}
-          selectableFlowNodes={selectableFlowNodes}
-          onFlowNodeSelected={onFlowNodeSelected}
-        />
-      );
-      await flushPromises();
+      const node = shallowRenderNode({
+        selectableFlowNodes: ['nodeA', 'nodeB'],
+        selectedFlowNode: 'nodeA',
+        onFlowNodeSelected
+      });
 
       // when
-      node.instance().handleElementClick({element: {id: 'foo'}});
+      node.instance().handleElementClick({element: {id: 'nodeA'}});
 
       // then
-      expect(onFlowNodeSelected).not.toBeCalled();
+      expect(onFlowNodeSelected).toHaveBeenCalledWith(null);
     });
 
-    it("should deselect element if it's already selected", async () => {
+    it('should deselect current selected flownode if a non-selectable flownode is selected', () => {
       // given
-      const selectableFlowNodes = ['foo', 'bar'];
       const onFlowNodeSelected = jest.fn();
-      const node = shallow(
-        <Diagram
-          workflowId={workflowId}
-          theme={'dark'}
-          selectedFlowNode="foo"
-          selectableFlowNodes={selectableFlowNodes}
-          onFlowNodeSelected={onFlowNodeSelected}
-        />
-      );
-      await flushPromises();
+      const node = shallowRenderNode({
+        selectableFlowNodes: ['nodeA', 'nodeB'],
+        selectedFlowNode: 'nodeA',
+        onFlowNodeSelected
+      });
 
       // when
-      node.instance().handleElementClick({element: {id: 'foo'}});
+      node.instance().handleElementClick({element: {id: 'nodeC'}});
 
       // then
-      expect(onFlowNodeSelected).toBeCalledWith(null);
+      expect(onFlowNodeSelected).toHaveBeenCalledWith(null);
+    });
+
+    it('should not select a flownode if it is not selectable', () => {
+      // given
+      const onFlowNodeSelected = jest.fn();
+      const node = shallowRenderNode({
+        selectableFlowNodes: ['nodeA', 'nodeB'],
+        selectedFlowNode: null,
+        onFlowNodeSelected
+      });
+
+      // when
+      node.instance().handleElementClick({element: {id: 'nodeC'}});
+
+      // then
+      expect(onFlowNodeSelected).not.toHaveBeenCalled();
     });
   });
 
@@ -299,40 +278,10 @@ describe('Diagram', () => {
     });
   });
 
-  describe("viewer's theme", () => {
-    it('should initiate dark BPMNViewer if theme is dark', () => {
-      // given
-      const node = shallowRenderNode({theme: 'dark'});
-      const nodeInstance = node.instance();
-
-      //then
-      const {container, bpmnRenderer} = nodeInstance.Viewer;
-      expect(container).toBe(nodeInstance.myRef.current);
-      expect(bpmnRenderer).toEqual({
-        defaultFillColor: Colors.uiDark02,
-        defaultStrokeColor: Colors.darkDiagram
-      });
-    });
-
-    it('should initiate light BPMNViewer if theme is light', () => {
-      // given
-      const node = shallowRenderNode({theme: 'light'});
-      const nodeInstance = node.instance();
-
-      //then
-      const {container, bpmnRenderer} = nodeInstance.Viewer;
-      expect(container).toBe(nodeInstance.myRef.current);
-      expect(bpmnRenderer).toEqual({
-        defaultFillColor: Colors.uiLight04,
-        defaultStrokeColor: Colors.uiLight06
-      });
-    });
-  });
-
-  describe.skip('addFlowNodesStatisticsOverlays', () => {
+  describe.skip('addflowNodesStatisticss', () => {
     it('should add statistics state overlays if provided', () => {
       // given
-      const flowNodesStatisticsOverlay = [
+      const flowNodesStatistics = [
         {
           activityId: 'Task_162x79i',
           active: 0,
@@ -351,7 +300,7 @@ describe('Diagram', () => {
       const node = shallow(<Diagram workflowId={workflowId} theme={'light'} />);
       const statisticsOverlaysAddSpy = jest.spyOn(
         node.instance(),
-        'addFlowNodesStatisticsOverlays'
+        'addflowNodesStatisticss'
       );
       const statisticsOverlaysRemoveSpy = jest.spyOn(
         node.instance().Viewer.overlays,
@@ -359,7 +308,7 @@ describe('Diagram', () => {
       );
 
       // when
-      node.setProps({flowNodesStatisticsOverlay});
+      node.setProps({flowNodesStatistics});
 
       // then
       // we clear the statistics overlays
@@ -367,13 +316,13 @@ describe('Diagram', () => {
       // we add the new overlays
       expect(statisticsOverlaysAddSpy).toHaveBeenCalledTimes(1);
       expect(statisticsOverlaysAddSpy.mock.calls[0][0]).toEqual(
-        flowNodesStatisticsOverlay
+        flowNodesStatistics
       );
     });
 
     it('should statistics overlays with incidents', async () => {
       // given
-      const flowNodesStatisticsOverlay = [
+      const flowNodesStatistics = [
         {
           activityId: 'ServiceTask_1un6ye3',
           active: 0,
@@ -386,7 +335,7 @@ describe('Diagram', () => {
       await flushPromises();
 
       // when
-      node.setProps({flowNodesStatisticsOverlay});
+      node.setProps({flowNodesStatistics});
 
       // then
       const overlaysAddSpy = node.instance().Viewer.overlays.add;
@@ -407,7 +356,7 @@ describe('Diagram', () => {
 
     it('should statistics overlays with active', async () => {
       // given
-      const flowNodesStatisticsOverlay = [
+      const flowNodesStatistics = [
         {
           activityId: 'ServiceTask_1un6ye3',
           active: 7,
@@ -420,7 +369,7 @@ describe('Diagram', () => {
       await flushPromises();
 
       // when
-      node.setProps({flowNodesStatisticsOverlay});
+      node.setProps({flowNodesStatistics});
 
       // then
       const overlaysAddSpy = node.instance().Viewer.overlays.add;
@@ -442,7 +391,7 @@ describe('Diagram', () => {
 
     it('should statistics overlays with completed state', async () => {
       // given
-      const flowNodesStatisticsOverlay = [
+      const flowNodesStatistics = [
         {
           activityId: 'ServiceTask_1un6ye3',
           active: 0,
@@ -455,7 +404,7 @@ describe('Diagram', () => {
       await flushPromises();
 
       // when
-      node.setProps({flowNodesStatisticsOverlay});
+      node.setProps({flowNodesStatistics});
 
       // then
       const overlaysAddSpy = node.instance().Viewer.overlays.add;
@@ -470,7 +419,7 @@ describe('Diagram', () => {
 
     it('should statistics overlays with canceled state', async () => {
       // given
-      const flowNodesStatisticsOverlay = [
+      const flowNodesStatistics = [
         {
           activityId: 'ServiceTask_1un6ye3',
           active: 0,
@@ -483,7 +432,7 @@ describe('Diagram', () => {
       await flushPromises();
 
       // when
-      node.setProps({flowNodesStatisticsOverlay});
+      node.setProps({flowNodesStatistics});
 
       // then
       const overlaysAddSpy = node.instance().Viewer.overlays.add;

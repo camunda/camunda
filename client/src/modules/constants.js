@@ -85,12 +85,7 @@ export const EXPAND_STATE = {
 export const UNNAMED_ACTIVITY = 'Unnamed Activity';
 
 export const FLOW_NODE_STATE_OVERLAY_ID = 'flow-node-state';
-export const ACTIVE_STATISTICS_OVERLAY_ID = 'active-flow-nodes-statistics';
-export const INCIDENTS_STATISTICS_OVERLAY_ID =
-  'incidents-flow-nodes-statistics';
-export const CANCELED_STATISTICS_OVERLAY_ID = 'canceled-flow-nodes-statistics';
-export const COMPLETED_STATISTICS_OVERLAY_ID =
-  'completed-flow-nodes-statistics';
+export const STATISTICS_OVERLAY_ID = 'flow-nodes-statistics';
 
 export const FLOW_NODE_TYPE = {
   TASK: 'TASK',

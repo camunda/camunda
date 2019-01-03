@@ -451,7 +451,7 @@ describe('Instances', () => {
 
       const DiagramNode = node.find(Diagram);
       // the statistics don't fetch, because Diagram is mocked
-      expect(DiagramNode.prop('flowNodesStatisticsOverlay')).toEqual([]);
+      expect(DiagramNode.prop('flowNodesStatistics')).toEqual([]);
       expect(DiagramNode.prop('selectedFlowNode')).toEqual(
         filterMock.activityId
       );
