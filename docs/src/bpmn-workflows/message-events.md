@@ -1,6 +1,6 @@
 # Message Events
 
-Message events are events which reference a message. They can be used to wait until a proper message is received. 
+Message events are events which reference a message. They can be used to wait until a proper message is received.
 
 > Currently, messages can be published only externally using one of the Zeebe clients.
 
@@ -39,9 +39,28 @@ XML representation:
 
 > [Receive tasks](/bpmn-workflows/receive-tasks.html) are an alternative to message intermediate catch events.
 
+## Message Start Events
+
+A message start event allows to create a workflow instance by publishing a named message. A workflow can have more than one message start event, each with a unique message name. We can choose the right start event from a set of start events by publishing a named message.
+
+After a new version of the workflow is deployed, instances of the old version cannot be created by publishing messages. This is true even if the new version has different start events.
+
+Currently, a workflow with message start events cannot have a none start event.
+
+XML representation
+
+```xml
+<bpmn:message id="newOrder" name="New order">
+</bpmn:message>
+
+<bpmn:startEvent id="messageStart">
+  <bpmn:messageEventDefinition messageRef="newOrder" />
+</bpmn:startEvent>
+```
+
 ### Payload Mapping
 
-By default, the complete message payload is merged into the workflow instance payload. This behavior can be customized by defining an output mapping at the intermediate catch event. 
+By default, the complete message payload is merged into the workflow instance payload. This behavior can be customized by defining an output mapping at the intermediate catch event.
 
 XML representation:
 
