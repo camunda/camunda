@@ -147,6 +147,10 @@ class Diagram extends React.Component {
     if (this.props.flowNodeStateOverlays) {
       this.props.flowNodeStateOverlays.forEach(this.addFlowNodeStateOverlay);
     }
+
+    if (this.props.flowNodesStatistics) {
+      this.props.flowNodesStatistics.forEach(this.addSatisticOverlays);
+    }
   };
 
   initViewer = () => {

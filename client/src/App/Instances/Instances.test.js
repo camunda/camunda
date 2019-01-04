@@ -84,7 +84,8 @@ const mockProps = {
   diagramModel: {
     bpmnElements: createDiagramNodes(),
     definitions: createDefinitions()
-  }
+  },
+  statistics: []
 };
 
 const defaultFilterMockProps = {
@@ -134,28 +135,6 @@ describe('Instances', () => {
     expect(node.find(VisuallyHiddenH1).text()).toEqual(
       'Camunda Operate Instances'
     );
-  });
-
-  describe('selections fetching', () => {
-    it('should re fetch selections when diagram is loaded & filter changes', async () => {
-      // given shalow render as we need to call setProps() on the root element
-      const node = shallow(
-        <Instances.WrappedComponent {...mockProps} {...localStorageProps} />
-      );
-
-      // when
-      await flushPromises();
-      node.update();
-
-      // change the filter
-      node.setProps({filter: DEFAULT_FILTER});
-
-      await flushPromises();
-      node.update();
-
-      //then
-      expect(api.fetchWorkflowInstancesStatistics).toHaveBeenCalledTimes(1);
-    });
   });
 
   describe('instances fetching', async () => {
@@ -451,7 +430,9 @@ describe('Instances', () => {
 
       const DiagramNode = node.find(Diagram);
       // the statistics don't fetch, because Diagram is mocked
-      expect(DiagramNode.prop('flowNodesStatistics')).toEqual([]);
+      expect(DiagramNode.prop('flowNodesStatistics')).toEqual(
+        mockProps.statistics
+      );
       expect(DiagramNode.prop('selectedFlowNode')).toEqual(
         filterMock.activityId
       );
@@ -459,31 +440,6 @@ describe('Instances', () => {
       expect(DiagramNode.prop('definitions')).toBe(
         mockProps.diagramModel.definitions
       );
-    });
-
-    it('should fetch the statistics for diagram', async () => {
-      // given
-      const node = mount(
-        <ThemeProvider>
-          <CollapsablePanelProvider>
-            <Instances {...mockProps} />
-          </CollapsablePanelProvider>
-        </ThemeProvider>
-      );
-
-      await flushPromises();
-      node.update();
-
-      const DiagramNode = node.find(Diagram);
-      const onDiagramLoaded = DiagramNode.prop('onDiagramLoaded');
-
-      // when the diagram finished loading
-      onDiagramLoaded();
-      await flushPromises();
-      node.update();
-
-      //then
-      expect(api.fetchWorkflowInstancesStatistics).toHaveBeenCalledTimes(1);
     });
 
     it('should change the filter when the user selects a flow node', async () => {

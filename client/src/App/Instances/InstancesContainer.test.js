@@ -14,11 +14,7 @@ import * as apiDiagram from 'modules/api/diagram/diagram';
 import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 import {getFilterQueryString} from 'modules/utils/filter';
 import {DEFAULT_FILTER} from 'modules/constants';
-import {
-  createDiagramNodes,
-  groupedWorkflowsMock,
-  createDefinitions
-} from 'modules/testUtils';
+import {groupedWorkflowsMock} from 'modules/testUtils';
 import {parsedDiagram} from 'modules/utils/bpmn';
 const InstancesContainerWrapped = InstancesContainer.WrappedComponent;
 
@@ -64,6 +60,7 @@ const localStorageProps = {
 
 // api mocks
 api.fetchGroupedWorkflowInstances = mockResolvedAsyncFn(groupedWorkflowsMock);
+api.fetchWorkflowInstancesStatistics = mockResolvedAsyncFn([]);
 apiDiagram.fetchWorkflowXML = mockResolvedAsyncFn('<xml />');
 jest.mock('bpmn-js', () => ({}));
 jest.mock('modules/utils/bpmn');
@@ -98,7 +95,7 @@ describe('InstancesContainer', () => {
     expect(api.fetchGroupedWorkflowInstances).toHaveBeenCalled();
   });
 
-  it('should fetch the the fetchWorkflowXML', async () => {
+  it('should fetch the the workflow xml', async () => {
     // given
     const node = mount(
       <InstancesContainerWrapped
@@ -154,9 +151,6 @@ describe('InstancesContainer', () => {
       formatGroupedWorkflowInstances(groupedWorkflowsMock)
     );
     expect(InstancesNode.prop('filter')).toEqual(DEFAULT_FILTER);
-    expect(InstancesNode.prop('diagramWorkflow')).toBe(
-      node.state().currentWorkflow
-    );
     expect(InstancesNode.props().onFilterChange).toBe(
       node.instance().setFilterInURL
     );
@@ -181,7 +175,6 @@ describe('InstancesContainer', () => {
     expect(InstancesNode.prop('filter')).toEqual(
       decodeFields(fullFilterWithoutWorkflow)
     );
-    expect(InstancesNode.prop('diagramWorkflow')).toEqual({});
     expect(InstancesNode.prop('diagramModel')).toEqual({});
   });
 
@@ -201,9 +194,6 @@ describe('InstancesContainer', () => {
 
     expect(InstancesNode.prop('filter')).toEqual(
       decodeFields(fullFilterWithWorkflow)
-    );
-    expect(InstancesNode.prop('diagramWorkflow')).toEqual(
-      groupedWorkflowsMock[0].workflows[2]
     );
     expect(InstancesNode.prop('diagramModel')).toEqual(parsedDiagram);
   });
@@ -230,7 +220,6 @@ describe('InstancesContainer', () => {
         version: 'all'
       })
     );
-    expect(InstancesNode.prop('diagramWorkflow')).toEqual({});
     expect(InstancesNode.prop('diagramModel')).toEqual({});
   });
 

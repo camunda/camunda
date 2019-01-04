@@ -1,19 +1,13 @@
 import React from 'react';
 import {shallow, mount} from 'enzyme';
 
-import {createActivity, flushPromises} from 'modules/testUtils';
+import {createActivity} from 'modules/testUtils';
 import {Colors, ThemeProvider} from 'modules/theme';
 import {
   ACTIVITY_STATE,
   FLOW_NODE_STATE_OVERLAY_ID,
   STATISTICS_OVERLAY_ID
 } from 'modules/constants';
-import incidentIcon from 'modules/components/Icon/diagram-badge-single-instance-incident.svg';
-import activeIcon from 'modules/components/Icon/diagram-badge-single-instance-active.svg';
-import completedLightIcon from 'modules/components/Icon/diagram-badge-single-instance-completed-light.svg';
-import completedDarkIcon from 'modules/components/Icon/diagram-badge-single-instance-completed-dark.svg';
-import canceledLightIcon from 'modules/components/Icon/diagram-badge-single-instance-canceled-light.svg';
-import canceledDarkIcon from 'modules/components/Icon/diagram-badge-single-instance-canceled-dark.svg';
 import {parsedDiagram} from 'modules/utils/bpmn';
 
 import Diagram from './Diagram';
@@ -44,8 +38,6 @@ describe('Diagram', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
-
-  const workflowId = 'some-id';
 
   it('should render Diagram with controls', () => {
     // given

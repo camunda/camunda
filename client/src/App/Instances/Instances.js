@@ -7,6 +7,11 @@ import withSharedState from 'modules/components/withSharedState';
 import SplitPane from 'modules/components/SplitPane';
 import Diagram from 'modules/components/Diagram';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
+import {
+  parseFilterForRequest,
+  getFilterWithWorkflowIds,
+  getWorkflowByVersion
+} from 'modules/utils/filter';
 
 import {
   DEFAULT_FILTER,
@@ -16,15 +21,7 @@ import {
   DEFAULT_FIRST_ELEMENT
 } from 'modules/constants';
 
-import {
-  fetchWorkflowInstances,
-  fetchWorkflowInstancesStatistics
-} from 'modules/api/instances';
-
-import {
-  parseFilterForRequest,
-  getFilterWithWorkflowIds
-} from 'modules/utils/filter';
+import {fetchWorkflowInstances} from 'modules/api/instances';
 
 import {SelectionProvider} from 'modules/contexts/SelectionContext';
 
@@ -55,15 +52,11 @@ class Instances extends Component {
     }),
     groupedWorkflowInstances: PropTypes.object,
     onFilterChange: PropTypes.func.isRequired,
-    diagramWorkflow: PropTypes.shape({
-      id: PropTypes.string,
-      bpmnProcessId: PropTypes.string,
-      name: PropTypes.string
-    }),
     diagramModel: PropTypes.shape({
       bpmnElements: PropTypes.object,
       definitions: PropTypes.object
-    })
+    }).isRequired,
+    statistics: PropTypes.array.isRequired
   };
 
   constructor(props) {
@@ -72,7 +65,6 @@ class Instances extends Component {
 
     this.state = {
       filterCount: filterCount || 0,
-      statistics: [],
       workflowInstances: [],
       workflowInstancesLoaded: false,
       firstElement: DEFAULT_FIRST_ELEMENT,
@@ -85,6 +77,7 @@ class Instances extends Component {
       this.state.sorting,
       this.state.firstElement
     );
+
     this.props.storeStateLocally({filterCount: instances.totalCount});
 
     this.setState({
@@ -130,17 +123,6 @@ class Instances extends Component {
 
       // update local storage data
       this.props.storeStateLocally({filterCount: instances.totalCount});
-
-      // filter has changed but the diagram is the same
-      if (
-        hasFilterChanged &&
-        isEqual(prevProps.diagramWorkflow, this.props.diagramWorkflow)
-      ) {
-        // refetch statiscs
-        this.setState({statistics: []}, () => {
-          this.fetchDiagramStatistics();
-        });
-      }
     }
   }
 
@@ -159,23 +141,6 @@ class Instances extends Component {
   };
 
   handleFirstElementChange = firstElement => this.setState({firstElement});
-
-  fetchDiagramStatistics = async () => {
-    if (isEmpty(this.props.diagramWorkflow)) {
-      return;
-    }
-
-    const filterWithWorkflowIds = getFilterWithWorkflowIds(
-      this.props.filter,
-      this.props.groupedWorkflowInstances
-    );
-
-    const statistics = await fetchWorkflowInstancesStatistics({
-      queries: [parseFilterForRequest(filterWithWorkflowIds)]
-    });
-
-    this.setState({statistics});
-  };
 
   fetchWorkflowInstances = async (
     sorting = DEFAULT_SORTING,
@@ -234,13 +199,29 @@ class Instances extends Component {
     return parseFilterForRequest(filterWithWorkflowIds);
   };
 
-  render() {
-    const workflowName = getWorkflowName(
-      isEmpty(this.props.diagramWorkflow)
-        ? this.props.groupedWorkflowInstances[this.props.filter.workflow]
-        : this.props.diagramWorkflow
-    );
+  getCurrentWorkflowByVersion = () => {
+    const {
+      filter: {workflow, version},
+      groupedWorkflowInstances
+    } = this.props;
+    return getWorkflowByVersion(groupedWorkflowInstances[workflow], version);
+  };
 
+  getCurrentWorkflowName = () => {
+    const currentWorkflowByVersion = this.getCurrentWorkflowByVersion();
+
+    if (!isEmpty(currentWorkflowByVersion)) {
+      return getWorkflowName(currentWorkflowByVersion);
+    }
+
+    const {workflow} = this.props.filter;
+    const currentWorkflow = this.props.groupedWorkflowInstances[workflow];
+    return getWorkflowName(currentWorkflow);
+  };
+
+  render() {
+    const currentWorkflowByVersion = this.getCurrentWorkflowByVersion();
+    const workflowName = this.getCurrentWorkflowName();
     const activityIds = getTaskNodes(this.props.diagramModel.bpmnElements).map(
       item => {
         return {value: item.id, label: item.name};
@@ -298,11 +279,10 @@ To see a diagram, select a Workflow in the Filters panel.`}
                       />
                     </Styled.EmptyMessageWrapper>
                   )}
-                  {!isEmpty(this.props.diagramWorkflow) &&
-                    this.props.diagramModel && (
+                  {!isEmpty(currentWorkflowByVersion) &&
+                    this.props.diagramModel.definitions && (
                       <Diagram
-                        flowNodesStatistics={this.state.statistics}
-                        onDiagramLoaded={this.fetchDiagramStatistics}
+                        flowNodesStatistics={this.props.statistics}
                         onFlowNodeSelected={this.handleFlowNodeSelection}
                         selectedFlowNode={this.props.filter.activityId}
                         selectableFlowNodes={activityIds.map(

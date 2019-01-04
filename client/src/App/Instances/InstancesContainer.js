@@ -1,21 +1,26 @@
 import React, {Component} from 'react';
 import PropTypes from 'prop-types';
-
-import Instances from './Instances';
+import {isEqual, isEmpty} from 'lodash';
 
 import withSharedState from 'modules/components/withSharedState';
 import {fetchGroupedWorkflowInstances} from 'modules/api/instances';
 import {DEFAULT_FILTER, PAGE_TITLE} from 'modules/constants';
-import {isEqual} from 'lodash';
 import {fetchWorkflowXML} from 'modules/api/diagram';
-import {getFilterQueryString, getWorkflowByVersion} from 'modules/utils/filter';
+import {fetchWorkflowInstancesStatistics} from 'modules/api/instances';
+import {
+  parseFilterForRequest,
+  getFilterWithWorkflowIds,
+  getFilterQueryString,
+  getWorkflowByVersion
+} from 'modules/utils/filter';
+import {parseDiagramXML} from 'modules/utils/bpmn';
+
+import Instances from './Instances';
 import {
   parseQueryString,
   decodeFields,
   formatGroupedWorkflowInstances
 } from './service';
-import {parseDiagramXML} from 'modules/utils/bpmn';
-
 class InstancesContainer extends Component {
   static propTypes = {
     getStateLocally: PropTypes.func.isRequired,
@@ -31,7 +36,7 @@ class InstancesContainer extends Component {
       filter: {},
       groupedWorkflowInstances: {},
       diagramModel: {},
-      currentWorkflow: {}
+      statistics: []
     };
   }
 
@@ -74,7 +79,7 @@ class InstancesContainer extends Component {
         : this.setState({
             filter,
             diagramModel: {},
-            currentWorkflow: {}
+            statistics: []
           });
     }
 
@@ -94,7 +99,7 @@ class InstancesContainer extends Component {
         : this.setState({
             filter,
             diagramModel: {},
-            currentWorkflow: {}
+            statistics: []
           });
     }
 
@@ -110,27 +115,47 @@ class InstancesContainer extends Component {
     }
 
     // (4) diagramModel
-    // refetch nodes for new workflow + version combination
+    const currentWorkflowByVersion = getWorkflowByVersion(
+      this.state.groupedWorkflowInstances[this.state.filter.workflow],
+      this.state.filter.version
+    );
+
+    const hasWorkflowChanged = !isEqual(
+      workflowByVersion,
+      currentWorkflowByVersion
+    );
+
+    // if activityId is invalid, remove it from the url filter
     let {diagramModel} = this.state;
 
-    if (!isEqual(workflowByVersion, this.state.currentWorkflow)) {
+    if (hasWorkflowChanged) {
       diagramModel = await this.fetchDiagramModel(workflowByVersion.id);
     }
 
-    const isActivityIdValid = Boolean(diagramModel.bpmnElements[activityId]);
-
-    if (activityId && !isActivityIdValid) {
+    if (activityId && !diagramModel.bpmnElements[activityId]) {
       return this.setFilterInURL({...otherFilters, workflow, version});
     }
 
-    // no activity id
-    return this.setState({
-      diagramModel,
-      filter,
-      currentWorkflow: getWorkflowByVersion(
-        this.state.groupedWorkflowInstances[filter.workflow],
-        filter.version
-      )
+    // fetch statistics
+    const statistics = await this.fetchStatistics(filter, workflowByVersion);
+
+    // if the workflow didn't change, we can immediatly update the state
+    if (!hasWorkflowChanged) {
+      return this.setState({
+        statistics,
+        filter
+      });
+    }
+
+    // First, clear state.statistics to avoid a conflict between the statitistics
+    // and the diagram.
+    // Then, set the new data in state.
+    this.setState({statistics: []}, async () => {
+      this.setState({
+        diagramModel,
+        statistics,
+        filter
+      });
     });
   };
 
@@ -140,6 +165,21 @@ class InstancesContainer extends Component {
 
   updateLocalStorageFilter = () => {
     this.props.storeStateLocally({filter: this.state.filter});
+  };
+
+  fetchStatistics = async (filter, workflow) => {
+    if (isEmpty(workflow)) {
+      return;
+    }
+
+    const filterWithWorkflowIds = getFilterWithWorkflowIds(
+      filter,
+      this.state.groupedWorkflowInstances
+    );
+
+    return await fetchWorkflowInstancesStatistics({
+      queries: [parseFilterForRequest(filterWithWorkflowIds)]
+    });
   };
 
   fetchDiagramModel = async workflowId => {
@@ -164,10 +204,10 @@ class InstancesContainer extends Component {
     return (
       <Instances
         filter={decodeFields(this.state.filter)}
-        diagramWorkflow={this.state.currentWorkflow}
         groupedWorkflowInstances={this.state.groupedWorkflowInstances}
         onFilterChange={this.setFilterInURL}
         diagramModel={this.state.diagramModel}
+        statistics={this.state.statistics}
       />
     );
   }
