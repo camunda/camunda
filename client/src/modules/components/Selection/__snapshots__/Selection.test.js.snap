@@ -418,87 +418,82 @@ exports[`Selection should contain Actions 1`] = `
 
 exports[`Selection should contain Instances 1`] = `
 <ul>
-  <TransitionGroup
-    childFactory={[Function]}
-    component="div"
+  <CSSTransition
+    classNames="transition"
+    data-test="addInstanceTransition"
+    in={true}
+    key=".$0"
+    onExited={[Function]}
+    timeout={800}
   >
-    <div>
-      <CSSTransition
-        classNames="transition"
+    <Transition
+      appear={false}
+      data-test="addInstanceTransition"
+      enter={true}
+      exit={true}
+      in={true}
+      mountOnEnter={false}
+      onEnter={[Function]}
+      onEntered={[Function]}
+      onEntering={[Function]}
+      onExit={[Function]}
+      onExited={[Function]}
+      onExiting={[Function]}
+      timeout={800}
+      unmountOnExit={false}
+    >
+      <Themed(styled.li)
         data-test="addInstanceTransition"
-        in={true}
-        key=".$0"
-        onExited={[Function]}
+        key="0"
         timeout={800}
       >
-        <Transition
-          appear={false}
+        <Themed
           data-test="addInstanceTransition"
-          enter={true}
-          exit={true}
-          in={true}
-          mountOnEnter={false}
-          onEnter={[Function]}
-          onEntered={[Function]}
-          onEntering={[Function]}
-          onExit={[Function]}
-          onExited={[Function]}
-          onExiting={[Function]}
+          forwardedRef={null}
           timeout={800}
-          unmountOnExit={false}
         >
-          <Themed(styled.li)
+          <styled.li
             data-test="addInstanceTransition"
-            key="0"
-            transitionTiming={800}
+            theme="dark"
+            timeout={800}
           >
-            <Themed
+            <StyledComponent
               data-test="addInstanceTransition"
-              forwardedRef={null}
-              transitionTiming={800}
-            >
-              <styled.li
-                data-test="addInstanceTransition"
-                theme="dark"
-                transitionTiming={800}
-              >
-                <StyledComponent
-                  data-test="addInstanceTransition"
-                  forwardedClass={
-                    Object {
-                      "$$typeof": Symbol(react.forward_ref),
-                      "attrs": undefined,
-                      "componentStyle": ComponentStyle {
-                        "componentId": "sc-jlyJG",
-                        "isStatic": false,
-                        "lastClassName": "heQgUx",
-                        "rules": Array [
-                          "
+              forwardedClass={
+                Object {
+                  "$$typeof": Symbol(react.forward_ref),
+                  "attrs": undefined,
+                  "componentStyle": ComponentStyle {
+                    "componentId": "sc-jlyJG",
+                    "isStatic": false,
+                    "lastClassName": "heQgUx",
+                    "rules": Array [
+                      "
   display: flex;
   align-items: center;
   height: 31px;
   /* padding-left: 10px; */
   color: ",
-                          [Function],
-                          ";
+                      [Function],
+                      ";
   font-size: 13px;
 
   ",
-                          "
+                      "
   &.transition-enter {
     opacity: 0;
   }
   &.transition-enter-active {
     opacity: 1;
     transition: opacity ",
-                          [Function],
-                          ";
+                      [Function],
+                      ";
   }
   &.transition-enter-done {
     opacity: 1;
   }
 ",
-                          ";
+                      ";
 
   /* opacity: 1; */
 
@@ -512,73 +507,162 @@ exports[`Selection should contain Instances 1`] = `
 
   &:nth-child(even) {
     background: ",
-                          [Function],
-                          ";
+                      [Function],
+                      ";
 
     border-bottom: 1px solid ",
-                          [Function],
-                          ";
+                      [Function],
+                      ";
   }
 
   &:nth-child(odd) {
     background: ",
-                          [Function],
-                          ";
+                      [Function],
+                      ";
     border-bottom: 1px solid ",
-                          [Function],
-                          ";
+                      [Function],
+                      ";
   }
 ",
-                        ],
-                      },
-                      "displayName": "styled.li",
-                      "render": [Function],
-                      "styledComponentId": "sc-jlyJG",
-                      "target": "li",
-                      "toString": [Function],
-                      "warnTooManyClasses": [Function],
-                      "withComponent": [Function],
-                    }
-                  }
-                  forwardedRef={null}
-                  theme="dark"
-                  transitionTiming={800}
-                >
-                  <li
-                    className="sc-jlyJG heQgUx"
-                    data-test="addInstanceTransition"
-                  >
-                    <styled.div>
-                      <StyledComponent
-                        forwardedClass={
-                          Object {
-                            "$$typeof": Symbol(react.forward_ref),
-                            "attrs": undefined,
-                            "componentStyle": ComponentStyle {
-                              "componentId": "sc-gipzik",
-                              "isStatic": true,
-                              "lastClassName": "jbuueO",
-                              "rules": Array [
-                                "
+                    ],
+                  },
+                  "displayName": "styled.li",
+                  "render": [Function],
+                  "styledComponentId": "sc-jlyJG",
+                  "target": "li",
+                  "toString": [Function],
+                  "warnTooManyClasses": [Function],
+                  "withComponent": [Function],
+                }
+              }
+              forwardedRef={null}
+              theme="dark"
+              timeout={800}
+            >
+              <li
+                className="sc-jlyJG heQgUx"
+                data-test="addInstanceTransition"
+              >
+                <styled.div>
+                  <StyledComponent
+                    forwardedClass={
+                      Object {
+                        "$$typeof": Symbol(react.forward_ref),
+                        "attrs": undefined,
+                        "componentStyle": ComponentStyle {
+                          "componentId": "sc-gipzik",
+                          "isStatic": true,
+                          "lastClassName": "jbuueO",
+                          "rules": Array [
+                            "
   width: 25px;
 ",
-                              ],
-                            },
-                            "displayName": "styled.div",
-                            "render": [Function],
-                            "styledComponentId": "sc-gipzik",
-                            "target": "div",
-                            "toString": [Function],
-                            "warnTooManyClasses": [Function],
-                            "withComponent": [Function],
+                          ],
+                        },
+                        "displayName": "styled.div",
+                        "render": [Function],
+                        "styledComponentId": "sc-gipzik",
+                        "target": "div",
+                        "toString": [Function],
+                        "warnTooManyClasses": [Function],
+                        "withComponent": [Function],
+                      }
+                    }
+                    forwardedRef={null}
+                  >
+                    <div
+                      className="sc-gipzik jbuueO"
+                    >
+                      <Themed(StateIcon)
+                        instance={
+                          Object {
+                            "activities": Array [
+                              Object {
+                                "activityId": "activityId_0",
+                                "endDate": "2018-10-10T09:20:38.658Z",
+                                "id": "id_0",
+                                "startDate": "2018-10-10T09:20:38.658Z",
+                                "state": "ACTIVE",
+                              },
+                            ],
+                            "bpmnProcessId": "someKey",
+                            "endDate": null,
+                            "id": "id_1",
+                            "incidents": Array [
+                              Object {
+                                "activityId": Object {},
+                                "activityInstanceId": Object {},
+                                "errorMessage": "",
+                                "errorType": "",
+                                "id": "id_2",
+                                "jobId": "jobId_0",
+                                "state": "ACTIVE",
+                              },
+                            ],
+                            "operations": Array [
+                              Object {
+                                "endDate": "2018-10-10T09:20:38.661Z",
+                                "errorMessage": "string",
+                                "startDate": "2018-10-10T09:20:38.661Z",
+                                "state": "SCHEDULED",
+                                "type": "UPDATE_RETRIES",
+                              },
+                            ],
+                            "sequenceFlows": Array [],
+                            "startDate": "2018-06-21",
+                            "state": "ACTIVE",
+                            "workflowId": "2",
+                            "workflowName": "someWorkflowName",
+                            "workflowVersion": 1,
                           }
                         }
-                        forwardedRef={null}
                       >
-                        <div
-                          className="sc-gipzik jbuueO"
+                        <Themed
+                          forwardedRef={null}
+                          instance={
+                            Object {
+                              "activities": Array [
+                                Object {
+                                  "activityId": "activityId_0",
+                                  "endDate": "2018-10-10T09:20:38.658Z",
+                                  "id": "id_0",
+                                  "startDate": "2018-10-10T09:20:38.658Z",
+                                  "state": "ACTIVE",
+                                },
+                              ],
+                              "bpmnProcessId": "someKey",
+                              "endDate": null,
+                              "id": "id_1",
+                              "incidents": Array [
+                                Object {
+                                  "activityId": Object {},
+                                  "activityInstanceId": Object {},
+                                  "errorMessage": "",
+                                  "errorType": "",
+                                  "id": "id_2",
+                                  "jobId": "jobId_0",
+                                  "state": "ACTIVE",
+                                },
+                              ],
+                              "operations": Array [
+                                Object {
+                                  "endDate": "2018-10-10T09:20:38.661Z",
+                                  "errorMessage": "string",
+                                  "startDate": "2018-10-10T09:20:38.661Z",
+                                  "state": "SCHEDULED",
+                                  "type": "UPDATE_RETRIES",
+                                },
+                              ],
+                              "sequenceFlows": Array [],
+                              "startDate": "2018-06-21",
+                              "state": "ACTIVE",
+                              "workflowId": "2",
+                              "workflowName": "someWorkflowName",
+                              "workflowVersion": 1,
+                            }
+                          }
                         >
-                          <Themed(StateIcon)
+                          <StateIcon
                             instance={
                               Object {
                                 "activities": Array [
@@ -621,255 +705,284 @@ exports[`Selection should contain Instances 1`] = `
                                 "workflowVersion": 1,
                               }
                             }
+                            theme="dark"
                           >
-                            <Themed
-                              forwardedRef={null}
-                              instance={
-                                Object {
-                                  "activities": Array [
-                                    Object {
-                                      "activityId": "activityId_0",
-                                      "endDate": "2018-10-10T09:20:38.658Z",
-                                      "id": "id_0",
-                                      "startDate": "2018-10-10T09:20:38.658Z",
-                                      "state": "ACTIVE",
-                                    },
-                                  ],
-                                  "bpmnProcessId": "someKey",
-                                  "endDate": null,
-                                  "id": "id_1",
-                                  "incidents": Array [
-                                    Object {
-                                      "activityId": Object {},
-                                      "activityInstanceId": Object {},
-                                      "errorMessage": "",
-                                      "errorType": "",
-                                      "id": "id_2",
-                                      "jobId": "jobId_0",
-                                      "state": "ACTIVE",
-                                    },
-                                  ],
-                                  "operations": Array [
-                                    Object {
-                                      "endDate": "2018-10-10T09:20:38.661Z",
-                                      "errorMessage": "string",
-                                      "startDate": "2018-10-10T09:20:38.661Z",
-                                      "state": "SCHEDULED",
-                                      "type": "UPDATE_RETRIES",
-                                    },
-                                  ],
-                                  "sequenceFlows": Array [],
-                                  "startDate": "2018-06-21",
-                                  "state": "ACTIVE",
-                                  "workflowId": "2",
-                                  "workflowName": "someWorkflowName",
-                                  "workflowVersion": 1,
-                                }
-                              }
+                            <Styled(ReactComponent)
+                              theme="dark"
                             >
-                              <StateIcon
-                                instance={
+                              <StyledComponent
+                                forwardedClass={
                                   Object {
-                                    "activities": Array [
-                                      Object {
-                                        "activityId": "activityId_0",
-                                        "endDate": "2018-10-10T09:20:38.658Z",
-                                        "id": "id_0",
-                                        "startDate": "2018-10-10T09:20:38.658Z",
-                                        "state": "ACTIVE",
-                                      },
-                                    ],
-                                    "bpmnProcessId": "someKey",
-                                    "endDate": null,
-                                    "id": "id_1",
-                                    "incidents": Array [
-                                      Object {
-                                        "activityId": Object {},
-                                        "activityInstanceId": Object {},
-                                        "errorMessage": "",
-                                        "errorType": "",
-                                        "id": "id_2",
-                                        "jobId": "jobId_0",
-                                        "state": "ACTIVE",
-                                      },
-                                    ],
-                                    "operations": Array [
-                                      Object {
-                                        "endDate": "2018-10-10T09:20:38.661Z",
-                                        "errorMessage": "string",
-                                        "startDate": "2018-10-10T09:20:38.661Z",
-                                        "state": "SCHEDULED",
-                                        "type": "UPDATE_RETRIES",
-                                      },
-                                    ],
-                                    "sequenceFlows": Array [],
-                                    "startDate": "2018-06-21",
-                                    "state": "ACTIVE",
-                                    "workflowId": "2",
-                                    "workflowName": "someWorkflowName",
-                                    "workflowVersion": 1,
-                                  }
-                                }
-                                theme="dark"
-                              >
-                                <Styled(ReactComponent)
-                                  theme="dark"
-                                >
-                                  <StyledComponent
-                                    forwardedClass={
-                                      Object {
-                                        "$$typeof": Symbol(react.forward_ref),
-                                        "attrs": undefined,
-                                        "componentStyle": ComponentStyle {
-                                          "componentId": "sc-bdVaJa",
-                                          "isStatic": true,
-                                          "lastClassName": "gRHdRX",
-                                          "rules": Array [
-                                            "
+                                    "$$typeof": Symbol(react.forward_ref),
+                                    "attrs": undefined,
+                                    "componentStyle": ComponentStyle {
+                                      "componentId": "sc-bdVaJa",
+                                      "isStatic": true,
+                                      "lastClassName": "gRHdRX",
+                                      "rules": Array [
+                                        "
   ",
-                                            "
+                                        "
   position: relative;
   top: 3px;
   margin-right: 5px;
 ",
-                                            ";
+                                        ";
   color: ",
-                                            "#ff3d3d",
-                                            ";
+                                        "#ff3d3d",
+                                        ";
 ",
-                                          ],
-                                        },
-                                        "displayName": "Styled(ReactComponent)",
-                                        "render": [Function],
-                                        "styledComponentId": "sc-bdVaJa",
-                                        "target": [Function],
-                                        "toString": [Function],
-                                        "warnTooManyClasses": [Function],
-                                        "withComponent": [Function],
-                                        Symbol(Symbol.hasInstance): [Function],
-                                      }
-                                    }
-                                    forwardedRef={null}
+                                      ],
+                                    },
+                                    "displayName": "Styled(ReactComponent)",
+                                    "render": [Function],
+                                    "styledComponentId": "sc-bdVaJa",
+                                    "target": [Function],
+                                    "toString": [Function],
+                                    "warnTooManyClasses": [Function],
+                                    "withComponent": [Function],
+                                    Symbol(Symbol.hasInstance): [Function],
+                                  }
+                                }
+                                forwardedRef={null}
+                                theme="dark"
+                              >
+                                <ReactComponent
+                                  className="sc-bdVaJa gRHdRX"
+                                  theme="dark"
+                                >
+                                  <svg
+                                    className="sc-bdVaJa gRHdRX"
                                     theme="dark"
                                   >
-                                    <ReactComponent
-                                      className="sc-bdVaJa gRHdRX"
-                                      theme="dark"
-                                    >
-                                      <svg
-                                        className="sc-bdVaJa gRHdRX"
-                                        theme="dark"
-                                      >
-                                        state-icon-incident.svg
-                                      </svg>
-                                    </ReactComponent>
-                                  </StyledComponent>
-                                </Styled(ReactComponent)>
-                              </StateIcon>
-                            </Themed>
-                          </Themed(StateIcon)>
-                        </div>
-                      </StyledComponent>
-                    </styled.div>
-                    <styled.div>
-                      <StyledComponent
-                        forwardedClass={
-                          Object {
-                            "$$typeof": Symbol(react.forward_ref),
-                            "attrs": undefined,
-                            "componentStyle": ComponentStyle {
-                              "componentId": "sc-csuQGl",
-                              "isStatic": true,
-                              "lastClassName": "hMOCmG",
-                              "rules": Array [
-                                "
+                                    state-icon-incident.svg
+                                  </svg>
+                                </ReactComponent>
+                              </StyledComponent>
+                            </Styled(ReactComponent)>
+                          </StateIcon>
+                        </Themed>
+                      </Themed(StateIcon)>
+                    </div>
+                  </StyledComponent>
+                </styled.div>
+                <styled.div>
+                  <StyledComponent
+                    forwardedClass={
+                      Object {
+                        "$$typeof": Symbol(react.forward_ref),
+                        "attrs": undefined,
+                        "componentStyle": ComponentStyle {
+                          "componentId": "sc-csuQGl",
+                          "isStatic": true,
+                          "lastClassName": "hMOCmG",
+                          "rules": Array [
+                            "
   width: 50%;
 ",
-                              ],
-                            },
-                            "displayName": "styled.div",
-                            "render": [Function],
-                            "styledComponentId": "sc-csuQGl",
-                            "target": "div",
-                            "toString": [Function],
-                            "warnTooManyClasses": [Function],
-                            "withComponent": [Function],
-                          }
-                        }
-                        forwardedRef={null}
-                      >
-                        <div
-                          className="sc-csuQGl hMOCmG"
-                        >
-                          someWorkflowName
-                        </div>
-                      </StyledComponent>
-                    </styled.div>
-                    <styled.div>
-                      <StyledComponent
-                        forwardedClass={
-                          Object {
-                            "$$typeof": Symbol(react.forward_ref),
-                            "attrs": undefined,
-                            "componentStyle": ComponentStyle {
-                              "componentId": "sc-Rmtcm",
-                              "isStatic": true,
-                              "lastClassName": "kqlPcX",
-                              "rules": Array [
-                                "
+                          ],
+                        },
+                        "displayName": "styled.div",
+                        "render": [Function],
+                        "styledComponentId": "sc-csuQGl",
+                        "target": "div",
+                        "toString": [Function],
+                        "warnTooManyClasses": [Function],
+                        "withComponent": [Function],
+                      }
+                    }
+                    forwardedRef={null}
+                  >
+                    <div
+                      className="sc-csuQGl hMOCmG"
+                    >
+                      someWorkflowName
+                    </div>
+                  </StyledComponent>
+                </styled.div>
+                <styled.div>
+                  <StyledComponent
+                    forwardedClass={
+                      Object {
+                        "$$typeof": Symbol(react.forward_ref),
+                        "attrs": undefined,
+                        "componentStyle": ComponentStyle {
+                          "componentId": "sc-Rmtcm",
+                          "isStatic": true,
+                          "lastClassName": "kqlPcX",
+                          "rules": Array [
+                            "
   width: 50%;
 ",
-                              ],
-                            },
-                            "displayName": "styled.div",
-                            "render": [Function],
-                            "styledComponentId": "sc-Rmtcm",
-                            "target": "div",
-                            "toString": [Function],
-                            "warnTooManyClasses": [Function],
-                            "withComponent": [Function],
-                          }
-                        }
-                        forwardedRef={null}
-                      >
-                        <div
-                          className="sc-Rmtcm kqlPcX"
-                        >
-                          id_1
-                        </div>
-                      </StyledComponent>
-                    </styled.div>
-                    <styled.div>
-                      <StyledComponent
-                        forwardedClass={
-                          Object {
-                            "$$typeof": Symbol(react.forward_ref),
-                            "attrs": undefined,
-                            "componentStyle": ComponentStyle {
-                              "componentId": "sc-bRBYWo",
-                              "isStatic": true,
-                              "lastClassName": "cxlfn",
-                              "rules": Array [
-                                "
+                          ],
+                        },
+                        "displayName": "styled.div",
+                        "render": [Function],
+                        "styledComponentId": "sc-Rmtcm",
+                        "target": "div",
+                        "toString": [Function],
+                        "warnTooManyClasses": [Function],
+                        "withComponent": [Function],
+                      }
+                    }
+                    forwardedRef={null}
+                  >
+                    <div
+                      className="sc-Rmtcm kqlPcX"
+                    >
+                      id_1
+                    </div>
+                  </StyledComponent>
+                </styled.div>
+                <styled.div>
+                  <StyledComponent
+                    forwardedClass={
+                      Object {
+                        "$$typeof": Symbol(react.forward_ref),
+                        "attrs": undefined,
+                        "componentStyle": ComponentStyle {
+                          "componentId": "sc-bRBYWo",
+                          "isStatic": true,
+                          "lastClassName": "cxlfn",
+                          "rules": Array [
+                            "
   width: 185px;
 ",
-                              ],
-                            },
-                            "displayName": "styled.div",
-                            "render": [Function],
-                            "styledComponentId": "sc-bRBYWo",
-                            "target": "div",
-                            "toString": [Function],
-                            "warnTooManyClasses": [Function],
-                            "withComponent": [Function],
+                          ],
+                        },
+                        "displayName": "styled.div",
+                        "render": [Function],
+                        "styledComponentId": "sc-bRBYWo",
+                        "target": "div",
+                        "toString": [Function],
+                        "warnTooManyClasses": [Function],
+                        "withComponent": [Function],
+                      }
+                    }
+                    forwardedRef={null}
+                  >
+                    <div
+                      className="sc-bRBYWo cxlfn"
+                    >
+                      <Styled(ActionStatus)
+                        instance={
+                          Object {
+                            "activities": Array [
+                              Object {
+                                "activityId": "activityId_0",
+                                "endDate": "2018-10-10T09:20:38.658Z",
+                                "id": "id_0",
+                                "startDate": "2018-10-10T09:20:38.658Z",
+                                "state": "ACTIVE",
+                              },
+                            ],
+                            "bpmnProcessId": "someKey",
+                            "endDate": null,
+                            "id": "id_1",
+                            "incidents": Array [
+                              Object {
+                                "activityId": Object {},
+                                "activityInstanceId": Object {},
+                                "errorMessage": "",
+                                "errorType": "",
+                                "id": "id_2",
+                                "jobId": "jobId_0",
+                                "state": "ACTIVE",
+                              },
+                            ],
+                            "operations": Array [
+                              Object {
+                                "endDate": "2018-10-10T09:20:38.661Z",
+                                "errorMessage": "string",
+                                "startDate": "2018-10-10T09:20:38.661Z",
+                                "state": "SCHEDULED",
+                                "type": "UPDATE_RETRIES",
+                              },
+                            ],
+                            "sequenceFlows": Array [],
+                            "startDate": "2018-06-21",
+                            "state": "ACTIVE",
+                            "workflowId": "2",
+                            "workflowName": "someWorkflowName",
+                            "workflowVersion": 1,
                           }
                         }
-                        forwardedRef={null}
+                        operationState="SCHEDULED"
+                        operationType="UPDATE_RETRIES"
                       >
-                        <div
-                          className="sc-bRBYWo cxlfn"
+                        <StyledComponent
+                          forwardedClass={
+                            Object {
+                              "$$typeof": Symbol(react.forward_ref),
+                              "attrs": undefined,
+                              "componentStyle": ComponentStyle {
+                                "componentId": "sc-hzDkRC",
+                                "isStatic": true,
+                                "lastClassName": "kKNFUc",
+                                "rules": Array [
+                                  "
+  margin-right: 97px;
+",
+                                ],
+                              },
+                              "displayName": "Styled(ActionStatus)",
+                              "render": [Function],
+                              "styledComponentId": "sc-hzDkRC",
+                              "target": [Function],
+                              "toString": [Function],
+                              "warnTooManyClasses": [Function],
+                              "withComponent": [Function],
+                              Symbol(Symbol.hasInstance): [Function],
+                            }
+                          }
+                          forwardedRef={null}
+                          instance={
+                            Object {
+                              "activities": Array [
+                                Object {
+                                  "activityId": "activityId_0",
+                                  "endDate": "2018-10-10T09:20:38.658Z",
+                                  "id": "id_0",
+                                  "startDate": "2018-10-10T09:20:38.658Z",
+                                  "state": "ACTIVE",
+                                },
+                              ],
+                              "bpmnProcessId": "someKey",
+                              "endDate": null,
+                              "id": "id_1",
+                              "incidents": Array [
+                                Object {
+                                  "activityId": Object {},
+                                  "activityInstanceId": Object {},
+                                  "errorMessage": "",
+                                  "errorType": "",
+                                  "id": "id_2",
+                                  "jobId": "jobId_0",
+                                  "state": "ACTIVE",
+                                },
+                              ],
+                              "operations": Array [
+                                Object {
+                                  "endDate": "2018-10-10T09:20:38.661Z",
+                                  "errorMessage": "string",
+                                  "startDate": "2018-10-10T09:20:38.661Z",
+                                  "state": "SCHEDULED",
+                                  "type": "UPDATE_RETRIES",
+                                },
+                              ],
+                              "sequenceFlows": Array [],
+                              "startDate": "2018-06-21",
+                              "state": "ACTIVE",
+                              "workflowId": "2",
+                              "workflowName": "someWorkflowName",
+                              "workflowVersion": 1,
+                            }
+                          }
+                          operationState="SCHEDULED"
+                          operationType="UPDATE_RETRIES"
                         >
-                          <Styled(ActionStatus)
+                          <ActionStatus
+                            className="sc-hzDkRC kKNFUc"
                             instance={
                               Object {
                                 "activities": Array [
@@ -915,207 +1028,89 @@ exports[`Selection should contain Instances 1`] = `
                             operationState="SCHEDULED"
                             operationType="UPDATE_RETRIES"
                           >
-                            <StyledComponent
-                              forwardedClass={
-                                Object {
-                                  "$$typeof": Symbol(react.forward_ref),
-                                  "attrs": undefined,
-                                  "componentStyle": ComponentStyle {
-                                    "componentId": "sc-hzDkRC",
-                                    "isStatic": true,
-                                    "lastClassName": "kKNFUc",
-                                    "rules": Array [
-                                      "
-  margin-right: 97px;
-",
-                                    ],
-                                  },
-                                  "displayName": "Styled(ActionStatus)",
-                                  "render": [Function],
-                                  "styledComponentId": "sc-hzDkRC",
-                                  "target": [Function],
-                                  "toString": [Function],
-                                  "warnTooManyClasses": [Function],
-                                  "withComponent": [Function],
-                                  Symbol(Symbol.hasInstance): [Function],
-                                }
-                              }
-                              forwardedRef={null}
-                              instance={
-                                Object {
-                                  "activities": Array [
-                                    Object {
-                                      "activityId": "activityId_0",
-                                      "endDate": "2018-10-10T09:20:38.658Z",
-                                      "id": "id_0",
-                                      "startDate": "2018-10-10T09:20:38.658Z",
-                                      "state": "ACTIVE",
-                                    },
-                                  ],
-                                  "bpmnProcessId": "someKey",
-                                  "endDate": null,
-                                  "id": "id_1",
-                                  "incidents": Array [
-                                    Object {
-                                      "activityId": Object {},
-                                      "activityInstanceId": Object {},
-                                      "errorMessage": "",
-                                      "errorType": "",
-                                      "id": "id_2",
-                                      "jobId": "jobId_0",
-                                      "state": "ACTIVE",
-                                    },
-                                  ],
-                                  "operations": Array [
-                                    Object {
-                                      "endDate": "2018-10-10T09:20:38.661Z",
-                                      "errorMessage": "string",
-                                      "startDate": "2018-10-10T09:20:38.661Z",
-                                      "state": "SCHEDULED",
-                                      "type": "UPDATE_RETRIES",
-                                    },
-                                  ],
-                                  "sequenceFlows": Array [],
-                                  "startDate": "2018-06-21",
-                                  "state": "ACTIVE",
-                                  "workflowId": "2",
-                                  "workflowName": "someWorkflowName",
-                                  "workflowVersion": 1,
-                                }
-                              }
-                              operationState="SCHEDULED"
-                              operationType="UPDATE_RETRIES"
-                            >
-                              <ActionStatus
+                            <div>
+                              <Themed(Styled(Spinner))
                                 className="sc-hzDkRC kKNFUc"
-                                instance={
-                                  Object {
-                                    "activities": Array [
-                                      Object {
-                                        "activityId": "activityId_0",
-                                        "endDate": "2018-10-10T09:20:38.658Z",
-                                        "id": "id_0",
-                                        "startDate": "2018-10-10T09:20:38.658Z",
-                                        "state": "ACTIVE",
-                                      },
-                                    ],
-                                    "bpmnProcessId": "someKey",
-                                    "endDate": null,
-                                    "id": "id_1",
-                                    "incidents": Array [
-                                      Object {
-                                        "activityId": Object {},
-                                        "activityInstanceId": Object {},
-                                        "errorMessage": "",
-                                        "errorType": "",
-                                        "id": "id_2",
-                                        "jobId": "jobId_0",
-                                        "state": "ACTIVE",
-                                      },
-                                    ],
-                                    "operations": Array [
-                                      Object {
-                                        "endDate": "2018-10-10T09:20:38.661Z",
-                                        "errorMessage": "string",
-                                        "startDate": "2018-10-10T09:20:38.661Z",
-                                        "state": "SCHEDULED",
-                                        "type": "UPDATE_RETRIES",
-                                      },
-                                    ],
-                                    "sequenceFlows": Array [],
-                                    "startDate": "2018-06-21",
-                                    "state": "ACTIVE",
-                                    "workflowId": "2",
-                                    "workflowName": "someWorkflowName",
-                                    "workflowVersion": 1,
-                                  }
-                                }
-                                operationState="SCHEDULED"
-                                operationType="UPDATE_RETRIES"
+                                title="Instance id_1 has scheduled Operations"
                               >
-                                <div>
-                                  <Themed(Styled(Spinner))
+                                <Themed
+                                  className="sc-hzDkRC kKNFUc"
+                                  forwardedRef={null}
+                                  title="Instance id_1 has scheduled Operations"
+                                >
+                                  <Styled(Spinner)
                                     className="sc-hzDkRC kKNFUc"
+                                    theme="dark"
                                     title="Instance id_1 has scheduled Operations"
                                   >
-                                    <Themed
+                                    <StyledComponent
                                       className="sc-hzDkRC kKNFUc"
-                                      forwardedRef={null}
-                                      title="Instance id_1 has scheduled Operations"
-                                    >
-                                      <Styled(Spinner)
-                                        className="sc-hzDkRC kKNFUc"
-                                        theme="dark"
-                                        title="Instance id_1 has scheduled Operations"
-                                      >
-                                        <StyledComponent
-                                          className="sc-hzDkRC kKNFUc"
-                                          forwardedClass={
-                                            Object {
-                                              "$$typeof": Symbol(react.forward_ref),
-                                              "attrs": undefined,
-                                              "componentStyle": ComponentStyle {
-                                                "componentId": "sc-kpOJdX",
-                                                "isStatic": false,
-                                                "lastClassName": "kVoQta",
-                                                "rules": Array [
-                                                  "
+                                      forwardedClass={
+                                        Object {
+                                          "$$typeof": Symbol(react.forward_ref),
+                                          "attrs": undefined,
+                                          "componentStyle": ComponentStyle {
+                                            "componentId": "sc-kpOJdX",
+                                            "isStatic": false,
+                                            "lastClassName": "kVoQta",
+                                            "rules": Array [
+                                              "
   margin: 0 5px;
  border: 3px solid ",
-                                                  [Function],
-                                                  ";
+                                              [Function],
+                                              ";
     border-right-color: transparent;
   }
 ",
-                                                ],
-                                              },
-                                              "displayName": "Styled(Spinner)",
-                                              "render": [Function],
-                                              "styledComponentId": "sc-kpOJdX",
-                                              "target": [Function],
-                                              "toString": [Function],
-                                              "warnTooManyClasses": [Function],
-                                              "withComponent": [Function],
-                                              Symbol(Symbol.hasInstance): [Function],
-                                            }
-                                          }
-                                          forwardedRef={null}
+                                            ],
+                                          },
+                                          "displayName": "Styled(Spinner)",
+                                          "render": [Function],
+                                          "styledComponentId": "sc-kpOJdX",
+                                          "target": [Function],
+                                          "toString": [Function],
+                                          "warnTooManyClasses": [Function],
+                                          "withComponent": [Function],
+                                          Symbol(Symbol.hasInstance): [Function],
+                                        }
+                                      }
+                                      forwardedRef={null}
+                                      theme="dark"
+                                      title="Instance id_1 has scheduled Operations"
+                                    >
+                                      <Spinner
+                                        className="sc-hzDkRC kKNFUc sc-kpOJdX kVoQta"
+                                        theme="dark"
+                                        title="Instance id_1 has scheduled Operations"
+                                      >
+                                        <Themed(styled.div)
+                                          className="sc-hzDkRC kKNFUc sc-kpOJdX kVoQta"
                                           theme="dark"
                                           title="Instance id_1 has scheduled Operations"
                                         >
-                                          <Spinner
+                                          <Themed
                                             className="sc-hzDkRC kKNFUc sc-kpOJdX kVoQta"
+                                            forwardedRef={null}
                                             theme="dark"
                                             title="Instance id_1 has scheduled Operations"
                                           >
-                                            <Themed(styled.div)
+                                            <styled.div
                                               className="sc-hzDkRC kKNFUc sc-kpOJdX kVoQta"
                                               theme="dark"
                                               title="Instance id_1 has scheduled Operations"
                                             >
-                                              <Themed
+                                              <StyledComponent
                                                 className="sc-hzDkRC kKNFUc sc-kpOJdX kVoQta"
-                                                forwardedRef={null}
-                                                theme="dark"
-                                                title="Instance id_1 has scheduled Operations"
-                                              >
-                                                <styled.div
-                                                  className="sc-hzDkRC kKNFUc sc-kpOJdX kVoQta"
-                                                  theme="dark"
-                                                  title="Instance id_1 has scheduled Operations"
-                                                >
-                                                  <StyledComponent
-                                                    className="sc-hzDkRC kKNFUc sc-kpOJdX kVoQta"
-                                                    forwardedClass={
-                                                      Object {
-                                                        "$$typeof": Symbol(react.forward_ref),
-                                                        "attrs": undefined,
-                                                        "componentStyle": ComponentStyle {
-                                                          "componentId": "sc-kGXeez",
-                                                          "isStatic": false,
-                                                          "lastClassName": "kyYmHA",
-                                                          "rules": Array [
-                                                            "
+                                                forwardedClass={
+                                                  Object {
+                                                    "$$typeof": Symbol(react.forward_ref),
+                                                    "attrs": undefined,
+                                                    "componentStyle": ComponentStyle {
+                                                      "componentId": "sc-kGXeez",
+                                                      "isStatic": false,
+                                                      "lastClassName": "kyYmHA",
+                                                      "rules": Array [
+                                                        "
   border-radius: 50%;
 
   // intentionally sized based on the parent's font-size
@@ -1126,67 +1121,65 @@ exports[`Selection should contain Instances 1`] = `
 
   border: 3px solid
     ",
-                                                            [Function],
-                                                            ";
+                                                        [Function],
+                                                        ";
   border-right-color: transparent;
 
   animation: ",
-                                                            Keyframes {
-                                                              "id": "sc-keyframes-iECmZH",
-                                                              "inject": [Function],
-                                                              "name": "iECmZH",
-                                                              "rules": Array [
-                                                                "@-webkit-keyframes iECmZH{0%{-webkit-transform:rotate(0deg);-ms-transform:rotate(0deg);transform:rotate(0deg);}100%{-webkit-transform:rotate(360deg);-ms-transform:rotate(360deg);transform:rotate(360deg);}}",
-                                                                "@keyframes iECmZH{0%{-webkit-transform:rotate(0deg);-ms-transform:rotate(0deg);transform:rotate(0deg);}100%{-webkit-transform:rotate(360deg);-ms-transform:rotate(360deg);transform:rotate(360deg);}}",
-                                                              ],
-                                                              "toString": [Function],
-                                                            },
-                                                            " 0.65s infinite linear;
-",
+                                                        Keyframes {
+                                                          "id": "sc-keyframes-iECmZH",
+                                                          "inject": [Function],
+                                                          "name": "iECmZH",
+                                                          "rules": Array [
+                                                            "@-webkit-keyframes iECmZH{0%{-webkit-transform:rotate(0deg);-ms-transform:rotate(0deg);transform:rotate(0deg);}100%{-webkit-transform:rotate(360deg);-ms-transform:rotate(360deg);transform:rotate(360deg);}}",
+                                                            "@keyframes iECmZH{0%{-webkit-transform:rotate(0deg);-ms-transform:rotate(0deg);transform:rotate(0deg);}100%{-webkit-transform:rotate(360deg);-ms-transform:rotate(360deg);transform:rotate(360deg);}}",
                                                           ],
+                                                          "toString": [Function],
                                                         },
-                                                        "displayName": "styled.div",
-                                                        "render": [Function],
-                                                        "styledComponentId": "sc-kGXeez",
-                                                        "target": "div",
-                                                        "toString": [Function],
-                                                        "warnTooManyClasses": [Function],
-                                                        "withComponent": [Function],
-                                                      }
-                                                    }
-                                                    forwardedRef={null}
-                                                    theme="dark"
-                                                    title="Instance id_1 has scheduled Operations"
-                                                  >
-                                                    <div
-                                                      className="sc-hzDkRC kKNFUc sc-kpOJdX kVoQta sc-kGXeez kyYmHA"
-                                                      title="Instance id_1 has scheduled Operations"
-                                                    />
-                                                  </StyledComponent>
-                                                </styled.div>
-                                              </Themed>
-                                            </Themed(styled.div)>
-                                          </Spinner>
-                                        </StyledComponent>
-                                      </Styled(Spinner)>
-                                    </Themed>
-                                  </Themed(Styled(Spinner))>
-                                </div>
-                              </ActionStatus>
-                            </StyledComponent>
-                          </Styled(ActionStatus)>
-                        </div>
-                      </StyledComponent>
-                    </styled.div>
-                  </li>
-                </StyledComponent>
-              </styled.li>
-            </Themed>
-          </Themed(styled.li)>
-        </Transition>
-      </CSSTransition>
-    </div>
-  </TransitionGroup>
+                                                        " 0.65s infinite linear;
+",
+                                                      ],
+                                                    },
+                                                    "displayName": "styled.div",
+                                                    "render": [Function],
+                                                    "styledComponentId": "sc-kGXeez",
+                                                    "target": "div",
+                                                    "toString": [Function],
+                                                    "warnTooManyClasses": [Function],
+                                                    "withComponent": [Function],
+                                                  }
+                                                }
+                                                forwardedRef={null}
+                                                theme="dark"
+                                                title="Instance id_1 has scheduled Operations"
+                                              >
+                                                <div
+                                                  className="sc-hzDkRC kKNFUc sc-kpOJdX kVoQta sc-kGXeez kyYmHA"
+                                                  title="Instance id_1 has scheduled Operations"
+                                                />
+                                              </StyledComponent>
+                                            </styled.div>
+                                          </Themed>
+                                        </Themed(styled.div)>
+                                      </Spinner>
+                                    </StyledComponent>
+                                  </Styled(Spinner)>
+                                </Themed>
+                              </Themed(Styled(Spinner))>
+                            </div>
+                          </ActionStatus>
+                        </StyledComponent>
+                      </Styled(ActionStatus)>
+                    </div>
+                  </StyledComponent>
+                </styled.div>
+              </li>
+            </StyledComponent>
+          </styled.li>
+        </Themed>
+      </Themed(styled.li)>
+    </Transition>
+  </CSSTransition>
 </ul>
 `;
 

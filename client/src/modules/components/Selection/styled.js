@@ -33,26 +33,25 @@ const openSelectionTransitionStyle = css`
   }
   &.transition-enter-active {
     opacity: 1;
-    transition: opacity ${({transitionTiming}) => transitionTiming.enter + 'ms'};
+    transition: opacity ${({timeout}) => timeout.enter + 'ms'};
     overflow: hidden;
     animation-name: ${Animations.fold(0, 474)};
-    animation-duration: ${({transitionTiming}) =>
-      transitionTiming.enter + 'ms'};
+    animation-duration: ${({timeout}) => timeout.enter + 'ms'};
   }
   &.transition-enter-done {
     opacity: 1;
-    transition: opacity ${({transitionTiming}) => transitionTiming.enter + 'ms'};
+    transition: opacity ${({timeout}) => timeout.enter + 'ms'};
   }
   &.transition-exit {
     opacity: 0;
-    transition: opacity ${({transitionTiming}) => transitionTiming.exit + 'ms'};
+    transition: opacity ${({timeout}) => timeout.exit + 'ms'};
   }
   &.transition-exit-active {
     opacity: 0;
     max-height: 0px;
     overflow: hidden;
     animation-name: ${Animations.fold(474, 0)};
-    animation-duration: ${({transitionTiming}) => transitionTiming.exit + 'ms'};
+    animation-duration: ${({timeout}) => timeout.exit + 'ms'};
   }
   &.transition-exit-done {
     opacity: 0;
@@ -205,7 +204,7 @@ const addInstanceTransitionStyles = css`
   }
   &.transition-enter-active {
     opacity: 1;
-    transition: opacity ${({transitionTiming}) => transitionTiming + 'ms'};
+    transition: opacity ${({timeout}) => timeout + 'ms'};
   }
   &.transition-enter-done {
     opacity: 1;

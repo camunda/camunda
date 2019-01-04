@@ -1,5 +1,6 @@
 import styled, {css} from 'styled-components';
 import {themed, themeStyle, Colors, Animations} from 'modules/theme';
+import {TransitionGroup as TransitionGroupComponent} from 'react-transition-group';
 
 import ContextualMessage from 'modules/components/ContextualMessage';
 
@@ -16,25 +17,25 @@ const addSelectionTransitionStyles = css`
   }
   &.transition-enter-active {
     opacity: 1;
-    transition: opacity ${({transitionTiming}) => transitionTiming + 'ms'};
+    transition: opacity ${({timeout}) => timeout + 'ms'};
     overflow: hidden;
     animation-name: ${Animations.fold(0, 474)};
-    animation-duration: ${({transitionTiming}) => transitionTiming + 'ms'};
+    animation-duration: ${({timeout}) => timeout + 'ms'};
   }
   &.transition-enter-done {
     opacity: 1;
-    transition: opacity ${({transitionTiming}) => transitionTiming + 'ms'};
+    transition: opacity ${({timeout}) => timeout + 'ms'};
   }
   &.transition-exit {
     opacity: 0;
-    transition: opacity ${({transitionTiming}) => transitionTiming + 'ms'};
+    transition: opacity ${({timeout}) => timeout + 'ms'};
   }
   &.transition-exit-active {
     opacity: 0;
     max-height: 0px;
     overflow: hidden;
     animation-name: ${Animations.fold(474, 0)};
-    animation-duration: ${({transitionTiming}) => transitionTiming + 'ms'};
+    animation-duration: ${({timeout}) => timeout + 'ms'};
   }
   &.transition-exit-done {
     opacity: 0;
@@ -42,18 +43,11 @@ const addSelectionTransitionStyles = css`
   }
 `;
 
-export const Ul = styled.ul`
+export const TransitionGroup = styled(TransitionGroupComponent)`
   padding-left: 35px;
   margin: 0px;
   overflow: auto;
   overflow-x: hidden;
-`;
-
-export const MessageWrapper = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  /* margin-top: 20px; */
-  padding-right: 40px;
 `;
 
 export const Li = styled.li`
@@ -63,6 +57,13 @@ export const Li = styled.li`
     margin-top: 20px;
   }
   ${addSelectionTransitionStyles};
+`;
+
+export const MessageWrapper = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  /* margin-top: 20px; */
+  padding-right: 40px;
 `;
 
 export const SelectionMessage = styled(ContextualMessage)`

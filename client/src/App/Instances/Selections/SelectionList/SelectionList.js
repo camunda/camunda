@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {CSSTransition, TransitionGroup} from 'react-transition-group';
+import {CSSTransition} from 'react-transition-group';
 
 import Selection from 'modules/components/Selection';
 import {withSelection} from 'modules/contexts/SelectionContext';
@@ -40,7 +40,7 @@ class SelectionList extends React.Component {
   };
 
   render() {
-    const transitionTiming = 200;
+    const timeout = 200;
     const {
       selections,
       openSelection,
@@ -54,50 +54,47 @@ class SelectionList extends React.Component {
             <Styled.SelectionMessage type={MESSAGES_TYPE.DROP_SELECTION} />
           </Styled.MessageWrapper>
         )}
+        <Styled.TransitionGroup component={'ul'}>
+          {selections.length ? (
+            selections.map(selection => {
+              const {selectionId, instancesMap, totalCount} = selection;
 
-        <Styled.Ul>
-          <TransitionGroup>
-            {selections.length ? (
-              selections.map(selection => {
-                const {selectionId, instancesMap, totalCount} = selection;
-
-                return (
-                  <CSSTransition
-                    key={selectionId}
-                    classNames="transition"
-                    timeout={transitionTiming}
-                  >
-                    <Styled.Li
-                      data-test="selection-list-item"
-                      key={selectionId}
-                      transitionTiming={transitionTiming}
-                    >
-                      <Selection
-                        isOpen={openSelection === selectionId}
-                        selectionId={selectionId}
-                        instances={instancesMap}
-                        instanceCount={totalCount}
-                        onRetry={() => this.handleRetrySelection(selectionId)}
-                        onCancel={() => this.handleCancelSelection(selectionId)}
-                        onToggle={() => onToggleSelection(selectionId)}
-                        onDelete={() => onDeleteSelection(selectionId)}
-                      />
-                    </Styled.Li>
-                  </CSSTransition>
-                );
-              })
-            ) : (
-              <CSSTransition classNames="transition" timeout={transitionTiming}>
-                <Styled.NoSelectionWrapper
-                  data-test="empty-selection-list-message"
-                  transitionTiming={transitionTiming}
+              return (
+                <CSSTransition
+                  key={selectionId}
+                  classNames="transition"
+                  timeout={timeout}
                 >
-                  {NO_SELECTIONS_MESSAGE}
-                </Styled.NoSelectionWrapper>
-              </CSSTransition>
-            )}
-          </TransitionGroup>
-        </Styled.Ul>
+                  <Styled.Li
+                    key={selectionId}
+                    timeout={timeout}
+                    data-test="selection-list-item"
+                  >
+                    <Selection
+                      isOpen={openSelection === selectionId}
+                      selectionId={selectionId}
+                      instances={instancesMap}
+                      instanceCount={totalCount}
+                      onRetry={() => this.handleRetrySelection(selectionId)}
+                      onCancel={() => this.handleCancelSelection(selectionId)}
+                      onToggle={() => onToggleSelection(selectionId)}
+                      onDelete={() => onDeleteSelection(selectionId)}
+                    />
+                  </Styled.Li>
+                </CSSTransition>
+              );
+            })
+          ) : (
+            <CSSTransition classNames="transition" timeout={timeout}>
+              <Styled.NoSelectionWrapper
+                data-test="empty-selection-list-message"
+                timeout={timeout}
+              >
+                {NO_SELECTIONS_MESSAGE}
+              </Styled.NoSelectionWrapper>
+            </CSSTransition>
+          )}
+        </Styled.TransitionGroup>
       </React.Fragment>
     );
   }
