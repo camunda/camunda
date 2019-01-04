@@ -1,163 +1,145 @@
 import React from 'react';
-import {shallow} from 'enzyme';
+import {mount} from 'enzyme';
+
+import {ThemeProvider} from 'modules/contexts/ThemeContext';
 
 import {PANE_ID, EXPAND_STATE, DIRECTION} from 'modules/constants';
 
 import Pane from './Pane';
 import * as Styled from './styled';
 
-describe.skip('Pane', () => {
-  const Foo = () => <div>Foo</div>;
-  const mockProps = {
-    handleExpand: jest.fn()
-  };
+const SplitPaneHeader = () => <div>Header Content</div>;
+const SplitPaneBody = () => <div>Body Content</div>;
 
+const mockDefaultProps = {
+  handleExpand: jest.fn()
+};
+
+const mountNode = mockCustomProps => {
+  return mount(
+    <ThemeProvider>
+      <Pane {...mockDefaultProps} {...mockCustomProps}>
+        <SplitPaneHeader />
+        <SplitPaneBody />
+      </Pane>
+    </ThemeProvider>
+  );
+};
+
+describe('Pane', () => {
   it('should render children with expandState', () => {
     // given
-    const node = shallow(
-      <Pane
-        {...mockProps}
-        paneId={PANE_ID.TOP}
-        expandState={EXPAND_STATE.EXPANDED}
-      >
-        <Foo />
-      </Pane>
-    );
+    const node = mountNode({
+      paneId: PANE_ID.TOP,
+      expandState: EXPAND_STATE.EXPANDED
+    });
+
+    const HeaderNode = node.find(SplitPaneHeader);
+    const BodyNode = node.find(SplitPaneBody);
 
     // then
-    const FooNode = node.find(Foo);
-    expect(FooNode).toHaveLength(1);
-    expect(FooNode.prop('expandState')).toBe(EXPAND_STATE.EXPANDED);
-    expect(node).toMatchSnapshot();
+    expect(HeaderNode).toHaveLength(1);
+    expect(BodyNode).toHaveLength(1);
+
+    expect(HeaderNode.prop('expandState')).toBe(EXPAND_STATE.EXPANDED);
+    expect(BodyNode.prop('expandState')).toBe(EXPAND_STATE.EXPANDED);
   });
 
   describe('top pane', () => {
     it('should not render expand buttons', () => {
       // given
-      const node = shallow(
-        <Pane
-          {...mockProps}
-          paneId={PANE_ID.TOP}
-          expandState={EXPAND_STATE.COLLAPSED}
-        >
-          <Foo />
-        </Pane>
-      );
+      const node = mountNode({
+        expandState: EXPAND_STATE.COLLAPSED
+      });
 
       // then
       const ExpandButtonNode = node.find(Styled.PaneExpandButton);
       expect(ExpandButtonNode).toHaveLength(0);
-      expect(node).toMatchSnapshot();
     });
   });
 
   describe('bottom pane', () => {
     it('should render ExpandButton with UP icon if pane is collapsed', () => {
       // given
-      const node = shallow(
-        <Pane
-          {...mockProps}
-          paneId={PANE_ID.BOTTOM}
-          expandState={EXPAND_STATE.COLLAPSED}
-        >
-          <Foo />
-        </Pane>
-      );
+      const node = mountNode({
+        paneId: PANE_ID.BOTTOM,
+        expandState: EXPAND_STATE.COLLAPSED
+      });
 
       // then
-      const ExpandButtonNode = node
-        .find('CollapsablePanelConsumer')
-        .dive()
-        .find(Styled.PaneExpandButton);
+      const ExpandButtonNode = node.find(Styled.PaneExpandButton);
+
       expect(ExpandButtonNode).toHaveLength(1);
       expect(ExpandButtonNode.prop('direction')).toBe(DIRECTION.UP);
-      expect(node).toMatchSnapshot();
-      expect(ExpandButtonNode).toMatchSnapshot();
     });
 
-    it("'should render both ExpandButtons by default", () => {
+    it("'should render both ExpandButtons if pane is in default position", () => {
       // given
-      const node = shallow(
-        <Pane
-          {...mockProps}
-          paneId={PANE_ID.BOTTOM}
-          expandState={EXPAND_STATE.DEFAULT}
-        >
-          <Foo />
-        </Pane>
-      );
+      const node = mountNode({
+        paneId: PANE_ID.BOTTOM,
+        expandState: EXPAND_STATE.DEFAULT
+      });
 
       // then
-      const ExpandButtonNodes = node
-        .find('CollapsablePanelConsumer')
-        .dive()
-        .find(Styled.PaneExpandButton);
+      const ExpandButtonNodes = node.find(Styled.PaneExpandButton);
       expect(ExpandButtonNodes).toHaveLength(2);
       expect(ExpandButtonNodes.at(0).prop('direction')).toBe(DIRECTION.DOWN);
       expect(ExpandButtonNodes.at(1).prop('direction')).toBe(DIRECTION.UP);
-      expect(node).toMatchSnapshot();
-      expect(ExpandButtonNodes).toMatchSnapshot();
     });
 
     it("should render ExpandButton with DOWN icon if pane is expanded'", () => {
       // given
-      const node = shallow(
-        <Pane
-          {...mockProps}
-          paneId={PANE_ID.BOTTOM}
-          expandState={EXPAND_STATE.EXPANDED}
-        >
-          <Foo />
-        </Pane>
-      );
+      const node = mountNode({
+        paneId: PANE_ID.BOTTOM,
+        expandState: EXPAND_STATE.EXPANDED
+      });
 
       // then
-      const ExpandButtonNode = node
-        .find('CollapsablePanelConsumer')
-        .dive()
-        .find(Styled.PaneExpandButton);
+      const ExpandButtonNode = node.find(Styled.PaneExpandButton);
       expect(ExpandButtonNode).toHaveLength(1);
       expect(ExpandButtonNode.prop('direction')).toBe(DIRECTION.DOWN);
-      expect(node).toMatchSnapshot();
-      expect(ExpandButtonNode).toMatchSnapshot();
     });
   });
 
   describe('handleExpand', () => {
-    const mockProps = {
+    const mockDefaultProps = {
       handleExpand: jest.fn(),
       resetExpanded: jest.fn(),
       paneId: PANE_ID.BOTTOM
     };
 
     beforeEach(() => {
-      mockProps.handleExpand.mockClear();
-      mockProps.resetExpanded.mockClear();
+      mockDefaultProps.handleExpand.mockClear();
+      mockDefaultProps.resetExpanded.mockClear();
     });
 
     describe('handleTopExpand', () => {
-      it('should call handleExpand with PANE_ID.TOP', () => {
+      it.only('should call handleExpand with PANE_ID.TOP', () => {
         // given
-        const node = shallow(<Pane {...mockProps} />);
+        const node = mountNode(mockDefaultProps);
+        const PaneNode = node.find(Pane);
 
         // when
-        expect(node.instance().handleTopExpand());
+        expect(PaneNode.instance().handleTopExpand());
 
         // then
-        expect(mockProps.handleExpand).toHaveBeenCalledWith(PANE_ID.TOP);
+        expect(mockDefaultProps.handleExpand).toHaveBeenCalledWith(PANE_ID.TOP);
       });
     });
 
     describe('handleBottomExpand', () => {
       it('should call handleExpand with PANE_ID.BOTTOM', () => {
         // given
-        const node = shallow(<Pane {...mockProps} />);
+        const node = mountNode(mockDefaultProps);
+        const PaneNode = node.find(Pane);
 
         // when
-        expect(node.instance().handleBottomExpand());
+        expect(PaneNode.instance().handleBottomExpand());
 
         // then
-        expect(mockProps.handleExpand).toHaveBeenCalledWith(PANE_ID.BOTTOM);
+        expect(mockDefaultProps.handleExpand).toHaveBeenCalledWith(
+          PANE_ID.BOTTOM
+        );
       });
     });
   });
