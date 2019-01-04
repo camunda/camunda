@@ -15,6 +15,7 @@ import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.util.DateUtilHelper;
+import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.get.GetResponse;
 import org.junit.After;
@@ -151,7 +152,8 @@ public class SingleReportHandlingIT {
 
     // then
     assertThat(reports.size(), is(1));
-    SingleReportDefinitionDto<ProcessReportDataDto> newReport = (SingleReportDefinitionDto<ProcessReportDataDto>) reports.get(0);
+    SingleReportDefinitionDto<ProcessReportDataDto> newReport =
+      (SingleReportDefinitionDto<ProcessReportDataDto>) reports.get(0);
     assertThat(newReport.getData().getProcessDefinitionKey(), is("procdef"));
     assertThat(newReport.getData().getProcessDefinitionVersion(), is("123"));
     assertThat(newReport.getData().getConfiguration(), is("aRandomConfiguration"));
@@ -233,7 +235,8 @@ public class SingleReportHandlingIT {
 
     // then
     assertThat(reports.size(), is(1));
-    SingleReportDefinitionDto<ProcessReportDataDto> newReport = (SingleReportDefinitionDto<ProcessReportDataDto>) reports.get(0);
+    SingleReportDefinitionDto<ProcessReportDataDto> newReport =
+      (SingleReportDefinitionDto<ProcessReportDataDto>) reports.get(0);
     assertThat(newReport.getData(), is(notNullValue()));
     reportData = newReport.getData();
     assertThat(reportData.getFilter().size(), is(3));
@@ -299,6 +302,23 @@ public class SingleReportHandlingIT {
     assertThat(result.getCreated().truncatedTo(ChronoUnit.DAYS), is(now.truncatedTo(ChronoUnit.DAYS)));
     assertThat(result.getLastModifier(), is(DEFAULT_USERNAME));
     assertThat(result.getLastModified().truncatedTo(ChronoUnit.DAYS), is(now.truncatedTo(ChronoUnit.DAYS)));
+  }
+
+  @Test
+  public void evaluateReportWithoutVisualization() {
+    // given
+    ProcessReportDataDto reportData =
+      ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone("foo", "1");
+    reportData.setVisualization(null);
+
+    // when
+    Response response = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      .execute();
+
+    // then
+    assertThat(response.getStatus(), is(200));
   }
 
   @Test

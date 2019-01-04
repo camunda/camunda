@@ -87,7 +87,6 @@ public class ValidationHelper {
       ProcessViewDto viewDto = processReportDataDto.getView();
       ensureNotNull("view", viewDto);
       ensureNotEmpty("view operation", viewDto.getOperation());
-      ensureNotEmpty("visualization", processReportDataDto.getVisualization());
       ensureNotNull("group by", processReportDataDto.getGroupBy());
       validateProcessFilters(processReportDataDto.getFilter());
     } else if (dataDto instanceof DecisionReportDataDto) {
@@ -96,7 +95,6 @@ public class ValidationHelper {
       DecisionViewDto viewDto = decisionReportDataDto.getView();
       ensureNotNull("view", viewDto);
       ensureNotEmpty("view operation", viewDto.getOperation());
-      ensureNotEmpty("visualization", decisionReportDataDto.getVisualization());
       ensureNotNull("group by", decisionReportDataDto.getGroupBy());
       validateDecisionFilters(decisionReportDataDto.getFilter());
     }
