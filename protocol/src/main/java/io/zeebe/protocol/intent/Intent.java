@@ -70,6 +70,8 @@ public interface Intent {
         return MessageIntent.from(intent);
       case MESSAGE_SUBSCRIPTION:
         return MessageSubscriptionIntent.from(intent);
+      case MESSAGE_START_EVENT_SUBSCRIPTION:
+        return MessageStartEventSubscriptionIntent.from(intent);
       case WORKFLOW_INSTANCE_SUBSCRIPTION:
         return WorkflowInstanceSubscriptionIntent.from(intent);
       case EXPORTER:
@@ -104,6 +106,8 @@ public interface Intent {
         return WorkflowInstanceIntent.valueOf(intent);
       case MESSAGE_SUBSCRIPTION:
         return MessageSubscriptionIntent.valueOf(intent);
+      case MESSAGE_START_EVENT_SUBSCRIPTION:
+        return MessageStartEventSubscriptionIntent.valueOf(intent);
       case WORKFLOW_INSTANCE_SUBSCRIPTION:
         return WorkflowInstanceSubscriptionIntent.valueOf(intent);
       case EXPORTER:

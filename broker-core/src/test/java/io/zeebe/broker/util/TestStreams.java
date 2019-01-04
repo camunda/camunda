@@ -22,6 +22,7 @@ import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import io.zeebe.broker.exporter.stream.ExporterRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.state.StateStorageFactory;
+import io.zeebe.broker.subscription.message.data.MessageStartEventSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.workflow.data.TimerRecord;
@@ -79,6 +80,8 @@ public class TestStreams {
     VALUE_TYPES.put(WorkflowInstanceRecord.class, ValueType.WORKFLOW_INSTANCE);
     VALUE_TYPES.put(MessageRecord.class, ValueType.MESSAGE);
     VALUE_TYPES.put(MessageSubscriptionRecord.class, ValueType.MESSAGE_SUBSCRIPTION);
+    VALUE_TYPES.put(
+        MessageStartEventSubscriptionRecord.class, ValueType.MESSAGE_START_EVENT_SUBSCRIPTION);
     VALUE_TYPES.put(
         WorkflowInstanceSubscriptionRecord.class, ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
     VALUE_TYPES.put(ExporterRecord.class, ValueType.EXPORTER);

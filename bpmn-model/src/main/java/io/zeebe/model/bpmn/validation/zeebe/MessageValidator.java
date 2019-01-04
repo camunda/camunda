@@ -21,6 +21,7 @@ import io.zeebe.model.bpmn.instance.Message;
 import io.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.zeebe.model.bpmn.instance.Process;
 import io.zeebe.model.bpmn.instance.ReceiveTask;
+import io.zeebe.model.bpmn.instance.StartEvent;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 import java.util.Collection;
 import java.util.stream.Collectors;
@@ -48,7 +49,28 @@ public class MessageValidator implements ModelElementValidator<Message> {
         validationResultCollector.addError(
             0, "Must have exactly one zeebe:subscription extension element");
       }
+    } else if (isReferedByStartEvent(element)) {
+      if (element.getName() == null || element.getName().isEmpty()) {
+        validationResultCollector.addError(0, "Name must be present and not empty");
+      }
     }
+  }
+
+  private boolean isReferedByStartEvent(Message element) {
+    final Collection<StartEvent> startEvents =
+        element
+            .getParentElement()
+            .getChildElementsByType(Process.class)
+            .stream()
+            .flatMap(p -> p.getChildElementsByType(StartEvent.class).stream())
+            .collect(Collectors.toList());
+    return startEvents
+        .stream()
+        .flatMap(i -> i.getEventDefinitions().stream())
+        .anyMatch(
+            e ->
+                e instanceof MessageEventDefinition
+                    && ((MessageEventDefinition) e).getMessage() == element);
   }
 
   private boolean isReferedByCatchEvent(Message element) {

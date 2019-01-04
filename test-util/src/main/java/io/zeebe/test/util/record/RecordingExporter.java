@@ -22,6 +22,7 @@ import io.zeebe.exporter.record.value.IncidentRecordValue;
 import io.zeebe.exporter.record.value.JobBatchRecordValue;
 import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.exporter.record.value.MessageRecordValue;
+import io.zeebe.exporter.record.value.MessageStartEventSubscriptionRecordValue;
 import io.zeebe.exporter.record.value.MessageSubscriptionRecordValue;
 import io.zeebe.exporter.record.value.RaftRecordValue;
 import io.zeebe.exporter.record.value.TimerRecordValue;
@@ -34,6 +35,7 @@ import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.MessageIntent;
+import io.zeebe.protocol.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.intent.RaftIntent;
 import io.zeebe.protocol.intent.TimerIntent;
@@ -97,6 +99,18 @@ public class RecordingExporter implements Exporter {
   public static MessageSubscriptionRecordStream messageSubscriptionRecords(
       final MessageSubscriptionIntent intent) {
     return messageSubscriptionRecords().withIntent(intent);
+  }
+
+  public static MessageStartEventSubscriptionRecordStream messageStartEventSubscriptionRecords() {
+    return new MessageStartEventSubscriptionRecordStream(
+        records(
+            ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
+            MessageStartEventSubscriptionRecordValue.class));
+  }
+
+  public static MessageStartEventSubscriptionRecordStream messageStartEventSubscriptionRecords(
+      final MessageStartEventSubscriptionIntent intent) {
+    return messageStartEventSubscriptionRecords().withIntent(intent);
   }
 
   public static DeploymentRecordStream deploymentRecords() {

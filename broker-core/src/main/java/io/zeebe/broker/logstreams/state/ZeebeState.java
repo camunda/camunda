@@ -20,6 +20,7 @@ package io.zeebe.broker.logstreams.state;
 import io.zeebe.broker.incident.processor.IncidentState;
 import io.zeebe.broker.job.JobState;
 import io.zeebe.broker.logstreams.processor.KeyGenerator;
+import io.zeebe.broker.subscription.message.state.MessageStartEventSubscriptionState;
 import io.zeebe.broker.subscription.message.state.MessageState;
 import io.zeebe.broker.subscription.message.state.MessageSubscriptionState;
 import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionState;
@@ -36,6 +37,7 @@ public class ZeebeState {
   private final JobState jobState;
   private final MessageState messageState;
   private final MessageSubscriptionState messageSubscriptionState;
+  private final MessageStartEventSubscriptionState messageStartEventSubscriptionState;
   private final WorkflowInstanceSubscriptionState workflowInstanceSubscriptionState;
   private final IncidentState incidentState;
 
@@ -50,6 +52,7 @@ public class ZeebeState {
     jobState = new JobState(zeebeDb);
     messageState = new MessageState(zeebeDb);
     messageSubscriptionState = new MessageSubscriptionState(zeebeDb);
+    messageStartEventSubscriptionState = new MessageStartEventSubscriptionState(zeebeDb);
     workflowInstanceSubscriptionState = new WorkflowInstanceSubscriptionState(zeebeDb);
     incidentState = new IncidentState(zeebeDb);
   }
@@ -72,6 +75,10 @@ public class ZeebeState {
 
   public MessageSubscriptionState getMessageSubscriptionState() {
     return messageSubscriptionState;
+  }
+
+  public MessageStartEventSubscriptionState getMessageStartEventSubscriptionState() {
+    return messageStartEventSubscriptionState;
   }
 
   public WorkflowInstanceSubscriptionState getWorkflowInstanceSubscriptionState() {

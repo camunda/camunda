@@ -21,10 +21,12 @@ import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.logstreams.processor.TypedEventStreamProcessorBuilder;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
+import io.zeebe.broker.subscription.message.state.MessageStartEventSubscriptionState;
 import io.zeebe.broker.subscription.message.state.MessageState;
 import io.zeebe.broker.subscription.message.state.MessageSubscriptionState;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.MessageIntent;
+import io.zeebe.protocol.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 
 public class MessageEventProcessors {
@@ -37,6 +39,8 @@ public class MessageEventProcessors {
 
     final MessageState messageState = zeebeState.getMessageState();
     final MessageSubscriptionState subscriptionState = zeebeState.getMessageSubscriptionState();
+    final MessageStartEventSubscriptionState startEventSubscriptionState =
+        zeebeState.getMessageStartEventSubscriptionState();
 
     typedProcessorBuilder
         .onCommand(
@@ -59,6 +63,14 @@ public class MessageEventProcessors {
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.CLOSE,
             new CloseMessageSubscriptionProcessor(subscriptionState, subscriptionCommandSender))
+        .onCommand(
+            ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
+            MessageStartEventSubscriptionIntent.OPEN,
+            new OpenMessageStartEventSubscriptionProcessor(startEventSubscriptionState))
+        .onCommand(
+            ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
+            MessageStartEventSubscriptionIntent.CLOSE,
+            new CloseMessageStartEventSubscriptionProcessor(startEventSubscriptionState))
         .withListener(
             new MessageObserver(
                 messageState, subscriptionState, subscriptionCommandSender, topologyManager));

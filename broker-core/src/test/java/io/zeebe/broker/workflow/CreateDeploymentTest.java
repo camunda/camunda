@@ -27,6 +27,7 @@ import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.DeploymentRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.zeebe.model.bpmn.instance.Message;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
@@ -204,6 +205,38 @@ public class CreateDeploymentTest {
     // given
     final BpmnModelInstance process = Bpmn.createExecutableProcess().startEvent().done();
     process.getDefinitions().addChildElement(process.newInstance(Message.class));
+
+    // when
+    final ExecuteCommandResponse resp = apiRule.partitionClient().deployWithResponse(process);
+
+    // then
+    assertThat(resp.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATED);
+  }
+
+  @Test
+  public void shouldCreateDeploymentWithMessageStartEvent() throws IOException {
+    // given
+    final ProcessBuilder processBuilder = Bpmn.createExecutableProcess();
+    final BpmnModelInstance process =
+        processBuilder.startEvent().message(m -> m.name("startMessage")).endEvent().done();
+
+    // when
+    final ExecuteCommandResponse resp = apiRule.partitionClient().deployWithResponse(process);
+
+    // then
+    assertThat(resp.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATED);
+  }
+
+  @Test
+  public void shouldCreateDeploymentWithMultipleMessageStartEvent() throws IOException {
+    // given
+    final ProcessBuilder processBuilder =
+        Bpmn.createExecutableProcess("processWithMulitpleMsgStartEvent");
+    processBuilder.startEvent().message(m -> m.name("startMessage1")).endEvent().done();
+    final BpmnModelInstance process =
+        processBuilder.startEvent().message(m -> m.name("startMessage2")).endEvent().done();
 
     // when
     final ExecuteCommandResponse resp = apiRule.partitionClient().deployWithResponse(process);
