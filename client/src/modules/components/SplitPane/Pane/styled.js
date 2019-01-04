@@ -13,7 +13,6 @@ export const Pane = styled(
     'onAddNewSelection',
     'onAddToSelectionById',
     'onSelectedInstancesUpdate',
-    'onDiagramLoaded',
     'onActivityInstanceSelected',
     'onFlowNodeSelected'
   ])(Panel)
