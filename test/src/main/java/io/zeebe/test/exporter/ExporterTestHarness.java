@@ -29,8 +29,10 @@ import java.io.File;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
 /**
@@ -138,6 +140,29 @@ public class ExporterTestHarness {
   }
 
   /**
+   * Exports a single default record.
+   *
+   * @return generated record
+   */
+  public MockRecord export() {
+    final MockRecord record = generateNextRecord();
+    return export(record);
+  }
+
+  /**
+   * Exports the given record, updating the latest position to the position of the record.
+   *
+   * @param record record to export
+   * @return exported record
+   */
+  public MockRecord export(MockRecord record) {
+    exporter.export(record);
+    position = record.getPosition();
+
+    return record;
+  }
+
+  /**
    * Will export a mock record to the exporter; the {@param configurator} is called right before,
    * providing a means of modifying the record before.
    *
@@ -151,9 +176,16 @@ public class ExporterTestHarness {
       configurator.accept(record);
     }
 
-    exporter.export(record);
+    return export(record);
+  }
 
-    return record;
+  /**
+   * Streams a series of record.
+   *
+   * @return a stream of {@link MockRecord}
+   */
+  public Stream stream() {
+    return new Stream(MockRecordStream.generate());
   }
 
   /**
@@ -212,11 +244,14 @@ public class ExporterTestHarness {
     return position;
   }
 
-  private MockRecord export(MockRecord record) {
-    exporter.export(record);
-    position = record.getPosition();
-
-    return record;
+  /**
+   * Returns the last position as reported by the exporter through {@link
+   * io.zeebe.exporter.context.Controller#updateLastExportedRecordPosition(long)}
+   *
+   * @return the last exported record position
+   */
+  public long getLastUpdatedPosition() {
+    return controller.getPosition();
   }
 
   private void configure(String id, BrokerCfg brokerCfg) {
@@ -260,8 +295,8 @@ public class ExporterTestHarness {
      *
      * @param count amount of records to export
      */
-    public void export(int count) {
-      limit(count).forEach(ExporterTestHarness.this::export);
+    public List<Record> export(int count) {
+      return limit(count).map(ExporterTestHarness.this::export).collect(Collectors.toList());
     }
   }
 }

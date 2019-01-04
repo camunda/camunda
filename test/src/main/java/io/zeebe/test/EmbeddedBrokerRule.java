@@ -66,15 +66,16 @@ public class EmbeddedBrokerRule extends ExternalResource {
 
   protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
-
-  protected BrokerCfg brokerCfg;
-  protected Broker broker;
-
-  protected ControlledActorClock controlledActorClock = new ControlledActorClock();
-
+  protected final BrokerCfg brokerCfg;
+  protected final ControlledActorClock controlledActorClock = new ControlledActorClock();
   protected final Supplier<InputStream> configSupplier;
   protected final Consumer<BrokerCfg>[] configurators;
   private final int timeout;
+  private final File newTemporaryFolder;
+
+  protected Broker broker;
+  protected long startTime;
+  private List<String> dataDirectories;
 
   @SafeVarargs
   public EmbeddedBrokerRule(Consumer<BrokerCfg>... configurators) {
@@ -101,12 +102,19 @@ public class EmbeddedBrokerRule extends ExternalResource {
     this.configSupplier = configSupplier;
     this.configurators = configurators;
     this.timeout = timeout;
+
+    newTemporaryFolder = Files.newTemporaryFolder();
+    try (InputStream configStream = configSupplier.get()) {
+      if (configStream == null) {
+        brokerCfg = new BrokerCfg();
+      } else {
+        brokerCfg = TomlConfigurationReader.read(configStream, BrokerCfg.class);
+      }
+      configureBroker(brokerCfg);
+    } catch (final IOException e) {
+      throw new RuntimeException("Unable to open configuration", e);
+    }
   }
-
-  protected long startTime;
-
-  private File newTemporaryFolder;
-  private List<String> dataDirectories;
 
   @Override
   public Statement apply(final Statement base, final Description description) {
@@ -116,7 +124,6 @@ public class EmbeddedBrokerRule extends ExternalResource {
 
   @Override
   protected void before() {
-    newTemporaryFolder = Files.newTemporaryFolder();
     startTime = System.currentTimeMillis();
     startBroker();
     LOG.info("\n====\nBroker startup time: {}\n====\n", (System.currentTimeMillis() - startTime));
@@ -184,19 +191,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
   }
 
   public void startBroker() {
-    if (brokerCfg == null) {
-      try (InputStream configStream = configSupplier.get()) {
-        if (configStream == null) {
-          brokerCfg = new BrokerCfg();
-        } else {
-          brokerCfg = TomlConfigurationReader.read(configStream, BrokerCfg.class);
-        }
-        configureBroker(brokerCfg);
-      } catch (final IOException e) {
-        throw new RuntimeException("Unable to open configuration", e);
-      }
-    }
-
+    startTime = System.currentTimeMillis();
     broker = new Broker(brokerCfg, newTemporaryFolder.getAbsolutePath(), controlledActorClock);
 
     final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();

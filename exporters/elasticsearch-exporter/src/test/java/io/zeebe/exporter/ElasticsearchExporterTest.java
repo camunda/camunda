@@ -29,6 +29,7 @@ import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.test.exporter.ExporterTestHarness;
 import java.time.Duration;
+import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -301,18 +302,19 @@ public class ElasticsearchExporterTest {
     createAndOpenExporter();
 
     // when
-    testHarness
-        .stream(
-            r ->
-                r.getMetadata()
-                    .setValueType(ValueType.WORKFLOW_INSTANCE)
-                    .setRecordType(RecordType.EVENT))
-        .export(4);
+    final List<Record> exported =
+        testHarness
+            .stream(
+                r ->
+                    r.getMetadata()
+                        .setValueType(ValueType.WORKFLOW_INSTANCE)
+                        .setRecordType(RecordType.EVENT))
+            .export(4);
     testHarness.getController().runScheduledTasks(Duration.ofSeconds(config.bulk.delay));
 
     // then no record was indexed but the exporter record position was updated
     verify(esClient, never()).index(any());
-    assertThat(testHarness.getController().getPosition()).isEqualTo(testHarness.getPosition());
+    assertThat(testHarness.getController().getPosition()).isEqualTo(exported.get(3).getPosition());
   }
 
   private ElasticsearchExporter createAndOpenExporter() {
