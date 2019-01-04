@@ -144,6 +144,33 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
+  public void testWorkflowInstanceStartTimeDoesNotChange() {
+    // having
+    String processId = "demoProcess";
+    BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
+      .startEvent("start")
+        .serviceTask("task1").zeebeTaskType("task1")
+      .endEvent()
+      .done();
+    deployWorkflow(workflow, "demoProcess_v_1.bpmn");
+    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, null);
+    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceKey, "task1");
+    //remember start date
+    final OffsetDateTime startDate = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey)).getStartDate();
+
+    //when
+    completeTask(workflowInstanceKey, "task1", null);
+    elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCompletedCheck, workflowInstanceKey);
+
+    //then
+    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
+    assertThat(workflowInstanceEntity.getState()).isEqualTo(WorkflowInstanceState.COMPLETED);
+    //assert start date did not change
+    assertThat(workflowInstanceEntity.getStartDate()).isEqualTo(startDate);
+
+  }
+
+  @Test
   public void testSequenceFlowsPersisted() {
     // having
     String processId = "demoProcess";
