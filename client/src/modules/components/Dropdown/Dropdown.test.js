@@ -29,7 +29,6 @@ const mountDropDown = placement => {
       >
         <Dropdown.Option
           disabled={false}
-          data-test={'dropdown-option'}
           onClick={mockOnClick}
           label="Create New Selection"
         />
@@ -48,7 +47,7 @@ describe('Dropdown', () => {
 
   it('should show/hide child contents when isOpen/closed', () => {
     //given
-    expect(node.find('[data-test="dropdown-option"]')).not.toExist();
+    expect(node.find(Dropdown.Option)).not.toExist();
 
     //when
     node
@@ -57,7 +56,7 @@ describe('Dropdown', () => {
       .simulate('click');
 
     //then
-    expect(node.find('[data-test="dropdown-option"]')).toExist();
+    expect(node.find(Dropdown.Option)).toExist();
   });
 
   it('should render string label', () => {
@@ -67,7 +66,7 @@ describe('Dropdown', () => {
 
   it('should render icon label', () => {
     node.setProps({label: <Batch />});
-    expect(node.find("[data-test='dropdown-toggle']").contains(<Batch />));
+    expect(node.find(Dropdown.Option).contains(<Batch />));
   });
 
   it('should pass "bottom" as default placement', () => {
