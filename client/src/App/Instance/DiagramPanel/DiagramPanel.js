@@ -20,7 +20,6 @@ export default class DiagramPanel extends React.Component {
       errorMessage: PropTypes.string,
       workflowVersion: PropTypes.number
     }).isRequired,
-    paneId: PropTypes.string,
     children: PropTypes.node
   };
 

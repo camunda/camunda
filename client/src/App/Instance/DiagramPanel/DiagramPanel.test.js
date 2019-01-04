@@ -1,55 +1,60 @@
 import React from 'react';
-import {shallow} from 'enzyme';
+import {mount} from 'enzyme';
 
+import SplitPane from 'modules/components/SplitPane';
 import Pane from 'modules/components/SplitPane/Pane';
-import Diagram from 'modules/components/Diagram';
 import StateIcon from 'modules/components/StateIcon';
 import {formatDate} from 'modules/utils/date';
 import {getWorkflowName} from 'modules/utils/instance';
+import {ThemeProvider} from 'modules/theme';
 import {createInstance} from 'modules/testUtils';
 
 import DiagramPanel from './DiagramPanel';
-import * as Styled from './styled';
 import DiagramBar from './DiagramBar';
 
-const mockInstance = createInstance({id: 'foo'});
+const mockInstance = createInstance();
 
-const mockProps = {
-  instance: mockInstance,
-  onDiagramLoaded: jest.fn(),
-  selectableFlowNodes: ['foo'],
-  selectedFlowNode: 'foo',
-  onFlowNodeSelected: jest.fn(),
-  flowNodeStateOverlays: [{}]
-};
+function Foo(props) {
+  return <div data-test="foo" {...props} />;
+}
 
-describe.skip('DiagramPanel', () => {
+function BottomPane() {
+  return <div data-test="bottom-pane" />;
+}
+describe('DiagramPanel', () => {
   it('should render pane header and body', () => {
     // given
+    const workflowName = getWorkflowName(mockInstance);
     const formattedStartDate = formatDate(mockInstance.startDate);
     const formattedEndDate = formatDate(mockInstance.endDate);
-    const node = shallow(<DiagramPanel {...mockProps} />);
+    const node = mount(
+      <ThemeProvider>
+        <SplitPane>
+          <DiagramPanel instance={mockInstance}>
+            <Foo />
+          </DiagramPanel>
+          <BottomPane />
+        </SplitPane>
+      </ThemeProvider>
+    );
 
     // then
     expect(node.find(Pane)).toHaveLength(1);
-    expect(node.find(Pane).props().hasShiftableControls).toBe(false);
 
     // Pane.Header
-    const PaneHeaderNode = node.find(Styled.SplitPaneHeader);
-    expect(PaneHeaderNode).toHaveLength(1);
-    const StyledTableNode = PaneHeaderNode.find(Styled.Table);
-    expect(StyledTableNode).toHaveLength(1);
-    const StateIconNode = StyledTableNode.find(StateIcon);
+    const PaneHeaderNode = node.find(Pane.Header);
+    const TableNode = PaneHeaderNode.find('table');
+    const StateIconNode = TableNode.find(StateIcon);
     expect(StateIconNode).toHaveLength(1);
     expect(StateIconNode.prop('instance')).toBe(mockInstance);
-    expect(StyledTableNode.text()).toContain(getWorkflowName(mockInstance));
+    expect(TableNode.text()).toContain(workflowName);
     expect(node.find(Pane.Body)).toHaveLength(1);
-    expect(StyledTableNode.text()).toContain(mockInstance.id);
-    expect(StyledTableNode.text()).toContain(
+    expect(TableNode.text()).toContain(mockInstance.id);
+    expect(TableNode.text()).toContain(
       `Version ${mockInstance.workflowVersion}`
     );
-    expect(StyledTableNode.text()).toContain(formattedStartDate);
-    expect(StyledTableNode.text()).toContain(formattedEndDate);
+    expect(TableNode.text()).toContain(formattedStartDate);
+    expect(TableNode.text()).toContain(formattedEndDate);
 
     // Pane.Body
     const PaneBodyNode = node.find(Pane.Body);
@@ -58,24 +63,7 @@ describe.skip('DiagramPanel', () => {
     const DiagramBarNode = PaneBodyNode.find(DiagramBar);
     expect(DiagramBarNode).toHaveLength(1);
     expect(DiagramBarNode.prop('instance')).toBe(mockInstance);
-
-    // DiagramNode
-    const DiagramNode = PaneBodyNode.find(Diagram);
-    expect(DiagramNode).toHaveLength(1);
-    expect(DiagramNode.prop('workflowId')).toBe(mockInstance.workflowId);
-    expect(DiagramNode.prop('onDiagramLoaded')).toBe(mockProps.onDiagramLoaded);
-    expect(DiagramNode.prop('selectableFlowNodes')).toBe(
-      mockProps.selectableFlowNodes
-    );
-    expect(DiagramNode.prop('selectedFlowNode')).toBe(
-      mockProps.selectedFlowNode
-    );
-    expect(DiagramNode.prop('onFlowNodeSelected')).toBe(
-      mockProps.onFlowNodeSelected
-    );
-    expect(DiagramNode.prop('flowNodeStateOverlays')).toBe(
-      mockProps.flowNodeStateOverlays
-    );
-    expect(node).toMatchSnapshot();
+    // Child
+    expect(PaneBodyNode.find(Foo)).toHaveLength(1);
   });
 });
