@@ -1,11 +1,11 @@
 package org.camunda.optimize.service.es.report.command.process.flownode.duration;
 
 import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.max.InternalMax;
+import org.elasticsearch.search.aggregations.metrics.max.ParsedMax;
 
 import static org.elasticsearch.search.aggregations.AggregationBuilders.max;
 
-public class MaxFlowNodeDurationByFlowNodeCommand extends AbstractFlowNodeDurationByFlowNodeCommand<InternalMax> {
+public class MaxFlowNodeDurationByFlowNodeCommand extends AbstractFlowNodeDurationByFlowNodeCommand<ParsedMax> {
 
   @Override
   protected AggregationBuilder addOperation(String aggregationName, String field) {
@@ -14,7 +14,7 @@ public class MaxFlowNodeDurationByFlowNodeCommand extends AbstractFlowNodeDurati
   }
 
   @Override
-  protected Long processOperationAggregation(InternalMax aggregation) {
+  protected Long processOperationAggregation(ParsedMax aggregation) {
     return Math.round(aggregation.getValue());
   }
 }

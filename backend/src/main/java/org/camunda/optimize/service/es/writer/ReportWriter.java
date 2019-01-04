@@ -1,6 +1,5 @@
 package org.camunda.optimize.service.es.writer;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.IdDto;
@@ -15,18 +14,20 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.action.support.WriteRequest;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.engine.DocumentMissingException;
+import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
-import org.elasticsearch.index.reindex.DeleteByQueryAction;
-import org.elasticsearch.index.reindex.UpdateByQueryAction;
-import org.elasticsearch.index.reindex.UpdateByQueryRequestBuilder;
+import org.elasticsearch.index.reindex.DeleteByQueryRequest;
+import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.slf4j.Logger;
@@ -35,6 +36,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 
@@ -44,6 +46,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CREATE_SUCC
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DELETE_SUCCESSFUL_RESPONSE_RESULT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE;
+import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -53,19 +56,28 @@ public class ReportWriter {
   private static final Logger logger = LoggerFactory.getLogger(ReportWriter.class);
 
   private static final String DEFAULT_REPORT_NAME = "New Report";
-
-
-  private final TransportClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
+  private RestHighLevelClient esClient;
 
   @Autowired
-  public ReportWriter(final TransportClient esClient,
+  public ReportWriter(final RestHighLevelClient esClient,
                       final ConfigurationService configurationService,
                       final ObjectMapper objectMapper) {
     this.esClient = esClient;
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;
+  }
+
+  private static String getOptimizeIndexTypeForReportType(final ReportType type) {
+    switch (type) {
+      case PROCESS:
+        return SINGLE_PROCESS_REPORT_TYPE;
+      case DECISION:
+        return SINGLE_DECISION_REPORT_TYPE;
+      default:
+        throw new IllegalStateException("Unsupported reportType: " + type);
+    }
   }
 
   public IdDto createNewCombinedReportAndReturnId(final String userId) {
@@ -86,15 +98,15 @@ public class ReportWriter {
     reportDefinitionDto.setName(DEFAULT_REPORT_NAME);
 
     try {
-      IndexResponse indexResponse = esClient
-        .prepareIndex(
-          getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE),
-          COMBINED_REPORT_TYPE,
-          id
-        )
-        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
-        .setSource(objectMapper.writeValueAsString(reportDefinitionDto), XContentType.JSON)
-        .get();
+      IndexRequest request = new IndexRequest(
+        getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE),
+        COMBINED_REPORT_TYPE,
+        id
+      )
+        .source(objectMapper.writeValueAsString(reportDefinitionDto), XContentType.JSON)
+        .setRefreshPolicy(IMMEDIATE);
+
+      IndexResponse indexResponse = esClient.index(request, RequestOptions.DEFAULT);
 
       if (!indexResponse.getResult().getLowercase().equals(CREATE_SUCCESSFUL_RESPONSE_RESULT)) {
         String message = "Could not write report to Elasticsearch. " +
@@ -107,8 +119,8 @@ public class ReportWriter {
       IdDto idDto = new IdDto();
       idDto.setId(id);
       return idDto;
-    } catch (JsonProcessingException e) {
-      String errorMessage = "Was not able to insert combined report. Could not serialize report!";
+    } catch (IOException e) {
+      String errorMessage = "Was not able to insert combined report.!";
       logger.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
@@ -140,11 +152,14 @@ public class ReportWriter {
     try {
       final String optimizeIndexTypeForReportType =
         getOptimizeIndexTypeForReportType(reportDefinitionDto.getReportType());
-      IndexResponse indexResponse = esClient
-        .prepareIndex(getOptimizeIndexAliasForType(optimizeIndexTypeForReportType), optimizeIndexTypeForReportType, id)
-        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
-        .setSource(objectMapper.writeValueAsString(reportDefinitionDto), XContentType.JSON)
-        .get();
+
+      IndexRequest request = new IndexRequest(
+        getOptimizeIndexAliasForType(optimizeIndexTypeForReportType), optimizeIndexTypeForReportType, id
+      )
+        .source(objectMapper.writeValueAsString(reportDefinitionDto), XContentType.JSON)
+        .setRefreshPolicy(IMMEDIATE);
+
+      IndexResponse indexResponse = esClient.index(request, RequestOptions.DEFAULT);
 
       if (!indexResponse.getResult().getLowercase().equals(CREATE_SUCCESSFUL_RESPONSE_RESULT)) {
         String message = "Could not write report to Elasticsearch. " +
@@ -157,26 +172,15 @@ public class ReportWriter {
       IdDto idDto = new IdDto();
       idDto.setId(id);
       return idDto;
-    } catch (JsonProcessingException e) {
-      String errorMessage = "Was not able to insert single report. Could not serialize report!";
+    } catch (IOException e) {
+      String errorMessage = "Was not able to insert single report.";
       logger.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
   }
 
-  public static String getOptimizeIndexTypeForReportType(final ReportType type) {
-    switch (type) {
-      case PROCESS:
-        return SINGLE_PROCESS_REPORT_TYPE;
-      case DECISION:
-        return SINGLE_DECISION_REPORT_TYPE;
-      default:
-        throw new IllegalStateException("Unsupported reportType: " + type);
-    }
-  }
-
   public void updateSingleReport(final ReportDefinitionUpdateDto updatedReport) {
-    if (updatedReport.getData() instanceof  ProcessReportDataDto) {
+    if (updatedReport.getData() instanceof ProcessReportDataDto) {
       updateReport(updatedReport, SINGLE_PROCESS_REPORT_TYPE);
     } else if (updatedReport.getData() instanceof DecisionReportDataDto) {
       updateReport(updatedReport, SINGLE_DECISION_REPORT_TYPE);
@@ -190,16 +194,18 @@ public class ReportWriter {
   public void updateReport(ReportDefinitionUpdateDto updatedReport, String elasticsearchType) {
     logger.debug("Updating report with id [{}] in Elasticsearch", updatedReport.getId());
     try {
-      UpdateResponse updateResponse = esClient
-        .prepareUpdate(
+      UpdateRequest request =
+        new UpdateRequest(
           getOptimizeIndexAliasForType(elasticsearchType),
           elasticsearchType,
           updatedReport.getId()
         )
-        .setDoc(objectMapper.writeValueAsString(updatedReport), XContentType.JSON)
-        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
-        .setRetryOnConflict(configurationService.getNumberOfRetriesOnConflict())
-        .get();
+          .doc(objectMapper.writeValueAsString(updatedReport), XContentType.JSON)
+          .setRefreshPolicy(IMMEDIATE)
+          .retryOnConflict(configurationService.getNumberOfRetriesOnConflict());
+
+      UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
+
       if (updateResponse.getShardInfo().getFailed() > 0) {
         logger.error(
           "Was not able to update report with id [{}] and name [{}].",
@@ -208,9 +214,9 @@ public class ReportWriter {
         );
         throw new OptimizeRuntimeException("Was not able to update collection!");
       }
-    } catch (JsonProcessingException e) {
+    } catch (IOException e) {
       String errorMessage = String.format(
-        "Was not able to update report with id [%s]. Could not serialize report update!",
+        "Was not able to update report with id [%s].",
         updatedReport.getId()
       );
       logger.error(errorMessage, e);
@@ -229,16 +235,24 @@ public class ReportWriter {
   public void deleteSingleReport(final String reportId) {
     logger.debug("Deleting single report with id [{}]", reportId);
 
-    final BulkByScrollResponse response = DeleteByQueryAction.INSTANCE.newRequestBuilder(esClient)
-      .source(
-        getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE),
-        getOptimizeIndexAliasForType(SINGLE_DECISION_REPORT_TYPE)
-      )
-      .filter(idsQuery().addIds(reportId))
-      .refresh(true)
-      .get();
+    DeleteByQueryRequest request = new DeleteByQueryRequest(
+      getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE),
+      getOptimizeIndexAliasForType(SINGLE_DECISION_REPORT_TYPE)
+    )
+      .setQuery(idsQuery().addIds(reportId))
+      .setRefresh(true);
 
-    if (!response.getBulkFailures().isEmpty()) {
+    BulkByScrollResponse bulkByScrollResponse;
+    try {
+      bulkByScrollResponse = esClient.deleteByQuery(request, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason =
+        String.format("Could not delete single report with id [%s].", reportId);
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    if (!bulkByScrollResponse.getBulkFailures().isEmpty()) {
       String message = String.format(
         "Could not delete single process report with id [%s]. Single process report does not exist."
           + "Maybe it was already deleted by someone else?",
@@ -250,7 +264,6 @@ public class ReportWriter {
   }
 
   public void removeSingleReportFromCombinedReports(final String reportId) {
-    UpdateByQueryRequestBuilder updateByQuery = UpdateByQueryAction.INSTANCE.newRequestBuilder(esClient);
     Script removeReportIdFromCombinedReportsScript = new Script(
       ScriptType.INLINE,
       Script.DEFAULT_SCRIPT_LANG,
@@ -258,24 +271,34 @@ public class ReportWriter {
       Collections.singletonMap("idToRemove", reportId)
     );
 
-    updateByQuery.source(getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE))
-      .abortOnVersionConflict(false)
-      .setMaxRetries(configurationService.getNumberOfRetriesOnConflict())
-      .filter(nestedQuery(
-        CombinedReportType.DATA,
-        termQuery(CombinedReportType.DATA + "." + CombinedReportType.REPORT_IDS, reportId),
-        ScoreMode.None
-      ))
-      .script(removeReportIdFromCombinedReportsScript)
-      .refresh(true);
+    NestedQueryBuilder query = nestedQuery(
+      CombinedReportType.DATA,
+      termQuery(CombinedReportType.DATA + "." + CombinedReportType.REPORT_IDS, reportId),
+      ScoreMode.None
+    );
 
-    BulkByScrollResponse response = updateByQuery.get();
-    if (!response.getBulkFailures().isEmpty()) {
+    UpdateByQueryRequest request = new UpdateByQueryRequest(getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE))
+      .setAbortOnVersionConflict(false)
+      .setMaxRetries(configurationService.getNumberOfRetriesOnConflict())
+      .setQuery(query)
+      .setScript(removeReportIdFromCombinedReportsScript)
+      .setRefresh(true);
+
+    BulkByScrollResponse bulkByScrollResponse;
+    try {
+      bulkByScrollResponse = esClient.updateByQuery(request, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format("Could not remove report with id [%s] from combined report.", reportId);
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    if (!bulkByScrollResponse.getBulkFailures().isEmpty()) {
       String errorMessage =
         String.format(
           "Could not remove report id [%s] from one or more combined report/s! Error response: %s",
           reportId,
-          response.getBulkFailures()
+          bulkByScrollResponse.getBulkFailures()
         );
       logger.error(errorMessage);
       throw new OptimizeRuntimeException(errorMessage);
@@ -285,13 +308,20 @@ public class ReportWriter {
   public void deleteCombinedReport(final String reportId) {
     logger.debug("Deleting combined report with id [{}]", reportId);
 
-    DeleteResponse deleteResponse = esClient.prepareDelete(
-      getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE),
-      COMBINED_REPORT_TYPE,
-      reportId
-    )
-      .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
-      .get();
+    DeleteRequest request =
+      new DeleteRequest(getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE), COMBINED_REPORT_TYPE, reportId)
+        .setRefreshPolicy(IMMEDIATE);
+
+    DeleteResponse deleteResponse;
+    try {
+      deleteResponse = esClient.delete(request, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason =
+        String.format("Could not delete combined report with id [%s]. " +
+                        "Maybe Optimize is not connected to Elasticsearch?", reportId);
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
 
     if (!deleteResponse.getResult().getLowercase().equals(DELETE_SUCCESSFUL_RESPONSE_RESULT)) {
       String message =

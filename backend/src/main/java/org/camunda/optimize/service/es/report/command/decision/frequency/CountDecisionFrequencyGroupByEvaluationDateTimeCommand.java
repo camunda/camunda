@@ -8,7 +8,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUn
 import org.camunda.optimize.service.es.report.command.decision.DecisionReportCommand;
 import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeException;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -16,8 +19,10 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.joda.time.DateTime;
 
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -47,17 +52,34 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
     );
     queryFilterEnhancer.addFilterToQuery(query, reportData.getFilter());
 
-    DecisionGroupByEvaluationDateTimeValueDto groupBy = ((DecisionGroupByEvaluationDateTimeDto) reportData.getGroupBy())
-      .getValue();
+    DecisionGroupByEvaluationDateTimeValueDto groupBy =
+      ((DecisionGroupByEvaluationDateTimeDto) reportData.getGroupBy())
+        .getValue();
 
-    SearchResponse response = esclient
-      .prepareSearch(getOptimizeIndexAliasForType(DECISION_INSTANCE_TYPE))
-      .setTypes(DECISION_INSTANCE_TYPE)
-      .setQuery(query)
-      .setFetchSource(false)
-      .setSize(0)
-      .addAggregation(createAggregation(groupBy.getUnit()))
-      .get();
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(query)
+      .fetchSource(false)
+      .aggregation(createAggregation(groupBy.getUnit()))
+      .size(0);
+    SearchRequest searchRequest =
+      new SearchRequest(getOptimizeIndexAliasForType(DECISION_INSTANCE_TYPE))
+        .types(DECISION_INSTANCE_TYPE)
+        .source(searchSourceBuilder);
+
+    SearchResponse response;
+    try {
+      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason =
+        String.format(
+          "Could not evaluate count decision instance frequency grouped by evaluation date report " +
+            "for decision definition with key [%s] and version [%s]",
+          reportData.getDecisionDefinitionKey(),
+      reportData.getDecisionDefinitionVersion()
+        );
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
 
     DecisionReportMapResultDto mapResult = new DecisionReportMapResultDto();
     mapResult.setResult(mapAggregationsToMapResult(response.getAggregations()));

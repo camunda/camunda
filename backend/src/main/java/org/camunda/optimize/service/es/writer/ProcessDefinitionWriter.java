@@ -3,12 +3,12 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.slf4j.Logger;
@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,21 +28,45 @@ public class ProcessDefinitionWriter {
 
   private final Logger logger = LoggerFactory.getLogger(ProcessDefinitionWriter.class);
 
-  @Autowired
-  private TransportClient esclient;
-  @Autowired
-  private ConfigurationService configurationService;
-  @Autowired
+  private RestHighLevelClient esClient;
   private ObjectMapper objectMapper;
 
-  public void importProcessDefinitions(List<ProcessDefinitionOptimizeDto> procDefs) throws Exception {
+  @Autowired
+  public ProcessDefinitionWriter(RestHighLevelClient esClient,
+                                 ObjectMapper objectMapper) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+  }
+
+  public void importProcessDefinitions(List<ProcessDefinitionOptimizeDto> procDefs) {
     logger.debug("Writing [{}] process definitions to elasticsearch", procDefs.size());
     writeProcessDefinitionInformation(procDefs);
   }
 
-  private void writeProcessDefinitionInformation(List<ProcessDefinitionOptimizeDto> procDefs)
-        throws InterruptedException, java.util.concurrent.ExecutionException {
-    BulkRequestBuilder bulkRequest = esclient.prepareBulk();
+  private void writeProcessDefinitionInformation(List<ProcessDefinitionOptimizeDto> procDefs) {
+    BulkRequest bulkRequest = new BulkRequest();
+    addUpdateRequestForEachDefinition(procDefs, bulkRequest);
+
+    if (bulkRequest.numberOfActions() > 0) {
+      final BulkResponse bulkResponse;
+      try {
+        bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+        if (bulkResponse.hasFailures()) {
+          logger.warn(
+            "There were failures while writing process definition information. " +
+              "Received error message: {}",
+            bulkResponse.buildFailureMessage()
+          );
+        }
+      } catch (IOException e) {
+        logger.error("There were errors while writing process definition information.", e);
+      }
+    } else {
+      logger.warn("Cannot import empty list of process definitions.");
+    }
+  }
+
+  private void addUpdateRequestForEachDefinition(List<ProcessDefinitionOptimizeDto> procDefs, BulkRequest bulkRequest) {
     for (ProcessDefinitionOptimizeDto procDef : procDefs) {
       String id = procDef.getId();
 
@@ -61,28 +86,16 @@ public class ProcessDefinitionWriter {
         params
       );
 
-      bulkRequest.add(esclient
-        .prepareUpdate(
+      UpdateRequest request =
+        new UpdateRequest(
           getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_DEF_TYPE),
           ElasticsearchConstants.PROC_DEF_TYPE,
           id
         )
-        .setScript(updateScript)
-        .setUpsert(objectMapper.convertValue(procDef, Map.class))
-        .setRetryOnConflict(configurationService.getNumberOfRetriesOnConflict())
-      );
-    }
+          .script(updateScript)
+          .upsert(objectMapper.convertValue(procDef, Map.class));
 
-    if (bulkRequest.numberOfActions() > 0) {
-      BulkResponse response = bulkRequest.execute().get();
-      if (response.hasFailures()) {
-        logger.warn("There were failures while writing process definition information. " +
-            "Received error message: {}",
-          response.buildFailureMessage()
-        );
-      }
-    } else {
-      logger.warn("Cannot import empty list of process definitions.");
+      bulkRequest.add(request);
     }
   }
 

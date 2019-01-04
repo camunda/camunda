@@ -20,7 +20,7 @@ public class DecisionDefinitionElasticsearchImportJob extends ElasticsearchImpor
     try {
       decisionDefinitionWriter.importProcessDefinitions(newOptimizeEntities);
     } catch (Exception e) {
-      logger.error("error while writing process definitions to elasticsearch", e);
+      logger.error("error while writing decision definitions to elasticsearch", e);
     }
   }
 }

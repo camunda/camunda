@@ -274,7 +274,6 @@ public class OptimizeCleanupServiceIT {
     return Lists.newArrayList(firstProcInst.getId(), secondProcInst.getId());
   }
 
-
   private void assertVariablesEmptyInProcessInstances(List<String> processIds) {
 
     SearchResponse idsResp = getProcessInstancesById(processIds);

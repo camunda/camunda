@@ -3,8 +3,14 @@ package org.camunda.optimize.service.es.report.command.decision.frequency;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportNumberResultDto;
 import org.camunda.optimize.service.es.report.command.decision.DecisionReportCommand;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+
+import java.io.IOException;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
@@ -28,13 +34,29 @@ public class CountDecisionFrequencyGroupByNoneCommand extends DecisionReportComm
     );
     queryFilterEnhancer.addFilterToQuery(query, reportData.getFilter());
 
-    SearchResponse response = esclient
-      .prepareSearch(getOptimizeIndexAliasForType(DECISION_INSTANCE_TYPE))
-      .setTypes(DECISION_INSTANCE_TYPE)
-      .setQuery(query)
-      .setFetchSource(false)
-      .setSize(0)
-      .get();
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(query)
+      .fetchSource(false)
+      .size(0);
+    SearchRequest searchRequest =
+      new SearchRequest(getOptimizeIndexAliasForType(DECISION_INSTANCE_TYPE))
+        .types(DECISION_INSTANCE_TYPE)
+        .source(searchSourceBuilder);
+
+    SearchResponse response;
+    try {
+      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason =
+        String.format(
+          "Could not evaluate count decision instance frequency grouped by none report " +
+            "for decision definition with key [%s] and version [%s]",
+          reportData.getDecisionDefinitionKey(),
+          reportData.getDecisionDefinitionVersion()
+        );
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
 
     DecisionReportNumberResultDto numberResult = new DecisionReportNumberResultDto();
     numberResult.setResult(response.getHits().getTotalHits());

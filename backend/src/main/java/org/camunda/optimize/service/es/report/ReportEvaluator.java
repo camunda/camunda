@@ -51,8 +51,7 @@ import org.camunda.optimize.service.es.report.command.util.ReportUtil;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -125,16 +124,22 @@ public class ReportEvaluator {
     addDecisionCountFrequencyReports();
   }
 
+  private final ConfigurationService configurationService;
+  private final ObjectMapper objectMapper;
+  private final ProcessQueryFilterEnhancer processQueryFilterEnhancer;
+  private final DecisionQueryFilterEnhancer decisionQueryFilterEnhancer;
+  private final RestHighLevelClient esClient;
+
   @Autowired
-  private ConfigurationService configurationService;
-  @Autowired
-  private ObjectMapper objectMapper;
-  @Autowired
-  private ProcessQueryFilterEnhancer processQueryFilterEnhancer;
-  @Autowired
-  private DecisionQueryFilterEnhancer decisionQueryFilterEnhancer;
-  @Autowired
-  private TransportClient esclient;
+  public ReportEvaluator(ConfigurationService configurationService, ObjectMapper objectMapper,
+                         ProcessQueryFilterEnhancer processQueryFilterEnhancer,
+                         DecisionQueryFilterEnhancer decisionQueryFilterEnhancer, RestHighLevelClient esClient) {
+    this.configurationService = configurationService;
+    this.objectMapper = objectMapper;
+    this.processQueryFilterEnhancer = processQueryFilterEnhancer;
+    this.decisionQueryFilterEnhancer = decisionQueryFilterEnhancer;
+    this.esClient = esClient;
+  }
 
   private static void addCountProcessInstanceFrequencyReports() {
     possibleCommands.put(
@@ -320,7 +325,7 @@ public class ReportEvaluator {
   private CommandContext createCommandContext(ReportDataDto reportData) {
     CommandContext commandContext = new CommandContext();
     commandContext.setConfigurationService(configurationService);
-    commandContext.setEsclient(esclient);
+    commandContext.setEsClient(esClient);
     commandContext.setObjectMapper(objectMapper);
     if (reportData instanceof ProcessReportDataDto) {
       commandContext.setQueryFilterEnhancer(processQueryFilterEnhancer);

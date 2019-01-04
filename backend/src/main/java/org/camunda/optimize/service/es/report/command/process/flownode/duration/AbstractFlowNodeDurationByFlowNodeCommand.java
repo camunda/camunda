@@ -3,9 +3,11 @@ package org.camunda.optimize.service.es.report.command.process.flownode.duration
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
 import org.camunda.optimize.service.es.report.command.process.FlowNodeGroupingCommand;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.ValidationHelper;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -14,7 +16,9 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,6 +27,7 @@ import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.AC
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ACTIVITY_TYPE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DURATION;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
@@ -52,14 +57,30 @@ public abstract class AbstractFlowNodeDurationByFlowNodeCommand<T extends Aggreg
 
     queryFilterEnhancer.addFilterToQuery(query, processReportData.getFilter());
 
-    SearchResponse response = esclient
-      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE))
-      .setTypes(ElasticsearchConstants.PROC_INSTANCE_TYPE)
-      .setQuery(query)
-      .setFetchSource(false)
-      .setSize(0)
-      .addAggregation(createAggregation())
-      .get();
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(query)
+      .fetchSource(false)
+      .aggregation(createAggregation())
+      .size(0);
+    SearchRequest searchRequest =
+      new SearchRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
+        .types(PROC_INSTANCE_TYPE)
+        .source(searchSourceBuilder);
+
+    SearchResponse response;
+    try {
+      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason =
+        String.format(
+          "Could not evaluate flow node duration grouped by " +
+            "flow node report for process definition key [%s] and version [%s]",
+          processReportData.getProcessDefinitionKey(),
+          processReportData.getProcessDefinitionVersion()
+        );
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
 
     Map<String, Long> resultMap = processAggregations(response.getAggregations());
     ProcessReportMapResultDto resultDto =

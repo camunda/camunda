@@ -4,14 +4,14 @@ import org.camunda.optimize.service.es.report.command.process.processinstance.du
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.metrics.max.InternalMax;
+import org.elasticsearch.search.aggregations.metrics.max.ParsedMax;
 
 public class MaxProcessInstanceDurationGroupByNoneCommand extends
   AbstractProcessInstanceDurationGroupByNoneCommand {
 
   @Override
   protected long processAggregation(Aggregations aggs) {
-    InternalMax aggregation = aggs.get(DURATION_AGGREGATION);
+    ParsedMax aggregation = aggs.get(DURATION_AGGREGATION);
     if (Double.isInfinite(aggregation.getValue())){
       return 0L;
     } else {

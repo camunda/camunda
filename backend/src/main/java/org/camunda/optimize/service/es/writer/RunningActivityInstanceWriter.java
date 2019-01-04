@@ -1,9 +1,16 @@
 package org.camunda.optimize.service.es.writer;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.stereotype.Component;
 
 @Component
 public class RunningActivityInstanceWriter extends AbstractActivityInstanceWriter {
+
+  public RunningActivityInstanceWriter(RestHighLevelClient esClient,
+                                       ObjectMapper objectMapper) {
+    super(esClient, objectMapper);
+  }
 
   protected String createInlineUpdateScript() {
     // already imported events should win over the

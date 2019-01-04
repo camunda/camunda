@@ -5,7 +5,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.group.Deci
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
 import org.camunda.optimize.service.es.report.command.decision.DecisionReportCommand;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -13,7 +16,9 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -27,9 +32,9 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 public class CountDecisionFrequencyGroupByVariableCommand
   extends DecisionReportCommand<DecisionReportMapResultDto> {
 
-  public static final String NESTED_AGGREGATION = "nested";
-  public static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
-  public static final String VARIABLE_VALUE_TERMS_AGGREGATION = "variableValueTerms";
+  private static final String NESTED_AGGREGATION = "nested";
+  private static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
+  private static final String VARIABLE_VALUE_TERMS_AGGREGATION = "variableValueTerms";
 
   private final String variablePath;
 
@@ -43,7 +48,7 @@ public class CountDecisionFrequencyGroupByVariableCommand
     final DecisionReportDataDto reportData = getDecisionReportData();
     logger.debug(
       "Evaluating count decision instance frequency grouped by {} report " +
-        "for decision definition key [{}] and version [{}]",
+        "for decision definition with key [{}] and version [{}]",
       variablePath,
       reportData.getDecisionDefinitionKey(),
       reportData.getDecisionDefinitionVersion()
@@ -58,14 +63,30 @@ public class CountDecisionFrequencyGroupByVariableCommand
     DecisionGroupByVariableValueDto groupBy =
       ((DecisionGroupByDto<DecisionGroupByVariableValueDto>) reportData.getGroupBy()).getValue();
 
-    SearchResponse response = esclient
-      .prepareSearch(getOptimizeIndexAliasForType(DECISION_INSTANCE_TYPE))
-      .setTypes(DECISION_INSTANCE_TYPE)
-      .setQuery(query)
-      .setFetchSource(false)
-      .setSize(0)
-      .addAggregation(createAggregation(groupBy.getId()))
-      .get();
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(query)
+      .fetchSource(false)
+      .aggregation(createAggregation(groupBy.getId()))
+      .size(0);
+    SearchRequest searchRequest =
+      new SearchRequest(getOptimizeIndexAliasForType(DECISION_INSTANCE_TYPE))
+        .types(DECISION_INSTANCE_TYPE)
+        .source(searchSourceBuilder);
+
+    SearchResponse response;
+    try {
+      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason =
+        String.format(
+          "Could not evaluate count decision instance frequency grouped by {} report " +
+            "for decision definition with key [%s] and version [%s]",
+          reportData.getDecisionDefinitionKey(),
+          reportData.getDecisionDefinitionVersion()
+        );
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
 
     DecisionReportMapResultDto mapResult = new DecisionReportMapResultDto();
     mapResult.setResult(mapAggregationsToMapResult(response.getAggregations()));

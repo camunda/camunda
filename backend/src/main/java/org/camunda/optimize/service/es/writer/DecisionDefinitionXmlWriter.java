@@ -4,12 +4,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.schema.type.DecisionDefinitionType;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
@@ -18,45 +17,55 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
 
 @Component
 public class DecisionDefinitionXmlWriter {
   private static final Logger logger = LoggerFactory.getLogger(DecisionDefinitionXmlWriter.class);
 
-  @Autowired
-  private TransportClient esclient;
-  @Autowired
-  private ConfigurationService configurationService;
-  @Autowired
+  private RestHighLevelClient esClient;
   private ObjectMapper objectMapper;
+
+  @Autowired
+  public DecisionDefinitionXmlWriter(RestHighLevelClient esClient,
+                                     ObjectMapper objectMapper) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+  }
 
   public void importProcessDefinitionXmls(final List<DecisionDefinitionOptimizeDto> decisionDefinitions) {
     logger.debug("writing [{}] decision definition XMLs to ES", decisionDefinitions.size());
 
-    final BulkRequestBuilder processDefinitionXmlBulkRequest = esclient.prepareBulk();
+    final BulkRequest processDefinitionXmlBulkRequest = new BulkRequest();
     for (DecisionDefinitionOptimizeDto decisionDefinition : decisionDefinitions) {
       addImportProcessDefinitionXmlRequest(processDefinitionXmlBulkRequest, decisionDefinition);
     }
 
-    if (processDefinitionXmlBulkRequest.numberOfActions() > 0 ) {
-      final BulkResponse response = processDefinitionXmlBulkRequest.get();
-      if (response.hasFailures()) {
-        logger.warn("There were failures while writing process definition xml information. " +
-            "Received error message: {}",
-          response.buildFailureMessage()
-        );
+    if (processDefinitionXmlBulkRequest.numberOfActions() > 0) {
+      try {
+        BulkResponse bulkResponse = esClient.bulk(processDefinitionXmlBulkRequest, RequestOptions.DEFAULT);
+        if (bulkResponse.hasFailures()) {
+          logger.warn(
+            "There were failures while writing decision definition xml information. " +
+              "Received error message: {}",
+            bulkResponse.buildFailureMessage()
+          );
+        }
+      } catch (IOException e) {
+        logger.error("There were errors while writing decision definition xml information.", e);
       }
     } else {
-      logger.warn("Cannot import empty list of process definition xmls.");
+      logger.warn("Cannot import empty list of decision definition xmls.");
     }
   }
 
-  private void addImportProcessDefinitionXmlRequest(final BulkRequestBuilder bulkRequest,
+  private void addImportProcessDefinitionXmlRequest(final BulkRequest bulkRequest,
                                                     final DecisionDefinitionOptimizeDto newEntryIfAbsent) {
 
     final Map<String, Object> params = new HashMap<>();
@@ -71,16 +80,16 @@ public class DecisionDefinitionXmlWriter {
       logger.error("can't serialize to JSON", e);
     }
 
-    bulkRequest.add(esclient
-        .prepareUpdate(
-            getOptimizeIndexAliasForType(ElasticsearchConstants.DECISION_DEFINITION_TYPE),
-            ElasticsearchConstants.DECISION_DEFINITION_TYPE,
-            newEntryIfAbsent.getId()
-        )
-        .setScript(updateScript)
-        .setUpsert(source, XContentType.JSON)
-        .setRetryOnConflict(configurationService.getNumberOfRetriesOnConflict())
-    );
+    UpdateRequest updateRequest =
+      new UpdateRequest(
+        getOptimizeIndexAliasForType(DECISION_DEFINITION_TYPE),
+        DECISION_DEFINITION_TYPE,
+        newEntryIfAbsent.getId()
+      )
+        .script(updateScript)
+        .upsert(source, XContentType.JSON);
+
+    bulkRequest.add(updateRequest);
   }
 
   private Script buildUpdateScript(final Map<String, Object> params) {

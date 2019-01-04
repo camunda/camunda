@@ -5,7 +5,7 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.client.Client;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,7 +14,7 @@ public abstract class ReportCommand <T extends ReportResultDto>  implements Comm
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
   protected ReportDataDto reportData;
-  protected Client esclient;
+  protected RestHighLevelClient esClient;
   protected ConfigurationService configurationService;
   protected ObjectMapper objectMapper;
 
@@ -22,7 +22,7 @@ public abstract class ReportCommand <T extends ReportResultDto>  implements Comm
   @Override
   public T evaluate(CommandContext commandContext) throws OptimizeException {
     reportData = commandContext.getReportData();
-    esclient = commandContext.getEsclient();
+    esClient = commandContext.getEsClient();
     configurationService = commandContext.getConfigurationService();
     objectMapper = commandContext.getObjectMapper();
     beforeEvaluate(commandContext);

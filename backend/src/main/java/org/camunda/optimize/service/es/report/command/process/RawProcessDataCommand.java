@@ -5,20 +5,24 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.service.es.report.command.process.mapping.RawProcessDataResultDtoMapper;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.ProcessVariableHelper;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
-import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 
+import java.io.IOException;
 import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_NAME;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_VALUE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 public class RawProcessDataCommand extends ProcessReportCommand<RawDataProcessReportResultDto> {
@@ -52,17 +56,39 @@ public class RawProcessDataCommand extends ProcessReportCommand<RawDataProcessRe
       .map(order -> SortOrder.valueOf(order.name()))
       .orElse(SortOrder.DESC);
 
-    final SearchRequestBuilder searchRequestBuilder = esclient
-      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE))
-      .setTypes(ElasticsearchConstants.PROC_INSTANCE_TYPE)
-      .setQuery(query)
-      .setFetchSource(null, EVENTS)
-      .setSize(RAW_DATA_LIMIT.intValue());
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(query)
+      .fetchSource(null, EVENTS)
+      .size(RAW_DATA_LIMIT.intValue());
+    SearchRequest searchRequest =
+      new SearchRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
+        .types(PROC_INSTANCE_TYPE)
+        .source(searchSourceBuilder);
 
+    addSorting(sortByField, sortOrder, searchSourceBuilder);
+
+    SearchResponse response;
+    try {
+      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason =
+        String.format(
+          "Could not evaluate raw data report for process definition key [%s] and version [%s]",
+          processReportData.getProcessDefinitionKey(),
+          processReportData.getProcessDefinitionVersion()
+        );
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    return rawDataSingleReportResultDtoMapper.mapFrom(response, objectMapper);
+  }
+
+  private void addSorting(String sortByField, SortOrder sortOrder, SearchSourceBuilder searchSourceBuilder) {
     if (sortByField.startsWith(VARIABLE_PREFIX)) {
       final String variableName = sortByField.substring(VARIABLE_PREFIX.length());
       for (String variableField : ProcessVariableHelper.getAllVariableTypeFieldLabels()) {
-        searchRequestBuilder.addSort(
+        searchSourceBuilder.sort(
           SortBuilders
             .fieldSort(variableField + "." + VARIABLE_VALUE)
             .setNestedPath(variableField)
@@ -73,7 +99,7 @@ public class RawProcessDataCommand extends ProcessReportCommand<RawDataProcessRe
         );
       }
     } else {
-      searchRequestBuilder.addSort(
+      searchSourceBuilder.sort(
         SortBuilders.fieldSort(sortByField).order(sortOrder)
           // this ensures the query doesn't fail on unknown properties but just ignores them
           // this is done to ensure consistent behavior compared to unknown variable names as ES doesn't fail there
@@ -81,10 +107,6 @@ public class RawProcessDataCommand extends ProcessReportCommand<RawDataProcessRe
           .unmappedType("short")
       );
     }
-
-    final SearchResponse scrollResp = searchRequestBuilder.get();
-
-    return rawDataSingleReportResultDtoMapper.mapFrom(scrollResp, objectMapper);
   }
 
 }

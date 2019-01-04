@@ -19,7 +19,6 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.concurrent.TimeUnit;
 
-
 public class TransportClientFactory implements FactoryBean<TransportClient>, DisposableBean {
 
   private final Logger logger = LoggerFactory.getLogger(TransportClientFactory.class);

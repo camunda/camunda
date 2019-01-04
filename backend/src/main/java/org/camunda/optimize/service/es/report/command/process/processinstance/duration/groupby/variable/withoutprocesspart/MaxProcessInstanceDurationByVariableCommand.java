@@ -6,13 +6,14 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.metrics.max.InternalMax;
+import org.elasticsearch.search.aggregations.metrics.max.ParsedMax;
 
 public class MaxProcessInstanceDurationByVariableCommand
   extends AbstractProcessInstanceDurationByVariableCommand {
 
   @Override
   protected long processAggregationOperation(Aggregations aggs) {
-    InternalMax aggregation = aggs.get(DURATION_AGGREGATION);
+    ParsedMax aggregation = aggs.get(DURATION_AGGREGATION);
     if (Double.isInfinite(aggregation.getValue())){
       return 0L;
     } else {

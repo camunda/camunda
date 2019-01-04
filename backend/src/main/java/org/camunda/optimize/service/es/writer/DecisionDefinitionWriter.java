@@ -3,13 +3,11 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.schema.type.DecisionDefinitionType;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.support.WriteRequest;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.slf4j.Logger;
@@ -17,38 +15,36 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
+import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
 @Component
 public class DecisionDefinitionWriter {
   private static final Logger logger = LoggerFactory.getLogger(DecisionDefinitionWriter.class);
 
-  private final TransportClient esclient;
-  private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
+  private final RestHighLevelClient esClient;
 
   @Autowired
-  public DecisionDefinitionWriter(final TransportClient esclient,
-                                  final ConfigurationService configurationService,
+  public DecisionDefinitionWriter(final RestHighLevelClient esClient,
                                   final ObjectMapper objectMapper) {
-    this.esclient = esclient;
-    this.configurationService = configurationService;
+    this.esClient = esClient;
     this.objectMapper = objectMapper;
   }
 
-  public void importProcessDefinitions(List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos)
-    throws ExecutionException {
+  public void importProcessDefinitions(List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos) {
     logger.debug("Writing [{}] decision definitions to elasticsearch", decisionDefinitionOptimizeDtos.size());
     writeDecisionDefinitionInformation(decisionDefinitionOptimizeDtos);
   }
 
   private void writeDecisionDefinitionInformation(List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos) {
-    final BulkRequestBuilder bulkRequest = esclient.prepareBulk();
+    final BulkRequest bulkRequest = new BulkRequest();
     for (DecisionDefinitionOptimizeDto decisionDefinition : decisionDefinitionOptimizeDtos) {
       final String id = decisionDefinition.getId();
 
@@ -60,28 +56,27 @@ public class DecisionDefinitionWriter {
 
       final Script updateScript = buildUpdateScript(params);
 
-      bulkRequest.add(
-        esclient
-          .prepareUpdate(
-            getOptimizeIndexAliasForType(ElasticsearchConstants.DECISION_DEFINITION_TYPE),
-            ElasticsearchConstants.DECISION_DEFINITION_TYPE,
-            id
-          )
-          .setScript(updateScript)
-          .setUpsert(objectMapper.convertValue(decisionDefinition, Map.class))
-          .setRetryOnConflict(configurationService.getNumberOfRetriesOnConflict())
-      );
+      UpdateRequest request =
+        new UpdateRequest(getOptimizeIndexAliasForType(DECISION_DEFINITION_TYPE), DECISION_DEFINITION_TYPE, id)
+          .script(updateScript)
+          .upsert(objectMapper.convertValue(decisionDefinition, Map.class));
+
+      bulkRequest.add(request);
     }
 
     if (bulkRequest.numberOfActions() > 0) {
-      final BulkResponse response = bulkRequest
-        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
-        .get();
-      if (response.hasFailures()) {
-        logger.warn(
-          "There were failures while writing decision definition information. Received error message: {}",
-          response.buildFailureMessage()
-        );
+      final BulkResponse bulkResponse;
+      try {
+        bulkRequest.setRefreshPolicy(IMMEDIATE);
+        bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+        if (bulkResponse.hasFailures()) {
+          logger.warn(
+            "There were failures while writing decision definition information. Received error message: {}",
+            bulkResponse.buildFailureMessage()
+          );
+        }
+      } catch (IOException e) {
+        logger.error("There were errors while writing decision definition information.", e);
       }
     } else {
       logger.warn("Cannot import empty list of decision definitions.");

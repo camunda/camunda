@@ -1,6 +1,5 @@
 package org.camunda.optimize.service.es.writer;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.IdDto;
@@ -11,18 +10,20 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.ElasticsearchStatusException;
+import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.action.support.WriteRequest;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.index.engine.DocumentMissingException;
+import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
-import org.elasticsearch.index.reindex.UpdateByQueryAction;
-import org.elasticsearch.index.reindex.UpdateByQueryRequestBuilder;
+import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.slf4j.Logger;
@@ -31,12 +32,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
+import java.io.IOException;
 import java.util.Collections;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CREATE_SUCCESSFUL_RESPONSE_RESULT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DELETE_SUCCESSFUL_RESPONSE_RESULT;
+import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
 @Component
 public class DashboardWriter {
@@ -44,13 +47,14 @@ public class DashboardWriter {
   private static final String DEFAULT_DASHBOARD_NAME = "New Dashboard";
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  private TransportClient esclient;
+  private RestHighLevelClient esClient;
   private ConfigurationService configurationService;
   private ObjectMapper objectMapper;
 
   @Autowired
-  public DashboardWriter(TransportClient esclient, ConfigurationService configurationService, ObjectMapper objectMapper) {
-    this.esclient = esclient;
+  public DashboardWriter(RestHighLevelClient esClient, ConfigurationService configurationService,
+                         ObjectMapper objectMapper) {
+    this.esClient = esClient;
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;
   }
@@ -68,11 +72,11 @@ public class DashboardWriter {
     dashboard.setId(id);
 
     try {
-      IndexResponse indexResponse = esclient
-        .prepareIndex(getOptimizeIndexAliasForType(DASHBOARD_TYPE), DASHBOARD_TYPE, id)
-        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
-        .setSource(objectMapper.writeValueAsString(dashboard), XContentType.JSON)
-        .get();
+      IndexRequest request = new IndexRequest(getOptimizeIndexAliasForType(DASHBOARD_TYPE), DASHBOARD_TYPE, id)
+        .source(objectMapper.writeValueAsString(dashboard), XContentType.JSON)
+        .setRefreshPolicy(IMMEDIATE);
+
+      IndexResponse indexResponse = esClient.index(request, RequestOptions.DEFAULT);
 
       if (!indexResponse.getResult().getLowercase().equals(CREATE_SUCCESSFUL_RESPONSE_RESULT)) {
         String message = "Could not write dashboard to Elasticsearch. " +
@@ -80,7 +84,7 @@ public class DashboardWriter {
         logger.error(message);
         throw new OptimizeRuntimeException(message);
       }
-    } catch (JsonProcessingException e) {
+    } catch (IOException e) {
       String errorMessage = "Could not create dashboard.";
       logger.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
@@ -95,12 +99,13 @@ public class DashboardWriter {
   public void updateDashboard(DashboardDefinitionUpdateDto dashboard, String id) {
     logger.debug("Updating dashboard with id [{}] in Elasticsearch", id);
     try {
-      UpdateResponse updateResponse = esclient
-        .prepareUpdate(getOptimizeIndexAliasForType(DASHBOARD_TYPE), DASHBOARD_TYPE, id)
-        .setDoc(objectMapper.writeValueAsString(dashboard), XContentType.JSON)
-        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
-        .setRetryOnConflict(configurationService.getNumberOfRetriesOnConflict())
-        .get();
+      UpdateRequest request =
+        new UpdateRequest(getOptimizeIndexAliasForType(DASHBOARD_TYPE), DASHBOARD_TYPE, id)
+          .doc(objectMapper.writeValueAsString(dashboard), XContentType.JSON)
+          .setRefreshPolicy(IMMEDIATE)
+          .retryOnConflict(configurationService.getNumberOfRetriesOnConflict());
+
+      UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
 
       if (updateResponse.getShardInfo().getFailed() > 0) {
         logger.error(
@@ -110,15 +115,15 @@ public class DashboardWriter {
         );
         throw new OptimizeRuntimeException("Was not able to update dashboard!");
       }
-    } catch (JsonProcessingException e) {
+    } catch (IOException e) {
       String errorMessage = String.format(
-        "Was not able to update dashboard with id [%s] and name [%s]. Could not serialize dashboard update!",
+        "Was not able to update dashboard with id [%s] and name [%s].",
         id,
         dashboard.getName()
       );
       logger.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
-    } catch (DocumentMissingException e) {
+    } catch (ElasticsearchStatusException e) {
       String errorMessage = String.format(
         "Was not able to update dashboard with id [%s] and name [%s]. Dashboard does not exist!",
         id,
@@ -130,7 +135,6 @@ public class DashboardWriter {
   }
 
   public void removeReportFromDashboards(String reportId) {
-    UpdateByQueryRequestBuilder updateByQuery = UpdateByQueryAction.INSTANCE.newRequestBuilder(esclient);
     Script removeReportIdFromCombinedReportsScript = new Script(
       ScriptType.INLINE,
       Script.DEFAULT_SCRIPT_LANG,
@@ -138,26 +142,33 @@ public class DashboardWriter {
       Collections.singletonMap("idToRemove", reportId)
     );
 
-    updateByQuery.source(getOptimizeIndexAliasForType(DASHBOARD_TYPE))
-      .abortOnVersionConflict(false)
+    NestedQueryBuilder query = QueryBuilders.nestedQuery(
+      DashboardType.REPORTS,
+      QueryBuilders.termQuery(DashboardType.REPORTS + "." + DashboardType.ID, reportId),
+      ScoreMode.None
+    );
+    UpdateByQueryRequest request = new UpdateByQueryRequest(getOptimizeIndexAliasForType(DASHBOARD_TYPE))
+      .setAbortOnVersionConflict(false)
       .setMaxRetries(configurationService.getNumberOfRetriesOnConflict())
-      .filter(
-        QueryBuilders.nestedQuery(
-          DashboardType.REPORTS,
-          QueryBuilders.termQuery(DashboardType.REPORTS + "." + DashboardType.ID, reportId),
-          ScoreMode.None
-        )
-      )
-      .script(removeReportIdFromCombinedReportsScript)
-      .refresh(true);
+      .setQuery(query)
+      .setScript(removeReportIdFromCombinedReportsScript)
+      .setRefresh(true);
 
-    BulkByScrollResponse response = updateByQuery.get();
-    if (!response.getBulkFailures().isEmpty()) {
+    BulkByScrollResponse bulkByScrollResponse;
+    try {
+      bulkByScrollResponse = esClient.updateByQuery(request, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format("Could not remove report with id [%s] from dashboards.", reportId);
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    if (!bulkByScrollResponse.getBulkFailures().isEmpty()) {
       String errorMessage =
         String.format(
           "Could not remove report id [%s] from dashboard! Error response: %s",
           reportId,
-          response.getBulkFailures()
+          bulkByScrollResponse.getBulkFailures()
         );
       logger.error(errorMessage);
       throw new OptimizeRuntimeException(errorMessage);
@@ -166,13 +177,20 @@ public class DashboardWriter {
 
   public void deleteDashboard(String dashboardId) {
     logger.debug("Deleting dashboard with id [{}]", dashboardId);
-    DeleteResponse deleteResponse = esclient.prepareDelete(
-      getOptimizeIndexAliasForType(DASHBOARD_TYPE),
-      DASHBOARD_TYPE,
-      dashboardId
-    )
-      .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
-      .get();
+    DeleteRequest request =
+      new DeleteRequest(getOptimizeIndexAliasForType(DASHBOARD_TYPE), DASHBOARD_TYPE, dashboardId)
+        .setRefreshPolicy(IMMEDIATE);
+
+    DeleteResponse deleteResponse;
+    try {
+      deleteResponse = esClient.delete(request, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason =
+        String.format("Could not delete dashboard with id [%s]. " +
+                        "Maybe Optimize is not connected to Elasticsearch?", dashboardId);
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
 
     if (!deleteResponse.getResult().getLowercase().equals(DELETE_SUCCESSFUL_RESPONSE_RESULT)) {
       String message =

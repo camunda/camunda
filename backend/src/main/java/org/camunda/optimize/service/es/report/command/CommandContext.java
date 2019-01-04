@@ -4,23 +4,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.service.es.filter.QueryFilterEnhancer;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.RestHighLevelClient;
 
 public class CommandContext {
 
-  private TransportClient esclient;
+  private RestHighLevelClient esClient;
   private ConfigurationService configurationService;
   private ObjectMapper objectMapper;
   private QueryFilterEnhancer queryFilterEnhancer;
   private ReportDataDto reportData;
 
-  public Client getEsclient() {
-    return esclient;
+  public RestHighLevelClient getEsClient() {
+    return esClient;
   }
 
-  public void setEsclient(TransportClient esclient) {
-    this.esclient = esclient;
+  public void setEsClient(RestHighLevelClient esClient) {
+    this.esClient = esClient;
   }
 
   public ConfigurationService getConfigurationService() {

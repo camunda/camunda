@@ -1,34 +1,39 @@
 package org.camunda.optimize.service.es.writer;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.service.es.schema.type.AlertType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.action.support.WriteRequest;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.engine.DocumentMissingException;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
-import org.elasticsearch.index.reindex.DeleteByQueryAction;
+import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
+import java.io.IOException;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CREATE_SUCCESSFUL_RESPONSE_RESULT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DELETE_SUCCESSFUL_RESPONSE_RESULT;
+import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 
@@ -36,12 +41,17 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 public class AlertWriter {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  @Autowired
-  private TransportClient esclient;
-  @Autowired
+  private RestHighLevelClient esClient;
   private ConfigurationService configurationService;
-  @Autowired
   private ObjectMapper objectMapper;
+
+  @Autowired
+  public AlertWriter(RestHighLevelClient esClient, ConfigurationService configurationService,
+                     ObjectMapper objectMapper) {
+    this.esClient = esClient;
+    this.configurationService = configurationService;
+    this.objectMapper = objectMapper;
+  }
 
   public AlertDefinitionDto createAlert(AlertDefinitionDto alertDefinitionDto) {
     logger.debug("Writing new alert to Elasticsearch");
@@ -49,15 +59,11 @@ public class AlertWriter {
     String id = IdGenerator.getNextId();
     alertDefinitionDto.setId(id);
     try {
-      IndexResponse indexResponse = esclient
-        .prepareIndex(
-          getOptimizeIndexAliasForType(ElasticsearchConstants.ALERT_TYPE),
-          ElasticsearchConstants.ALERT_TYPE,
-          id
-        )
-        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
-        .setSource(objectMapper.writeValueAsString(alertDefinitionDto), XContentType.JSON)
-        .get();
+      IndexRequest request = new IndexRequest(getOptimizeIndexAliasForType(ALERT_TYPE), ALERT_TYPE, id)
+        .source(objectMapper.writeValueAsString(alertDefinitionDto), XContentType.JSON)
+        .setRefreshPolicy(IMMEDIATE);
+
+      IndexResponse indexResponse = esClient.index(request, RequestOptions.DEFAULT);
 
       if (!indexResponse.getResult().getLowercase().equals(CREATE_SUCCESSFUL_RESPONSE_RESULT)) {
         String message = "Could not write alert to Elasticsearch. " +
@@ -65,7 +71,7 @@ public class AlertWriter {
         logger.error(message);
         throw new OptimizeRuntimeException(message);
       }
-    } catch (JsonProcessingException e) {
+    } catch (IOException e) {
       String errorMessage = "Could not create alert.";
       logger.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
@@ -78,16 +84,13 @@ public class AlertWriter {
   public void updateAlert(AlertDefinitionDto alertUpdate) {
     logger.debug("Updating alert with id [{}] in Elasticsearch", alertUpdate.getId());
     try {
-      UpdateResponse updateResponse = esclient
-        .prepareUpdate(
-          getOptimizeIndexAliasForType(ElasticsearchConstants.ALERT_TYPE),
-          ElasticsearchConstants.ALERT_TYPE,
-          alertUpdate.getId()
-        )
-        .setDoc(objectMapper.writeValueAsString(alertUpdate), XContentType.JSON)
-        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
-        .setRetryOnConflict(configurationService.getNumberOfRetriesOnConflict())
-        .get();
+      UpdateRequest request =
+        new UpdateRequest(getOptimizeIndexAliasForType(ALERT_TYPE), ALERT_TYPE, alertUpdate.getId())
+        .doc(objectMapper.writeValueAsString(alertUpdate), XContentType.JSON)
+        .setRefreshPolicy(IMMEDIATE)
+        .retryOnConflict(configurationService.getNumberOfRetriesOnConflict());
+
+      UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
 
       if (updateResponse.getShardInfo().getFailed() > 0) {
         String errorMessage = String.format(
@@ -96,9 +99,9 @@ public class AlertWriter {
         logger.error(errorMessage);
         throw new OptimizeRuntimeException(errorMessage);
       }
-    } catch (JsonProcessingException e) {
+    } catch (IOException e) {
       String errorMessage = String.format(
-        "Was not able to update alert with id [%s] and name [%s]. Could not serialize alert update!",
+        "Was not able to update alert with id [%s] and name [%s].",
         alertUpdate.getId(),
         alertUpdate.getName()
       );
@@ -117,13 +120,20 @@ public class AlertWriter {
 
   public void deleteAlert(String alertId) {
     logger.debug("Deleting alert with id [{}]", alertId);
-    DeleteResponse deleteResponse = esclient.prepareDelete(
-      getOptimizeIndexAliasForType(ElasticsearchConstants.ALERT_TYPE),
-      ElasticsearchConstants.ALERT_TYPE,
-      alertId
-    )
-      .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
-      .get();
+    DeleteRequest request =
+      new DeleteRequest(getOptimizeIndexAliasForType(ALERT_TYPE), ALERT_TYPE, alertId)
+      .setRefreshPolicy(IMMEDIATE);
+
+    DeleteResponse deleteResponse;
+    try {
+      deleteResponse = esClient.delete(request, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason =
+        String.format("Could not delete alert with id [%s]. " +
+                        "Maybe Optimize is not connected to Elasticsearch?", alertId);
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
 
     if (!deleteResponse.getResult().getLowercase().equals(DELETE_SUCCESSFUL_RESPONSE_RESULT)) {
       String message =
@@ -137,23 +147,20 @@ public class AlertWriter {
   public void writeAlertStatus(boolean alertStatus, String alertId) {
     logger.debug("Writing alert status for alert with id [{}] to Elasticsearch", alertId);
     try {
-      esclient
-        .prepareUpdate(
-          getOptimizeIndexAliasForType(ElasticsearchConstants.ALERT_TYPE),
-          ElasticsearchConstants.ALERT_TYPE,
-          alertId
-        )
-        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
-        .setRetryOnConflict(configurationService.getNumberOfRetriesOnConflict())
-        .setDoc(
-          jsonBuilder()
-            .startObject()
-            .field(AlertType.TRIGGERED, alertStatus)
-            .endObject()
-        )
-        .get();
+      XContentBuilder docFieldToUpdate =
+        jsonBuilder()
+          .startObject()
+          .field(AlertType.TRIGGERED, alertStatus)
+          .endObject();
+      UpdateRequest request =
+        new UpdateRequest(getOptimizeIndexAliasForType(ALERT_TYPE), ALERT_TYPE, alertId)
+          .doc(docFieldToUpdate)
+          .setRefreshPolicy(IMMEDIATE)
+          .retryOnConflict(configurationService.getNumberOfRetriesOnConflict());
+
+      esClient.update(request, RequestOptions.DEFAULT);
     } catch (Exception e) {
-      logger.error("can't update status of alert [{}]", alertId, e);
+      logger.error("Can't update status of alert [{}]", alertId, e);
     }
   }
 
@@ -162,11 +169,20 @@ public class AlertWriter {
    */
   public void deleteAlertsForReport(String reportId) {
     logger.debug("Deleting all alerts for report with id [{}]", reportId);
-    BulkByScrollResponse bulkByScrollResponse = DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
-      .filter(QueryBuilders.matchQuery(AlertType.REPORT_ID, reportId))
-      .source(getOptimizeIndexAliasForType(ElasticsearchConstants.ALERT_TYPE))
-      .refresh(true)
-      .get();
+
+    TermQueryBuilder query = QueryBuilders.termQuery(AlertType.REPORT_ID, reportId);
+    DeleteByQueryRequest request = new DeleteByQueryRequest(getOptimizeIndexAliasForType(ALERT_TYPE))
+      .setQuery(query)
+      .setRefresh(true);
+
+    BulkByScrollResponse bulkByScrollResponse;
+    try {
+      bulkByScrollResponse = esClient.deleteByQuery(request, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format("Could not delete all alerts for report with id [%s].", reportId);
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
 
     if (!bulkByScrollResponse.getBulkFailures().isEmpty()) {
       String errorMessage =
@@ -178,7 +194,6 @@ public class AlertWriter {
       logger.error(errorMessage);
       throw new OptimizeRuntimeException(errorMessage);
     }
-
     long deleted = bulkByScrollResponse.getDeleted();
     logger.debug("deleted [{}] alerts related to report [{}]", deleted, reportId);
   }

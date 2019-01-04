@@ -5,12 +5,11 @@ import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.SimpleEventDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
@@ -27,23 +26,27 @@ import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 
 
 @Component
 public abstract class AbstractActivityInstanceWriter {
   protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-  @Autowired
-  private TransportClient esclient;
-  @Autowired
-  private ConfigurationService configurationService;
-  @Autowired
+  private RestHighLevelClient esClient;
   private ObjectMapper objectMapper;
+
+  @Autowired
+  public AbstractActivityInstanceWriter(RestHighLevelClient esClient,
+                                        ObjectMapper objectMapper) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+  }
 
   public void importActivityInstances(List<FlowNodeEventDto> events) throws Exception {
     logger.debug("Writing [{}] activity instances to elasticsearch", events.size());
 
-    BulkRequestBuilder addEventToProcessInstanceBulkRequest = esclient.prepareBulk();
+    BulkRequest addEventToProcessInstanceBulkRequest = new BulkRequest();
     Map<String, List<FlowNodeEventDto>> processInstanceToEvents = new HashMap<>();
     for (FlowNodeEventDto e : events) {
       if (!processInstanceToEvents.containsKey(e.getProcessInstanceId())) {
@@ -60,19 +63,19 @@ public abstract class AbstractActivityInstanceWriter {
       );
     }
 
-    BulkResponse response = addEventToProcessInstanceBulkRequest.get();
-    if (response.hasFailures()) {
+    BulkResponse bulkResponse = esClient.bulk(addEventToProcessInstanceBulkRequest, RequestOptions.DEFAULT);
+    if (bulkResponse.hasFailures()) {
       String errorMessage = String.format(
         "There were failures while writing activity instance with message: %s",
-        response.buildFailureMessage()
+        bulkResponse.buildFailureMessage()
       );
       throw new OptimizeRuntimeException(errorMessage);
     }
   }
 
   private void addActivityInstancesToProcessInstanceRequest(
-      BulkRequestBuilder addEventToProcessInstanceBulkRequest,
-      List<FlowNodeEventDto> processEvents, String processInstanceId) throws IOException {
+    BulkRequest addEventToProcessInstanceBulkRequest,
+    List<FlowNodeEventDto> processEvents, String processInstanceId) throws IOException {
 
     List<SimpleEventDto> simpleEvents = getSimpleEventDtos(processEvents);
     Map<String, Object> params = new HashMap<>();
@@ -99,16 +102,12 @@ public abstract class AbstractActivityInstanceWriter {
     procInst.setEngine(e.getEngineAlias());
     String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
 
-    addEventToProcessInstanceBulkRequest.add(esclient
-      .prepareUpdate(
-        getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE),
-        ElasticsearchConstants.PROC_INSTANCE_TYPE,
-        processInstanceId
-      )
-      .setScript(updateScript)
-      .setUpsert(newEntryIfAbsent, XContentType.JSON)
-      .setRetryOnConflict(configurationService.getNumberOfRetriesOnConflict())
-    );
+    UpdateRequest request =
+      new UpdateRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE), PROC_INSTANCE_TYPE, processInstanceId)
+        .script(updateScript)
+        .upsert(newEntryIfAbsent, XContentType.JSON);
+
+    addEventToProcessInstanceBulkRequest.add(request);
   }
 
   protected abstract String createInlineUpdateScript();

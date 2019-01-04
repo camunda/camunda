@@ -5,15 +5,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
+import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.slf4j.Logger;
@@ -21,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -28,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -36,28 +40,33 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 public class CompletedProcessInstanceWriter {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  @Autowired
-  private TransportClient esClient;
-  @Autowired
-  private ConfigurationService configurationService;
-  @Autowired
+
+  private RestHighLevelClient esClient;
   private ObjectMapper objectMapper;
-  @Autowired
   private DateTimeFormatter dateTimeFormatter;
+
+  @Autowired
+  public CompletedProcessInstanceWriter(RestHighLevelClient esClient,
+                                        ObjectMapper objectMapper,
+                                        DateTimeFormatter dateTimeFormatter) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+    this.dateTimeFormatter = dateTimeFormatter;
+  }
 
   public void importProcessInstances(List<ProcessInstanceDto> processInstances) throws Exception {
     logger.debug("Writing [{}] completed process instances to elasticsearch", processInstances.size());
 
-    BulkRequestBuilder processInstanceBulkRequest = esClient.prepareBulk();
+    BulkRequest processInstanceBulkRequest = new BulkRequest();
 
     for (ProcessInstanceDto procInst : processInstances) {
       addImportProcessInstanceRequest(processInstanceBulkRequest, procInst);
     }
-    BulkResponse response = processInstanceBulkRequest.get();
-    if (response.hasFailures()) {
+    BulkResponse bulkResponse = esClient.bulk(processInstanceBulkRequest, RequestOptions.DEFAULT);
+    if (bulkResponse.hasFailures()) {
       logger.warn(
         "There were failures while writing process instances with message: {}",
-        response.buildFailureMessage()
+        bulkResponse.buildFailureMessage()
       );
     }
   }
@@ -78,20 +87,30 @@ public class CompletedProcessInstanceWriter {
       final BoolQueryBuilder filterQuery = boolQuery()
         .filter(termQuery(ProcessInstanceType.PROCESS_DEFINITION_KEY, processDefinitionKey))
         .filter(rangeQuery(ProcessInstanceType.END_DATE).lt(dateTimeFormatter.format(endDate)));
-      final BulkByScrollResponse response = DeleteByQueryAction.INSTANCE.newRequestBuilder(esClient)
-        .source(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE))
-        .abortOnVersionConflict(false)
-        .filter(filterQuery)
-        .get();
+      DeleteByQueryRequest request = new DeleteByQueryRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
+        .setQuery(filterQuery)
+        .setAbortOnVersionConflict(false)
+        .setRefresh(true);
+
+      BulkByScrollResponse bulkByScrollResponse;
+      try {
+        bulkByScrollResponse = esClient.deleteByQuery(request, RequestOptions.DEFAULT);
+      } catch (IOException e) {
+        String reason =
+          String.format("Could not delete process instances " +
+                          "for process definition key [%s] and end date [%s].", processDefinitionKey, endDate);
+        logger.error(reason, e);
+        throw new OptimizeRuntimeException(reason, e);
+      }
 
       logger.debug(
         "BulkByScrollResponse on deleting process instances for processDefinitionKey {}: {}",
         processDefinitionKey,
-        response
+        bulkByScrollResponse
       );
       logger.info(
         "Deleted {} process instances for processDefinitionKey {} and endDate past {}",
-        response.getDeleted(),
+        bulkByScrollResponse.getDeleted(),
         processDefinitionKey,
         endDate
       );
@@ -101,8 +120,8 @@ public class CompletedProcessInstanceWriter {
 
   }
 
-  private void addImportProcessInstanceRequest(BulkRequestBuilder bulkRequest, ProcessInstanceDto procInst) throws
-                                                                                                            JsonProcessingException {
+  private void addImportProcessInstanceRequest(BulkRequest bulkRequest, ProcessInstanceDto procInst) throws
+                                                                                                     JsonProcessingException {
     String processInstanceId = procInst.getProcessInstanceId();
     Map<String, Object> params = new HashMap<>();
     params.put(ProcessInstanceType.START_DATE, dateTimeFormatter.format(procInst.getStartDate()));
@@ -132,16 +151,12 @@ public class CompletedProcessInstanceWriter {
 
     String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
 
-    bulkRequest.add(esClient
-                      .prepareUpdate(
-                        getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE),
-                        ElasticsearchConstants.PROC_INSTANCE_TYPE,
-                        processInstanceId
-                      )
-                      .setScript(updateScript)
-                      .setUpsert(newEntryIfAbsent, XContentType.JSON)
-                      .setRetryOnConflict(configurationService.getNumberOfRetriesOnConflict())
-    );
+    UpdateRequest request =
+      new UpdateRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE), PROC_INSTANCE_TYPE, processInstanceId)
+        .script(updateScript)
+        .upsert(newEntryIfAbsent, XContentType.JSON);
+
+    bulkRequest.add(request);
 
   }
 

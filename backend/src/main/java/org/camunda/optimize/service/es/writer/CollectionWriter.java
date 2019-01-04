@@ -1,6 +1,5 @@
 package org.camunda.optimize.service.es.writer;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.IdDto;
@@ -12,27 +11,32 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.ElasticsearchStatusException;
+import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.support.WriteRequest;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.index.engine.DocumentMissingException;
+import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
-import org.elasticsearch.index.reindex.UpdateByQueryAction;
-import org.elasticsearch.index.reindex.UpdateByQueryRequestBuilder;
+import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
@@ -43,6 +47,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CREATE_SUCC
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DELETE_SUCCESSFUL_RESPONSE_RESULT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE;
+import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
 
 @Component
@@ -51,13 +56,14 @@ public class CollectionWriter {
   private static final String DEFAULT_COLLECTION_NAME = "New Collection";
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  private TransportClient esclient;
+  private RestHighLevelClient esClient;
   private ConfigurationService configurationService;
   private ObjectMapper objectMapper;
 
   @Autowired
-  public CollectionWriter(TransportClient esclient, ConfigurationService configurationService, ObjectMapper objectMapper) {
-    this.esclient = esclient;
+  public CollectionWriter(RestHighLevelClient esClient, ConfigurationService configurationService,
+                          ObjectMapper objectMapper) {
+    this.esClient = esClient;
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;
   }
@@ -76,11 +82,11 @@ public class CollectionWriter {
     collection.setName(DEFAULT_COLLECTION_NAME);
 
     try {
-      IndexResponse indexResponse = esclient
-        .prepareIndex(getOptimizeIndexAliasForType(COLLECTION_TYPE), COLLECTION_TYPE, id)
-        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
-        .setSource(objectMapper.writeValueAsString(collection), XContentType.JSON)
-        .get();
+      IndexRequest request = new IndexRequest(getOptimizeIndexAliasForType(COLLECTION_TYPE), COLLECTION_TYPE, id)
+        .source(objectMapper.writeValueAsString(collection), XContentType.JSON)
+        .setRefreshPolicy(IMMEDIATE);
+
+      IndexResponse indexResponse = esClient.index(request, RequestOptions.DEFAULT);
 
       if (!indexResponse.getResult().getLowercase().equals(CREATE_SUCCESSFUL_RESPONSE_RESULT)) {
         String message = "Could not write collection to Elasticsearch. " +
@@ -88,7 +94,7 @@ public class CollectionWriter {
         logger.error(message);
         throw new OptimizeRuntimeException(message);
       }
-    } catch (JsonProcessingException e) {
+    } catch (IOException e) {
       String errorMessage = "Could not create collection.";
       logger.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
@@ -105,12 +111,13 @@ public class CollectionWriter {
 
     ensureThatAllProvidedReportIdsExist(collection.getData());
     try {
-      UpdateResponse updateResponse = esclient
-        .prepareUpdate(getOptimizeIndexAliasForType(COLLECTION_TYPE), COLLECTION_TYPE, id)
-        .setDoc(objectMapper.writeValueAsString(collection), XContentType.JSON)
-        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
-        .setRetryOnConflict(configurationService.getNumberOfRetriesOnConflict())
-        .get();
+      UpdateRequest request =
+        new UpdateRequest(getOptimizeIndexAliasForType(COLLECTION_TYPE), COLLECTION_TYPE, id)
+        .doc(objectMapper.writeValueAsString(collection), XContentType.JSON)
+        .setRefreshPolicy(IMMEDIATE)
+        .retryOnConflict(configurationService.getNumberOfRetriesOnConflict());
+
+      UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
 
       if (updateResponse.getShardInfo().getFailed() > 0) {
         logger.error(
@@ -120,15 +127,15 @@ public class CollectionWriter {
         );
         throw new OptimizeRuntimeException("Was not able to update collection!");
       }
-    } catch (JsonProcessingException e) {
+    } catch (IOException e) {
       String errorMessage = String.format(
-        "Was not able to update collection with id [%s] and name [%s]. Could not serialize collection update!",
+        "Was not able to update collection with id [%s] and name [%s].",
         id,
         collection.getName()
       );
       logger.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
-    } catch (DocumentMissingException e) {
+    } catch (ElasticsearchStatusException e) {
       String errorMessage = String.format(
         "Was not able to update collection with id [%s] and name [%s]. Collection does not exist!",
         id,
@@ -146,15 +153,28 @@ public class CollectionWriter {
     if (reportIdsAreProvided) {
       List<String> reportIds = collectionData.getEntities();
       logger.debug("Checking that the given report ids [{}] for a collection exist", reportIds);
-      SearchResponse searchResponse = esclient.prepareSearch()
-        .setIndices(
-          getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE),
-          getOptimizeIndexAliasForType(SINGLE_DECISION_REPORT_TYPE),
-          getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE)
-        )
-        .setQuery(QueryBuilders.idsQuery().addIds(reportIds.toArray(new String[0])))
-        .setSize(0)
-        .get();
+
+      SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+        .query(QueryBuilders.idsQuery().addIds(reportIds.toArray(new String[0])))
+        .size(0);
+      SearchRequest searchRequest =
+        new SearchRequest()
+          .indices(
+            getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE),
+            getOptimizeIndexAliasForType(SINGLE_DECISION_REPORT_TYPE),
+            getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE)
+          )
+          .source(searchSourceBuilder);
+
+      SearchResponse searchResponse;
+      try {
+        searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      } catch (IOException e) {
+        String reason = "Was not able to fetch collections.";
+        logger.error(reason, e);
+        throw new OptimizeRuntimeException(reason, e);
+      }
+
       if (searchResponse.getHits().getTotalHits() != reportIds.size()) {
         String errorMessage = "Could not update collection, since the update contains report ids that " +
           "do not exist in Optimize any longer.";
@@ -165,7 +185,7 @@ public class CollectionWriter {
   }
 
   public void removeReportFromCollections(String reportId) {
-    UpdateByQueryRequestBuilder updateByQuery = UpdateByQueryAction.INSTANCE.newRequestBuilder(esclient);
+    logger.debug("Removing report [{}] from all collections.", reportId);
     Script removeReportFromCollectionScript = new Script(
       ScriptType.INLINE,
       Script.DEFAULT_SCRIPT_LANG,
@@ -173,26 +193,35 @@ public class CollectionWriter {
       Collections.singletonMap("idToRemove", reportId)
     );
 
-    updateByQuery.source(getOptimizeIndexAliasForType(COLLECTION_TYPE))
-      .abortOnVersionConflict(false)
-      .setMaxRetries(configurationService.getNumberOfRetriesOnConflict())
-      .filter(
-        QueryBuilders.nestedQuery(
-          CollectionType.DATA,
-          QueryBuilders.termQuery(CollectionType.DATA + "." + CollectionType.ENTITIES, reportId),
-          ScoreMode.None
-        )
-      )
-      .script(removeReportFromCollectionScript)
-      .refresh(true);
+    NestedQueryBuilder query =
+      QueryBuilders.nestedQuery(
+        CollectionType.DATA,
+        QueryBuilders.termQuery(CollectionType.DATA + "." + CollectionType.ENTITIES, reportId),
+        ScoreMode.None
+      );
 
-    BulkByScrollResponse response = updateByQuery.get();
-    if (!response.getBulkFailures().isEmpty()) {
+    UpdateByQueryRequest request = new UpdateByQueryRequest(getOptimizeIndexAliasForType(COLLECTION_TYPE))
+      .setAbortOnVersionConflict(false)
+      .setMaxRetries(configurationService.getNumberOfRetriesOnConflict())
+      .setQuery(query)
+      .setScript(removeReportFromCollectionScript)
+      .setRefresh(true);
+
+    BulkByScrollResponse bulkByScrollResponse;
+    try {
+      bulkByScrollResponse = esClient.updateByQuery(request, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format("Could not remove report with id [%s] from collections.", reportId);
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    if (!bulkByScrollResponse.getBulkFailures().isEmpty()) {
       String errorMessage =
         String.format(
           "Could not remove report id [%s] from collection! Error response: %s",
           reportId,
-          response.getBulkFailures()
+          bulkByScrollResponse.getBulkFailures()
         );
       logger.error(errorMessage);
       throw new OptimizeRuntimeException(errorMessage);
@@ -201,13 +230,20 @@ public class CollectionWriter {
 
   public void deleteCollection(String collectionId) {
     logger.debug("Deleting collection with id [{}]", collectionId);
-    DeleteResponse deleteResponse = esclient.prepareDelete(
-      getOptimizeIndexAliasForType(COLLECTION_TYPE),
-      COLLECTION_TYPE,
-      collectionId
-    )
-      .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
-      .get();
+    DeleteRequest request =
+      new DeleteRequest(getOptimizeIndexAliasForType(COLLECTION_TYPE), COLLECTION_TYPE, collectionId)
+      .setRefreshPolicy(IMMEDIATE);
+
+    DeleteResponse deleteResponse;
+    try {
+      deleteResponse = esClient.delete(request, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason =
+        String.format("Could not delete collection with id [%s]. " +
+                        "Maybe Optimize is not connected to Elasticsearch?", collectionId);
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
 
     if (!deleteResponse.getResult().getLowercase().equals(DELETE_SUCCESSFUL_RESPONSE_RESULT)) {
       String message = String.format("Could not delete collection with id [%s]. Collection does not exist." +

@@ -1,11 +1,11 @@
 package org.camunda.optimize.service.es.report.command.process.flownode.duration;
 
 import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.avg.InternalAvg;
+import org.elasticsearch.search.aggregations.metrics.avg.ParsedAvg;
 
 import static org.elasticsearch.search.aggregations.AggregationBuilders.avg;
 
-public class AverageFlowNodeDurationByFlowNodeCommand extends AbstractFlowNodeDurationByFlowNodeCommand<InternalAvg> {
+public class AverageFlowNodeDurationByFlowNodeCommand extends AbstractFlowNodeDurationByFlowNodeCommand<ParsedAvg> {
 
   @Override
   protected AggregationBuilder addOperation(String aggregationName, String field) {
@@ -14,7 +14,7 @@ public class AverageFlowNodeDurationByFlowNodeCommand extends AbstractFlowNodeDu
   }
 
   @Override
-  protected Long processOperationAggregation(InternalAvg aggregation) {
+  protected Long processOperationAggregation(ParsedAvg aggregation) {
     return Math.round(aggregation.getValue());
   }
 }

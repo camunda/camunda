@@ -37,7 +37,7 @@ public class ProcessPartQueryUtil {
     for (Terms.Bucket entry : agg.getBuckets()) {
       Nested nested = entry.getAggregations().get(NESTED_AGGREGATION);
       ScriptedMetric scriptedMetric = nested.getAggregations().get(SCRIPT_AGGREGATION);
-      Long scriptedResult = (Long) scriptedMetric.aggregation();
+      Integer scriptedResult = (Integer) scriptedMetric.aggregation();
       if (scriptedResult != null) {
         sum += scriptedResult;
       }
@@ -51,7 +51,7 @@ public class ProcessPartQueryUtil {
     for (Terms.Bucket entry : agg.getBuckets()) {
       Nested nested = entry.getAggregations().get(NESTED_AGGREGATION);
       ScriptedMetric scriptedMetric = nested.getAggregations().get(SCRIPT_AGGREGATION);
-      Long scriptedResult = (Long) scriptedMetric.aggregation();
+      Integer scriptedResult = (Integer) scriptedMetric.aggregation();
       if (scriptedResult != null) {
         min = min < scriptedResult ? min : scriptedResult;
       }
@@ -65,7 +65,7 @@ public class ProcessPartQueryUtil {
     for (Terms.Bucket entry : agg.getBuckets()) {
       Nested nested = entry.getAggregations().get(NESTED_AGGREGATION);
       ScriptedMetric scriptedMetric = nested.getAggregations().get(SCRIPT_AGGREGATION);
-      Long scriptedResult = (Long) scriptedMetric.aggregation();
+      Integer scriptedResult = (Integer) scriptedMetric.aggregation();
       if (scriptedResult != null) {
         max = max > scriptedResult ? max : scriptedResult;
       }
@@ -75,11 +75,11 @@ public class ProcessPartQueryUtil {
 
   public static long processProcessPartAggregationAsMedian(Aggregations aggs) {
     Terms agg = aggs.get(TERMS_AGGREGATIONS);
-    List<Long> allDurations = new ArrayList<>();
+    List<Integer> allDurations = new ArrayList<>();
     for (Terms.Bucket entry : agg.getBuckets()) {
       Nested nested = entry.getAggregations().get(NESTED_AGGREGATION);
       ScriptedMetric scriptedMetric = nested.getAggregations().get(SCRIPT_AGGREGATION);
-      Long scriptedResult = (Long) scriptedMetric.aggregation();
+      Integer scriptedResult = (Integer) scriptedMetric.aggregation();
       if (scriptedResult != null) {
         allDurations.add(scriptedResult);
       }

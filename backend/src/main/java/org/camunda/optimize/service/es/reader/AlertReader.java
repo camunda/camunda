@@ -18,6 +18,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
@@ -30,6 +31,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_
 
 
 @Component
+@DependsOn({"elasticSearchSchemaInitializer"})
 public class AlertReader {
   private static final Logger logger = LoggerFactory.getLogger(AlertReader.class);
 

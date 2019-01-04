@@ -15,16 +15,18 @@ import org.camunda.optimize.dto.optimize.query.variable.value.StringVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.value.VariableInstanceDto;
 import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.ProcessVariableHelper;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.client.Client;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.UpdateByQueryAction;
+import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.slf4j.Logger;
@@ -46,6 +48,7 @@ import java.util.Optional;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.isVariableTypeSupported;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.variableTypeToFieldLabel;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
@@ -57,20 +60,48 @@ public abstract class VariableWriter {
 
   protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-  @Autowired
-  protected Client esClient;
-  @Autowired
-  protected ConfigurationService configurationService;
-  @Autowired
-  protected ObjectMapper objectMapper;
+  private final RestHighLevelClient esClient;
+  protected final ObjectMapper objectMapper;
+  private final DateTimeFormatter dateTimeFormatter;
 
   @Autowired
-  protected DateTimeFormatter dateTimeFormatter;
+  public VariableWriter(RestHighLevelClient esClient,
+                        ObjectMapper objectMapper, DateTimeFormatter dateTimeFormatter) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+    this.dateTimeFormatter = dateTimeFormatter;
+  }
+
+  private static void addAtLeastOneVariableArrayNotEmptyNestedFilters(final BoolQueryBuilder queryBuilder) {
+    final BoolQueryBuilder innerBoolQuery = boolQuery();
+    innerBoolQuery.minimumShouldMatch(1);
+
+    Arrays.stream(ProcessVariableHelper.getAllVariableTypeFieldLabels())
+      .forEach(variableName -> innerBoolQuery.should(
+        nestedQuery(
+          variableName,
+          scriptQuery(new Script(MessageFormat.format("doc[''{0}.id''].length > 0", variableName))),
+          ScoreMode.None
+        )
+      ));
+
+    queryBuilder.filter(innerBoolQuery);
+  }
+
+  private static Script createVariableClearScript(String[] variableFieldNames) {
+    final StringBuilder builder = new StringBuilder();
+    for (String variableField : variableFieldNames) {
+      builder.append(
+        MessageFormat.format("ctx._source.{0} = new ArrayList();\n", variableField)
+      );
+    }
+    return new Script(builder.toString());
+  }
 
   public void importVariables(List<VariableDto> variables) throws Exception {
     logger.debug("Writing [{}] variables to elasticsearch", variables.size());
 
-    BulkRequestBuilder addVariablesToProcessInstanceBulkRequest = esClient.prepareBulk();
+    BulkRequest addVariablesToProcessInstanceBulkRequest = new BulkRequest();
 
     //build map first
     Map<String, Map<String, List<VariableDto>>> processInstanceIdToTypedVariables =
@@ -83,11 +114,11 @@ public abstract class VariableWriter {
     }
     try {
       if (addVariablesToProcessInstanceBulkRequest.numberOfActions() != 0) {
-        BulkResponse response = addVariablesToProcessInstanceBulkRequest.get();
-        if (response.hasFailures()) {
+        BulkResponse bulkResponse = esClient.bulk(addVariablesToProcessInstanceBulkRequest, RequestOptions.DEFAULT);
+        if (bulkResponse.hasFailures()) {
           logger.warn(
             "There were failures while writing variables with message: {}",
-            response.buildFailureMessage()
+            bulkResponse.buildFailureMessage()
           );
         }
       }
@@ -115,19 +146,30 @@ public abstract class VariableWriter {
 
       addAtLeastOneVariableArrayNotEmptyNestedFilters(filterQuery);
 
-      final BulkByScrollResponse response = UpdateByQueryAction.INSTANCE.newRequestBuilder(esClient)
-        .source(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE))
-        .script(createVariableClearScript(ProcessVariableHelper.getAllVariableTypeFieldLabels()))
-        .abortOnVersionConflict(false)
-        .filter(filterQuery)
-        .get();
+      UpdateByQueryRequest request = new UpdateByQueryRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
+        .setQuery(filterQuery)
+        .setAbortOnVersionConflict(false)
+        .setScript(createVariableClearScript(ProcessVariableHelper.getAllVariableTypeFieldLabels()))
+        .setRefresh(true);
+
+      BulkByScrollResponse bulkByScrollResponse;
+      try {
+        bulkByScrollResponse = esClient.updateByQuery(request, RequestOptions.DEFAULT);
+      } catch (IOException e) {
+        String reason =
+          String.format("Could not delete process instances " +
+                          "for process definition key [%s] and end date [%s].", processDefinitionKey, endDate);
+        logger.error(reason, e);
+        throw new OptimizeRuntimeException(reason, e);
+      }
 
       logger.debug(
-        "BulkByScrollResponse on deleting variables for processDefinitionKey {}: {}", processDefinitionKey, response
+        "BulkByScrollResponse on deleting variables for processDefinitionKey {}: {}", processDefinitionKey,
+        bulkByScrollResponse
       );
       logger.info(
         "Deleted variables on {} process instances for processDefinitionKey {} and endDate past {}",
-        response.getUpdated(),
+        bulkByScrollResponse.getUpdated(),
         processDefinitionKey,
         endDate
       );
@@ -135,33 +177,6 @@ public abstract class VariableWriter {
       progressReporter.stop();
     }
   }
-
-  protected static void addAtLeastOneVariableArrayNotEmptyNestedFilters(final BoolQueryBuilder queryBuilder) {
-    final BoolQueryBuilder innerBoolQuery = boolQuery();
-    innerBoolQuery.minimumShouldMatch(1);
-
-    Arrays.stream(ProcessVariableHelper.getAllVariableTypeFieldLabels())
-      .forEach(variableName -> innerBoolQuery.should(
-        nestedQuery(
-          variableName,
-          scriptQuery(new Script(MessageFormat.format("doc[''{0}.id''].length > 0", variableName))),
-          ScoreMode.None
-        )
-      ));
-
-    queryBuilder.filter(innerBoolQuery);
-  }
-
-  protected static Script createVariableClearScript(String[] variableFieldNames) {
-    final StringBuilder builder = new StringBuilder();
-    for (String variableField : variableFieldNames) {
-      builder.append(
-        MessageFormat.format("ctx._source.{0} = new ArrayList();\n", variableField)
-      );
-    }
-    return new Script(builder.toString());
-  }
-
 
   private Map<String, Map<String, List<VariableDto>>> groupVariablesByProcessInstanceIds(List<VariableDto> variableUpdates) {
     Map<String, Map<String, List<VariableDto>>> processInstanceIdToTypedVariables = new HashMap<>();
@@ -190,7 +205,7 @@ public abstract class VariableWriter {
   }
 
   private void addImportVariablesRequest(
-    BulkRequestBuilder addVariablesToProcessInstanceBulkRequest,
+    BulkRequest addVariablesToProcessInstanceBulkRequest,
     String processInstanceId,
     Map<String, List<VariableDto>> typeMappedVars) throws IOException {
 
@@ -206,16 +221,16 @@ public abstract class VariableWriter {
     String newEntryIfAbsent = getNewProcessInstanceRecordString(processInstanceId, typeMappedVars);
 
     if (newEntryIfAbsent != null) {
-      addVariablesToProcessInstanceBulkRequest.add(esClient
-                                                     .prepareUpdate(
-                                                       getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE),
-                                                       ElasticsearchConstants.PROC_INSTANCE_TYPE,
-                                                       processInstanceId
-                                                     )
-                                                     .setScript(updateScript)
-                                                     .setUpsert(newEntryIfAbsent, XContentType.JSON)
-                                                     .setRetryOnConflict(configurationService.getNumberOfRetriesOnConflict())
-      );
+      UpdateRequest request =
+        new UpdateRequest(
+          getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE),
+          PROC_INSTANCE_TYPE,
+          processInstanceId
+        )
+          .script(updateScript)
+          .upsert(newEntryIfAbsent, XContentType.JSON);
+
+      addVariablesToProcessInstanceBulkRequest.add(request);
     }
 
   }

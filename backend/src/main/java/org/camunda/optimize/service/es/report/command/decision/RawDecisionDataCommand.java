@@ -6,14 +6,17 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.service.es.report.command.decision.mapping.RawDecisionDataResultDtoMapper;
 import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
-import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 
+import java.io.IOException;
 import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
@@ -22,6 +25,7 @@ import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.O
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableIdField;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableMultivalueFields;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueFieldForType;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 public class RawDecisionDataCommand extends DecisionReportCommand<RawDataDecisionReportResultDto> {
@@ -47,20 +51,35 @@ public class RawDecisionDataCommand extends DecisionReportCommand<RawDataDecisio
     );
     queryFilterEnhancer.addFilterToQuery(query, getDecisionReportData().getFilter());
 
-    final SearchRequestBuilder searchRequestBuilder = esclient
-      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.DECISION_INSTANCE_TYPE))
-      .setTypes(ElasticsearchConstants.DECISION_INSTANCE_TYPE)
-      .setQuery(query)
-      .setSize(RAW_DATA_LIMIT.intValue());
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(query)
+      .size(RAW_DATA_LIMIT.intValue());
+    SearchRequest searchRequest =
+      new SearchRequest(getOptimizeIndexAliasForType(DECISION_INSTANCE_TYPE))
+        .types(DECISION_INSTANCE_TYPE)
+        .source(searchSourceBuilder);
 
-    addSortingToQuery(decisionReportData, searchRequestBuilder);
+    addSortingToQuery(decisionReportData, searchSourceBuilder);
 
-    final SearchResponse scrollResp = searchRequestBuilder.get();
-    return rawDataSingleReportResultDtoMapper.mapFrom(scrollResp, objectMapper);
+    SearchResponse response;
+    try {
+      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason =
+        String.format(
+          "Could not evaluate raw data report for decision definition key [%s] and version [%s]",
+          getDecisionReportData().getDecisionDefinitionKey(),
+          getDecisionReportData().getDecisionDefinitionVersion()
+        );
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    return rawDataSingleReportResultDtoMapper.mapFrom(response, objectMapper);
   }
 
   private void addSortingToQuery(final DecisionReportDataDto decisionReportData,
-                                 final SearchRequestBuilder searchRequestBuilder) {
+                                 final SearchSourceBuilder searchRequestBuilder) {
     final Optional<SortingDto> customSorting = Optional.ofNullable(decisionReportData.getParameters())
       .flatMap(parameters -> Optional.ofNullable(parameters.getSorting()));
     final String sortByField = customSorting.flatMap(sorting -> Optional.ofNullable(sorting.getBy()))
@@ -74,7 +93,7 @@ public class RawDecisionDataCommand extends DecisionReportCommand<RawDataDecisio
     } else if (sortByField.startsWith(OUTPUT_VARIABLE_PREFIX)) {
       addSortByOutputVariable(searchRequestBuilder, sortByField, sortOrder);
     } else {
-      searchRequestBuilder.addSort(
+      searchRequestBuilder.sort(
         SortBuilders.fieldSort(sortByField).order(sortOrder)
           // this ensures the query doesn't fail on unknown properties but just ignores them
           // this is done to ensure consistent behavior compared to unknown variable names as ES doesn't fail there
@@ -85,30 +104,30 @@ public class RawDecisionDataCommand extends DecisionReportCommand<RawDataDecisio
     }
   }
 
-  private void addSortByInputVariable(final SearchRequestBuilder searchRequestBuilder,
+  private void addSortByInputVariable(final SearchSourceBuilder searchRequestBuilder,
                                       final String sortByField,
                                       final SortOrder sortOrder) {
     getVariableMultivalueFields()
-      .forEach(type -> searchRequestBuilder.addSort(
+      .forEach(type -> searchRequestBuilder.sort(
         createSortByVariable(sortByField, sortOrder, INPUT_VARIABLE_PREFIX, INPUTS, type)
       ));
 
     // add default string field as last as it will always be present
-    searchRequestBuilder.addSort(
+    searchRequestBuilder.sort(
       createSortByVariable(sortByField, sortOrder, INPUT_VARIABLE_PREFIX, INPUTS, VariableType.STRING)
     );
   }
 
-  private void addSortByOutputVariable(final SearchRequestBuilder searchRequestBuilder,
+  private void addSortByOutputVariable(final SearchSourceBuilder searchRequestBuilder,
                                        final String sortByField,
                                        final SortOrder sortOrder) {
     getVariableMultivalueFields()
-      .forEach(type -> searchRequestBuilder.addSort(
+      .forEach(type -> searchRequestBuilder.sort(
         createSortByVariable(sortByField, sortOrder, OUTPUT_VARIABLE_PREFIX, OUTPUTS, type)
       ));
 
     // add default string field as last as it will always be present
-    searchRequestBuilder.addSort(
+    searchRequestBuilder.sort(
       createSortByVariable(sortByField, sortOrder, OUTPUT_VARIABLE_PREFIX, OUTPUTS, VariableType.STRING)
     );
   }

@@ -8,12 +8,12 @@ import org.camunda.optimize.dto.optimize.importing.index.ImportIndexDto;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.es.schema.type.index.ImportIndexType;
 import org.camunda.optimize.service.util.EsHelper;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
-import org.elasticsearch.action.index.IndexRequestBuilder;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
@@ -27,57 +27,69 @@ import java.util.List;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_TYPE;
 
 @Component
 public class ImportIndexWriter {
 
   private final Logger logger = LoggerFactory.getLogger(ImportIndexWriter.class);
 
-  @Autowired
-  private TransportClient esclient;
-  @Autowired
-  private ConfigurationService configurationService;
-  @Autowired
+  private RestHighLevelClient esClient;
   private ObjectMapper objectMapper;
-  @Autowired
   private DateTimeFormatter dateTimeFormatter;
+
+  @Autowired
+  public ImportIndexWriter(RestHighLevelClient esClient,
+                           ObjectMapper objectMapper, DateTimeFormatter dateTimeFormatter) {
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+    this.dateTimeFormatter = dateTimeFormatter;
+  }
 
   public void importIndexes(CombinedImportIndexesDto importIndexes) {
     logger.debug("Writing import index to Elasticsearch");
-    BulkRequestBuilder bulkRequest = esclient.prepareBulk();
+    BulkRequest bulkRequest = new BulkRequest();
     addAllEntitiesBasedImportIndexesToBulk(bulkRequest, importIndexes.getAllEntitiesBasedImportIndexes());
     addDefinitionBasedImportIndexesToBulk(bulkRequest, importIndexes.getDefinitionBasedIndexes());
-    bulkRequest.get();
+    try {
+      BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+      if (bulkResponse.hasFailures()) {
+        logger.warn(
+          "There were failures while writing import indexes. " +
+            "Received error message: {}",
+          bulkResponse.buildFailureMessage()
+        );
+      }
+    } catch (IOException e) {
+      logger.error("There were errors while writing import indexes.", e);
+    }
   }
 
   private void addDefinitionBasedImportIndexesToBulk(
-    BulkRequestBuilder bulkRequest, List<TimestampBasedImportIndexDto> importIndexesDefinitionBasedIndexes) {
+    BulkRequest bulkRequest, List<TimestampBasedImportIndexDto> importIndexesDefinitionBasedIndexes) {
     importIndexesDefinitionBasedIndexes
       .forEach(importIndex ->
         bulkRequest.add(createDefinitionBasedRequest(importIndex))
       );
   }
 
-  private IndexRequestBuilder createDefinitionBasedRequest(TimestampBasedImportIndexDto importIndex) {
+  private IndexRequest createDefinitionBasedRequest(TimestampBasedImportIndexDto importIndex) {
     String currentTimeStamp =
       dateTimeFormatter.format(importIndex.getTimestampOfLastEntity());
     logger.debug("Writing definition based import index [{}] of type [{}] to elasticsearch",
-      currentTimeStamp, importIndex.getEsTypeIndexRefersTo());
+                 currentTimeStamp, importIndex.getEsTypeIndexRefersTo()
+    );
     try {
-      return esclient
-        .prepareIndex(
-          getOptimizeIndexAliasForType(TIMESTAMP_BASED_IMPORT_INDEX_TYPE),
-          TIMESTAMP_BASED_IMPORT_INDEX_TYPE,
-          getId(importIndex)
-        )
-        .setSource(
-          objectMapper.writeValueAsString(importIndex),
-          XContentType.JSON
-        );
+      return new IndexRequest(
+        getOptimizeIndexAliasForType(TIMESTAMP_BASED_IMPORT_INDEX_TYPE),
+        TIMESTAMP_BASED_IMPORT_INDEX_TYPE,
+        getId(importIndex)
+      )
+        .source(objectMapper.writeValueAsString(importIndex),XContentType.JSON);
     } catch (JsonProcessingException e) {
       logger.error("Was not able to write definition based import index of type [{}] to Elasticsearch. Reason: {}",
         importIndex.getEsTypeIndexRefersTo(), e);
-      return esclient.prepareIndex();
+      return new IndexRequest();
     }
   }
 
@@ -85,7 +97,7 @@ public class ImportIndexWriter {
     return EsHelper.constructKey(importIndex.getEsTypeIndexRefersTo(), importIndex.getEngine());
   }
 
-  private void addAllEntitiesBasedImportIndexesToBulk(BulkRequestBuilder bulkRequest,
+  private void addAllEntitiesBasedImportIndexesToBulk(BulkRequest bulkRequest,
                                                       List<AllEntitiesBasedImportIndexDto> importIndexes) {
     importIndexes
       .forEach(importIndexDto ->
@@ -93,28 +105,25 @@ public class ImportIndexWriter {
       );
   }
 
-  private IndexRequestBuilder createAllEntitiesBasedRequest(AllEntitiesBasedImportIndexDto importIndex) {
+  private IndexRequest createAllEntitiesBasedRequest(AllEntitiesBasedImportIndexDto importIndex) {
     logger.debug("Writing all entities based import index type [{}] to elasticsearch. " +
-        "Starting from [{}]",
-      importIndex.getEsTypeIndexRefersTo(), importIndex.getImportIndex());
+                   "Starting from [{}]",
+                 importIndex.getEsTypeIndexRefersTo(), importIndex.getImportIndex()
+    );
     try {
-      return esclient
-        .prepareIndex(
-          getOptimizeIndexAliasForType(ElasticsearchConstants.IMPORT_INDEX_TYPE),
-          ElasticsearchConstants.IMPORT_INDEX_TYPE,
-          getId(importIndex)
-        )
-        .setSource(
-          XContentFactory.jsonBuilder()
-            .startObject()
-              .field(ImportIndexType.ENGINE, importIndex.getEngine())
-              .field(ImportIndexType.IMPORT_INDEX, importIndex.getImportIndex())
-            .endObject()
-        );
+      XContentBuilder sourceToAdjust = XContentFactory.jsonBuilder()
+        .startObject()
+        .field(ImportIndexType.ENGINE, importIndex.getEngine())
+        .field(ImportIndexType.IMPORT_INDEX, importIndex.getImportIndex())
+        .endObject();
+      return
+        new IndexRequest(getOptimizeIndexAliasForType(IMPORT_INDEX_TYPE), IMPORT_INDEX_TYPE, getId(importIndex))
+          .source(sourceToAdjust);
     } catch (IOException e) {
       logger.error("Was not able to write all entities based import index of type [{}] to Elasticsearch. Reason: {}",
-        importIndex.getEsTypeIndexRefersTo(), e);
-      return esclient.prepareIndex();
+                   importIndex.getEsTypeIndexRefersTo(), e
+      );
+      return new IndexRequest();
     }
   }
 

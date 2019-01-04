@@ -3,11 +3,17 @@ package org.camunda.optimize.service.es.report.command.process.processinstance.f
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+
+import java.io.IOException;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 
 public class CountProcessInstanceFrequencyGroupByNoneCommand
   extends ProcessReportCommand<ProcessReportNumberResultDto> {
@@ -29,13 +35,29 @@ public class CountProcessInstanceFrequencyGroupByNoneCommand
     );
     queryFilterEnhancer.addFilterToQuery(query, processReportData.getFilter());
 
-    SearchResponse response = esclient
-      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE))
-      .setTypes(ElasticsearchConstants.PROC_INSTANCE_TYPE)
-      .setQuery(query)
-      .setFetchSource(false)
-      .setSize(0)
-      .get();
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(query)
+      .fetchSource(false)
+      .size(0);
+    SearchRequest searchRequest =
+      new SearchRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
+        .types(PROC_INSTANCE_TYPE)
+        .source(searchSourceBuilder);
+
+    SearchResponse response;
+    try {
+      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason =
+        String.format(
+          "Could not evaluate count process instance frequency grouped by none report " +
+            "for process definition with key [%s] and version [%s]",
+          processReportData.getProcessDefinitionKey(),
+          processReportData.getProcessDefinitionVersion()
+        );
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
 
     ProcessReportNumberResultDto numberResult = new ProcessReportNumberResultDto();
     numberResult.setResult(response.getHits().getTotalHits());

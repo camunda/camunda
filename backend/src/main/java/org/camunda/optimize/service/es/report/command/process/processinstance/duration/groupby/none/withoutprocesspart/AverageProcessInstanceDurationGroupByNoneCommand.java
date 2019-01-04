@@ -4,15 +4,19 @@ import org.camunda.optimize.service.es.report.command.process.processinstance.du
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.metrics.avg.InternalAvg;
+import org.elasticsearch.search.aggregations.metrics.avg.ParsedAvg;
 
 public class AverageProcessInstanceDurationGroupByNoneCommand extends
   AbstractProcessInstanceDurationGroupByNoneCommand {
 
   @Override
   protected long processAggregation(Aggregations aggs) {
-    InternalAvg aggregation = aggs.get(DURATION_AGGREGATION);
-    return Math.round(aggregation.getValue());
+    ParsedAvg aggregation = aggs.get(DURATION_AGGREGATION);
+    if (Double.isInfinite(aggregation.getValue())){
+      return 0L;
+    } else {
+      return Math.round(aggregation.getValue());
+    }
   }
 
   @Override
