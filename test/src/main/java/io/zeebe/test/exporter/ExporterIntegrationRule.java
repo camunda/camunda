@@ -15,6 +15,7 @@
  */
 package io.zeebe.test.exporter;
 
+import static io.zeebe.test.EmbeddedBrokerRule.TEST_RECORD_EXPORTER_ID;
 import static io.zeebe.test.util.record.RecordingExporter.workflowInstanceRecords;
 
 import com.moandjiezana.toml.Toml;
@@ -42,6 +43,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.junit.rules.ExternalResource;
 
 /**
@@ -157,7 +159,11 @@ public class ExporterIntegrationRule extends ExternalResource {
 
   /** @return the currently configured exporters */
   public List<ExporterCfg> getConfiguredExporters() {
-    return getBrokerConfig().getExporters();
+    return getBrokerConfig()
+        .getExporters()
+        .stream()
+        .filter(cfg -> !cfg.getId().equals(TEST_RECORD_EXPORTER_ID))
+        .collect(Collectors.toList());
   }
 
   /** @return true if any exporter has been configured for the broker, false otherwise */

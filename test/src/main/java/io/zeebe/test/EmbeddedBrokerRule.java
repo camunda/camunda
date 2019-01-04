@@ -63,6 +63,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
 
   protected static final Logger LOG = new ZbLogger("io.zeebe.test");
   public static final int DEFAULT_TIMEOUT = 25;
+  public static final String TEST_RECORD_EXPORTER_ID = "test-recorder";
 
   protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
@@ -226,7 +227,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
   public void configureBroker(final BrokerCfg brokerCfg) {
     // build-in exporters
     final ExporterCfg exporterCfg = new ExporterCfg();
-    exporterCfg.setId("test-recorder");
+    exporterCfg.setId(TEST_RECORD_EXPORTER_ID);
     exporterCfg.setClassName(RecordingExporter.class.getName());
     brokerCfg.getExporters().add(exporterCfg);
 
