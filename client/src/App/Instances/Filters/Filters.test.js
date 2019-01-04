@@ -1,16 +1,13 @@
 import React from 'react';
-import {shallow} from 'enzyme';
+import {shallow, mount} from 'enzyme';
 
 import {DEFAULT_FILTER, FILTER_TYPES} from 'modules/constants';
 import Button from 'modules/components/Button';
-import Textarea from 'modules/components/Textarea';
-import TextInput from 'modules/components/TextInput';
-import Select from 'modules/components/Select';
 import {mockResolvedAsyncFn} from 'modules/testUtils';
 import * as api from 'modules/api/instances/instances';
-
+import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
+import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import Filters from './Filters';
-import CheckboxGroup from './CheckboxGroup/';
 import * as Styled from './styled';
 import {ALL_VERSIONS_OPTION} from './constants';
 
@@ -92,7 +89,7 @@ const workflows = {
 
 api.fetchGroupedWorkflowInstances = mockResolvedAsyncFn(groupedWorkflowsMock);
 
-describe.skip('Filters', () => {
+describe('Filters', () => {
   const spy = jest.fn();
   const resetSpy = jest.fn();
   const mockProps = {
@@ -141,15 +138,17 @@ describe.skip('Filters', () => {
     // given
     const {active, incidents, completed, canceled} = DEFAULT_FILTER;
 
-    const node = shallow(
-      <Filters
-        groupedWorkflowInstances={workflows}
-        {...mockProps}
-        filter={DEFAULT_FILTER}
-      />
-    )
-      .find('CollapsablePanelConsumer')
-      .dive();
+    const node = mount(
+      <ThemeProvider>
+        <CollapsablePanelProvider>
+          <Filters
+            groupedWorkflowInstances={workflows}
+            {...mockProps}
+            filter={DEFAULT_FILTER}
+          />
+        </CollapsablePanelProvider>
+      </ThemeProvider>
+    );
     const FilterNodes = node.find(Styled.CheckboxGroup);
 
     // then
@@ -165,26 +164,31 @@ describe.skip('Filters', () => {
   describe('errorMessage filter', () => {
     it('should render an errorMessage field', () => {
       // given
-      const node = shallow(
-        <Filters
-          groupedWorkflowInstances={workflows}
-          {...mockProps}
-          filter={DEFAULT_FILTER}
-        />
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflowInstances={workflows}
+              {...mockProps}
+              filter={DEFAULT_FILTER}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
       );
       const field = node
-        .find('CollapsablePanelConsumer')
-        .dive()
-        .find({name: 'errorMessage'});
+        .find(Styled.TextInput)
+        .filterWhere(n => n.props().name === 'errorMessage');
+      const onBlur = field.props().onBlur;
+      onBlur({target: {value: '', name: 'errorMessage'}});
 
       // then
       expect(field.length).toEqual(1);
-      expect(field.type()).toEqual(Styled.TextInput);
-      expect(field.props().name).toEqual('errorMessage');
-      expect(field.props().onBlur).toEqual(node.instance().handleFieldChange);
-      expect(field.props().onChange).toEqual(node.instance().handleInputChange);
+      expect(field.prop('placeholder')).toEqual('Error Message');
+      expect(field.prop('value')).toEqual('');
+      expect(spy).toHaveBeenCalledWith({errorMessage: ''});
     });
 
+    // test behaviour here
     it('should initialize the field with empty value', () => {
       const node = shallow(
         <Filters
@@ -198,22 +202,23 @@ describe.skip('Filters', () => {
     });
 
     it('should be prefilled with the value from props.filter.errorMessage ', async () => {
-      const node = shallow(
-        <Filters
-          groupedWorkflowInstances={workflows}
-          {...mockProps}
-          filter={COMPLETE_FILTER}
-        />
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflowInstances={workflows}
+              {...mockProps}
+              filter={COMPLETE_FILTER}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
       );
 
       const field = node
-        .find('CollapsablePanelConsumer')
-        .dive()
-        .find({name: 'errorMessage'});
+        .find(Styled.TextInput)
+        .filterWhere(n => n.props().name === 'errorMessage');
+
       // then
-      expect(node.state().filter.errorMessage).toEqual(
-        'This is an error message'
-      );
       expect(field.props().value).toEqual('This is an error message');
     });
 
@@ -278,24 +283,32 @@ describe.skip('Filters', () => {
   describe('ids filter', () => {
     it('should render an ids field', () => {
       // given
-      const node = shallow(
-        <Filters
-          groupedWorkflowInstances={workflows}
-          {...mockProps}
-          filter={DEFAULT_FILTER}
-        />
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflowInstances={workflows}
+              {...mockProps}
+              filter={DEFAULT_FILTER}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
       );
       const field = node
-        .find('CollapsablePanelConsumer')
-        .dive()
-        .find({name: 'ids'});
+        .find(Styled.Textarea)
+        .filterWhere(n => n.props().name === 'ids');
+      const onBlur = field.props().onBlur;
+
+      // when
+      onBlur({target: {value: '', name: 'ids'}});
 
       // then
-      expect(field.length).toEqual(1);
-      expect(field.type()).toEqual(Styled.Textarea);
-      expect(field.props().name).toEqual('ids');
-      expect(field.props().onBlur).toEqual(node.instance().handleFieldChange);
-      expect(field.props().onChange).toEqual(node.instance().handleInputChange);
+      expect(field).toExist();
+      expect(field.prop('value')).toEqual('');
+      expect(field.prop('placeholder')).toEqual(
+        'Instance Id(s) separated by space or comma'
+      );
+      expect(spy).toHaveBeenCalledWith({ids: ''});
     });
 
     it('should initialize the field with empty value', () => {
@@ -327,20 +340,23 @@ describe.skip('Filters', () => {
     });
 
     it('should be prefilled with the value from props.filter.ids ', async () => {
-      const node = shallow(
-        <Filters
-          groupedWorkflowInstances={workflows}
-          {...mockProps}
-          filter={COMPLETE_FILTER}
-        />
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflowInstances={workflows}
+              {...mockProps}
+              filter={COMPLETE_FILTER}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
       );
 
       const field = node
-        .find('CollapsablePanelConsumer')
-        .dive()
-        .find({name: 'ids'});
+        .find(Styled.Textarea)
+        .filterWhere(n => n.props().name === 'ids');
+
       // then
-      expect(node.state().filter.ids).toEqual('a, b, c');
       expect(field.props().value).toEqual('a, b, c');
     });
 
@@ -391,63 +407,75 @@ describe.skip('Filters', () => {
   describe('workflow filter', () => {
     it('should render an workflow select field', () => {
       // given
-      const node = shallow(
-        <Filters
-          groupedWorkflowInstances={workflows}
-          {...mockProps}
-          filter={DEFAULT_FILTER}
-        />
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflowInstances={workflows}
+              {...mockProps}
+              filter={DEFAULT_FILTER}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
       );
       const field = node
-        .find('CollapsablePanelConsumer')
-        .dive()
-        .find({name: 'workflow'});
+        .find(Styled.Select)
+        .filterWhere(n => n.props().name === 'workflow');
+      const onChange = field.props().onChange;
+
+      // when
+      onChange({target: {value: '', name: 'workflow'}});
 
       // then
       expect(field.length).toEqual(1);
-      expect(field.type()).toEqual(Styled.Select);
-      expect(field.props().name).toEqual('workflow');
       expect(field.props().value).toEqual('');
       expect(field.props().placeholder).toEqual('Workflow');
-      expect(field.props().onChange).toEqual(
-        node.instance().handleWorkflowNameChange
-      );
+      expect(spy).toHaveBeenCalledWith({
+        workflow: '',
+        activityId: '',
+        version: ''
+      });
     });
 
     it('should render the value from this.props.filter.workflow', () => {
-      const node = shallow(
-        <Filters
-          groupedWorkflowInstances={workflows}
-          {...mockProps}
-          filter={COMPLETE_FILTER}
-        />
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflowInstances={workflows}
+              {...mockProps}
+              filter={COMPLETE_FILTER}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
       );
 
       const field = node
-        .find('CollapsablePanelConsumer')
-        .dive()
-        .find({name: 'workflow'});
+        .find(Styled.Select)
+        .filterWhere(n => n.props().name === 'workflow');
+
       // then
-      expect(node.state().filter.workflow).toEqual('demoProcess');
       expect(field.props().value).toEqual('demoProcess');
     });
 
     it('should have values read from this.props.groupedWorkflowInstances', () => {
-      const node = shallow(
-        <Filters
-          groupedWorkflowInstances={workflows}
-          {...mockProps}
-          filter={COMPLETE_FILTER}
-        />
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflowInstances={workflows}
+              {...mockProps}
+              filter={COMPLETE_FILTER}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
       );
 
-      expect(
-        node
-          .find('CollapsablePanelConsumer')
-          .dive()
-          .find({name: 'workflow'})
-          .props().options
-      ).toEqual([
+      const field = node
+        .find(Styled.Select)
+        .filterWhere(n => n.props().name === 'workflow');
+
+      expect(field.props().options).toEqual([
         {value: 'demoProcess', label: 'New demo process'},
         {value: 'orderProcess', label: 'Order'}
       ]);
@@ -478,70 +506,81 @@ describe.skip('Filters', () => {
   describe('version filter', () => {
     it('should exist and be disabled by default', () => {
       // given
-      const node = shallow(
-        <Filters
-          groupedWorkflowInstances={workflows}
-          {...mockProps}
-          filter={DEFAULT_FILTER}
-        />
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflowInstances={workflows}
+              {...mockProps}
+              filter={DEFAULT_FILTER}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
       );
       const field = node
-        .find('CollapsablePanelConsumer')
-        .dive()
-        .find({name: 'version'});
+        .find(Styled.Select)
+        .filterWhere(n => n.props().name === 'version');
+      const onChange = field.props().onChange;
+
+      // when
+      onChange({target: {value: '1'}});
 
       // then
       expect(field.length).toEqual(1);
-      expect(field.type()).toEqual(Styled.Select);
-      expect(field.props().name).toEqual('version');
       expect(field.props().value).toEqual('');
       expect(field.props().placeholder).toEqual('Workflow Version');
-      expect(field.props().onChange).toEqual(
-        node.instance().handleWorkflowVersionChange
-      );
+      expect(spy).toHaveBeenCalled();
     });
 
     it('should render the value from this.props.filter.version', () => {
-      const node = shallow(
-        <Filters
-          groupedWorkflowInstances={workflows}
-          {...mockProps}
-          filter={COMPLETE_FILTER}
-        />
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflowInstances={workflows}
+              {...mockProps}
+              filter={COMPLETE_FILTER}
+            />{' '}
+          </CollapsablePanelProvider>
+        </ThemeProvider>
       );
 
       const field = node
-        .find('CollapsablePanelConsumer')
-        .dive()
-        .find({name: 'version'});
+        .find(Styled.Select)
+        .filterWhere(n => n.props().name === 'version');
+
       // then
-      expect(node.state().filter.version).toEqual('2');
       expect(field.props().value).toEqual('2');
     });
 
     it('should display the latest version of a selected workflowName', async () => {
       // given
       const value = groupedWorkflowsMock[0].bpmnProcessId;
-      const node = shallow(
-        <Filters
-          groupedWorkflowInstances={workflows}
-          {...mockProps}
-          filter={DEFAULT_FILTER}
-        />
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflowInstances={workflows}
+              {...mockProps}
+              filter={DEFAULT_FILTER}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
       );
-
+      const workflowField = node
+        .find(Styled.Select)
+        .filterWhere(n => n.props().name === 'workflow');
       //when
-      node.instance().handleWorkflowNameChange({target: {value: value}});
+      workflowField.prop('onChange')({target: {value: value}});
       node.update();
 
+      const field = node
+        .find(Styled.Select)
+        .filterWhere(n => n.props().name === 'version');
       // then
-      expect(
-        node
-          .find('CollapsablePanelConsumer')
-          .dive()
-          .find({name: 'version'})
-          .props().value
-      ).toEqual(String(groupedWorkflowsMock[0].workflows[0].version));
+      expect(field.props().value).toEqual(
+        String(groupedWorkflowsMock[0].workflows[0].version)
+      );
       expect(spy.mock.calls[0][0].version).toEqual(
         String(groupedWorkflowsMock[0].workflows[0].version)
       );
@@ -549,22 +588,28 @@ describe.skip('Filters', () => {
 
     it('should display an all versions option', async () => {
       const value = groupedWorkflowsMock[0].bpmnProcessId;
-      const node = shallow(
-        <Filters
-          groupedWorkflowInstances={workflows}
-          {...mockProps}
-          filter={DEFAULT_FILTER}
-        />
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflowInstances={workflows}
+              {...mockProps}
+              filter={DEFAULT_FILTER}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
       );
 
+      const workflowField = node
+        .find(Styled.Select)
+        .filterWhere(n => n.props().name === 'workflow');
       //when
-      node.instance().handleWorkflowNameChange({target: {value: value}});
+      workflowField.prop('onChange')({target: {value: value}});
       node.update();
 
       const options = node
-        .find('CollapsablePanelConsumer')
-        .dive()
-        .find({name: 'version'})
+        .find(Styled.Select)
+        .filterWhere(n => n.props().name === 'version')
         .props().options;
 
       // then
@@ -577,30 +622,40 @@ describe.skip('Filters', () => {
 
     it('should not allow the selection of the first option', async () => {
       const value = groupedWorkflowsMock[0].bpmnProcessId;
-      const node = shallow(
-        <Filters
-          groupedWorkflowInstances={workflows}
-          {...mockProps}
-          filter={DEFAULT_FILTER}
-        />
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflowInstances={workflows}
+              {...mockProps}
+              filter={DEFAULT_FILTER}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
       );
+      const workflowField = node
+        .find(Styled.Select)
+        .filterWhere(n => n.props().name === 'workflow');
+
+      const versionField = node
+        .find(Styled.Select)
+        .filterWhere(n => n.props().name === 'version');
 
       //when
       // select workflowName, the version is set to the latest
-      node.instance().handleWorkflowNameChange({target: {value: value}});
+      workflowField.prop('onChange')({target: {value: value}});
       node.update();
 
       // select WorkflowVersion option, 1st
-      node.instance().handleWorkflowVersionChange({target: {value: ''}});
+      versionField.prop('onChange')({target: {value: ''}});
       node.update();
 
       // then
       // should keep the last version option selected
       expect(
         node
-          .find('CollapsablePanelConsumer')
-          .dive()
-          .find({name: 'version'})
+          .find(Styled.Select)
+          .filterWhere(n => n.props().name === 'version')
           .props().value
       ).toEqual(String(groupedWorkflowsMock[0].workflows[0].version));
       // should update the workflow in Instances
@@ -609,37 +664,42 @@ describe.skip('Filters', () => {
 
     it('should reset after a the workflowName field is also reseted ', async () => {
       const value = groupedWorkflowsMock[0].bpmnProcessId;
-      const node = shallow(
-        <Filters
-          groupedWorkflowInstances={workflows}
-          {...mockProps}
-          filter={DEFAULT_FILTER}
-        />
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflowInstances={workflows}
+              {...mockProps}
+              filter={DEFAULT_FILTER}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
       );
+      const workflowField = node
+        .find(Styled.Select)
+        .filterWhere(n => n.props().name === 'workflow');
 
       //when
       // select workflowName, the version is set to the latest
-      node.instance().handleWorkflowNameChange({target: {value: value}});
+      workflowField.prop('onChange')({target: {value: value}});
       node.update();
 
       // select WorkflowVersion option, 1st
-      node.instance().handleWorkflowNameChange({target: {value: ''}});
+      workflowField.prop('onChange')({target: {value: ''}});
       node.update();
 
       // then
       // should keep the last version option selected
       expect(
         node
-          .find('CollapsablePanelConsumer')
-          .dive()
-          .find({name: 'version'})
+          .find(Styled.Select)
+          .filterWhere(n => n.props().name === 'version')
           .props().value
       ).toEqual('');
       expect(
         node
-          .find('CollapsablePanelConsumer')
-          .dive()
-          .find({name: 'workflow'})
+          .find(Styled.Select)
+          .filterWhere(n => n.props().name === 'workflow')
           .props().value
       ).toEqual('');
     });
@@ -697,198 +757,213 @@ describe.skip('Filters', () => {
   describe('activityId filter', () => {
     it('should exist and be disabled by default', () => {
       // given
-      const node = shallow(
-        <Filters
-          groupedWorkflowInstances={workflows}
-          {...mockProps}
-          filter={DEFAULT_FILTER}
-        />
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflowInstances={workflows}
+              {...mockProps}
+              filter={DEFAULT_FILTER}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
       );
       const field = node
-        .find('CollapsablePanelConsumer')
-        .dive()
-        .find({name: 'activityId'});
+        .find(Styled.Select)
+        .filterWhere(n => n.props().name === 'activityId');
+      const onChange = field.props().onChange;
 
+      //when
+      onChange({target: {value: '', name: 'activityId'}});
       // then
       expect(field.length).toEqual(1);
-      expect(field.type()).toEqual(Styled.Select);
-      expect(field.props().name).toEqual('activityId');
       expect(field.props().value).toEqual('');
       expect(field.props().placeholder).toEqual('Flow Node');
-      expect(field.props().onChange).toEqual(node.instance().handleFieldChange);
       expect(field.props().disabled).toBe(true);
       expect(field.props().options.length).toBe(0);
+      expect(spy).toHaveBeenCalledWith({activityId: ''});
     });
 
     it('should render the value from this.props.filter.activityId', () => {
-      const node = shallow(
-        <Filters
-          groupedWorkflowInstances={workflows}
-          {...mockProps}
-          filter={COMPLETE_FILTER}
-        />
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflowInstances={workflows}
+              {...mockProps}
+              filter={COMPLETE_FILTER}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
       );
-
       const field = node
-        .find('CollapsablePanelConsumer')
-        .dive()
-        .find({name: 'activityId'});
+        .find(Styled.Select)
+        .filterWhere(n => n.props().name === 'activityId');
+
       // then
-      expect(node.state().filter.activityId).toEqual('4');
       expect(field.props().value).toEqual('4');
     });
 
     it('should be disabled if All versions is selected', async () => {
       const value = groupedWorkflowsMock[0].bpmnProcessId;
-      const node = shallow(
-        <Filters
-          groupedWorkflowInstances={workflows}
-          {...mockProps}
-          filter={DEFAULT_FILTER}
-        />
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflowInstances={workflows}
+              {...mockProps}
+              filter={DEFAULT_FILTER}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
       );
+
+      const workflowField = node
+        .find(Styled.Select)
+        .filterWhere(n => n.props().name === 'workflow');
+      const versionField = node
+        .find(Styled.Select)
+        .filterWhere(n => n.props().name === 'version');
 
       //when
       // select workflowName, the version is set to the latest
-      node.instance().handleWorkflowNameChange({target: {value: value}});
+      workflowField.prop('onChange')({target: {value: value}});
       node.update();
 
-      node
-        .instance()
-        .handleWorkflowVersionChange({target: {value: ALL_VERSIONS_OPTION}});
+      versionField.prop('onChange')({target: {value: ALL_VERSIONS_OPTION}});
       node.update();
+
+      const field = node
+        .find(Styled.Select)
+        .filterWhere(n => n.props().name === 'activityId');
 
       // then
-      expect(
-        node
-          .find('CollapsablePanelConsumer')
-          .dive()
-          .find({name: 'activityId'})
-          .props().disabled
-      ).toEqual(true);
+      expect(field.props().disabled).toEqual(true);
     });
 
     it('should not be disabled when a version is selected', async () => {
       const value = groupedWorkflowsMock[0].bpmnProcessId;
-      const node = shallow(
-        <Filters
-          groupedWorkflowInstances={workflows}
-          {...mockProps}
-          filter={DEFAULT_FILTER}
-        />
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflowInstances={workflows}
+              {...mockProps}
+              filter={DEFAULT_FILTER}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
       );
+      const workflowField = node
+        .find(Styled.Select)
+        .filterWhere(n => n.props().name === 'workflow');
+      const versionField = node
+        .find(Styled.Select)
+        .filterWhere(n => n.props().name === 'version');
 
       //when
       // select workflowName, the version is set to the latest
-      node.instance().handleWorkflowNameChange({target: {value: value}});
+      workflowField.prop('onChange')({target: {value: value}});
       node.update();
 
-      node.instance().handleWorkflowVersionChange({
+      versionField.prop('onChange')({
         target: {value: groupedWorkflowsMock[0].workflows[0].version}
       });
       node.update();
 
+      const field = node
+        .find(Styled.Select)
+        .filterWhere(n => n.props().name === 'activityId');
+
       // then
-      expect(
-        node
-          .find('CollapsablePanelConsumer')
-          .dive()
-          .find({name: 'activityId'})
-          .props().disabled
-      ).toEqual(false);
-      expect(
-        node
-          .find('CollapsablePanelConsumer')
-          .dive()
-          .find({name: 'activityId'})
-          .props().value
-      ).toEqual('');
+      expect(field.props().disabled).toEqual(false);
+      expect(field.props().value).toEqual('');
     });
 
     it('should read the options from this.props.activityIds', () => {
       const value = groupedWorkflowsMock[0].bpmnProcessId;
-      const node = shallow(
-        <Filters
-          groupedWorkflowInstances={workflows}
-          {...mockPropsWithActivityIds}
-          filter={DEFAULT_FILTER}
-        />
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflowInstances={workflows}
+              {...mockPropsWithActivityIds}
+              filter={DEFAULT_FILTER}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
       );
+      const workflowField = node
+        .find(Styled.Select)
+        .filterWhere(n => n.props().name === 'workflow');
 
       //when
       // select workflowName, the version is set to the latest
-      node.instance().handleWorkflowNameChange({target: {value: value}});
+      workflowField.prop('onChange')({target: {value: value}});
       node.update();
 
-      expect(
-        node
-          .find('CollapsablePanelConsumer')
-          .dive()
-          .find({name: 'activityId'})
-          .props().options[0].value
-      ).toEqual('taskA');
-      expect(
-        node
-          .find('CollapsablePanelConsumer')
-          .dive()
-          .find({name: 'activityId'})
-          .props().options[1].value
-      ).toEqual('taskB');
+      const field = node
+        .find(Styled.Select)
+        .filterWhere(n => n.props().name === 'activityId');
+
+      expect(field.props().options[0].value).toEqual('taskA');
+      expect(field.props().options[1].value).toEqual('taskB');
     });
 
     it('should be disabled after the workflow name is reseted', async () => {
       const value = groupedWorkflowsMock[0].bpmnProcessId;
-      const node = shallow(
-        <Filters
-          groupedWorkflowInstances={workflows}
-          {...mockProps}
-          filter={DEFAULT_FILTER}
-        />
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflowInstances={workflows}
+              {...mockProps}
+              filter={DEFAULT_FILTER}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
       );
+
+      const workflowField = node
+        .find(Styled.Select)
+        .filterWhere(n => n.props().name === 'workflow');
 
       //when
       // select workflowName, the version is set to the latest
-      node.instance().handleWorkflowNameChange({target: {value: value}});
+      workflowField.prop('onChange')({target: {value: value}});
       node.update();
 
-      node.instance().handleWorkflowNameChange({target: {value: ''}});
+      workflowField.prop('onChange')({target: {value: ''}});
       node.update();
+
+      const field = node
+        .find(Styled.Select)
+        .filterWhere(n => n.props().name === 'activityId');
 
       // then
-      expect(
-        node
-          .find('CollapsablePanelConsumer')
-          .dive()
-          .find({name: 'activityId'})
-          .props().disabled
-      ).toEqual(true);
-      expect(
-        node
-          .find('CollapsablePanelConsumer')
-          .dive()
-          .find({name: 'activityId'})
-          .props().options.length
-      ).toEqual(0);
+      expect(field.props().disabled).toEqual(true);
+      expect(field.props().options.length).toEqual(0);
     });
 
     it('should display a list of activity ids', async () => {
       // given
-      const node = shallow(
-        <Filters
-          groupedWorkflowInstances={workflows}
-          {...mockPropsWithActivityIds}
-          filter={DEFAULT_FILTER}
-        />
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflowInstances={workflows}
+              {...mockPropsWithActivityIds}
+              filter={DEFAULT_FILTER}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
       );
+      const field = node
+        .find(Styled.Select)
+        .filterWhere(n => n.props().name === 'activityId');
 
       // then
-      expect(
-        node
-          .find('CollapsablePanelConsumer')
-          .dive()
-          .find({name: 'activityId'})
-          .props().options.length
-      ).toEqual(2);
+      expect(field.props().options.length).toEqual(2);
     });
 
     it('should set the state on activityId selection', async () => {
@@ -921,49 +996,54 @@ describe.skip('Filters', () => {
   });
 
   describe('startDate filter', () => {
+    const target = {value: '08 October 1084', name: 'startDate'};
     it('should exist', () => {
       // given
-      const node = shallow(
-        <Filters
-          groupedWorkflowInstances={workflows}
-          {...mockProps}
-          filter={DEFAULT_FILTER}
-        />
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflowInstances={workflows}
+              {...mockProps}
+              filter={DEFAULT_FILTER}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
       );
       const field = node
-        .find('CollapsablePanelConsumer')
-        .dive()
-        .find({name: 'startDate'});
+        .find(Styled.TextInput)
+        .filterWhere(n => n.props().name === 'startDate');
+      const onBlur = field.props().onBlur;
+      onBlur({target});
 
       // then
       expect(field.length).toEqual(1);
-      expect(field.type()).toEqual(Styled.TextInput);
-      expect(field.props().name).toEqual('startDate');
       expect(field.props().placeholder).toEqual('Start Date');
-      expect(field.props().onBlur).toEqual(node.instance().handleFieldChange);
-      expect(field.props().onChange).toEqual(node.instance().handleInputChange);
+      expect(field.props().value).toEqual('');
+      expect(spy).toHaveBeenCalledWith({startDate: '08 October 1084'});
     });
 
     it('should be prefilled with the value from props.filter.startDate', async () => {
-      const node = shallow(
-        <Filters
-          groupedWorkflowInstances={workflows}
-          {...mockProps}
-          filter={COMPLETE_FILTER}
-        />
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflowInstances={workflows}
+              {...mockProps}
+              filter={COMPLETE_FILTER}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
       );
-
-      //when
-      node.update();
       const field = node
-        .find('CollapsablePanelConsumer')
-        .dive()
-        .find({name: 'startDate'});
+        .find(Styled.TextInput)
+        .filterWhere(n => n.props().name === 'startDate');
+
       // then
-      expect(node.state().filter.startDate).toEqual('08 October 2018');
       expect(field.props().value).toEqual('08 October 2018');
     });
 
+    //change without implementation
     it('should update the state with new value', async () => {
       const node = shallow(
         <Filters
@@ -1025,48 +1105,55 @@ describe.skip('Filters', () => {
   describe('endDate filter', () => {
     it('should exist', () => {
       // given
-      const node = shallow(
-        <Filters
-          groupedWorkflowInstances={workflows}
-          {...mockProps}
-          filter={DEFAULT_FILTER}
-        />
+      const target = {value: '08 October 1984', name: 'endDate'};
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflowInstances={workflows}
+              {...mockProps}
+              filter={DEFAULT_FILTER}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
       );
       const field = node
-        .find('CollapsablePanelConsumer')
-        .dive()
-        .find({name: 'endDate'});
+        .find(Styled.TextInput)
+        .filterWhere(n => n.props().name === 'endDate');
+      const onBlur = field.props().onBlur;
+      onBlur({target});
 
       // then
       expect(field.length).toEqual(1);
-      expect(field.type()).toEqual(Styled.TextInput);
       expect(field.props().name).toEqual('endDate');
       expect(field.props().placeholder).toEqual('End Date');
-      expect(field.props().onBlur).toEqual(node.instance().handleFieldChange);
-      expect(field.props().onChange).toEqual(node.instance().handleInputChange);
+      expect(field.props().value).toEqual('');
+      expect(spy).toHaveBeenCalledWith({endDate: '08 October 1984'});
     });
 
     it('should be prefilled with the value from props.filter.endDate', async () => {
-      const node = shallow(
-        <Filters
-          groupedWorkflowInstances={workflows}
-          {...mockProps}
-          filter={COMPLETE_FILTER}
-        />
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflowInstances={workflows}
+              {...mockProps}
+              filter={COMPLETE_FILTER}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
       );
 
       //when
-      node.update();
       const field = node
-        .find('CollapsablePanelConsumer')
-        .dive()
-        .find({name: 'endDate'});
+        .find(Styled.TextInput)
+        .filterWhere(n => n.props().name === 'endDate');
 
       // then
-      expect(node.state().filter.endDate).toEqual('10-10-2018');
       expect(field.props().value).toEqual('10-10-2018');
     });
 
+    // change
     it('should update the state with new value', async () => {
       const node = shallow(
         <Filters
@@ -1108,41 +1195,46 @@ describe.skip('Filters', () => {
   });
 
   describe('reset button', () => {
-    it('should render the disabled reset filters button', () => {
+    it('should render the reset filters button', () => {
       // given filter is different from DEFAULT_FILTER
-      const node = shallow(
-        <Filters
-          groupedWorkflowInstances={workflows}
-          {...mockProps}
-          filter={COMPLETE_FILTER}
-        />
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflowInstances={workflows}
+              {...mockProps}
+              filter={COMPLETE_FILTER}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
       );
-      const ResetButtonNode = node
-        .find('CollapsablePanelConsumer')
-        .dive()
-        .find(Button);
+      const ResetButtonNode = node.find(Button);
+      const onClick = ResetButtonNode.props().onClick;
+
+      //when
+      onClick();
 
       // then
+      expect(ResetButtonNode.text()).toBe('Reset Filters');
       expect(ResetButtonNode).toHaveLength(1);
       expect(ResetButtonNode.prop('disabled')).toBe(false);
-      expect(ResetButtonNode.prop('onClick')).toBe(
-        node.instance().onFilterReset
-      );
+      expect(resetSpy).toHaveBeenCalled();
     });
 
     it('should render the disabled reset filters button', () => {
       // given
-      const node = shallow(
-        <Filters
-          groupedWorkflowInstances={workflows}
-          {...mockProps}
-          filter={DEFAULT_FILTER}
-        />
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflowInstances={workflows}
+              {...mockProps}
+              filter={DEFAULT_FILTER}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
       );
-      const ResetButtonNode = node
-        .find('CollapsablePanelConsumer')
-        .dive()
-        .find(Button);
+      const ResetButtonNode = node.find(Button);
 
       // then
       expect(ResetButtonNode).toHaveLength(1);
@@ -1151,96 +1243,53 @@ describe.skip('Filters', () => {
 
     it('should reset all fields', async () => {
       // given
-      const node = shallow(
-        <Filters
-          groupedWorkflowInstances={workflows}
-          {...mockProps}
-          filter={DEFAULT_FILTER}
-        />
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflowInstances={workflows}
+              {...mockProps}
+              filter={COMPLETE_FILTER}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
       );
-      const ResetButtonNode = node
-        .find('CollapsablePanelConsumer')
-        .dive()
-        .find(Button);
-
-      //when
-      node.update();
-
-      // enter errorMessage
-      node.instance().handleFieldChange({
-        target: {value: 'errorMessage', name: 'errorMessage'}
-      });
-      node.update();
-
-      // enter workFlowName, version takes by default latest version
-      node
-        .instance()
-        .handleWorkflowNameChange({target: {value: 'demoProcess'}});
-      node.update();
-
-      // enter ids
-      node.instance().handleInputChange({
-        target: {value: "['a', 'b', 'c']", name: 'ids'}
-      });
-      node.update();
-
-      // enter startDate
-      node.instance().handleInputChange({
-        target: {value: '25 January 2009', name: 'startDate'}
-      });
-      node.update();
-
-      // enter endDate
-      node.instance().handleInputChange({
-        target: {value: '25 January 2009', name: 'endDate'}
-      });
-      node.update();
-
-      // select activityId
-      node.instance().handleFieldChange({
-        target: {
-          value: mockPropsWithActivityIds.activityIds[0].value,
-          name: 'activityId'
-        }
-      });
-      node.update();
+      const ResetButtonNode = node.find(Button);
 
       // click reset filters
       ResetButtonNode.simulate('click');
       node.update();
 
-      const nodeDived = node.find('CollapsablePanelConsumer').dive();
-
       // then
-      expect(nodeDived.find({name: 'workflow'}).props().value).toBe('');
-      expect(nodeDived.find({name: 'version'}).props().value).toBe('');
-      expect(nodeDived.find({name: 'ids'}).props().value).toBe('');
-      expect(nodeDived.find({name: 'errorMessage'}).props().value).toBe('');
-      expect(nodeDived.find({name: 'startDate'}).props().value).toBe('');
-      expect(nodeDived.find({name: 'endDate'}).props().value).toBe('');
-      expect(nodeDived.find({name: 'activityId'}).props().value).toBe('');
+      expect(node.find('select[name="workflow"]').get(0).props.value).toBe('');
+      expect(node.find('select[name="version"]').get(0).props.value).toBe('');
+      expect(node.find('textarea[name="ids"]').get(0).props.value).toBe('');
+      expect(node.find('input[name="errorMessage"]').get(0).props.value).toBe(
+        ''
+      );
+      expect(node.find('input[name="startDate"]').get(0).props.value).toBe('');
+      expect(node.find('input[name="endDate"]').get(0).props.value).toBe('');
+      expect(node.find('select[name="activityId"]').get(0).props.value).toBe(
+        ''
+      );
     });
 
     it('should call this.props.onFilterReset', async () => {
       // given
-      const value = groupedWorkflowsMock[0].bpmnProcessId;
-      const node = shallow(
-        <Filters
-          groupedWorkflowInstances={workflows}
-          {...mockProps}
-          filter={DEFAULT_FILTER}
-        />
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Filters
+              groupedWorkflowInstances={workflows}
+              {...mockProps}
+              filter={COMPLETE_FILTER}
+            />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
       );
-      const ResetButtonNode = node
-        .find('CollapsablePanelConsumer')
-        .dive()
-        .find(Button);
+      const ResetButtonNode = node.find(Button);
 
       //when
-      // we select a workflow
-      node.instance().handleWorkflowNameChange({target: {value: value}});
-      node.update();
-      // click reset filters
       ResetButtonNode.simulate('click');
       node.update();
 
