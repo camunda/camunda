@@ -28,6 +28,7 @@ import io.zeebe.exporter.record.value.TimerRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -65,6 +66,10 @@ public class TimerStartEventTest {
           .endEvent("end_3")
           .done();
 
+  public static BpmnModelInstance multiStartModel;
+
+  public static BpmnModelInstance multiStartSameEndModel;
+
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
   public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
@@ -72,6 +77,19 @@ public class TimerStartEventTest {
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
   private PartitionTestClient testClient;
+
+  static {
+    ProcessBuilder builder = Bpmn.createExecutableProcess("process_4");
+    builder.startEvent("start_4").timerWithCycle("R/PT2S").endEvent("end_4");
+    multiStartModel =
+        builder.startEvent("start_5").timerWithCycle("R/PT3S").endEvent("end_5").done();
+
+    builder = Bpmn.createExecutableProcess("process_5");
+
+    builder.startEvent("start_4").timerWithCycle("R/PT2S").endEvent("end_4");
+    multiStartSameEndModel =
+        builder.startEvent("start_5").timerWithCycle("R/PT2S").connectTo("end_4").done();
+  }
 
   @Before
   public void setUp() {
@@ -280,7 +298,6 @@ public class TimerStartEventTest {
   @Test
   public void shouldTriggerDifferentWorkflowsSeparately() {
     // when
-    brokerRule.getClock().pinCurrentTime();
     testClient.deploy(THREE_SEC_MODEL);
     testClient.deploy(REPEATING_MODEL);
 
@@ -319,5 +336,37 @@ public class TimerStartEventTest {
             .getTimestamp();
 
     assertThat(secondModelTimestamp.isAfter(firstModelTimestamp)).isTrue();
+  }
+
+  @Test
+  public void shouldCreateMultipleInstanceAtTheCorrectTimes() {
+    // when
+    testClient.deploy(multiStartModel);
+    assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(2).count()).isEqualTo(2);
+    brokerRule.getClock().addTime(Duration.ofSeconds(2));
+
+    // then
+    assertThat(
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERED)
+                .withElementId("start_4")
+                .exists())
+        .isTrue();
+    assertThat(
+            RecordingExporter.workflowInstanceRecords(EVENT_ACTIVATED)
+                .withElementId("end_4")
+                .exists())
+        .isTrue();
+
+    brokerRule.getClock().addTime(Duration.ofSeconds(1));
+    assertThat(
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERED)
+                .withElementId("start_5")
+                .exists())
+        .isTrue();
+    assertThat(
+            RecordingExporter.workflowInstanceRecords(EVENT_ACTIVATED)
+                .withElementId("end_5")
+                .exists())
+        .isTrue();
   }
 }

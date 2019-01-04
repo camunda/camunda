@@ -37,6 +37,7 @@ import io.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.util.buffer.BufferUtil;
+import java.util.List;
 import org.agrona.DirectBuffer;
 
 public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> {
@@ -71,7 +72,11 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
     boolean isOccurred = true;
 
     if (elementInstanceKey == NO_ELEMENT_INSTANCE) {
-      catchEventBehavior.occurStartEvent(timer.getWorkflowKey(), EMPTY_DOCUMENT, streamWriter);
+      catchEventBehavior.occurStartEvent(
+          timer.getWorkflowKey(),
+          record.getValue().getHandlerNodeId(),
+          EMPTY_DOCUMENT,
+          streamWriter);
     } else {
       isOccurred =
           catchEventBehavior.occurEventForElement(
@@ -106,7 +111,14 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
       return getCatchEventById(
           workflowState, elementInstance.getValue().getWorkflowKey(), timer.getHandlerNodeId());
     } else if (elementInstanceKey == NO_ELEMENT_INSTANCE) {
-      return workflowState.getWorkflowByKey(timer.getWorkflowKey()).getWorkflow().getStartEvent();
+      final List<ExecutableCatchEventElement> startEvents =
+          workflowState.getWorkflowByKey(timer.getWorkflowKey()).getWorkflow().getStartEvents();
+
+      for (ExecutableCatchEventElement startEvent : startEvents) {
+        if (startEvent.getId().equals(timer.getHandlerNodeId())) {
+          return startEvent;
+        }
+      }
     }
 
     return null;

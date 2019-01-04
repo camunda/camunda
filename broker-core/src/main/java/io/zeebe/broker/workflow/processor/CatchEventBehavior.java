@@ -151,7 +151,10 @@ public class CatchEventBehavior {
   }
 
   public void occurStartEvent(
-      long workflowKey, DirectBuffer eventPayload, TypedStreamWriter streamWriter) {
+      long workflowKey,
+      DirectBuffer handlerId,
+      DirectBuffer eventPayload,
+      TypedStreamWriter streamWriter) {
     final DeployedWorkflow workflow = state.getWorkflowState().getWorkflowByKey(workflowKey);
 
     workflowInstanceRecord.reset();
@@ -159,6 +162,7 @@ public class CatchEventBehavior {
     workflowInstanceRecord.setWorkflowKey(workflow.getKey());
     workflowInstanceRecord.setBpmnProcessId(workflow.getBpmnProcessId());
     workflowInstanceRecord.setPayload(eventPayload);
+    workflowInstanceRecord.setElementId(handlerId);
     streamWriter.appendNewCommand(WorkflowInstanceIntent.CREATE, workflowInstanceRecord);
   }
 

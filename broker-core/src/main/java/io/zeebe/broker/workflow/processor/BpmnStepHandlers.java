@@ -58,7 +58,7 @@ public class BpmnStepHandlers {
     final IncidentState incidentState = zeebeState.getIncidentState();
 
     // flow element container (process, sub process)
-    stepHandlers.put(BpmnStep.TRIGGER_START_EVENT, new TriggerStartEventHandler());
+    stepHandlers.put(BpmnStep.TRIGGER_START_EVENT, new TriggerStartEventHandler(workflowState));
     stepHandlers.put(BpmnStep.COMPLETE_PROCESS, new CompleteProcessHandler());
     stepHandlers.put(
         BpmnStep.TERMINATE_CONTAINED_INSTANCES, new TerminateContainedElementsHandler(zeebeState));

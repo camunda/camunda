@@ -24,6 +24,10 @@ public interface ExecutableCatchEvent extends ExecutableFlowElement {
 
   boolean isMessage();
 
+  default boolean isNone() {
+    return !isTimer() && !isMessage();
+  }
+
   ExecutableMessage getMessage();
 
   default boolean shouldCloseMessageSubscriptionOnCorrelate() {

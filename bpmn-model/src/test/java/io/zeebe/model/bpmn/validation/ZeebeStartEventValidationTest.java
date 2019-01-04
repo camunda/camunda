@@ -68,15 +68,7 @@ public class ZeebeStartEventValidationTest extends AbstractZeebeValidationTest {
         singletonList(
             expect(
                 Process.class,
-                "Must be either one none/timer start event or multiple message start events"))
-      },
-      {
-        // multiple start event types not supported yet
-        getProcessWithMultipleStartEventTypes(),
-        singletonList(
-            expect(
-                Process.class,
-                "Must be either one none/timer start event or multiple message start events"))
+                "Must be either one none start event or multiple message/timer start events"))
       },
     };
   }
@@ -85,13 +77,6 @@ public class ZeebeStartEventValidationTest extends AbstractZeebeValidationTest {
     final ProcessBuilder process = Bpmn.createExecutableProcess();
     process.startEvent().endEvent();
     process.startEvent().endEvent();
-    return process.done();
-  }
-
-  private static BpmnModelInstance getProcessWithMultipleStartEventTypes() {
-    final ProcessBuilder process = Bpmn.createExecutableProcess();
-    process.startEvent().message(m -> m.name("msgStart")).endEvent();
-    process.startEvent().timerWithCycle("R1/PT2H").endEvent();
     return process.done();
   }
 }
