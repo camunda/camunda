@@ -117,6 +117,9 @@ public class CatchEventBehavior {
       final WorkflowInstanceRecord deferredRecord = tokenEvent.getRecord().getValue();
       deferredRecord.setPayload(eventPayload).setElementId(eventHandlerId);
 
+      elementInstanceState.removeStoredRecord(
+          deferredRecord.getScopeInstanceKey(), elementInstanceKey, Purpose.DEFERRED_TOKEN);
+
       streamWriter.appendFollowUpEvent(
           elementInstanceKey, WorkflowInstanceIntent.EVENT_OCCURRED, deferredRecord);
 

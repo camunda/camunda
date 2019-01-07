@@ -60,6 +60,20 @@ public class EventbasedGatewayTest {
           .endEvent("end2")
           .done();
 
+  private static final BpmnModelInstance WORKFLOW_WITH_EQUAL_TIMERS =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent("start")
+          .eventBasedGateway()
+          .id("gateway")
+          .intermediateCatchEvent("timer-1", c -> c.timerWithDuration("PT2S"))
+          .sequenceFlowId("to-end1")
+          .endEvent("end1")
+          .moveToLastGateway()
+          .intermediateCatchEvent("timer-2", c -> c.timerWithDuration("PT2S"))
+          .sequenceFlowId("to-end2")
+          .endEvent("end2")
+          .done();
+
   private static final BpmnModelInstance WORKFLOW_WITH_MESSAGES =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent("start")
@@ -213,6 +227,33 @@ public class EventbasedGatewayTest {
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
             .withElementId(PROCESS_ID)
             .exists());
+  }
+
+  @Test
+  public void shouldOnlyExecuteOneBranchWithEqualTimers() {
+    // given
+    testClient.deploy(WORKFLOW_WITH_EQUAL_TIMERS);
+    testClient.createWorkflowInstance(PROCESS_ID);
+    assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(2).exists()).isTrue();
+    // when
+    brokerRule.getClock().addTime(Duration.ofSeconds(2));
+
+    // then
+    assertThat(
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.GATEWAY_ACTIVATED)
+                .limit(1)
+                .count())
+        .isEqualTo(1);
+
+    assertThat(
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN)
+                    .withElementId("to-end2")
+                    .exists()
+                ^ RecordingExporter.workflowInstanceRecords(
+                        WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN)
+                    .withElementId("to-end1")
+                    .exists())
+        .isTrue();
   }
 
   @Test
