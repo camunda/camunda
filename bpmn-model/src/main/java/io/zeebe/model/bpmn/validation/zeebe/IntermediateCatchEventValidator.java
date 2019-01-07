@@ -51,9 +51,10 @@ public class IntermediateCatchEventValidator
 
       } else if (eventDefinition instanceof TimerEventDefinition) {
         final TimerEventDefinition timerEventDefinition = (TimerEventDefinition) eventDefinition;
-        if (timerEventDefinition.getTimeDuration() == null) {
+        if (timerEventDefinition.getTimeDuration() == null
+            && timerEventDefinition.getTimeDate() == null) {
           validationResultCollector.addError(
-              0, "Intermediate timer catch event must have a time duration.");
+              0, "Intermediate timer catch event must have either a time duration or a time date.");
         }
       }
     }

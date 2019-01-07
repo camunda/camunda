@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.workflow.model.element;
 
-import io.zeebe.model.bpmn.util.time.RepeatingInterval;
+import io.zeebe.model.bpmn.util.time.Timer;
 import java.util.Collections;
 import java.util.List;
 
@@ -27,7 +27,7 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
 
   private ExecutableMessage message;
 
-  private RepeatingInterval timer;
+  private Timer timer;
 
   public ExecutableCatchEventElement(String id) {
     super(id);
@@ -53,11 +53,11 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
   }
 
   @Override
-  public RepeatingInterval getTimer() {
+  public Timer getTimer() {
     return timer;
   }
 
-  public void setTimer(RepeatingInterval timer) {
+  public void setTimer(Timer timer) {
     this.timer = timer;
   }
 
