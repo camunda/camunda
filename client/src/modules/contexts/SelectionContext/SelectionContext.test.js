@@ -267,10 +267,10 @@ describe('SelectionContext', () => {
       const expectedSelection = {
         selectionId: 2,
         instancesMap: new Map([
-          ['foo2', {id: 'foo2', value: 'foo2Value'}],
-          ['foo1', {id: 'foo1', value: 'foo1Value'}],
+          ['key1', {id: 'key1', value: 'value1'}],
           ['key2', {id: 'key2', value: 'value2'}],
-          ['key1', {id: 'key1', value: 'value1'}]
+          ['foo1', {id: 'foo1', value: 'foo1Value'}],
+          ['foo2', {id: 'foo2', value: 'foo2Value'}]
         ]),
         queries: expectedSelectionQueries,
         totalCount: 4

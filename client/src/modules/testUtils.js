@@ -161,6 +161,38 @@ export const createInstance = (options = {}) => {
 };
 
 /**
+ * @returns a mocked array of instance objects
+ * @param {number} amount specifies the amount of instances
+ * @param {object} options to set custom properties for all instances
+ */
+export const createArrayOfMockInstances = (amount, options = {}) => {
+  let arrayOfInstances = [];
+  xTimes(amount)(() =>
+    arrayOfInstances.push(
+      createInstance({
+        id: randomIdIterator.next().value,
+        ...options
+      })
+    )
+  );
+  return arrayOfInstances;
+};
+
+/**
+ * @returns a Map with mocked instanceId 'keys' and instance object 'values'
+ * @param {Array} arrayofInstances contains any number of instance objects
+ */
+export const createMapOfMockInstances = arrayofInstances => {
+  const transformedInstances = arrayofInstances.reduce((acc, instance) => {
+    return {
+      ...acc,
+      [instance.id]: instance
+    };
+  }, {});
+  return new Map(Object.entries(transformedInstances));
+};
+
+/**
  * A hard coded object to use when mocking fetchGroupedWorkflowInstances api/instances.js
  */
 export const groupedWorkflowsMock = [
