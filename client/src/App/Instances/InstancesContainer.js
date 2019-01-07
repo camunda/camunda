@@ -175,7 +175,7 @@ class InstancesContainer extends Component {
     );
 
     return await fetchWorkflowInstancesStatistics({
-      queries: [parseFilterForRequest(filterWithWorkflowIds)]
+      queries: [parseFilterForRequest(decodeFields(filterWithWorkflowIds))]
     });
   };
 

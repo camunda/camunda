@@ -56,7 +56,7 @@ class Instances extends Component {
       bpmnElements: PropTypes.object,
       definitions: PropTypes.object
     }).isRequired,
-    statistics: PropTypes.array.isRequired
+    statistics: PropTypes.array
   };
 
   constructor(props) {
