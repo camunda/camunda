@@ -24,7 +24,6 @@ import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.broker.workflow.processor.EventOutput;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import java.util.List;
 
 public class ParallelSplitHandler implements BpmnStepHandler<ExecutableFlowNode> {
 
@@ -32,14 +31,16 @@ public class ParallelSplitHandler implements BpmnStepHandler<ExecutableFlowNode>
   public void handle(final BpmnStepContext<ExecutableFlowNode> context) {
     final ExecutableFlowNode element = context.getElement();
     final WorkflowInstanceRecord value = context.getValue();
-
-    final List<ExecutableSequenceFlow> outgoingFlows = element.getOutgoing();
-
     final EventOutput eventOutput = context.getOutput();
 
-    for (final ExecutableSequenceFlow flow : outgoingFlows) {
+    // consume the incoming token and spawn a new one for each outgoing sequence flow
+    context.getFlowScopeInstance().consumeToken();
+
+    for (final ExecutableSequenceFlow flow : element.getOutgoing()) {
       value.setElementId(flow.getId());
       eventOutput.appendNewEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, value);
+
+      context.getFlowScopeInstance().spawnToken();
     }
   }
 }

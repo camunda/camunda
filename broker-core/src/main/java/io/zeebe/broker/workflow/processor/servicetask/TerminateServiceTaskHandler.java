@@ -50,7 +50,7 @@ public class TerminateServiceTaskHandler extends TerminateActivityHandler {
             String.format("Expected to find job with key %d, but no job found", jobKey));
       }
 
-      context.getOutput().getStreamWriter().appendFollowUpCommand(jobKey, JobIntent.CANCEL, job);
+      context.getCommandWriter().appendFollowUpCommand(jobKey, JobIntent.CANCEL, job);
       resolveExistingJobIncident(jobKey, context);
     }
   }

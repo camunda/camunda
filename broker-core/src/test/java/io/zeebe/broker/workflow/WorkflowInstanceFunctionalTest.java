@@ -133,63 +133,6 @@ public class WorkflowInstanceFunctionalTest {
   }
 
   @Test
-  public void shouldCompleteWorkflowInstance() {
-    // given
-    testClient.deploy(Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done());
-
-    // when
-    final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
-
-    // then
-    final Record<WorkflowInstanceRecordValue> completedEvent =
-        testClient.receiveElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED);
-
-    assertThat(completedEvent.getKey()).isEqualTo(workflowInstanceKey);
-    assertWorkflowInstanceRecord(workflowInstanceKey, PROCESS_ID, completedEvent);
-  }
-
-  @Test
-  public void shouldConsumeTokenIfEventHasNoOutgoingSequenceflow() {
-    // given
-    testClient.deploy(Bpmn.createExecutableProcess(PROCESS_ID).startEvent().done());
-
-    // when
-    final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
-
-    // then
-    final Record<WorkflowInstanceRecordValue> completedEvent =
-        testClient.receiveElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED);
-
-    assertThat(completedEvent.getKey()).isEqualTo(workflowInstanceKey);
-    assertWorkflowInstanceRecord(workflowInstanceKey, PROCESS_ID, completedEvent);
-  }
-
-  @Test
-  public void shouldConsumeTokenIfActivityHasNoOutgoingSequenceflow() {
-    // given
-    final BpmnModelInstance definition =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .serviceTask("foo", t -> t.zeebeTaskType("bar"))
-            .done();
-    testClient.deploy(definition);
-    final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
-
-    // when
-    testClient.completeJobOfType("bar");
-
-    // then
-    final Record<WorkflowInstanceRecordValue> activityCompleted =
-        testClient.receiveElementInState("foo", WorkflowInstanceIntent.ELEMENT_COMPLETED);
-    final Record<WorkflowInstanceRecordValue> completedEvent =
-        testClient.receiveElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED);
-
-    assertThat(completedEvent.getKey()).isEqualTo(workflowInstanceKey);
-    assertThat(completedEvent.getPosition()).isGreaterThan(activityCompleted.getPosition());
-    assertWorkflowInstanceRecord(workflowInstanceKey, PROCESS_ID, completedEvent);
-  }
-
-  @Test
   public void shouldActivateServiceTask() {
     // given
     final BpmnModelInstance model =

@@ -30,24 +30,37 @@ public class TriggerBoundaryEventHandler implements BpmnStepHandler<ExecutableBo
     final ExecutableBoundaryEvent element = context.getElement();
 
     if (element.cancelActivity()) {
-      final ElementInstance elementInstance = context.getElementInstance();
+      triggerInterruptingBoundaryEvent(context);
 
-      if (elementInstance != null
-          && elementInstance.getState() == WorkflowInstanceIntent.ELEMENT_ACTIVATED) {
-
-        context.getCatchEventBehavior().deferEvent(context);
-
-        context
-            .getOutput()
-            .appendFollowUpEvent(
-                context.getRecord().getKey(),
-                WorkflowInstanceIntent.ELEMENT_TERMINATING,
-                context.getElementInstance().getValue());
-      }
     } else {
+      triggerNonInterruptingBoundaryEvent(context);
+    }
+  }
+
+  private void triggerInterruptingBoundaryEvent(BpmnStepContext<ExecutableBoundaryEvent> context) {
+    final ElementInstance elementInstance = context.getElementInstance();
+
+    if (elementInstance != null
+        && elementInstance.getState() == WorkflowInstanceIntent.ELEMENT_ACTIVATED) {
+
+      context.getCatchEventBehavior().deferEvent(context);
+
       context
           .getOutput()
-          .appendNewEvent(WorkflowInstanceIntent.EVENT_TRIGGERING, context.getRecord().getValue());
+          .appendFollowUpEvent(
+              context.getRecord().getKey(),
+              WorkflowInstanceIntent.ELEMENT_TERMINATING,
+              context.getElementInstance().getValue());
     }
+  }
+
+  private void triggerNonInterruptingBoundaryEvent(
+      BpmnStepContext<ExecutableBoundaryEvent> context) {
+    context
+        .getOutput()
+        .appendNewEvent(WorkflowInstanceIntent.EVENT_TRIGGERING, context.getRecord().getValue());
+
+    // spawn a new token to continue at the event
+    context.getFlowScopeInstance().spawnToken();
   }
 }

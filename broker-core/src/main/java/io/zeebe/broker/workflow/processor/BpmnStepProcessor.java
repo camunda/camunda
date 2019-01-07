@@ -77,7 +77,6 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
     populateEventContext(record, streamWriter, sideEffect);
 
     if (stepGuards.shouldHandle(context)) {
-      state.onEventConsumed(record);
       stepHandlers.handle(context);
       elementInstanceState.flushDirtyState();
     }
@@ -90,6 +89,7 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
 
     context.setRecord(record);
     context.setStreamWriter(streamWriter);
+    context.setElementInstanceState(workflowState.getElementInstanceState());
 
     context.getSideEffect().clear();
     sideEffect.accept(context.getSideEffect());
