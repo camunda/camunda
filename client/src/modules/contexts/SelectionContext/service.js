@@ -8,6 +8,16 @@ export function createMapOfInstances(workflowInstances) {
   return new Map(Object.entries(transformedInstances));
 }
 
+export function updateMapOfInstances(workflowInstances, oldInstanceMap) {
+  const updatedInstanceMap = new Map([...oldInstanceMap]);
+  workflowInstances.forEach(instance => {
+    if (updatedInstanceMap.size < 10) {
+      updatedInstanceMap.set(instance.id, instance);
+    }
+  });
+  return updatedInstanceMap;
+}
+
 export function getInstancesIdsFromSelections(selections) {
   const idsSet = selections.reduce((acc, {instancesMap}) => {
     return new Set([...acc, ...[...instancesMap.keys()]]);

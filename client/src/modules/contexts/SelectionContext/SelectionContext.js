@@ -14,7 +14,11 @@ import {getSelectionById} from 'modules/utils/selection';
 import withSharedState from 'modules/components/withSharedState';
 import {DEFAULT_SELECTED_INSTANCES} from 'modules/constants';
 
-import {createMapOfInstances, getInstancesIdsFromSelections} from './service';
+import {
+  createMapOfInstances,
+  updateMapOfInstances,
+  getInstancesIdsFromSelections
+} from './service';
 
 const SelectionContext = React.createContext();
 
@@ -166,17 +170,18 @@ class BasicSelectionProvider extends React.Component {
     } = await fetchWorkflowInstancesBySelection({queries});
 
     // get target selection from list of selections
-    const {index: selectionIndex, totalCount: oldTotalCount} = getSelectionById(
-      this.state.selections,
-      selectionId
-    );
+    const {
+      index: selectionIndex,
+      totalCount: oldTotalCount,
+      instancesMap: oldInstanceMap
+    } = getSelectionById(this.state.selections, selectionId);
 
     // update the target selection
     const selections = [
       ...this.state.selections.slice(0, selectionIndex),
       {
         ...this.state.selections[selectionIndex],
-        instancesMap: createMapOfInstances(workflowInstances),
+        instancesMap: updateMapOfInstances(workflowInstances, oldInstanceMap),
         queries,
         totalCount
       },
@@ -258,6 +263,7 @@ class BasicSelectionProvider extends React.Component {
       IdsOfInstancesInSelections
     );
     const workflowInstancesMap = createMapOfInstances(workflowInstances);
+
     let selections = this.state.selections.map(
       ({instancesMap, ...selection}) => {
         const newMap = new Map();
@@ -268,6 +274,7 @@ class BasicSelectionProvider extends React.Component {
         return {instancesMap: newMap, ...selection};
       }
     );
+
     this.setState({selections});
   };
 
