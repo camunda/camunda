@@ -198,22 +198,6 @@ describe('modules/utils/filter.js', () => {
     });
   });
 
-  describe('fieldParser.errorMessage()', () => {
-    it('should return the value for errorMessage', () => {
-      const value = 'lorem ipsum';
-      const output = fieldParser.errorMessage('errorMessage', value);
-
-      expect(output.errorMessage).toEqual(value);
-    });
-
-    it('should return null for empty value', () => {
-      const value = '';
-      const output = fieldParser.errorMessage('errorMessage', value);
-
-      expect(output.errorMessage).toEqual(null);
-    });
-  });
-
   describe('fieldParser.ids()', () => {
     it('should return an array for ids', () => {
       const value = '1 2 3';

@@ -53,9 +53,6 @@ const parseDate = (value, name) => {
  * we used this parser before making a call to backend with the current filters
  */
 export const fieldParser = {
-  errorMessage: (name, value) => {
-    return {[name]: value.length === 0 ? null : value};
-  },
   ids: (name, value) => {
     // split by space, comma, tab or return key
     return {[name]: value.split(/[ ,\t\n]+/).filter(Boolean)};
