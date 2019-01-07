@@ -258,18 +258,6 @@ describe('Instances', () => {
   });
 
   describe('local storage ', () => {
-    it('should read the filterCount from localStorage', () => {
-      const node = mount(
-        <ThemeProvider>
-          <CollapsablePanelProvider>
-            <Instances {...mockProps} {...localStorageProps} />
-          </CollapsablePanelProvider>
-        </ThemeProvider>
-      );
-      expect(localStorageProps.getStateLocally).toHaveBeenCalled();
-      expect(node.find(ListView).prop('filterCount')).toEqual(mockFilterCount);
-    });
-
     it('should store filterCount to localStorage', async () => {
       // given
       const node = mount(

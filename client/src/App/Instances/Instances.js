@@ -61,10 +61,8 @@ class Instances extends Component {
 
   constructor(props) {
     super(props);
-    const {filterCount} = props.getStateLocally();
-
     this.state = {
-      filterCount: filterCount || 0,
+      filterCount: 0,
       workflowInstances: [],
       workflowInstancesLoaded: false,
       firstElement: DEFAULT_FIRST_ELEMENT,
