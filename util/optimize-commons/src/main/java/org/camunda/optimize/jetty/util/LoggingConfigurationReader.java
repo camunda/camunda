@@ -1,5 +1,6 @@
 package org.camunda.optimize.jetty.util;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
@@ -36,6 +37,18 @@ public class LoggingConfigurationReader {
           logger.error("error closing stream", e);
         }
       }
+    }
+    enableElasticsearchRequestLogging(loggerContext);
+  }
+
+  private void enableElasticsearchRequestLogging(LoggerContext loggerContext) {
+    if (logger.isTraceEnabled()) {
+      // this allows to enable logging of Elasticsearch requests when
+      // Optimize log level is set to trace
+      // for more information:
+      // - https://www.elastic.co/guide/en/elasticsearch/client/java-rest/6.5/java-rest-low-usage-logging.html
+      // - https://guzalexander.com/2018/09/30/es-rest-client-trace-logging.html
+      loggerContext.getLogger("tracer").setLevel(Level.TRACE);
     }
   }
 
