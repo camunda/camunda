@@ -408,15 +408,16 @@ public class MsgPackReader {
           break;
         case BIN8:
         case STR8:
-          offset += 1 + buffer.getByte(offset);
+          offset += 1 + Byte.toUnsignedInt(buffer.getByte(offset));
           break;
         case BIN16:
         case STR16:
-          offset += 2 + buffer.getShort(offset, BYTE_ORDER);
+          offset += 2 + Short.toUnsignedInt(buffer.getShort(offset, BYTE_ORDER));
           break;
         case BIN32:
         case STR32:
-          offset += 4 + buffer.getInt(offset, BYTE_ORDER);
+          final int length = (int) ensurePositive(buffer.getInt(offset, BYTE_ORDER));
+          offset += 4 + length;
           break;
         case FIXEXT1:
           offset += 2;
