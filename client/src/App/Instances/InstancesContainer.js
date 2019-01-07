@@ -44,32 +44,31 @@ class InstancesContainer extends Component {
     document.title = PAGE_TITLE.INSTANCES;
     const groupedWorkflows = await fetchGroupedWorkflowInstances();
     this.setGroupedWorkflowInstances(groupedWorkflows);
-    await this.validateAndSetUrlFilter();
+    await this.sanitizeStateAndUrl();
     this.updateLocalStorageFilter();
   }
 
   async componentDidUpdate(prevProps, prevState) {
     // filter in url has changed
-    if (
-      !isEqual(
-        parseQueryString(prevProps.location.search).filter,
-        parseQueryString(this.props.location.search).filter
-      )
-    ) {
-      await this.validateAndSetUrlFilter();
+    const prevFilter = parseQueryString(prevProps.location.search).filter;
+    const currentFilter = parseQueryString(this.props.location.search).filter;
+    if (!isEqual(prevFilter, currentFilter)) {
+      await this.sanitizeStateAndUrl();
       return this.updateLocalStorageFilter();
     }
 
-    // fetch statistics
+    // filter in state has changed
     if (!isEqual(this.state.filter, prevState.filter)) {
       const statistics = await this.fetchStatistics();
       this.setState({statistics});
     }
   }
 
-  // TODO: set currentWorkflow in Instances
-  validateAndSetUrlFilter = async () => {
-    const {filter} = parseQueryString(this.props.location.search);
+  /**
+   * @returns [isValidUrlFilter, update]
+   */
+  sanitizeStateAndUrl = async () => {
+    const filter = parseQueryString(this.props.location.search).filter;
 
     // (1) empty filter
     if (!filter) {
@@ -78,15 +77,13 @@ class InstancesContainer extends Component {
 
     let {workflow, version, activityId, ...otherFilters} = filter;
 
-    // (2) filter has no workflow
+    // (2):
+    // - if there is no workflow or version and there is an activityId, remove the activityId from the url filter
+    // - if there is no workflow or version and there is no activityId, reset diagramModel and statistics
     if (!workflow || (workflow && !version)) {
       return activityId
         ? this.setFilterInURL(otherFilters)
-        : this.setState({
-            filter,
-            diagramModel: {},
-            statistics: []
-          });
+        : this.setState({filter, diagramModel: {}, statistics: []});
     }
 
     // (3) validate workflow
@@ -94,12 +91,15 @@ class InstancesContainer extends Component {
       this.state.groupedWorkflowInstances[workflow]
     );
 
+    // (3) if the workflow is invalid, remove it from the url filter
     if (!isWorkflowValid) {
       return this.setFilterInURL(otherFilters);
     }
 
+    // (4):
+    // - if the version is 'all' and there is an activityId, remove the activityId from the url filter
+    // - if the version is 'all' and there is no activityId, reset diagramModel & statistics
     if (version === 'all') {
-      // set filter in url without activity id
       return activityId
         ? this.setFilterInURL({...otherFilters, workflow, version})
         : this.setState({
@@ -115,12 +115,11 @@ class InstancesContainer extends Component {
       version
     );
 
-    // version is not valid for workflow
+    // (5) if version is invalid, remove workflow from the url filter
     if (!Boolean(workflowByVersion)) {
       return this.setFilterInURL(otherFilters);
     }
 
-    // (4) diagramModel
     const currentWorkflowByVersion = getWorkflowByVersion(
       this.state.groupedWorkflowInstances[this.state.filter.workflow],
       this.state.filter.version
@@ -131,26 +130,24 @@ class InstancesContainer extends Component {
       currentWorkflowByVersion
     );
 
-    // if activityId is invalid, remove it from the url filter
     let {diagramModel} = this.state;
 
     if (hasWorkflowChanged) {
       diagramModel = await this.fetchDiagramModel(workflowByVersion.id);
     }
 
+    // (6) if activityId is invalid, remove it from the url filter
     if (activityId && !diagramModel.bpmnElements[activityId]) {
       return this.setFilterInURL({...otherFilters, workflow, version});
     }
 
-    // if the workflow didn't change, we can immediatly update the state
+    // (7) if the workflow didn't change, we can immediatly update the state
     if (!hasWorkflowChanged) {
-      return this.setState({
-        filter
-      });
+      return this.setState({filter});
     }
 
-    // Set new data in state and clear current statistics
-    this.setState({diagramModel, statistics: [], filter});
+    // (8) Set new data in state and clear current statistics
+    return this.setState({filter, diagramModel, statistics: []});
   };
 
   isValidActivityId(bpmnElements, activityId) {
