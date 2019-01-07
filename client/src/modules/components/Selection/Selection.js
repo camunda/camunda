@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {CSSTransition, TransitionGroup} from 'react-transition-group';
+import {CSSTransition} from 'react-transition-group';
 
 import StateIcon from 'modules/components/StateIcon';
 import Dropdown from 'modules/components/Dropdown';
@@ -124,7 +124,7 @@ export default class Selection extends React.Component {
     const instances = [...this.props.instances];
     const timeout = 800;
     return (
-      <TransitionGroup component={'ul'}>
+      <Styled.TransitionGroup component={'ul'}>
         {instances.map(([_, instanceDetails], index) => {
           const {state, type} = getLatestOperation(instanceDetails.operations);
           return (
@@ -153,7 +153,7 @@ export default class Selection extends React.Component {
             </CSSTransition>
           );
         })}
-      </TransitionGroup>
+      </Styled.TransitionGroup>
     );
   };
 

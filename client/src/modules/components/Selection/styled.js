@@ -1,5 +1,6 @@
 import styled, {css} from 'styled-components';
 import {themed, themeStyle, Colors, Animations} from 'modules/theme';
+import {TransitionGroup as TransGroup} from 'react-transition-group';
 
 import ActionStatus from 'modules/components/ActionStatus';
 
@@ -25,6 +26,11 @@ export const iconStyle = css`
 export const Dl = styled.dl`
   margin: 0px;
   width: 442px;
+`;
+
+export const TransitionGroup = styled(TransGroup)`
+  display: flex;
+  flex-direction: column-reverse;
 `;
 
 const openSelectionTransitionStyle = css`
