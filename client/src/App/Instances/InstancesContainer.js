@@ -57,7 +57,13 @@ class InstancesContainer extends Component {
       )
     ) {
       await this.validateAndSetUrlFilter();
-      this.updateLocalStorageFilter();
+      return this.updateLocalStorageFilter();
+    }
+
+    // fetch statistics
+    if (!isEqual(this.state.filter, prevState.filter)) {
+      const statistics = await this.fetchStatistics();
+      this.setState({statistics});
     }
   }
 
@@ -136,27 +142,15 @@ class InstancesContainer extends Component {
       return this.setFilterInURL({...otherFilters, workflow, version});
     }
 
-    // fetch statistics
-    const statistics = await this.fetchStatistics(filter, workflowByVersion);
-
     // if the workflow didn't change, we can immediatly update the state
     if (!hasWorkflowChanged) {
       return this.setState({
-        statistics,
         filter
       });
     }
 
-    // First, clear state.statistics to avoid a conflict between the statitistics
-    // and the diagram.
-    // Then, set the new data in state.
-    this.setState({statistics: []}, async () => {
-      this.setState({
-        diagramModel,
-        statistics,
-        filter
-      });
-    });
+    // Set new data in state and clear current statistics
+    this.setState({diagramModel, statistics: [], filter});
   };
 
   isValidActivityId(bpmnElements, activityId) {
@@ -167,14 +161,20 @@ class InstancesContainer extends Component {
     this.props.storeStateLocally({filter: this.state.filter});
   };
 
-  fetchStatistics = async (filter, workflow) => {
-    if (isEmpty(workflow)) {
+  fetchStatistics = async () => {
+    const {filter, groupedWorkflowInstances} = this.state;
+    const workflowByVersion = getWorkflowByVersion(
+      groupedWorkflowInstances[filter.workflow],
+      filter.version
+    );
+
+    if (isEmpty(workflowByVersion)) {
       return;
     }
 
     const filterWithWorkflowIds = getFilterWithWorkflowIds(
       filter,
-      this.state.groupedWorkflowInstances
+      groupedWorkflowInstances
     );
 
     return await fetchWorkflowInstancesStatistics({
