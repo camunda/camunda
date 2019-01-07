@@ -4,6 +4,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.main.Upgrade;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
+import org.camunda.optimize.upgrade.steps.schema.DeleteIndexStep;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,11 +33,16 @@ public class UpgradeFrom23To24 implements Upgrade {
       UpgradePlan upgradePlan = UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
+        .addUpgradeStep(removeTargetValueIndexStep())
         .build();
       upgradePlan.execute();
     } catch (Exception e) {
       logger.error("Error while executing upgrade", e);
       System.exit(2);
     }
+  }
+
+  private DeleteIndexStep removeTargetValueIndexStep() {
+    return new DeleteIndexStep(null, "duration-target-value");
   }
 }
