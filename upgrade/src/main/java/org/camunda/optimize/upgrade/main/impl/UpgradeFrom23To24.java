@@ -1,12 +1,20 @@
 package org.camunda.optimize.upgrade.main.impl;
 
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
+import org.camunda.optimize.upgrade.es.ElasticsearchRestClientBuilder;
 import org.camunda.optimize.upgrade.main.Upgrade;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.schema.DeleteIndexStep;
+import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestClientBuilder;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 
 
 public class UpgradeFrom23To24 implements Upgrade {
@@ -30,16 +38,39 @@ public class UpgradeFrom23To24 implements Upgrade {
   @Override
   public void performUpgrade() {
     try {
-      UpgradePlan upgradePlan = UpgradePlanBuilder.createUpgradePlan()
+      UpgradePlanBuilder.AddUpgradeStepBuilder upgradePlanBuilder = UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
-        .toVersion(TO_VERSION)
-        .addUpgradeStep(removeTargetValueIndexStep())
+        .toVersion(TO_VERSION);
+
+      if (isTargetValueIndexPresent()) {
+        upgradePlanBuilder
+          .addUpgradeStep(removeTargetValueIndexStep());
+      }
+
+      UpgradePlan upgradePlan = upgradePlanBuilder
         .build();
       upgradePlan.execute();
     } catch (Exception e) {
       logger.error("Error while executing upgrade", e);
       System.exit(2);
     }
+  }
+
+  private boolean isTargetValueIndexPresent() {
+    RestHighLevelClient client = ElasticsearchHighLevelRestClientBuilder.build(configurationService);
+
+    GetIndexRequest request = new GetIndexRequest();
+    request.indices("optimize-duration-target-value");
+
+    boolean exists;
+
+    try {
+      exists = client.indices().exists(request, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      logger.error("Could not execute a request against Elasticsearch");
+      exists = false;
+    }
+    return exists;
   }
 
   private DeleteIndexStep removeTargetValueIndexStep() {
