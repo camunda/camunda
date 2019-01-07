@@ -193,7 +193,7 @@ export const createMapOfMockInstances = arrayofInstances => {
 };
 
 /**
- * A hard coded object to use when mocking fetchGroupedWorkflowInstances api/instances.js
+ * A hard coded object to use when mocking fetchGroupedWorkflows api/instances.js
  */
 export const groupedWorkflowsMock = [
   {

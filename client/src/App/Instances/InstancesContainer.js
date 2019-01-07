@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import {isEqual, isEmpty} from 'lodash';
 
 import withSharedState from 'modules/components/withSharedState';
-import {fetchGroupedWorkflowInstances} from 'modules/api/instances';
+import {fetchGroupedWorkflows} from 'modules/api/instances';
 import {DEFAULT_FILTER, PAGE_TITLE} from 'modules/constants';
 import {fetchWorkflowXML} from 'modules/api/diagram';
 import {fetchWorkflowInstancesStatistics} from 'modules/api/instances';
@@ -19,7 +19,7 @@ import Instances from './Instances';
 import {
   parseQueryString,
   decodeFields,
-  formatGroupedWorkflowInstances
+  formatGroupedWorkflows
 } from './service';
 class InstancesContainer extends Component {
   static propTypes = {
@@ -34,7 +34,7 @@ class InstancesContainer extends Component {
 
     this.state = {
       filter: {},
-      groupedWorkflowInstances: {},
+      groupedWorkflows: {},
       diagramModel: {},
       statistics: []
     };
@@ -42,8 +42,8 @@ class InstancesContainer extends Component {
 
   async componentDidMount() {
     document.title = PAGE_TITLE.INSTANCES;
-    const groupedWorkflows = await fetchGroupedWorkflowInstances();
-    this.setGroupedWorkflowInstances(groupedWorkflows);
+    const groupedWorkflows = await fetchGroupedWorkflows();
+    this.setGroupedWorkflows(groupedWorkflows);
     this.handleUrlFilter();
   }
 
@@ -109,9 +109,7 @@ class InstancesContainer extends Component {
     }
 
     // (3) validate workflow
-    const isWorkflowValid = Boolean(
-      this.state.groupedWorkflowInstances[workflow]
-    );
+    const isWorkflowValid = Boolean(this.state.groupedWorkflows[workflow]);
 
     // (3) if the workflow is invalid, remove it from the url filter
     if (!isWorkflowValid) {
@@ -136,7 +134,7 @@ class InstancesContainer extends Component {
 
     // check workflow & version combination
     const workflowByVersion = getWorkflowByVersion(
-      this.state.groupedWorkflowInstances[workflow],
+      this.state.groupedWorkflows[workflow],
       version
     );
 
@@ -146,7 +144,7 @@ class InstancesContainer extends Component {
     }
 
     const currentWorkflowByVersion = getWorkflowByVersion(
-      this.state.groupedWorkflowInstances[this.state.filter.workflow],
+      this.state.groupedWorkflows[this.state.filter.workflow],
       this.state.filter.version
     );
 
@@ -184,9 +182,9 @@ class InstancesContainer extends Component {
   };
 
   fetchStatistics = async () => {
-    const {filter, groupedWorkflowInstances} = this.state;
+    const {filter, groupedWorkflows} = this.state;
     const workflowByVersion = getWorkflowByVersion(
-      groupedWorkflowInstances[filter.workflow],
+      groupedWorkflows[filter.workflow],
       filter.version
     );
 
@@ -196,7 +194,7 @@ class InstancesContainer extends Component {
 
     const filterWithWorkflowIds = getFilterWithWorkflowIds(
       filter,
-      groupedWorkflowInstances
+      groupedWorkflows
     );
 
     return await fetchWorkflowInstancesStatistics({
@@ -209,10 +207,10 @@ class InstancesContainer extends Component {
     return await parseDiagramXML(xml);
   };
 
-  setGroupedWorkflowInstances = (workflows = []) => {
-    const groupedWorkflowInstances = formatGroupedWorkflowInstances(workflows);
+  setGroupedWorkflows = (workflows = []) => {
+    const groupedWorkflows = formatGroupedWorkflows(workflows);
 
-    this.setState({groupedWorkflowInstances});
+    this.setState({groupedWorkflows});
   };
 
   setFilterInURL = filter => {
@@ -223,11 +221,10 @@ class InstancesContainer extends Component {
   };
 
   render() {
-    console.log(this.state.statistics);
     return (
       <Instances
         filter={decodeFields(this.state.filter)}
-        groupedWorkflowInstances={this.state.groupedWorkflowInstances}
+        groupedWorkflows={this.state.groupedWorkflows}
         onFilterChange={this.setFilterInURL}
         diagramModel={this.state.diagramModel}
         statistics={this.state.statistics}

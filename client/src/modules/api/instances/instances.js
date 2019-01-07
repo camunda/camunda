@@ -15,7 +15,7 @@ export async function fetchWorkflowInstances(options) {
   return await response.json();
 }
 
-export async function fetchGroupedWorkflowInstances() {
+export async function fetchGroupedWorkflows() {
   try {
     const response = await get('/api/workflows/grouped');
     return await response.json();

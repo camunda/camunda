@@ -50,7 +50,7 @@ class Instances extends Component {
       completed: PropTypes.bool,
       activityId: PropTypes.string
     }),
-    groupedWorkflowInstances: PropTypes.object,
+    groupedWorkflows: PropTypes.object,
     onFilterChange: PropTypes.func.isRequired,
     diagramModel: PropTypes.shape({
       bpmnElements: PropTypes.object,
@@ -152,7 +152,7 @@ class Instances extends Component {
           ...parseFilterForRequest(
             getFilterWithWorkflowIds(
               this.props.filter,
-              this.props.groupedWorkflowInstances
+              this.props.groupedWorkflows
             )
           )
         }
@@ -193,7 +193,7 @@ class Instances extends Component {
   getFilterQuery = () => {
     const filterWithWorkflowIds = getFilterWithWorkflowIds(
       this.props.filter,
-      this.props.groupedWorkflowInstances
+      this.props.groupedWorkflows
     );
 
     return parseFilterForRequest(filterWithWorkflowIds);
@@ -202,9 +202,9 @@ class Instances extends Component {
   getCurrentWorkflowByVersion = () => {
     const {
       filter: {workflow, version},
-      groupedWorkflowInstances
+      groupedWorkflows
     } = this.props;
-    return getWorkflowByVersion(groupedWorkflowInstances[workflow], version);
+    return getWorkflowByVersion(groupedWorkflows[workflow], version);
   };
 
   getCurrentWorkflowName = () => {
@@ -215,7 +215,7 @@ class Instances extends Component {
     }
 
     const {workflow} = this.props.filter;
-    const currentWorkflow = this.props.groupedWorkflowInstances[workflow];
+    const currentWorkflow = this.props.groupedWorkflows[workflow];
     return getWorkflowName(currentWorkflow);
   };
 
@@ -246,7 +246,7 @@ class Instances extends Component {
                 activityIds={sortBy(activityIds, item =>
                   item.label.toLowerCase()
                 )}
-                groupedWorkflowInstances={this.props.groupedWorkflowInstances}
+                groupedWorkflows={this.props.groupedWorkflows}
                 filter={this.props.filter}
                 filterCount={this.state.filterCount}
                 onFilterReset={this.handleFilterReset}

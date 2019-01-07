@@ -75,9 +75,7 @@ const mockDiagramNodes = [];
 xTimes(5)(index => mockDiagramNodes.push(createDiagramNode(index)));
 const filterMock = createFilter();
 const mockProps = {
-  groupedWorkflowInstances: service.formatGroupedWorkflowInstances(
-    groupedWorkflowsMock
-  ),
+  groupedWorkflows: service.formatGroupedWorkflows(groupedWorkflowsMock),
   filter: filterMock,
   onFilterChange: jest.fn(),
   diagramWorkflow: groupedWorkflowsMock[0].workflows[2],
@@ -153,7 +151,7 @@ describe('Instances', () => {
 
       const filterWithWorkflowIds = getFilterWithWorkflowIds(
         filterMock,
-        mockProps.groupedWorkflowInstances
+        mockProps.groupedWorkflows
       );
       const payload = api.fetchWorkflowInstances.mock.calls[0][0];
 
@@ -327,8 +325,8 @@ describe('Instances', () => {
       // then
       expect(FiltersNode.prop('activityIds')[0].label).toEqual('task D');
       expect(FiltersNode.prop('activityIds')[0].value).toEqual('taskD');
-      expect(FiltersNode.prop('groupedWorkflowInstances')).toEqual(
-        mockProps.groupedWorkflowInstances
+      expect(FiltersNode.prop('groupedWorkflows')).toEqual(
+        mockProps.groupedWorkflows
       );
       expect(FiltersNode.prop('filter')).toEqual(filterMock);
       expect(FiltersNode.prop('filterCount')).toBe(

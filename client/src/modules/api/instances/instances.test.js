@@ -7,7 +7,7 @@ import {
   applyOperation,
   fetchWorkflowInstance,
   fetchWorkflowInstances,
-  fetchGroupedWorkflowInstances,
+  fetchGroupedWorkflows,
   fetchWorkflowInstancesStatistics,
   fetchWorkflowInstancesByIds
 } from './instances';
@@ -63,10 +63,10 @@ describe('instances api', () => {
     });
   });
 
-  describe('fetchGroupedWorkflowInstances', () => {
+  describe('fetchGroupedWorkflows', () => {
     it('should call get the right url', async () => {
       //when
-      await fetchGroupedWorkflowInstances();
+      await fetchGroupedWorkflows();
 
       //then
       expect(wrappers.get.mock.calls[0][0]).toBe('/api/workflows/grouped');

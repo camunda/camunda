@@ -87,7 +87,7 @@ const workflows = {
   }
 };
 
-api.fetchGroupedWorkflowInstances = mockResolvedAsyncFn(groupedWorkflowsMock);
+api.fetchGroupedWorkflows = mockResolvedAsyncFn(groupedWorkflowsMock);
 
 describe('Filters', () => {
   const spy = jest.fn();
@@ -118,7 +118,7 @@ describe('Filters', () => {
     // given
     const node = shallow(
       <Filters
-        groupedWorkflowInstances={workflows}
+        groupedWorkflows={workflows}
         {...mockProps}
         filter={DEFAULT_FILTER}
       />
@@ -142,7 +142,7 @@ describe('Filters', () => {
       <ThemeProvider>
         <CollapsablePanelProvider>
           <Filters
-            groupedWorkflowInstances={workflows}
+            groupedWorkflows={workflows}
             {...mockProps}
             filter={DEFAULT_FILTER}
           />
@@ -168,7 +168,7 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
-              groupedWorkflowInstances={workflows}
+              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER}
             />
@@ -192,7 +192,7 @@ describe('Filters', () => {
     it('should initialize the field with empty value', () => {
       const node = shallow(
         <Filters
-          groupedWorkflowInstances={workflows}
+          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER}
         />
@@ -206,7 +206,7 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
-              groupedWorkflowInstances={workflows}
+              groupedWorkflows={workflows}
               {...mockProps}
               filter={COMPLETE_FILTER}
             />
@@ -225,7 +225,7 @@ describe('Filters', () => {
     it('should update state when input receives text', () => {
       const node = shallow(
         <Filters
-          groupedWorkflowInstances={workflows}
+          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER}
         />
@@ -243,7 +243,7 @@ describe('Filters', () => {
       // given
       const node = shallow(
         <Filters
-          groupedWorkflowInstances={workflows}
+          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER}
         />
@@ -264,7 +264,7 @@ describe('Filters', () => {
       const emptyErrorMessage = '';
       const node = shallow(
         <Filters
-          groupedWorkflowInstances={workflows}
+          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER}
         />
@@ -287,7 +287,7 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
-              groupedWorkflowInstances={workflows}
+              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER}
             />
@@ -314,7 +314,7 @@ describe('Filters', () => {
     it('should initialize the field with empty value', () => {
       const node = shallow(
         <Filters
-          groupedWorkflowInstances={workflows}
+          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER}
         />
@@ -326,7 +326,7 @@ describe('Filters', () => {
     it('should update state when input receives text', () => {
       const node = shallow(
         <Filters
-          groupedWorkflowInstances={workflows}
+          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER}
         />
@@ -344,7 +344,7 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
-              groupedWorkflowInstances={workflows}
+              groupedWorkflows={workflows}
               {...mockProps}
               filter={COMPLETE_FILTER}
             />
@@ -365,7 +365,7 @@ describe('Filters', () => {
       // given
       const node = shallow(
         <Filters
-          groupedWorkflowInstances={workflows}
+          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER}
         />
@@ -386,7 +386,7 @@ describe('Filters', () => {
       const emptyInstanceIds = '';
       const node = shallow(
         <Filters
-          groupedWorkflowInstances={workflows}
+          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER}
         />
@@ -411,7 +411,7 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
-              groupedWorkflowInstances={workflows}
+              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER}
             />
@@ -442,7 +442,7 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
-              groupedWorkflowInstances={workflows}
+              groupedWorkflows={workflows}
               {...mockProps}
               filter={COMPLETE_FILTER}
             />
@@ -458,12 +458,12 @@ describe('Filters', () => {
       expect(field.props().value).toEqual('demoProcess');
     });
 
-    it('should have values read from this.props.groupedWorkflowInstances', () => {
+    it('should have values read from this.props.groupedWorkflows', () => {
       const node = mount(
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
-              groupedWorkflowInstances={workflows}
+              groupedWorkflows={workflows}
               {...mockProps}
               filter={COMPLETE_FILTER}
             />
@@ -486,7 +486,7 @@ describe('Filters', () => {
       const value = groupedWorkflowsMock[0].bpmnProcessId;
       const node = shallow(
         <Filters
-          groupedWorkflowInstances={workflows}
+          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER}
         />
@@ -510,7 +510,7 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
-              groupedWorkflowInstances={workflows}
+              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER}
             />
@@ -537,7 +537,7 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
-              groupedWorkflowInstances={workflows}
+              groupedWorkflows={workflows}
               {...mockProps}
               filter={COMPLETE_FILTER}
             />{' '}
@@ -560,7 +560,7 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
-              groupedWorkflowInstances={workflows}
+              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER}
             />
@@ -592,7 +592,7 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
-              groupedWorkflowInstances={workflows}
+              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER}
             />
@@ -626,7 +626,7 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
-              groupedWorkflowInstances={workflows}
+              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER}
             />
@@ -668,7 +668,7 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
-              groupedWorkflowInstances={workflows}
+              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER}
             />
@@ -708,7 +708,7 @@ describe('Filters', () => {
       const value = groupedWorkflowsMock[0].bpmnProcessId;
       const node = shallow(
         <Filters
-          groupedWorkflowInstances={workflows}
+          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER}
         />
@@ -731,7 +731,7 @@ describe('Filters', () => {
       const value = groupedWorkflowsMock[0].bpmnProcessId;
       const node = shallow(
         <Filters
-          groupedWorkflowInstances={workflows}
+          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER}
         />
@@ -761,7 +761,7 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
-              groupedWorkflowInstances={workflows}
+              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER}
             />
@@ -789,7 +789,7 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
-              groupedWorkflowInstances={workflows}
+              groupedWorkflows={workflows}
               {...mockProps}
               filter={COMPLETE_FILTER}
             />
@@ -810,7 +810,7 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
-              groupedWorkflowInstances={workflows}
+              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER}
             />
@@ -847,7 +847,7 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
-              groupedWorkflowInstances={workflows}
+              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER}
             />
@@ -886,7 +886,7 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
-              groupedWorkflowInstances={workflows}
+              groupedWorkflows={workflows}
               {...mockPropsWithActivityIds}
               filter={DEFAULT_FILTER}
             />
@@ -916,7 +916,7 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
-              groupedWorkflowInstances={workflows}
+              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER}
             />
@@ -951,7 +951,7 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
-              groupedWorkflowInstances={workflows}
+              groupedWorkflows={workflows}
               {...mockPropsWithActivityIds}
               filter={DEFAULT_FILTER}
             />
@@ -972,7 +972,7 @@ describe('Filters', () => {
       const activityId = mockPropsWithActivityIds.activityIds[0].value;
       const node = shallow(
         <Filters
-          groupedWorkflowInstances={workflows}
+          groupedWorkflows={workflows}
           {...mockPropsWithActivityIds}
           filter={DEFAULT_FILTER}
         />
@@ -1003,7 +1003,7 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
-              groupedWorkflowInstances={workflows}
+              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER}
             />
@@ -1028,7 +1028,7 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
-              groupedWorkflowInstances={workflows}
+              groupedWorkflows={workflows}
               {...mockProps}
               filter={COMPLETE_FILTER}
             />
@@ -1047,7 +1047,7 @@ describe('Filters', () => {
     it('should update the state with new value', async () => {
       const node = shallow(
         <Filters
-          groupedWorkflowInstances={workflows}
+          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER}
         />
@@ -1065,7 +1065,7 @@ describe('Filters', () => {
     it('should update the filters in Instances page', async () => {
       const node = shallow(
         <Filters
-          groupedWorkflowInstances={workflows}
+          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER}
         />
@@ -1085,7 +1085,7 @@ describe('Filters', () => {
     it('should send null values for empty start dates', async () => {
       const node = shallow(
         <Filters
-          groupedWorkflowInstances={workflows}
+          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER}
         />
@@ -1110,7 +1110,7 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
-              groupedWorkflowInstances={workflows}
+              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER}
             />
@@ -1136,7 +1136,7 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
-              groupedWorkflowInstances={workflows}
+              groupedWorkflows={workflows}
               {...mockProps}
               filter={COMPLETE_FILTER}
             />
@@ -1157,7 +1157,7 @@ describe('Filters', () => {
     it('should update the state with new value', async () => {
       const node = shallow(
         <Filters
-          groupedWorkflowInstances={workflows}
+          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER}
         />
@@ -1176,7 +1176,7 @@ describe('Filters', () => {
     it('should update the filters in Instances page', async () => {
       const node = shallow(
         <Filters
-          groupedWorkflowInstances={workflows}
+          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER}
         />
@@ -1201,7 +1201,7 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
-              groupedWorkflowInstances={workflows}
+              groupedWorkflows={workflows}
               {...mockProps}
               filter={COMPLETE_FILTER}
             />
@@ -1227,7 +1227,7 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
-              groupedWorkflowInstances={workflows}
+              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER}
             />
@@ -1247,7 +1247,7 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
-              groupedWorkflowInstances={workflows}
+              groupedWorkflows={workflows}
               {...mockProps}
               filter={COMPLETE_FILTER}
             />
@@ -1280,7 +1280,7 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters
-              groupedWorkflowInstances={workflows}
+              groupedWorkflows={workflows}
               {...mockProps}
               filter={COMPLETE_FILTER}
             />

@@ -48,7 +48,7 @@ export default class Filters extends React.Component {
         value: PropTypes.string
       })
     ),
-    groupedWorkflowInstances: PropTypes.object
+    groupedWorkflows: PropTypes.object
   };
 
   state = {
@@ -84,7 +84,7 @@ export default class Filters extends React.Component {
 
   handleWorkflowNameChange = event => {
     const {value} = event.target;
-    const currentWorkflow = this.props.groupedWorkflowInstances[value];
+    const currentWorkflow = this.props.groupedWorkflows[value];
     const version = getLastVersionOfWorkflow(currentWorkflow);
 
     this.setState(
@@ -149,13 +149,12 @@ export default class Filters extends React.Component {
 
   render() {
     const {active, incidents, canceled, completed} = this.props.filter;
-    const isWorkflowsDataLoaded = !isEmpty(this.props.groupedWorkflowInstances);
+    const isWorkflowsDataLoaded = !isEmpty(this.props.groupedWorkflows);
     const workflowVersions =
       this.state.filter.workflow !== '' && isWorkflowsDataLoaded
         ? addAllVersionsOption(
             getOptionsForWorkflowVersion(
-              this.props.groupedWorkflowInstances[this.state.filter.workflow]
-                .workflows
+              this.props.groupedWorkflows[this.state.filter.workflow].workflows
             )
           )
         : [];
@@ -192,11 +191,11 @@ export default class Filters extends React.Component {
                   <Styled.Field>
                     <Styled.Select
                       value={this.state.filter.workflow}
-                      disabled={isEmpty(this.props.groupedWorkflowInstances)}
+                      disabled={isEmpty(this.props.groupedWorkflows)}
                       name="workflow"
                       placeholder="Workflow"
                       options={getOptionsForWorkflowName(
-                        this.props.groupedWorkflowInstances
+                        this.props.groupedWorkflows
                       )}
                       onChange={this.handleWorkflowNameChange}
                     />

@@ -7,7 +7,7 @@ import Instances from './Instances';
 import {
   parseQueryString,
   decodeFields,
-  formatGroupedWorkflowInstances
+  formatGroupedWorkflows
 } from './service';
 import * as api from 'modules/api/instances/instances';
 import * as apiDiagram from 'modules/api/diagram/diagram';
@@ -59,7 +59,7 @@ const localStorageProps = {
 };
 
 // api mocks
-api.fetchGroupedWorkflowInstances = mockResolvedAsyncFn(groupedWorkflowsMock);
+api.fetchGroupedWorkflows = mockResolvedAsyncFn(groupedWorkflowsMock);
 api.fetchWorkflowInstancesStatistics = mockResolvedAsyncFn([]);
 apiDiagram.fetchWorkflowXML = mockResolvedAsyncFn('<xml />');
 jest.mock('bpmn-js', () => ({}));
@@ -81,7 +81,7 @@ describe('InstancesContainer', () => {
     pushMock.mockClear();
   });
 
-  it('should fetch the groupedWorkflowInstances', async () => {
+  it('should fetch the groupedWorkflows', async () => {
     // given
     const node = mount(
       <InstancesContainerWrapped {...localStorageProps} {...getRouterProps()} />
@@ -92,7 +92,7 @@ describe('InstancesContainer', () => {
     node.update();
 
     // then
-    expect(api.fetchGroupedWorkflowInstances).toHaveBeenCalled();
+    expect(api.fetchGroupedWorkflows).toHaveBeenCalled();
   });
 
   it('should fetch the the workflow xml', async () => {
@@ -147,8 +147,8 @@ describe('InstancesContainer', () => {
     const InstancesNode = node.find(Instances);
 
     // then
-    expect(InstancesNode.prop('groupedWorkflowInstances')).toEqual(
-      formatGroupedWorkflowInstances(groupedWorkflowsMock)
+    expect(InstancesNode.prop('groupedWorkflows')).toEqual(
+      formatGroupedWorkflows(groupedWorkflowsMock)
     );
     expect(InstancesNode.prop('filter')).toEqual(DEFAULT_FILTER);
     expect(InstancesNode.props().onFilterChange).toBe(
