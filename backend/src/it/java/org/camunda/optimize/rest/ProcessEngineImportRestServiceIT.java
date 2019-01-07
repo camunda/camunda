@@ -42,7 +42,7 @@ public class ProcessEngineImportRestServiceIT {
 
     //when
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
     List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeRule

@@ -94,7 +94,7 @@ public class MixedFilterIT {
     OffsetDateTime start = engineRule.getHistoricProcessInstance(instanceEngineDto.getId()).getStartTime();
     OffsetDateTime end = engineRule.getHistoricProcessInstance(instanceEngineDto.getId()).getEndTime();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<ProcessFilterDto> filterList = new ArrayList<>();

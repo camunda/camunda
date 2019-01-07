@@ -35,7 +35,7 @@ public class DecisionBooleanVariableFilterIT extends AbstractDecisionDefinitionI
     );
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(

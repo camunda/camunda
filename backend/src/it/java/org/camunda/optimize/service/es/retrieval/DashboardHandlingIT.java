@@ -6,7 +6,9 @@ import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.client.RequestOptions;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -22,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_TYPE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -43,25 +47,24 @@ public class DashboardHandlingIT {
   }
 
   @Test
-  public void dashboardIsWrittenToElasticsearch() {
+  public void dashboardIsWrittenToElasticsearch() throws IOException {
     // given
     String id = createNewDashboard();
 
-    // then
-    GetResponse response =
-      elasticSearchRule.getClient()
-        .prepareGet(
-          elasticSearchRule.getOptimizeIndex(elasticSearchRule.getDashboardType()),
-          elasticSearchRule.getDashboardType(),
-          id
-        )
-        .get();
+    // when
+    GetRequest getRequest = new GetRequest(
+      getOptimizeIndexAliasForType(DASHBOARD_TYPE),
+      DASHBOARD_TYPE,
+      id
+    );
+    GetResponse getResponse = elasticSearchRule.getEsClient().get(getRequest, RequestOptions.DEFAULT);
 
-    assertThat(response.isExists(), is(true));
+    // then
+    assertThat(getResponse.isExists(), is(true));
   }
 
   @Test
-  public void writeAndThenReadGivesTheSameResult() throws IOException {
+  public void writeAndThenReadGivesTheSameResult() {
     // given
     String id = createNewDashboard();
 
@@ -75,7 +78,7 @@ public class DashboardHandlingIT {
   }
 
   @Test
-  public void createAndGetSeveralDashboards() throws IOException {
+  public void createAndGetSeveralDashboards() {
     // given
     String id = createNewDashboard();
     String id2 = createNewDashboard();
@@ -97,7 +100,7 @@ public class DashboardHandlingIT {
   }
 
   @Test
-  public void noDashboardAvailableReturnsEmptyList() throws IOException {
+  public void noDashboardAvailableReturnsEmptyList() {
 
     // when
     List<DashboardDefinitionDto> dashboards = getAllDashboards();
@@ -108,7 +111,7 @@ public class DashboardHandlingIT {
   }
 
   @Test
-  public void updateDashboard() throws Exception {
+  public void updateDashboard() {
     // given
     String id = createNewDashboard();
     ReportLocationDto reportLocationDto = new ReportLocationDto();
@@ -143,7 +146,7 @@ public class DashboardHandlingIT {
   }
 
   @Test
-  public void doNotUpdateNullFieldsInDashboard() throws Exception {
+  public void doNotUpdateNullFieldsInDashboard() {
     // given
     String id = createNewDashboard();
     DashboardDefinitionDto dashboard = new DashboardDefinitionDto();

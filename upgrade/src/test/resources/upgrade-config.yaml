@@ -2,7 +2,6 @@ es:
   connection:
     nodes:
     - host: 'localhost'
-      tcpPort: 9300
       httpPort: 9200
 
 serialization:

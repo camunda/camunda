@@ -28,8 +28,6 @@
   </bean>
 
   <!--not declared as annotated component to be able to mock-->
-  <bean id="transportClient"  class="org.camunda.optimize.service.es.TransportClientFactory"/>
-
   <bean id="restHighLevelClient"  class="org.camunda.optimize.service.es.ElasticsearchRestClientFactory"/>
 
   <util:list id="registeredPlugins" value-type="org.camunda.optimize.plugin.importing.variable.VariableImportAdapter"/>

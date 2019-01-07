@@ -61,7 +61,7 @@ public class ExportLimitsIT {
     embeddedOptimizeRule.getConfigurationService().setExportCsvLimit(null);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     Response response = embeddedOptimizeRule
@@ -97,7 +97,7 @@ public class ExportLimitsIT {
     embeddedOptimizeRule.getConfigurationService().setExportCsvLimit(1);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     Response response = embeddedOptimizeRule
@@ -132,7 +132,7 @@ public class ExportLimitsIT {
     embeddedOptimizeRule.getConfigurationService().setExportCsvLimit(1);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     Response response = embeddedOptimizeRule

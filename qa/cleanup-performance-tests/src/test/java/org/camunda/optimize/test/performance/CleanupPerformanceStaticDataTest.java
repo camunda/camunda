@@ -44,7 +44,7 @@ public class CleanupPerformanceStaticDataTest extends AbstractCleanupTest {
     // and run the cleanup
     runCleanupAndAssertFinishedWithinTimeout();
     // and refresh es
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // then no variables should be left in optimize
     assertThat(
@@ -89,7 +89,7 @@ public class CleanupPerformanceStaticDataTest extends AbstractCleanupTest {
     // and run the cleanup
     runCleanupAndAssertFinishedWithinTimeout();
     // and refresh es
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // then no process instances, no activity and no variables should be left in optimize
     assertThat(

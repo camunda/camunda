@@ -6,8 +6,6 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
-import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.camunda.optimize.service.util.configuration.CleanupMode;
 import org.camunda.optimize.service.util.configuration.DecisionDefinitionCleanupConfiguration;
@@ -18,13 +16,16 @@ import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.VariableTestUtil;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.Collection;
@@ -33,6 +34,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.DECISION_INSTANCE_ID;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_INSTANCE_ID;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -72,70 +78,72 @@ public class OptimizeCleanupServiceIT {
   }
 
   @Test
-  public void testCleanupWithProcessInstanceDelete() throws SQLException {
+  public void testCleanupWithProcessInstanceDelete() throws SQLException, IOException {
     // given
     getCleanupConfiguration().setDefaultProcessDataCleanupMode(CleanupMode.ALL);
     final List<String> clearedProcessDefinitionsIds = deployTwoProcessInstancesWithEndTimeLessThanTtl();
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
     embeddedOptimizeRule.getCleanupScheduler().runCleanup();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
     assertProcessInstanceDataCompleteInEs(Collections.emptyList());
   }
 
   @Test
-  public void testCleanupWithProcessInstanceDeleteVerifyThatNewOnesAreUnaffected() throws SQLException {
+  public void testCleanupWithProcessInstanceDeleteVerifyThatNewOnesAreUnaffected() throws SQLException, IOException {
     // given
     getCleanupConfiguration().setDefaultProcessDataCleanupMode(CleanupMode.ALL);
     final List<String> clearedProcessDefinitionsIds = deployTwoProcessInstancesWithEndTimeLessThanTtl();
     final List<String> unaffectedProcessDefinitionsIds = deployTwoProcessInstancesWithEndTime(OffsetDateTime.now());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
     embeddedOptimizeRule.getCleanupScheduler().runCleanup();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
     assertProcessInstanceDataCompleteInEs(unaffectedProcessDefinitionsIds);
   }
 
   @Test
-  public void testCleanupProcessInstanceVariablesCleared() throws SQLException {
+  public void testCleanupProcessInstanceVariablesCleared() throws SQLException, IOException {
     // given
     getCleanupConfiguration().setDefaultProcessDataCleanupMode(CleanupMode.VARIABLES);
     final List<String> clearedProcessDefinitionsIds = deployTwoProcessInstancesWithEndTimeLessThanTtl();
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
     embeddedOptimizeRule.getCleanupScheduler().runCleanup();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
     assertVariablesEmptyInProcessInstances(clearedProcessDefinitionsIds);
   }
 
   @Test
-  public void testCleanupProcessInstanceVariablesClearedVerifyThatNewOnesAreUnaffected() throws SQLException {
+  public void testCleanupProcessInstanceVariablesClearedVerifyThatNewOnesAreUnaffected() throws
+                                                                                         SQLException,
+                                                                                         IOException {
     // given
     getCleanupConfiguration().setDefaultProcessDataCleanupMode(CleanupMode.VARIABLES);
     final List<String> clearedProcessDefinitionsIds = deployTwoProcessInstancesWithEndTimeLessThanTtl();
     final List<String> unaffectedProcessDefinitionsIds = deployTwoProcessInstancesWithEndTime(OffsetDateTime.now());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
     embeddedOptimizeRule.getCleanupScheduler().runCleanup();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
     assertVariablesEmptyInProcessInstances(clearedProcessDefinitionsIds);
@@ -144,7 +152,7 @@ public class OptimizeCleanupServiceIT {
 
   @Test
   public void testFailCleanupOnSpecificKeyConfigWithNoMatchingProcessDefinitionNoInstancesCleaned()
-    throws SQLException {
+    throws SQLException, IOException {
     // given I have a key specific config
     final String configuredKey = "myMistypedKey";
     getCleanupConfiguration().getProcessDefinitionSpecificConfiguration().put(
@@ -156,11 +164,11 @@ public class OptimizeCleanupServiceIT {
     final List<String> unaffectedProcessDefinitionsIds = deployTwoProcessInstancesWithEndTime(OffsetDateTime.now());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
     embeddedOptimizeRule.getCleanupScheduler().runCleanup();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // all data is still there
     assertProcessInstanceDataCompleteInEs(
@@ -169,23 +177,23 @@ public class OptimizeCleanupServiceIT {
   }
 
   @Test
-  public void testCleanupWithDecisionInstanceDelete() throws SQLException {
+  public void testCleanupWithDecisionInstanceDelete() throws SQLException, IOException {
     // given
     final List<String> clearedDecisionDefinitionsIds = deployTwoDecisionInstancesWithEvaluationTimeLessThanTtl();
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
     embeddedOptimizeRule.getCleanupScheduler().runCleanup();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
     assertDecisionInstancesExistInEs(Collections.emptyList());
   }
 
   @Test
-  public void testCleanupWithDecisionInstanceDeleteVerifyThatNewOnesAreUnaffected() throws SQLException {
+  public void testCleanupWithDecisionInstanceDeleteVerifyThatNewOnesAreUnaffected() throws SQLException, IOException {
     // given
     final List<String> clearedDecisionDefinitionsIds = deployTwoDecisionInstancesWithEvaluationTimeLessThanTtl();
     final List<String> unaffectedDecisionDefinitionsIds = deployTwoDecisionInstancesWithEvaluationTime(
@@ -193,11 +201,11 @@ public class OptimizeCleanupServiceIT {
     );
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
     embeddedOptimizeRule.getCleanupScheduler().runCleanup();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
     assertDecisionInstancesExistInEs(unaffectedDecisionDefinitionsIds);
@@ -205,7 +213,7 @@ public class OptimizeCleanupServiceIT {
 
   @Test
   public void testFailCleanupOnSpecificKeyConfigWithNoMatchingDecisionDefinitionNoInstancesCleaned()
-    throws SQLException {
+    throws SQLException, IOException {
     // given I have a key specific config
     final String configuredKey = "myMistypedKey";
     getCleanupConfiguration().getDecisionDefinitionSpecificConfiguration().put(
@@ -219,12 +227,12 @@ public class OptimizeCleanupServiceIT {
       deployTwoDecisionInstancesWithEvaluationTime(OffsetDateTime.now());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
     embeddedOptimizeRule.getCleanupScheduler().runCleanup();
 
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // all data is still there
     assertDecisionInstancesExistInEs(
@@ -274,7 +282,7 @@ public class OptimizeCleanupServiceIT {
     return Lists.newArrayList(firstProcInst.getId(), secondProcInst.getId());
   }
 
-  private void assertVariablesEmptyInProcessInstances(List<String> processIds) {
+  private void assertVariablesEmptyInProcessInstances(List<String> processIds) throws IOException {
 
     SearchResponse idsResp = getProcessInstancesById(processIds);
 
@@ -290,16 +298,20 @@ public class OptimizeCleanupServiceIT {
     }
   }
 
-  private SearchResponse getProcessInstancesById(List<String> processIds) {
-    return elasticSearchRule.getClient()
-      .prepareSearch(elasticSearchRule.getOptimizeIndex(elasticSearchRule.getProcessInstanceType()))
-      .setTypes(elasticSearchRule.getProcessInstanceType())
-      .setQuery(termsQuery(ProcessInstanceType.PROCESS_INSTANCE_ID, processIds))
-      .setSize(100)
-      .get();
+  private SearchResponse getProcessInstancesById(List<String> processIds) throws IOException {
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(termsQuery(PROCESS_INSTANCE_ID, processIds))
+      .size(100);
+
+    SearchRequest searchRequest = new SearchRequest()
+      .indices(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
+      .types(PROC_INSTANCE_TYPE)
+      .source(searchSourceBuilder);
+
+    return elasticSearchRule.getEsClient().search(searchRequest, RequestOptions.DEFAULT);
   }
 
-  private void assertProcessInstanceDataCompleteInEs(List<String> processIds) {
+  private void assertProcessInstanceDataCompleteInEs(List<String> processIds) throws IOException {
     SearchResponse idsResp = getProcessInstancesById(processIds);
     assertThat(idsResp.getHits().getTotalHits(), is(Long.valueOf(processIds.size())));
 
@@ -314,16 +326,20 @@ public class OptimizeCleanupServiceIT {
     }
   }
 
-  private SearchResponse getDecisionInstancesById(List<String> decisionInstanceIds) {
-    return elasticSearchRule.getClient()
-      .prepareSearch(elasticSearchRule.getOptimizeIndex(ElasticsearchConstants.DECISION_INSTANCE_TYPE))
-      .setTypes(ElasticsearchConstants.DECISION_INSTANCE_TYPE)
-      .setQuery(termsQuery(DecisionInstanceType.DECISION_INSTANCE_ID, decisionInstanceIds))
-      .setSize(100)
-      .get();
+  private SearchResponse getDecisionInstancesById(List<String> decisionInstanceIds) throws IOException {
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(termsQuery(DECISION_INSTANCE_ID, decisionInstanceIds))
+      .size(100);
+
+    SearchRequest searchRequest = new SearchRequest()
+      .indices(getOptimizeIndexAliasForType(DECISION_INSTANCE_TYPE))
+      .types(DECISION_INSTANCE_TYPE)
+      .source(searchSourceBuilder);
+
+    return elasticSearchRule.getEsClient().search(searchRequest, RequestOptions.DEFAULT);
   }
 
-  private void assertDecisionInstancesExistInEs(List<String> decisionInstanceIds) {
+  private void assertDecisionInstancesExistInEs(List<String> decisionInstanceIds) throws IOException {
     SearchResponse idsResp = getDecisionInstancesById(decisionInstanceIds);
     assertThat(idsResp.getHits().getTotalHits(), is(Long.valueOf(decisionInstanceIds.size())));
   }

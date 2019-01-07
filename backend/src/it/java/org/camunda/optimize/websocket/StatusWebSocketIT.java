@@ -40,7 +40,7 @@ public class StatusWebSocketIT {
       .done();
     engineRule.deployAndStartProcess(processModel);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     String dest = "ws://localhost:8090/ws/status";
     StatusClientSocket socket = new StatusClientSocket();
@@ -69,7 +69,7 @@ public class StatusWebSocketIT {
       .done();
     engineRule.deployAndStartProcess(processModel);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
     assertThat(socket.hasImportStatusChanged, is(true));

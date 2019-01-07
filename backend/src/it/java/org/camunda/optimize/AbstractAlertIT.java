@@ -95,7 +95,7 @@ public abstract class AbstractAlertIT {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     adjustProcessInstanceDates(processInstance.getId(), startDate, daysToShift, durationInSec);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
     return processInstance;
   }
 
@@ -143,7 +143,7 @@ public abstract class AbstractAlertIT {
     engineRule.startProcessInstance(processDefinition.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     String reportId = createAndStoreNumberReport(processDefinition);
     return createSimpleAlert(reportId);

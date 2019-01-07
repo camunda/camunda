@@ -32,7 +32,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
     engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -60,7 +60,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
     engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -91,7 +91,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
     deployAndStartSimpleDecisionDefinition("key2");
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -126,7 +126,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
     );
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()

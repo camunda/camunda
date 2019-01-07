@@ -51,7 +51,7 @@ public class CanceledInstancesOnlyFilterIT {
 
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData =
@@ -88,7 +88,7 @@ public class CanceledInstancesOnlyFilterIT {
     );
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData =
@@ -119,7 +119,7 @@ public class CanceledInstancesOnlyFilterIT {
     engineRule.externallyTerminateProcessInstance(secondProcInst.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData =

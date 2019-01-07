@@ -54,7 +54,7 @@ public class MedianFlowNodeDurationByFlowNodeReportEvaluationIT {
     ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 20L);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = getMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
@@ -88,7 +88,7 @@ public class MedianFlowNodeDurationByFlowNodeReportEvaluationIT {
     processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 20L);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = getMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
@@ -115,7 +115,7 @@ public class MedianFlowNodeDurationByFlowNodeReportEvaluationIT {
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 1000L);
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 2000L);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData =
@@ -160,7 +160,7 @@ public class MedianFlowNodeDurationByFlowNodeReportEvaluationIT {
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 100L);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
     ProcessReportDataDto reportData = createMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(
@@ -194,7 +194,7 @@ public class MedianFlowNodeDurationByFlowNodeReportEvaluationIT {
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 100L);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
     ProcessReportDataDto reportData = createMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(
@@ -221,7 +221,7 @@ public class MedianFlowNodeDurationByFlowNodeReportEvaluationIT {
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 80L);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
     ProcessReportDataDto reportData = createMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(
@@ -253,7 +253,7 @@ public class MedianFlowNodeDurationByFlowNodeReportEvaluationIT {
     processInstanceDto = engineRule.startProcessInstance(processDefinition2.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 1000L);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData1 = getMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
@@ -309,7 +309,7 @@ public class MedianFlowNodeDurationByFlowNodeReportEvaluationIT {
     engineRule.startProcessInstance(processDefinitionId);
     engineDatabaseRule.changeActivityDurationForProcessDefinition(subProcessDefinition.getId(), 10L);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData =
@@ -333,7 +333,7 @@ public class MedianFlowNodeDurationByFlowNodeReportEvaluationIT {
       engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), i);
     }
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = getMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
@@ -353,7 +353,7 @@ public class MedianFlowNodeDurationByFlowNodeReportEvaluationIT {
     engineDatabaseRule.changeActivityDuration(processInstance.getId(), 10L);
     OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = getMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);

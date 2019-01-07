@@ -16,14 +16,16 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.util.DateUtilHelper;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.client.RequestOptions;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -34,8 +36,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -59,21 +63,20 @@ public class SingleReportHandlingIT {
   }
 
   @Test
-  public void reportIsWrittenToElasticsearch() {
+  public void reportIsWrittenToElasticsearch() throws IOException {
     // given
     String id = createNewReport();
 
-    // then
-    GetResponse response =
-      elasticSearchRule.getClient()
-        .prepareGet(
-          elasticSearchRule.getOptimizeIndex(ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE),
-          ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE,
-          id
-        )
-        .get();
+    // when
+    GetRequest getRequest = new GetRequest(
+      getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE),
+      SINGLE_PROCESS_REPORT_TYPE,
+      id
+    );
+    GetResponse getResponse = elasticSearchRule.getEsClient().get(getRequest, RequestOptions.DEFAULT);
 
-    assertThat(response.isExists(), is(true));
+    // then
+    assertThat(getResponse.isExists(), is(true));
   }
 
   @Test

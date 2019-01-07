@@ -7,12 +7,15 @@ import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefini
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.client.RequestOptions;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collections;
@@ -40,22 +43,16 @@ public class CollectionHandlingIT {
     .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
 
   @Test
-  public void collectionIsWrittenToElasticsearch() {
+  public void collectionIsWrittenToElasticsearch() throws IOException {
     // given
     String id = createNewCollection();
 
     // then
-    GetResponse response =
-      elasticSearchRule.getClient()
-        .prepareGet(
-          getOptimizeIndexAliasForType(COLLECTION_TYPE),
-          COLLECTION_TYPE,
-          id
-        )
-        .get();
+    GetRequest getRequest = new GetRequest(getOptimizeIndexAliasForType(COLLECTION_TYPE), COLLECTION_TYPE, id);
+    GetResponse getResponse = elasticSearchRule.getEsClient().get(getRequest, RequestOptions.DEFAULT);
 
     // then
-    assertThat(response.isExists(), is(true));
+    assertThat(getResponse.isExists(), is(true));
   }
 
   @Test

@@ -51,7 +51,7 @@ public class VariableRetrievalIT {
     variables.put("var4", "value4");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<VariableRetrievalDto> variableResponse = getVariables(processDefinition);
@@ -74,7 +74,7 @@ public class VariableRetrievalIT {
     );
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<VariableRetrievalDto> variableResponse = getVariables(processDefinition);
@@ -97,7 +97,7 @@ public class VariableRetrievalIT {
     variables.put("var4", "value4");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<VariableRetrievalDto> variableResponse = getVariables(processDefinition.getKey(), ALL_VERSIONS);
@@ -122,7 +122,7 @@ public class VariableRetrievalIT {
     variables.put("var2", "value2");
     engineRule.startProcessInstance(processDefinition2.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<VariableRetrievalDto> variableResponse = getVariables(processDefinition);
@@ -143,7 +143,7 @@ public class VariableRetrievalIT {
     variables.put("a", "value3");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<VariableRetrievalDto> variableResponse = getSortedVariables(processDefinition, "asc", "name");
@@ -165,7 +165,7 @@ public class VariableRetrievalIT {
     variables.put("a", "value3");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<VariableRetrievalDto> variableResponse = getSortedVariables(processDefinition, "desc", "name");
@@ -195,7 +195,7 @@ public class VariableRetrievalIT {
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<VariableRetrievalDto> variableResponse = getVariables(processDefinition);
@@ -215,7 +215,7 @@ public class VariableRetrievalIT {
     variables.put("var", true);
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<VariableRetrievalDto> variableResponse = getVariables(processDefinition);
@@ -242,7 +242,7 @@ public class VariableRetrievalIT {
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     embeddedOptimizeRule.resetImportStartIndexes();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<VariableRetrievalDto> variableResponse = getVariables(processDefinition);
@@ -265,7 +265,7 @@ public class VariableRetrievalIT {
      variables.put("c", "value2");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<VariableRetrievalDto> variableResponse = getVariablesWithPrefix(processDefinition, "a");
@@ -286,7 +286,7 @@ public class VariableRetrievalIT {
      variables.put("c", "value2");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<VariableRetrievalDto> variableResponse = getVariablesWithPrefix(processDefinition, "foo");
@@ -305,7 +305,7 @@ public class VariableRetrievalIT {
      variables.put("c", "value2");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<VariableRetrievalDto> variableResponse = getVariablesWithPrefix(processDefinition, null);
@@ -327,7 +327,7 @@ public class VariableRetrievalIT {
      variables.put("c", "value2");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<VariableRetrievalDto> variableResponse = getVariablesWithPrefix(processDefinition, "");
@@ -354,7 +354,7 @@ public class VariableRetrievalIT {
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<VariableRetrievalDto> variableResponse = getVariablesWithPrefix(processDefinition, "d");

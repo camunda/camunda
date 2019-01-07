@@ -63,7 +63,7 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 20L);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = getMinFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
@@ -95,7 +95,7 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 30L);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = getMinFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
@@ -119,7 +119,7 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 10L);
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 200L);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData =
@@ -158,7 +158,7 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 40L);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
     ProcessReportDataDto reportData = createMinFlowNodeDurationGroupByFlowNodeHeatmapReport(
@@ -186,7 +186,7 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 40L);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
     ProcessReportDataDto reportData = createMinFlowNodeDurationGroupByFlowNodeHeatmapReport(
@@ -211,7 +211,7 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 40L);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
     ProcessReportDataDto reportData = createMinFlowNodeDurationGroupByFlowNodeHeatmapReport(
@@ -239,7 +239,7 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     processInstanceDto = engineRule.startProcessInstance(processDefinition2.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 100L);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData1 = getMinFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
@@ -295,7 +295,7 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     engineRule.startProcessInstance(processDefinitionId);
     engineDatabaseRule.changeActivityDurationForProcessDefinition(subProcessDefinition.getId(), 10L);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData =
@@ -319,7 +319,7 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
       engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), i);
     }
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = getMinFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
@@ -339,7 +339,7 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     engineDatabaseRule.changeActivityDuration(processInstance.getId(), 10L);
     OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = getMinFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
@@ -373,7 +373,7 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     engineDatabaseRule.changeActivityDuration(processInstance.getId(), 10L);
     engineRule.startProcessInstance(processDefinition.getId());
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = getMinFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
@@ -407,7 +407,7 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
     variables.put("goToTask1", false);
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = getMinFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);

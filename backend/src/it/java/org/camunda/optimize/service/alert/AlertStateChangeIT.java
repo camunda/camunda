@@ -101,7 +101,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     //when
     engineRule.startProcessInstance(processInstance.getDefinitionId());
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
     greenMail.purgeEmailFromAllMailboxes();
 
     //then
@@ -133,7 +133,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     //when
     engineRule.startProcessInstance(processInstance.getDefinitionId());
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     greenMail.purgeEmailFromAllMailboxes();
     triggerAndCompleteReminderJob(id);

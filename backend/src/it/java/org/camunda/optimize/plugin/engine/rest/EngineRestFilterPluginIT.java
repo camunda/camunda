@@ -3,27 +3,31 @@ package org.camunda.optimize.plugin.engine.rest;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.plugin.EngineRestFilterProvider;
-import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EngineConfiguration;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -75,7 +79,7 @@ public class EngineRestFilterPluginIT {
 
     // when
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     engineConfiguration.getAuthentication().setEnabled(false);
     engineConfiguration.setRest(
@@ -84,26 +88,26 @@ public class EngineRestFilterPluginIT {
     );
 
     // then
-    allEntriesInElasticsearchHaveAllData(elasticSearchRule.getProcessInstanceType());
+    allEntriesInElasticsearchHaveAllData(PROC_INSTANCE_TYPE);
   }
 
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTask() {
+  private void deployAndStartSimpleServiceTask() {
     Map<String, Object> variables = new HashMap<>();
     variables.put("aVariable", "aStringVariables");
-    return deployAndStartSimpleServiceTaskWithVariables(variables);
+    deployAndStartSimpleServiceTaskWithVariables(variables);
   }
 
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskWithVariables(Map<String, Object> variables) {
+  private void deployAndStartSimpleServiceTaskWithVariables(Map<String, Object> variables) {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess").name("aProcessName").startEvent().serviceTask().camundaExpression("${true}")
         .endEvent().done();
-    return engineRule.deployAndStartProcessWithVariables(processModel, variables);
+    engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
 
-  private void allEntriesInElasticsearchHaveAllData(String elasticsearchType) {
+  private void allEntriesInElasticsearchHaveAllData(String elasticsearchType) throws IOException {
     allEntriesInElasticsearchHaveAllDataWithCount(elasticsearchType, 1L);
   }
 
-  private void allEntriesInElasticsearchHaveAllDataWithCount(String elasticsearchType, long count) {
+  private void allEntriesInElasticsearchHaveAllDataWithCount(String elasticsearchType, long count) throws IOException {
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticsearchType);
 
     assertThat(idsResp.getHits().getTotalHits(), is(count));
@@ -119,11 +123,17 @@ public class EngineRestFilterPluginIT {
     }
   }
 
-  private SearchResponse getSearchResponseForAllDocumentsOfType(String elasticsearchType) {
-    QueryBuilder qb = matchAllQuery();
+  private SearchResponse getSearchResponseForAllDocumentsOfType(String elasticsearchType) throws IOException {
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(matchAllQuery())
+      .size(100);
 
-    return elasticSearchRule.getClient().prepareSearch(elasticSearchRule.getOptimizeIndex(elasticsearchType)).setTypes(elasticsearchType).setQuery(qb)
-        .setSize(100).get();
+    SearchRequest searchRequest = new SearchRequest()
+      .indices(getOptimizeIndexAliasForType(elasticsearchType))
+      .types(elasticsearchType)
+      .source(searchSourceBuilder);
+
+    return elasticSearchRule.getEsClient().search(searchRequest, RequestOptions.DEFAULT);
   }
 
 }

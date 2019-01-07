@@ -48,7 +48,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
@@ -84,7 +84,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
@@ -128,7 +128,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
@@ -178,7 +178,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -228,7 +228,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     );
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
@@ -265,7 +265,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     );
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
@@ -304,7 +304,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     );
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(

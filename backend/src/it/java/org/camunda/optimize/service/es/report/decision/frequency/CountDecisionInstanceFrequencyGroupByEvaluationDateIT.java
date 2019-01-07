@@ -46,7 +46,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
@@ -75,7 +75,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
@@ -121,7 +121,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
@@ -170,7 +170,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
@@ -203,7 +203,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
@@ -232,7 +232,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     deployAndStartSimpleDecisionDefinition("key2");
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
@@ -265,7 +265,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     );
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()

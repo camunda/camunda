@@ -15,17 +15,16 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewOperation;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
-import org.elasticsearch.index.reindex.UpdateByQueryAction;
-import org.elasticsearch.index.reindex.UpdateByQueryRequestBuilder;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.junit.Rule;
@@ -34,6 +33,7 @@ import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 
 import javax.ws.rs.core.Response;
+import java.io.IOException;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
@@ -44,6 +44,8 @@ import java.util.Map;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.test.util.ProcessVariableFilterUtilHelper.createBooleanVariableFilter;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.script.Script.DEFAULT_SCRIPT_LANG;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -84,7 +86,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
     );
     engineDatabaseRule.changeActivityInstanceEndDateForProcessDefinition(processInstanceDto.getDefinitionId(), endDate);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -135,7 +137,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
     );
     engineDatabaseRule.changeActivityInstanceEndDateForProcessDefinition(processInstanceDto.getDefinitionId(), endDate);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
     ProcessReportDataDto reportDataDto = ProcessReportDataBuilder
             .createReportData()
             .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
@@ -195,7 +197,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
     endDatesToUpdate.put(processInstanceDto3.getId(), startDate.plusSeconds(9));
     engineDatabaseRule.updateActivityInstanceEndDates(endDatesToUpdate);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -231,7 +233,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
     engineDatabaseRule.changeFirstActivityInstanceStartDate(START_LOOP, startDate);
     engineDatabaseRule.changeFirstActivityInstanceEndDate(END_LOOP, startDate.plusSeconds(2));
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -261,7 +263,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
     setActivityStartDatesToNull();
 
     // when
@@ -282,20 +284,23 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
   }
 
   private void setActivityStartDatesToNull() {
-    UpdateByQueryRequestBuilder updateByQuery =
-      UpdateByQueryAction.INSTANCE.newRequestBuilder(elasticSearchRule.getClient());
-    ConfigurationService configurationService = embeddedOptimizeRule.getConfigurationService();
-    String processInstanceIndex = getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE);
     Script setActivityStartDatesToNull = new Script(
       ScriptType.INLINE,
       DEFAULT_SCRIPT_LANG,
       "for (event in ctx._source.events) { event.startDate = null }",
       Collections.emptyMap()
     );
-    updateByQuery.source(processInstanceIndex)
-    .abortOnVersionConflict(false)
-    .script(setActivityStartDatesToNull);
-    updateByQuery.refresh(true).get();
+    UpdateByQueryRequest request = new UpdateByQueryRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
+      .setAbortOnVersionConflict(false)
+      .setQuery(matchAllQuery())
+      .setScript(setActivityStartDatesToNull)
+      .setRefresh(true);
+
+    try {
+      elasticSearchRule.getEsClient().updateByQuery(request, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException("Could not set activity start dates to null.", e);
+    }
   }
 
   @Test
@@ -308,7 +313,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
     engineDatabaseRule.changeFirstActivityInstanceStartDate(START_EVENT, startDate);
     engineDatabaseRule.changeFirstActivityInstanceEndDate(END_EVENT, startDate.minusSeconds(2));
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -337,7 +342,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
       OffsetDateTime.now().plusHours(1)
     );
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -366,7 +371,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
       OffsetDateTime.now().minusHours(1)
     );
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -421,7 +426,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
     engineDatabaseRule.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
     engineDatabaseRule.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(2));
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -469,7 +474,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
     engineDatabaseRule.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(2));
     deployAndStartSimpleServiceTaskProcess();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -510,7 +515,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
     String processDefinitionId = processInstanceDto.getDefinitionId();
     engineRule.startProcessInstance(processDefinitionId);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder

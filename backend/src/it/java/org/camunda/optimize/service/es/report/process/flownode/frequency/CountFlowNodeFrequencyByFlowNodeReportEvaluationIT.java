@@ -52,7 +52,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     assertThat(latestProcess.getProcessDefinitionVersion(), Is.is("2"));
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
@@ -75,7 +75,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     assertThat(latestProcess.getProcessDefinitionVersion(), Is.is("2"));
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
@@ -96,7 +96,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     deployAndStartSimpleServiceTaskProcess();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
@@ -124,7 +124,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     deployAndStartSimpleServiceTaskProcess();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
@@ -151,7 +151,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
@@ -179,7 +179,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleUserTaskProcess();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
@@ -201,7 +201,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     engineRule.startProcessInstance(engineDto.getDefinitionId());
     deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY_2);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
@@ -224,7 +224,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
 
     ProcessInstanceEngineDto instanceDto2 = deployAndStartSimpleServiceTaskProcess();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData =
@@ -270,7 +270,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
 
     ProcessInstanceEngineDto instanceDto = engineRule.deployAndStartProcess(processModel);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(
@@ -317,7 +317,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
 
     engineRule.waitForAllProcessesToFinish();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeRule
       .getRequestExecutor()
@@ -342,7 +342,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcess();
     OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createCountFlowNodeFrequencyGroupByFlowNode(

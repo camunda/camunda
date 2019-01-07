@@ -63,7 +63,7 @@ public abstract class AbstractCleanupTest {
     final ScheduledExecutorService progressReporterExecutorService = reportImportProgress();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     progressReporterExecutorService.shutdown();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
     OffsetDateTime afterImport = OffsetDateTime.now();
     long importDurationInMinutes = ChronoUnit.MINUTES.between(importStart, afterImport);
     logger.info("Import took [ " + importDurationInMinutes + " ] min");

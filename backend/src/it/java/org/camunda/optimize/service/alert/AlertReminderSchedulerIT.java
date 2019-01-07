@@ -109,7 +109,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     engineRule.startProcessInstance(processDefinition.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     String reportId = createAndStoreNumberReport(processDefinition);
     AlertCreationDto simpleAlert = createSimpleAlert(reportId);
@@ -173,7 +173,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     //when
     engineRule.startProcessInstance(processInstance.getDefinitionId());
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     triggerAndCompleteReminderJob(id);
 

@@ -224,7 +224,7 @@ public class ReportAuthorizationIT {
     grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, authorizedProcessDefinitionKey);
     deployAndStartSimpleProcessDefinition(notAuthorizedProcessDefinitionKey);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     String authorizedReportId = createNewSingleMapReport(authorizedProcessDefinitionKey);
     String notAuthorizedReportId = createNewSingleMapReport(notAuthorizedProcessDefinitionKey);
@@ -284,7 +284,7 @@ public class ReportAuthorizationIT {
     }
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
   }
 
   private void deployAndStartSimpleProcessDefinition(String processKey) {

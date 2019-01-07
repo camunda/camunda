@@ -72,7 +72,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
     engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), endDate);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -127,7 +127,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     engineDatabaseRule.changeProcessInstanceStartDate(processInstance.getId(), startDate);
     engineDatabaseRule.changeProcessInstanceEndDate(processInstance.getId(), endDate);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
     ProcessReportDataDto reportData = ProcessReportDataBuilder
       .createReportData()
       .setReportDataType(reportDataType)
@@ -186,7 +186,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
     engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), endDate);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -226,7 +226,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
     engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), endDate);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -266,7 +266,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 9);
     startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 2);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -317,7 +317,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     ProcessInstanceEngineDto processInstanceDto =
       engineRule.deployAndStartProcessWithVariables(processModel, variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -352,7 +352,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto2.getId(), startDate);
     engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto2.getId(), endDate);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -392,7 +392,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto2.getId(), startDate);
     engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto2.getId(), endDate);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -434,7 +434,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
     engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), endDate);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     for (Map.Entry<String, Object> entry : variables.entrySet()) {
       // when
@@ -489,7 +489,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     engineDatabaseRule.changeProcessInstanceStartDate(processInstance.getId(), startDate);
     engineDatabaseRule.changeProcessInstanceEndDate(processInstance.getId(), endDate);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder

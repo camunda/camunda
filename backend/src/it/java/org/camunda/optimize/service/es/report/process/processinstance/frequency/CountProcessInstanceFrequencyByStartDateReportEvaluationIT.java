@@ -67,7 +67,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByStartDate(
@@ -145,7 +145,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcess();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
     String reportId = createAndStoreDefaultReportDefinition(
         processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion(), GroupByDateUnit.DAY
     );
@@ -182,7 +182,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
     engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto3.getId(), OffsetDateTime.now().minusDays(1));
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByStartDate(
@@ -226,7 +226,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
     engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto3.getId(), OffsetDateTime.now().minusDays(1));
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByStartDate(
@@ -255,7 +255,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
       engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
     engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto3.getId(), OffsetDateTime.now().minusDays(2));
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByStartDate(
@@ -285,7 +285,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     OffsetDateTime now = OffsetDateTime.now();
     updateProcessInstancesStartTime(processInstanceDtos, now, ChronoUnit.HOURS);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessInstanceEngineDto processInstanceEngineDto = processInstanceDtos.get(0);
@@ -346,7 +346,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     OffsetDateTime now = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC);
     updateProcessInstancesStartTime(processInstanceDtos, now, ChronoUnit.DAYS);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessInstanceEngineDto processInstanceEngineDto = processInstanceDtos.get(0);
@@ -368,7 +368,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     OffsetDateTime now = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC);
     updateProcessInstancesStartTime(processInstanceDtos, now, ChronoUnit.WEEKS);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessInstanceEngineDto processInstanceEngineDto = processInstanceDtos.get(0);
@@ -390,7 +390,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     OffsetDateTime now = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC);
     updateProcessInstancesStartTime(processInstanceDtos, now, ChronoUnit.MONTHS);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessInstanceEngineDto processInstanceEngineDto = processInstanceDtos.get(0);
@@ -412,7 +412,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     OffsetDateTime now = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC);
     updateProcessInstancesStartTime(processInstanceDtos, now, ChronoUnit.YEARS);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessInstanceEngineDto processInstanceEngineDto = processInstanceDtos.get(0);
@@ -433,7 +433,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     deployAndStartSimpleServiceTaskProcess();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByStartDate(
@@ -455,7 +455,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     deployAndStartSimpleServiceTaskProcess();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByStartDate(
@@ -481,7 +481,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT {
     variables.put("goToTask1", false);
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByStartDate(

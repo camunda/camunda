@@ -43,7 +43,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
@@ -84,7 +84,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
@@ -127,7 +127,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -172,7 +172,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     );
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
@@ -209,7 +209,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     );
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
@@ -246,7 +246,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     );
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(

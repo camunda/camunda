@@ -13,17 +13,19 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.metrics.valuecount.ValueCount;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
@@ -35,6 +37,8 @@ import java.util.Map.Entry;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.count;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
@@ -61,33 +65,33 @@ public class ImportIT  {
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule).around(engineDatabaseRule);
 
   @Test
-  public void allProcessDefinitionFieldDataOfImportIsAvailable() {
+  public void allProcessDefinitionFieldDataOfImportIsAvailable() throws IOException {
     //given
     deployAndStartSimpleServiceTask();
 
     //when
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    allEntriesInElasticsearchHaveAllData(elasticSearchRule.getProcessDefinitionType());
+    allEntriesInElasticsearchHaveAllData(PROC_DEF_TYPE);
   }
 
   @Test
-  public void allEventFieldDataOfImportIsAvailable() {
+  public void allEventFieldDataOfImportIsAvailable() throws IOException {
     //given
     deployAndStartSimpleServiceTask();
 
     //when
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    allEntriesInElasticsearchHaveAllData(elasticSearchRule.getProcessInstanceType());
+    allEntriesInElasticsearchHaveAllData(PROC_INSTANCE_TYPE);
   }
 
   @Test
-  public void allEventFieldDataOfImportIsAvailableWithAuthentication() {
+  public void allEventFieldDataOfImportIsAvailableWithAuthentication() throws IOException {
     //given
     EngineConfiguration engineConfiguration = embeddedOptimizeRule
       .getConfigurationService().getConfiguredEngines().get("1");
@@ -102,17 +106,17 @@ public class ImportIT  {
 
     //when
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     engineConfiguration.getAuthentication().setEnabled(false);
     engineConfiguration.setRest(HTTP_LOCALHOST + "/engine-rest");
 
     //then
-    allEntriesInElasticsearchHaveAllData(elasticSearchRule.getProcessInstanceType());
+    allEntriesInElasticsearchHaveAllData(PROC_INSTANCE_TYPE);
   }
 
   @Test
-  public void runningActivitiesAreNotSkippedDuringImport() {
+  public void runningActivitiesAreNotSkippedDuringImport() throws IOException {
     // given
     deployAndStartUserTaskProcess();
     deployAndStartSimpleServiceTask();
@@ -120,10 +124,10 @@ public class ImportIT  {
     // when
     engineRule.finishAllUserTasks();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       List events = (List) searchHitFields.getSourceAsMap().get(EVENTS);
       assertThat(events.size(), is(3));
@@ -131,16 +135,16 @@ public class ImportIT  {
   }
 
   @Test
-  public void processInstanceStateIsImported() {
+  public void processInstanceStateIsImported() throws IOException {
     // given
     createStartAndCancelUserTaskProcess();
 
     // when
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
     assertThat(idsResp.getHits().getAt(0).getSourceAsMap().get(ProcessInstanceType.STATE), is(CanceledInstancesOnlyQueryFilter.EXTERNALLY_TERMINATED));
   }
 
@@ -161,13 +165,13 @@ public class ImportIT  {
   }
 
   @Test
-  public void runningProcessesIndexedAfterFinish() {
+  public void runningProcessesIndexedAfterFinish() throws IOException {
     // given
     deployAndStartUserTaskProcess();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
 
     //then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       List events = (List) searchHitFields.getSourceAsMap().get(EVENTS);
       assertThat(events.size(), is(2));
@@ -178,10 +182,10 @@ public class ImportIT  {
     // when
     engineRule.finishAllUserTasks();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
+    idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       Object date = searchHitFields.getSourceAsMap().get(END_DATE);
       assertThat(date, is(notNullValue()));
@@ -189,7 +193,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void deletionOfProcessInstancesDoesNotDistortProcessInstanceImport() {
+  public void deletionOfProcessInstancesDoesNotDistortProcessInstanceImport() throws IOException {
     // given
     ProcessInstanceEngineDto firstProcInst = createImportAndDeleteTwoProcessInstances();
 
@@ -197,10 +201,10 @@ public class ImportIT  {
     engineRule.startProcessInstance(firstProcInst.getDefinitionId());
     engineRule.startProcessInstance(firstProcInst.getDefinitionId());
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    allEntriesInElasticsearchHaveAllDataWithCount(elasticSearchRule.getProcessInstanceType(), 4L);
+    allEntriesInElasticsearchHaveAllDataWithCount(PROC_INSTANCE_TYPE, 4L);
   }
 
   @Test
@@ -216,7 +220,7 @@ public class ImportIT  {
     variables.put("thirdVar", "bar");
     engineRule.startProcessInstance(firstProcInst.getDefinitionId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
     List<VariableRetrievalDto> variablesResponseDtos =
@@ -229,7 +233,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void importRunningAndCompletedHistoricActivityInstances() {
+  public void importRunningAndCompletedHistoricActivityInstances() throws IOException {
     //given
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
@@ -241,10 +245,10 @@ public class ImportIT  {
 
     //when
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     SearchHit hit = idsResp.getHits().getAt(0);
     List events = (List) hit.getSourceAsMap().get(EVENTS);
@@ -252,7 +256,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void completedActivitiesOverwriteRunningActivities() {
+  public void completedActivitiesOverwriteRunningActivities() throws IOException {
     //given
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
         .startEvent()
@@ -265,10 +269,10 @@ public class ImportIT  {
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     engineRule.finishAllUserTasks();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     SearchHit hit = idsResp.getHits().getAt(0);
     List<Map> events = (List) hit.getSourceAsMap().get(EVENTS);
@@ -277,7 +281,7 @@ public class ImportIT  {
   }
 
   @Test
-  public void runningActivitiesDoNotOverwriteCompletedActivities() {
+  public void runningActivitiesDoNotOverwriteCompletedActivities() throws IOException {
     //given
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
         .startEvent()
@@ -297,10 +301,10 @@ public class ImportIT  {
     startEvent.setEndTime(null);
     startEvent.setDurationInMillis(null);
     embeddedOptimizeRule.importRunningActivityInstance(Collections.singletonList(startEvent));
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //then
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticSearchRule.getProcessInstanceType());
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     SearchHit hit = idsResp.getHits().getAt(0);
     List<Map> events = (List) hit.getSourceAsMap().get(EVENTS);
@@ -331,13 +335,13 @@ public class ImportIT  {
     Thread.sleep(currentTimeBackOff);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
     List<Long> firstRoundIndexes =  embeddedOptimizeRule.getImportIndexes();
 
     // then
     embeddedOptimizeRule.resetImportStartIndexes();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
     List<Long> secondsRoundIndexes = embeddedOptimizeRule.getImportIndexes();
 
     // then
@@ -355,7 +359,7 @@ public class ImportIT  {
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     embeddedOptimizeRule.stopOptimize();
@@ -376,7 +380,7 @@ public class ImportIT  {
     deployAndStartSimpleServiceTask();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
     List<Long> firstRoundIndexes = embeddedOptimizeRule.getImportIndexes();
 
     // when
@@ -395,7 +399,7 @@ public class ImportIT  {
     // given
     deployAndStartSimpleServiceTask();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
     List<Long> firstRoundIndexes = embeddedOptimizeRule.getImportIndexes();
 
     // and
@@ -405,7 +409,7 @@ public class ImportIT  {
     embeddedOptimizeRule.stopOptimize();
     embeddedOptimizeRule.startOptimize();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
     List<Long> secondsRoundIndexes = embeddedOptimizeRule.getImportIndexes();
 
     // then
@@ -419,13 +423,13 @@ public class ImportIT  {
     // given
     deployAndStartSimpleServiceTask();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     embeddedOptimizeRule.stopOptimize();
     embeddedOptimizeRule.startOptimize();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
     assertThat(getImportedActivityCount(), is(3L));
@@ -438,7 +442,7 @@ public class ImportIT  {
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     embeddedOptimizeRule.resetImportStartIndexes();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     embeddedOptimizeRule.stopOptimize();
@@ -461,29 +465,34 @@ public class ImportIT  {
     // when
     embeddedOptimizeRule.importAllEngineEntitiesFromLastIndex();
     embeddedOptimizeRule.importAllEngineEntitiesFromLastIndex();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // then
-    allEntriesInElasticsearchHaveAllDataWithCount(elasticSearchRule.getProcessInstanceType(), 2L);
+    allEntriesInElasticsearchHaveAllDataWithCount(PROC_INSTANCE_TYPE, 2L);
     embeddedOptimizeRule.getConfigurationService().setEngineImportProcessInstanceMaxPageSize(originalMaxPageSize);
   }
 
-  private Long getImportedActivityCount() {
+  private Long getImportedActivityCount() throws IOException {
     ConfigurationService configurationService = embeddedOptimizeRule.getConfigurationService();
-    SearchResponse response = elasticSearchRule.getClient()
-      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE))
-      .setTypes(ElasticsearchConstants.PROC_INSTANCE_TYPE)
-      .setQuery(QueryBuilders.matchAllQuery())
-      .setSize(0)
-      .addAggregation(
+
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(QueryBuilders.matchAllQuery())
+      .size(0)
+      .fetchSource(false)
+      .aggregation(
         nested(EVENTS, EVENTS)
           .subAggregation(
             count(EVENTS + "_count")
               .field(EVENTS + "." + ProcessInstanceType.EVENT_ID)
           )
-      )
-      .setFetchSource(false)
-      .get();
+      );
+
+    SearchRequest searchRequest = new SearchRequest()
+      .indices(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
+      .types(PROC_INSTANCE_TYPE)
+      .source(searchSourceBuilder);
+
+    SearchResponse response = elasticSearchRule.getEsClient().search(searchRequest, RequestOptions.DEFAULT);
 
     Nested nested = response.getAggregations()
       .get(EVENTS);
@@ -521,11 +530,11 @@ public class ImportIT  {
     return engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
 
-  private void allEntriesInElasticsearchHaveAllData(String elasticsearchType) {
+  private void allEntriesInElasticsearchHaveAllData(String elasticsearchType) throws IOException {
     allEntriesInElasticsearchHaveAllDataWithCount(elasticsearchType, 1L);
   }
 
-  private void allEntriesInElasticsearchHaveAllDataWithCount(String elasticsearchType, long count) {
+  private void allEntriesInElasticsearchHaveAllDataWithCount(String elasticsearchType, long count) throws IOException {
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticsearchType);
 
     assertThat(idsResp.getHits().getTotalHits(), is(count));
@@ -542,14 +551,17 @@ public class ImportIT  {
     }
   }
 
-  private SearchResponse getSearchResponseForAllDocumentsOfType(String elasticsearchType) {
-    QueryBuilder qb = matchAllQuery();
+  private SearchResponse getSearchResponseForAllDocumentsOfType(String elasticsearchType) throws IOException {
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(matchAllQuery())
+      .size(100);
 
-    return elasticSearchRule.getClient().prepareSearch(elasticSearchRule.getOptimizeIndex(elasticsearchType))
-      .setTypes(elasticsearchType)
-      .setQuery(qb)
-      .setSize(100)
-      .get();
+    SearchRequest searchRequest = new SearchRequest()
+      .indices(getOptimizeIndexAliasForType(elasticsearchType))
+      .types(elasticsearchType)
+      .source(searchSourceBuilder);
+
+    return elasticSearchRule.getEsClient().search(searchRequest, RequestOptions.DEFAULT);
   }
 
   private ProcessInstanceEngineDto createImportAndDeleteTwoProcessInstances() {
@@ -560,7 +572,7 @@ public class ImportIT  {
     ProcessInstanceEngineDto firstProcInst = deployAndStartSimpleServiceTaskWithVariables(variables);
     ProcessInstanceEngineDto secondProcInst = engineRule.startProcessInstance(firstProcInst.getDefinitionId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
     engineRule.deleteHistoricProcessInstance(firstProcInst.getId());
     engineRule.deleteHistoricProcessInstance(secondProcInst.getId());
     return firstProcInst;

@@ -45,7 +45,7 @@ public class ImportPerformanceLiveLoadTest extends AbstractImportTest {
     embeddedOptimizeRule.importAllEngineEntitiesFromLastIndex();
     progressReporterExecutorService.shutdown();
 
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
     logStats();
 
     // THEN all data from the engine should be in elasticsearch

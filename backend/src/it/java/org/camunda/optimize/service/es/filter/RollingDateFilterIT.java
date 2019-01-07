@@ -23,7 +23,7 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     engineRule.finishAllUserTasks(processInstance.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     LocalDateUtil.setCurrentTime(processInstanceStartTime);
 
@@ -61,7 +61,7 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
             engineRule.getHistoricProcessInstance(processInstance.getId()).getEndTime();
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     LocalDateUtil.setCurrentTime(processInstanceEndTime);
 

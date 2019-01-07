@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -18,9 +19,13 @@ import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -40,6 +45,7 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LICENSE_TYPE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -72,7 +78,7 @@ public class ForceReimportIT {
     addLicense();
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<SingleReportDefinitionDto> reports = getAllReports();
@@ -101,7 +107,7 @@ public class ForceReimportIT {
     assertThat(hasEngineData(), is(false));
   }
 
-  private boolean hasEngineData() {
+  private boolean hasEngineData() throws IOException {
     ConfigurationService configurationService = embeddedOptimizeRule.getConfigurationService();
 
     List<String> types = new ArrayList<>();
@@ -118,24 +124,28 @@ public class ForceReimportIT {
       .map(OptimizeIndexNameHelper::getOptimizeIndexAliasForType)
       .collect(Collectors.toList());
 
-    SearchResponse response = elasticSearchRule.getClient()
-      .prepareSearch(indexNames.toArray(new String[0]))
-      .setTypes(types.toArray(new String[0]))
-      .setQuery(QueryBuilders.matchAllQuery())
-      .get();
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(QueryBuilders.matchAllQuery())
+      .size(0);
+    SearchRequest searchRequest = new SearchRequest()
+      .indices(indexNames.toArray(new String[0]))
+      .types(types.toArray(new String[0]))
+      .source(searchSourceBuilder);
+
+    SearchResponse response = elasticSearchRule.getEsClient().search(searchRequest, RequestOptions.DEFAULT);
 
     return response.getHits().getTotalHits() > 0L;
   }
 
   private boolean licenseExists() {
-    ConfigurationService configurationService = embeddedOptimizeRule.getConfigurationService();
-    GetResponse response = elasticSearchRule.getClient().prepareGet(
-      getOptimizeIndexAliasForType(ElasticsearchConstants.LICENSE_TYPE),
-      ElasticsearchConstants.LICENSE_TYPE,
-      ElasticsearchConstants.LICENSE_TYPE
-    )
-      .get();
-    return response.isExists();
+    GetRequest getRequest = new GetRequest(getOptimizeIndexAliasForType(LICENSE_TYPE), LICENSE_TYPE, LICENSE_TYPE);
+    GetResponse getResponse;
+    try {
+      getResponse = elasticSearchRule.getEsClient().get(getRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException("Could not retrieve license!", e);
+    }
+    return getResponse.isExists();
   }
 
   private List<AlertDefinitionDto> getAllAlerts() {
@@ -162,7 +172,7 @@ public class ForceReimportIT {
 
   private AlertCreationDto setupBasicAlert(String reportId) {
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     return createSimpleAlert(reportId);
   }

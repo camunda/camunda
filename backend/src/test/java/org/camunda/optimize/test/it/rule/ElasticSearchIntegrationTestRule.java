@@ -1,50 +1,48 @@
 package org.camunda.optimize.test.it.rule;
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.CustomDeserializer;
 import org.camunda.optimize.service.util.CustomSerializer;
 import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.test.util.PropertyUtil;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
-import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.support.WriteRequest;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.TransportAddress;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.index.IndexNotFoundException;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.reindex.DeleteByQueryAction;
+import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.metrics.valuecount.ValueCount;
-import org.elasticsearch.transport.client.PreBuiltTransportClient;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
-import java.net.InetAddress;
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_ID;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.count;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
@@ -55,25 +53,26 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   private Logger logger = LoggerFactory.getLogger(ElasticSearchIntegrationTestRule.class);
   private static final String DEFAULT_PROPERTIES_PATH = "integration-rules.properties";
-  private Properties properties;
   private static ObjectMapper objectMapper;
-  private static Client esclient;
+  private static RestHighLevelClient esClient;
   private boolean haveToClean = true;
+  private static ConfigurationService configurationService;
 
   // maps types to a list of document entry ids added to that type
   private Map<String, List<String>> documentEntriesTracker = new HashMap<>();
 
   public ElasticSearchIntegrationTestRule() {
-    this(DEFAULT_PROPERTIES_PATH);
   }
 
-  public ElasticSearchIntegrationTestRule(String propertiesLocation) {
-    properties = PropertyUtil.loadProperties(propertiesLocation);
+  private void initEsClient() {
+    if (esClient == null) {
+      esClient = ElasticsearchHighLevelRestClientBuilder.build(configurationService);
+    }
   }
 
-  private void initEsclient() {
-    if (esclient == null) {
-      initTransportClient();
+  private void initConfigurationService() {
+    if (configurationService == null) {
+      configurationService = new ConfigurationService();
     }
   }
 
@@ -107,39 +106,14 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   }
 
   public String getDateFormat() {
-    return properties.getProperty("camunda.optimize.serialization.date.format");
-  }
-
-  private void initTransportClient() {
-    try {
-      esclient =
-          new PreBuiltTransportClient(Settings.EMPTY)
-              .addTransportAddress(new TransportAddress(
-                  InetAddress.getByName(properties.getProperty("camunda.optimize.es.host")),
-                  Integer.parseInt(properties.getProperty("camunda.optimize.es.port"))
-              ));
-    } catch (Exception e) {
-      logger.error("Can't connect to Elasticsearch. Please check the connection!", e);
-    }
-    String indexName = properties.getProperty("camunda.optimize.es.index");
-    boolean exists = esclient.admin().indices()
-        .prepareExists(indexName)
-        .execute().actionGet().isExists();
-
-    if (exists) {
-      esclient
-          .admin()
-          .cluster()
-          .prepareHealth(indexName)
-          .setWaitForYellowStatus()
-          .get();
-    }
+    return configurationService.getOptimizeDateFormat();
   }
 
   @Override
   protected void starting(Description description) {
+    initConfigurationService();
     initObjectMapper();
-    this.initEsclient();
+    this.initEsClient();
     logger.info("Cleaning elasticsearch...");
     this.cleanAndVerify();
     logger.info("All documents have been wiped out! Elasticsearch has successfully been cleaned!");
@@ -150,17 +124,16 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     if (haveToClean) {
       logger.info("cleaning up elasticsearch on finish");
       this.cleanUpElasticSearch();
-      this.refreshOptimizeIndexInElasticsearch();
+      this.refreshAllOptimizeIndices();
     }
   }
 
-  public void refreshOptimizeIndexInElasticsearch() {
+  public void refreshAllOptimizeIndices() {
     try {
-      esclient.admin().indices()
-          .prepareRefresh("_all")
-          .get();
-    } catch (IndexNotFoundException e) {
-      logger.error("should not happen", e);
+      RefreshRequest refreshAllIndicesRequest = new RefreshRequest();
+      getEsClient().indices().refresh(refreshAllIndicesRequest, RequestOptions.DEFAULT);
+    } catch (Exception e) {
+      throw new OptimizeIntegrationTestException("Could not refresh Optimize indices!", e);
     }
   }
 
@@ -180,65 +153,64 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
    * @param entry a POJO specifying field names and their contents.
    */
   public void addEntryToElasticsearch(String type, String id, Object entry) {
-    String json = "";
     try {
-      json = objectMapper.writeValueAsString(entry);
-    } catch (JsonProcessingException e) {
-      logger.error("Unable to add an entry to elasticsearch", e);
+      String json = objectMapper.writeValueAsString(entry);
+      IndexRequest request = new IndexRequest(getOptimizeIndexAliasForType(type), type, id)
+        .source(json, XContentType.JSON)
+        .setRefreshPolicy(IMMEDIATE); // necessary because otherwise I can't search for the entry immediately
+      getEsClient().index(request, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException("Unable to add an entry to elasticsearch", e);
     }
-    esclient.prepareIndex(this.getOptimizeIndex(type), type, id)
-      .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE) // necessary because otherwise I can't search for the entry immediately
-      .setSource(json, XContentType.JSON)
-      .get();
     addEntryToTracker(type, id);
   }
 
-  public void addDemoUser() throws JsonProcessingException {
-    CredentialsDto user = new CredentialsDto();
-    user.setUsername("demo");
-    user.setPassword("demo");
-
-    System.out.println("Objectmapper" + objectMapper);
-
-    esclient
-      .prepareIndex(
-        getOptimizeIndex(getUserType()),
-        getUserType(),
-        "1"
-      )
-      .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
-      .setSource(objectMapper.writeValueAsString(user), XContentType.JSON)
-      .get();
-  }
-
   public Integer getImportedCountOf(String elasticsearchType, ConfigurationService configurationService) {
-    SearchResponse searchResponse = getClient()
-      .prepareSearch(getOptimizeIndexAliasForType(elasticsearchType))
-      .setTypes(elasticsearchType)
-      .setQuery(QueryBuilders.matchAllQuery())
-      .setSize(0)
-      .setFetchSource(false)
-      .get();
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(QueryBuilders.matchAllQuery())
+      .fetchSource(false)
+      .size(0);
+
+    SearchRequest searchRequest = new SearchRequest()
+      .indices(getOptimizeIndexAliasForType(elasticsearchType))
+      .types(elasticsearchType)
+      .source(searchSourceBuilder);
+
+    SearchResponse searchResponse;
+    try {
+      searchResponse = getEsClient().search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException("Could not query the import count!", e);
+    }
     return Long.valueOf(searchResponse.getHits().getTotalHits()).intValue();
   }
 
   public Integer getActivityCount(ConfigurationService configurationService) {
-    SearchResponse response = getClient()
-      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE))
-      .setTypes(ElasticsearchConstants.PROC_INSTANCE_TYPE)
-      .setQuery(QueryBuilders.matchAllQuery())
-      .setSize(0)
-      .addAggregation(
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(QueryBuilders.matchAllQuery())
+      .fetchSource(false)
+      .size(0)
+      .aggregation(
         nested(EVENTS, EVENTS)
           .subAggregation(
             count(EVENTS + "_count")
               .field(EVENTS + "." + ProcessInstanceType.EVENT_ID)
           )
-      )
-      .setFetchSource(false)
-      .get();
+      );
 
-    Nested nested = response.getAggregations()
+    SearchRequest searchRequest = new SearchRequest()
+      .indices(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
+      .types(PROC_INSTANCE_TYPE)
+      .source(searchSourceBuilder);
+
+    SearchResponse searchResponse;
+    try {
+      searchResponse = getEsClient().search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException("Could not query the activity count!", e);
+    }
+
+    Nested nested = searchResponse.getAggregations()
       .get(EVENTS);
     ValueCount countAggregator =
       nested.getAggregations()
@@ -247,15 +219,18 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   }
 
   public Integer getVariableInstanceCount(ConfigurationService configurationService) {
-    SearchRequestBuilder searchRequestBuilder = getClient()
-      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.PROC_INSTANCE_TYPE))
-      .setTypes(ElasticsearchConstants.PROC_INSTANCE_TYPE)
-      .setQuery(QueryBuilders.matchAllQuery())
-      .setSize(0)
-      .setFetchSource(false);
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(QueryBuilders.matchAllQuery())
+      .fetchSource(false)
+      .size(0);
+
+    SearchRequest searchRequest = new SearchRequest()
+      .indices(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
+      .types(PROC_INSTANCE_TYPE)
+      .source(searchSourceBuilder);
 
     for (String variableTypeFieldLabel : ProcessVariableHelper.allVariableTypeFieldLabels) {
-      searchRequestBuilder.addAggregation(
+      searchSourceBuilder.aggregation(
         nested(variableTypeFieldLabel, variableTypeFieldLabel)
           .subAggregation(
             count(variableTypeFieldLabel + "_count")
@@ -264,11 +239,16 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
       );
     }
 
-    SearchResponse response = searchRequestBuilder.get();
+    SearchResponse searchResponse;
+    try {
+      searchResponse = getEsClient().search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException("Could not query the variable instance count!", e);
+    }
 
     long totalVariableCount = 0L;
     for (String variableTypeFieldLabel : ProcessVariableHelper.allVariableTypeFieldLabels) {
-      Nested nestedAgg = response.getAggregations().get(variableTypeFieldLabel);
+      Nested nestedAgg = searchResponse.getAggregations().get(variableTypeFieldLabel);
       ValueCount countAggregator = nestedAgg.getAggregations()
         .get(variableTypeFieldLabel + "_count");
       totalVariableCount += countAggregator.getValue();
@@ -289,12 +269,16 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     }
   }
 
-  public void deleteOptimizeIndexes() {
-    DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
-      .refresh(true)
-      .filter(matchAllQuery())
-      .source("_all")
-      .get();
+  public void deleteAllOptimizeData() {
+    DeleteByQueryRequest request = new DeleteByQueryRequest("_all")
+      .setQuery(matchAllQuery())
+      .setRefresh(true);
+
+    try {
+      getEsClient().deleteByQuery(request, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException("Could not delete all Optimize data", e);
+    }
   }
 
   public void cleanAndVerify() {
@@ -304,55 +288,31 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   private void cleanUpElasticSearch() {
     try {
-      deleteOptimizeIndexes();
+      deleteAllOptimizeData();
     } catch (Exception e) {
       //nothing to do
       logger.error("can't clean optimize indexes", e);
     }
   }
 
-  private String getUserType() {
-    return properties.getProperty("camunda.optimize.es.users.type");
-  }
-
   private void assureElasticsearchIsClean() {
     try {
-      SearchResponse response = esclient
-          .prepareSearch()
-          .setQuery(matchAllQuery())
-          .get();
-      Long hits = response.getHits().getTotalHits();
+      SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+        .query(QueryBuilders.matchAllQuery());
+      SearchRequest searchRequest = new SearchRequest();
+      searchRequest.source(searchSourceBuilder);
+      SearchResponse searchResponse = getEsClient().search(searchRequest, RequestOptions.DEFAULT);
+
+      Long hits = searchResponse.getHits().getTotalHits();
       assertThat("Elasticsearch should be clean after Test!", hits, is(0L));
-    } catch (IndexNotFoundException e) {
-      //nothing to do
+    } catch (Exception e) {
+      throw new OptimizeIntegrationTestException("Could not check if elasticsearch is clean!", e);
     }
   }
 
-  public Client getClient() {
-    return esclient;
+  public RestHighLevelClient getEsClient() {
+    return esClient;
   }
-
-  protected String getOptimizeIndex() {
-    return properties.getProperty("camunda.optimize.es.index");
-  }
-
-  public String getOptimizeIndex(String type) {
-    String original = this.getOptimizeIndex() + "-" + type;
-    return original.toLowerCase();
-  }
-
-  public String getProcessDefinitionType() {
-    return ElasticsearchConstants.PROC_DEF_TYPE;
-  }
-
-  public String getDashboardType() {
-    return ElasticsearchConstants.DASHBOARD_TYPE;
-  }
-
-  public String getProcessInstanceType() {
-    return ElasticsearchConstants.PROC_INSTANCE_TYPE;
-  }
-
 
   public void disableCleanup() {
     this.haveToClean = false;

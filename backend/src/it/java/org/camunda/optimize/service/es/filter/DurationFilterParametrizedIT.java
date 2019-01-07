@@ -69,7 +69,7 @@ public class DurationFilterParametrizedIT extends AbstractDurationFilterIT {
     }
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData =

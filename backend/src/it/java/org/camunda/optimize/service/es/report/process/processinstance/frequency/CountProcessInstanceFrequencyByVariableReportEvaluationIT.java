@@ -59,7 +59,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     variables.put("foo", "bar");
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
@@ -140,7 +140,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     variables.put("foo", "bar");
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcess(variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
     String reportId = createAndStoreDefaultReportDefinition(
         processInstance.getProcessDefinitionKey(),
       processInstance.getProcessDefinitionVersion(),
@@ -179,7 +179,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     variables.put("foo", "bar2");
     deployAndStartSimpleServiceTaskProcess(variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
@@ -210,7 +210,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     variables.put("foo", "bar2");
     deployAndStartSimpleServiceTaskProcess(variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
@@ -241,7 +241,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     engineRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
     engineRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
@@ -272,7 +272,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     variables.put("foo", 1);
     engineRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
@@ -302,7 +302,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
     engineRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
@@ -337,7 +337,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     variables.put("stringVar", "aString");
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     for (Map.Entry<String, Object> entry : variables.entrySet()) {
       // when
@@ -385,7 +385,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcess(variables);
     OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(

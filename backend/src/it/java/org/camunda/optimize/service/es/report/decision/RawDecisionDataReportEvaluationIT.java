@@ -45,7 +45,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     startDecisionInstanceWithInputVars(decisionDefinitionDto.getId(), inputs);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
@@ -87,7 +87,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     startDecisionInstanceWithInputVars(decisionDefinitionDto.getId(), inputs);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
@@ -140,7 +140,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     }};
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
@@ -171,7 +171,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     engineRule.startDecisionInstance(decisionDefinitionDto.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
@@ -205,7 +205,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     engineRule.startDecisionInstance(decisionDefinitionDto.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
@@ -240,7 +240,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     engineRule.startDecisionInstance(decisionDefinitionDto.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
@@ -276,7 +276,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     startDecisionInstanceWithInputVars(decisionDefinitionDto.getId(), createInputs(1000.0, "Misc"));
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
@@ -325,7 +325,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     startDecisionInstanceWithInputVars(decisionDefinitionDto.getId(), createInputs(200.0, "Misc"));
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(

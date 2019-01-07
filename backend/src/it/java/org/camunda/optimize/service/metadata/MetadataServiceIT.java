@@ -49,7 +49,7 @@ public class MetadataServiceIT {
       embeddedOptimizeRule.startOptimize();
     } catch (Exception e) {
       //expected
-      elasticSearchRule.deleteOptimizeIndexes();
+      elasticSearchRule.deleteAllOptimizeData();
       embeddedOptimizeRule.stopOptimize();
       embeddedOptimizeRule.startOptimize();
       return;
@@ -62,7 +62,7 @@ public class MetadataServiceIT {
   public void verifyNotStartingIfVersionDoesNotMatch () throws Exception {
     String metaDataType = ElasticsearchConstants.METADATA_TYPE;
     embeddedOptimizeRule.stopOptimize();
-    elasticSearchRule.deleteOptimizeIndexes();
+    elasticSearchRule.deleteAllOptimizeData();
     MetadataDto meta = new MetadataDto();
     meta.setSchemaVersion("TEST");
     elasticSearchRule.addEntryToElasticsearch(metaDataType, "2", meta);
@@ -71,7 +71,7 @@ public class MetadataServiceIT {
     } catch (Exception e) {
       //expected
       assertThat(e.getCause().getMessage(), is("The Elasticsearch data structure doesn't match the current Optimize version"));
-      elasticSearchRule.deleteOptimizeIndexes();
+      elasticSearchRule.deleteAllOptimizeData();
       embeddedOptimizeRule.stopOptimize();
       embeddedOptimizeRule.startOptimize();
       return;

@@ -33,6 +33,8 @@ import java.util.stream.IntStream;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -332,7 +334,7 @@ public class ProcessDefinitionRestServiceIT {
     expectedXml.setKey(key);
     expectedXml.setVersion(version);
     expectedXml.setId(key + version);
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionType(), expectedXml.getId(), expectedXml);
+    elasticSearchRule.addEntryToElasticsearch(PROC_DEF_TYPE, expectedXml.getId(), expectedXml);
     return expectedXml;
   }
 
@@ -350,14 +352,14 @@ public class ProcessDefinitionRestServiceIT {
     processDefinitionXmlDto.setVersion(PROCESS_DEFINITION_VERSION_1);
     processDefinitionXmlDto.setBpmn20Xml(readDiagram(DIAGRAM));
     elasticSearchRule.addEntryToElasticsearch(
-      ElasticsearchConstants.PROC_DEF_TYPE,
+      PROC_DEF_TYPE,
       PROCESS_DEFINITION_ID,
       processDefinitionXmlDto
     );
     processDefinitionXmlDto.setId(PROCESS_DEFINITION_ID_2);
     processDefinitionXmlDto.setVersion(PROCESS_DEFINITION_VERSION_2);
     elasticSearchRule.addEntryToElasticsearch(
-      ElasticsearchConstants.PROC_DEF_TYPE,
+      PROC_DEF_TYPE,
       PROCESS_DEFINITION_ID_2,
       processDefinitionXmlDto
     );
@@ -372,7 +374,7 @@ public class ProcessDefinitionRestServiceIT {
     procInst.setEvents(createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY, TASK}));
 
     elasticSearchRule.addEntryToElasticsearch(
-      elasticSearchRule.getProcessInstanceType(),
+      PROC_INSTANCE_TYPE,
       PROCESS_INSTANCE_ID,
       procInst
     );
@@ -381,7 +383,7 @@ public class ProcessDefinitionRestServiceIT {
     );
     procInst.setProcessInstanceId(PROCESS_INSTANCE_ID_2);
     elasticSearchRule.addEntryToElasticsearch(
-      elasticSearchRule.getProcessInstanceType(),
+      PROC_INSTANCE_TYPE,
       PROCESS_INSTANCE_ID_2,
       procInst
     );

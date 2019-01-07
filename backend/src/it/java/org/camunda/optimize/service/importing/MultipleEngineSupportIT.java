@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.importing;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EngineAuthenticationConfiguration;
@@ -9,8 +10,11 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -18,6 +22,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.STRING_VARIABLES;
@@ -79,13 +85,8 @@ public class MultipleEngineSupportIT {
     embeddedOptimizeRule.updateImportIndex();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    SearchResponse searchResponse = elasticSearchRule.getClient()
-      .prepareSearch(elasticSearchRule.getOptimizeIndex(ElasticsearchConstants.PROC_DEF_TYPE))
-      .setTypes(ElasticsearchConstants.PROC_DEF_TYPE)
-      .setQuery(matchAllQuery())
-      .setSize(100)
-      .get();
+    elasticSearchRule.refreshAllOptimizeIndices();
+    SearchResponse searchResponse = performProcessDefinitionSearchRequest(ElasticsearchConstants.PROC_DEF_TYPE);
 
     // then
     Set<String> allowedProcessDefinitionKeys = new HashSet<>();
@@ -99,6 +100,23 @@ public class MultipleEngineSupportIT {
     }
   }
 
+  private SearchResponse performProcessDefinitionSearchRequest(String procDefType) {
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(matchAllQuery())
+      .size(100);
+
+    SearchRequest searchRequest = new SearchRequest()
+      .indices(getOptimizeIndexAliasForType(procDefType))
+      .types(procDefType)
+      .source(searchSourceBuilder);
+
+    try {
+      return elasticSearchRule.getEsClient().search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException("Could not query the import count!", e);
+    }
+  }
+
   @Test
   public void allProcessDefinitionsAreImported() {
     // given
@@ -109,13 +127,8 @@ public class MultipleEngineSupportIT {
     embeddedOptimizeRule.updateImportIndex();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    SearchResponse searchResponse = elasticSearchRule.getClient()
-      .prepareSearch(elasticSearchRule.getOptimizeIndex(ElasticsearchConstants.PROC_DEF_TYPE))
-      .setTypes(ElasticsearchConstants.PROC_DEF_TYPE)
-      .setQuery(matchAllQuery())
-      .setSize(100)
-      .get();
+    elasticSearchRule.refreshAllOptimizeIndices();
+    SearchResponse searchResponse = performProcessDefinitionSearchRequest(ElasticsearchConstants.PROC_DEF_TYPE);
 
     // then
     Set<String> allowedProcessDefinitionKeys = new HashSet<>();
@@ -139,13 +152,8 @@ public class MultipleEngineSupportIT {
     embeddedOptimizeRule.updateImportIndex();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    SearchResponse searchResponse = elasticSearchRule.getClient()
-      .prepareSearch(elasticSearchRule.getOptimizeIndex(ElasticsearchConstants.PROC_INSTANCE_TYPE))
-      .setTypes(ElasticsearchConstants.PROC_INSTANCE_TYPE)
-      .setQuery(matchAllQuery())
-      .setSize(100)
-      .get();
+    elasticSearchRule.refreshAllOptimizeIndices();
+    SearchResponse searchResponse = performProcessDefinitionSearchRequest(ElasticsearchConstants.PROC_INSTANCE_TYPE);
 
     // then
     Set<String> allowedProcessDefinitionKeys = new HashSet<>();
@@ -182,13 +190,8 @@ public class MultipleEngineSupportIT {
     embeddedOptimizeRule.updateImportIndex();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    SearchResponse searchResponse = elasticSearchRule.getClient()
-      .prepareSearch(elasticSearchRule.getOptimizeIndex(ElasticsearchConstants.PROC_INSTANCE_TYPE))
-      .setTypes(ElasticsearchConstants.PROC_INSTANCE_TYPE)
-      .setQuery(matchAllQuery())
-      .setSize(100)
-      .get();
+    elasticSearchRule.refreshAllOptimizeIndices();
+    SearchResponse searchResponse = performProcessDefinitionSearchRequest(ElasticsearchConstants.PROC_INSTANCE_TYPE);
 
     // then
     Set<String> allowedProcessDefinitionKeys = new HashSet<>();
@@ -292,19 +295,14 @@ public class MultipleEngineSupportIT {
     deployAndStartDecisionDefinitionForAllEngines();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     embeddedOptimizeRule.stopOptimize();
     embeddedOptimizeRule.startOptimize();
 
     // then
-    SearchResponse searchResponse = elasticSearchRule.getClient()
-      .prepareSearch(elasticSearchRule.getOptimizeIndex(TIMESTAMP_BASED_IMPORT_INDEX_TYPE))
-      .setTypes(TIMESTAMP_BASED_IMPORT_INDEX_TYPE)
-      .setQuery(matchAllQuery())
-      .setSize(100)
-      .get();
+    SearchResponse searchResponse = performProcessDefinitionSearchRequest(TIMESTAMP_BASED_IMPORT_INDEX_TYPE);
 
     assertThat(searchResponse.getHits().getTotalHits(), is(12L));
     for (SearchHit searchHit : searchResponse.getHits().getHits()) {

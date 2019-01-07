@@ -43,7 +43,7 @@ public class DurationFilterIT extends AbstractDurationFilterIT {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     ProcessReportDataDto reportData =
       createProcessReportDataViewRawAsTable(processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());

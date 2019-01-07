@@ -356,7 +356,7 @@ public class SessionServiceIT {
     }
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
   }
 
   private void addGlobalAuthorizationForAllDefinitions(int definitionResourceType) {

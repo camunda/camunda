@@ -52,7 +52,7 @@ public class VariableValueRetrievalIT {
     variables.put("var", "value3");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<String> variableResponse = getVariableValues(processDefinition, "var");
@@ -76,7 +76,7 @@ public class VariableValueRetrievalIT {
       }
     );
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<String> variableResponse = getVariableValues(processDefinition, "var");
@@ -95,7 +95,7 @@ public class VariableValueRetrievalIT {
     variables.put("var3", "value3");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<String> variableResponse = getVariableValues(processDefinition, "var1");
@@ -116,7 +116,7 @@ public class VariableValueRetrievalIT {
     variables.put("var", "value2");
     engineRule.startProcessInstance(processDefinition2.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<String> variableResponse = getVariableValues(processDefinition, "var");
@@ -136,7 +136,7 @@ public class VariableValueRetrievalIT {
     variables.put("var", true);
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<String> variableResponse = getVariableValues(processDefinition, "var");
@@ -156,7 +156,7 @@ public class VariableValueRetrievalIT {
     variables.put("var", "value1");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<String> variableResponse = getVariableValues(processDefinition, "var");
@@ -181,7 +181,7 @@ public class VariableValueRetrievalIT {
     variables.put("stringVar", "aString");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     for (String name : variables.keySet()) {
       // when
@@ -232,7 +232,7 @@ public class VariableValueRetrievalIT {
     variables.put("var", "value3");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     Map<String, Object> queryParams = new HashMap<>();
@@ -261,7 +261,7 @@ public class VariableValueRetrievalIT {
     variables.put("var", "value3");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     Map<String, Object> queryParams = new HashMap<>();
@@ -290,7 +290,7 @@ public class VariableValueRetrievalIT {
     variables.put("var", "value3");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     Map<String, Object> queryParams = new HashMap<>();
@@ -319,7 +319,7 @@ public class VariableValueRetrievalIT {
     variables.put("var", "ball");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     Map<String, Object> queryParams = new HashMap<>();
@@ -347,7 +347,7 @@ public class VariableValueRetrievalIT {
     variables.put("foo", "oooo");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     Map<String, Object> queryParams = new HashMap<>();
@@ -374,7 +374,7 @@ public class VariableValueRetrievalIT {
     variables.put("var", "oooo");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     Map<String, Object> queryParams = new HashMap<>();
@@ -405,7 +405,7 @@ public class VariableValueRetrievalIT {
     variables.put("var", "tsoi-zhiv");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     Map<String, Object> queryParams = new HashMap<>();
@@ -435,7 +435,7 @@ public class VariableValueRetrievalIT {
     variables.put("var", "oobaro");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     Map<String, Object> queryParams = new HashMap<>();
@@ -460,7 +460,7 @@ public class VariableValueRetrievalIT {
     variables.put("var", "fooo");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     Map<String, Object> queryParams = new HashMap<>();
@@ -483,7 +483,7 @@ public class VariableValueRetrievalIT {
     variables.put("var", 2);
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     Map<String, Object> queryParams = new HashMap<>();
@@ -506,7 +506,7 @@ public class VariableValueRetrievalIT {
     variables.put("var", "foo");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     Map<String, Object> queryParams = new HashMap<>();
@@ -529,7 +529,7 @@ public class VariableValueRetrievalIT {
     variables.put("var", "foo");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     Map<String, Object> queryParams = new HashMap<>();

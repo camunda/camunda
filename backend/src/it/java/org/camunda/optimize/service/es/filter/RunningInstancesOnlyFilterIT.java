@@ -44,7 +44,7 @@ public class RunningInstancesOnlyFilterIT {
     engineRule.finishAllUserTasks(secondProcInst.getId());
     
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData =

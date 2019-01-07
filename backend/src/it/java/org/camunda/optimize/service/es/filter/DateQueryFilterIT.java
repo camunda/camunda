@@ -187,7 +187,7 @@ public class DateQueryFilterIT {
     processDefinitionKey = processInstanceDto.getProcessDefinitionKey();
     processDefinitionVersion = processInstanceDto.getProcessDefinitionVersion();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
   }
 
 

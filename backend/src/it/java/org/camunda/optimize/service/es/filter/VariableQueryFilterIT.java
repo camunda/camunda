@@ -106,7 +106,7 @@ public class VariableQueryFilterIT {
     variables.put("var", "anotherValue");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     VariableFilterDto filter = ProcessVariableFilterUtilHelper.createStringVariableFilter("var", IN, "value");
@@ -127,7 +127,7 @@ public class VariableQueryFilterIT {
     variables.put("boolVar", true);
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     VariableFilterDto filter = ProcessVariableFilterUtilHelper.createStringVariableFilter(
@@ -151,7 +151,7 @@ public class VariableQueryFilterIT {
     variables.put("boolVar", true);
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     VariableFilterDto filter = ProcessVariableFilterUtilHelper.createStringVariableFilter(
@@ -177,7 +177,7 @@ public class VariableQueryFilterIT {
     variables.put("anotherStringVar", "aStringValue");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     VariableFilterDto filter = ProcessVariableFilterUtilHelper.createStringVariableFilter(
@@ -202,7 +202,7 @@ public class VariableQueryFilterIT {
     variables.put("stringVar", "anotherValue");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     VariableFilterDto filter = ProcessVariableFilterUtilHelper.createStringVariableFilter(
@@ -227,7 +227,7 @@ public class VariableQueryFilterIT {
     variables.put("anotherStringVar", "value");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     VariableFilterDto filter = ProcessVariableFilterUtilHelper.createStringVariableFilter("stringVar", IN, "value");
@@ -247,7 +247,7 @@ public class VariableQueryFilterIT {
     variables.put("var", 1);
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     VariableFilterDto filter = ProcessVariableFilterUtilHelper.createStringVariableFilter("var", IN, "1");
@@ -269,7 +269,7 @@ public class VariableQueryFilterIT {
     variables.put("var", "aThirdValue");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     VariableFilterDto filter = ProcessVariableFilterUtilHelper.createStringVariableFilter("var", NOT_IN, "value");
@@ -291,7 +291,7 @@ public class VariableQueryFilterIT {
     variables.put("var", "3");
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     VariableFilterDto filter = ProcessVariableFilterUtilHelper.createStringVariableFilter("var", NOT_IN, "1");
@@ -315,7 +315,7 @@ public class VariableQueryFilterIT {
     variables.put("var", false);
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     VariableFilterDto filter = ProcessVariableFilterUtilHelper.createBooleanVariableFilter("var", "false");
@@ -337,7 +337,7 @@ public class VariableQueryFilterIT {
     variables.put("var", false);
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     VariableFilterDto filter = ProcessVariableFilterUtilHelper.createBooleanVariableFilter("var", "true");
@@ -361,7 +361,7 @@ public class VariableQueryFilterIT {
       variables.put("var", changeNumericValueToType(10, variableType));
       engineRule.startProcessInstance(processDefinition.getId(), variables);
       embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-      elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+      elasticSearchRule.refreshAllOptimizeIndices();
 
       // when
       VariableFilterDto filter = createNumericVariableFilter(LESS_THAN, "var", variableType, "5");
@@ -392,7 +392,7 @@ public class VariableQueryFilterIT {
       variables.put("var", changeNumericValueToType(3, variableType));
       engineRule.startProcessInstance(processDefinition.getId(), variables);
       embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-      elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+      elasticSearchRule.refreshAllOptimizeIndices();
 
       // when
       VariableFilterDto filter = createNumericVariableFilter(IN, "var", variableType, "1");
@@ -422,7 +422,7 @@ public class VariableQueryFilterIT {
       variables.put("var", changeNumericValueToType(3, variableType));
       engineRule.startProcessInstance(processDefinition.getId(), variables);
       embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-      elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+      elasticSearchRule.refreshAllOptimizeIndices();
 
       // when
       VariableFilterDto filter = createNumericVariableFilter(NOT_IN, "var", variableType, "1");
@@ -454,7 +454,7 @@ public class VariableQueryFilterIT {
       variables.put("var", changeNumericValueToType(10, variableType));
       engineRule.startProcessInstance(processDefinition.getId(), variables);
       embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-      elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+      elasticSearchRule.refreshAllOptimizeIndices();
 
       // when
       VariableFilterDto filter = createNumericVariableFilter(LESS_THAN_EQUALS, "var", variableType, "2");
@@ -481,7 +481,7 @@ public class VariableQueryFilterIT {
       variables.put("var", changeNumericValueToType(10, variableType));
       engineRule.startProcessInstance(processDefinition.getId(), variables);
       embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-      elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+      elasticSearchRule.refreshAllOptimizeIndices();
 
       // when
       VariableFilterDto filter = createNumericVariableFilter(GREATER_THAN, "var", variableType, "1");
@@ -508,7 +508,7 @@ public class VariableQueryFilterIT {
       variables.put("var", changeNumericValueToType(10, variableType));
       engineRule.startProcessInstance(processDefinition.getId(), variables);
       embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-      elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+      elasticSearchRule.refreshAllOptimizeIndices();
 
       // when
       VariableFilterDto filter = createNumericVariableFilter(GREATER_THAN_EQUALS, "var", variableType, "2");
@@ -535,7 +535,7 @@ public class VariableQueryFilterIT {
       variables.put("var", changeNumericValueToType(10, variableType));
       engineRule.startProcessInstance(processDefinition.getId(), variables);
       embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-      elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+      elasticSearchRule.refreshAllOptimizeIndices();
 
       // when
       VariableFilterDto filter = createNumericVariableFilter(IN, "var", variableType, "2");
@@ -562,7 +562,7 @@ public class VariableQueryFilterIT {
       variables.put("var", changeNumericValueToType(10, variableType));
       engineRule.startProcessInstance(processDefinition.getId(), variables);
       embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-      elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+      elasticSearchRule.refreshAllOptimizeIndices();
 
       // when
       VariableFilterDto filter = createNumericVariableFilter(NOT_IN, "var", variableType, "2");
@@ -589,7 +589,7 @@ public class VariableQueryFilterIT {
       variables.put("var", changeNumericValueToType(10, variableType));
       engineRule.startProcessInstance(processDefinition.getId(), variables);
       embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-      elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+      elasticSearchRule.refreshAllOptimizeIndices();
 
       // when
       VariableFilterDto filter = createNumericVariableFilter(GREATER_THAN, "var", variableType, "1");
@@ -619,7 +619,7 @@ public class VariableQueryFilterIT {
       variables.put("var", changeNumericValueToType(10, variableType));
       engineRule.startProcessInstance(processDefinition.getId(), variables);
       embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-      elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+      elasticSearchRule.refreshAllOptimizeIndices();
 
       // when
       VariableFilterDto filter = createNumericVariableFilter(LESS_THAN, "var", variableType, "2");
@@ -648,7 +648,7 @@ public class VariableQueryFilterIT {
     variables.put("var", now.plusSeconds(10));
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     VariableFilterDto filter = ProcessVariableFilterUtilHelper.createDateVariableFilter("var", null, now);
@@ -671,7 +671,7 @@ public class VariableQueryFilterIT {
     variables.put("var", now.plusSeconds(10));
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     VariableFilterDto filter =
@@ -695,7 +695,7 @@ public class VariableQueryFilterIT {
     variables.put("var", now.plusSeconds(10));
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     VariableFilterDto filter = ProcessVariableFilterUtilHelper.createDateVariableFilter("var", now, now);
@@ -717,7 +717,7 @@ public class VariableQueryFilterIT {
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     VariableFilterDto filter = ProcessVariableFilterUtilHelper.createDateVariableFilter(
@@ -744,7 +744,7 @@ public class VariableQueryFilterIT {
     variables.put("var", now.plusSeconds(10));
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     VariableFilterDto filter = ProcessVariableFilterUtilHelper.createDateVariableFilter(

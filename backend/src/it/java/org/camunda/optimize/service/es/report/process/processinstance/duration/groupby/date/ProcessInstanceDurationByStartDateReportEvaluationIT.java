@@ -82,7 +82,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 1L);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
@@ -132,7 +132,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 1L);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
     ProcessReportDataDto reportData = ProcessReportDataBuilder
             .createReportData()
             .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
@@ -187,7 +187,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     adjustProcessInstanceDates(processInstanceDto3.getId(), startDate, -1L, 1L);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
@@ -238,7 +238,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
 
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
@@ -305,7 +305,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     adjustProcessInstanceDates(processInstanceDto3.getId(), startDate, -2L, 1L);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
@@ -350,7 +350,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     OffsetDateTime now = OffsetDateTime.now();
     updateProcessInstancesDates(processInstanceDtos, now, ChronoUnit.HOURS);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessInstanceEngineDto dto = processInstanceDtos.get(0);
@@ -419,7 +419,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     OffsetDateTime now = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC);
     updateProcessInstancesDates(processInstanceDtos, now, ChronoUnit.DAYS);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessInstanceEngineDto processInstanceEngineDto = processInstanceDtos.get(0);
@@ -445,7 +445,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     OffsetDateTime now = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC);
     updateProcessInstancesDates(processInstanceDtos, now, ChronoUnit.WEEKS);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessInstanceEngineDto dto = processInstanceDtos.get(0);
@@ -472,7 +472,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     OffsetDateTime now = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC);
     updateProcessInstancesDates(processInstanceDtos, now, ChronoUnit.MONTHS);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessInstanceEngineDto dto = processInstanceDtos.get(0);
@@ -499,7 +499,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     OffsetDateTime now = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC);
     updateProcessInstancesDates(processInstanceDtos, now, ChronoUnit.YEARS);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessInstanceEngineDto dto = processInstanceDtos.get(0);
@@ -529,7 +529,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 2L);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
     // when
@@ -569,7 +569,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 1L);
     deployAndStartSimpleServiceTaskProcess();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
@@ -610,7 +610,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     String processDefinitionId = processInstanceDto.getDefinitionId();
     engineRule.startProcessInstance(processDefinitionId);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder

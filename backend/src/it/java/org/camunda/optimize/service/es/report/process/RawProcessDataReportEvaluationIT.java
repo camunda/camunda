@@ -78,7 +78,7 @@ public class RawProcessDataReportEvaluationIT {
     deployAndStartSimpleProcess();
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
@@ -103,7 +103,7 @@ public class RawProcessDataReportEvaluationIT {
     deployAndStartSimpleProcess();
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
@@ -137,7 +137,7 @@ public class RawProcessDataReportEvaluationIT {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
@@ -169,7 +169,7 @@ public class RawProcessDataReportEvaluationIT {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
     String reportId = createAndStoreDefaultReportDefinition(
       processInstance.getProcessDefinitionKey(),
       processInstance.getProcessDefinitionVersion()
@@ -223,7 +223,7 @@ public class RawProcessDataReportEvaluationIT {
 
     ProcessInstanceEngineDto processInstance2 = engineRule.startProcessInstance(processInstance.getDefinitionId());
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
@@ -264,7 +264,7 @@ public class RawProcessDataReportEvaluationIT {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcessWithVariables(variables);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
@@ -299,7 +299,7 @@ public class RawProcessDataReportEvaluationIT {
       engineRule.startProcessInstance(processInstance.getDefinitionId());
     engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto3.getId(), OffsetDateTime.now().minusDays(1));
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
@@ -342,7 +342,7 @@ public class RawProcessDataReportEvaluationIT {
       engineRule.startProcessInstance(processInstanceDto1.getDefinitionId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
     final Object[] processInstanceIdsOrderedAsc = Lists.newArrayList(
       processInstanceDto1.getId(), processInstanceDto2.getId(), processInstanceDto3.getId()
     ).stream().sorted(Collections.reverseOrder()).toArray();
@@ -368,7 +368,7 @@ public class RawProcessDataReportEvaluationIT {
     ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleProcess();
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
@@ -402,7 +402,7 @@ public class RawProcessDataReportEvaluationIT {
     );
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
     final Object[] processInstanceIdsOrderedAsc = Lists.newArrayList(
       processInstanceDto1.getId(), processInstanceDto2.getId(), processInstanceDto3.getId(), processInstanceDto4.getId()
     ).toArray();
@@ -428,7 +428,7 @@ public class RawProcessDataReportEvaluationIT {
     ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleProcess();
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
@@ -454,7 +454,7 @@ public class RawProcessDataReportEvaluationIT {
     variables.put("varName2", "value2");
     engineRule.startProcessInstance(processInstance.getDefinitionId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
@@ -487,7 +487,7 @@ public class RawProcessDataReportEvaluationIT {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     deployAndStartSimpleProcess();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
@@ -512,7 +512,7 @@ public class RawProcessDataReportEvaluationIT {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
@@ -553,7 +553,7 @@ public class RawProcessDataReportEvaluationIT {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
@@ -597,7 +597,7 @@ public class RawProcessDataReportEvaluationIT {
 
     engineRule.startProcessInstance(processInstance.getDefinitionId());
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
@@ -633,7 +633,7 @@ public class RawProcessDataReportEvaluationIT {
     variables.put("goToTask1", false);
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(

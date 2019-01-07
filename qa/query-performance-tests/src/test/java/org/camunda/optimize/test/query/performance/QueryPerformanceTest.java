@@ -62,7 +62,7 @@ public class QueryPerformanceTest {
   private static final Random randomGen = new Random();
 
   private static ElasticSearchIntegrationTestRule elasticSearchRule =
-    new ElasticSearchIntegrationTestRule(PROPERTY_LOCATION);
+    new ElasticSearchIntegrationTestRule();
   private static EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
   private static EngineIntegrationRule engineRule =
     new EngineIntegrationRule(PROPERTY_LOCATION);
@@ -162,7 +162,7 @@ public class QueryPerformanceTest {
     if (!wasAbleToFinishImportInTime) {
       throw new TimeoutException("Import was not able to finish import in " + 2 + " hours!");
     }
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
     logger.info("Finished importing engine data...");
   }
 

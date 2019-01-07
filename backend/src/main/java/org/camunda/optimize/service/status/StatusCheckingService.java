@@ -7,7 +7,10 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.engine.importing.EngineImportSchedulerFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -22,18 +25,20 @@ import java.util.Map;
 @Component
 public class StatusCheckingService {
 
-
-  @Autowired
-  private org.elasticsearch.client.Client elasticsearchClient;
-
-  @Autowired
+  private RestHighLevelClient esClient;
   private ConfigurationService configurationService;
-
-  @Autowired
   private EngineContextFactory engineContextFactory;
+  private EngineImportSchedulerFactory engineImportSchedulerFactory;
 
   @Autowired
-  private EngineImportSchedulerFactory engineImportSchedulerFactory;
+  public StatusCheckingService(RestHighLevelClient esClient, ConfigurationService configurationService,
+                               EngineContextFactory engineContextFactory,
+                               EngineImportSchedulerFactory engineImportSchedulerFactory) {
+    this.esClient = esClient;
+    this.configurationService = configurationService;
+    this.engineContextFactory = engineContextFactory;
+    this.engineImportSchedulerFactory = engineImportSchedulerFactory;
+  }
 
   public StatusWithProgressDto getConnectionStatusWithProgress() {
     StatusWithProgressDto result = new StatusWithProgressDto();
@@ -83,12 +88,11 @@ public class StatusCheckingService {
   private boolean isConnectedToElasticSearch() {
     boolean isConnected = false;
     try {
-      ClusterHealthResponse getResponse = elasticsearchClient
-        .admin()
-        .cluster()
-        .prepareHealth()
-        .get();
-      isConnected = getResponse.status().getStatus() == 200 && getResponse.getStatus() != ClusterHealthStatus.RED;
+      ClusterHealthRequest request = new ClusterHealthRequest();
+      ClusterHealthResponse healthResponse = esClient.cluster().health(request, RequestOptions.DEFAULT);
+
+      isConnected =
+        healthResponse.status().getStatus() == 200 && healthResponse.getStatus() != ClusterHealthStatus.RED;
     } catch (Exception ignored) {
       // do nothing
     }

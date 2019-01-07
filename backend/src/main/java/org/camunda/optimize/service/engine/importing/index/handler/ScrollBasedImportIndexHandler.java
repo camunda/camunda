@@ -6,10 +6,11 @@ import org.camunda.optimize.service.engine.importing.index.page.IdSetBasedImport
 import org.camunda.optimize.service.es.reader.ImportIndexReader;
 import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.client.Client;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -17,6 +18,7 @@ import java.util.Optional;
 import java.util.Set;
 
 @Component
+@DependsOn({"elasticSearchSchemaInitializer"})
 public abstract class ScrollBasedImportIndexHandler
   implements ImportIndexHandler<IdSetBasedImportPage, AllEntitiesBasedImportIndexDto> {
 
@@ -25,7 +27,7 @@ public abstract class ScrollBasedImportIndexHandler
   @Autowired
   private ImportIndexReader importIndexReader;
   @Autowired
-  protected Client esclient;
+  protected RestHighLevelClient esClient;
   @Autowired
   protected ConfigurationService configurationService;
 

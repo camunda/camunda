@@ -651,7 +651,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     //given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess("aProcess");
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     String reportId = this.createNewReport();
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper

@@ -30,7 +30,6 @@ public class OverwriteConfigurationsTest extends AbstractUpgradeTest {
       "  connection:\n" +
         "    nodes:\n" +
         "    - host: 'foo'\n" +
-        "      tcpPort: 9300\n" +
         "      httpPort: 9200"
     );
 

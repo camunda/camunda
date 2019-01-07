@@ -10,6 +10,7 @@ import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -68,7 +69,7 @@ public class FlowNodeRestServiceIT {
     expected.setKey(processDefinitionKey);
     expected.setVersion(processDefinitionVersion);
     expected.setEngine("testEngine");
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionType(), expectedProcessDefinitionId, expected);
+    elasticSearchRule.addEntryToElasticsearch(PROC_DEF_TYPE, expectedProcessDefinitionId, expected);
     createProcessDefinitionXml(processDefinitionKey, processDefinitionVersion);
   }
 
@@ -79,6 +80,6 @@ public class FlowNodeRestServiceIT {
     expectedXml.setKey(processDefinitionKey);
     expectedXml.setVersion(processDefinitionVersion);
     expectedXml.setId(expectedProcessDefinitionId);
-    elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionType(), expectedProcessDefinitionId, expectedXml);
+    elasticSearchRule.addEntryToElasticsearch(PROC_DEF_TYPE, expectedProcessDefinitionId, expectedXml);
   }
 }

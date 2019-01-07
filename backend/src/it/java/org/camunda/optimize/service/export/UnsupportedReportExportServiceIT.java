@@ -47,7 +47,7 @@ public class UnsupportedReportExportServiceIT {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     ProcessReportDataDto currentReport = ProcessReportDataBuilderHelper.createAvgPiDurationAsNumberGroupByNone(
         processInstance.getProcessDefinitionKey(),processInstance.getProcessDefinitionVersion());

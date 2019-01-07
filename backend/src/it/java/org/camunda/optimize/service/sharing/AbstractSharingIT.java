@@ -52,7 +52,7 @@ public abstract class AbstractSharingIT {
   protected String createReport(String definitionKey) {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess(definitionKey);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     String reportId = this.createNewReport();
     ProcessReportDataDto reportData =

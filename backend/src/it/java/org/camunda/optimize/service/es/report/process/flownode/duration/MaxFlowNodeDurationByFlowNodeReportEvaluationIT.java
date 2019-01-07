@@ -54,7 +54,7 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 20L);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = getMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
@@ -86,7 +86,7 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 30L);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = getMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
@@ -110,7 +110,7 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 10L);
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 200L);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData =
@@ -149,7 +149,7 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 40L);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
     ProcessReportDataDto reportData = createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(
@@ -177,7 +177,7 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 40L);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
     ProcessReportDataDto reportData = createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(
@@ -202,7 +202,7 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 40L);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
     ProcessReportDataDto reportData = createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(
@@ -230,7 +230,7 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     processInstanceDto = engineRule.startProcessInstance(processDefinition2.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 100L);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData1 = getMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
@@ -286,7 +286,7 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     engineRule.startProcessInstance(processDefinitionId);
     engineDatabaseRule.changeActivityDurationForProcessDefinition(subProcessDefinition.getId(), 10L);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData =
@@ -310,7 +310,7 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
       engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), i);
     }
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = getMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
@@ -331,7 +331,7 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = getMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);

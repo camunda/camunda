@@ -28,7 +28,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     }
     embeddedOptimizeRule.getConfigurationService().setEngineImportDecisionDefinitionXmlMaxPageSize(11);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<DecisionDefinitionOptimizeDto> definitions =
@@ -48,7 +48,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
       deployAndStartSimpleDecisionDefinition(decisionDefinitionKey);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<DecisionDefinitionOptimizeDto> definitions =
@@ -73,7 +73,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineRule.deployDecisionDefinition(modelInstance);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<DecisionDefinitionOptimizeDto> definitions =
@@ -100,7 +100,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
 
     addDecisionDefinitionWithoutXmlToElasticsearch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<DecisionDefinitionOptimizeDto> definitions =
@@ -123,7 +123,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineRule.deployDecisionDefinition(modelInstance);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     String actualXml = embeddedOptimizeRule
@@ -154,7 +154,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
       engineRule.deployDecisionDefinition(modelInstance2);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     final String actualXml = embeddedOptimizeRule

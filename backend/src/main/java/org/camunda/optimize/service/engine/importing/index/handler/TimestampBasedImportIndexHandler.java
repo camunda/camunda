@@ -9,6 +9,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.DependsOn;
 
 import javax.annotation.PostConstruct;
 import java.time.Instant;
@@ -17,6 +18,7 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
+@DependsOn({"elasticSearchSchemaInitializer"})
 public abstract class TimestampBasedImportIndexHandler
   implements ImportIndexHandler<TimestampBasedImportPage, TimestampBasedImportIndexDto> {
 

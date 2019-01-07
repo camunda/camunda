@@ -1,26 +1,26 @@
 package org.camunda.optimize.test.it.factory;
 
-import org.elasticsearch.client.Client;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
-public class MockTransportClientFactory implements FactoryBean<Client> {
+public class MockElasticsearchRestClientFactory implements FactoryBean<RestHighLevelClient> {
 
-  private Client spyedInstance;
+  private RestHighLevelClient spyedInstance;
 
   @Autowired
   private ApplicationContext applicationContext;
 
   @Override
-  public Client getObject() {
-    return Mockito.mock(Client.class);
+  public RestHighLevelClient getObject() {
+    return Mockito.mock(RestHighLevelClient.class);
   }
 
   @Override
   public Class<?> getObjectType() {
-    return Client.class;
+    return RestHighLevelClient.class;
   }
 
   @Override

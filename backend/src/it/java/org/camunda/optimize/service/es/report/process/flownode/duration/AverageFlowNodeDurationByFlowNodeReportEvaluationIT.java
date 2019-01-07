@@ -57,7 +57,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 20L);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
@@ -89,7 +89,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 30L);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
@@ -113,7 +113,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 10L);
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 20L);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData =
@@ -152,7 +152,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 40L);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
     ProcessReportDataDto reportData = createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
@@ -180,7 +180,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 40L);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
     ProcessReportDataDto reportData = createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
@@ -205,7 +205,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 40L);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     //when
     ProcessReportDataDto reportData = createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
@@ -233,7 +233,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     processInstanceDto = engineRule.startProcessInstance(processDefinition2.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 20L);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData1 = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
@@ -261,7 +261,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
     engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 600L);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
@@ -312,7 +312,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     engineRule.startProcessInstance(processDefinitionId);
     engineDatabaseRule.changeActivityDurationForProcessDefinition(subProcessDefinition.getId(), 10L);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData =
@@ -336,7 +336,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
       engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), 10L);
     }
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
@@ -356,7 +356,7 @@ public class AverageFlowNodeDurationByFlowNodeReportEvaluationIT {
     engineDatabaseRule.changeActivityDuration(processInstance.getId(), 10L);
     OffsetDateTime past = engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);

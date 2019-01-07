@@ -15,6 +15,7 @@ import org.junit.rules.RuleChain;
 import java.util.List;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
@@ -43,7 +44,7 @@ public class ProcessDefinitionRetrievalIT {
     }
     embeddedOptimizeRule.getConfigurationService().setEngineImportProcessDefinitionXmlMaxPageSize(11);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<ProcessDefinitionOptimizeDto> definitions =
@@ -62,7 +63,7 @@ public class ProcessDefinitionRetrievalIT {
     String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
     String processDefinitionId = deploySimpleServiceTaskProcessDefinition(processId);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<ProcessDefinitionOptimizeDto> definitions =
@@ -94,7 +95,7 @@ public class ProcessDefinitionRetrievalIT {
     // @formatter:on
     String processDefinitionId = engineRule.deployProcessAndGetId(modelInstance);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<ProcessDefinitionOptimizeDto> definitions =
@@ -119,7 +120,7 @@ public class ProcessDefinitionRetrievalIT {
     String processDefinitionId = deploySimpleServiceTaskProcessDefinition(processId);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     addProcessDefinitionWithoutXmlToElasticsearch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<ProcessDefinitionOptimizeDto> definitions =
@@ -142,7 +143,7 @@ public class ProcessDefinitionRetrievalIT {
     engineRule.startProcessInstance(processDefinitionId);
     engineRule.startProcessInstance(processDefinitionId);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     List<ProcessDefinitionOptimizeDto> definitions =
@@ -172,7 +173,7 @@ public class ProcessDefinitionRetrievalIT {
     ProcessDefinitionEngineDto processDefinition = engineRule.deployProcessAndGetProcessDefinition(modelInstance);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     String actualXml =
@@ -208,7 +209,7 @@ public class ProcessDefinitionRetrievalIT {
     ProcessDefinitionEngineDto processDefinition = engineRule.deployProcessAndGetProcessDefinition(modelInstance);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     String actualXml =
@@ -240,7 +241,7 @@ public class ProcessDefinitionRetrievalIT {
     processDefinitionWithoutXml.setVersion("aProcDefVersion");
     processDefinitionWithoutXml.setId("aProcDefId");
     elasticSearchRule.addEntryToElasticsearch(
-      elasticSearchRule.getProcessDefinitionType(),
+      PROC_DEF_TYPE,
       "fooId",
       processDefinitionWithoutXml
     );

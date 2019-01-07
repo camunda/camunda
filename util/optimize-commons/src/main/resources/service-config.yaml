@@ -151,10 +151,6 @@ es:
     nodes:
         # the address/hostname under which the Elasticsearch node is available.
       - host: 'localhost'
-        # A port number used by Elasticsearch to accept TCP connections. This
-        # port is used for Optimize to communicate with Elasticsearch. Exception
-        # is the communication during the upgrade.
-        tcpPort: 9300
         # A port number used by Elasticsearch to accept HTTP connections. Currently,
         # this port is only used in the upgrade jar.
         httpPort: 9200

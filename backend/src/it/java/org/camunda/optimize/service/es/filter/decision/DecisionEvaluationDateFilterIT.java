@@ -33,7 +33,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     engineRule.startDecisionInstance(decisionDefinitionDto.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
@@ -60,7 +60,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     engineRule.startDecisionInstance(decisionDefinitionDto.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
@@ -95,7 +95,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
 
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
@@ -121,7 +121,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     engineRule.startDecisionInstance(decisionDefinitionDto.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
@@ -144,7 +144,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     engineRule.startDecisionInstance(decisionDefinitionDto.getId());
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
