@@ -65,6 +65,10 @@ public class StatusWebSocket {
   @OnClose
   public void onClose(CloseReason reason, Session session) {
     logger.debug("stopping to report status for session [{}]",session.getId());
+    removeSession(session);
+  }
+
+  private void removeSession(Session session) {
     if (statusReportJobs.containsKey(session.getId())) {
       StatusNotifier job = statusReportJobs.remove(session.getId());
       engineImportSchedulerFactory.getImportSchedulers().forEach(s -> s.unsubscribe(job));
@@ -72,8 +76,14 @@ public class StatusWebSocket {
   }
 
   @OnError
-  public void onError(Throwable t) {
-    logger.error("Web socket connection terminated prematurely!", t);
+  public void onError(Throwable t, Session session) {
+    String message = "Web socket connection terminated prematurely!";
+    if (logger.isWarnEnabled()) {
+      logger.warn(message);
+    } else if (logger.isDebugEnabled()) {
+      logger.debug(message, t);
+    }
+    removeSession(session);
   }
 
 }

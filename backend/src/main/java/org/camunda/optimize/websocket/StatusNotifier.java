@@ -2,7 +2,6 @@ package org.camunda.optimize.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
-import org.camunda.optimize.service.engine.importing.EngineImportSchedulerFactory;
 import org.camunda.optimize.service.engine.importing.service.ImportObserver;
 import org.camunda.optimize.service.status.StatusCheckingService;
 import org.slf4j.Logger;
@@ -10,9 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.websocket.Session;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class StatusNotifier implements ImportObserver {
   private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -53,7 +50,11 @@ public class StatusNotifier implements ImportObserver {
     result.setIsImporting(importStatusMap);
 
     try {
-      session.getBasicRemote().sendText(objectMapper.writeValueAsString(result));
+      if (session.isOpen()) {
+        session.getBasicRemote().sendText(objectMapper.writeValueAsString(result));
+      } else {
+        logger.debug("Could not write to websocket session [{}], because it already seems closed.", session.getId());
+      }
     } catch (IOException e) {
       logger.error("can't write status to web socket", e);
     }

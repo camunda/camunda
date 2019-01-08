@@ -35,7 +35,7 @@ export default class Footer extends React.Component {
     });
   }
 
-  async componentWillUnmount() {
+  componentWillUnmount() {
     this.connection.close();
   }
 
