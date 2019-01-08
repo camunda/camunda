@@ -15,6 +15,11 @@
  */
 package io.zeebe.test.broker.protocol.clientapi;
 
+import static io.zeebe.protocol.intent.JobIntent.ACTIVATED;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsArray;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.*;
 import io.zeebe.model.bpmn.Bpmn;
@@ -27,8 +32,6 @@ import io.zeebe.protocol.intent.*;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.*;
 import io.zeebe.util.buffer.BufferUtil;
-import org.agrona.DirectBuffer;
-
 import java.io.ByteArrayOutputStream;
 import java.time.Duration;
 import java.util.Collections;
@@ -38,11 +41,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
-import static io.zeebe.protocol.intent.JobIntent.ACTIVATED;
-import static io.zeebe.util.buffer.BufferUtil.bufferAsArray;
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
-import static org.assertj.core.api.Assertions.assertThat;
+import org.agrona.DirectBuffer;
 
 public class PartitionTestClient {
   // workflow related properties

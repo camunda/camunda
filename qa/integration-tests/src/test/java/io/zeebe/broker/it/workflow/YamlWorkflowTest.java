@@ -28,6 +28,7 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.response.ActivatedJob;
+import io.zeebe.test.util.JsonUtil;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -143,7 +144,7 @@ public class YamlWorkflowTest {
     waitUntil(() -> recordingTaskHandler.getHandledJobs().size() >= 1);
 
     final ActivatedJob jobEvent = recordingTaskHandler.getHandledJobs().get(0);
-    assertThat(jobEvent.getPayload()).isEqualTo("{\"bar\":1}");
+    JsonUtil.assertEquality(jobEvent.getPayload(), "{'bar': 1, 'foo': 1}");
 
     assertWorkflowInstanceCompleted(
         "workflow-mappings",
