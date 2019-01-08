@@ -85,7 +85,7 @@ class InstancesContainer extends Component {
   /**
    * Parses the url filter and returns an update object containing the sanitized filter.
    * If the url filter is valid, the update object can be used to cleanup the state.
-   * If the url filter is not valid, the update contains the update object
+   * If the url filter is not valid, the update contains the filter object
    * can be used to cleanup url filter.
    * @returns [isValidUrlFilter, update]
    */
