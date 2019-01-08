@@ -21,6 +21,7 @@ import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.msgpack.value.LongValue;
+import io.zeebe.msgpack.value.StringValue;
 import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.protocol.Protocol;
 import org.agrona.DirectBuffer;
@@ -34,6 +35,8 @@ public class JobBatchRecord extends UnpackedObject {
   private final ArrayProperty<LongValue> jobKeysProp =
       new ArrayProperty<>("jobKeys", new LongValue());
   private final ArrayProperty<JobRecord> jobsProp = new ArrayProperty<>("jobs", new JobRecord());
+  private final ArrayProperty<StringValue> variablesProp =
+      new ArrayProperty<>("variables", new StringValue());
 
   public JobBatchRecord() {
     this.declareProperty(typeProp)
@@ -41,7 +44,8 @@ public class JobBatchRecord extends UnpackedObject {
         .declareProperty(timeoutProp)
         .declareProperty(amountProp)
         .declareProperty(jobKeysProp)
-        .declareProperty(jobsProp);
+        .declareProperty(jobsProp)
+        .declareProperty(variablesProp);
   }
 
   public DirectBuffer getType() {
@@ -106,5 +110,9 @@ public class JobBatchRecord extends UnpackedObject {
 
   public ValueArray<JobRecord> jobs() {
     return jobsProp;
+  }
+
+  public ValueArray<StringValue> variables() {
+    return variablesProp;
   }
 }

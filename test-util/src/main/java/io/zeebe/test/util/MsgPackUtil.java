@@ -120,11 +120,15 @@ public class MsgPackUtil {
     assertThat(msgPackNode).isEqualTo(jsonNode);
   }
 
-  public static byte[] asMsgPack(String json) {
+  public static byte[] asMsgPackReturnArray(String json) {
     try {
       return MSGPACK_MAPPER.writeValueAsBytes(JsonUtil.JSON_MAPPER.readTree(json));
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  public static DirectBuffer asMsgPack(String json) {
+    return new UnsafeBuffer(asMsgPackReturnArray(json));
   }
 }

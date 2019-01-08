@@ -37,6 +37,7 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.test.util.JsonUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -209,7 +210,7 @@ public class ServiceTaskTest {
     waitUntil(() -> recordingJobHandler.getHandledJobs().size() >= 1);
 
     final ActivatedJob jobEvent = recordingJobHandler.getHandledJobs().get(0);
-    assertThat(jobEvent.getPayload()).isEqualTo("{\"bar\":1}");
+    JsonUtil.assertEquality(jobEvent.getPayload(), "{'bar': 1, 'foo': 1}");
   }
 
   @Test

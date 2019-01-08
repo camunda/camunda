@@ -43,7 +43,9 @@ public class JobEventProcessors {
         .onCommand(ValueType.JOB, JobIntent.UPDATE_RETRIES, new UpdateRetriesProcessor(jobState))
         .onCommand(ValueType.JOB, JobIntent.CANCEL, new CancelProcessor(jobState))
         .onCommand(
-            ValueType.JOB_BATCH, JobBatchIntent.ACTIVATE, new JobBatchActivateProcessor(jobState))
+            ValueType.JOB_BATCH,
+            JobBatchIntent.ACTIVATE,
+            new JobBatchActivateProcessor(jobState, workflowState))
         .withListener(new JobTimeoutTrigger(jobState));
   }
 }

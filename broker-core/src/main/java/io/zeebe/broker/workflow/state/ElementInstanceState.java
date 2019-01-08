@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.agrona.ExpandableArrayBuffer;
 
 public class ElementInstanceState {
@@ -58,6 +59,8 @@ public class ElementInstanceState {
       tokenParentChildColumnFamily;
 
   private final ExpandableArrayBuffer copyBuffer = new ExpandableArrayBuffer();
+
+  private final VariablesState variablesState;
 
   public ElementInstanceState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
 
@@ -85,6 +88,8 @@ public class ElementInstanceState {
     tokenParentChildColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.TOKEN_PARENT_CHILD, tokenParentStateTokenKey, DbNil.INSTANCE);
+
+    variablesState = new VariablesState(zeebeDb);
   }
 
   public ElementInstance newInstance(
@@ -115,6 +120,7 @@ public class ElementInstanceState {
 
     elementInstanceColumnFamily.put(elementInstanceKey, instance);
     parentChildColumnFamily.put(parentChildKey, DbNil.INSTANCE);
+    variablesState.createScope(elementInstanceKey.getValue(), parentKey.getValue());
   }
 
   public ElementInstance getInstance(long key) {
@@ -147,6 +153,8 @@ public class ElementInstanceState {
             tokenParentChildColumnFamily.delete(compositeKey);
             tokenColumnFamily.delete(compositeKey.getSecond());
           });
+
+      variablesState.removeScope(key);
 
       final long parentKey = instance.getParentKey();
       if (parentKey > 0) {
@@ -271,6 +279,36 @@ public class ElementInstanceState {
     return records;
   }
 
+  public boolean isEmpty() {
+    final AtomicBoolean isEmpty = new AtomicBoolean(true);
+
+    elementInstanceColumnFamily.whileTrue(
+        (k, v) -> {
+          isEmpty.compareAndSet(true, false);
+          return false;
+        });
+
+    parentChildColumnFamily.whileTrue(
+        (k, v) -> {
+          isEmpty.compareAndSet(true, false);
+          return false;
+        });
+
+    tokenColumnFamily.whileTrue(
+        (k, v) -> {
+          isEmpty.compareAndSet(true, false);
+          return false;
+        });
+
+    tokenParentChildColumnFamily.whileTrue(
+        (k, v) -> {
+          isEmpty.compareAndSet(true, false);
+          return false;
+        });
+
+    return isEmpty.get() && variablesState.isEmpty();
+  }
+
   @FunctionalInterface
   public interface TokenVisitor {
     void visitToken(IndexedRecord indexedRecord);
@@ -293,6 +331,10 @@ public class ElementInstanceState {
             visitor.visitToken(tokenEvent.getRecord());
           }
         });
+  }
+
+  public VariablesState getVariablesState() {
+    return variablesState;
   }
 
   public void flushDirtyState() {

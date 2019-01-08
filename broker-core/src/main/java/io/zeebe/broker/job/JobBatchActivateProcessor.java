@@ -23,23 +23,34 @@ import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.msgpack.value.LongValue;
+import io.zeebe.msgpack.value.StringValue;
 import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.collections.ObjectHashSet;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchRecord> {
 
   private final JobState state;
+  private final WorkflowState workflowState;
+  private final ObjectHashSet<DirectBuffer> variableNames = new ObjectHashSet<>();
 
-  public JobBatchActivateProcessor(final JobState state) {
+  public JobBatchActivateProcessor(JobState state, WorkflowState workflowState) {
     this.state = state;
+    this.workflowState = workflowState;
   }
 
   @Override
@@ -89,6 +100,17 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
     final ValueArray<LongValue> jobKeyIterator = value.jobKeys();
 
     // collect jobs for activation
+
+    variableNames.clear();
+    final ValueArray<StringValue> variables = value.variables();
+
+    variables.forEach(
+        v -> {
+          final MutableDirectBuffer nameCopy = new UnsafeBuffer(new byte[v.getValue().capacity()]);
+          nameCopy.putBytes(0, v.getValue(), 0, v.getValue().capacity());
+          variableNames.add(nameCopy);
+        });
+
     state.forEachActivatableJobs(
         value.getType(),
         (key, jobRecord) -> {
@@ -114,19 +136,48 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
     final Iterator<JobRecord> iterator = value.jobs().iterator();
     final Iterator<LongValue> keyIt = value.jobKeys().iterator();
     while (iterator.hasNext() && keyIt.hasNext()) {
-      final JobRecord next = iterator.next();
+      final JobRecord jobRecord = iterator.next();
       final LongValue next1 = keyIt.next();
       final long key = next1.getValue();
 
-      final ExpandableArrayBuffer copy = new ExpandableArrayBuffer();
-      next.write(copy, 0);
-      final JobRecord jobRecord = new JobRecord();
-      jobRecord.wrap(copy, 0, next.getLength());
-
       // update state and write follow up event for job record
-      state.activate(key, jobRecord);
-      streamWriter.appendFollowUpEvent(key, JobIntent.ACTIVATED, next);
+      final long elementInstanceKey = jobRecord.getHeaders().getElementInstanceKey();
+
+      if (elementInstanceKey >= 0) {
+        final DirectBuffer payload = collectPayload(variableNames, elementInstanceKey);
+        jobRecord.setPayload(payload);
+      } else {
+        jobRecord.setPayload(WorkflowInstanceRecord.EMPTY_PAYLOAD);
+      }
+
+      // we have to copy the job record because #write will reset the iterator state
+      final ExpandableArrayBuffer copy = new ExpandableArrayBuffer();
+      jobRecord.write(copy, 0);
+      final JobRecord copiedJob = new JobRecord();
+      copiedJob.wrap(copy, 0, jobRecord.getLength());
+
+      state.activate(key, copiedJob);
+      streamWriter.appendFollowUpEvent(key, JobIntent.ACTIVATED, copiedJob);
     }
+  }
+
+  private DirectBuffer collectPayload(
+      Collection<DirectBuffer> variableNames, long elementInstanceKey) {
+    final DirectBuffer payload;
+    if (variableNames.isEmpty()) {
+      payload =
+          workflowState
+              .getElementInstanceState()
+              .getVariablesState()
+              .getVariablesAsDocument(elementInstanceKey);
+    } else {
+      payload =
+          workflowState
+              .getElementInstanceState()
+              .getVariablesState()
+              .getVariablesAsDocument(elementInstanceKey, variableNames);
+    }
+    return payload;
   }
 
   private void rejectCommand(

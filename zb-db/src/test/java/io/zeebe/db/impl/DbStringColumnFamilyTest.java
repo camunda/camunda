@@ -16,6 +16,7 @@
 package io.zeebe.db.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.ZeebeDb;
@@ -190,6 +191,25 @@ public class DbStringColumnFamilyTest {
     // then should work like get
     assertThat(values).containsExactly("be good");
     assertThat(keys).containsExactly("and");
+  }
+
+  @Test
+  public void shouldThrowExceptionOnNestedWhileEqualPrefix() {
+    // given
+    putKeyValuePair("and", "be good");
+    key.wrapString("and");
+
+    // when
+    assertThatThrownBy(
+            () ->
+                columnFamily.whileEqualPrefix(
+                    key,
+                    (key, value) -> {
+                      columnFamily.whileEqualPrefix(key, (k, v) -> {});
+                    }))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage(
+            "Currently nested prefix iterations are not supported! This will cause unexpected behavior.");
   }
 
   private void putKeyValuePair(String key, String value) {

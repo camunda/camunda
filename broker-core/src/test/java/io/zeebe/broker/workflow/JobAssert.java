@@ -32,7 +32,7 @@ public class JobAssert {
   }
 
   public static void assertJobPayload(Record<JobRecordValue> event, String expectedPayload) {
-    final byte[] payload = MsgPackUtil.asMsgPack(event.getValue().getPayload());
+    final byte[] payload = MsgPackUtil.asMsgPackReturnArray(event.getValue().getPayload());
     MsgPackUtil.assertEquality(payload, expectedPayload);
   }
 
