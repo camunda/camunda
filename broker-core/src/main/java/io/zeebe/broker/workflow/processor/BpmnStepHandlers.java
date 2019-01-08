@@ -37,6 +37,7 @@ import io.zeebe.broker.workflow.processor.flownode.ConsumeTokenHandler;
 import io.zeebe.broker.workflow.processor.flownode.PropagateTerminationHandler;
 import io.zeebe.broker.workflow.processor.gateway.ExclusiveSplitHandler;
 import io.zeebe.broker.workflow.processor.gateway.ParallelSplitHandler;
+import io.zeebe.broker.workflow.processor.instance.CreateWorkflowInstanceOnStartEventHandler;
 import io.zeebe.broker.workflow.processor.process.CompleteProcessHandler;
 import io.zeebe.broker.workflow.processor.sequenceflow.ParallelMergeHandler;
 import io.zeebe.broker.workflow.processor.sequenceflow.StartFlowNodeHandler;
@@ -59,6 +60,11 @@ public class BpmnStepHandlers {
 
     // flow element container (process, sub process)
     stepHandlers.put(BpmnStep.TRIGGER_START_EVENT, new TriggerStartEventHandler(workflowState));
+
+    stepHandlers.put(
+        BpmnStep.CREATE_INSTANCE_ON_START_EVENT,
+        new CreateWorkflowInstanceOnStartEventHandler(zeebeState));
+
     stepHandlers.put(BpmnStep.COMPLETE_PROCESS, new CompleteProcessHandler());
     stepHandlers.put(
         BpmnStep.TERMINATE_CONTAINED_INSTANCES, new TerminateContainedElementsHandler(zeebeState));

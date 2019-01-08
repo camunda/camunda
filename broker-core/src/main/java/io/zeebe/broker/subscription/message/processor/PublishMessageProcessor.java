@@ -26,19 +26,24 @@ import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.state.Message;
+import io.zeebe.broker.subscription.message.state.MessageStartEventSubscriptionState;
 import io.zeebe.broker.subscription.message.state.MessageState;
 import io.zeebe.broker.subscription.message.state.MessageSubscriptionState;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.MessageIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.function.Consumer;
+import org.agrona.DirectBuffer;
 import org.agrona.collections.LongArrayList;
 
 public class PublishMessageProcessor implements TypedRecordProcessor<MessageRecord> {
 
   private final MessageState messageState;
   private final MessageSubscriptionState subscriptionState;
+  private final MessageStartEventSubscriptionState startEventSubscriptionState;
   private final SubscriptionCommandSender commandSender;
 
   private TypedResponseWriter responseWriter;
@@ -50,9 +55,11 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
   public PublishMessageProcessor(
       final MessageState messageState,
       final MessageSubscriptionState subscriptionState,
+      final MessageStartEventSubscriptionState startEventSubscriptionState,
       final SubscriptionCommandSender commandSender) {
     this.messageState = messageState;
     this.subscriptionState = subscriptionState;
+    this.startEventSubscriptionState = startEventSubscriptionState;
     this.commandSender = commandSender;
   }
 
@@ -118,6 +125,8 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
 
     sideEffect.accept(this::correlateMessage);
 
+    correlateMessageStartEvents(command, streamWriter);
+
     if (messageRecord.getTimeToLive() > 0L) {
       final Message message =
           new Message(
@@ -159,5 +168,24 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
     }
 
     return responseWriter.flush();
+  }
+
+  private void correlateMessageStartEvents(
+      final TypedRecord<MessageRecord> command, final TypedStreamWriter streamWriter) {
+    final DirectBuffer messageName = command.getValue().getName();
+    startEventSubscriptionState.visitSubscriptionsByMessageName(
+        messageName,
+        subscription -> {
+          final DirectBuffer startEventId = subscription.getStartEventId();
+          final long workflowKey = subscription.getWorkflowKey();
+
+          final WorkflowInstanceRecord record = new WorkflowInstanceRecord();
+          record
+              .setWorkflowKey(workflowKey)
+              .setElementId(startEventId)
+              .setPayload(command.getValue().getPayload());
+
+          streamWriter.appendNewEvent(WorkflowInstanceIntent.EVENT_OCCURRED, record);
+        });
   }
 }
