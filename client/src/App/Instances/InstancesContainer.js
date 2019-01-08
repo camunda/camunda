@@ -220,12 +220,19 @@ class InstancesContainer extends Component {
     });
   };
 
+  handleFilterChange = async newFilter => {
+    if (!isEqual(newFilter, this.state.filter)) {
+      // only change the URL if a new value for a field is provided
+      this.setFilterInURL({...this.state.filter, ...newFilter});
+    }
+  };
+
   render() {
     return (
       <Instances
         filter={decodeFields(this.state.filter)}
         groupedWorkflows={this.state.groupedWorkflows}
-        onFilterChange={this.setFilterInURL}
+        onFilterChange={this.handleFilterChange}
         diagramModel={this.state.diagramModel}
         statistics={this.state.statistics}
       />

@@ -182,9 +182,6 @@ describe('InstancesContainer', () => {
       formatGroupedWorkflows(groupedWorkflowsMock)
     );
     expect(InstancesNode.prop('filter')).toEqual(DEFAULT_FILTER);
-    expect(InstancesNode.props().onFilterChange).toBe(
-      node.instance().setFilterInURL
-    );
     expect(InstancesNode.props().diagramModel).toEqual({});
   });
 
@@ -228,6 +225,7 @@ describe('InstancesContainer', () => {
     );
     expect(InstancesNode.prop('diagramModel')).toEqual(parsedDiagram);
   });
+
   it('should pass data to Instances for full filter, with all versions', async () => {
     const {activityId, version, ...rest} = fullFilterWithWorkflow;
     const node = mount(
@@ -395,6 +393,33 @@ describe('InstancesContainer', () => {
         ...rest,
         version: 'all'
       });
+    });
+  });
+
+  describe('handle filter change', () => {
+    it("should update filter in url if it' differnt from the current one", async () => {
+      const node = mount(
+        <InstancesContainerWrapped
+          {...localStorageProps}
+          {...getRouterProps(fullFilterWithoutWorkflow)}
+        />
+      );
+
+      await flushPromises();
+      node.update();
+      const InstancesNode = node.find('Instances');
+
+      // when
+      InstancesNode.prop('onFilterChange')(fullFilterWithWorkflow);
+
+      // then
+      expect(pushMock).toHaveBeenCalled();
+      expect(pushMock.mock.calls[0][0].search).toBe(
+        getFilterQueryString({
+          ...fullFilterWithoutWorkflow,
+          ...fullFilterWithWorkflow
+        })
+      );
     });
   });
 });

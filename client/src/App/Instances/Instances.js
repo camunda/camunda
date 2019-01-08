@@ -163,29 +163,12 @@ class Instances extends Component {
     return instances;
   };
 
-  handleFilterChange = async newFilter => {
-    let hasNewValue = false;
-
-    for (let key in newFilter) {
-      if (this.props.filter[key] !== newFilter[key]) {
-        hasNewValue = true;
-        break;
-      }
-    }
-
-    // only change the URL if a new value for a field is provided
-    if (hasNewValue) {
-      const filter = {...this.props.filter, ...newFilter};
-      this.props.onFilterChange(filter);
-    }
-  };
-
   handleFilterReset = () => {
     this.props.onFilterChange(DEFAULT_FILTER);
   };
 
   handleFlowNodeSelection = flowNodeId => {
-    this.handleFilterChange({activityId: flowNodeId});
+    this.props.onFilterChange({activityId: flowNodeId});
   };
 
   getFilterQuery = () => {
@@ -248,7 +231,7 @@ class Instances extends Component {
                 filter={this.props.filter}
                 filterCount={this.state.filterCount}
                 onFilterReset={this.handleFilterReset}
-                onFilterChange={this.handleFilterChange}
+                onFilterChange={this.props.onFilterChange}
               />
             </Styled.Filters>
 

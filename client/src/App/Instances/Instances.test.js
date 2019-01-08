@@ -356,10 +356,7 @@ describe('Instances', () => {
       // when
       onFilterChange(newFilterValue);
 
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-        ...filterMock,
-        ...newFilterValue
-      });
+      expect(mockProps.onFilterChange).toHaveBeenCalledWith(newFilterValue);
     });
   });
 
