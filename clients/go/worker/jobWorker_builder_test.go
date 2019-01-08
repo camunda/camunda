@@ -84,3 +84,11 @@ func TestJobWorkerBuilder_PollThreshold(t *testing.T) {
 	builder.PollThreshold(0)
 	assert.Equal(t, 0.12, builder.pollThreshold)
 }
+
+func TestJobWorkerBuilder_FetchVariables(t *testing.T) {
+	fetchVariables := []string{"foo", "bar", "baz"}
+
+	builder := JobWorkerBuilder{}
+	builder.FetchVariables(fetchVariables...)
+	assert.Equal(t, fetchVariables, builder.request.FetchVariable)
+}

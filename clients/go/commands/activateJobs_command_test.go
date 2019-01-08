@@ -188,3 +188,34 @@ func TestActivateJobsCommandWithWorkerName(t *testing.T) {
 		t.Errorf("Failed to receive response")
 	}
 }
+
+func TestActivateJobsCommandWithFetchVariables(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+	stream := mock_pb.NewMockGateway_ActivateJobsClient(ctrl)
+
+	fetchVariables := []string{"foo", "bar", "baz"}
+
+	request := &pb.ActivateJobsRequest{
+		Type:          "foo",
+		Amount:        5,
+		Worker:        DefaultJobWorkerName,
+		Timeout:       DefaultJobTimeoutInMs,
+		FetchVariable: fetchVariables,
+	}
+
+	stream.EXPECT().Recv().Return(nil, io.EOF)
+	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stream, nil)
+
+	jobs, err := NewActivateJobsCommand(client, utils.DefaultTestTimeout).JobType("foo").Amount(5).FetchVariables(fetchVariables...).Send()
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if len(jobs) != 0 {
+		t.Errorf("Failed to receive response")
+	}
+}

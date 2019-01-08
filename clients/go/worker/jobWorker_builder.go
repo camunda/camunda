@@ -70,6 +70,8 @@ type JobWorkerBuilderStep3 interface {
 	PollInterval(time.Duration) JobWorkerBuilderStep3
 	// Set the threshold of buffered activated jobs before polling for new jobs, i.e. threshold * BufferSize(int)
 	PollThreshold(float64) JobWorkerBuilderStep3
+	// Set list of variable names which should be fetched on job activation
+	FetchVariables(...string) JobWorkerBuilderStep3
 	// Open the job worker and start polling and handling jobs
 	Open() JobWorker
 }
@@ -124,7 +126,11 @@ func (builder *JobWorkerBuilder) PollThreshold(pollThreshold float64) JobWorkerB
 		log.Println("Ignoring invalid poll threshold", pollThreshold, "which should be greater then zero for job worker and using instead", builder.concurrency)
 	}
 	return builder
+}
 
+func (builder *JobWorkerBuilder) FetchVariables(fetchVariables ...string) JobWorkerBuilderStep3 {
+	builder.request.FetchVariable = fetchVariables
+	return builder
 }
 
 func (builder *JobWorkerBuilder) Open() JobWorker {

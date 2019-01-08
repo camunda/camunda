@@ -45,6 +45,7 @@ type ActivateJobsCommandStep3 interface {
 
 	Timeout(time.Duration) ActivateJobsCommandStep3
 	WorkerName(string) ActivateJobsCommandStep3
+	FetchVariables(...string) ActivateJobsCommandStep3
 }
 
 type ActivateJobsCommand struct {
@@ -70,6 +71,11 @@ func (cmd *ActivateJobsCommand) Timeout(timeout time.Duration) ActivateJobsComma
 
 func (cmd *ActivateJobsCommand) WorkerName(workerName string) ActivateJobsCommandStep3 {
 	cmd.request.Worker = workerName
+	return cmd
+}
+
+func (cmd *ActivateJobsCommand) FetchVariables(fetchVariables ...string) ActivateJobsCommandStep3 {
+	cmd.request.FetchVariable = fetchVariables
 	return cmd
 }
 
