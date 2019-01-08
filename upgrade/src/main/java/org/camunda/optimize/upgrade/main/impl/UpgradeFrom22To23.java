@@ -4,7 +4,7 @@ import com.jayway.jsonpath.JsonPath;
 import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
-import org.camunda.optimize.upgrade.es.ElasticsearchRestClientBuilder;
+import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.main.Upgrade;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -141,7 +141,7 @@ public class UpgradeFrom22To23 implements Upgrade {
   }
 
   private Map<String, String> buildSingleReportIdToVisualizationMap() {
-    RestClient build = ElasticsearchRestClientBuilder.build(configurationService);
+    RestClient build = ElasticsearchHighLevelRestClientBuilder.build(configurationService).getLowLevelClient();
     try {
       Response response =
         build.performRequest("GET", getOptimizeIndexAliasForType(SINGLE_REPORT) + "/_search");

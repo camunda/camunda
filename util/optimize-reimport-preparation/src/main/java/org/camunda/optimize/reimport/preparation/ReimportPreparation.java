@@ -8,7 +8,7 @@ import org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
-import org.camunda.optimize.upgrade.es.ElasticsearchRestClientBuilder;
+import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
@@ -40,7 +40,8 @@ public class ReimportPreparation {
     ConfigurationService configurationService = new ConfigurationService();
     logger.info("Successfully read configuration.");
     logger.info("Creating connection to Elasticsearch...");
-    try (RestClient restClient = ElasticsearchRestClientBuilder.build(configurationService)) {
+    try (RestClient restClient =
+           ElasticsearchHighLevelRestClientBuilder.build(configurationService).getLowLevelClient()) {
       logger.info("Successfully created connection to Elasticsearch.");
       prepareElasticsearchSuchThatOptimizeReimportsDataFromEngine(configurationService, restClient);
       logger.info("Optimize was successfully prepared such it can reimport the engine data. " +

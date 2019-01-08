@@ -6,7 +6,7 @@ import ch.qos.logback.core.joran.spi.JoranException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
-import org.camunda.optimize.upgrade.es.ElasticsearchRestClientBuilder;
+import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.camunda.optimize.upgrade.main.UpgradeMain;
 import org.camunda.optimize.upgrade.service.ValidationService;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
@@ -46,7 +46,7 @@ public class UpgradeExecutionPlan implements UpgradePlan {
     validationService = new ValidationService(configurationService);
     validationService.validateConfiguration();
     validationService.validateExecutionPath();
-    client = ElasticsearchRestClientBuilder.build(configurationService);
+    client = ElasticsearchHighLevelRestClientBuilder.build(configurationService).getLowLevelClient();
   }
 
   private void addEnvironmentFolderToClasspath() throws Exception {
