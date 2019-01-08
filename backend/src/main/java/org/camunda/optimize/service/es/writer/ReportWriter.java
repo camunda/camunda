@@ -13,7 +13,6 @@ import org.camunda.optimize.service.es.schema.type.CombinedReportType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexRequest;
@@ -42,6 +41,7 @@ import java.util.Collections;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
@@ -54,16 +54,13 @@ public class ReportWriter {
   private static final Logger logger = LoggerFactory.getLogger(ReportWriter.class);
 
   private static final String DEFAULT_REPORT_NAME = "New Report";
-  private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
   private RestHighLevelClient esClient;
 
   @Autowired
   public ReportWriter(final RestHighLevelClient esClient,
-                      final ConfigurationService configurationService,
                       final ObjectMapper objectMapper) {
     this.esClient = esClient;
-    this.configurationService = configurationService;
     this.objectMapper = objectMapper;
   }
 
@@ -198,7 +195,7 @@ public class ReportWriter {
         )
           .doc(objectMapper.writeValueAsString(updatedReport), XContentType.JSON)
           .setRefreshPolicy(IMMEDIATE)
-          .retryOnConflict(configurationService.getNumberOfRetriesOnConflict());
+          .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
       UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
 
@@ -275,7 +272,7 @@ public class ReportWriter {
 
     UpdateByQueryRequest request = new UpdateByQueryRequest(getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE))
       .setAbortOnVersionConflict(false)
-      .setMaxRetries(configurationService.getNumberOfRetriesOnConflict())
+      .setMaxRetries(NUMBER_OF_RETRIES_ON_CONFLICT)
       .setQuery(query)
       .setScript(removeReportIdFromCombinedReportsScript)
       .setRefresh(true);

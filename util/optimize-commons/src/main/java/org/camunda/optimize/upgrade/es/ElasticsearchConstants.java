@@ -5,6 +5,8 @@ public class ElasticsearchConstants {
   // Note: we cap listings to 1000 as a generous practical limit, no paging
   public static final int LIST_FETCH_LIMIT = 1000;
 
+  public static final int NUMBER_OF_RETRIES_ON_CONFLICT = 5;
+
   public static final String DECISION_DEFINITION_TYPE = "decision-definition";
   public static final String DECISION_INSTANCE_TYPE = "decision-instance";
 

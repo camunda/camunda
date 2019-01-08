@@ -22,6 +22,7 @@ import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
 @Component
@@ -59,7 +60,8 @@ public class DecisionDefinitionWriter {
       UpdateRequest request =
         new UpdateRequest(getOptimizeIndexAliasForType(DECISION_DEFINITION_TYPE), DECISION_DEFINITION_TYPE, id)
           .script(updateScript)
-          .upsert(objectMapper.convertValue(decisionDefinition, Map.class));
+          .upsert(objectMapper.convertValue(decisionDefinition, Map.class))
+          .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
       bulkRequest.add(request);
     }

@@ -24,6 +24,7 @@ import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 
 @Component
 public class DecisionDefinitionXmlWriter {
@@ -87,7 +88,8 @@ public class DecisionDefinitionXmlWriter {
         newEntryIfAbsent.getId()
       )
         .script(updateScript)
-        .upsert(source, XContentType.JSON);
+        .upsert(source, XContentType.JSON)
+        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
     bulkRequest.add(updateRequest);
   }

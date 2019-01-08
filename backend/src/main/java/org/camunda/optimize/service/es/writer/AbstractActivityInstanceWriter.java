@@ -26,6 +26,7 @@ import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 
 
@@ -105,7 +106,8 @@ public abstract class AbstractActivityInstanceWriter {
     UpdateRequest request =
       new UpdateRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE), PROC_INSTANCE_TYPE, processInstanceId)
         .script(updateScript)
-        .upsert(newEntryIfAbsent, XContentType.JSON);
+        .upsert(newEntryIfAbsent, XContentType.JSON)
+        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
     addEventToProcessInstanceBulkRequest.add(request);
   }

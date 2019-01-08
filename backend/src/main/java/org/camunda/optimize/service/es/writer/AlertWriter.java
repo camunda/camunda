@@ -5,7 +5,6 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.service.es.schema.type.AlertType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.IdGenerator;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexRequest;
@@ -31,6 +30,7 @@ import java.io.IOException;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
@@ -40,14 +40,12 @@ public class AlertWriter {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private RestHighLevelClient esClient;
-  private ConfigurationService configurationService;
   private ObjectMapper objectMapper;
 
   @Autowired
-  public AlertWriter(RestHighLevelClient esClient, ConfigurationService configurationService,
+  public AlertWriter(RestHighLevelClient esClient,
                      ObjectMapper objectMapper) {
     this.esClient = esClient;
-    this.configurationService = configurationService;
     this.objectMapper = objectMapper;
   }
 
@@ -86,7 +84,7 @@ public class AlertWriter {
         new UpdateRequest(getOptimizeIndexAliasForType(ALERT_TYPE), ALERT_TYPE, alertUpdate.getId())
         .doc(objectMapper.writeValueAsString(alertUpdate), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE)
-        .retryOnConflict(configurationService.getNumberOfRetriesOnConflict());
+        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
       UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
 
@@ -154,7 +152,7 @@ public class AlertWriter {
         new UpdateRequest(getOptimizeIndexAliasForType(ALERT_TYPE), ALERT_TYPE, alertId)
           .doc(docFieldToUpdate)
           .setRefreshPolicy(IMMEDIATE)
-          .retryOnConflict(configurationService.getNumberOfRetriesOnConflict());
+          .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
       esClient.update(request, RequestOptions.DEFAULT);
     } catch (Exception e) {

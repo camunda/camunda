@@ -48,6 +48,7 @@ import java.util.Optional;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.isVariableTypeSupported;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.variableTypeToFieldLabel;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
@@ -201,7 +202,8 @@ public abstract class VariableWriter {
           processInstanceId
         )
           .script(updateScript)
-          .upsert(newEntryIfAbsent, XContentType.JSON);
+          .upsert(newEntryIfAbsent, XContentType.JSON)
+          .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
       addVariablesToProcessInstanceBulkRequest.add(request);
     }

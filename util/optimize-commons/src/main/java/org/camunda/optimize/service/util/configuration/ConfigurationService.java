@@ -111,7 +111,6 @@ public class ConfigurationService {
   private List<String> engineRestFilterPluginBasePackages;
   private List<String> authenticationExtractorPluginBasePackages;
 
-  private Integer numberOfRetriesOnConflict;
   private Long engineImportActivityInstanceMaxPageSize;
   private String containerHost;
   private String containerKeystorePassword;
@@ -592,13 +591,6 @@ public class ConfigurationService {
     return authenticationExtractorPluginBasePackages;
   }
 
-  public int getNumberOfRetriesOnConflict() {
-    if (numberOfRetriesOnConflict == null) {
-      numberOfRetriesOnConflict = configJsonContext.read(ConfigurationServiceConstants.NUMBER_OF_RETRIES_ON_CONFLICT);
-    }
-    return numberOfRetriesOnConflict;
-  }
-
   public long getEngineImportActivityInstanceMaxPageSize() {
     if (engineImportActivityInstanceMaxPageSize == null) {
       engineImportActivityInstanceMaxPageSize = configJsonContext.read(
@@ -994,10 +986,6 @@ public class ConfigurationService {
 
   public void setSamplerInterval(Long samplerInterval) {
     this.samplerInterval = samplerInterval;
-  }
-
-  public void setNumberOfRetriesOnConflict(Integer numberOfRetriesOnConflict) {
-    this.numberOfRetriesOnConflict = numberOfRetriesOnConflict;
   }
 
   public void setEngineImportActivityInstanceMaxPageSize(Long engineImportActivityInstanceMaxPageSize) {

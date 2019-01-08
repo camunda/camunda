@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 
 @Component
 public class ProcessDefinitionWriter {
@@ -93,7 +94,8 @@ public class ProcessDefinitionWriter {
           id
         )
           .script(updateScript)
-          .upsert(objectMapper.convertValue(procDef, Map.class));
+          .upsert(objectMapper.convertValue(procDef, Map.class))
+          .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
       bulkRequest.add(request);
     }

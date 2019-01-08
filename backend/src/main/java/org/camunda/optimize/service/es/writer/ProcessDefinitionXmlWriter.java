@@ -24,6 +24,7 @@ import java.util.Map;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.FLOW_NODE_NAMES;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_XML;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
 
 @Component
@@ -92,7 +93,8 @@ public class ProcessDefinitionXmlWriter {
     UpdateRequest updateRequest =
       new UpdateRequest(getOptimizeIndexAliasForType(PROC_DEF_TYPE), PROC_DEF_TYPE, newEntryIfAbsent.getId())
         .script(updateScript)
-        .upsert(source, XContentType.JSON);
+        .upsert(source, XContentType.JSON)
+        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
     bulkRequest.add(updateRequest);
   }

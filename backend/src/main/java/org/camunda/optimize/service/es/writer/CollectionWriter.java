@@ -10,7 +10,6 @@ import org.camunda.optimize.service.es.schema.type.CollectionType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
@@ -43,6 +42,7 @@ import java.util.List;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
@@ -55,14 +55,12 @@ public class CollectionWriter {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private RestHighLevelClient esClient;
-  private ConfigurationService configurationService;
   private ObjectMapper objectMapper;
 
   @Autowired
-  public CollectionWriter(RestHighLevelClient esClient, ConfigurationService configurationService,
+  public CollectionWriter(RestHighLevelClient esClient,
                           ObjectMapper objectMapper) {
     this.esClient = esClient;
-    this.configurationService = configurationService;
     this.objectMapper = objectMapper;
   }
 
@@ -112,7 +110,7 @@ public class CollectionWriter {
         new UpdateRequest(getOptimizeIndexAliasForType(COLLECTION_TYPE), COLLECTION_TYPE, id)
         .doc(objectMapper.writeValueAsString(collection), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE)
-        .retryOnConflict(configurationService.getNumberOfRetriesOnConflict());
+        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
       UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
 
@@ -199,7 +197,7 @@ public class CollectionWriter {
 
     UpdateByQueryRequest request = new UpdateByQueryRequest(getOptimizeIndexAliasForType(COLLECTION_TYPE))
       .setAbortOnVersionConflict(false)
-      .setMaxRetries(configurationService.getNumberOfRetriesOnConflict())
+      .setMaxRetries(NUMBER_OF_RETRIES_ON_CONFLICT)
       .setQuery(query)
       .setScript(removeReportFromCollectionScript)
       .setRefresh(true);

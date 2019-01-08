@@ -129,10 +129,6 @@ import:
   importIndexStorageIntervalInSec: 10
   # the time interval the import backs off from the current tip of the time, to reread potentially missed concurrent writes
   currentTimeBackoffMilliseconds: 2000
-  writer:
-    #Number of retries when there is a version conflict in Elasticsearch
-    #during the import.
-    numberOfRetries: 5
 
 # everything that is related with configuring Elasticsearch or creating
 # a connection to it.

@@ -9,7 +9,6 @@ import org.camunda.optimize.service.es.schema.type.DashboardType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
@@ -37,6 +36,7 @@ import java.util.Collections;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
 @Component
@@ -46,14 +46,12 @@ public class DashboardWriter {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private RestHighLevelClient esClient;
-  private ConfigurationService configurationService;
   private ObjectMapper objectMapper;
 
   @Autowired
-  public DashboardWriter(RestHighLevelClient esClient, ConfigurationService configurationService,
+  public DashboardWriter(RestHighLevelClient esClient,
                          ObjectMapper objectMapper) {
     this.esClient = esClient;
-    this.configurationService = configurationService;
     this.objectMapper = objectMapper;
   }
 
@@ -101,7 +99,7 @@ public class DashboardWriter {
         new UpdateRequest(getOptimizeIndexAliasForType(DASHBOARD_TYPE), DASHBOARD_TYPE, id)
           .doc(objectMapper.writeValueAsString(dashboard), XContentType.JSON)
           .setRefreshPolicy(IMMEDIATE)
-          .retryOnConflict(configurationService.getNumberOfRetriesOnConflict());
+          .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
       UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
 
@@ -147,7 +145,7 @@ public class DashboardWriter {
     );
     UpdateByQueryRequest request = new UpdateByQueryRequest(getOptimizeIndexAliasForType(DASHBOARD_TYPE))
       .setAbortOnVersionConflict(false)
-      .setMaxRetries(configurationService.getNumberOfRetriesOnConflict())
+      .setMaxRetries(NUMBER_OF_RETRIES_ON_CONFLICT)
       .setQuery(query)
       .setScript(removeReportIdFromCombinedReportsScript)
       .setRefresh(true);
