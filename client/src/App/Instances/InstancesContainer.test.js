@@ -77,8 +77,8 @@ function getRouterProps(filter = DEFAULT_FILTER) {
 }
 
 describe('InstancesContainer', () => {
-  afterEach(() => {
-    pushMock.mockClear();
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
   it('should fetch the groupedWorkflows', async () => {
@@ -112,6 +112,41 @@ describe('InstancesContainer', () => {
     expect(apiDiagram.fetchWorkflowXML).toHaveBeenCalledWith(
       groupedWorkflowsMock[0].workflows[2].id
     );
+  });
+
+  it('should fetch statistics', async () => {
+    // given
+    const node = mount(
+      <InstancesContainerWrapped
+        {...localStorageProps}
+        {...getRouterProps(fullFilterWithWorkflow)}
+      />
+    );
+    const expectedQuery = {
+      active: true,
+      activityId: 'taskD',
+      completed: true,
+      endDateAfter: '2018-12-28T00:00:00.000+0100',
+      endDateBefore: '2018-12-29T00:00:00.000+0100',
+      errorMessage: 'No data found for query $.foo.',
+      finished: true,
+      ids: ['424242', '434343'],
+      incidents: true,
+      running: true,
+      startDateAfter: '2018-12-28T00:00:00.000+0100',
+      startDateBefore: '2018-12-29T00:00:00.000+0100',
+      workflowIds: ['1']
+    };
+
+    // when
+    await flushPromises();
+    node.update();
+
+    // then
+    expect(api.fetchWorkflowInstancesStatistics).toHaveBeenCalled();
+    expect(
+      api.fetchWorkflowInstancesStatistics.mock.calls[0][0].queries[0]
+    ).toEqual(expectedQuery);
   });
 
   it('should write the filter to local storage', async () => {
