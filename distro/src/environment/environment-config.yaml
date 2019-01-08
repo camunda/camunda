@@ -113,6 +113,13 @@ es:
       # and restart Optimize.
       number_of_shards: 5
 
+import:
+  data:
+    dmn:
+      # Determines if the DMN/decision data, such as decision definitions and instances
+      # should be imported.
+      enabled: true
+
 serialization:
   # Define a custom date format that should be used for
   # fetching date data from the engine(should be the same as in the engine)

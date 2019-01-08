@@ -88,11 +88,13 @@ public class ConfigurationService {
   private Integer esNumberOfReplicas;
   private Integer esNumberOfShards;
   private String esRefreshInterval;
+  private Long samplerInterval;
 
   // job executor settings
   private Integer elasticsearchJobExecutorQueueSize;
   private Integer elasticsearchJobExecutorThreadCount;
 
+  // engine import settings
   private Integer engineConnectTimeout;
   private Integer engineReadTimeout;
   private Integer currentTimeBackoffMilliseconds;
@@ -102,7 +104,9 @@ public class ConfigurationService {
   private Integer engineImportDecisionDefinitionXmlMaxPageSize;
   private Integer engineImportDecisionInstanceMaxPageSize;
   private Integer importIndexAutoStorageIntervalInSec;
-  private Long samplerInterval;
+  private Boolean importDmnDataEnabled;
+
+  // plugin base packages
   private List<String> variableImportPluginBasePackages;
   private List<String> engineRestFilterPluginBasePackages;
   private List<String> authenticationExtractorPluginBasePackages;
@@ -726,6 +730,13 @@ public class ConfigurationService {
     return emailEnabled;
   }
 
+  public Boolean isImportDmnDataEnabled() {
+    if (importDmnDataEnabled == null) {
+      importDmnDataEnabled = configJsonContext.read(ConfigurationServiceConstants.IMPORT_DMN_DATA);
+    }
+    return importDmnDataEnabled;
+  }
+
   public String getAlertEmailAddress() {
     if (alertEmailAddress == null) {
       alertEmailAddress = configJsonContext.read(ConfigurationServiceConstants.EMAIL_ADDRESS);
@@ -1079,5 +1090,9 @@ public class ConfigurationService {
 
   public void setElasticsearchConnectionNodes(List<ElasticsearchConnectionNodeConfiguration> elasticsearchConnectionNodes) {
     this.elasticsearchConnectionNodes = elasticsearchConnectionNodes;
+  }
+
+  public void setImportDmnDataEnabled(Boolean importDmnDataEnabled) {
+    this.importDmnDataEnabled = importDmnDataEnabled;
   }
 }

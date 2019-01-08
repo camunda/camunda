@@ -1,5 +1,7 @@
 package org.camunda.optimize.service.importing;
 
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
@@ -24,6 +26,8 @@ import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedIm
 import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.hamcrest.CoreMatchers.is;
@@ -42,6 +46,30 @@ public class DecisionImportIT {
   @Rule
   public RuleChain chain = RuleChain
     .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule).around(engineDatabaseRule);
+
+  @Test
+  public void importOfDecisionDataCanBeDisabled() {
+    // given
+    embeddedOptimizeRule.getConfigurationService().setImportDmnDataEnabled(false);
+    embeddedOptimizeRule.reloadConfiguration();
+    engineRule.deployAndStartDecisionDefinition();
+    BpmnModelInstance exampleProcess = Bpmn.createExecutableProcess().name("foo").startEvent().endEvent().done();
+    engineRule.deployAndStartProcess(exampleProcess);
+
+    // when
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // then
+    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_TYPE, 0L);
+    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_TYPE, 0L);
+    allEntriesInElasticsearchHaveAllDataWithCount(PROC_INSTANCE_TYPE, 1L);
+    allEntriesInElasticsearchHaveAllDataWithCount(PROC_DEF_TYPE, 1L);
+
+    // cleanup
+    embeddedOptimizeRule.getConfigurationService().setImportDmnDataEnabled(true);
+    embeddedOptimizeRule.reloadConfiguration();
+  }
 
   @Test
   public void allDecisionDefinitionFieldDataOfImportIsAvailable() {
