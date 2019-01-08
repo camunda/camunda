@@ -28,6 +28,8 @@ import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest.Builder;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
 
 public class ActivateJobsCommandImpl
     implements ActivateJobsCommandStep1, ActivateJobsCommandStep2, ActivateJobsCommandStep3 {
@@ -73,6 +75,17 @@ public class ActivateJobsCommandImpl
   public ActivateJobsCommandStep3 workerName(String workerName) {
     builder.setWorker(workerName);
     return this;
+  }
+
+  @Override
+  public ActivateJobsCommandStep3 fetchVariables(List<String> fetchVariables) {
+    builder.addAllFetchVariable(fetchVariables);
+    return this;
+  }
+
+  @Override
+  public ActivateJobsCommandStep3 fetchVariables(String... fetchVariables) {
+    return fetchVariables(Arrays.asList(fetchVariables));
   }
 
   @Override

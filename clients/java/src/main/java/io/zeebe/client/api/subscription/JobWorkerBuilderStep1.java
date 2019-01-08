@@ -17,6 +17,7 @@ package io.zeebe.client.api.subscription;
 
 import io.zeebe.client.ZeebeClientConfiguration;
 import java.time.Duration;
+import java.util.List;
 
 public interface JobWorkerBuilderStep1 {
   /**
@@ -143,6 +144,32 @@ public interface JobWorkerBuilderStep1 {
      * @return the builder for this worker
      */
     JobWorkerBuilderStep3 pollInterval(Duration pollInterval);
+
+    /**
+     * Set a list of variable names which should be fetch on job activation.
+     *
+     * <p>The jobs which are activated by this worker will only contain variables from this list in
+     * their payload.
+     *
+     * <p>This can be used to limit the number of variables in the payload of the activated jobs.
+     *
+     * @param fetchVariables list of variables names to fetch on activation
+     * @return the builder for this worker
+     */
+    JobWorkerBuilderStep3 fetchVariables(List<String> fetchVariables);
+
+    /**
+     * Set a list of variable names which should be fetch on job activation.
+     *
+     * <p>The jobs which are activated by this worker will only contain variables from this list in
+     * their payload.
+     *
+     * <p>This can be used to limit the number of variables in the payload of the activated jobs.
+     *
+     * @param fetchVariables list of variables names to fetch on activation
+     * @return the builder for this worker
+     */
+    JobWorkerBuilderStep3 fetchVariables(String... fetchVariables);
 
     /**
      * Open the worker and start to work on available tasks.

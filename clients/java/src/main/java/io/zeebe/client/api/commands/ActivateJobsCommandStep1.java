@@ -17,6 +17,7 @@ package io.zeebe.client.api.commands;
 
 import io.zeebe.client.api.response.ActivateJobsResponse;
 import java.time.Duration;
+import java.util.List;
 
 public interface ActivateJobsCommandStep1 {
 
@@ -86,5 +87,33 @@ public interface ActivateJobsCommandStep1 {
      *     it to the broker.
      */
     ActivateJobsCommandStep3 workerName(String workerName);
+
+    /**
+     * Set a list of variable names which should be fetch on job activation.
+     *
+     * <p>The jobs which are activated by this command will only contain variables from this list in
+     * their payload.
+     *
+     * <p>This can be used to limit the number of variables in the payload of the activated jobs.
+     *
+     * @param fetchVariables list of variables names to fetch on activation
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    ActivateJobsCommandStep3 fetchVariables(List<String> fetchVariables);
+
+    /**
+     * Set a list of variable names which should be fetch on job activation.
+     *
+     * <p>The jobs which are activated by this command will only contain variables from this list in
+     * their payload.
+     *
+     * <p>This can be used to limit the number of variables in the payload of the activated jobs.
+     *
+     * @param fetchVariables list of variables names to fetch on activation
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    ActivateJobsCommandStep3 fetchVariables(String... fetchVariables);
   }
 }

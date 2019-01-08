@@ -34,8 +34,13 @@ import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.util.TestUtil;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -429,6 +434,62 @@ public class JobWorkerTest {
 
     // then
     TestUtil.waitUntil(() -> jobHandler.getHandledJobs().size() > subscriptionCapacity);
+  }
+
+  @Test
+  public void shouldOnlyFetchVariablesSpecified() throws InterruptedException {
+    // given
+    final String jobType = "test";
+    final List<String> fetchVariables = Arrays.asList("foo", "bar", "baz");
+    final Set<String> capturedVariables = new HashSet<>();
+    final CountDownLatch latch = new CountDownLatch(1);
+
+    client
+        .newWorker()
+        .jobType(jobType)
+        .handler(
+            (c, job) -> {
+              final Map<String, Object> payload = job.getPayloadAsMap();
+              capturedVariables.addAll(payload.keySet());
+              latch.countDown();
+            })
+        .fetchVariables(fetchVariables)
+        .open();
+
+    // when
+    clientRule.createSingleJob(jobType, b -> {}, "{\"foo\":1,\"baz\":2,\"hello\":\"world\"}");
+
+    // then
+    latch.await();
+    assertThat(capturedVariables).isSubsetOf(fetchVariables);
+  }
+
+  @Test
+  public void shouldOnlyFetchVariablesSpecifiedAsVargs() throws InterruptedException {
+    // given
+    final String jobType = "test";
+    final String[] fetchVariables = new String[] {"foo", "bar", "baz"};
+    final Set<String> capturedVariables = new HashSet<>();
+    final CountDownLatch latch = new CountDownLatch(1);
+
+    client
+        .newWorker()
+        .jobType(jobType)
+        .handler(
+            (c, job) -> {
+              final Map<String, Object> payload = job.getPayloadAsMap();
+              capturedVariables.addAll(payload.keySet());
+              latch.countDown();
+            })
+        .fetchVariables(fetchVariables)
+        .open();
+
+    // when
+    clientRule.createSingleJob(jobType, b -> {}, "{\"foo\":1,\"baz\":2,\"hello\":\"world\"}");
+
+    // then
+    latch.await();
+    assertThat(capturedVariables).isSubsetOf(fetchVariables);
   }
 
   private long createJobOfType(final String type) {
