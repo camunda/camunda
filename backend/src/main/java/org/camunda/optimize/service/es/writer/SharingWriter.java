@@ -5,7 +5,6 @@ import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.IdGenerator;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexRequest;
@@ -22,9 +21,7 @@ import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CREATE_SUCCESSFUL_RESPONSE_RESULT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_SHARE_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DELETE_SUCCESSFUL_RESPONSE_RESULT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.REPORT_SHARE_TYPE;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
@@ -34,14 +31,12 @@ public class SharingWriter {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private RestHighLevelClient esClient;
-  private ConfigurationService configurationService;
   private ObjectMapper objectMapper;
 
   @Autowired
-  public SharingWriter(RestHighLevelClient esClient, ConfigurationService configurationService,
+  public SharingWriter(RestHighLevelClient esClient,
                        ObjectMapper objectMapper) {
     this.esClient = esClient;
-    this.configurationService = configurationService;
     this.objectMapper = objectMapper;
   }
 
@@ -60,7 +55,7 @@ public class SharingWriter {
 
       IndexResponse indexResponse = esClient.index(request, RequestOptions.DEFAULT);
 
-      if (!indexResponse.getResult().getLowercase().equals(CREATE_SUCCESSFUL_RESPONSE_RESULT)) {
+      if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
         String message = "Could not write report share to Elasticsearch. " +
           "Maybe the connection to Elasticsearch got lost?";
         logger.error(message);
@@ -91,7 +86,7 @@ public class SharingWriter {
 
       IndexResponse indexResponse = esClient.index(request, RequestOptions.DEFAULT);
 
-      if (!indexResponse.getResult().getLowercase().equals(CREATE_SUCCESSFUL_RESPONSE_RESULT)) {
+      if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
         String message = "Could not write dashboard share to Elasticsearch. " +
           "Maybe the connection to Elasticsearch got lost?";
         logger.error(message);
@@ -124,7 +119,8 @@ public class SharingWriter {
 
       IndexResponse indexResponse = esClient.index(request, RequestOptions.DEFAULT);
 
-      if (!indexResponse.getResult().getLowercase().equals(CREATE_SUCCESSFUL_RESPONSE_RESULT)) {
+      if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED) &&
+        !indexResponse.getResult().equals(IndexResponse.Result.UPDATED)) {
         String message = "Could not write dashboard share to Elasticsearch.";
         logger.error(message);
         throw new OptimizeRuntimeException(message);
@@ -157,13 +153,12 @@ public class SharingWriter {
       deleteResponse = esClient.delete(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String reason =
-        String.format("Could not delete report share with id [%s]. " +
-                        "Maybe Optimize is not connected to Elasticsearch?", shareId);
+        String.format("Could not delete report share with id [%s].", shareId);
       logger.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    if (!deleteResponse.getResult().getLowercase().equals(DELETE_SUCCESSFUL_RESPONSE_RESULT)) {
+    if (!deleteResponse.getResult().equals(DeleteResponse.Result.DELETED)) {
       String message =
         String.format("Could not delete report share with id [%s]. Report share does not exist." +
                         "Maybe it was already deleted by someone else?", shareId);
@@ -187,13 +182,12 @@ public class SharingWriter {
       deleteResponse = esClient.delete(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String reason =
-        String.format("Could not delete dashboard share with id [%s]. " +
-                        "Maybe Optimize is not connected to Elasticsearch?", shareId);
+        String.format("Could not delete dashboard share with id [%s].", shareId);
       logger.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    if (!deleteResponse.getResult().getLowercase().equals(DELETE_SUCCESSFUL_RESPONSE_RESULT)) {
+    if (!deleteResponse.getResult().equals(DeleteResponse.Result.DELETED)) {
       String message =
         String.format("Could not delete dashboard share with id [%s]. Dashboard share does not exist." +
                         "Maybe it was already deleted by someone else?", shareId);

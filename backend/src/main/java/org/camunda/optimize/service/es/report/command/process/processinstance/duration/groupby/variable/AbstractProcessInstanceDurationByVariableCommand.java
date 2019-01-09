@@ -79,7 +79,7 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
     } catch (IOException e) {
       String reason =
         String.format(
-          "Could not average process instance duration grouped by variable report " +
+          "Could not evaluate average process instance duration grouped by variable report " +
             "for process definition key [%s] and version [%s]",
           processReportData.getProcessDefinitionKey(),
           processReportData.getProcessDefinitionVersion()

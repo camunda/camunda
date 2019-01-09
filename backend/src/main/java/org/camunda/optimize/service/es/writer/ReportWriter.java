@@ -42,8 +42,6 @@ import java.util.Collections;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CREATE_SUCCESSFUL_RESPONSE_RESULT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DELETE_SUCCESSFUL_RESPONSE_RESULT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
@@ -108,9 +106,8 @@ public class ReportWriter {
 
       IndexResponse indexResponse = esClient.index(request, RequestOptions.DEFAULT);
 
-      if (!indexResponse.getResult().getLowercase().equals(CREATE_SUCCESSFUL_RESPONSE_RESULT)) {
-        String message = "Could not write report to Elasticsearch. " +
-          "Maybe the connection to Elasticsearch got lost?";
+      if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
+        String message = "Could not write report to Elasticsearch. ";
         logger.error(message);
         throw new OptimizeRuntimeException(message);
       }
@@ -161,9 +158,8 @@ public class ReportWriter {
 
       IndexResponse indexResponse = esClient.index(request, RequestOptions.DEFAULT);
 
-      if (!indexResponse.getResult().getLowercase().equals(CREATE_SUCCESSFUL_RESPONSE_RESULT)) {
-        String message = "Could not write report to Elasticsearch. " +
-          "Maybe the connection to Elasticsearch got lost?";
+      if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
+        String message = "Could not write report to Elasticsearch.";
         logger.error(message);
         throw new OptimizeRuntimeException(message);
       }
@@ -317,13 +313,12 @@ public class ReportWriter {
       deleteResponse = esClient.delete(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String reason =
-        String.format("Could not delete combined report with id [%s]. " +
-                        "Maybe Optimize is not connected to Elasticsearch?", reportId);
+        String.format("Could not delete combined report with id [%s].", reportId);
       logger.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    if (!deleteResponse.getResult().getLowercase().equals(DELETE_SUCCESSFUL_RESPONSE_RESULT)) {
+    if (!deleteResponse.getResult().equals(DeleteResponse.Result.DELETED)) {
       String message =
         String.format("Could not delete combined process report with id [%s]. " +
                         "Combined process report does not exist." +

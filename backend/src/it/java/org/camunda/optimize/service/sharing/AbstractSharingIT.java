@@ -141,8 +141,8 @@ public abstract class AbstractSharingIT {
             .getId();
   }
 
-  void updateDashboard(String id, DashboardDefinitionDto updatedDashboard) {
-    embeddedOptimizeRule
+  Response updateDashboard(String id, DashboardDefinitionDto updatedDashboard) {
+    return embeddedOptimizeRule
             .getRequestExecutor()
             .buildUpdateDashboardRequest(id, updatedDashboard)
             .execute();

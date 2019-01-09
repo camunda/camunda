@@ -36,9 +36,7 @@ import java.io.IOException;
 import java.util.Collections;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CREATE_SUCCESSFUL_RESPONSE_RESULT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DELETE_SUCCESSFUL_RESPONSE_RESULT;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
 @Component
@@ -78,7 +76,7 @@ public class DashboardWriter {
 
       IndexResponse indexResponse = esClient.index(request, RequestOptions.DEFAULT);
 
-      if (!indexResponse.getResult().getLowercase().equals(CREATE_SUCCESSFUL_RESPONSE_RESULT)) {
+      if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
         String message = "Could not write dashboard to Elasticsearch. " +
           "Maybe the connection to Elasticsearch got lost?";
         logger.error(message);
@@ -186,13 +184,12 @@ public class DashboardWriter {
       deleteResponse = esClient.delete(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String reason =
-        String.format("Could not delete dashboard with id [%s]. " +
-                        "Maybe Optimize is not connected to Elasticsearch?", dashboardId);
+        String.format("Could not delete dashboard with id [%s].", dashboardId);
       logger.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    if (!deleteResponse.getResult().getLowercase().equals(DELETE_SUCCESSFUL_RESPONSE_RESULT)) {
+    if (!deleteResponse.getResult().equals(DeleteResponse.Result.DELETED)) {
       String message =
         String.format("Could not delete dashboard with id [%s]. Dashboard does not exist." +
                         "Maybe it was already deleted by someone else?", dashboardId);

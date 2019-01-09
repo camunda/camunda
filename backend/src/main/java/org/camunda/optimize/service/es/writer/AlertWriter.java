@@ -31,8 +31,6 @@ import java.io.IOException;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CREATE_SUCCESSFUL_RESPONSE_RESULT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DELETE_SUCCESSFUL_RESPONSE_RESULT;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
@@ -65,7 +63,7 @@ public class AlertWriter {
 
       IndexResponse indexResponse = esClient.index(request, RequestOptions.DEFAULT);
 
-      if (!indexResponse.getResult().getLowercase().equals(CREATE_SUCCESSFUL_RESPONSE_RESULT)) {
+      if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
         String message = "Could not write alert to Elasticsearch. " +
           "Maybe the connection to Elasticsearch got lost?";
         logger.error(message);
@@ -135,7 +133,7 @@ public class AlertWriter {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    if (!deleteResponse.getResult().getLowercase().equals(DELETE_SUCCESSFUL_RESPONSE_RESULT)) {
+    if (!deleteResponse.getResult().equals(DeleteResponse.Result.DELETED)) {
       String message =
         String.format("Could not delete alert with id [%s]. Alert does not exist." +
                         "Maybe it was already deleted by someone else?", alertId);

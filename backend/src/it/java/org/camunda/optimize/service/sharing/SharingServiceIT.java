@@ -279,6 +279,23 @@ public class SharingServiceIT extends AbstractSharingIT {
   }
 
   @Test
+  public void updateDashboardShareMoreThanOnce() {
+    //given
+    String reportId = createReport();
+    String dashboardWithReport = createDashboardWithReport(reportId);
+    String dashboardShareId = addShareForDashboard(dashboardWithReport);
+    DashboardDefinitionDto fullBoard = new DashboardDefinitionDto();
+    fullBoard.setId(dashboardWithReport);
+    updateDashboard(dashboardWithReport, fullBoard);
+
+    //when
+    Response response = updateDashboard(dashboardWithReport, fullBoard);
+
+    //then
+    assertThat(response.getStatus(), is(204));
+  }
+
+  @Test
   public void updatingDashboardUpdatesRespectiveShare() {
     // given
     String dashboardId = addEmptyDashboardToOptimize();

@@ -16,9 +16,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CREATE_SUCCESSFUL_RESPONSE_RESULT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_TYPE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.UPDATE_SUCCESSFUL_RESPONSE_RESULT;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
 
@@ -46,8 +44,8 @@ public class MetadataWriter {
 
       IndexResponse indexResponse = esClient.index(request, RequestOptions.DEFAULT);
 
-      if (!indexResponse.getResult().getLowercase().equals(CREATE_SUCCESSFUL_RESPONSE_RESULT) &&
-        !indexResponse.getResult().getLowercase().equals(UPDATE_SUCCESSFUL_RESPONSE_RESULT)) {
+      if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED) &&
+        !indexResponse.getResult().equals(IndexResponse.Result.UPDATED)) {
         String message = "Could not write Optimize version to Elasticsearch. " +
           "Maybe the connection to Elasticsearch got lost?";
         logger.error(message);

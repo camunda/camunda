@@ -61,13 +61,13 @@ public abstract class FlowNodeGroupingCommand extends ProcessReportCommand<Proce
         String responseBodyAsString = response.getHits().getAt(0).getSourceAsString();
         return objectMapper.readValue(responseBodyAsString, ProcessDefinitionOptimizeDto.class);
       } else {
-        String reason = "Could not fetch process instance for latest process definition. " +
+        String reason = "Could not fetch latest process definition. " +
           "It seems the process definition hast not been imported yet.";
         logger.error(reason);
         throw new OptimizeRuntimeException(reason);
       }
     } catch (IOException e) {
-      String reason = "Could not fetch process instance for latest process definition.";
+      String reason = "Could not latest process definition.";
       logger.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }

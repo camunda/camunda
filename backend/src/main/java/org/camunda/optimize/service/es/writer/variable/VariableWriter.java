@@ -59,9 +59,8 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 public abstract class VariableWriter {
 
   protected final Logger logger = LoggerFactory.getLogger(getClass());
-
-  private final RestHighLevelClient esClient;
   protected final ObjectMapper objectMapper;
+  private final RestHighLevelClient esClient;
   private final DateTimeFormatter dateTimeFormatter;
 
   @Autowired
@@ -70,32 +69,6 @@ public abstract class VariableWriter {
     this.esClient = esClient;
     this.objectMapper = objectMapper;
     this.dateTimeFormatter = dateTimeFormatter;
-  }
-
-  private static void addAtLeastOneVariableArrayNotEmptyNestedFilters(final BoolQueryBuilder queryBuilder) {
-    final BoolQueryBuilder innerBoolQuery = boolQuery();
-    innerBoolQuery.minimumShouldMatch(1);
-
-    Arrays.stream(ProcessVariableHelper.getAllVariableTypeFieldLabels())
-      .forEach(variableName -> innerBoolQuery.should(
-        nestedQuery(
-          variableName,
-          scriptQuery(new Script(MessageFormat.format("doc[''{0}.id''].length > 0", variableName))),
-          ScoreMode.None
-        )
-      ));
-
-    queryBuilder.filter(innerBoolQuery);
-  }
-
-  private static Script createVariableClearScript(String[] variableFieldNames) {
-    final StringBuilder builder = new StringBuilder();
-    for (String variableField : variableFieldNames) {
-      builder.append(
-        MessageFormat.format("ctx._source.{0} = new ArrayList();\n", variableField)
-      );
-    }
-    return new Script(builder.toString());
   }
 
   public void importVariables(List<VariableDto> variables) throws Exception {
@@ -157,7 +130,7 @@ public abstract class VariableWriter {
         bulkByScrollResponse = esClient.updateByQuery(request, RequestOptions.DEFAULT);
       } catch (IOException e) {
         String reason =
-          String.format("Could not delete process instances " +
+          String.format("Could not delete process instance variables" +
                           "for process definition key [%s] and end date [%s].", processDefinitionKey, endDate);
         logger.error(reason, e);
         throw new OptimizeRuntimeException(reason, e);
@@ -375,6 +348,32 @@ public abstract class VariableWriter {
 
   private Integer parseInteger(VariableDto var) {
     return var.getValue() == null ? null : Integer.parseInt(var.getValue());
+  }
+
+  private static Script createVariableClearScript(String[] variableFieldNames) {
+    final StringBuilder builder = new StringBuilder();
+    for (String variableField : variableFieldNames) {
+      builder.append(
+        MessageFormat.format("ctx._source.{0} = new ArrayList();\n", variableField)
+      );
+    }
+    return new Script(builder.toString());
+  }
+
+  private static void addAtLeastOneVariableArrayNotEmptyNestedFilters(final BoolQueryBuilder queryBuilder) {
+    final BoolQueryBuilder innerBoolQuery = boolQuery();
+    innerBoolQuery.minimumShouldMatch(1);
+
+    Arrays.stream(ProcessVariableHelper.getAllVariableTypeFieldLabels())
+      .forEach(variableName -> innerBoolQuery.should(
+        nestedQuery(
+          variableName,
+          scriptQuery(new Script(MessageFormat.format("doc[''{0}.id''].length > 0", variableName))),
+          ScoreMode.None
+        )
+      ));
+
+    queryBuilder.filter(innerBoolQuery);
   }
 
 }
