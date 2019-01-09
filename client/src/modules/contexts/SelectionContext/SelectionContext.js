@@ -11,10 +11,6 @@ import {
   fetchWorkflowInstancesByIds
 } from 'modules/api/instances';
 import {getSelectionById} from 'modules/utils/selection';
-import {
-  parseFilterForRequest,
-  getFilterWithWorkflowIds
-} from 'modules/utils/filter';
 import withSharedState from 'modules/components/withSharedState';
 import {DEFAULT_SELECTED_INSTANCES} from 'modules/constants';
 
@@ -34,10 +30,10 @@ class BasicSelectionProvider extends React.Component {
       PropTypes.arrayOf(PropTypes.node),
       PropTypes.node
     ]),
+    getFilterQuery: PropTypes.func.isRequired,
     getStateLocally: PropTypes.func.isRequired,
     storeStateLocally: PropTypes.func.isRequired,
-    filter: PropTypes.object,
-    groupedWorkflows: PropTypes.object.isRequired
+    filter: PropTypes.object
   };
 
   constructor(props) {
@@ -78,22 +74,13 @@ class BasicSelectionProvider extends React.Component {
     }
   }
 
-  getFilterQuery = () => {
-    const filterWithWorkflowIds = getFilterWithWorkflowIds(
-      this.props.filter,
-      this.props.groupedWorkflows
-    );
-
-    return parseFilterForRequest(filterWithWorkflowIds);
-  };
-
   /**
    * Gets the queries associatioed with a particular selection.
    * It combines the current filter query and the ids of instances in the selection
    */
   getSelectionQueries = () => {
     // add filter query to the query
-    let query = this.getFilterQuery();
+    let query = this.props.getFilterQuery();
 
     if (!this.state.selectedInstances.all) {
       query.ids = [...this.state.selectedInstances.ids];

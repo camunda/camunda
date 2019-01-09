@@ -1,9 +1,4 @@
-import {isEmpty} from 'lodash';
-
 import {isValidJSON} from 'modules/utils';
-import {parseDiagramXML} from 'modules/utils/bpmn';
-import {fetchWorkflowXML} from 'modules/api/diagram';
-import {getWorkflowByVersion} from 'modules/utils/filter';
 
 export function parseQueryString(queryString = '') {
   var params = {};
@@ -101,30 +96,4 @@ export function formatGroupedWorkflows(workflows = []) {
 
     return obj;
   }, {});
-}
-
-export async function fetchDiagramModel(workflowId) {
-  const xml = await fetchWorkflowXML(workflowId);
-  return await parseDiagramXML(xml);
-}
-
-export function getWorkflowByVersionFromFilter({
-  filter: {workflow, version},
-  groupedWorkflows
-}) {
-  return getWorkflowByVersion(groupedWorkflows[workflow], version);
-}
-
-export function getWorkflowNameFromFilter({filter, groupedWorkflows}) {
-  const currentWorkflowByVersion = getWorkflowByVersionFromFilter({
-    filter,
-    groupedWorkflows
-  });
-
-  if (!isEmpty(currentWorkflowByVersion)) {
-    return getWorkflowName(currentWorkflowByVersion);
-  }
-
-  const currentWorkflow = groupedWorkflows[filter.workflow];
-  return getWorkflowName(currentWorkflow);
 }
