@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.assertj.core.internal.bytebuddy.utility.RandomString;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -84,7 +85,28 @@ public class MsgPackSkippingTest {
             "str 8", given((b) -> b.add(0xd9, 0x01, 0xff)) // length 1
           },
           {
+            "str 8 > 127",
+            given(
+                (b) -> {
+                  final byte[] bytes = RandomString.make(130).getBytes();
+                  bytes[0] = (byte) 0xd9;
+                  bytes[1] = (byte) 0x80; // length 128
+                  b.add(bytes);
+                })
+          },
+          {
             "str 16", given((b) -> b.add(0xda, 0x00, 0x01, 0xff)) // length 1
+          },
+          {
+            "str 16 > 2^15 - 1",
+            given(
+                (b) -> {
+                  final byte[] bytes = RandomString.make((1 << 15) + 3).getBytes();
+                  bytes[0] = (byte) 0xda;
+                  bytes[1] = (byte) 0x80; // length 2^15 = 0x8000
+                  bytes[2] = (byte) 0x00;
+                  b.add(bytes);
+                })
           },
           {
             "str 32", given((b) -> b.add(0xdb, 0x00, 0x00, 0x00, 0x01, 0xff)) // length 1

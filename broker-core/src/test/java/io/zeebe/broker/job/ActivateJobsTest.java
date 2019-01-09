@@ -45,6 +45,7 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.util.MsgPackUtil;
+import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.io.ByteArrayOutputStream;
 import java.time.Duration;
@@ -57,6 +58,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import one.util.streamex.StreamEx;
+import org.assertj.core.internal.bytebuddy.utility.RandomString;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -67,6 +69,7 @@ public class ActivateJobsTest {
   public static final String JSON_PAYLOAD = "{\"foo\": \"bar\"}";
   public static final byte[] PAYLOAD_MSG_PACK = MsgPackUtil.asMsgPackReturnArray(JSON_PAYLOAD);
   public static final String PROCESS_ID = "testProcess";
+  public static final String LONG_CUSTOM_HEADER_VALUE = RandomString.make(128);
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
@@ -333,6 +336,32 @@ public class ActivateJobsTest {
     assertThat(records)
         .extracting(r -> r.getValue().getWorkflowInstanceKey())
         .containsOnlyElementsOf(workflowInstanceKeys);
+  }
+
+  @Test
+  public void shouldActivateJobsWithLongCustomHeaders() {
+    // given
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("processId")
+            .startEvent()
+            .serviceTask(
+                "task",
+                b -> {
+                  b.zeebeTaskType("taskType").zeebeTaskHeader("foo", LONG_CUSTOM_HEADER_VALUE);
+                })
+            .endEvent()
+            .done();
+
+    apiRule.partitionClient().deployWithResponse(Bpmn.convertToString(modelInstance).getBytes());
+    apiRule.partitionClient().createWorkflowInstance("processId");
+
+    // when
+    apiRule.partitionClient().completeJobOfType("taskType");
+
+    // then
+    final JobRecordValue jobRecord =
+        RecordingExporter.jobRecords(JobIntent.ACTIVATED).limit(1).getFirst().getValue();
+    assertThat(jobRecord.getCustomHeaders().get("foo")).isEqualTo(LONG_CUSTOM_HEADER_VALUE);
   }
 
   @Test
