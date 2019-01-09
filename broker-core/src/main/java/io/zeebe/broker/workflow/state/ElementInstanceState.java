@@ -46,16 +46,16 @@ public class ElementInstanceState {
   private final ElementInstance elementInstance;
   private final ColumnFamily<DbLong, ElementInstance> elementInstanceColumnFamily;
 
-  private final DbLong tokenKey;
+  private final DbLong recordKey;
   private final StoredRecord storedRecord;
-  private final ColumnFamily<DbLong, StoredRecord> tokenColumnFamily;
+  private final ColumnFamily<DbLong, StoredRecord> recordColumnFamily;
 
-  private final DbLong tokenParentKey;
-  private final DbCompositeKey<DbCompositeKey<DbLong, DbByte>, DbLong> tokenParentStateTokenKey;
+  private final DbLong recordParentKey;
+  private final DbCompositeKey<DbCompositeKey<DbLong, DbByte>, DbLong> recordParentStateRecordKey;
   private final DbByte stateKey;
-  private final DbCompositeKey<DbLong, DbByte> tokenParentStateKey;
+  private final DbCompositeKey<DbLong, DbByte> recordParentStateKey;
   private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbLong, DbByte>, DbLong>, DbNil>
-      tokenParentChildColumnFamily;
+      recordParentChildColumnFamily;
 
   private final ExpandableArrayBuffer copyBuffer = new ExpandableArrayBuffer();
 
@@ -75,18 +75,21 @@ public class ElementInstanceState {
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.ELEMENT_INSTANCE_KEY, elementInstanceKey, elementInstance);
 
-    tokenKey = new DbLong();
+    recordKey = new DbLong();
     storedRecord = new StoredRecord();
-    tokenColumnFamily =
-        zeebeDb.createColumnFamily(ZbColumnFamilies.TOKEN_EVENTS, tokenKey, storedRecord);
-
-    tokenParentKey = new DbLong();
-    stateKey = new DbByte();
-    tokenParentStateKey = new DbCompositeKey<>(tokenParentKey, stateKey);
-    tokenParentStateTokenKey = new DbCompositeKey<>(tokenParentStateKey, tokenKey);
-    tokenParentChildColumnFamily =
+    recordColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.TOKEN_PARENT_CHILD, tokenParentStateTokenKey, DbNil.INSTANCE);
+            ZbColumnFamilies.STORED_INSTANCE_EVENTS, recordKey, storedRecord);
+
+    recordParentKey = new DbLong();
+    stateKey = new DbByte();
+    recordParentStateKey = new DbCompositeKey<>(recordParentKey, stateKey);
+    recordParentStateRecordKey = new DbCompositeKey<>(recordParentStateKey, recordKey);
+    recordParentChildColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.STORED_INSTANCE_EVENTS_PARENT_CHILD,
+            recordParentStateRecordKey,
+            DbNil.INSTANCE);
 
     variablesState = new VariablesState(zeebeDb);
   }
@@ -146,11 +149,11 @@ public class ElementInstanceState {
       elementInstanceColumnFamily.delete(elementInstanceKey);
       cachedInstances.remove(key);
 
-      tokenParentChildColumnFamily.whileEqualPrefix(
+      recordParentChildColumnFamily.whileEqualPrefix(
           elementInstanceKey,
           (compositeKey, nil) -> {
-            tokenParentChildColumnFamily.delete(compositeKey);
-            tokenColumnFamily.delete(compositeKey.getSecond());
+            recordParentChildColumnFamily.delete(compositeKey);
+            recordColumnFamily.delete(compositeKey.getSecond());
           });
 
       variablesState.removeScope(key);
@@ -163,9 +166,9 @@ public class ElementInstanceState {
     }
   }
 
-  public StoredRecord getTokenEvent(long tokenKey) {
-    this.tokenKey.wrapLong(tokenKey);
-    return tokenColumnFamily.get(this.tokenKey);
+  public StoredRecord getStoredRecord(long recordKey) {
+    this.recordKey.wrapLong(recordKey);
+    return recordColumnFamily.get(this.recordKey);
   }
 
   void updateInstance(ElementInstance scopeInstance) {
@@ -205,7 +208,7 @@ public class ElementInstanceState {
     }
   }
 
-  public void storeTokenEvent(
+  public void storeRecord(
       long scopeKey, TypedRecord<WorkflowInstanceRecord> record, Purpose purpose) {
     final IndexedRecord indexedRecord =
         new IndexedRecord(
@@ -214,51 +217,51 @@ public class ElementInstanceState {
             record.getValue());
     final StoredRecord storedRecord = new StoredRecord(indexedRecord, purpose);
 
-    setTokenKeys(scopeKey, record.getKey(), purpose);
+    setRecordKeys(scopeKey, record.getKey(), purpose);
 
-    tokenColumnFamily.put(tokenKey, storedRecord);
-    tokenParentChildColumnFamily.put(tokenParentStateTokenKey, DbNil.INSTANCE);
+    recordColumnFamily.put(recordKey, storedRecord);
+    recordParentChildColumnFamily.put(recordParentStateRecordKey, DbNil.INSTANCE);
   }
 
   public void removeStoredRecord(long scopeKey, long recordKey, Purpose purpose) {
-    setTokenKeys(scopeKey, recordKey, purpose);
+    setRecordKeys(scopeKey, recordKey, purpose);
 
-    tokenColumnFamily.delete(tokenKey);
-    tokenParentChildColumnFamily.delete(tokenParentStateTokenKey);
+    recordColumnFamily.delete(this.recordKey);
+    recordParentChildColumnFamily.delete(recordParentStateRecordKey);
   }
 
-  private void setTokenKeys(long scopeKey, long recordKey, Purpose purpose) {
-    tokenParentKey.wrapLong(scopeKey);
+  private void setRecordKeys(long scopeKey, long recordKey, Purpose purpose) {
+    recordParentKey.wrapLong(scopeKey);
     stateKey.wrapByte((byte) purpose.ordinal());
-    tokenKey.wrapLong(recordKey);
+    this.recordKey.wrapLong(recordKey);
   }
 
-  public List<IndexedRecord> getDeferredTokens(long scopeKey) {
-    return collectTokenEvents(scopeKey, Purpose.DEFERRED_TOKEN);
+  public List<IndexedRecord> getDeferredRecords(long scopeKey) {
+    return collectRecords(scopeKey, Purpose.DEFERRED);
   }
 
-  public IndexedRecord getFailedToken(long key) {
-    final StoredRecord tokenEvent = getTokenEvent(key);
-    if (tokenEvent != null && tokenEvent.getPurpose() == Purpose.FAILED_TOKEN) {
-      return tokenEvent.getRecord();
+  public IndexedRecord getFailedRecord(long key) {
+    final StoredRecord storedRecord = getStoredRecord(key);
+    if (storedRecord != null && storedRecord.getPurpose() == Purpose.FAILED) {
+      return storedRecord.getRecord();
     } else {
       return null;
     }
   }
 
-  public void updateFailedToken(IndexedRecord indexedRecord) {
-    final StoredRecord storedRecord = new StoredRecord(indexedRecord, Purpose.FAILED_TOKEN);
-    tokenKey.wrapLong(indexedRecord.getKey());
-    tokenColumnFamily.put(tokenKey, storedRecord);
+  public void updateFailedRecord(IndexedRecord indexedRecord) {
+    final StoredRecord storedRecord = new StoredRecord(indexedRecord, Purpose.FAILED);
+    recordKey.wrapLong(indexedRecord.getKey());
+    recordColumnFamily.put(recordKey, storedRecord);
   }
 
-  public List<IndexedRecord> getFinishedTokens(long scopeKey) {
-    return collectTokenEvents(scopeKey, Purpose.FINISHED_TOKEN);
+  public List<IndexedRecord> getFinishedRecords(long scopeKey) {
+    return collectRecords(scopeKey, Purpose.FINISHED);
   }
 
-  private List<IndexedRecord> collectTokenEvents(long scopeKey, Purpose purpose) {
+  private List<IndexedRecord> collectRecords(long scopeKey, Purpose purpose) {
     final List<IndexedRecord> records = new ArrayList<>();
-    visitTokens(
+    visitRecords(
         scopeKey,
         purpose,
         (indexedRecord) -> {
@@ -281,31 +284,31 @@ public class ElementInstanceState {
   public boolean isEmpty() {
     return elementInstanceColumnFamily.isEmpty()
         && parentChildColumnFamily.isEmpty()
-        && tokenColumnFamily.isEmpty()
-        && tokenParentChildColumnFamily.isEmpty()
+        && recordColumnFamily.isEmpty()
+        && recordParentChildColumnFamily.isEmpty()
         && variablesState.isEmpty();
   }
 
   @FunctionalInterface
-  public interface TokenVisitor {
-    void visitToken(IndexedRecord indexedRecord);
+  public interface RecordVisitor {
+    void visitRecord(IndexedRecord indexedRecord);
   }
 
-  public void visitFailedTokens(long scopeKey, TokenVisitor visitor) {
-    visitTokens(scopeKey, Purpose.FAILED_TOKEN, visitor);
+  public void visitFailedRecords(long scopeKey, RecordVisitor visitor) {
+    visitRecords(scopeKey, Purpose.FAILED, visitor);
   }
 
-  private void visitTokens(long scopeKey, Purpose purpose, TokenVisitor visitor) {
-    tokenParentKey.wrapLong(scopeKey);
+  private void visitRecords(long scopeKey, Purpose purpose, RecordVisitor visitor) {
+    recordParentKey.wrapLong(scopeKey);
     stateKey.wrapByte((byte) purpose.ordinal());
 
-    tokenParentChildColumnFamily.whileEqualPrefix(
-        tokenParentStateKey,
+    recordParentChildColumnFamily.whileEqualPrefix(
+        recordParentStateKey,
         (compositeKey, value) -> {
-          final DbLong tokenKey = compositeKey.getSecond();
-          final StoredRecord tokenEvent = tokenColumnFamily.get(tokenKey);
-          if (tokenEvent != null) {
-            visitor.visitToken(tokenEvent.getRecord());
+          final DbLong recordKey = compositeKey.getSecond();
+          final StoredRecord storedRecord = recordColumnFamily.get(recordKey);
+          if (storedRecord != null) {
+            visitor.visitRecord(storedRecord.getRecord());
           }
         });
   }

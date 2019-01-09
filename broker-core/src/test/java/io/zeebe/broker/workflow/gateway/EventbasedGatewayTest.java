@@ -29,6 +29,8 @@ import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
@@ -37,6 +39,7 @@ import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -234,26 +237,38 @@ public class EventbasedGatewayTest {
     // given
     testClient.deploy(WORKFLOW_WITH_EQUAL_TIMERS);
     testClient.createWorkflowInstance(PROCESS_ID);
-    assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(2).exists()).isTrue();
+
     // when
+    assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(2).count()).isEqualTo(2);
     brokerRule.getClock().addTime(Duration.ofSeconds(2));
 
     // then
     assertThat(
             RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.GATEWAY_ACTIVATED)
-                .limit(1)
-                .count())
-        .isEqualTo(1);
+                .exists())
+        .isTrue();
+
+    final List<String> timers =
+        RecordingExporter.timerRecords(TimerIntent.CREATE)
+            .limit(2)
+            .map(r -> r.getValue().getHandlerFlowNodeId())
+            .collect(Collectors.toList());
 
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN)
-                    .withElementId("to-end2")
-                    .exists()
-                ^ RecordingExporter.workflowInstanceRecords(
-                        WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN)
-                    .withElementId("to-end1")
-                    .exists())
+            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+                .withHandlerNodeId(timers.get(0))
+                .exists())
         .isTrue();
+
+    Assertions.assertThat(
+            RecordingExporter.timerRecords(TimerIntent.TRIGGER)
+                .withHandlerNodeId(timers.get(1))
+                .onlyCommandRejections()
+                .getFirst()
+                .getMetadata())
+        .hasRejectionType(RejectionType.NOT_APPLICABLE)
+        .hasRejectionReason("activity is not active anymore")
+        .hasRecordType(RecordType.COMMAND_REJECTION);
   }
 
   @Test
@@ -364,5 +379,41 @@ public class EventbasedGatewayTest {
         .extracting(r -> r.getValue().getMessageName())
         .hasSize(1)
         .contains("msg");
+  }
+
+  @Test
+  public void shouldOnlyExecuteOneBranchWithSimultaneousMessages() {
+    // given
+    testClient.deploy(WORKFLOW_WITH_MESSAGES);
+
+    // when
+    testClient.publishMessage("msg-1", "123");
+    testClient.publishMessage("msg-2", "123");
+    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "123"));
+
+    final List<String> messageNames =
+        RecordingExporter.workflowInstanceSubscriptionRecords(
+                WorkflowInstanceSubscriptionIntent.CORRELATE)
+            .limit(2)
+            .map(r -> r.getValue().getMessageName())
+            .collect(Collectors.toList());
+
+    assertThat(
+            RecordingExporter.workflowInstanceSubscriptionRecords(
+                    WorkflowInstanceSubscriptionIntent.CORRELATED)
+                .withMessageName(messageNames.get(0))
+                .exists())
+        .isTrue();
+
+    Assertions.assertThat(
+            RecordingExporter.workflowInstanceSubscriptionRecords(
+                    WorkflowInstanceSubscriptionIntent.CORRELATE)
+                .withMessageName(messageNames.get(1))
+                .onlyCommandRejections()
+                .getFirst()
+                .getMetadata())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasRejectionType(RejectionType.NOT_APPLICABLE)
+        .hasRejectionReason("activity is not active anymore");
   }
 }

@@ -383,10 +383,10 @@ public class ElementInstanceStateTest {
 
     // when
     final TypedRecord<WorkflowInstanceRecord> typedRecord = mockTypedRecord();
-    elementInstanceState.storeTokenEvent(100, typedRecord, Purpose.DEFERRED_TOKEN);
+    elementInstanceState.storeRecord(100, typedRecord, Purpose.DEFERRED);
 
     // then
-    final List<IndexedRecord> storedRecords = elementInstanceState.getDeferredTokens(100);
+    final List<IndexedRecord> storedRecords = elementInstanceState.getDeferredRecords(100);
 
     assertThat(storedRecords).hasSize(1);
     final IndexedRecord indexedRecord = storedRecords.get(0);
@@ -404,23 +404,23 @@ public class ElementInstanceStateTest {
 
     // when
     final TypedRecord<WorkflowInstanceRecord> typedRecord = mockTypedRecord(123L);
-    elementInstanceState.storeTokenEvent(100, typedRecord, Purpose.DEFERRED_TOKEN);
+    elementInstanceState.storeRecord(100, typedRecord, Purpose.DEFERRED);
     final TypedRecord<WorkflowInstanceRecord> typedRecord2 = mockTypedRecord(124L);
-    elementInstanceState.storeTokenEvent(100, typedRecord2, Purpose.FINISHED_TOKEN);
+    elementInstanceState.storeRecord(100, typedRecord2, Purpose.FINISHED);
 
     // then
-    final List<IndexedRecord> deferredTokens = elementInstanceState.getDeferredTokens(100);
-    final List<IndexedRecord> finishedTokens = elementInstanceState.getFinishedTokens(100);
+    final List<IndexedRecord> deferredRecords = elementInstanceState.getDeferredRecords(100);
+    final List<IndexedRecord> finishedRecords = elementInstanceState.getFinishedRecords(100);
 
-    assertThat(deferredTokens).hasSize(1);
-    final IndexedRecord deferredToken = deferredTokens.get(0);
-    assertThat(deferredToken.getKey()).isEqualTo(123L);
-    assertThat(deferredToken.getState()).isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+    assertThat(deferredRecords).hasSize(1);
+    final IndexedRecord deferredRecord = deferredRecords.get(0);
+    assertThat(deferredRecord.getKey()).isEqualTo(123L);
+    assertThat(deferredRecord.getState()).isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
-    assertThat(finishedTokens).hasSize(1);
-    final IndexedRecord finishedToken = finishedTokens.get(0);
-    assertThat(finishedToken.getKey()).isEqualTo(124L);
-    assertThat(finishedToken.getState()).isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+    assertThat(finishedRecords).hasSize(1);
+    final IndexedRecord finishedRecord = finishedRecords.get(0);
+    assertThat(finishedRecord.getKey()).isEqualTo(124L);
+    assertThat(finishedRecord.getState()).isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
   }
 
   @Test
@@ -430,15 +430,15 @@ public class ElementInstanceStateTest {
     elementInstanceState.newInstance(
         100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
     final TypedRecord<WorkflowInstanceRecord> typedRecord = mockTypedRecord(123L);
-    elementInstanceState.storeTokenEvent(100, typedRecord, Purpose.DEFERRED_TOKEN);
+    elementInstanceState.storeRecord(100, typedRecord, Purpose.DEFERRED);
     final TypedRecord<WorkflowInstanceRecord> typedRecord2 = mockTypedRecord(124L);
-    elementInstanceState.storeTokenEvent(100, typedRecord2, Purpose.DEFERRED_TOKEN);
+    elementInstanceState.storeRecord(100, typedRecord2, Purpose.DEFERRED);
 
     // when
-    elementInstanceState.removeStoredRecord(100, 123, Purpose.DEFERRED_TOKEN);
+    elementInstanceState.removeStoredRecord(100, 123, Purpose.DEFERRED);
 
     // then
-    final List<IndexedRecord> storedRecords = elementInstanceState.getDeferredTokens(100);
+    final List<IndexedRecord> storedRecords = elementInstanceState.getDeferredRecords(100);
 
     assertThat(storedRecords).hasSize(1);
     final IndexedRecord indexedRecord = storedRecords.get(0);
@@ -457,13 +457,13 @@ public class ElementInstanceStateTest {
         key, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     final TypedRecord<WorkflowInstanceRecord> typedRecord = mockTypedRecord(123L);
-    elementInstanceState.storeTokenEvent(key, typedRecord, Purpose.DEFERRED_TOKEN);
+    elementInstanceState.storeRecord(key, typedRecord, Purpose.DEFERRED);
 
     // when
     elementInstanceState.removeInstance(key);
 
     // then
-    assertThat(elementInstanceState.getDeferredTokens(key)).isEmpty();
+    assertThat(elementInstanceState.getDeferredRecords(key)).isEmpty();
   }
 
   @Test

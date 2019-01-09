@@ -52,11 +52,11 @@ public class TerminateContainedElementsHandler
 
     context.getCatchEventBehavior().unsubscribeFromEvents(elementInstance.getKey(), context);
 
-    final List<IndexedRecord> deferredTokens =
-        elementInstanceState.getDeferredTokens(elementInstance.getKey());
-    for (IndexedRecord deferedToken : deferredTokens) {
-      context.getCatchEventBehavior().unsubscribeFromEvents(deferedToken.getKey(), context);
-      output.consumeDeferredEvent(elementInstance.getKey(), deferedToken.getKey());
+    final List<IndexedRecord> deferredRecords =
+        elementInstanceState.getDeferredRecords(elementInstance.getKey());
+    for (IndexedRecord deferredRecord : deferredRecords) {
+      context.getCatchEventBehavior().unsubscribeFromEvents(deferredRecord.getKey(), context);
+      output.removeDeferredEvent(elementInstance.getKey(), deferredRecord.getKey());
     }
 
     final List<ElementInstance> children =
@@ -64,7 +64,7 @@ public class TerminateContainedElementsHandler
 
     if (children.isEmpty()) {
 
-      elementInstanceState.visitFailedTokens(
+      elementInstanceState.visitFailedRecords(
           elementInstance.getKey(),
           (token) -> {
             incidentState.forExistingWorkflowIncident(

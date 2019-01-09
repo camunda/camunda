@@ -130,7 +130,7 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
         .setErrorType(errorType)
         .setErrorMessage(errorMessage);
 
-    eventOutput.storeFailedToken(record);
+    eventOutput.storeFailedRecord(record);
     commandWriter.appendNewCommand(IncidentIntent.CREATE, incidentCommand);
   }
 

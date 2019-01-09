@@ -102,17 +102,17 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
     }
   }
 
-  public void deferTokenEvent(TypedRecord<WorkflowInstanceRecord> event) {
+  public void deferRecord(TypedRecord<WorkflowInstanceRecord> event) {
     final long scopeKey = event.getValue().getScopeInstanceKey();
-    elementInstanceState.storeTokenEvent(scopeKey, event, Purpose.DEFERRED_TOKEN);
+    elementInstanceState.storeRecord(scopeKey, event, Purpose.DEFERRED);
   }
 
-  public void storeFailedToken(TypedRecord<WorkflowInstanceRecord> event) {
+  public void storeFailedRecord(TypedRecord<WorkflowInstanceRecord> event) {
     final long scopeKey = event.getValue().getScopeInstanceKey();
-    elementInstanceState.storeTokenEvent(scopeKey, event, Purpose.FAILED_TOKEN);
+    elementInstanceState.storeRecord(scopeKey, event, Purpose.FAILED);
   }
 
-  public void consumeStoredRecord(long scopeKey, long key, Purpose purpose) {
+  public void removeStoredRecord(long scopeKey, long key, Purpose purpose) {
     elementInstanceState.removeStoredRecord(scopeKey, key, purpose);
   }
 

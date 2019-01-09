@@ -108,17 +108,17 @@ public class CatchEventBehavior {
 
     final ElementInstanceState elementInstanceState =
         state.getWorkflowState().getElementInstanceState();
-    final StoredRecord tokenEvent = elementInstanceState.getTokenEvent(elementInstanceKey);
+    final StoredRecord storedRecord = elementInstanceState.getStoredRecord(elementInstanceKey);
     final ElementInstance elementInstance = elementInstanceState.getInstance(elementInstanceKey);
 
-    if (tokenEvent != null && tokenEvent.getPurpose() == Purpose.DEFERRED_TOKEN) {
+    if (storedRecord != null && storedRecord.getPurpose() == Purpose.DEFERRED) {
       // if the event belongs to an intermediate catch event
 
-      final WorkflowInstanceRecord deferredRecord = tokenEvent.getRecord().getValue();
+      final WorkflowInstanceRecord deferredRecord = storedRecord.getRecord().getValue();
       deferredRecord.setPayload(eventPayload).setElementId(eventHandlerId);
 
       elementInstanceState.removeStoredRecord(
-          deferredRecord.getScopeInstanceKey(), elementInstanceKey, Purpose.DEFERRED_TOKEN);
+          deferredRecord.getScopeInstanceKey(), elementInstanceKey, Purpose.DEFERRED);
 
       streamWriter.appendFollowUpEvent(
           elementInstanceKey, WorkflowInstanceIntent.EVENT_OCCURRED, deferredRecord);
@@ -179,18 +179,19 @@ public class CatchEventBehavior {
     final long elementInstanceKey = record.getKey();
     final long scopeInstanceKey = record.getValue().getScopeInstanceKey();
 
-    final StoredRecord token =
-        state.getWorkflowState().getElementInstanceState().getTokenEvent(elementInstanceKey);
+    final StoredRecord storedRecord =
+        state.getWorkflowState().getElementInstanceState().getStoredRecord(elementInstanceKey);
 
-    if (token != null
-        && token.getPurpose() == Purpose.DEFERRED_TOKEN
-        && token.getRecord().getState() == WorkflowInstanceIntent.EVENT_OCCURRED) {
+    if (storedRecord != null
+        && storedRecord.getPurpose() == Purpose.DEFERRED
+        && storedRecord.getRecord().getState() == WorkflowInstanceIntent.EVENT_OCCURRED) {
 
       context
           .getOutput()
-          .appendNewEvent(WorkflowInstanceIntent.EVENT_TRIGGERING, token.getRecord().getValue());
+          .appendNewEvent(
+              WorkflowInstanceIntent.EVENT_TRIGGERING, storedRecord.getRecord().getValue());
 
-      context.getOutput().consumeDeferredEvent(scopeInstanceKey, elementInstanceKey);
+      context.getOutput().removeDeferredEvent(scopeInstanceKey, elementInstanceKey);
     }
   }
 

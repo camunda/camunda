@@ -50,13 +50,13 @@ public class UpdatePayloadHandler implements WorkflowInstanceCommandHandler {
       final WorkflowInstanceRecord elementInstanceValue = elementInstance.getValue();
       elementInstanceValue.setPayload(commandValue.getPayload());
 
-      final IndexedRecord failedToken =
-          workflowState.getElementInstanceState().getFailedToken(command.getKey());
+      final IndexedRecord failedRecord =
+          workflowState.getElementInstanceState().getFailedRecord(command.getKey());
 
-      if (failedToken != null) {
-        final WorkflowInstanceRecord value = failedToken.getValue();
+      if (failedRecord != null) {
+        final WorkflowInstanceRecord value = failedRecord.getValue();
         value.setPayload(commandValue.getPayload());
-        workflowState.getElementInstanceState().updateFailedToken(failedToken);
+        workflowState.getElementInstanceState().updateFailedRecord(failedRecord);
       }
 
       output.appendFollowUpEvent(
@@ -69,13 +69,13 @@ public class UpdatePayloadHandler implements WorkflowInstanceCommandHandler {
           .getVariablesState()
           .setVariablesLocalFromDocument(command.getKey(), commandValue.getPayload());
     } else {
-      final IndexedRecord failedToken =
-          workflowState.getElementInstanceState().getFailedToken(command.getKey());
+      final IndexedRecord failedRecord =
+          workflowState.getElementInstanceState().getFailedRecord(command.getKey());
 
-      if (failedToken != null) {
-        final WorkflowInstanceRecord value = failedToken.getValue();
+      if (failedRecord != null) {
+        final WorkflowInstanceRecord value = failedRecord.getValue();
         value.setPayload(commandValue.getPayload());
-        workflowState.getElementInstanceState().updateFailedToken(failedToken);
+        workflowState.getElementInstanceState().updateFailedRecord(failedRecord);
 
         output.appendFollowUpEvent(command.getKey(), WorkflowInstanceIntent.PAYLOAD_UPDATED, value);
         responseWriter.writeEventOnCommand(

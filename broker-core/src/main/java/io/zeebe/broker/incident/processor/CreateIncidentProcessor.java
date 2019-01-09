@@ -31,7 +31,7 @@ import io.zeebe.protocol.intent.IncidentIntent;
 public final class CreateIncidentProcessor implements CommandProcessor<IncidentRecord> {
 
   public static final String CORRUPTED_STATE_EXCEPTION =
-      "Expected to have an failed token, but no entry with key %d found.";
+      "Expected to have a failed record, but no entry with key %d found.";
   public static final String NOT_FAILED_JOB_MSG =
       "Expected to have an job with key %d in failed state.";
 
@@ -82,13 +82,13 @@ public final class CreateIncidentProcessor implements CommandProcessor<IncidentR
     final ElementInstanceState elementInstanceState =
         zeebeState.getWorkflowState().getElementInstanceState();
 
-    final IndexedRecord failedToken = elementInstanceState.getFailedToken(elementInstanceKey);
-    final boolean noFailedToken = failedToken == null;
-    if (noFailedToken) {
+    final IndexedRecord failedRecord = elementInstanceState.getFailedRecord(elementInstanceKey);
+    final boolean noFailedRecord = failedRecord == null;
+    if (noFailedRecord) {
       commandControl.reject(
           RejectionType.NOT_APPLICABLE,
           String.format(CORRUPTED_STATE_EXCEPTION, elementInstanceKey));
     }
-    return noFailedToken;
+    return noFailedRecord;
   }
 }
