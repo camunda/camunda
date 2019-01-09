@@ -37,7 +37,7 @@ describe('instances api', () => {
     });
   });
 
-  describe.only('fetchWorkflowInstances', () => {
+  describe('fetchWorkflowInstances', () => {
     it('should call post with the right url and the right payload', async () => {
       // given
       const options = {
@@ -90,7 +90,7 @@ describe('instances api', () => {
     });
   });
 
-  describe.only('fetchWorkflowInstancesByIds', () => {
+  describe('fetchWorkflowInstancesByIds', () => {
     it('should call post with the right url and payload', async () => {
       // given
       const ids = ['1', '2', '3'];

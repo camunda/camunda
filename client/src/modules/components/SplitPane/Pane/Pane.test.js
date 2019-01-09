@@ -114,7 +114,7 @@ describe('Pane', () => {
     });
 
     describe('handleTopExpand', () => {
-      it.only('should call handleExpand with PANE_ID.TOP', () => {
+      it('should call handleExpand with PANE_ID.TOP', () => {
         // given
         const node = mountNode(mockDefaultProps);
         const PaneNode = node.find(Pane);
