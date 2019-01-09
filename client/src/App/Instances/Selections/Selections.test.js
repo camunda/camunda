@@ -6,6 +6,9 @@ import {SelectionProvider} from 'modules/contexts/SelectionContext';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 import CollapsablePanel from 'modules/components/CollapsablePanel';
 import ComboBadge from 'modules/components/ComboBadge';
+import {FILTER_SELECTION} from 'modules/constants';
+import {formatGroupedWorkflows} from 'modules/utils/instance';
+import {groupedWorkflowsMock} from 'modules/testUtils';
 
 import Selections from './Selections';
 
@@ -17,7 +20,10 @@ describe('Selections', () => {
     const node = mount(
       <ThemeProvider>
         <CollapsablePanelProvider>
-          <SelectionProvider getFilterQuery={jest.fn()}>
+          <SelectionProvider
+            groupedWorkflows={formatGroupedWorkflows(groupedWorkflowsMock)}
+            filter={FILTER_SELECTION.incidents}
+          >
             <Selections />
           </SelectionProvider>
         </CollapsablePanelProvider>

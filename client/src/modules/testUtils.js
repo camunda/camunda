@@ -160,6 +160,12 @@ export const createInstance = (options = {}) => {
   };
 };
 
+export const createMockInstancesObject = (amount = 5, options = {}) => ({
+  workflowInstances: createArrayOfMockInstances(amount),
+  totalCount: amount,
+  ...options
+});
+
 /**
  * @returns a mocked array of instance objects
  * @param {number} amount specifies the amount of instances

@@ -1,25 +1,31 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
-import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
+import {
+  mockResolvedAsyncFn,
+  flushPromises,
+  groupedWorkflowsMock
+} from 'modules/testUtils';
 import {DEFAULT_SELECTED_INSTANCES} from 'modules/constants';
 import {serializeInstancesMaps} from 'modules/utils/selection/selection';
+import {formatGroupedWorkflows} from 'modules/utils/instance';
 import * as instancesApi from 'modules/api/instances/instances';
 import {FILTER_SELECTION} from 'modules/constants';
 
 import {SelectionProvider, withSelection} from './SelectionContext';
 
-describe('SelectionContext', () => {
-  const mockFunctions = {
-    getFilterQuery: jest.fn(),
-    getStateLocally: jest.fn(() => ({})),
-    storeStateLocally: jest.fn()
-  };
+const mockProps = {
+  getStateLocally: jest.fn(() => ({})),
+  storeStateLocally: jest.fn(),
+  groupedWorkflows: formatGroupedWorkflows(groupedWorkflowsMock),
+  filter: FILTER_SELECTION.incidents
+};
 
+describe('SelectionContext', () => {
   beforeEach(() => {
     instancesApi.fetchWorkflowInstancesBySelection = mockResolvedAsyncFn({});
     instancesApi.fetchWorkflowInstancesByIds = mockResolvedAsyncFn({});
-    Object.values(mockFunctions).forEach(fun => fun.mockClear());
+    jest.clearAllMocks();
   });
 
   const Foo = withSelection(function Foo() {
@@ -28,7 +34,7 @@ describe('SelectionContext', () => {
 
   function mountNode(customProps = {}) {
     return mount(
-      <SelectionProvider {...mockFunctions} {...customProps}>
+      <SelectionProvider {...mockProps} {...customProps}>
         <Foo />
       </SelectionProvider>
     );
@@ -154,7 +160,6 @@ describe('SelectionContext', () => {
     it('should create a new selection', async () => {
       // given
       const selectedInstances = {all: false, ids: ['foo1', 'foo2']};
-      const filterQuery = FILTER_SELECTION.incidents;
       instancesApi.fetchWorkflowInstancesByIds = instancesApi.fetchWorkflowInstancesBySelection = mockResolvedAsyncFn(
         {
           workflowInstances: [
@@ -164,13 +169,17 @@ describe('SelectionContext', () => {
           totalCount: 2
         }
       );
-      const wrapper = mountNode({getFilterQuery: () => filterQuery});
+      const wrapper = mountNode();
       const node = wrapper.find('BasicSelectionProvider');
       await flushPromises();
       node.instance().handleSelectedInstancesUpdate(selectedInstances);
       wrapper.update();
       const expectedSelectionQueries = [
-        {...filterQuery, ids: selectedInstances.ids}
+        {
+          ...FILTER_SELECTION.incidents,
+          running: true,
+          ids: selectedInstances.ids
+        }
       ];
       const expectedSelection = {
         selectionId: 1,
@@ -206,7 +215,7 @@ describe('SelectionContext', () => {
       );
 
       // (3) localStorage changes with new selection related data
-      const storeStateCall = mockFunctions.storeStateLocally.mock.calls[0][0];
+      const storeStateCall = mockProps.storeStateLocally.mock.calls[0][0];
       expect(storeStateCall.selections).toEqual(
         serializeInstancesMaps([expectedSelection])
       );
@@ -236,7 +245,6 @@ describe('SelectionContext', () => {
           }
         ])
       };
-      const filterQuery = FILTER_SELECTION.incidents;
       const mockResponse = {
         workflowInstances: [
           {id: 'key1', value: 'value1'},
@@ -253,7 +261,6 @@ describe('SelectionContext', () => {
         mockResponse
       );
       const wrapper = mountNode({
-        getFilterQuery: () => filterQuery,
         getStateLocally: () => mockLocalStorage
       });
       const node = wrapper.find('BasicSelectionProvider');
@@ -261,7 +268,7 @@ describe('SelectionContext', () => {
       node.instance().handleSelectedInstancesUpdate(selectedInstances);
       wrapper.update();
       const expectedSelectionQueries = [
-        {...filterQuery, ids: selectedInstances.ids},
+        {...mockProps.filter, running: true, ids: selectedInstances.ids},
         {ids: ['key1', 'key2']}
       ];
       const expectedSelection = {
@@ -297,7 +304,7 @@ describe('SelectionContext', () => {
       expect(node.state('openSelection')).toBe(2);
 
       // (3) localStorage changes with new selection related data
-      const storeStateCall = mockFunctions.storeStateLocally.mock.calls[0][0];
+      const storeStateCall = mockProps.storeStateLocally.mock.calls[0][0];
       expect(storeStateCall.selections).toEqual(
         serializeInstancesMaps([expectedSelection])
       );
@@ -325,7 +332,6 @@ describe('SelectionContext', () => {
           }
         ])
       };
-      const filterQuery = FILTER_SELECTION.incidents;
       const mockResponse = {
         workflowInstances: [
           {id: 'key1', value: 'value1'},
@@ -342,7 +348,6 @@ describe('SelectionContext', () => {
         mockResponse
       );
       const wrapper = mountNode({
-        getFilterQuery: () => filterQuery,
         getStateLocally: () => mockLocalStorage
       });
       const node = wrapper.find('BasicSelectionProvider');
@@ -384,7 +389,6 @@ describe('SelectionContext', () => {
           }
         ])
       };
-      const filterQuery = FILTER_SELECTION.incidents;
       const mockResponse = {
         workflowInstances: [
           {id: 'key1', value: 'value1'},
@@ -401,7 +405,6 @@ describe('SelectionContext', () => {
         mockResponse
       );
       const wrapper = mountNode({
-        getFilterQuery: () => filterQuery,
         getStateLocally: () => mockLocalStorage
       });
       const node = wrapper.find('BasicSelectionProvider');
@@ -434,7 +437,6 @@ describe('SelectionContext', () => {
           }
         ])
       };
-      const filterQuery = FILTER_SELECTION.incidents;
       const mockResponse = {
         workflowInstances: [
           {id: 'key1', value: 'value1'},
@@ -449,7 +451,6 @@ describe('SelectionContext', () => {
         mockResponse
       );
       const wrapper = mountNode({
-        getFilterQuery: () => filterQuery,
         getStateLocally: () => mockLocalStorage
       });
       const node = wrapper.find('BasicSelectionProvider');
@@ -467,7 +468,7 @@ describe('SelectionContext', () => {
       expect(node.state('selectionCount')).toEqual(0);
 
       // (2) localStorage should be updated
-      const storeStateCall = mockFunctions.storeStateLocally.mock.calls[0][0];
+      const storeStateCall = mockProps.storeStateLocally.mock.calls[0][0];
       expect(storeStateCall.selections).toEqual(serializeInstancesMaps([]));
       expect(storeStateCall.instancesInSelectionsCount).toBe(0);
       expect(storeStateCall.selectionCount).toBe(0);

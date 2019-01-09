@@ -1,11 +1,6 @@
 import React from 'react';
-import {mount, shallow} from 'enzyme';
+import {mount} from 'enzyme';
 import {BrowserRouter as Router} from 'react-router-dom';
-import Filters from './Filters';
-import ListView from './ListView';
-import Selections from './Selections';
-import Header from '../Header';
-import Instances from './Instances';
 import Diagram from 'modules/components/Diagram';
 import SplitPane from 'modules/components/SplitPane';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
@@ -13,31 +8,19 @@ import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import {SelectionProvider} from 'modules/contexts/SelectionContext';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 import {
-  xTimes,
-  createFilter,
-  createDiagramNode,
   groupedWorkflowsMock,
-  createDiagramNodes,
   flushPromises,
-  mockResolvedAsyncFn,
-  createInstance,
-  createDiagramStatistics,
-  createDefinitions
+  createMockInstancesObject
 } from 'modules/testUtils';
-import * as service from './service';
-import {
-  parseFilterForRequest,
-  getFilterWithWorkflowIds,
-  getInstanceStatePayload
-} from 'modules/utils/filter';
-import * as api from 'modules/api/instances/instances';
+import {parsedDiagram} from 'modules/utils/bpmn';
+import {formatGroupedWorkflows} from 'modules/utils/instance';
+import {DEFAULT_FILTER, DEFAULT_SORTING} from 'modules/constants';
 
-import {
-  DEFAULT_FILTER,
-  DEFAULT_SORTING,
-  DEFAULT_MAX_RESULTS,
-  DEFAULT_FIRST_ELEMENT
-} from 'modules/constants';
+import Filters from './Filters';
+import ListView from './ListView';
+import Selections from './Selections';
+import Header from '../Header';
+import Instances from './Instances';
 
 // component mocks
 jest.mock(
@@ -69,54 +52,53 @@ jest.mock(
       return <div />;
     }
 );
+jest.mock('modules/utils/bpmn');
 
 // props mocks
-const mockDiagramNodes = [];
-xTimes(5)(index => mockDiagramNodes.push(createDiagramNode(index)));
-const filterMock = createFilter();
+const filterMock = {
+  active: true,
+  incidents: true,
+  completed: true,
+  finished: true,
+  ids: '424242, 434343',
+  errorMessage: 'No%20data%20found%20for%20query%20$.foo.',
+  startDate: '28 December 2018',
+  endDate: '28 December 2018',
+  workflow: 'demoProcess',
+  version: '1',
+  activityId: 'taskD'
+};
+const mockInstances = createMockInstancesObject();
+
 const mockProps = {
-  groupedWorkflows: service.formatGroupedWorkflows(groupedWorkflowsMock),
   filter: filterMock,
+  groupedWorkflows: formatGroupedWorkflows(groupedWorkflowsMock),
+  workflowInstances: mockInstances.workflowInstances,
+  filterCount: mockInstances.totalCount,
+  workflowInstancesLoaded: true,
+  firstElement: 1,
+  onFirstElementChange: jest.fn(),
+  sorting: DEFAULT_SORTING,
+  onSort: jest.fn(),
   onFilterChange: jest.fn(),
-  diagramWorkflow: groupedWorkflowsMock[0].workflows[2],
-  diagramModel: {
-    bpmnElements: createDiagramNodes(),
-    definitions: createDefinitions()
-  },
+  onFilterReset: jest.fn(),
+  diagramModel: parsedDiagram,
   statistics: []
 };
 
 const defaultFilterMockProps = {
   ...mockProps,
   filter: DEFAULT_FILTER,
-  diagramWorkflow: {},
   diagramModel: {
     bpmnElements: {},
     definitions: {}
   }
 };
 
-const mockFilterCount = 1;
-const localStorageProps = {
-  getStateLocally: jest.fn(() => {
-    return {filterCount: mockFilterCount};
-  }),
-  storeStateLocally: jest.fn()
-};
-
 // api mocks
-const instancesMock = [createInstance(), createInstance()];
-const instancesResponseMock = {totalCount: 2, workflowInstances: instancesMock};
-const statisticsMock = createDiagramStatistics();
-api.fetchWorkflowInstances = mockResolvedAsyncFn(instancesResponseMock);
-api.fetchWorkflowInstancesStatistics = mockResolvedAsyncFn(statisticsMock);
-
 describe('Instances', () => {
   afterEach(() => {
-    api.fetchWorkflowInstances.mockClear();
-    api.fetchWorkflowInstancesStatistics.mockClear();
-    localStorage.setItem.mockClear();
-    mockProps.onFilterChange.mockClear();
+    jest.clearAllMocks();
   });
 
   it('should contain a VisuallyHiddenH1', () => {
@@ -129,155 +111,11 @@ describe('Instances', () => {
       </ThemeProvider>
     );
 
+    // then
     expect(node.find(VisuallyHiddenH1)).toExist();
     expect(node.find(VisuallyHiddenH1).text()).toEqual(
       'Camunda Operate Instances'
     );
-  });
-
-  describe('instances fetching', async () => {
-    it('should fetch instances with default data', async () => {
-      const node = mount(
-        <ThemeProvider>
-          <CollapsablePanelProvider>
-            <Instances {...mockProps} />
-          </CollapsablePanelProvider>
-        </ThemeProvider>
-      );
-
-      // when
-      await flushPromises();
-      node.update();
-
-      const filterWithWorkflowIds = getFilterWithWorkflowIds(
-        filterMock,
-        mockProps.groupedWorkflows
-      );
-      const payload = api.fetchWorkflowInstances.mock.calls[0][0];
-
-      // then
-      expect(api.fetchWorkflowInstances).toHaveBeenCalled();
-      expect(payload.sorting).toEqual(DEFAULT_SORTING);
-      expect(payload.firstResult).toEqual(0);
-      expect(payload.maxResults).toEqual(DEFAULT_MAX_RESULTS);
-      expect(payload.queries[0]).toEqual(
-        parseFilterForRequest(filterWithWorkflowIds)
-      );
-    });
-
-    it('should fetch instances when filter changes', async () => {
-      const defaultFilterPayload = {
-        ...DEFAULT_FILTER,
-        ...getInstanceStatePayload(DEFAULT_FILTER)
-      };
-      // shalow render as we need to call setProps() on the root element
-      const node = shallow(
-        <Instances.WrappedComponent {...mockProps} {...localStorageProps} />
-      );
-
-      // when
-      await flushPromises();
-      node.update();
-      // we change the filter
-      node.setProps({filter: DEFAULT_FILTER});
-
-      expect(api.fetchWorkflowInstances).toHaveBeenCalledTimes(2);
-      expect(api.fetchWorkflowInstances.mock.calls[1][0].queries[0]).toEqual(
-        defaultFilterPayload
-      );
-    });
-
-    it('should reset the firstElement when filter changes', async () => {
-      // shalow render as we need to call setProps() on the root element
-      const node = shallow(
-        <Instances.WrappedComponent {...mockProps} {...localStorageProps} />
-      );
-
-      // when
-      await flushPromises();
-      node.update();
-
-      // we change the first element
-      const onFirstElementChange = node
-        .find(ListView)
-        .prop('onFirstElementChange');
-
-      onFirstElementChange(2);
-
-      // wait for the instances to be fetched
-      await flushPromises();
-      node.update();
-
-      // the ListView receives the new firstElement
-      expect(node.find(ListView).prop('firstElement')).toBe(2);
-
-      // we change the filter
-      node.setProps({filter: DEFAULT_FILTER});
-
-      await flushPromises();
-      node.update();
-
-      expect(api.fetchWorkflowInstances).toHaveBeenCalledTimes(3);
-      expect(node.find(ListView).prop('firstElement')).toBe(
-        DEFAULT_FIRST_ELEMENT
-      );
-    });
-
-    it('should reset sorting when no finished filter is active', async () => {
-      // shalow render as we need to call setProps() on the root element
-      const sortingMock = {sortBy: 'endDate', sortOrder: 'desc'};
-      const node = shallow(
-        <Instances.WrappedComponent {...mockProps} {...localStorageProps} />
-      );
-
-      // when
-      await flushPromises();
-      node.update();
-
-      // we change the first element
-      const onSort = node.find(ListView).prop('onSort');
-      onSort(sortingMock.sortBy);
-
-      // wait for the instances to be fetched
-      await flushPromises();
-      node.update();
-
-      expect(node.find(ListView).prop('sorting')).toEqual(sortingMock);
-      // we change the filter
-
-      node.setProps({filter: DEFAULT_FILTER});
-      await flushPromises();
-      node.update();
-
-      // the instances are fetched 3 times: initial mount, firstElement change, filter change
-      expect(api.fetchWorkflowInstances).toHaveBeenCalledTimes(3);
-      expect(node.find(ListView).prop('firstElement')).toBe(
-        DEFAULT_FIRST_ELEMENT
-      );
-    });
-  });
-
-  describe('local storage ', () => {
-    it('should store filterCount to localStorage', async () => {
-      // given
-      const node = mount(
-        <ThemeProvider>
-          <CollapsablePanelProvider>
-            <Instances {...mockProps} />
-          </CollapsablePanelProvider>
-        </ThemeProvider>
-      );
-
-      // when
-      await flushPromises();
-      node.update();
-      expect(localStorage.setItem).toHaveBeenCalledTimes(1);
-      expect(localStorage.setItem.mock.calls[0][1]).toEqual(
-        `{"filterCount":${instancesResponseMock.totalCount}}`
-      );
-      // updates the new filterCount
-      expect(node.find(ListView).prop('filterCount')).toEqual(2);
-    });
   });
 
   describe('Filters', () => {
@@ -291,6 +129,7 @@ describe('Instances', () => {
         </ThemeProvider>
       );
 
+      // then
       expect(node.find(Filters)).toExist();
     });
 
@@ -316,10 +155,8 @@ describe('Instances', () => {
       expect(FiltersNode.prop('groupedWorkflows')).toEqual(
         mockProps.groupedWorkflows
       );
-      expect(FiltersNode.prop('filter')).toEqual(filterMock);
-      expect(FiltersNode.prop('filterCount')).toBe(
-        instancesResponseMock.totalCount
-      );
+      expect(FiltersNode.prop('filter')).toEqual(mockProps.filter);
+      expect(FiltersNode.prop('filterCount')).toBe(mockInstances.totalCount);
     });
 
     it('should handle the filter reset', () => {
@@ -331,13 +168,12 @@ describe('Instances', () => {
           </CollapsablePanelProvider>
         </ThemeProvider>
       );
-      const FiltersNode = node.find(Filters);
-      const onFilterReset = FiltersNode.prop('onFilterReset');
 
       // when
-      onFilterReset();
+      node.find(Filters).prop('onFilterReset')();
 
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith(DEFAULT_FILTER);
+      // then
+      expect(mockProps.onFilterReset).toHaveBeenCalled();
     });
 
     it('should handle the filter change', () => {
@@ -356,6 +192,7 @@ describe('Instances', () => {
       // when
       onFilterChange(newFilterValue);
 
+      // then
       expect(mockProps.onFilterChange).toHaveBeenCalledWith(newFilterValue);
     });
   });
@@ -370,6 +207,8 @@ describe('Instances', () => {
           </CollapsablePanelProvider>
         </ThemeProvider>
       );
+
+      // then
       // expect no Diagram, general title and an empty message
       expect(node.find(Diagram)).not.toExist();
       expect(node.find("[data-test='instances-diagram-title']").text()).toBe(
@@ -377,6 +216,7 @@ describe('Instances', () => {
       );
       expect(node.find("[data-test='data-test-noWorkflowMessage']")).toExist();
     });
+
     it('should display a diagram when a workflow is present', () => {
       // given
       const node = mount(
@@ -387,17 +227,18 @@ describe('Instances', () => {
         </ThemeProvider>
       );
 
+      // then
       // expect Diagram, Workflow title and no empty message
       expect(node.find(Diagram)).toExist();
       expect(node.find("[data-test='instances-diagram-title']").text()).toBe(
-        mockProps.diagramWorkflow.name
+        'Demo process'
       );
       expect(
         node.find("[data-test='data-test-noWorkflowMessage']")
       ).not.toExist();
     });
 
-    it('should pass the right data to diagram', async () => {
+    it('should pass the right data to diagram', () => {
       // given
       const node = mount(
         <ThemeProvider>
@@ -408,16 +249,16 @@ describe('Instances', () => {
       );
 
       // when
-      await flushPromises();
       node.update();
 
+      // then
       const DiagramNode = node.find(Diagram);
       // the statistics don't fetch, because Diagram is mocked
       expect(DiagramNode.prop('flowNodesStatistics')).toEqual(
         mockProps.statistics
       );
       expect(DiagramNode.prop('selectedFlowNode')).toEqual(
-        filterMock.activityId
+        mockProps.filter.activityId
       );
       expect(DiagramNode.prop('selectableFlowNodes')).toEqual(['taskD']);
       expect(DiagramNode.prop('definitions')).toBe(
@@ -425,7 +266,7 @@ describe('Instances', () => {
       );
     });
 
-    it('should change the filter when the user selects a flow node', async () => {
+    it('should change the filter when the user selects a flow node', () => {
       // given
       const node = mount(
         <ThemeProvider>
@@ -435,7 +276,6 @@ describe('Instances', () => {
         </ThemeProvider>
       );
 
-      await flushPromises();
       node.update();
 
       const DiagramNode = node.find(Diagram);
@@ -443,10 +283,9 @@ describe('Instances', () => {
 
       // when the user selects a node in the diagram
       onFlowNodeSelected('taskB');
-      await flushPromises();
       node.update();
 
-      //then
+      // then
       expect(mockProps.onFilterChange).toHaveBeenCalledTimes(1);
       expect(mockProps.onFilterChange.mock.calls[0][0].activityId).toEqual(
         'taskB'
@@ -465,10 +304,12 @@ describe('Instances', () => {
         </ThemeProvider>
       );
 
+      // then
       expect(node.find(ListView)).toExist();
     });
 
-    it('should pass the right data to ListView', async () => {
+    it('should pass the right data to ListView', () => {
+      // given
       const node = mount(
         <ThemeProvider>
           <CollapsablePanelProvider>
@@ -476,23 +317,25 @@ describe('Instances', () => {
           </CollapsablePanelProvider>
         </ThemeProvider>
       );
+
       // when
-      await flushPromises();
       node.update();
 
+      // then
       const ListViewNode = node.find(ListView);
 
-      expect(ListViewNode.prop('instances')).toBe(instancesMock);
+      expect(ListViewNode.prop('instances')).toBe(
+        mockInstances.workflowInstances
+      );
       expect(ListViewNode.prop('instancesLoaded')).toBe(true);
-      expect(ListViewNode.prop('filter')).toBe(filterMock);
-      expect(ListViewNode.prop('filterCount')).toBe(
-        instancesResponseMock.totalCount
-      );
-      expect(ListViewNode.prop('sorting')).toBe(DEFAULT_SORTING);
-      expect(ListViewNode.prop('firstElement')).toBe(0);
+      expect(ListViewNode.prop('filter')).toBe(mockProps.filter);
+      expect(ListViewNode.prop('filterCount')).toBe(mockProps.filterCount);
+      expect(ListViewNode.prop('sorting')).toBe(mockProps.sorting);
+      expect(ListViewNode.prop('firstElement')).toBe(mockProps.firstElement);
     });
 
-    it('should be able to trigger fetching', () => {
+    it('should be able to handle sorting change', () => {
+      // given
       const node = mount(
         <ThemeProvider>
           <CollapsablePanelProvider>
@@ -501,43 +344,15 @@ describe('Instances', () => {
         </ThemeProvider>
       );
 
-      const ListViewNode = node.find(ListView);
-      const fetchWorkflowInstances = ListViewNode.prop(
-        'fetchWorkflowInstances'
-      );
-
       // when
-      fetchWorkflowInstances();
-      expect(api.fetchWorkflowInstances).toHaveBeenCalled();
-    });
-
-    it('should be able to handle sorting change', async () => {
-      const sortMock = {sortBy: 'id', sortOrder: 'desc'};
-      const node = mount(
-        <ThemeProvider>
-          <CollapsablePanelProvider>
-            <Instances {...mockProps} />
-          </CollapsablePanelProvider>
-        </ThemeProvider>
-      );
-
-      const ListViewNode = node.find(ListView);
-      const onSort = ListViewNode.prop('onSort');
-
-      // when
-      await flushPromises();
+      node.find(ListView).prop('onSort')('key');
       node.update();
 
-      // when
-      onSort(sortMock.sortBy);
-
-      expect(api.fetchWorkflowInstances).toHaveBeenCalled();
-      expect(api.fetchWorkflowInstances.mock.calls[1][0].sorting).toEqual(
-        sortMock
-      );
+      // then
+      expect(mockProps.onSort).toBeCalledWith('key');
     });
 
-    it('should be able to handle first element change', async () => {
+    it('should be able to handle first element change', () => {
       const firstResultMock = 2;
       const node = mount(
         <ThemeProvider>
@@ -547,25 +362,18 @@ describe('Instances', () => {
         </ThemeProvider>
       );
 
-      const ListViewNode = node.find(ListView);
-      const onFirstElementChange = ListViewNode.prop('onFirstElementChange');
-
       // when
-      await flushPromises();
+      node.find(ListView).prop('onFirstElementChange')(firstResultMock);
       node.update();
 
-      // when
-      onFirstElementChange(firstResultMock);
-
-      expect(api.fetchWorkflowInstances).toHaveBeenCalledTimes(2);
-      expect(api.fetchWorkflowInstances.mock.calls[1][0].firstResult).toEqual(
-        firstResultMock
-      );
+      // then
+      expect(mockProps.onFirstElementChange).toBeCalledWith(firstResultMock);
     });
   });
 
   describe('Selections', () => {
     it('should render the Selections', () => {
+      // given
       const node = mount(
         <ThemeProvider>
           <CollapsablePanelProvider>
@@ -574,6 +382,7 @@ describe('Instances', () => {
         </ThemeProvider>
       );
 
+      // then
       expect(node.find(Selections)).toExist();
     });
 
@@ -587,15 +396,18 @@ describe('Instances', () => {
         </ThemeProvider>
       );
 
+      // then
       const SelectionProviderNode = node.find(SelectionProvider);
       expect(SelectionProviderNode).toExist();
-      expect(SelectionProviderNode.prop('filter')).toBe(filterMock);
-      expect(SelectionProviderNode.prop('getFilterQuery')).not.toBe(undefined);
+      expect(SelectionProviderNode.prop('filter')).toBe(mockProps.filter);
+      expect(SelectionProviderNode.prop('groupedWorkflows')).toBe(
+        mockProps.groupedWorkflows
+      );
     });
   });
 
   describe('Header', () => {
-    it('should render the Header', async () => {
+    it('should render the Header', () => {
       // given
       const node = mount(
         <ThemeProvider>
@@ -604,18 +416,14 @@ describe('Instances', () => {
           </CollapsablePanelProvider>
         </ThemeProvider>
       );
-      // when
-      await flushPromises();
-      node.update();
 
+      // then
       const InstancesNode = node.find(Instances);
       const HeaderNode = node.find(Header);
       expect(HeaderNode).toExist();
       expect(HeaderNode.prop('active')).toBe('instances');
       expect(HeaderNode.prop('filter')).toBe(InstancesNode.prop('filter'));
-      expect(HeaderNode.prop('filterCount')).toBe(
-        instancesResponseMock.totalCount
-      );
+      expect(HeaderNode.prop('filterCount')).toBe(mockInstances.totalCount);
     });
   });
 
@@ -629,8 +437,9 @@ describe('Instances', () => {
           </CollapsablePanelProvider>
         </ThemeProvider>
       );
-      const SplitPaneNode = node.find(SplitPane);
 
+      // then
+      const SplitPaneNode = node.find(SplitPane);
       expect(SplitPaneNode).toExist();
       expect(node.find(SplitPane.Pane).length).toBe(2);
     });
@@ -644,8 +453,9 @@ describe('Instances', () => {
           </CollapsablePanelProvider>
         </ThemeProvider>
       );
-      const SplitPanes = node.find(SplitPane.Pane);
 
+      // then
+      const SplitPanes = node.find(SplitPane.Pane);
       expect(SplitPanes.first().find(Diagram)).toExist();
     });
 
@@ -659,8 +469,9 @@ describe('Instances', () => {
           </ThemeProvider>
         </Router>
       );
-      const ListViewNode = node.find(ListView);
 
+      // then
+      const ListViewNode = node.find(ListView);
       expect(ListViewNode.find(SplitPane.Pane)).toExist();
     });
   });

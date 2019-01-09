@@ -40,3 +40,13 @@ export function getIncidentMessage({incidents}) {
 export function getWorkflowName({bpmnProcessId, workflowName}) {
   return workflowName || bpmnProcessId;
 }
+
+export function formatGroupedWorkflows(workflows = []) {
+  return workflows.reduce((obj, value) => {
+    obj[value.bpmnProcessId] = {
+      ...value
+    };
+
+    return obj;
+  }, {});
+}

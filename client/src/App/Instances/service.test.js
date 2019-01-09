@@ -1,5 +1,7 @@
 import {parseQueryString} from './service';
 
+jest.mock('modules/utils/bpmn');
+
 describe('Instances service', () => {
   describe('parseQueryString', () => {
     it('should return a empty object for invalid querys string', () => {

@@ -1,11 +1,20 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
-import {createSelection, mockResolvedAsyncFn} from 'modules/testUtils';
+import {
+  createSelection,
+  mockResolvedAsyncFn,
+  groupedWorkflowsMock
+} from 'modules/testUtils';
 import {ThemeProvider} from 'modules/theme';
 import {SelectionProvider} from 'modules/contexts/SelectionContext';
 import * as instancesApi from 'modules/api/instances/instances';
-import {MESSAGES_TYPE, OPERATION_TYPE} from 'modules/constants';
+import {formatGroupedWorkflows} from 'modules/utils/instance';
+import {
+  MESSAGES_TYPE,
+  OPERATION_TYPE,
+  FILTER_SELECTION
+} from 'modules/constants';
 import {MESSAGES} from 'modules/components/ContextualMessage/constants';
 
 import SelectionList from './SelectionList';
@@ -18,7 +27,10 @@ describe('SelectionList', () => {
   beforeEach(async () => {
     node = mount(
       <ThemeProvider>
-        <SelectionProvider getFilterQuery={jest.fn()}>
+        <SelectionProvider
+          groupedWorkflows={formatGroupedWorkflows(groupedWorkflowsMock)}
+          filter={FILTER_SELECTION.incidents}
+        >
           <SelectionList />
         </SelectionProvider>
       </ThemeProvider>

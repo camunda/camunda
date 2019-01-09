@@ -4,17 +4,25 @@ import {mount} from 'enzyme';
 import InstancesContainer from './InstancesContainer';
 import Instances from './Instances';
 
-import {
-  parseQueryString,
-  decodeFields,
-  formatGroupedWorkflows
-} from './service';
+import {parseQueryString, decodeFields} from './service';
 import * as api from 'modules/api/instances/instances';
 import * as apiDiagram from 'modules/api/diagram/diagram';
-import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 import {getFilterQueryString} from 'modules/utils/filter';
-import {DEFAULT_FILTER} from 'modules/constants';
-import {groupedWorkflowsMock} from 'modules/testUtils';
+import {formatGroupedWorkflows} from 'modules/utils/instance';
+import {
+  DEFAULT_FILTER,
+  DEFAULT_SORTING,
+  DEFAULT_FIRST_ELEMENT,
+  DEFAULT_MAX_RESULTS,
+  SORT_ORDER,
+  INCIDENTS_FILTER
+} from 'modules/constants';
+import {
+  mockResolvedAsyncFn,
+  flushPromises,
+  groupedWorkflowsMock,
+  createMockInstancesObject
+} from 'modules/testUtils';
 import {parsedDiagram} from 'modules/utils/bpmn';
 const InstancesContainerWrapped = InstancesContainer.WrappedComponent;
 
@@ -60,6 +68,8 @@ const localStorageProps = {
 
 // api mocks
 api.fetchGroupedWorkflows = mockResolvedAsyncFn(groupedWorkflowsMock);
+const mockInstances = createMockInstancesObject();
+api.fetchWorkflowInstances = mockResolvedAsyncFn(mockInstances);
 api.fetchWorkflowInstancesStatistics = mockResolvedAsyncFn([]);
 apiDiagram.fetchWorkflowXML = mockResolvedAsyncFn('<xml />');
 jest.mock('bpmn-js', () => ({}));
@@ -87,7 +97,7 @@ describe('InstancesContainer', () => {
       <InstancesContainerWrapped {...localStorageProps} {...getRouterProps()} />
     );
 
-    //when
+    // when
     await flushPromises();
     node.update();
 
@@ -104,7 +114,7 @@ describe('InstancesContainer', () => {
       />
     );
 
-    //when
+    // when
     await flushPromises();
     node.update();
 
@@ -112,6 +122,7 @@ describe('InstancesContainer', () => {
     expect(apiDiagram.fetchWorkflowXML).toHaveBeenCalledWith(
       groupedWorkflowsMock[0].workflows[2].id
     );
+    expect(node.find('Instances').prop('diagramModel')).toEqual(parsedDiagram);
   });
 
   it('should fetch statistics', async () => {
@@ -145,11 +156,99 @@ describe('InstancesContainer', () => {
     ).toMatchObject(expectedQuery);
   });
 
+  describe('fetching workflow instances', () => {
+    function checkInstancesUpdate(node) {
+      const expectedQuery = {
+        active: true,
+        activityId: 'taskD',
+        completed: true,
+        errorMessage: 'No data found for query $.foo.',
+        finished: true,
+        ids: ['424242', '434343'],
+        incidents: true,
+        running: true,
+        workflowIds: ['1']
+      };
+
+      expect(api.fetchWorkflowInstances).toHaveBeenCalled();
+      const call = api.fetchWorkflowInstances.mock.calls[0][0];
+      expect(call.queries[0]).toMatchObject(expectedQuery);
+      expect(call.sorting).toEqual(node.state('sorting'));
+      expect(call.firstResult).toEqual(node.state('firstElement'));
+      expect(call.maxResults).toEqual(DEFAULT_MAX_RESULTS);
+      expect(node.find('Instances').prop('workflowInstances')).toEqual(
+        mockInstances.workflowInstances
+      );
+      expect(node.find('Instances').prop('filterCount')).toEqual(
+        mockInstances.totalCount
+      );
+    }
+
+    it('should fetch instances when filter changes', async () => {
+      // given
+      const node = mount(
+        <InstancesContainerWrapped
+          {...localStorageProps}
+          {...getRouterProps(fullFilterWithWorkflow)}
+        />
+      );
+
+      // when
+      await flushPromises();
+      node.update();
+
+      // then
+      checkInstancesUpdate(node);
+    });
+
+    it('should fetch instances when sorting changes', async () => {
+      // given
+      const node = mount(
+        <InstancesContainerWrapped
+          {...localStorageProps}
+          {...getRouterProps(fullFilterWithWorkflow)}
+        />
+      );
+      await flushPromises();
+      node.update();
+      api.fetchWorkflowInstances.mockClear();
+
+      // when
+      node.find('Instances').prop('onSort')(DEFAULT_SORTING.sortBy);
+      await flushPromises();
+      node.update();
+
+      // then
+      checkInstancesUpdate(node);
+    });
+
+    it('should fetch instances when firstElement changes', async () => {
+      // given
+      const node = mount(
+        <InstancesContainerWrapped
+          {...localStorageProps}
+          {...getRouterProps(fullFilterWithWorkflow)}
+        />
+      );
+      await flushPromises();
+      node.update();
+      api.fetchWorkflowInstances.mockClear();
+
+      // when
+      node.find('Instances').prop('onFirstElementChange')(3);
+      await flushPromises();
+      node.update();
+
+      // then
+      checkInstancesUpdate(node);
+    });
+  });
+
   it('should write the filter to local storage', async () => {
     // given
     const node = mount(<InstancesContainer {...getRouterProps()} />);
 
-    //when
+    // when
     await flushPromises();
     node.update();
 
@@ -171,7 +270,7 @@ describe('InstancesContainer', () => {
       <InstancesContainerWrapped {...localStorageProps} {...getRouterProps()} />
     );
 
-    //when
+    // when
     await flushPromises();
     node.update();
 
@@ -194,7 +293,7 @@ describe('InstancesContainer', () => {
       />
     );
 
-    //when
+    // when
     await flushPromises();
     node.update();
 
@@ -214,7 +313,7 @@ describe('InstancesContainer', () => {
       />
     );
 
-    //when
+    // when
     await flushPromises();
     node.update();
 
@@ -238,7 +337,7 @@ describe('InstancesContainer', () => {
       />
     );
 
-    //when
+    // when
     await flushPromises();
     node.update();
 
@@ -252,146 +351,261 @@ describe('InstancesContainer', () => {
     expect(InstancesNode.prop('diagramModel')).toEqual({});
   });
 
-  describe('should fix an invalid filter in url', () => {
-    it('should add the default filter to the url when no filter is present', async () => {
-      const noFilterRouterProps = {
-        history: {push: jest.fn()},
-        location: {
-          search: ''
-        }
-      };
+  describe('reading url filter', () => {
+    describe('fixing an invalid filter in url', () => {
+      it('should add the default filter to the url when no filter is present', async () => {
+        const noFilterRouterProps = {
+          history: {push: jest.fn()},
+          location: {
+            search: ''
+          }
+        };
 
-      mount(
-        <InstancesContainerWrapped
-          {...localStorageProps}
-          {...noFilterRouterProps}
-        />
-      );
+        mount(
+          <InstancesContainerWrapped
+            {...localStorageProps}
+            {...noFilterRouterProps}
+          />
+        );
 
-      //when
-      await flushPromises();
+        // when
+        await flushPromises();
 
-      expect(noFilterRouterProps.history.push).toHaveBeenCalled();
-      expect(noFilterRouterProps.history.push.mock.calls[0][0].search).toBe(
-        '?filter={"active":true,"incidents":true}'
-      );
+        expect(noFilterRouterProps.history.push).toHaveBeenCalled();
+        expect(noFilterRouterProps.history.push.mock.calls[0][0].search).toBe(
+          '?filter={"active":true,"incidents":true}'
+        );
+      });
+
+      it('when a value in the filter in url is invalid', async () => {
+        const invalidFilterRouterProps = {
+          history: {push: jest.fn()},
+          location: {
+            search:
+              '?filter={"active": fallse, "errorMessage": "No%20data%20found%20for%20query%20$.foo."'
+          }
+        };
+        const node = mount(
+          <InstancesContainerWrapped
+            {...localStorageProps}
+            {...invalidFilterRouterProps}
+          />
+        );
+
+        // when
+        await flushPromises();
+        node.update();
+
+        expect(invalidFilterRouterProps.history.push).toHaveBeenCalled();
+        expect(
+          invalidFilterRouterProps.history.push.mock.calls[0][0].search
+        ).toBe('?filter={"active":true,"incidents":true}');
+      });
+
+      it('when the workflow in url is invalid', async () => {
+        const node = mount(
+          <InstancesContainerWrapped
+            {...localStorageProps}
+            {...getRouterProps({
+              ...fullFilterWithWorkflow,
+              workflow: 'x'
+            })}
+          />
+        );
+
+        // when
+        await flushPromises();
+        node.update();
+
+        // expect invalid activityId to have been removed
+        expect(pushMock).toHaveBeenCalled();
+        const search = pushMock.mock.calls[0][0].search;
+        const {version, workflow, activityId, ...rest} = fullFilterWithWorkflow;
+
+        expect(parseQueryString(search).filter).toEqual(rest);
+      });
+
+      it('when the version in url is invalid', async () => {
+        const node = mount(
+          <InstancesContainerWrapped
+            {...localStorageProps}
+            {...getRouterProps({
+              ...fullFilterWithWorkflow,
+              version: 'x'
+            })}
+          />
+        );
+
+        // when
+        await flushPromises();
+        node.update();
+
+        // expect invalid activityId to have been removed
+        expect(pushMock).toHaveBeenCalled();
+        const search = pushMock.mock.calls[0][0].search;
+        const {version, workflow, activityId, ...rest} = fullFilterWithWorkflow;
+
+        expect(parseQueryString(search).filter).toEqual(rest);
+      });
+
+      it('when the activityId in url is invalid', async () => {
+        const node = mount(
+          <InstancesContainerWrapped
+            {...localStorageProps}
+            {...getRouterProps({
+              ...fullFilterWithWorkflow,
+              activityId: 'x'
+            })}
+          />
+        );
+
+        // when
+        await flushPromises();
+        node.update();
+
+        // expect invalid activityId to have been removed
+        expect(pushMock).toHaveBeenCalledTimes(1);
+        const search = pushMock.mock.calls[0][0].search;
+        const {activityId, ...rest} = fullFilterWithWorkflow;
+        expect(parseQueryString(search).filter).toEqual(rest);
+      });
+
+      it('should remove activityId when version="all"', async () => {
+        const node = mount(
+          <InstancesContainerWrapped
+            {...localStorageProps}
+            {...getRouterProps({
+              ...fullFilterWithWorkflow,
+              version: 'all'
+            })}
+          />
+        );
+
+        // when
+        await flushPromises();
+        node.update();
+
+        // expect invalid activityId to have been removed
+        expect(pushMock).toHaveBeenCalledTimes(1);
+        const search = pushMock.mock.calls[0][0].search;
+        const {activityId, version, ...rest} = fullFilterWithWorkflow;
+        expect(parseQueryString(search).filter).toEqual({
+          ...rest,
+          version: 'all'
+        });
+      });
     });
 
-    it('when the filter in url is invalid', async () => {
-      const invalidFilterRouterProps = {
-        history: {push: jest.fn()},
-        location: {
-          search:
-            '?filter={"active": fallse, "errorMessage": "No%20data%20found%20for%20query%20$.foo."'
-        }
-      };
-      const node = mount(
-        <InstancesContainerWrapped
-          {...localStorageProps}
-          {...invalidFilterRouterProps}
-        />
-      );
+    describe('updating the state when filter is valid', () => {
+      it('should update the state for a valid filter with no workflow', async () => {
+        const node = mount(
+          <InstancesContainerWrapped
+            {...localStorageProps}
+            {...getRouterProps({
+              ...fullFilterWithoutWorkflow
+            })}
+          />
+        );
 
-      //when
-      await flushPromises();
-      node.update();
+        // when
+        await flushPromises();
+        node.update();
 
-      expect(invalidFilterRouterProps.history.push).toHaveBeenCalled();
-      expect(
-        invalidFilterRouterProps.history.push.mock.calls[0][0].search
-      ).toBe('?filter={"active":true,"incidents":true}');
-    });
+        // then
+        const InstancesNode = node.find('Instances');
+        expect(InstancesNode.prop('filter')).toEqual(
+          decodeFields(fullFilterWithoutWorkflow)
+        );
+        expect(InstancesNode.prop('diagramModel')).toEqual({});
+        expect(InstancesNode.prop('statistics')).toEqual([]);
+        expect(InstancesNode.prop('firstElement')).toBe(DEFAULT_FIRST_ELEMENT);
+        expect(InstancesNode.prop('sorting')).toEqual(DEFAULT_SORTING);
+      });
 
-    it('when the workflow in url is invalid', async () => {
-      const node = mount(
-        <InstancesContainerWrapped
-          {...localStorageProps}
-          {...getRouterProps({
-            ...fullFilterWithWorkflow,
-            workflow: 'x'
-          })}
-        />
-      );
+      it('should update the state for a valid filter with version="all"', async () => {
+        // given
+        const {activityId, ...filterWithoutActivityId} = fullFilterWithWorkflow;
+        const validFilterWithVersionAll = {
+          ...filterWithoutActivityId,
+          version: 'all'
+        };
+        const node = mount(
+          <InstancesContainerWrapped
+            {...localStorageProps}
+            {...getRouterProps(validFilterWithVersionAll)}
+          />
+        );
 
-      //when
-      await flushPromises();
-      node.update();
+        // when
+        await flushPromises();
+        node.update();
 
-      // expect invalid activityId to have been removed
-      expect(pushMock).toHaveBeenCalled();
-      const search = pushMock.mock.calls[0][0].search;
-      const {version, workflow, activityId, ...rest} = fullFilterWithWorkflow;
+        // then
+        const InstancesNode = node.find('Instances');
+        expect(InstancesNode.prop('filter')).toEqual(
+          decodeFields(validFilterWithVersionAll)
+        );
+        expect(InstancesNode.prop('diagramModel')).toEqual({});
+        expect(InstancesNode.prop('statistics')).toEqual([]);
+        expect(InstancesNode.prop('firstElement')).toBe(DEFAULT_FIRST_ELEMENT);
+        expect(InstancesNode.prop('sorting')).toEqual(DEFAULT_SORTING);
+      });
 
-      expect(parseQueryString(search).filter).toEqual(rest);
-    });
+      it("should update the state for a valid filter when workflow didn't change", async () => {
+        // given
+        const node = mount(
+          <InstancesContainerWrapped
+            {...localStorageProps}
+            {...getRouterProps(fullFilterWithWorkflow)}
+          />
+        );
+        await flushPromises();
+        node.update();
 
-    it('when the version in url is invalid', async () => {
-      const node = mount(
-        <InstancesContainerWrapped
-          {...localStorageProps}
-          {...getRouterProps({
-            ...fullFilterWithWorkflow,
-            version: 'x'
-          })}
-        />
-      );
+        // when
+        // change filter without chaning workflow
+        const newFilter = {
+          ...fullFilterWithWorkflow,
+          endDate: '28 December 1955'
+        };
+        node.setProps({...getRouterProps(newFilter)});
+        await flushPromises();
+        node.update();
 
-      //when
-      await flushPromises();
-      node.update();
+        // then
+        const InstancesNode = node.find('Instances');
+        expect(InstancesNode.prop('filter')).toEqual(decodeFields(newFilter));
+        expect(InstancesNode.prop('firstElement')).toBe(DEFAULT_FIRST_ELEMENT);
+        expect(InstancesNode.prop('sorting')).toEqual(DEFAULT_SORTING);
+      });
 
-      // expect invalid activityId to have been removed
-      expect(pushMock).toHaveBeenCalled();
-      const search = pushMock.mock.calls[0][0].search;
-      const {version, workflow, activityId, ...rest} = fullFilterWithWorkflow;
+      it('should update the state for a valid filter when workflow changes', async () => {
+        // given
+        const node = mount(
+          <InstancesContainerWrapped
+            {...localStorageProps}
+            {...getRouterProps(fullFilterWithWorkflow)}
+          />
+        );
+        await flushPromises();
+        node.update();
 
-      expect(parseQueryString(search).filter).toEqual(rest);
-    });
+        // when
+        // change workflow by changing the version
+        const newFilter = {...fullFilterWithWorkflow, version: '3'};
+        node.setProps({...getRouterProps(newFilter)});
+        await flushPromises();
+        node.update();
 
-    it('when the activityId in url is invalid', async () => {
-      const node = mount(
-        <InstancesContainerWrapped
-          {...localStorageProps}
-          {...getRouterProps({
-            ...fullFilterWithWorkflow,
-            activityId: 'x'
-          })}
-        />
-      );
-
-      //when
-      await flushPromises();
-      node.update();
-
-      // expect invalid activityId to have been removed
-      expect(pushMock).toHaveBeenCalledTimes(1);
-      const search = pushMock.mock.calls[0][0].search;
-      const {activityId, ...rest} = fullFilterWithWorkflow;
-      expect(parseQueryString(search).filter).toEqual(rest);
-    });
-
-    it('should remove activityId when version="all"', async () => {
-      const node = mount(
-        <InstancesContainerWrapped
-          {...localStorageProps}
-          {...getRouterProps({
-            ...fullFilterWithWorkflow,
-            version: 'all'
-          })}
-        />
-      );
-
-      //when
-      await flushPromises();
-      node.update();
-
-      // expect invalid activityId to have been removed
-      expect(pushMock).toHaveBeenCalledTimes(1);
-      const search = pushMock.mock.calls[0][0].search;
-      const {activityId, version, ...rest} = fullFilterWithWorkflow;
-      expect(parseQueryString(search).filter).toEqual({
-        ...rest,
-        version: 'all'
+        // then
+        const InstancesNode = node.find('Instances');
+        expect(InstancesNode.prop('filter')).toEqual(decodeFields(newFilter));
+        // update diagramModel
+        expect(InstancesNode.prop('diagramModel')).toEqual(parsedDiagram);
+        // reset statistics
+        expect(InstancesNode.prop('statistics')).toEqual([]);
+        expect(InstancesNode.prop('firstElement')).toBe(DEFAULT_FIRST_ELEMENT);
+        expect(InstancesNode.prop('sorting')).toEqual(DEFAULT_SORTING);
       });
     });
   });
@@ -420,6 +634,95 @@ describe('InstancesContainer', () => {
           ...fullFilterWithWorkflow
         })
       );
+    });
+
+    it('should handle filter reset', async () => {
+      const node = mount(
+        <InstancesContainerWrapped
+          {...localStorageProps}
+          {...getRouterProps(fullFilterWithoutWorkflow)}
+        />
+      );
+
+      await flushPromises();
+      node.update();
+      const InstancesNode = node.find('Instances');
+
+      // when
+      InstancesNode.prop('onFilterReset')();
+
+      // then
+      expect(pushMock).toHaveBeenCalled();
+      expect(pushMock.mock.calls[0][0].search).toBe(
+        getFilterQueryString(DEFAULT_FILTER)
+      );
+    });
+  });
+
+  describe('sorting', () => {
+    it('should be able to handle sorting change', async () => {
+      // given
+      const node = mount(
+        <InstancesContainerWrapped
+          {...localStorageProps}
+          {...getRouterProps(fullFilterWithoutWorkflow)}
+        />
+      );
+      await flushPromises();
+      node.update();
+
+      // when
+      node.find('Instances').prop('onSort')(DEFAULT_SORTING.sortBy);
+      await flushPromises();
+      node.update();
+
+      // then
+      const expectedSorting = {...DEFAULT_SORTING, sortOrder: SORT_ORDER.ASC};
+      expect(node.find('Instances').prop('sorting')).toEqual(expectedSorting);
+    });
+
+    it('should reset sorting if it changes and no finished filter is active', async () => {
+      // given
+      const node = mount(
+        <InstancesContainerWrapped
+          {...localStorageProps}
+          {...getRouterProps(INCIDENTS_FILTER)}
+        />
+      );
+      await flushPromises();
+      node.update();
+
+      // when
+      node.find('Instances').prop('onSort')('endDate');
+      await flushPromises();
+      node.update();
+
+      // then
+      expect(node.find('Instances').prop('sorting')).toEqual(DEFAULT_SORTING);
+    });
+
+    it('should reset sorting if filter changes and no finished filter is active', async () => {
+      // given
+      const filterWithCompleted = {...INCIDENTS_FILTER, completed: true};
+      const node = mount(
+        <InstancesContainerWrapped
+          {...localStorageProps}
+          {...getRouterProps(filterWithCompleted)}
+        />
+      );
+      await flushPromises();
+      node.update();
+      node.find('Instances').prop('onSort')('endDate');
+      await flushPromises();
+      node.update();
+
+      // when
+      node.setProps(getRouterProps(INCIDENTS_FILTER));
+      await flushPromises();
+      node.update();
+
+      // then
+      expect(node.find('Instances').prop('sorting')).toEqual(DEFAULT_SORTING);
     });
   });
 });
