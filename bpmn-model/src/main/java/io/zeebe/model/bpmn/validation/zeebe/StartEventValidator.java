@@ -36,8 +36,8 @@ public class StartEventValidator implements ModelElementValidator<StartEvent> {
       validationResultCollector.addError(0, "Start event can't have more than one type");
     } else {
       for (EventDefinition eventDef : eventDefinitions) {
-        if (!(eventDef instanceof TimerEventDefinition)
-            && !(eventDef instanceof MessageEventDefinition)) {
+        if (!(eventDef instanceof TimerEventDefinition
+            || eventDef instanceof MessageEventDefinition)) {
           validationResultCollector.addError(
               0, "Start event must be one of the following types: none, timer, message");
         }

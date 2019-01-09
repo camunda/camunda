@@ -28,7 +28,6 @@ import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.broker.workflow.model.element.ExecutableCatchEvent;
 import io.zeebe.broker.workflow.model.element.ExecutableCatchEventSupplier;
 import io.zeebe.broker.workflow.model.element.ExecutableMessage;
-import io.zeebe.broker.workflow.state.DeployedWorkflow;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.ElementInstanceState;
 import io.zeebe.broker.workflow.state.StoredRecord;
@@ -141,22 +140,6 @@ public class CatchEventBehavior {
       // ignore the event if the element is left
       return false;
     }
-  }
-
-  public void occurStartEvent(
-      long workflowKey,
-      DirectBuffer handlerId,
-      DirectBuffer eventPayload,
-      TypedStreamWriter streamWriter) {
-    final DeployedWorkflow workflow = state.getWorkflowState().getWorkflowByKey(workflowKey);
-
-    workflowInstanceRecord.reset();
-    workflowInstanceRecord.setVersion(workflow.getVersion());
-    workflowInstanceRecord.setWorkflowKey(workflow.getKey());
-    workflowInstanceRecord.setBpmnProcessId(workflow.getBpmnProcessId());
-    workflowInstanceRecord.setPayload(eventPayload);
-    workflowInstanceRecord.setElementId(handlerId);
-    streamWriter.appendNewCommand(WorkflowInstanceIntent.CREATE, workflowInstanceRecord);
   }
 
   public void deferEvent(BpmnStepContext<?> context) {
