@@ -3,6 +3,7 @@ package org.camunda.optimize.test.util;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByMatchedRuleDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 
 import java.util.ArrayList;
@@ -53,6 +54,9 @@ public class DecisionReportDataBuilder {
         reportData = createCountFrequencyReportGroupByOutputVariable(
           decisionDefinitionKey, decisionDefinitionVersion, variableId
         );
+        break;
+      case COUNT_DEC_INST_FREQ_GROUP_BY_MATCHED_RULE:
+        reportData = createCountFrequencyReportGroupByMatchedRule(decisionDefinitionKey, decisionDefinitionVersion);
         break;
       default:
         throw new IllegalStateException("Unsupported type: " + reportDataType);
@@ -151,6 +155,17 @@ public class DecisionReportDataBuilder {
     decisionReportDataDto.setVisualization(DecisionVisualization.TABLE);
     decisionReportDataDto.setView(createCountFrequencyView());
     decisionReportDataDto.setGroupBy(createGroupDecisionByOutputVariable(variableId));
+    return decisionReportDataDto;
+  }
+
+  private static DecisionReportDataDto createCountFrequencyReportGroupByMatchedRule(String decisionDefinitionKey,
+                                                                                    String decisionDefinitionVersion) {
+    final DecisionReportDataDto decisionReportDataDto = new DecisionReportDataDto();
+    decisionReportDataDto.setDecisionDefinitionKey(decisionDefinitionKey);
+    decisionReportDataDto.setDecisionDefinitionVersion(decisionDefinitionVersion);
+    decisionReportDataDto.setVisualization(DecisionVisualization.TABLE);
+    decisionReportDataDto.setView(createCountFrequencyView());
+    decisionReportDataDto.setGroupBy(new DecisionGroupByMatchedRuleDto());
     return decisionReportDataDto;
   }
 

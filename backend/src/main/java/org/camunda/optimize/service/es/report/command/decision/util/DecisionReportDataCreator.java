@@ -2,6 +2,7 @@ package org.camunda.optimize.service.es.report.command.decision.util;
 
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByMatchedRuleDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewDto;
 
 import static org.camunda.optimize.service.es.report.command.decision.util.DecisionGroupByDtoCreator.createGroupDecisionByEvaluationDateTime;
@@ -63,4 +64,13 @@ public class DecisionReportDataCreator {
     return reportData;
   }
 
+  public static DecisionReportDataDto createCountFrequencyGroupByMatchedRuleReport() {
+    DecisionViewDto view = createCountFrequencyView();
+    DecisionGroupByDto groupByDto = new DecisionGroupByMatchedRuleDto();
+
+    DecisionReportDataDto reportData = new DecisionReportDataDto();
+    reportData.setView(view);
+    reportData.setGroupBy(groupByDto);
+    return reportData;
+  }
 }

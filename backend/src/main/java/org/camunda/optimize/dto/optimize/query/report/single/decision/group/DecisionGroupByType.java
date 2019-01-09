@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_EVALUATION_DATE_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_INPUT_VARIABLE_TYPE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_MATCHED_RULE_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_NONE_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_OUTPUT_VARIABLE_TYPE;
 
@@ -12,6 +13,7 @@ public enum DecisionGroupByType {
   NONE(GROUP_BY_NONE_TYPE),
   INPUT_VARIABLE(GROUP_BY_INPUT_VARIABLE_TYPE),
   OUTPUT_VARIABLE(GROUP_BY_OUTPUT_VARIABLE_TYPE),
+  MATCHED_RULE(GROUP_BY_MATCHED_RULE_TYPE),
   ;
 
   private final String id;

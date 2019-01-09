@@ -102,6 +102,12 @@ public class DecisionInstanceImportService {
         .collect(Collectors.toList())
     );
 
+    decisionInstanceDto.setMatchedRules(
+      engineEntity.getOutputs().stream()
+        .map(HistoricDecisionOutputInstanceDto::getRuleId)
+        .collect(Collectors.toSet())
+    );
+
     decisionInstanceDto.setEngine(engineAlias);
     return decisionInstanceDto;
   }

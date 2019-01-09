@@ -10,7 +10,7 @@ import java.io.IOException;
 @Component
 public class DecisionInstanceType extends StrictTypeMappingCreator {
 
-  public static final int VERSION = 1;
+  public static final int VERSION = 2;
 
   public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
   public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
@@ -43,6 +43,8 @@ public class DecisionInstanceType extends StrictTypeMappingCreator {
   public static final String OUTPUT_VARIABLE_RULE_ID = "ruleId";
   public static final String OUTPUT_VARIABLE_RULE_ORDER = "ruleOrder";
   public static final String OUTPUT_VARIABLE_NAME = "variableName";
+
+  public static final String MATCHED_RULES = "matchedRules";
 
   public static final String ENGINE = "engine";
 
@@ -108,6 +110,9 @@ public class DecisionInstanceType extends StrictTypeMappingCreator {
               .startObject("properties");
                 addNestedOutputField(newBuilder)
               .endObject()
+            .endObject()
+            .startObject(MATCHED_RULES)
+              .field("type", "keyword")
             .endObject()
             .startObject(COLLECT_RESULT_VALUE)
               .field("type", "double")

@@ -5,14 +5,21 @@ import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.camunda.optimize.upgrade.main.Upgrade;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
+import org.camunda.optimize.upgrade.steps.UpgradeStep;
+import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
 import org.camunda.optimize.upgrade.steps.schema.DeleteIndexStep;
+import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
+import org.camunda.optimize.upgrade.util.SchemaUpgradeUtil;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
 
 
 public class UpgradeFrom23To24 implements Upgrade {
@@ -38,7 +45,9 @@ public class UpgradeFrom23To24 implements Upgrade {
     try {
       UpgradePlanBuilder.AddUpgradeStepBuilder upgradePlanBuilder = UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
-        .toVersion(TO_VERSION);
+        .toVersion(TO_VERSION)
+        .addUpgradeStep(new UpdateIndexStep(DECISION_INSTANCE_TYPE, "1", "2", getNewDecisionInstanceMapping()))
+        .addUpgradeStep(buildMatchedRules());
 
       if (isTargetValueIndexPresent()) {
         upgradePlanBuilder
@@ -73,5 +82,21 @@ public class UpgradeFrom23To24 implements Upgrade {
 
   private DeleteIndexStep removeTargetValueIndexStep() {
     return new DeleteIndexStep(null, "duration-target-value");
+  }
+
+  private String getNewDecisionInstanceMapping() {
+    String pathToMapping = "upgrade/main/UpgradeFrom23To24/decision-instance-mapping.json";
+    return SchemaUpgradeUtil.readClasspathFileAsString(pathToMapping);
+  }
+
+  private UpgradeStep buildMatchedRules() {
+    // @formatter:off
+    String updateScript =
+      "ctx._source.matchedRules = new HashSet();" +
+      "for (output in ctx._source.outputs) {" +
+      "  ctx._source.matchedRules.add(output.ruleId);" +
+      "}";
+    // @formatter:on
+    return new UpdateDataStep(DECISION_INSTANCE_TYPE, QueryBuilders.matchAllQuery(), updateScript);
   }
 }

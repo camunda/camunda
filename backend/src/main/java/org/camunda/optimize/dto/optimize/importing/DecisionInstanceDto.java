@@ -4,7 +4,9 @@ import org.camunda.optimize.dto.optimize.OptimizeDto;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class DecisionInstanceDto implements OptimizeDto {
 
@@ -29,6 +31,8 @@ public class DecisionInstanceDto implements OptimizeDto {
 
   private List<InputInstanceDto> inputs = new ArrayList<>();
   private List<OutputInstanceDto> outputs = new ArrayList<>();
+
+  private Set<String> matchedRules = new HashSet<>();
 
   private String engine;
 
@@ -142,6 +146,14 @@ public class DecisionInstanceDto implements OptimizeDto {
 
   public void setOutputs(final List<OutputInstanceDto> outputs) {
     this.outputs = outputs;
+  }
+
+  public Set<String> getMatchedRules() {
+    return matchedRules;
+  }
+
+  public void setMatchedRules(final Set<String> matchedRules) {
+    this.matchedRules = matchedRules;
   }
 
   public String getEngine() {

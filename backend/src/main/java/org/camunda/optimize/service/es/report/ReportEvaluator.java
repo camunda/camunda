@@ -12,6 +12,7 @@ import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.NotSupportedCommand;
 import org.camunda.optimize.service.es.report.command.decision.RawDecisionDataCommand;
 import org.camunda.optimize.service.es.report.command.decision.frequency.CountDecisionFrequencyGroupByEvaluationDateTimeCommand;
+import org.camunda.optimize.service.es.report.command.decision.frequency.CountDecisionFrequencyGroupByMatchedRuleCommand;
 import org.camunda.optimize.service.es.report.command.decision.frequency.CountDecisionFrequencyGroupByNoneCommand;
 import org.camunda.optimize.service.es.report.command.decision.frequency.CountDecisionFrequencyGroupByVariableCommand;
 import org.camunda.optimize.service.es.report.command.process.RawProcessDataCommand;
@@ -60,6 +61,7 @@ import java.util.Map;
 
 import static org.camunda.optimize.service.es.report.command.decision.util.DecisionReportDataCreator.createCountFrequencyGroupByEvaluationDateTimeReport;
 import static org.camunda.optimize.service.es.report.command.decision.util.DecisionReportDataCreator.createCountFrequencyGroupByInputVariableReport;
+import static org.camunda.optimize.service.es.report.command.decision.util.DecisionReportDataCreator.createCountFrequencyGroupByMatchedRuleReport;
 import static org.camunda.optimize.service.es.report.command.decision.util.DecisionReportDataCreator.createCountFrequencyGroupByNoneReport;
 import static org.camunda.optimize.service.es.report.command.decision.util.DecisionReportDataCreator.createCountFrequencyGroupByOutputVariableReport;
 import static org.camunda.optimize.service.es.report.command.decision.util.DecisionReportDataCreator.createRawDecisionDataReport;
@@ -306,6 +308,10 @@ public class ReportEvaluator {
     possibleCommands.put(
       createCountFrequencyGroupByOutputVariableReport().createCommandKey(),
       new CountDecisionFrequencyGroupByVariableCommand(OUTPUTS)
+    );
+    possibleCommands.put(
+      createCountFrequencyGroupByMatchedRuleReport().createCommandKey(),
+      new CountDecisionFrequencyGroupByMatchedRuleCommand()
     );
   }
 

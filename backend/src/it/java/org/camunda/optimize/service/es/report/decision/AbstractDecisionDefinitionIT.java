@@ -34,6 +34,15 @@ public abstract class AbstractDecisionDefinitionIT {
   protected static final String INPUT_VARIABLE_AMOUNT = "amount";
   protected static final String INPUT_VARIABLE_INVOICE_DATE = "invoiceDate";
 
+  // dish variables
+  protected static final String INPUT_SEASON_ID = "InputData_0rin549";
+  protected static final String INPUT_NUMBER_OF_GUESTS_ID = "InputData_1axnom3";
+  protected static final String INPUT_GUEST_WITH_CHILDREN_ID = "InputData_0pgvdj9";
+  protected static final String INPUT_VARIABLE_SEASON = "season";
+  protected static final String INPUT_VARIABLE_NUMBER_OF_GUESTS = "guestCount";
+  protected static final String INPUT_VARIABLE_GUEST_WITH_CHILDREN = "guestsWithChildren";
+
+
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -54,6 +63,12 @@ public abstract class AbstractDecisionDefinitionIT {
         return INPUT_VARIABLE_INVOICE_CATEGORY;
       case INPUT_INVOICE_DATE_ID:
         return INPUT_VARIABLE_INVOICE_DATE;
+      case INPUT_SEASON_ID:
+        return INPUT_VARIABLE_SEASON;
+      case INPUT_NUMBER_OF_GUESTS_ID:
+        return INPUT_VARIABLE_NUMBER_OF_GUESTS;
+      case INPUT_GUEST_WITH_CHILDREN_ID:
+        return INPUT_VARIABLE_GUEST_WITH_CHILDREN;
       default:
         throw new IllegalStateException("Unsupported inputVariableId: " + inputId);
     }
