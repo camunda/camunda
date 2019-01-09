@@ -29,6 +29,7 @@ var (
 	activateJobsAmountFlag  int32
 	activateJobsWorkerFlag  string
 	activateJobsTimeoutFlag time.Duration
+	activateJobsFetchVariablesFlag []string
 )
 
 var activateJobsCmd = &cobra.Command{
@@ -38,7 +39,7 @@ var activateJobsCmd = &cobra.Command{
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		jobType := args[0]
-		jobs, err := client.NewActivateJobsCommand().JobType(jobType).Amount(activateJobsAmountFlag).WorkerName(activateJobsWorkerFlag).Timeout(activateJobsTimeoutFlag).Send()
+		jobs, err := client.NewActivateJobsCommand().JobType(jobType).Amount(activateJobsAmountFlag).WorkerName(activateJobsWorkerFlag).Timeout(activateJobsTimeoutFlag).FetchVariables(activateJobsFetchVariablesFlag...).Send()
 		if err != nil {
 			return err
 		}
@@ -63,4 +64,5 @@ func init() {
 	activateJobsCmd.Flags().Int32Var(&activateJobsAmountFlag, "amount", 1, "Specify amount of jobs to activate")
 	activateJobsCmd.Flags().StringVar(&activateJobsWorkerFlag, "worker", DefaultJobWorkerName, "Specify the name of the worker")
 	activateJobsCmd.Flags().DurationVar(&activateJobsTimeoutFlag, "timeout", commands.DefaultJobTimeout, "Specify the timeout of the activated job")
+	activateJobsCmd.Flags().StringSliceVar(&activateJobsFetchVariablesFlag, "variables", []string{}, "Specify the list of variable names which should be fetch on job activation (comma-separated)")
 }

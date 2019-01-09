@@ -159,6 +159,7 @@ message ActivateJobsRequest {
   string worker = 2;
   int64 timeout = 3;
   int32 amount = 4;
+  repeated string fetchVariable = 5;
 }
 
 message JobHeaders {

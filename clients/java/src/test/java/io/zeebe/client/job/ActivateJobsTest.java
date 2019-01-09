@@ -27,6 +27,8 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.zeebe.gateway.protocol.GatewayOuterClass.JobHeaders;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.Test;
 
 public class ActivateJobsTest extends ClientTest {
@@ -130,6 +132,44 @@ public class ActivateJobsTest extends ClientTest {
     // then
     final ActivateJobsRequest request = gatewayService.getLastRequest();
     assertThat(request.getTimeout()).isEqualTo(timeout.toMillis());
+  }
+
+  @Test
+  public void shouldSetFetchVariables() {
+    // given
+    final List<String> fetchVariables = Arrays.asList("foo", "bar", "baz");
+
+    // when
+    client
+        .newActivateJobsCommand()
+        .jobType("foo")
+        .amount(3)
+        .fetchVariables(fetchVariables)
+        .send()
+        .join();
+
+    // then
+    final ActivateJobsRequest request = gatewayService.getLastRequest();
+    assertThat(request.getFetchVariableList()).containsExactlyInAnyOrderElementsOf(fetchVariables);
+  }
+
+  @Test
+  public void shouldSetFetchVariablesAsVargs() {
+    // given
+    final String[] fetchVariables = new String[] {"foo", "bar", "baz"};
+
+    // when
+    client
+        .newActivateJobsCommand()
+        .jobType("foo")
+        .amount(3)
+        .fetchVariables(fetchVariables)
+        .send()
+        .join();
+
+    // then
+    final ActivateJobsRequest request = gatewayService.getLastRequest();
+    assertThat(request.getFetchVariableList()).containsExactlyInAnyOrder(fetchVariables);
   }
 
   @Test

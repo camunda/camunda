@@ -32,6 +32,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest.Builder;
 import io.zeebe.util.CloseableSilently;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -50,6 +51,7 @@ public class JobWorkerBuilderImpl
   private String workerName;
   private int bufferSize;
   private Duration pollInterval;
+  private List<String> fetchVariables;
 
   public JobWorkerBuilderImpl(
       ZeebeClientConfiguration configuration,
@@ -112,6 +114,17 @@ public class JobWorkerBuilderImpl
   }
 
   @Override
+  public JobWorkerBuilderStep3 fetchVariables(List<String> fetchVariables) {
+    this.fetchVariables = fetchVariables;
+    return this;
+  }
+
+  @Override
+  public JobWorkerBuilderStep3 fetchVariables(String... fetchVariables) {
+    return fetchVariables(Arrays.asList(fetchVariables));
+  }
+
+  @Override
   public JobWorker open() {
     ensureNotNullNorEmpty("jobType", jobType);
     ensureNotNull("jobHandler", handler);
@@ -125,6 +138,10 @@ public class JobWorkerBuilderImpl
             .setTimeout(timeout)
             .setWorker(workerName)
             .setAmount(bufferSize);
+
+    if (fetchVariables != null) {
+      requestBuilder.addAllFetchVariable(fetchVariables);
+    }
 
     final JobRunnableFactory jobRunnableFactory = new JobRunnableFactory(jobClient, handler);
     final JobPoller jobPoller = new JobPoller(gatewayStub, requestBuilder, objectMapper);
