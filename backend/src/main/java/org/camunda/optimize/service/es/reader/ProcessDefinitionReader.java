@@ -235,7 +235,7 @@ public class ProcessDefinitionReader {
       searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String reason = String.format(
-        "Was not able to fetch latest decision definition for key [%s]",
+        "Was not able to fetch latest process definition for key [%s]",
         key
       );
       logger.error(reason, e);
