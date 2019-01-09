@@ -12,7 +12,8 @@ import {getFilterQueryString} from 'modules/utils/filter';
 import {
   FILTER_SELECTION,
   BADGE_TYPE,
-  COMBO_BADGE_TYPE
+  COMBO_BADGE_TYPE,
+  DEFAULT_FILTER
 } from 'modules/constants';
 import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
 import {withSelection} from 'modules/contexts/SelectionContext';
@@ -45,7 +46,7 @@ class Header extends React.Component {
     runningInstancesCount: 0,
     selectionCount: 0,
     filterCount: 0,
-    filter: {},
+    filter: null,
     instancesInSelectionsCount: 0,
     incidentsCount: 0
   };
@@ -69,6 +70,11 @@ class Header extends React.Component {
         this.setValueFromPropsOrApi(key);
       }
     });
+
+    // set defaulf filter when no filter is found in localState
+    if (!this.state.filter) {
+      this.setState({filter: DEFAULT_FILTER});
+    }
   };
 
   setUser = async () => {
@@ -97,7 +103,6 @@ class Header extends React.Component {
    */
   setValueFromPropsOrApi = async key => {
     let countValue = this.props[key];
-
     // if it's not provided in props, fetch it from the api
     if (typeof countValue === 'undefined') {
       countValue = await fetchWorkflowInstancesCount(filtersMap[key]);
@@ -118,23 +123,25 @@ class Header extends React.Component {
     // query for the incidents link
     const incidentsQuery = getFilterQueryString(FILTER_SELECTION.incidents);
     const runningQuery = getFilterQueryString(FILTER_SELECTION.running);
-    const filterQuery = getFilterQueryString(this.state.filter);
+    const filterQuery = this.state.filter
+      ? getFilterQueryString(this.state.filter)
+      : '';
 
     const isRunningInstanceFilter = isEqual(
       FILTER_SELECTION.running,
       this.state.filter
     );
+
     // P.S. checking isRunningInstanceFilter first is a small perf improvement because
     // it checks for isRunningInstanceFilter before making an object equality check
     const isIncidentsFilter =
       !isRunningInstanceFilter && isEqual({incidents: true}, this.state.filter);
-
     return this.state.forceRedirect ? (
       <Redirect to="/login" />
     ) : (
       <Styled.Header role="banner">
         <Styled.Menu role="navigation">
-          <li>
+          <li data-test="header-link-dashboard">
             <Styled.Dashboard
               to="/"
               isActive={active === 'dashboard'}
@@ -178,7 +185,9 @@ class Header extends React.Component {
                   active === 'instances' && !this.props.isFiltersCollapsed
                 }
               >
-                {this.state.filterCount}
+                {isRunningInstanceFilter
+                  ? this.state.runningInstancesCount
+                  : this.state.filterCount}
               </Badge>
             </Styled.ListLink>
           </li>
@@ -240,4 +249,9 @@ class Header extends React.Component {
   }
 }
 
-export default withSelection(withCollapsablePanel(withSharedState(Header)));
+const WrappedHeader = withSelection(
+  withCollapsablePanel(withSharedState(Header))
+);
+WrappedHeader.WrappedComponent = Header;
+
+export default WrappedHeader;
