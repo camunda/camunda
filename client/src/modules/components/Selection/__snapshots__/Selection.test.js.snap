@@ -1030,89 +1030,88 @@ exports[`Selection should contain Instances 1`] = `
                             operationState="SCHEDULED"
                             operationType="UPDATE_RETRIES"
                           >
-                            <div>
-                              <Themed(Styled(Spinner))
+                            <Themed(Styled(Spinner))
+                              className="sc-jhAzac TOqAe"
+                              title="Instance id_1 has scheduled Operations"
+                            >
+                              <Themed
                                 className="sc-jhAzac TOqAe"
+                                forwardedRef={null}
                                 title="Instance id_1 has scheduled Operations"
                               >
-                                <Themed
+                                <Styled(Spinner)
                                   className="sc-jhAzac TOqAe"
-                                  forwardedRef={null}
+                                  theme="dark"
                                   title="Instance id_1 has scheduled Operations"
                                 >
-                                  <Styled(Spinner)
+                                  <StyledComponent
                                     className="sc-jhAzac TOqAe"
-                                    theme="dark"
-                                    title="Instance id_1 has scheduled Operations"
-                                  >
-                                    <StyledComponent
-                                      className="sc-jhAzac TOqAe"
-                                      forwardedClass={
-                                        Object {
-                                          "$$typeof": Symbol(react.forward_ref),
-                                          "attrs": undefined,
-                                          "componentStyle": ComponentStyle {
-                                            "componentId": "sc-kpOJdX",
-                                            "isStatic": false,
-                                            "lastClassName": "kVoQta",
-                                            "rules": Array [
-                                              "
+                                    forwardedClass={
+                                      Object {
+                                        "$$typeof": Symbol(react.forward_ref),
+                                        "attrs": undefined,
+                                        "componentStyle": ComponentStyle {
+                                          "componentId": "sc-kpOJdX",
+                                          "isStatic": false,
+                                          "lastClassName": "kVoQta",
+                                          "rules": Array [
+                                            "
   margin: 0 5px;
  border: 3px solid ",
-                                              [Function],
-                                              ";
+                                            [Function],
+                                            ";
     border-right-color: transparent;
   }
 ",
-                                            ],
-                                          },
-                                          "displayName": "Styled(Spinner)",
-                                          "render": [Function],
-                                          "styledComponentId": "sc-kpOJdX",
-                                          "target": [Function],
-                                          "toString": [Function],
-                                          "warnTooManyClasses": [Function],
-                                          "withComponent": [Function],
-                                          Symbol(Symbol.hasInstance): [Function],
-                                        }
+                                          ],
+                                        },
+                                        "displayName": "Styled(Spinner)",
+                                        "render": [Function],
+                                        "styledComponentId": "sc-kpOJdX",
+                                        "target": [Function],
+                                        "toString": [Function],
+                                        "warnTooManyClasses": [Function],
+                                        "withComponent": [Function],
+                                        Symbol(Symbol.hasInstance): [Function],
                                       }
-                                      forwardedRef={null}
+                                    }
+                                    forwardedRef={null}
+                                    theme="dark"
+                                    title="Instance id_1 has scheduled Operations"
+                                  >
+                                    <Spinner
+                                      className="sc-jhAzac TOqAe sc-kpOJdX kVoQta"
                                       theme="dark"
                                       title="Instance id_1 has scheduled Operations"
                                     >
-                                      <Spinner
+                                      <Themed(styled.div)
                                         className="sc-jhAzac TOqAe sc-kpOJdX kVoQta"
                                         theme="dark"
                                         title="Instance id_1 has scheduled Operations"
                                       >
-                                        <Themed(styled.div)
+                                        <Themed
                                           className="sc-jhAzac TOqAe sc-kpOJdX kVoQta"
+                                          forwardedRef={null}
                                           theme="dark"
                                           title="Instance id_1 has scheduled Operations"
                                         >
-                                          <Themed
+                                          <styled.div
                                             className="sc-jhAzac TOqAe sc-kpOJdX kVoQta"
-                                            forwardedRef={null}
                                             theme="dark"
                                             title="Instance id_1 has scheduled Operations"
                                           >
-                                            <styled.div
+                                            <StyledComponent
                                               className="sc-jhAzac TOqAe sc-kpOJdX kVoQta"
-                                              theme="dark"
-                                              title="Instance id_1 has scheduled Operations"
-                                            >
-                                              <StyledComponent
-                                                className="sc-jhAzac TOqAe sc-kpOJdX kVoQta"
-                                                forwardedClass={
-                                                  Object {
-                                                    "$$typeof": Symbol(react.forward_ref),
-                                                    "attrs": undefined,
-                                                    "componentStyle": ComponentStyle {
-                                                      "componentId": "sc-kGXeez",
-                                                      "isStatic": false,
-                                                      "lastClassName": "kyYmHA",
-                                                      "rules": Array [
-                                                        "
+                                              forwardedClass={
+                                                Object {
+                                                  "$$typeof": Symbol(react.forward_ref),
+                                                  "attrs": undefined,
+                                                  "componentStyle": ComponentStyle {
+                                                    "componentId": "sc-kGXeez",
+                                                    "isStatic": false,
+                                                    "lastClassName": "kyYmHA",
+                                                    "rules": Array [
+                                                      "
   border-radius: 50%;
 
   // intentionally sized based on the parent's font-size
@@ -1123,52 +1122,51 @@ exports[`Selection should contain Instances 1`] = `
 
   border: 3px solid
     ",
-                                                        [Function],
-                                                        ";
+                                                      [Function],
+                                                      ";
   border-right-color: transparent;
 
   animation: ",
-                                                        Keyframes {
-                                                          "id": "sc-keyframes-iECmZH",
-                                                          "inject": [Function],
-                                                          "name": "iECmZH",
-                                                          "rules": Array [
-                                                            "@-webkit-keyframes iECmZH{0%{-webkit-transform:rotate(0deg);-ms-transform:rotate(0deg);transform:rotate(0deg);}100%{-webkit-transform:rotate(360deg);-ms-transform:rotate(360deg);transform:rotate(360deg);}}",
-                                                            "@keyframes iECmZH{0%{-webkit-transform:rotate(0deg);-ms-transform:rotate(0deg);transform:rotate(0deg);}100%{-webkit-transform:rotate(360deg);-ms-transform:rotate(360deg);transform:rotate(360deg);}}",
-                                                          ],
-                                                          "toString": [Function],
-                                                        },
-                                                        " 0.65s infinite linear;
+                                                      Keyframes {
+                                                        "id": "sc-keyframes-iECmZH",
+                                                        "inject": [Function],
+                                                        "name": "iECmZH",
+                                                        "rules": Array [
+                                                          "@-webkit-keyframes iECmZH{0%{-webkit-transform:rotate(0deg);-ms-transform:rotate(0deg);transform:rotate(0deg);}100%{-webkit-transform:rotate(360deg);-ms-transform:rotate(360deg);transform:rotate(360deg);}}",
+                                                          "@keyframes iECmZH{0%{-webkit-transform:rotate(0deg);-ms-transform:rotate(0deg);transform:rotate(0deg);}100%{-webkit-transform:rotate(360deg);-ms-transform:rotate(360deg);transform:rotate(360deg);}}",
+                                                        ],
+                                                        "toString": [Function],
+                                                      },
+                                                      " 0.65s infinite linear;
 ",
-                                                      ],
-                                                    },
-                                                    "displayName": "styled.div",
-                                                    "render": [Function],
-                                                    "styledComponentId": "sc-kGXeez",
-                                                    "target": "div",
-                                                    "toString": [Function],
-                                                    "warnTooManyClasses": [Function],
-                                                    "withComponent": [Function],
-                                                  }
+                                                    ],
+                                                  },
+                                                  "displayName": "styled.div",
+                                                  "render": [Function],
+                                                  "styledComponentId": "sc-kGXeez",
+                                                  "target": "div",
+                                                  "toString": [Function],
+                                                  "warnTooManyClasses": [Function],
+                                                  "withComponent": [Function],
                                                 }
-                                                forwardedRef={null}
-                                                theme="dark"
+                                              }
+                                              forwardedRef={null}
+                                              theme="dark"
+                                              title="Instance id_1 has scheduled Operations"
+                                            >
+                                              <div
+                                                className="sc-jhAzac TOqAe sc-kpOJdX kVoQta sc-kGXeez kyYmHA"
                                                 title="Instance id_1 has scheduled Operations"
-                                              >
-                                                <div
-                                                  className="sc-jhAzac TOqAe sc-kpOJdX kVoQta sc-kGXeez kyYmHA"
-                                                  title="Instance id_1 has scheduled Operations"
-                                                />
-                                              </StyledComponent>
-                                            </styled.div>
-                                          </Themed>
-                                        </Themed(styled.div)>
-                                      </Spinner>
-                                    </StyledComponent>
-                                  </Styled(Spinner)>
-                                </Themed>
-                              </Themed(Styled(Spinner))>
-                            </div>
+                                              />
+                                            </StyledComponent>
+                                          </styled.div>
+                                        </Themed>
+                                      </Themed(styled.div)>
+                                    </Spinner>
+                                  </StyledComponent>
+                                </Styled(Spinner)>
+                              </Themed>
+                            </Themed(Styled(Spinner))>
                           </ActionStatus>
                         </StyledComponent>
                       </Styled(ActionStatus)>
