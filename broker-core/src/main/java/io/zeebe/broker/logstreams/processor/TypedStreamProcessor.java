@@ -48,9 +48,10 @@ public class TypedStreamProcessor implements StreamProcessor {
   protected final TypedEventImpl typedEvent = new TypedEventImpl();
   private final TypedStreamEnvironment environment;
 
-  protected DelegatingEventProcessor eventProcessorWrapper;
-  protected ActorControl actor;
+  private DelegatingEventProcessor eventProcessorWrapper;
+  private ActorControl actor;
   private StreamProcessorContext streamProcessorContext;
+  private TypedStreamWriterImpl streamWriter;
 
   public TypedStreamProcessor(
       final ServerOutput output,
@@ -75,9 +76,11 @@ public class TypedStreamProcessor implements StreamProcessor {
 
   @Override
   public void onOpen(final StreamProcessorContext context) {
+    final LogStream logStream = context.getLogStream();
+    this.streamWriter = new TypedStreamWriterImpl(logStream, eventRegistry, keyGenerator);
+
     this.eventProcessorWrapper =
-        new DelegatingEventProcessor(
-            context.getId(), output, context.getLogStream(), eventRegistry, keyGenerator);
+        new DelegatingEventProcessor(context.getId(), output, logStream, streamWriter);
 
     this.actor = context.getActorControl();
     this.streamProcessorContext = context;
@@ -138,11 +141,10 @@ public class TypedStreamProcessor implements StreamProcessor {
         final int streamProcessorId,
         final ServerOutput output,
         final LogStream logStream,
-        final EnumMap<ValueType, Class<? extends UnpackedObject>> eventRegistry,
-        final KeyGenerator keyGenerator) {
+        final TypedStreamWriterImpl writer) {
       this.streamProcessorId = streamProcessorId;
       this.logStream = logStream;
-      this.writer = new TypedStreamWriterImpl(logStream, eventRegistry, keyGenerator);
+      this.writer = writer;
       this.responseWriter = new TypedResponseWriterImpl(output, logStream.getPartitionId());
     }
 
@@ -198,5 +200,9 @@ public class TypedStreamProcessor implements StreamProcessor {
 
   public KeyGenerator getKeyGenerator() {
     return keyGenerator;
+  }
+
+  public TypedStreamWriterImpl getStreamWriter() {
+    return streamWriter;
   }
 }

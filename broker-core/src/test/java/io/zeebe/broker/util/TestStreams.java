@@ -26,6 +26,7 @@ import io.zeebe.broker.subscription.message.data.MessageStartEventSubscriptionRe
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.workflow.data.TimerRecord;
+import io.zeebe.broker.workflow.data.VariableRecord;
 import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
@@ -88,6 +89,7 @@ public class TestStreams {
     VALUE_TYPES.put(RaftConfigurationEvent.class, ValueType.RAFT);
     VALUE_TYPES.put(JobBatchRecord.class, ValueType.JOB_BATCH);
     VALUE_TYPES.put(TimerRecord.class, ValueType.TIMER);
+    VALUE_TYPES.put(VariableRecord.class, ValueType.VARIABLE);
 
     VALUE_TYPES.put(UnpackedObject.class, ValueType.NOOP);
   }

@@ -20,6 +20,7 @@ package io.zeebe.broker.workflow.state;
 import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
+import io.zeebe.broker.workflow.processor.UpdateVariableStreamWriter;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceLifecycle;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceMetrics;
 import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
@@ -87,6 +88,11 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
 
     this.metrics = new WorkflowInstanceMetrics(metricsManager, logStream.getPartitionId());
     this.elementInstanceState = workflowState.getElementInstanceState();
+
+    final UpdateVariableStreamWriter updateVariableStreamWriter =
+        new UpdateVariableStreamWriter(streamProcessor.getStreamWriter());
+
+    elementInstanceState.getVariablesState().setListener(updateVariableStreamWriter);
   }
 
   @Override
