@@ -23,11 +23,11 @@ ActionItems.Item = function Item({title, onClick, type, ...rest}) {
   const Icon = iconsMap[type];
 
   return (
-    <li>
+    <Styled.Li>
       <Styled.Button {...rest} type={type} title={title} onClick={onClick}>
         <Icon />
       </Styled.Button>
-    </li>
+    </Styled.Li>
   );
 };
 

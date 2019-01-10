@@ -55,6 +55,13 @@ const Colors = {
 
   // Button Colors
   primaryButton01: '#2b7bff',
+
+  darkButton02: '#7f8289',
+  darkButton03: '#34353a',
+  darkButton05: '#646670',
+
+  lightButton02: '#9ea9b7',
+  lightButton03: '#88889a',
   lightButton04: '#f1f2f5'
 };
 
