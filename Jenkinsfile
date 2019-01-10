@@ -12,6 +12,8 @@ String storeNumOfArtifacts() {
 
 def static PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
 
+def static CAMBPM_VERSION_LATEST() { return '7.10.0' }
+
 /************************ START OF PIPELINE ***********************/
 
 String camBpmPodspec(String camBpmDockerImage, boolean secured = false) {
@@ -125,7 +127,7 @@ spec:
       mountPath: /camunda/webapps/manager/META-INF/context.xml
       subPath: context.xml
   - name: elasticsearch
-    image: docker.elastic.co/elasticsearch/elasticsearch:6.0.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.2.0
     securityContext:
       privileged: true
       capabilities:
@@ -133,7 +135,7 @@ spec:
     resources:
       requests:
         cpu: 1
-        memory: 1Gi
+        memory: 2Gi
     ports:
       - containerPort: 9200
         name: http
@@ -147,7 +149,11 @@ spec:
           fieldRef:
             fieldPath: metadata.name
       - name: ES_JAVA_OPTS
-        value: "-Xms512m -Xmx512m"
+        value: "-Xms1g -Xmx1g"
+      - name: bootstrap.memory_lock
+        value: true
+      - name: discovery.type
+        value: single-node
       - name: cluster.name
         value: elasticsearch
     """ + footer
@@ -178,13 +184,16 @@ pipeline {
 
   stages {
     stage('Build') {
+      environment {
+        VERSION = readMavenPom().getVersion()
+      }
       steps {
         container('maven') {
           runMaven('install -Pproduction -Dskip.docker -DskipTests -T\$LIMITS_CPU')
-          // Loops with symbolic links cause stashing to fail
-          sh ('rm -fr client/node_modules')
         }
-        stash name: "optimize-stash"
+        stash name: "optimize-stash-client", includes: "client/build/**"
+        stash name: "optimize-stash-upgrade", includes: "upgrade/target/upgrade*.jar"
+        stash name: "optimize-stash-distro", includes: "m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*-production.tar.gz,m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*.xml,m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*.pom"
       }
     }
     stage('Unit tests') {
@@ -206,7 +215,6 @@ pipeline {
             container('node') {
               sh('''
                 cd ./client
-                yarn
                 yarn test:ci
               ''')
             }
@@ -231,11 +239,13 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-migration_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml camBpmPodspec('camunda/camunda-bpm-platform:7.10.0')
+              yaml camBpmPodspec("camunda/camunda-bpm-platform:${CAMBPM_VERSION_LATEST()}")
             }
           }
           steps {
-            migrationTestSteps('latest')
+            unstash name: "optimize-stash-upgrade"
+            unstash name: "optimize-stash-client"
+            migrationTestSteps()
           }
           post {
             always {
@@ -252,10 +262,12 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-data-upgrade_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml camBpmPodspec('camunda/camunda-bpm-platform:7.10.0')
+              yaml camBpmPodspec("camunda/camunda-bpm-platform:${CAMBPM_VERSION_LATEST()}")
             }
           }
           steps {
+            unstash name: "optimize-stash-upgrade"
+            unstash name: "optimize-stash-distro"
             dataUpgradeTestSteps()
           }
         }
@@ -265,7 +277,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-security_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml camBpmPodspec('camunda/camunda-bpm-platform:7.11.0-SNAPSHOT', true)
+              yaml camBpmPodspec("camunda/camunda-bpm-platform:${CAMBPM_VERSION_LATEST()}", true)
             }
           }
           steps {
@@ -283,11 +295,11 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-latest_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml camBpmPodspec('camunda/camunda-bpm-platform:7.11.0-SNAPSHOT')
+              yaml camBpmPodspec("camunda/camunda-bpm-platform:${CAMBPM_VERSION_LATEST()}")
             }
           }
           steps {
-            unstash name: "optimize-stash"
+            unstash name: "optimize-stash-client"
             integrationTestSteps('latest')
           }
           post {
@@ -309,7 +321,7 @@ pipeline {
             }
           }
           steps {
-            unstash name: "optimize-stash"
+            unstash name: "optimize-stash-client"
             integrationTestSteps('7.9')
           }
           post {
@@ -331,7 +343,7 @@ pipeline {
             }
           }
           steps {
-            unstash name: "optimize-stash"
+            unstash name: "optimize-stash-client"
             integrationTestSteps('7.8')
           }
           post {
@@ -456,60 +468,35 @@ void buildNotification(String buildStatus) {
 
 void integrationTestSteps(String engineVersion = 'latest') {
   container('maven') {
-    runMaven("install -Dskip.docker -Dskip.fe.build -Pproduction,it,engine-${engineVersion} -pl backend -am -T\$LIMITS_CPU")
+    runMaven("verify -Dskip.docker -Dskip.fe.build -Pproduction,it,engine-${engineVersion} -pl backend -am -T\$LIMITS_CPU")
   }
 }
 
 void securityTestSteps() {
   container('maven') {
-
-    // build all required artifacts for security tests
-    runMaven("install -Dskip.docker -DskipTests -Pproduction,it -pl backend,qa/connect-to-secured-es-tests -am -T\$LIMITS_CPU")
     // run migration tests
-    runMaven("verify -Dskip.docker -f qa/connect-to-secured-es-tests/pom.xml -Psecured-es-it")
+    runMaven("verify -Dskip.docker -Dskip.fe.build -pl qa/connect-to-secured-es-tests -am -Psecured-es-it")
   }
 }
 
-void migrationTestSteps(String engineVersion = 'latest') {
+void migrationTestSteps() {
   container('maven') {
     sh ("""apt-get update && apt-get install -y jq""")
-
-    // build all required artifacts for migration tests
-    runMaven("install -Dskip.docker -DskipTests -Pproduction,it,engine-${engineVersion} -pl backend,upgrade -am -T\$LIMITS_CPU")
     // run migration tests
-    runMaven("verify -Dskip.docker -f qa/upgrade-es-schema-tests/pom.xml -Pupgrade-es-schema-tests")
+    runMaven("verify -Dskip.docker -Dskip.fe.build -pl qa/upgrade-es-schema-tests -Pupgrade-es-schema-tests")
   }
 }
 
-void dataUpgradeTestSteps(String engineVersion = 'latest') {
+void dataUpgradeTestSteps() {
   container('maven') {
     sh ("""apt-get update && apt-get install -y jq""")
-
-    runMaven("install -Dskip.docker -DskipTests -Pproduction,it,engine-${engineVersion} -pl backend,upgrade,distro -am -T\$LIMITS_CPU")
-
-    runMaven("verify -Dskip.docker -f qa/upgrade-optimize-data/pom.xml -Pupgrade-optimize-data")
+    runMaven("verify -Dskip.docker -Dskip.fe.build -pl qa/upgrade-optimize-data -am -Pupgrade-optimize-data")
   }
-}
-
-void dockerRegistryLogin() {
-  sh ("""echo '${CAM_REGISTRY_PSW}' | docker login -u ${CAM_REGISTRY_USR} registry.camunda.cloud --password-stdin""")
 }
 
 void archiveTestArtifacts(String srcDirectory, String destDirectory = null) {
-  container('maven') {
-    // fix permissions for jnlp slave as maven user is root so we can archive the artifacts
-    sh ("""#!/bin/bash -ex
-      chown -R 10000:10000 ${srcDirectory}/target/{es_logs,cambpm_logs}
-    """)
-  }
-
   if (destDirectory == null) {
     destDirectory = srcDirectory
-  } else {
-    sh ("""
-      mkdir -p ${destDirectory}
-      cp -R ${srcDirectory}/target/es_logs ${srcDirectory}/target/cambpm_logs ${destDirectory}
-    """)
   }
 
   archiveArtifacts(

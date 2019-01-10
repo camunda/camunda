@@ -159,7 +159,7 @@
                     <!-- execute Optimize backend integration testsuite -->
                     <exec dir="${project.build.directory}/../../../" executable="/bin/bash" failonerror="true">
                       <arg value="-c" />
-                      <arg value="mvn verify -f backend/pom.xml -Dskip.docker -Pproduction,it,engine-latest ${maven-settings}" />
+                      <arg value="mvn verify -pl backend -am -Dskip.docker -Pproduction,it,engine-latest ${maven-settings}" />
                     </exec>
                   </target>
                 </configuration>
