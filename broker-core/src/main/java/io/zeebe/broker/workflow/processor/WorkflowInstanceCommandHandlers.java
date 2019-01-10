@@ -34,7 +34,8 @@ public class WorkflowInstanceCommandHandlers {
     handlers.put(WorkflowInstanceIntent.CANCEL, new CancelWorkflowInstanceHandler());
     handlers.put(
         WorkflowInstanceIntent.UPDATE_PAYLOAD, new UpdatePayloadHandler(state.getWorkflowState()));
-    handlers.put(WorkflowInstanceIntent.CREATE, new CreateWorkflowInstanceHandler(state));
+    handlers.put(
+        WorkflowInstanceIntent.CREATE, new CreateWorkflowInstanceHandler(state.getWorkflowState()));
   }
 
   public void handle(WorkflowInstanceCommandContext context) {

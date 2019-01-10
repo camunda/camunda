@@ -35,7 +35,9 @@ import io.zeebe.broker.workflow.state.TimerInstance;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.TimerIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import org.agrona.DirectBuffer;
@@ -44,6 +46,7 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
 
   private final CatchEventBehavior catchEventBehavior;
   private final WorkflowState workflowState;
+  private final WorkflowInstanceRecord startEventRecord = new WorkflowInstanceRecord();
 
   public TriggerTimerProcessor(
       final WorkflowState workflowState, CatchEventBehavior catchEventBehavior) {
@@ -72,11 +75,13 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
     boolean isOccurred = true;
 
     if (elementInstanceKey == NO_ELEMENT_INSTANCE) {
-      catchEventBehavior.occurStartEvent(
-          timer.getWorkflowKey(),
-          record.getValue().getHandlerNodeId(),
-          EMPTY_DOCUMENT,
-          streamWriter);
+      // timer start event
+      startEventRecord
+          .setWorkflowKey(timer.getWorkflowKey())
+          .setElementId(timer.getHandlerNodeId())
+          .setPayload(WorkflowInstanceRecord.EMPTY_PAYLOAD);
+      streamWriter.appendNewEvent(WorkflowInstanceIntent.EVENT_OCCURRED, startEventRecord);
+
     } else {
       isOccurred =
           catchEventBehavior.occurEventForElement(

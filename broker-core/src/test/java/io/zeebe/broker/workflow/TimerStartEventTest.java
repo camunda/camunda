@@ -26,10 +26,12 @@ import io.zeebe.exporter.record.Assertions;
 import io.zeebe.exporter.record.value.DeploymentRecordValue;
 import io.zeebe.exporter.record.value.TimerRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.record.value.deployment.DeployedWorkflow;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.protocol.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
@@ -66,9 +68,10 @@ public class TimerStartEventTest {
           .endEvent("end_3")
           .done();
 
-  public static BpmnModelInstance multiStartModel;
+  public static final BpmnModelInstance TIMER_AND_MESSAGE_MODEL =
+      createTimerAndMessageStartEventsModel();
 
-  public static BpmnModelInstance multiStartSameEndModel;
+  public static final BpmnModelInstance MULTI_TIMER_START_MODEL = createMultipleTimerStartModel();
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
@@ -78,17 +81,16 @@ public class TimerStartEventTest {
 
   private PartitionTestClient testClient;
 
-  static {
-    ProcessBuilder builder = Bpmn.createExecutableProcess("process_4");
-    builder.startEvent("start_4").timerWithCycle("R/PT2S").endEvent("end_4");
-    multiStartModel =
-        builder.startEvent("start_5").timerWithCycle("R/PT3S").endEvent("end_5").done();
+  private static BpmnModelInstance createTimerAndMessageStartEventsModel() {
+    final ProcessBuilder builder = Bpmn.createExecutableProcess("process");
+    builder.startEvent("timer_start").timerWithCycle("R/PT1S").endEvent("timer_end");
+    return builder.startEvent("msg_start").message("msg1").endEvent("msg_end").done();
+  }
 
-    builder = Bpmn.createExecutableProcess("process_5");
-
+  private static BpmnModelInstance createMultipleTimerStartModel() {
+    final ProcessBuilder builder = Bpmn.createExecutableProcess("process_4");
     builder.startEvent("start_4").timerWithCycle("R/PT2S").endEvent("end_4");
-    multiStartSameEndModel =
-        builder.startEvent("start_5").timerWithCycle("R/PT2S").connectTo("end_4").done();
+    return builder.startEvent("start_5").timerWithCycle("R/PT3S").endEvent("end_5").done();
   }
 
   @Before
@@ -117,28 +119,42 @@ public class TimerStartEventTest {
   public void shouldTriggerAndCreateWorkflowInstance() {
     // when
     final ExecuteCommandResponse response = testClient.deployWithResponse(SIMPLE_MODEL);
-    final DeploymentRecordValue deploymentRecord =
+    final DeployedWorkflow workflow =
         testClient
             .receiveFirstDeploymentEvent(DeploymentIntent.CREATED, response.getKey())
-            .getValue();
+            .getValue()
+            .getDeployedWorkflows()
+            .get(0);
 
     // then
     assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).exists()).isTrue();
     brokerRule.getClock().addTime(Duration.ofSeconds(2));
 
-    assertThat(RecordingExporter.timerRecords(TimerIntent.TRIGGERED).exists()).isTrue();
-    assertThat(RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.CREATE).exists())
-        .isTrue();
-
-    final WorkflowInstanceRecordValue wfInstanceRecord =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_READY)
-            .getFirst()
-            .getValue();
-
-    Assertions.assertThat(wfInstanceRecord)
-        .hasVersion(1)
+    Assertions.assertThat(
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERING)
+                .getFirst()
+                .getValue())
+        .hasElementId("start_1")
         .hasBpmnProcessId("process")
-        .hasWorkflowKey(deploymentRecord.getDeployedWorkflows().get(0).getWorkflowKey());
+        .hasVersion(workflow.getVersion())
+        .hasWorkflowKey(workflow.getWorkflowKey());
+
+    final long triggerRecordPosition =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGER).getFirst().getPosition();
+
+    assertThat(
+            RecordingExporter.getRecords()
+                .stream()
+                .filter(r -> r.getPosition() >= triggerRecordPosition)
+                .limit(6)
+                .map(r -> r.getMetadata().getIntent()))
+        .containsExactly(
+            TimerIntent.TRIGGER,
+            WorkflowInstanceIntent.EVENT_OCCURRED, // causes the instance creation
+            TimerIntent.TRIGGERED,
+            WorkflowInstanceIntent.ELEMENT_READY, // causes the flow node activation
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED, // input mappings applied
+            WorkflowInstanceIntent.EVENT_TRIGGERING); // triggers the start event
   }
 
   @Test
@@ -341,7 +357,7 @@ public class TimerStartEventTest {
   @Test
   public void shouldCreateMultipleInstanceAtTheCorrectTimes() {
     // when
-    testClient.deploy(multiStartModel);
+    testClient.deploy(MULTI_TIMER_START_MODEL);
     assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(2).count()).isEqualTo(2);
     brokerRule.getClock().addTime(Duration.ofSeconds(2));
 
@@ -370,6 +386,7 @@ public class TimerStartEventTest {
         .isTrue();
   }
 
+  @Test
   public void shouldTriggerAtSpecifiedTimeDate() {
     // given
     final Instant triggerTime = brokerRule.getClock().getCurrentTime().plusMillis(2000);
@@ -422,5 +439,49 @@ public class TimerStartEventTest {
         .hasDueDate(triggerTime.toEpochMilli())
         .hasHandlerFlowNodeId("start_2")
         .hasElementInstanceKey(NO_ELEMENT_INSTANCE);
+  }
+
+  @Test
+  public void shouldTriggerTimerAndMessageStartEvent() {
+    // given
+    testClient.deploy(TIMER_AND_MESSAGE_MODEL);
+
+    // when
+    assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).exists()).isTrue();
+    assertThat(
+            RecordingExporter.messageStartEventSubscriptionRecords(
+                    MessageStartEventSubscriptionIntent.OPENED)
+                .exists())
+        .isTrue();
+    brokerRule.getClock().addTime(Duration.ofSeconds(1));
+    testClient.publishMessage("msg1", "123");
+
+    // then
+    final long timerInstanceKey =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERING)
+            .withElementId("timer_start")
+            .getFirst()
+            .getValue()
+            .getWorkflowInstanceKey();
+    assertThat(
+            RecordingExporter.workflowInstanceRecords(EVENT_ACTIVATED)
+                .withElementId("timer_end")
+                .withWorkflowInstanceKey(timerInstanceKey)
+                .exists())
+        .isTrue();
+
+    final long messageInstanceKey =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERING)
+            .withElementId("msg_start")
+            .getFirst()
+            .getValue()
+            .getWorkflowInstanceKey();
+    assertThat(
+            RecordingExporter.workflowInstanceRecords(EVENT_ACTIVATED)
+                .withElementId("msg_end")
+                .withWorkflowInstanceKey(messageInstanceKey)
+                .exists())
+        .isTrue();
+    assertThat(messageInstanceKey).isNotEqualTo(timerInstanceKey);
   }
 }
