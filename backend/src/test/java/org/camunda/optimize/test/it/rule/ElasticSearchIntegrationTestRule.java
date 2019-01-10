@@ -55,7 +55,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   private static final String DEFAULT_PROPERTIES_PATH = "integration-rules.properties";
   private static ObjectMapper objectMapper;
   private static RestHighLevelClient esClient;
-  private boolean haveToClean = true;
+  private static boolean haveToClean = true;
   private static ConfigurationService configurationService;
 
   // maps types to a list of document entry ids added to that type
@@ -315,6 +315,6 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   }
 
   public void disableCleanup() {
-    this.haveToClean = false;
+    haveToClean = false;
   }
 }

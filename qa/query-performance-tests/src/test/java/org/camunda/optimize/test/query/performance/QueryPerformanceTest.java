@@ -75,6 +75,7 @@ public class QueryPerformanceTest {
 
   @BeforeClass
   public static void init() throws TimeoutException, InterruptedException {
+    elasticSearchRule.disableCleanup();
     // given
     importEngineData();
 
@@ -153,7 +154,7 @@ public class QueryPerformanceTest {
     logger.info("Start importing engine data...");
     ExecutorService executor = Executors.newSingleThreadExecutor();
     executor.execute(
-      () -> embeddedOptimizeRule.importAllEngineEntitiesFromScratch()
+      () -> embeddedOptimizeRule.importAllEngineData()
     );
 
     executor.shutdown();

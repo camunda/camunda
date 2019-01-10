@@ -32,14 +32,18 @@ public class ElasticsearchHighLevelRestClientBuilder {
     if (configurationService.getElasticsearchSecuritySSLEnabled()) {
       return buildSecuredRestClient(configurationService);
     }
-    return buildDefaultRestClient(configurationService);
+    return new RestHighLevelClient(buildDefaultRestClient(configurationService, HTTP));
   }
 
-  private static RestHighLevelClient buildDefaultRestClient(ConfigurationService configurationService) {
-    RestClientBuilder clientBuilder = RestClient.builder(
-      buildElasticsearchConnectionNodes(configurationService, HTTP)
-    );
-    return new RestHighLevelClient(clientBuilder);
+  private static RestClientBuilder buildDefaultRestClient(ConfigurationService configurationService, String protocol) {
+    return RestClient.builder(
+      buildElasticsearchConnectionNodes(configurationService, protocol))
+      .setRequestConfigCallback(
+        requestConfigBuilder -> requestConfigBuilder
+          .setConnectTimeout(5000)
+          .setSocketTimeout(0)
+      )
+      .setMaxRetryTimeoutMillis(Integer.MAX_VALUE);
   }
 
   private static HttpHost[] buildElasticsearchConnectionNodes(ConfigurationService configurationService,
@@ -57,9 +61,7 @@ public class ElasticsearchHighLevelRestClientBuilder {
 
   private static RestHighLevelClient buildSecuredRestClient(ConfigurationService configurationService) {
     try {
-      RestClientBuilder builder = RestClient.builder(
-        buildElasticsearchConnectionNodes(configurationService, HTTPS)
-      );
+      RestClientBuilder builder = buildDefaultRestClient(configurationService, HTTPS);
 
       // enable encrypted communication
       KeyStore truststore = loadKeystore(configurationService);

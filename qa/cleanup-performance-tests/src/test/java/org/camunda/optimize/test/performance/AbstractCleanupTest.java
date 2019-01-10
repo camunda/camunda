@@ -61,7 +61,7 @@ public abstract class AbstractCleanupTest {
     final OffsetDateTime importStart = OffsetDateTime.now();
     logger.info("Starting import of engine data to Optimize...");
     final ScheduledExecutorService progressReporterExecutorService = reportImportProgress();
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    embeddedOptimizeRule.importAllEngineData();
     progressReporterExecutorService.shutdown();
     elasticSearchRule.refreshAllOptimizeIndices();
     OffsetDateTime afterImport = OffsetDateTime.now();

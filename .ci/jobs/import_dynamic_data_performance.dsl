@@ -13,7 +13,7 @@ pipelineJob('import-performance-dynamic-dataset') {
   parameters {
     stringParam('BRANCH', 'master', 'Branch to use for performance tests.')
     stringParam('POSTGRES_VERSION', '9.6-alpine', 'Postgres version to use.')
-    stringParam('CAMBPM_VERSION', '7.10.0-SNAPSHOT', 'Camunda BPM version to use.')
+    stringParam('CAMBPM_VERSION', '7.10.0', 'Camunda BPM version to use.')
     stringParam('ES_VERSION', '6.0.0', 'Elasticsearch version to use.')
   }
 

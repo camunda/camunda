@@ -40,23 +40,27 @@ public class ElasticsearchRestClientFactory implements FactoryBean<RestHighLevel
       logger.info("Initializing Elasticsearch rest client...");
       esClient = ElasticsearchHighLevelRestClientBuilder.build(configurationService);
 
-      try {
-        waitForElasticsearch(esClient);
-      } catch (Exception e) {
-        String message = "Can't connect to Elasticsearch. Please check the connection!";
-        logger.error(message, e);
-        throw new OptimizeRuntimeException(message, e);
-      }
+      waitForElasticsearch(esClient);
       logger.info("Elasticsearch client has successfully been started");
     }
     return esClient;
   }
 
-  private void waitForElasticsearch(RestHighLevelClient esClient) throws InterruptedException {
-    while (getNumberOfClusterNodes(esClient) == 0) {
-      long sleepTime = backoffCalculator.calculateSleepTime();
-      Thread.sleep(sleepTime);
-      logger.info("No elasticsearch nodes available, waiting [{}] ms to retry connecting", sleepTime);
+  private void waitForElasticsearch(RestHighLevelClient esClient) {
+    boolean isConnected = false;
+    while (!isConnected) {
+      try {
+        isConnected = getNumberOfClusterNodes(esClient) > 0;
+        if (!isConnected) {
+          long sleepTime = backoffCalculator.calculateSleepTime();
+          logger.info("No elasticsearch nodes available, waiting [{}] ms to retry connecting", sleepTime);
+          Thread.sleep(sleepTime);
+        }
+      } catch (Exception e) {
+        String message = "Can't connect to Elasticsearch. Please check the connection!";
+        logger.error(message, e);
+        throw new OptimizeRuntimeException(message, e);
+      }
     }
   }
 

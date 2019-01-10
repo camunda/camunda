@@ -42,13 +42,12 @@ public class ImportPerformanceStaticDataTest extends AbstractImportTest {
   private void importEngineData() throws InterruptedException, TimeoutException {
     final ExecutorService importExecutorService = Executors.newSingleThreadExecutor();
     importExecutorService.execute(
-      () -> embeddedOptimizeRule.importAllEngineEntitiesFromScratch()
+      () -> embeddedOptimizeRule.importAllEngineData()
     );
-    ExecutorService executor = importExecutorService;
 
     ScheduledExecutorService progressReporterExecutorService = reportImportProgress();
-    executor.shutdown();
-    boolean wasAbleToFinishImportInTime = executor.awaitTermination(
+    importExecutorService.shutdown();
+    boolean wasAbleToFinishImportInTime = importExecutorService.awaitTermination(
       maxImportDurationInMin,
       TimeUnit.MINUTES
     );
