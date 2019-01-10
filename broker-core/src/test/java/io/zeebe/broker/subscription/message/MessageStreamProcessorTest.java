@@ -38,10 +38,10 @@ import io.zeebe.broker.subscription.message.processor.MessageEventProcessors;
 import io.zeebe.broker.subscription.message.processor.MessageObserver;
 import io.zeebe.broker.util.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
-import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
@@ -105,8 +105,7 @@ public class MessageStreamProcessorTest {
         awaitAndGetFirstSubscriptionRejection();
 
     assertThat(rejection.getMetadata().getIntent()).isEqualTo(MessageSubscriptionIntent.OPEN);
-    assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
-        .isEqualTo("subscription is already open");
+    assertThat(rejection.getMetadata().getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
 
     verify(mockSubscriptionCommandSender, timeout(5_000).times(2))
         .openWorkflowInstanceSubscription(
@@ -202,8 +201,7 @@ public class MessageStreamProcessorTest {
         awaitAndGetFirstSubscriptionRejection();
 
     assertThat(rejection.getMetadata().getIntent()).isEqualTo(MessageSubscriptionIntent.CORRELATE);
-    assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
-        .isEqualTo("subscription does not exist");
+    assertThat(rejection.getMetadata().getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
   }
 
   @Test
@@ -229,8 +227,7 @@ public class MessageStreamProcessorTest {
         awaitAndGetFirstSubscriptionRejection();
 
     assertThat(rejection.getMetadata().getIntent()).isEqualTo(MessageSubscriptionIntent.CLOSE);
-    assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
-        .isEqualTo("subscription is already closed");
+    assertThat(rejection.getMetadata().getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
 
     // cannot verify messageName buffer since it is a view around another buffer which is changed
     // by the time we perform the verification.

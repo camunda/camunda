@@ -28,10 +28,8 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class CancelWorkflowInstanceHandler implements WorkflowInstanceCommandHandler {
 
-  private static final String ERROR_MSG_CHILD_INSTANCE =
-      "Expected to find a workflow instance with key %d to cancel, but found a child element instance which cannot be canceled.";
-  private static final String ERROR_MSG_NOT_FOUND =
-      "Expected to find a running workflow instance with key %d, but found no workflow instance.";
+  private static final String WORKFLOW_NOT_FOUND_MESSAGE =
+      "Expected to cancel a workflow instance with key '%d', but no such workflow was found";
 
   @Override
   public void handle(WorkflowInstanceCommandContext commandContext) {
@@ -39,28 +37,25 @@ public class CancelWorkflowInstanceHandler implements WorkflowInstanceCommandHan
     final TypedRecord<WorkflowInstanceRecord> command = commandContext.getRecord();
     final ElementInstance elementInstance = commandContext.getElementInstance();
 
-    final boolean canCancel = elementInstance != null && elementInstance.canTerminate();
+    final boolean canCancel =
+        elementInstance != null
+            && elementInstance.canTerminate()
+            && elementInstance.getParentKey() < 0;
 
     if (canCancel) {
-      if (elementInstance.getParentKey() < 0) {
-        final EventOutput output = commandContext.getOutput();
-        final WorkflowInstanceRecord value = elementInstance.getValue();
+      final EventOutput output = commandContext.getOutput();
+      final WorkflowInstanceRecord value = elementInstance.getValue();
 
-        output.appendFollowUpEvent(
-            command.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING, value);
+      output.appendFollowUpEvent(
+          command.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING, value);
 
-        commandContext
-            .getResponseWriter()
-            .writeEventOnCommand(
-                command.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING, value, command);
-      } else {
-        commandContext.reject(
-            RejectionType.NOT_APPLICABLE,
-            String.format(ERROR_MSG_CHILD_INSTANCE, command.getKey()));
-      }
+      commandContext
+          .getResponseWriter()
+          .writeEventOnCommand(
+              command.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING, value, command);
     } else {
       commandContext.reject(
-          RejectionType.NOT_APPLICABLE, String.format(ERROR_MSG_NOT_FOUND, command.getKey()));
+          RejectionType.NOT_FOUND, String.format(WORKFLOW_NOT_FOUND_MESSAGE, command.getKey()));
     }
   }
 }

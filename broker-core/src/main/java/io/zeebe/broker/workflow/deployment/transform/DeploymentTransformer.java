@@ -19,6 +19,7 @@ package io.zeebe.broker.workflow.deployment.transform;
 
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.workflow.model.yaml.BpmnYamlParser;
@@ -32,14 +33,14 @@ import io.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
 import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
 import io.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayOutputStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Collection;
 import java.util.Iterator;
 import org.agrona.DirectBuffer;
 import org.agrona.io.DirectBufferInputStream;
+import org.slf4j.Logger;
 
 public class DeploymentTransformer {
+  private static final Logger LOG = Loggers.WORKFLOW_PROCESSOR_LOGGER;
 
   private final BpmnValidator validator = new BpmnValidator();
   private final BpmnYamlParser yamlParser = new BpmnYamlParser();
@@ -60,18 +61,22 @@ public class DeploymentTransformer {
     boolean success = true;
     final Iterator<DeploymentResource> resourceIterator = deploymentEvent.resources().iterator();
     if (!resourceIterator.hasNext()) {
-      validationErrors.append("Deployment doesn't contain a resource to deploy");
-      success = false;
-    } else {
-      while (resourceIterator.hasNext()) {
-        final DeploymentResource deploymentResource = resourceIterator.next();
-        success = transformResource(deploymentEvent, validationErrors, deploymentResource);
-      }
+      rejectionType = RejectionType.INVALID_ARGUMENT;
+      rejectionReason = "Expected to deploy at least one resource, but none given";
+      return false;
+    }
+
+    while (resourceIterator.hasNext()) {
+      final DeploymentResource deploymentResource = resourceIterator.next();
+      success = transformResource(deploymentEvent, validationErrors, deploymentResource);
     }
 
     if (!success) {
-      rejectionType = RejectionType.BAD_VALUE;
-      rejectionReason = validationErrors.toString();
+      rejectionType = RejectionType.INVALID_ARGUMENT;
+      rejectionReason =
+          String.format(
+              "Expected to deploy new resources, but encountered the following validation errors:%s",
+              validationErrors.toString());
     }
 
     return success;
@@ -89,18 +94,18 @@ public class DeploymentTransformer {
       if (validationError == null) {
         transformWorkflowResource(deploymentEvent, deploymentResource, definition);
       } else {
-        validationErrors.append(
-            String.format(
-                "Resource '%s':\n", bufferAsString(deploymentResource.getResourceName())));
-        validationErrors.append(validationError);
+        validationErrors
+            .append("\n'")
+            .append(bufferAsString(deploymentResource.getResourceName()))
+            .append("': ")
+            .append(validationError);
         success = false;
       }
-    } catch (final Exception e) {
-      validationErrors.append(
-          String.format(
-              "Failed to deploy resource '%s':\n",
-              bufferAsString(deploymentResource.getResourceName())));
-      validationErrors.append(generateErrorMessage(e));
+    } catch (RuntimeException e) {
+      final String resourceName = bufferAsString(deploymentResource.getResourceName());
+      LOG.error("Unexpected error while processing resource '{}'", resourceName, e);
+
+      validationErrors.append("\n'").append(resourceName).append("': ").append(e.getMessage());
       success = false;
     }
     return success;
@@ -155,14 +160,6 @@ public class DeploymentTransformer {
       final DirectBuffer bpmnXml = BufferUtil.wrapArray(outStream.toByteArray());
       deploymentResource.setResource(bpmnXml);
     }
-  }
-
-  private String generateErrorMessage(final Exception e) {
-    final StringWriter stacktraceWriter = new StringWriter();
-
-    e.printStackTrace(new PrintWriter(stacktraceWriter));
-
-    return stacktraceWriter.toString();
   }
 
   public RejectionType getRejectionType() {

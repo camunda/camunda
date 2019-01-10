@@ -26,10 +26,17 @@ import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionSt
 import io.zeebe.broker.workflow.state.WorkflowInstanceSubscription;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.util.buffer.BufferUtil;
 
 public class OpenWorkflowInstanceSubscriptionProcessor
     implements TypedRecordProcessor<WorkflowInstanceSubscriptionRecord> {
 
+  public static final String NO_SUBSCRIPTION_FOUND_MESSAGE =
+      "Expected to open workflow instance subscription with element key '%d' and message name '%s', "
+          + "but no such subscription was found";
+  public static final String NOT_OPENING_MSG =
+      "Expected to open workflow instance subscription with element key '%d' and message name '%s', "
+          + "but it is already %s";
   private final WorkflowInstanceSubscriptionState subscriptionState;
 
   public OpenWorkflowInstanceSubscriptionProcessor(
@@ -57,8 +64,24 @@ public class OpenWorkflowInstanceSubscriptionProcessor
           record.getKey(), WorkflowInstanceSubscriptionIntent.OPENED, subscriptionRecord);
 
     } else {
-      streamWriter.appendRejection(
-          record, RejectionType.NOT_APPLICABLE, "subscription is already open");
+      final String messageName = BufferUtil.bufferAsString(subscriptionRecord.getMessageName());
+
+      if (subscription == null) {
+        streamWriter.appendRejection(
+            record,
+            RejectionType.NOT_FOUND,
+            String.format(
+                NO_SUBSCRIPTION_FOUND_MESSAGE,
+                subscriptionRecord.getElementInstanceKey(),
+                messageName));
+      } else {
+        final String state = subscription.isClosing() ? "closing" : "opened";
+        streamWriter.appendRejection(
+            record,
+            RejectionType.INVALID_STATE,
+            String.format(
+                NOT_OPENING_MSG, subscriptionRecord.getElementInstanceKey(), messageName, state));
+      }
     }
   }
 }

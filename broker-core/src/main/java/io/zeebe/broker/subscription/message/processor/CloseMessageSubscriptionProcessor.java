@@ -27,11 +27,15 @@ import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.state.MessageSubscriptionState;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
+import io.zeebe.util.buffer.BufferUtil;
 import java.util.function.Consumer;
 
 public class CloseMessageSubscriptionProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
 
+  public static final String NO_SUBSCRIPTION_FOUND_MESSAGE =
+      "Expected to close message subscription for element with key '%d' and message name '%s', "
+          + "but no such message subscription exists";
   private final MessageSubscriptionState subscriptionState;
   private final SubscriptionCommandSender commandSender;
 
@@ -61,7 +65,12 @@ public class CloseMessageSubscriptionProcessor
 
     } else {
       streamWriter.appendRejection(
-          record, RejectionType.NOT_APPLICABLE, "subscription is already closed");
+          record,
+          RejectionType.NOT_FOUND,
+          String.format(
+              NO_SUBSCRIPTION_FOUND_MESSAGE,
+              subscriptionRecord.getElementInstanceKey(),
+              BufferUtil.bufferAsString(subscriptionRecord.getMessageName())));
     }
 
     sideEffect.accept(this::sendAcknowledgeCommand);

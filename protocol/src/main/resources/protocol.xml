@@ -61,12 +61,10 @@
     </enum>
 
     <enum name="RejectionType" encodingType="uint8">
-      <!-- Command contains a value that is not allowed/cannot be processed -->
-      <validValue name="BAD_VALUE">0</validValue>
-      <!-- Command is not applicable in current state of addressed state machine -->
-      <validValue name="NOT_APPLICABLE">1</validValue>
-      <!-- Command could not be processed for broker-internal reasons -->
-      <validValue name="PROCESSING_ERROR">2</validValue>
+      <validValue name="INVALID_ARGUMENT">0</validValue>
+      <validValue name="NOT_FOUND">1</validValue>
+      <validValue name="ALREADY_EXISTS">2</validValue>
+      <validValue name="INVALID_STATE">3</validValue>
     </enum>
   </types>
 

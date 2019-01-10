@@ -266,8 +266,7 @@ public class EventbasedGatewayTest {
                 .onlyCommandRejections()
                 .getFirst()
                 .getMetadata())
-        .hasRejectionType(RejectionType.NOT_APPLICABLE)
-        .hasRejectionReason("activity is not active anymore")
+        .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRecordType(RecordType.COMMAND_REJECTION);
   }
 
@@ -413,7 +412,6 @@ public class EventbasedGatewayTest {
                 .getFirst()
                 .getMetadata())
         .hasRecordType(RecordType.COMMAND_REJECTION)
-        .hasRejectionType(RejectionType.NOT_APPLICABLE)
-        .hasRejectionReason("activity is not active anymore");
+        .hasRejectionType(RejectionType.INVALID_STATE);
   }
 }

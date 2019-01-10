@@ -80,8 +80,8 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
               columnFamilyDescriptors,
               closeables,
               columnFamilyTypeClass);
-    } catch (final RocksDBException ex) {
-      throw new RuntimeException(ex);
+    } catch (final RocksDBException e) {
+      throw new RuntimeException("Unexpected error occurred trying to open the database", e);
     }
     return db;
   }

@@ -17,7 +17,9 @@ package io.zeebe.gateway.broker;
 
 import static io.zeebe.protocol.clientapi.ControlMessageType.REQUEST_TOPOLOGY;
 import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.fail;
 import static org.hamcrest.CoreMatchers.containsString;
 
 import io.zeebe.gateway.impl.broker.BrokerClient;
@@ -401,10 +403,12 @@ public class BrokerClientTest {
     assertThat(actualTopologyRequests).isLessThanOrEqualTo(expectedMaximumTopologyRequests);
   }
 
+  // TODO: revise the tests below
+
   @Test
-  public void shouldReturnRejectionWithBadValue() {
+  public void shouldReturnRejectionWithCorrectTypeAndReason() {
     // given
-    broker.jobs().registerCompleteCommand(b -> b.rejection(RejectionType.BAD_VALUE, "foo"));
+    broker.jobs().registerCompleteCommand(b -> b.rejection(RejectionType.INVALID_ARGUMENT, "foo"));
 
     // when
     final BrokerResponse<JobRecord> response =
@@ -413,50 +417,8 @@ public class BrokerClientTest {
     // then
     assertThat(response.isRejection()).isTrue();
     final BrokerRejection rejection = response.getRejection();
-    assertThat(rejection.getType()).isEqualTo(RejectionType.BAD_VALUE);
+    assertThat(rejection.getType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
     assertThat(rejection.getReason()).isEqualTo("foo");
-    assertThat(rejection.getMessage())
-        .isEqualTo(
-            "Command (COMPLETE) for event with key 79 was rejected. It has an invalid value. foo");
-  }
-
-  @Test
-  public void shouldReturnRejectionWhenNotApplicable() {
-    // given
-    broker.jobs().registerCompleteCommand(b -> b.rejection(RejectionType.NOT_APPLICABLE, "foo"));
-
-    // when
-    final BrokerResponse<JobRecord> response =
-        client.sendRequest(new BrokerCompleteJobRequest(79, EMPTY_PAYLOAD)).join();
-
-    // then
-    assertThat(response.isRejection()).isTrue();
-    final BrokerRejection rejection = response.getRejection();
-    assertThat(rejection.getType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(rejection.getReason()).isEqualTo("foo");
-    assertThat(rejection.getMessage())
-        .isEqualTo(
-            "Command (COMPLETE) for event with key 79 was rejected. It is not applicable in the current state. foo");
-  }
-
-  @Test
-  public void shouldReturnRejectionOnProcessingError() {
-    // given
-    broker.jobs().registerCompleteCommand(b -> b.rejection(RejectionType.PROCESSING_ERROR, "foo"));
-
-    // when
-    final BrokerResponse<JobRecord> response =
-        client.sendRequest(new BrokerCompleteJobRequest(79, EMPTY_PAYLOAD)).join();
-
-    // then
-    assertThat(response.isRejection()).isTrue();
-    final BrokerRejection rejection = response.getRejection();
-    assertThat(rejection.getType()).isEqualTo(RejectionType.PROCESSING_ERROR);
-    assertThat(rejection.getReason()).isEqualTo("foo");
-    assertThat(rejection.getMessage())
-        .isEqualTo(
-            "Command (COMPLETE) for event with key 79 was rejected. "
-                + "The broker could not process it for internal reasons. foo");
   }
 
   @Test

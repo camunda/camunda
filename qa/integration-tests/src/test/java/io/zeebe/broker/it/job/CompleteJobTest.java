@@ -164,8 +164,9 @@ public class CompleteJobTest {
     thrown.expectMessage(
         "Command (COMPLETE) for event with key "
             + jobKey
-            + " was rejected. It is not applicable in the current state. "
-            + "Job does not exist");
+            + " was rejected due to a required entity which does not exist. Expected to complete job with key '"
+            + jobKey
+            + "', but no such job was found");
 
     // when
     jobClient.newCompleteCommand(jobKey).send().join();

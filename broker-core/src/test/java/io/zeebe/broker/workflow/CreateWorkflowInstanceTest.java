@@ -22,7 +22,10 @@ import static io.zeebe.broker.workflow.WorkflowAssert.assertWorkflowInstanceReco
 import static io.zeebe.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
 import static io.zeebe.msgpack.spec.MsgPackHelper.NIL;
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
-import static io.zeebe.test.broker.protocol.clientapi.PartitionTestClient.*;
+import static io.zeebe.test.broker.protocol.clientapi.PartitionTestClient.PROP_WORKFLOW_INSTANCE_KEY;
+import static io.zeebe.test.broker.protocol.clientapi.PartitionTestClient.PROP_WORKFLOW_KEY;
+import static io.zeebe.test.broker.protocol.clientapi.PartitionTestClient.PROP_WORKFLOW_PAYLOAD;
+import static io.zeebe.test.broker.protocol.clientapi.PartitionTestClient.PROP_WORKFLOW_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
@@ -85,8 +88,7 @@ public class CreateWorkflowInstanceTest {
     assertThat(resp.getKey()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
     assertThat(resp.getPartitionId()).isEqualTo(apiRule.getDefaultPartitionId());
     assertThat(resp.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(resp.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(resp.getRejectionReason()).isEqualTo("Workflow is not deployed");
+    assertThat(resp.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
     assertThat(resp.getValue()).containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process");
   }
 

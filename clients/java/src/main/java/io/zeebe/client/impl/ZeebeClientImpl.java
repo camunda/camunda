@@ -94,7 +94,7 @@ public class ZeebeClientImpl implements ZeebeClient {
     try {
       address = new URI("zb://" + config.getBrokerContactPoint());
     } catch (final URISyntaxException e) {
-      throw new RuntimeException("failed to parse broker contact point", e);
+      throw new RuntimeException("Failed to parse broker contact point", e);
     }
 
     // TODO: Issue #1134 - https://github.com/zeebe-io/zeebe/issues/1134

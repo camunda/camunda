@@ -28,7 +28,9 @@ public enum ResourceType {
       return ResourceType.BPMN_XML;
     } else {
       throw new RuntimeException(
-          String.format("Cannot resolve type of resource '%s'.", resourceName));
+          String.format(
+              "Expected to resolve type of resource '%s', but could not; should be a .bpmn or .yaml file",
+              resourceName));
     }
   }
 }

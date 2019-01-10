@@ -66,7 +66,7 @@ public class CreateDeploymentTest {
   public void shouldNotDeployUnparsableModel() {
     // then
     exception.expect(ClientException.class);
-    exception.expectMessage("Failed to deploy resource 'invalid.bpmn'");
+    exception.expectMessage("'invalid.bpmn': SAXException while parsing input stream");
 
     // when
     clientRule

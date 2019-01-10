@@ -226,8 +226,7 @@ public class UpdatePayloadTest {
 
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.getRejectionReason()).isEqualTo("Workflow instance is not running");
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
 
     final Record<WorkflowInstanceRecordValue> rejection =
         testClient
@@ -262,8 +261,7 @@ public class UpdatePayloadTest {
 
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.getRejectionReason()).isEqualTo("Workflow instance is not running");
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
 
     final Record<WorkflowInstanceRecordValue> rejection =
         testClient

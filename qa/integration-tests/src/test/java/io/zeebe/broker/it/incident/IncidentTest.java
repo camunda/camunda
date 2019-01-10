@@ -70,7 +70,8 @@ public class IncidentTest {
     Assertions.assertThatThrownBy(
             () -> clientRule.getClient().newResolveIncidentCommand(1).send().join())
         .isInstanceOf(ClientException.class)
-        .hasMessageContaining("Expected to resolve an incident with key 1, but no incident found");
+        .hasMessageContaining(
+            "Expected to resolve incident with key '1', but no such incident was found");
   }
 
   @Test
@@ -135,9 +136,9 @@ public class IncidentTest {
             () -> clientRule.getClient().newResolveIncidentCommand(incident.getKey()).send().join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining(
-            "Expected to resolve an incident with key "
+            "Expected to resolve incident with key '"
                 + incident.getKey()
-                + ", but no incident found");
+                + "', but no such incident was found");
   }
 
   @Test

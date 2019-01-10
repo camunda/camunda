@@ -31,6 +31,8 @@ import org.agrona.DirectBuffer;
 
 public class CreateWorkflowInstanceHandler implements WorkflowInstanceCommandHandler {
 
+  public static final String NO_WORKFLOW_FOUND_MESSAGE =
+      "Expected to create an instance of workflow with key '%d', but no such workflow was found";
   private final WorkflowState workflowState;
 
   public CreateWorkflowInstanceHandler(WorkflowState workflowState) {
@@ -67,7 +69,9 @@ public class CreateWorkflowInstanceHandler implements WorkflowInstanceCommandHan
       responseWriter.writeEventOnCommand(
           workflowInstanceKey, WorkflowInstanceIntent.ELEMENT_READY, command, record);
     } else {
-      commandContext.reject(RejectionType.BAD_VALUE, "Workflow is not deployed");
+      commandContext.reject(
+          RejectionType.NOT_FOUND,
+          String.format(NO_WORKFLOW_FOUND_MESSAGE, command.getWorkflowKey()));
     }
   }
 

@@ -158,8 +158,8 @@ public class CancelWorkflowInstanceTest {
             })
         .isInstanceOf(ClientException.class)
         .hasMessageContaining(
-            "Expected to find a workflow instance with key "
+            "Expected to cancel a workflow instance with key '"
                 + elementInstanceKey
-                + " to cancel, but found a child element instance which cannot be canceled.");
+                + "', but no such workflow was found");
   }
 }

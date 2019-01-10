@@ -65,7 +65,8 @@ class RocksDbBatch extends WriteBatch {
           value.getLength(),
           columnFamilyHandle);
     } catch (IllegalAccessException | InvocationTargetException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException(
+          "Unexpected error occurred trying to write as part of a RocksBatch", e);
     }
   }
 
@@ -76,7 +77,8 @@ class RocksDbBatch extends WriteBatch {
       DELETE_METHOD.invoke(
           this, nativeHandle_, keyBuffer.byteArray(), key.getLength(), columnFamilyHandle);
     } catch (IllegalAccessException | InvocationTargetException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException(
+          "Unexpected error occurred trying to delete as part of a RocksBatch", e);
     }
   }
 }

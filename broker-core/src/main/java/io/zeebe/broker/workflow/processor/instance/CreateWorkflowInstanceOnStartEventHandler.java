@@ -33,6 +33,8 @@ import org.agrona.DirectBuffer;
 public class CreateWorkflowInstanceOnStartEventHandler
     implements BpmnStepHandler<ExecutableFlowElementContainer> {
 
+  public static final String NO_WORKFLOW_FOUND_MESSAGE =
+      "Expected to create an instance of workflow with key '%d', but no such workflow was found";
   private final ZeebeState state;
   private final WorkflowState workflowState;
 
@@ -78,10 +80,7 @@ public class CreateWorkflowInstanceOnStartEventHandler
 
     } else {
       // this should never happen because workflows are never deleted.
-      throw new IllegalStateException(
-          String.format(
-              "Expected to find deployed workflow with key %d, but no workflow found",
-              workflowKey));
+      throw new IllegalStateException(String.format(NO_WORKFLOW_FOUND_MESSAGE, workflowKey));
     }
   }
 }

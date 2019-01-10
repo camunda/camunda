@@ -26,11 +26,9 @@ import io.zeebe.model.bpmn.builder.ExclusiveGatewayBuilder;
 import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,25 +42,15 @@ public class BpmnYamlParser {
   private final Map<String, YamlTask> tasksById = new HashMap<>();
   private final List<String> createdTasks = new ArrayList<>();
 
-  public BpmnModelInstance readFromFile(File file) {
-    try {
-      return readFromStream(new FileInputStream(file));
-    } catch (FileNotFoundException e) {
-      throw new RuntimeException("Failed to read YAML from file", e);
-    }
-  }
-
   public BpmnModelInstance readFromStream(InputStream inputStream) {
-    YamlDefinitionImpl definition = null;
+    final YamlDefinitionImpl definition;
     try {
       definition = mapper.readValue(inputStream, YamlDefinitionImpl.class);
     } catch (Exception e) {
-      throw new RuntimeException("Failed to read YAML model", e);
+      throw new RuntimeException("Unexpected error trying to read BPMN YAML model", e);
     }
 
-    final BpmnModelInstance workflowDefinition = createWorkflow(definition);
-
-    return workflowDefinition;
+    return createWorkflow(definition);
   }
 
   private BpmnModelInstance createWorkflow(final YamlDefinitionImpl definition) {
@@ -91,7 +79,10 @@ public class BpmnYamlParser {
     } else {
       final YamlTask task = tasksById.get(taskId);
       if (task == null) {
-        throw new RuntimeException("No task with id: " + taskId);
+        throw new RuntimeException(
+            String.format(
+                "Expected to add task with id '%s', but no task definition with that id exists",
+                taskId));
       }
 
       builder = addServiceTask(builder, task);
@@ -163,16 +154,16 @@ public class BpmnYamlParser {
 
   private void addInputOutputMappingToTask(YamlTask task, ServiceTaskBuilder serviceTaskBuilder) {
     final String outputBehaviorString = task.getOutputBehavior();
-    ZeebeOutputBehavior outputBehavior = null;
+    final ZeebeOutputBehavior outputBehavior;
     try {
       outputBehavior = ZeebeOutputBehavior.valueOf(outputBehaviorString.toLowerCase());
     } catch (IllegalArgumentException e) {
       throw new RuntimeException(
-          String.format("Invalid output behavior value %s", outputBehaviorString));
+          String.format(
+              "Expected output behavior to be one of %s, but actual output behavior was '%s'",
+              outputBehaviorString, Arrays.toString(ZeebeOutputBehavior.values())));
     }
-    if (outputBehavior != null) {
-      serviceTaskBuilder.zeebeOutputBehavior(outputBehavior);
-    }
+    serviceTaskBuilder.zeebeOutputBehavior(outputBehavior);
 
     for (YamlMapping inputMapping : task.getInputs()) {
       serviceTaskBuilder.zeebeInput(inputMapping.getSource(), inputMapping.getTarget());

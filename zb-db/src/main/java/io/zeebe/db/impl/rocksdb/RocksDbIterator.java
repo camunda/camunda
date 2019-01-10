@@ -29,7 +29,8 @@ class RocksDbIterator extends RocksIterator {
           RocksIterator.class.getDeclaredMethod("seek0", long.class, byte[].class, int.class);
       SEEK_METHOD.setAccessible(true);
     } catch (NoSuchMethodException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException(
+          "Unexpected error occurred during during reflection operation on RocksIterator", e);
     }
   }
 
@@ -41,7 +42,7 @@ class RocksDbIterator extends RocksIterator {
     try {
       SEEK_METHOD.invoke(this, nativeHandle_, target, targetLength);
     } catch (IllegalAccessException | InvocationTargetException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException("Unexpected error occurred trying to seek with RocksIterator", e);
     }
   }
 }
