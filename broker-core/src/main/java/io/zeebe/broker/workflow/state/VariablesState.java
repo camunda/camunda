@@ -27,13 +27,15 @@ import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackToken;
 import io.zeebe.msgpack.spec.MsgPackWriter;
 import java.util.Collection;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Iterator;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.collections.Int2IntHashMap;
+import org.agrona.collections.Int2IntHashMap.EntryIterator;
 import org.agrona.collections.ObjectHashSet;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -62,6 +64,9 @@ public class VariablesState {
   // collecting variables
   private final ObjectHashSet<DirectBuffer> collectedVariables = new ObjectHashSet<>();
   private final ObjectHashSet<DirectBuffer> variablesToCollect = new ObjectHashSet<>();;
+
+  // setting variables
+  private IndexedDocument indexedDocument = new IndexedDocument();
 
   public VariablesState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
     parentKey = new DbLong();
@@ -117,12 +122,77 @@ public class VariablesState {
     variablesColumnFamily.put(scopeKeyVariableNameKey, variable);
   }
 
+  private boolean hasVariableLocal(
+      long scopeKey, DirectBuffer name, int nameOffset, int nameLength) {
+    this.scopeKey.wrapLong(scopeKey);
+    variableNameView.wrap(name, nameOffset, nameLength);
+    this.variableName.wrapBuffer(variableNameView);
+
+    return variablesColumnFamily.exists(scopeKeyVariableNameKey);
+  }
+
   public DirectBuffer getVariableLocal(long scopeKey, DirectBuffer name) {
     this.scopeKey.wrapLong(scopeKey);
     this.variableName.wrapBuffer(name);
 
     final Variable variable = variablesColumnFamily.get(scopeKeyVariableNameKey);
     return variable == null ? null : variable.getValue();
+  }
+
+  public void setVariablesFromDocument(long scopeKey, DirectBuffer document) {
+    // 1. index entries in the document
+    indexedDocument.index(document);
+
+    long currentScope = scopeKey;
+    long parentScope;
+
+    // 2. overwrite any variables in the scope hierarchy
+    while (indexedDocument.hasEntries() && (parentScope = getParent(currentScope)) > 0) {
+      final DocumentEntryIterator entryIterator = indexedDocument.iterator();
+
+      while (entryIterator.hasNext()) {
+        entryIterator.next();
+
+        final boolean hasVariable =
+            hasVariableLocal(
+                currentScope,
+                document,
+                entryIterator.getNameOffset(),
+                entryIterator.getNameLength());
+
+        if (hasVariable) {
+          setVariableLocal(
+              currentScope,
+              document,
+              entryIterator.getNameOffset(),
+              entryIterator.getNameLength(),
+              document,
+              entryIterator.getValueOffset(),
+              entryIterator.getValueLength());
+
+          entryIterator.remove();
+        }
+      }
+      currentScope = parentScope;
+    }
+
+    // 3. set remaining variables on top scope
+    if (indexedDocument.hasEntries()) {
+      final DocumentEntryIterator entryIterator = indexedDocument.iterator();
+
+      while (entryIterator.hasNext()) {
+        entryIterator.next();
+
+        setVariableLocal(
+            currentScope,
+            document,
+            entryIterator.getNameOffset(),
+            entryIterator.getNameLength(),
+            document,
+            entryIterator.getValueOffset(),
+            entryIterator.getValueLength());
+      }
+    }
   }
 
   private long getParent(long childKey) {
@@ -261,20 +331,107 @@ public class VariablesState {
   }
 
   public boolean isEmpty() {
-    final AtomicBoolean isEmpty = new AtomicBoolean(true);
+    return variablesColumnFamily.isEmpty() && childParentColumnFamily.isEmpty();
+  }
 
-    variablesColumnFamily.whileTrue(
-        (k, v) -> {
-          isEmpty.compareAndSet(true, false);
-          return false;
-        });
+  private class IndexedDocument implements Iterable<Void> {
+    // variable name offset -> variable value offset
+    private Int2IntHashMap entries = new Int2IntHashMap(-1);
+    private DocumentEntryIterator iterator = new DocumentEntryIterator();
+    private DirectBuffer document;
 
-    childParentColumnFamily.whileTrue(
-        (k, v) -> {
-          isEmpty.compareAndSet(true, false);
-          return false;
-        });
+    public void index(DirectBuffer document) {
+      this.document = document;
+      entries.clear();
+      final int documentLength = document.capacity();
 
-    return isEmpty.get();
+      reader.wrap(document, 0, documentLength);
+
+      final int variables = reader.readMapHeader();
+
+      for (int i = 0; i < variables; i++) {
+        final int keyOffset = reader.getOffset();
+        reader.skipValue();
+        final int valueOffset = reader.getOffset();
+        reader.skipValue();
+
+        entries.put(keyOffset, valueOffset);
+      }
+    }
+
+    @Override
+    public DocumentEntryIterator iterator() {
+      iterator.wrap(document, entries.entrySet().iterator());
+      return iterator;
+    }
+
+    public boolean hasEntries() {
+      return !entries.isEmpty();
+    }
+  }
+
+  private class DocumentEntryIterator implements Iterator<Void> {
+    private EntryIterator iterator;
+    private DirectBuffer document;
+    private int documentLength;
+
+    // per entry
+    private int nameOffset;
+    private int nameLength;
+    private int valueOffset;
+    private int valueLength;
+
+    @Override
+    public boolean hasNext() {
+      return iterator.hasNext();
+    }
+
+    public void wrap(DirectBuffer document, EntryIterator iterator) {
+      this.iterator = iterator;
+      this.document = document;
+      this.documentLength = document.capacity();
+    }
+
+    /** excluding string header */
+    public int getNameOffset() {
+      return nameOffset;
+    }
+
+    public int getNameLength() {
+      return nameLength;
+    }
+
+    /** including header */
+    public int getValueOffset() {
+      return valueOffset;
+    }
+
+    public int getValueLength() {
+      return valueLength;
+    }
+
+    @Override
+    public Void next() {
+      iterator.next();
+
+      final int keyOffset = iterator.getIntKey();
+      valueOffset = iterator.getIntValue();
+
+      reader.wrap(document, keyOffset, documentLength - keyOffset);
+
+      nameLength = reader.readStringLength();
+      nameOffset = keyOffset + reader.getOffset();
+
+      reader.wrap(document, valueOffset, documentLength - valueOffset);
+      reader.skipValue();
+      valueLength = reader.getOffset();
+
+      return null;
+    }
+
+    @Override
+    public void remove() {
+      iterator.remove();
+    }
   }
 }

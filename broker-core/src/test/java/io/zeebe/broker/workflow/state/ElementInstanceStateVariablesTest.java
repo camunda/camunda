@@ -362,6 +362,113 @@ public class ElementInstanceStateVariablesTest {
     MsgPackUtil.assertEquality(document, "{}");
   }
 
+  @Test
+  public void shouldSetVariablesFromDocument() {
+    // given
+    final long grandparent = 1;
+    final long parent = 2;
+    final long child = 3;
+    declareScope(grandparent);
+    declareScope(grandparent, parent);
+    declareScope(parent, child);
+
+    variablesState.setVariableLocal(
+        grandparent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("'should-overwrite-this'"));
+    variablesState.setVariableLocal(
+        parent, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("'should-overwrite-this'"));
+    variablesState.setVariableLocal(
+        child, BufferUtil.wrapString("c"), MsgPackUtil.asMsgPack("'should-overwrite-this'"));
+
+    final DirectBuffer document =
+        MsgPackUtil.asMsgPack(b -> b.put("a", 1).put("b", 2).put("c", 3).put("d", 4));
+
+    // when
+    variablesState.setVariablesFromDocument(child, document);
+
+    // then
+    final DirectBuffer varA =
+        variablesState.getVariableLocal(grandparent, BufferUtil.wrapString("a"));
+    MsgPackUtil.assertEquality(varA, "1");
+
+    final DirectBuffer varB = variablesState.getVariableLocal(parent, BufferUtil.wrapString("b"));
+    MsgPackUtil.assertEquality(varB, "2");
+
+    final DirectBuffer varC = variablesState.getVariableLocal(child, BufferUtil.wrapString("c"));
+    MsgPackUtil.assertEquality(varC, "3");
+
+    final DirectBuffer varD =
+        variablesState.getVariableLocal(grandparent, BufferUtil.wrapString("d"));
+    MsgPackUtil.assertEquality(varD, "4");
+  }
+
+  @Test
+  public void shouldSetVariablesFromDocumentNotInChildScopes() {
+    // given
+    final long parent = 1;
+    final long child = 2;
+    declareScope(parent);
+    declareScope(parent, child);
+
+    variablesState.setVariableLocal(
+        child, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("'should-not-overwrite-this'"));
+
+    final DirectBuffer document = MsgPackUtil.asMsgPack(b -> b.put("a", 1).put("b", 2));
+
+    // when
+    variablesState.setVariablesFromDocument(parent, document);
+
+    // then
+    final DirectBuffer varA = variablesState.getVariableLocal(parent, BufferUtil.wrapString("a"));
+    MsgPackUtil.assertEquality(varA, "1");
+
+    final DirectBuffer varBParent =
+        variablesState.getVariableLocal(parent, BufferUtil.wrapString("b"));
+    MsgPackUtil.assertEquality(varBParent, "2");
+
+    final DirectBuffer varBChild =
+        variablesState.getVariableLocal(child, BufferUtil.wrapString("b"));
+    MsgPackUtil.assertEquality(varBChild, "'should-not-overwrite-this'");
+  }
+
+  @Test
+  public void shouldSetVariablesFromDocumentAsObject() {
+    // given
+    final long scope = 1;
+    declareScope(scope);
+
+    final DirectBuffer document =
+        MsgPackUtil.asMsgPack(b -> b.put("a", Collections.singletonMap("x", 1)));
+
+    // when
+    variablesState.setVariablesFromDocument(scope, document);
+
+    // then
+    final DirectBuffer varA = variablesState.getVariableLocal(scope, BufferUtil.wrapString("a"));
+    MsgPackUtil.assertEquality(varA, "{'x': 1}");
+  }
+
+  /** Making sure the method is reusable and does not leave data structures dirty */
+  @Test
+  public void shouldSetVariablesFromDocumentRepeatedly() {
+    // given
+    final long scope1 = 1;
+    final long scope2 = 2;
+    declareScope(scope1);
+    declareScope(scope2);
+
+    variablesState.setVariablesFromDocument(scope1, MsgPackUtil.asMsgPack("{'a': 1, 'b': 2}"));
+
+    // when
+    variablesState.setVariablesFromDocument(scope2, MsgPackUtil.asMsgPack("{'x': 3}"));
+
+    // then
+    final DirectBuffer scope1Doc = variablesState.getVariablesAsDocument(scope1);
+    MsgPackUtil.assertEquality(scope1Doc, "{'a': 1, 'b': 2}");
+
+    final DirectBuffer scope2Doc = variablesState.getVariablesAsDocument(scope2);
+    MsgPackUtil.assertEquality(scope2Doc, "{'x': 3}");
+  }
+
   private void declareScope(long key) {
     declareScope(-1, key);
   }

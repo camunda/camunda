@@ -16,6 +16,7 @@
 package io.zeebe.test.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertNotNull;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -78,6 +79,7 @@ public class MsgPackUtil {
   }
 
   public static void assertEquality(byte[] actualMsgPack, String expectedJson) {
+    assertNotNull("actual msg pack is null", actualMsgPack);
     try {
       assertThat(MSGPACK_MAPPER.readTree(actualMsgPack))
           .isEqualTo(JsonUtil.JSON_MAPPER.readTree(expectedJson));
@@ -87,6 +89,7 @@ public class MsgPackUtil {
   }
 
   public static void assertEquality(DirectBuffer actualMsgPack, String expectedJson) {
+    assertNotNull("actual msg pack is null", actualMsgPack);
     final byte[] msgPackArray = new byte[actualMsgPack.capacity()];
     actualMsgPack.getBytes(0, msgPackArray);
     assertEquality(msgPackArray, expectedJson);
@@ -94,6 +97,7 @@ public class MsgPackUtil {
 
   public static void assertEqualityExcluding(
       DirectBuffer actualMsgPack, String expectedJson, String... excludedProperties) {
+    assertNotNull("actual msg pack is null", actualMsgPack);
     final byte[] msgPackArray = new byte[actualMsgPack.capacity()];
     actualMsgPack.getBytes(0, msgPackArray);
     assertEqualityExcluding(msgPackArray, expectedJson, excludedProperties);
@@ -101,6 +105,9 @@ public class MsgPackUtil {
 
   public static void assertEqualityExcluding(
       byte[] actualMsgPack, String expectedJson, String... excludedProperties) {
+
+    assertNotNull("actual msg pack is null", actualMsgPack);
+
     final JsonNode msgPackNode;
     final JsonNode jsonNode;
     try {

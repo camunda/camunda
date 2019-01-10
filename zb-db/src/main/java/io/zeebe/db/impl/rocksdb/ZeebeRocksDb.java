@@ -410,6 +410,15 @@ class ZeebeRocksDb<ColumnFamilyNames extends Enum<ColumnFamilyNames>> extends Ro
     return iteratorConsumer.visit(keyInstance, valueInstance);
   }
 
+  public boolean isEmpty(long columnFamilyHandle) {
+    try (RocksDbIterator iterator = newIterator(columnFamilyHandle)) {
+      iterator.seekToFirst();
+      final boolean hasEntry = iterator.isValid();
+
+      return !hasEntry;
+    }
+  }
+
   @Override
   public void createSnapshot(File snapshotDir) {
     try (Checkpoint checkpoint = Checkpoint.create(this)) {
