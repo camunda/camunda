@@ -167,6 +167,38 @@ public class ConfigurationServiceTest {
   }
 
   @Test
+  public void testDeprecatedArrayLeafKey() {
+    // given
+    String[] locations = {"config-samples/config-tcpPort-leaf-key.yaml"};
+    String[] deprecatedLocations = {"deprecation-samples/deprecated-tcpPort-wildcard-leaf-key.yaml"};
+    ConfigurationService underTest = new ConfigurationService(locations, deprecatedLocations);
+
+    // when
+    Map<String, String> deprecations = validateForAndReturnDeprecationsFailIfNone(underTest);
+
+    // then
+    assertThat(deprecations.size(), is(1));
+    assertThat(
+      deprecations.get("es.connection.nodes[*].tcpPort"),
+      is(generateExpectedDocUrl("/technical-guide/setup/configuration/#connection-settings"))
+    );
+  }
+
+  @Test
+  public void testNonDeprecatedArrayLeafKey_allFine() {
+    // given
+    String[] locations = {"config-samples/config-wo-tcpPort-leaf-key.yaml"};
+    String[] deprecatedLocations = {"deprecation-samples/deprecated-tcpPort-wildcard-leaf-key.yaml"};
+    ConfigurationService underTest = new ConfigurationService(locations, deprecatedLocations);
+
+    // when
+    Optional<Map<String, String>> deprecations = validateForAndReturnDeprecations(underTest);
+
+    // then
+    assertThat(deprecations.isPresent(), is(false));
+  }
+
+  @Test
   public void testAllFineOnEmptyDeprecationConfig() {
     // given
     String[] locations = {"config-samples/config-alerting-leaf-key.yaml"};

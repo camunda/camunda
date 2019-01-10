@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -63,7 +64,7 @@ public class ConfigurationService {
   private String processDefinitionXmlEndpoint;
   private String decisionDefinitionEndpoint;
   private String decisionDefinitionXmlEndpoint;
-  
+
   private String engineDateFormat;
   private String optimizeDateFormat;
   private Long importHandlerWait;
@@ -180,8 +181,14 @@ public class ConfigurationService {
       .parse((Object) configJsonContext.json());
 
     final Map<String, String> usedDeprecationKeysWithNewDocumentationPath = deprecatedConfigKeys.entrySet().stream()
-      .filter(entry -> Optional.ofNullable(failsafeConfigurationJsonContext.read("$." + entry.getKey())).isPresent())
-      .map(keyAndPath -> {
+      .filter(entry -> Optional.ofNullable(failsafeConfigurationJsonContext.read("$." + entry.getKey()))
+        // in case of array structures we always a list as result, thus we need to check if it contains actual results
+        .flatMap(object -> object instanceof Collection && ((Collection) object).size() == 0
+          ? Optional.empty()
+          : Optional.of(object)
+        )
+        .isPresent()
+      ).map(keyAndPath -> {
         keyAndPath.setValue(DOC_URL + keyAndPath.getValue());
         return keyAndPath;
       })
@@ -816,7 +823,8 @@ public class ConfigurationService {
 
   public List<String> getElasticsearchSecuritySSLCertificateAuthorities() {
     if (elasticsearchSecuritySSLCertificateAuthorities == null && getElasticsearchSecuritySSLEnabled()) {
-      TypeRef<List<String>> typeRef = new TypeRef<List<String>>() {};
+      TypeRef<List<String>> typeRef = new TypeRef<List<String>>() {
+      };
       List<String> authoritiesAsList =
         configJsonContext.read(ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES, typeRef);
       elasticsearchSecuritySSLCertificateAuthorities =
