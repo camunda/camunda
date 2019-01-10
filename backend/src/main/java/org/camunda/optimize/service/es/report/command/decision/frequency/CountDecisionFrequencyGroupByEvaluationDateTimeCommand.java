@@ -29,6 +29,7 @@ import java.util.Map;
 import static org.camunda.optimize.service.es.report.command.util.ReportUtil.getDateHistogramInterval;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
 public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
   extends DecisionReportCommand<DecisionReportMapResultDto> {
@@ -103,7 +104,7 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
     for (Histogram.Bucket entry : agg.getBuckets()) {
       DateTime key = (DateTime) entry.getKey();
       long docCount = entry.getDocCount();
-      String formattedDate = key.toString(configurationService.getOptimizeDateFormat());
+      String formattedDate = key.toString(OPTIMIZE_DATE_FORMAT);
       result.put(formattedDate, docCount);
     }
     return result;

@@ -6,7 +6,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Fi
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -20,15 +19,14 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
 import java.util.List;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+
 
 public abstract class DateQueryFilter implements QueryFilter<DateFilterDataDto> {
   private  org.slf4j.Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired
   private DateTimeFormatter formatter;
-
-  @Autowired
-  private ConfigurationService configurationService;
 
   public void addFilters(BoolQueryBuilder query, List<DateFilterDataDto> dates, String dateFieldType) {
     if (dates != null) {
@@ -44,8 +42,11 @@ public abstract class DateQueryFilter implements QueryFilter<DateFilterDataDto> 
         } else {
           logger.warn("Cannot execute start date filter. Unknown type [{}]", dateDto.getType());
         }
-        queryDate.format(configurationService.getOptimizeDateFormat());
-        filters.add(queryDate);
+
+        if (queryDate != null) {
+          queryDate.format(OPTIMIZE_DATE_FORMAT);
+          filters.add(queryDate);
+        }
       }
     }
   }

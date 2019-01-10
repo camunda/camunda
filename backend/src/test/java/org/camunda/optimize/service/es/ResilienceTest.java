@@ -9,7 +9,6 @@ import org.elasticsearch.node.InternalSettingsPreparer;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeValidationException;
 import org.elasticsearch.plugins.Plugin;
-import org.elasticsearch.transport.Netty4Plugin;
 import org.glassfish.jersey.client.ClientProperties;
 import org.junit.After;
 import org.junit.Before;
@@ -154,7 +153,6 @@ public class ResilienceTest {
 
   private Node elasticSearchTestNode() throws NodeValidationException, InterruptedException {
     ArrayList<Class<? extends Plugin>> classpathPlugins = new ArrayList<>();
-    classpathPlugins.add(Netty4Plugin.class);
 
     Node node = new MyNode(
         Settings.builder()

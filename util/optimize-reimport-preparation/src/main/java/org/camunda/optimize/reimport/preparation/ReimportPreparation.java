@@ -1,27 +1,26 @@
 package org.camunda.optimize.reimport.preparation;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.entity.ContentType;
-import org.apache.http.nio.entity.NStringEntity;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 import org.camunda.optimize.jetty.util.LoggingConfigurationReader;
+import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.es.schema.TypeMappingCreator;
+import org.camunda.optimize.service.es.schema.type.DecisionDefinitionType;
+import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
+import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
+import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.es.schema.type.index.ImportIndexType;
+import org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
-import org.elasticsearch.client.Response;
-import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.Request;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
 
 /**
  * Deletes all engine data and the import indexes from Elasticsearch
@@ -32,68 +31,66 @@ public class ReimportPreparation {
 
   private static Logger logger = LoggerFactory.getLogger(ReimportPreparation.class);
 
-  public static void main(String[] args) throws IOException {
+  private static ConfigurationService configurationService = new ConfigurationService();
+
+  private static final List<TypeMappingCreator> TYPES_TO_CLEAR = Lists.newArrayList(
+    new ImportIndexType(), new TimestampBasedImportIndexType(),
+    new ProcessDefinitionType(), new ProcessInstanceType(),
+    new DecisionDefinitionType(), new DecisionInstanceType()
+  );
+
+  public static void main(String[] args) {
     logger.info("Start to prepare Elasticsearch such that Optimize reimports engine data!");
+
     logger.info("Reading configuration...");
     LoggingConfigurationReader loggingConfigurationReader = new LoggingConfigurationReader();
     loggingConfigurationReader.defineLogbackLoggingConfiguration();
-    ConfigurationService configurationService = new ConfigurationService();
     logger.info("Successfully read configuration.");
+
     logger.info("Creating connection to Elasticsearch...");
-    try (RestClient restClient =
-           ElasticsearchHighLevelRestClientBuilder.build(configurationService).getLowLevelClient()) {
+    try (RestHighLevelClient restHighLevelClient =
+           ElasticsearchHighLevelRestClientBuilder.build(configurationService)) {
       logger.info("Successfully created connection to Elasticsearch.");
-      prepareElasticsearchSuchThatOptimizeReimportsDataFromEngine(configurationService, restClient);
-      logger.info("Optimize was successfully prepared such it can reimport the engine data. " +
-                    "Feel free to start Optimize again!");
+
+      deleteImportAndEngineDataIndexes(restHighLevelClient);
+      recreateImportAndEngineDataIndexes(restHighLevelClient);
+
+      logger.info(
+        "Optimize was successfully prepared such it can reimport the engine data. Feel free to start Optimize again!"
+      );
+    } catch (Exception e) {
+      logger.error("Failed preparing Optimize for reimport.", e);
     }
+
   }
 
-  private static void prepareElasticsearchSuchThatOptimizeReimportsDataFromEngine(ConfigurationService configurationService,
-                                                                                  RestClient restClient) throws IOException {
+  private static void deleteImportAndEngineDataIndexes(RestHighLevelClient restHighLevelClient) {
+    logger.info("Deleting import and engine data indexes from Optimize...");
 
-    logger.info("Deleting import indexes and engine data from Optimize...");
-    List<String> types = new ArrayList<>();
-    types.add(TIMESTAMP_BASED_IMPORT_INDEX_TYPE);
-    types.add(ElasticsearchConstants.IMPORT_INDEX_TYPE);
-    types.add(ElasticsearchConstants.PROC_DEF_TYPE);
-    types.add(ElasticsearchConstants.PROC_INSTANCE_TYPE);
+    TYPES_TO_CLEAR.stream()
+      .map(OptimizeIndexNameHelper::getVersionedOptimizeIndexNameForTypeMapping)
+      .forEach(indexName -> {
+        final Request request = new Request("DELETE", indexName);
+        try {
+          restHighLevelClient.getLowLevelClient().performRequest(request);
+        } catch (IOException e) {
+          logger.warn("Failed to delete index {}, reason: {}", indexName, e.getMessage());
+          throw new RuntimeException(e);
+        }
+      });
 
-    List<String> indexNames = types
-      .stream()
-      .map(OptimizeIndexNameHelper::getOptimizeIndexAliasForType)
-      .collect(Collectors.toList());
+    logger.info("Finished deleting import and engine data indexes from Elasticsearch.");
+  }
 
-    String commaSeparatedTypes = String.join(",", types);
-    String commaSeparatedIndexes = String.join(",", indexNames);
+  private static void recreateImportAndEngineDataIndexes(RestHighLevelClient restHighLevelClient) {
+    logger.info("Recreating import indexes and engine data from Optimize...");
 
-    String matchAll =
-      "{" +
-        "  \"query\": {" +
-        "    \"match_all\": {}" +
-        "  }" +
-      "}";
-
-    HttpEntity entity = new NStringEntity(matchAll, ContentType.APPLICATION_JSON);
-    Response response = restClient.performRequest(
-      "POST",
-      commaSeparatedIndexes + "/" + commaSeparatedTypes + "/_delete_by_query",
-      getParamsWithRefresh(),
-      entity
+    final ElasticSearchSchemaManager schemaManager = new ElasticSearchSchemaManager(
+      configurationService, restHighLevelClient, TYPES_TO_CLEAR, new ObjectMapper()
     );
 
-    int statusCode = response.getStatusLine().getStatusCode();
-    if (statusCode != 200) {
-      throw new OptimizeRuntimeException("Could not prepare Elasticsearch such that " +
-                                           "Optimize reimports the data from the engine " +
-                                           "Wrong status code was returned!");
-    }
-    logger.info("Successfully deleted import indexes and engine data from Elasticsearch.");
-  }
+    schemaManager.createOptimizeIndices();
 
-  private static Map<String, String> getParamsWithRefresh() {
-    HashMap<String, String> reindexParams = new HashMap<>();
-    reindexParams.put("refresh", "true");
-    return reindexParams;
+    logger.info("Finished recreating import and engine data indexes from Elasticsearch.");
   }
 }

@@ -42,6 +42,7 @@ import java.util.Map;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_ID;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -80,7 +81,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   private void initObjectMapper() {
     if (objectMapper == null) {
 
-      DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(getDateFormat());
+      DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
       JavaTimeModule javaTimeModule = new JavaTimeModule();
       javaTimeModule.addSerializer(OffsetDateTime.class, new CustomSerializer(dateTimeFormatter));
       javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomDeserializer(dateTimeFormatter));
@@ -104,10 +105,6 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   public ObjectMapper getObjectMapper() {
     return objectMapper;
-  }
-
-  public String getDateFormat() {
-    return configurationService.getOptimizeDateFormat();
   }
 
   @Override

@@ -38,7 +38,7 @@ public class ObjectMapperFactoryTest {
   @Before
   public void init() throws Exception {
     configurationService = new ConfigurationService(new String[]{"service-config.yaml"});
-    this.optimizeDateTimeFormatterFactory = new OptimizeDateTimeFormatterFactory(configurationService);
+    this.optimizeDateTimeFormatterFactory = new OptimizeDateTimeFormatterFactory();
     this.objectMapperFactory = new ObjectMapperFactory(
       optimizeDateTimeFormatterFactory.getObject(), configurationService
     );

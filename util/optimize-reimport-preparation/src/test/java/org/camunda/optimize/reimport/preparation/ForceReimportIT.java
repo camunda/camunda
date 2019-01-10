@@ -13,7 +13,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinit
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -61,9 +60,7 @@ public class ForceReimportIT {
     .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   @Test
-  public void forceReimport() throws
-                              IOException,
-                              URISyntaxException {
+  public void forceReimport() throws IOException, URISyntaxException {
 
     //given
     ProcessDefinitionEngineDto processDefinitionEngineDto = deployAndStartSimpleServiceTask();
@@ -108,8 +105,6 @@ public class ForceReimportIT {
   }
 
   private boolean hasEngineData() throws IOException {
-    ConfigurationService configurationService = embeddedOptimizeRule.getConfigurationService();
-
     List<String> types = new ArrayList<>();
     types.add(TIMESTAMP_BASED_IMPORT_INDEX_TYPE);
     types.add(

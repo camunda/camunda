@@ -1,12 +1,10 @@
 package org.camunda.optimize.service.es.filter;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
@@ -18,13 +16,11 @@ import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.GRE
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.GREATER_THAN_EQUALS;
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN;
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN_EQUALS;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
 
 @Component
 public class DurationQueryFilter implements QueryFilter<DurationFilterDataDto> {
-
-  @Autowired
-  private ConfigurationService configurationService;
 
   public void addFilters(BoolQueryBuilder query, List<DurationFilterDataDto> durations) {
     if (durations != null && !durations.isEmpty()) {
@@ -65,7 +61,7 @@ public class DurationQueryFilter implements QueryFilter<DurationFilterDataDto> {
       }
     }
 
-    queryDate.format(configurationService.getOptimizeDateFormat());
+    queryDate.format(OPTIMIZE_DATE_FORMAT);
     return queryDate;
   }
 

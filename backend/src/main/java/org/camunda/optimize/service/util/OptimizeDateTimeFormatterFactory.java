@@ -1,28 +1,21 @@
 package org.camunda.optimize.service.util;
 
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.FactoryBean;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.format.DateTimeFormatter;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+
 @Component
 public class OptimizeDateTimeFormatterFactory implements FactoryBean<DateTimeFormatter> {
 
-  private ConfigurationService configurationService;
-
   private DateTimeFormatter dateTimeFormatter;
-
-  @Autowired
-  public OptimizeDateTimeFormatterFactory(final ConfigurationService configurationService) {
-    this.configurationService = configurationService;
-  }
 
   @Override
   public DateTimeFormatter getObject() throws Exception {
     if (dateTimeFormatter == null) {
-      dateTimeFormatter = DateTimeFormatter.ofPattern(configurationService.getOptimizeDateFormat());
+      dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
     }
     return dateTimeFormatter;
   }

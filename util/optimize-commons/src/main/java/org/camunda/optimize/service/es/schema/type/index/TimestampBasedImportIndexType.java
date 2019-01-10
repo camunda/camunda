@@ -7,6 +7,8 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+
 @Component
 public class TimestampBasedImportIndexType extends StrictTypeMappingCreator {
 
@@ -33,14 +35,14 @@ public class TimestampBasedImportIndexType extends StrictTypeMappingCreator {
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     return xContentBuilder
       .startObject(ENGINE)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(ES_TYPE_INDEX_REFERS_TO)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(TIMESTAMP_OF_LAST_ENTITY)
-        .field("type", "date")
-        .field("format",configurationService.getOptimizeDateFormat())
+      .field("type", "date")
+      .field("format", OPTIMIZE_DATE_FORMAT)
       .endObject();
   }
 }

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
 @Component
 public class CollectionType extends StrictTypeMappingCreator {
@@ -47,11 +48,11 @@ public class CollectionType extends StrictTypeMappingCreator {
     .endObject()
     .startObject(LAST_MODIFIED)
       .field("type", "date")
-      .field("format",configurationService.getOptimizeDateFormat())
+      .field("format", OPTIMIZE_DATE_FORMAT)
     .endObject()
     .startObject(CREATED)
       .field("type", "date")
-      .field("format",configurationService.getOptimizeDateFormat())
+      .field("format", OPTIMIZE_DATE_FORMAT)
     .endObject()
     .startObject(OWNER)
       .field("type", "keyword")

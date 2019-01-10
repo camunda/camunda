@@ -66,7 +66,6 @@ public class ConfigurationService {
   private String decisionDefinitionXmlEndpoint;
 
   private String engineDateFormat;
-  private String optimizeDateFormat;
   private Long importHandlerWait;
   private Long maximumBackoff;
 
@@ -374,13 +373,6 @@ public class ConfigurationService {
       engineDateFormat = configJsonContext.read(ConfigurationServiceConstants.ENGINE_DATE_FORMAT);
     }
     return engineDateFormat;
-  }
-
-  public String getOptimizeDateFormat() {
-    if (optimizeDateFormat == null) {
-      optimizeDateFormat = configJsonContext.read(ConfigurationServiceConstants.OPTIMIZE_DATE_FORMAT);
-    }
-    return optimizeDateFormat;
   }
 
   public int getImportIndexAutoStorageIntervalInSec() {
@@ -918,10 +910,6 @@ public class ConfigurationService {
 
   public void setEngineDateFormat(String engineDateFormat) {
     this.engineDateFormat = engineDateFormat;
-  }
-
-  public void setOptimizeDateFormat(String optimizeDateFormat) {
-    this.optimizeDateFormat = optimizeDateFormat;
   }
 
   public void setImportHandlerWait(Long importHandlerWait) {

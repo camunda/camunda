@@ -67,7 +67,6 @@ public interface ConfigurationServiceConstants {
   String ES_NUMBER_OF_SHARDS = "$.es.settings.index.number_of_shards";
 
   String ENGINE_DATE_FORMAT = "$.serialization.engineDateFormat";
-  String OPTIMIZE_DATE_FORMAT = "$.serialization.optimizeDateFormat";
   String CONTAINER_HOST = "$.container.host";
   String CONTAINER_KEYSTORE_PASSWORD = "$.container.keystore.password";
   String CONTAINER_KEYSTORE_LOCATION = "$.container.keystore.location";

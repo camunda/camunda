@@ -5,6 +5,8 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+
 public abstract class AbstractReportType extends StrictTypeMappingCreator {
 
   public static final String ID = "id";
@@ -30,11 +32,11 @@ public abstract class AbstractReportType extends StrictTypeMappingCreator {
       .endObject()
       .startObject(LAST_MODIFIED)
         .field("type", "date")
-              .field("format",configurationService.getOptimizeDateFormat())
+              .field("format", OPTIMIZE_DATE_FORMAT)
       .endObject()
       .startObject(CREATED)
         .field("type", "date")
-              .field("format",configurationService.getOptimizeDateFormat())
+              .field("format", OPTIMIZE_DATE_FORMAT)
       .endObject()
       .startObject(OWNER)
         .field("type", "keyword")

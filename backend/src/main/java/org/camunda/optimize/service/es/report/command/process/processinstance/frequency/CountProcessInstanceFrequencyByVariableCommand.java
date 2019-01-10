@@ -28,6 +28,7 @@ import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.get
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameFieldLabelForType;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldLabelForType;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.variableTypeToFieldLabel;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -101,7 +102,7 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
       .field(nestedVariableValueFieldLabel);
 
     if (VariableType.DATE.equals(variableType)) {
-      collectVariableValueCount.format(configurationService.getOptimizeDateFormat());
+      collectVariableValueCount.format(OPTIMIZE_DATE_FORMAT);
     }
 
     return nested(NESTED_AGGREGATION, path)

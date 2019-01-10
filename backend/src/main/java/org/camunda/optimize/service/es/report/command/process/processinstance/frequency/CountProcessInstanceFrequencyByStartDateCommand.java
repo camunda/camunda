@@ -28,6 +28,7 @@ import java.util.Map;
 
 import static org.camunda.optimize.service.es.report.command.util.ReportUtil.getDateHistogramInterval;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 
 public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessReportCommand<ProcessReportMapResultDto> {
@@ -101,7 +102,7 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessRepo
     for (Histogram.Bucket entry : agg.getBuckets()) {
       DateTime key = (DateTime) entry.getKey();    // Key
       long docCount = entry.getDocCount();         // Doc count
-      String formattedDate = key.toString(configurationService.getOptimizeDateFormat());
+      String formattedDate = key.toString(OPTIMIZE_DATE_FORMAT);
       result.put(formattedDate, docCount);
     }
     return result;

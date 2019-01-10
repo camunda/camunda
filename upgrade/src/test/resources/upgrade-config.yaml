@@ -3,7 +3,3 @@ es:
     nodes:
     - host: 'localhost'
       httpPort: 9200
-
-serialization:
-  # the date format that is used in Optimize internally
-  optimizeDateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ

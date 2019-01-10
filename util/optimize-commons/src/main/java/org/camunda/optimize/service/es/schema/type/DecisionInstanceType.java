@@ -7,6 +7,8 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+
 @Component
 public class DecisionInstanceType extends StrictTypeMappingCreator {
 
@@ -92,7 +94,7 @@ public class DecisionInstanceType extends StrictTypeMappingCreator {
             .endObject()
             .startObject(EVALUATION_DATE_TIME)
               .field("type", "date")
-              .field("format", configurationService.getOptimizeDateFormat())
+              .field("format", OPTIMIZE_DATE_FORMAT)
             .endObject()
             .startObject(ACTIVITY_ID)
               .field("type", "keyword")
@@ -191,7 +193,7 @@ public class DecisionInstanceType extends StrictTypeMappingCreator {
     return builder
       .startObject(MULTIVALUE_FIELD_DATE)
         .field("type", "date")
-        .field("format", configurationService.getOptimizeDateFormat())
+        .field("format", OPTIMIZE_DATE_FORMAT)
         .field("ignore_malformed", true)
       .endObject()
       .startObject(MULTIVALUE_FIELD_LONG)

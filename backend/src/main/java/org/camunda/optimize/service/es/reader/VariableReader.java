@@ -40,6 +40,7 @@ import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ST
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getAllVariableTypeFieldLabels;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameFieldLabel;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldLabel;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.prefixQuery;
@@ -225,7 +226,7 @@ public class VariableReader {
         .order(BucketOrder.key(true));
 
     if (DATE_VARIABLES.equals(variableFieldLabel)) {
-      collectAllVariableValues.format(configurationService.getOptimizeDateFormat());
+      collectAllVariableValues.format(OPTIMIZE_DATE_FORMAT);
     }
     FilterAggregationBuilder filterForVariableWithGivenNameAndPrefix =
       getVariableValueFilterAggregation(name, variableFieldLabel, valueFilter);

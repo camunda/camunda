@@ -11,7 +11,6 @@ import java.io.IOException;
 public class LicenseType extends StrictTypeMappingCreator {
   public static final int VERSION = 1;
 
-
   public static final String LICENSE = "license";
 
   @Override

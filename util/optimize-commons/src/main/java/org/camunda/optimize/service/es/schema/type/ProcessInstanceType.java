@@ -7,6 +7,8 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+
 @Component
 public class ProcessInstanceType extends StrictTypeMappingCreator {
 
@@ -76,11 +78,11 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
             .endObject()
             .startObject(START_DATE)
               .field("type", "date")
-              .field("format",configurationService.getOptimizeDateFormat())
+              .field("format", OPTIMIZE_DATE_FORMAT)
             .endObject()
             .startObject(END_DATE)
               .field("type", "date")
-              .field("format",configurationService.getOptimizeDateFormat())
+              .field("format", OPTIMIZE_DATE_FORMAT)
             .endObject()
             .startObject(DURATION)
               .field("type", "long")
@@ -118,11 +120,11 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
       .endObject()
       .startObject(ACTIVITY_START_DATE)
         .field("type", "date")
-        .field("format",configurationService.getOptimizeDateFormat())
+        .field("format", OPTIMIZE_DATE_FORMAT)
       .endObject()
       .startObject(ACTIVITY_END_DATE)
         .field("type", "date")
-        .field("format",configurationService.getOptimizeDateFormat())
+        .field("format", OPTIMIZE_DATE_FORMAT)
       .endObject();
   }
 

@@ -7,6 +7,8 @@ public class ElasticsearchConstants {
 
   public static final int NUMBER_OF_RETRIES_ON_CONFLICT = 5;
 
+  public static final String OPTIMIZE_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
+
   public static final String DECISION_DEFINITION_TYPE = "decision-definition";
   public static final String DECISION_INSTANCE_TYPE = "decision-instance";
 

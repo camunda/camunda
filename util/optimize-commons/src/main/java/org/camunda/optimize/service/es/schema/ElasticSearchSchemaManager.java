@@ -159,8 +159,7 @@ public class ElasticSearchSchemaManager {
   }
 
   private void disableAutomaticIndexCreation() {
-    Settings settings =
-      Settings.builder()
+    Settings settings = Settings.builder()
         .put("action.auto_create_index", false)
         .build();
     ClusterUpdateSettingsRequest request = new ClusterUpdateSettingsRequest();
@@ -180,8 +179,7 @@ public class ElasticSearchSchemaManager {
 
   private void createSingleSchema(String type, XContentBuilder content) {
     PutMappingRequest request = new PutMappingRequest(getOptimizeIndexAliasForType(type));
-    request.type(type)
-      .source(content);
+    request.type(type).source(content);
 
     try {
       esClient.indices().putMapping(request, RequestOptions.DEFAULT);
