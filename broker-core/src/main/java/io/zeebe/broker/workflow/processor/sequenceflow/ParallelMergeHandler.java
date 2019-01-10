@@ -25,7 +25,6 @@ import io.zeebe.broker.workflow.processor.EventOutput;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.IndexedRecord;
 import io.zeebe.broker.workflow.state.WorkflowState;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.ArrayList;
 import java.util.List;
@@ -57,9 +56,9 @@ public class ParallelMergeHandler implements BpmnStepHandler<ExecutableSequenceF
             context.getFlowScopeInstance().consumeToken();
           });
 
-      final WorkflowInstanceRecord value = context.getValue();
-      value.setElementId(gateway.getId());
-      context.getOutput().appendNewEvent(WorkflowInstanceIntent.GATEWAY_ACTIVATED, value);
+      context
+          .getOutput()
+          .appendNewEvent(WorkflowInstanceIntent.GATEWAY_ACTIVATED, context.getValue(), gateway);
 
       context.getFlowScopeInstance().spawnToken();
     }

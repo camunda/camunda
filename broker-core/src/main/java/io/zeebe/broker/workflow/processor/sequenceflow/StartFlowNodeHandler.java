@@ -38,8 +38,6 @@ public class StartFlowNodeHandler implements BpmnStepHandler<ExecutableSequenceF
     final ExecutableFlowNode targetNode = sequenceFlow.getTarget();
 
     final WorkflowInstanceRecord value = context.getValue();
-    value.setElementId(targetNode.getId());
-
-    context.getOutput().appendNewEvent(nodeIntent, value);
+    context.getOutput().appendNewEvent(nodeIntent, value, targetNode);
   }
 }

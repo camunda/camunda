@@ -22,6 +22,7 @@ import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.Process;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class ProcessTransformer implements ModelElementTransformer<Process> {
@@ -36,6 +37,8 @@ public class ProcessTransformer implements ModelElementTransformer<Process> {
 
     final String id = element.getId();
     final ExecutableWorkflow workflow = new ExecutableWorkflow(id);
+    workflow.setElementType(
+        BpmnElementType.bpmnElementTypeFor(element.getElementType().getTypeName()));
     context.addWorkflow(workflow);
     context.setCurrentWorkflow(workflow);
 

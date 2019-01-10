@@ -18,6 +18,7 @@
 package io.zeebe.broker.workflow.model.element;
 
 import io.zeebe.broker.workflow.model.BpmnStep;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.EnumMap;
@@ -29,9 +30,11 @@ public abstract class AbstractFlowElement implements ExecutableFlowElement {
   private final DirectBuffer id;
   private Map<WorkflowInstanceIntent, BpmnStep> bpmnSteps =
       new EnumMap<>(WorkflowInstanceIntent.class);
+  private BpmnElementType elementType;
 
   public AbstractFlowElement(String id) {
     this.id = BufferUtil.wrapString(id);
+    this.elementType = BpmnElementType.UNSPECIFIED;
   }
 
   @Override
@@ -46,5 +49,14 @@ public abstract class AbstractFlowElement implements ExecutableFlowElement {
   @Override
   public BpmnStep getStep(WorkflowInstanceIntent state) {
     return bpmnSteps.get(state);
+  }
+
+  public void setElementType(BpmnElementType elementType) {
+    this.elementType = elementType;
+  }
+
+  @Override
+  public BpmnElementType getElementType() {
+    return elementType;
   }
 }

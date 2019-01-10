@@ -19,6 +19,7 @@ package io.zeebe.broker.workflow.processor.instance;
 
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
+import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.processor.EventOutput;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceCommandContext;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceCommandHandler;
@@ -48,16 +49,16 @@ public class CreateWorkflowInstanceHandler implements WorkflowInstanceCommandHan
     if (workflowDefinition != null) {
       final long workflowInstanceKey = commandContext.getKeyGenerator().nextKey();
       command.setWorkflowInstanceKey(workflowInstanceKey);
-      final DirectBuffer bpmnId = workflowDefinition.getWorkflow().getId();
+      final ExecutableWorkflow workflow = workflowDefinition.getWorkflow();
+      final DirectBuffer bpmnId = workflow.getId();
       command
           .setBpmnProcessId(bpmnId)
           .setWorkflowKey(workflowDefinition.getKey())
-          .setVersion(workflowDefinition.getVersion())
-          .setElementId(bpmnId);
+          .setVersion(workflowDefinition.getVersion());
 
       final EventOutput eventOutput = commandContext.getOutput();
       eventOutput.appendFollowUpEvent(
-          workflowInstanceKey, WorkflowInstanceIntent.ELEMENT_READY, command);
+          workflowInstanceKey, WorkflowInstanceIntent.ELEMENT_READY, command, workflow);
 
       workflowState
           .getElementInstanceState()

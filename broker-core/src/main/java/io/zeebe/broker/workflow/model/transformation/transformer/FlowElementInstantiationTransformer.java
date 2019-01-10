@@ -44,6 +44,7 @@ import io.zeebe.model.bpmn.instance.SequenceFlow;
 import io.zeebe.model.bpmn.instance.ServiceTask;
 import io.zeebe.model.bpmn.instance.StartEvent;
 import io.zeebe.model.bpmn.instance.SubProcess;
+import io.zeebe.protocol.BpmnElementType;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -85,6 +86,9 @@ public class FlowElementInstantiationTransformer implements ModelElementTransfor
     }
 
     final AbstractFlowElement executableElement = elementFactory.apply(element.getId());
+
+    executableElement.setElementType(
+        BpmnElementType.bpmnElementTypeFor(element.getElementType().getTypeName()));
 
     workflow.addFlowElement(executableElement);
   }

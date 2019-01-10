@@ -37,8 +37,7 @@ public class ParallelSplitHandler implements BpmnStepHandler<ExecutableFlowNode>
     context.getFlowScopeInstance().consumeToken();
 
     for (final ExecutableSequenceFlow flow : element.getOutgoing()) {
-      value.setElementId(flow.getId());
-      eventOutput.appendNewEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, value);
+      eventOutput.appendNewEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, value, flow);
 
       context.getFlowScopeInstance().spawnToken();
     }

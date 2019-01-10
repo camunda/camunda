@@ -16,6 +16,7 @@
 package io.zeebe.exporter.record.value;
 
 import io.zeebe.exporter.record.RecordValueWithPayload;
+import io.zeebe.protocol.BpmnElementType;
 
 /**
  * Represents a workflow instance related command or event.
@@ -43,4 +44,7 @@ public interface WorkflowInstanceRecordValue extends RecordValueWithPayload {
    *     -1 for records of the workflow instance itself.
    */
   long getScopeInstanceKey();
+
+  /** @return the BPMN type of the current workflow element. */
+  BpmnElementType getBpmnElementType();
 }

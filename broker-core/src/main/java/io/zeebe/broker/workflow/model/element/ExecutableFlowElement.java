@@ -18,6 +18,7 @@
 package io.zeebe.broker.workflow.model.element;
 
 import io.zeebe.broker.workflow.model.BpmnStep;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import org.agrona.DirectBuffer;
 
@@ -26,4 +27,6 @@ public interface ExecutableFlowElement {
   DirectBuffer getId();
 
   BpmnStep getStep(WorkflowInstanceIntent state);
+
+  BpmnElementType getElementType();
 }
