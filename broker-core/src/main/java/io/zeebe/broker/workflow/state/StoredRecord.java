@@ -73,8 +73,8 @@ public class StoredRecord implements DbValue {
 
   public enum Purpose {
     // Order is important, as we use the ordinal for persistence
-    DEFERRED_TOKEN,
-    FAILED_TOKEN,
-    FINISHED_TOKEN
+    DEFERRED,
+    FAILED,
+    FINISHED
   }
 }

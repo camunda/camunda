@@ -63,15 +63,15 @@ public class EventOutput {
   }
 
   public void deferEvent(final TypedRecord<WorkflowInstanceRecord> event) {
-    materializedState.deferTokenEvent(event);
+    materializedState.deferRecord(event);
   }
 
-  public void storeFailedToken(final TypedRecord<WorkflowInstanceRecord> event) {
-    materializedState.storeFailedToken(event);
+  public void storeFailedRecord(final TypedRecord<WorkflowInstanceRecord> event) {
+    materializedState.storeFailedRecord(event);
   }
 
-  public void consumeDeferredEvent(final long scopeKey, final long key) {
-    materializedState.consumeStoredRecord(scopeKey, key, Purpose.DEFERRED_TOKEN);
+  public void removeDeferredEvent(final long scopeKey, final long key) {
+    materializedState.removeStoredRecord(scopeKey, key, Purpose.DEFERRED);
   }
 
   public TypedStreamWriter getStreamWriter() {

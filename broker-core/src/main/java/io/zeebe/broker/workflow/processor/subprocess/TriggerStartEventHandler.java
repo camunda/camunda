@@ -49,20 +49,20 @@ public class TriggerStartEventHandler implements BpmnStepHandler<ExecutableFlowE
       // if timer/message start event
 
       final long wfInstanceKey = context.getRecord().getValue().getWorkflowInstanceKey();
-      final List<IndexedRecord> deferredTokens =
-          workflowState.getElementInstanceState().getDeferredTokens(wfInstanceKey);
+      final List<IndexedRecord> deferredRecords =
+          workflowState.getElementInstanceState().getDeferredRecords(wfInstanceKey);
 
-      if (deferredTokens.size() > 0) {
-        final IndexedRecord deferredToken = deferredTokens.get(0);
-        final WorkflowInstanceRecord tokenValue = deferredToken.getValue();
-        value.setElementId(tokenValue.getElementId());
-        value.setPayload(tokenValue.getPayload());
+      if (deferredRecords.size() > 0) {
+        final IndexedRecord deferredRecord = deferredRecords.get(0);
+        final WorkflowInstanceRecord workflowInstanceRecord = deferredRecord.getValue();
+        value.setElementId(workflowInstanceRecord.getElementId());
+        value.setPayload(workflowInstanceRecord.getPayload());
         workflowState
             .getElementInstanceState()
-            .removeStoredRecord(wfInstanceKey, deferredToken.getKey(), Purpose.DEFERRED_TOKEN);
+            .removeStoredRecord(wfInstanceKey, deferredRecord.getKey(), Purpose.DEFERRED);
       } else {
         throw new RuntimeException(
-            "Workflow has multiple start events but no deferred token was found");
+            "Workflow has multiple start events but no deferred record was found");
       }
     }
 

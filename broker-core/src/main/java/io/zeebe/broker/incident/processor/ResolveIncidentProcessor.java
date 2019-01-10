@@ -104,11 +104,11 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
       Consumer<SideEffectProducer> sideEffect,
       IncidentRecord incidentRecord) {
     final long elementInstanceKey = incidentRecord.getElementInstanceKey();
-    final IndexedRecord failedToken =
-        zeebeState.getWorkflowState().getElementInstanceState().getFailedToken(elementInstanceKey);
+    final IndexedRecord failedRecord =
+        zeebeState.getWorkflowState().getElementInstanceState().getFailedRecord(elementInstanceKey);
 
-    if (failedToken != null) {
-      typedRecord.wrap(failedToken);
+    if (failedRecord != null) {
+      typedRecord.wrap(failedRecord);
 
       queue.clear();
       queue.add(() -> responseWriter.flush());
