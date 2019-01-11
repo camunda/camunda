@@ -189,11 +189,16 @@ pipeline {
       }
       steps {
         container('maven') {
-          runMaven('install -Pproduction -Dskip.docker -DskipTests -T\$LIMITS_CPU')
+          runMaven('install -Pproduction,docs -Dskip.docker -DskipTests -T\$LIMITS_CPU')
         }
         stash name: "optimize-stash-client", includes: "client/build/**"
         stash name: "optimize-stash-upgrade", includes: "upgrade/target/upgrade*.jar"
         stash name: "optimize-stash-distro", includes: "m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*-production.tar.gz,m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*.xml,m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*.pom"
+      }
+      post {
+        success {
+          archiveArtifacts artifacts: 'backend/target/docs/**/*.*'
+        }
       }
     }
     stage('Unit tests') {
@@ -354,18 +359,6 @@ pipeline {
               archiveTestArtifacts('backend', '7_8')
             }
           }
-        }
-      }
-    }
-    stage('RESTAPI Docs') {
-      steps {
-        container('maven') {
-          runMaven('clean package -Pdocs,production -DskipTests -f backend/pom.xml')
-        }
-      }
-      post {
-        success {
-          archiveArtifacts artifacts: 'backend/target/docs/**/*.*'
         }
       }
     }

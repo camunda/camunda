@@ -469,6 +469,7 @@
             <artifactId>enunciate-maven-plugin</artifactId>
             <executions>
               <execution>
+                <id>docs</id>
                 <goals>
                   <goal>docs</goal>
                 </goals>
