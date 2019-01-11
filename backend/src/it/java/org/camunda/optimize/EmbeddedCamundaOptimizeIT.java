@@ -61,8 +61,9 @@ public class EmbeddedCamundaOptimizeIT {
 
   private Set<Thread> getCurrentThreads() {
     return Thread.getAllStackTraces().keySet().stream()
-      .filter(thread -> thread.getThreadGroup() == null
-        || !thread.getThreadGroup().getName().equals("system"))
+      .filter(thread -> thread.getThreadGroup() != null
+        && !thread.getThreadGroup().getName().equals("system")
+      )
       .collect(Collectors.toSet());
   }
 
