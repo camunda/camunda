@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.CustomDeserializer;
 import org.camunda.optimize.service.util.CustomSerializer;
@@ -300,6 +301,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
       SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
         .query(QueryBuilders.matchAllQuery());
       SearchRequest searchRequest = new SearchRequest();
+      searchRequest.indices(OptimizeIndexNameHelper.OPTIMIZE_INDEX_PREFIX + "*");
       searchRequest.source(searchSourceBuilder);
       SearchResponse searchResponse = getEsClient().search(searchRequest, RequestOptions.DEFAULT);
 
