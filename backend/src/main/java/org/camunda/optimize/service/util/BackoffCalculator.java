@@ -1,32 +1,47 @@
 package org.camunda.optimize.service.util;
 
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
+
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 
-public class BackoffCalculator {
-  private static final long STARTING_BACKOFF = 0;
-  private long backoffCounter = STARTING_BACKOFF;
+ @Component
+ @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+ public class BackoffCalculator {
+  private static final double BACKOFF_MULTIPLIER = 1.5;
+
+
+  private long currentTimeToWait;
+  private long initialBackoff;
   private OffsetDateTime nextRetryTime = OffsetDateTime.now().minusMinutes(1L);
   private long maximumBackoff;
-  private long interval;
 
-  public BackoffCalculator(long maximumBackoff, long interval) {
-    this.maximumBackoff = maximumBackoff;
-    this.interval = interval;
+  @Autowired
+  public BackoffCalculator(ConfigurationService configurationService) {
+    this(configurationService.getMaximumBackoff(), configurationService.getInitialBackoff());
+  }
+
+  public BackoffCalculator(long maximumBackoff, long initialBackoff) {
+    this.maximumBackoff = maximumBackoff * 1000;
+    this.currentTimeToWait = initialBackoff;
+    this.initialBackoff = initialBackoff;
   }
 
   public boolean isMaximumBackoffReached() {
-    return backoffCounter >= maximumBackoff;
+    return currentTimeToWait >= maximumBackoff;
   }
 
   public long calculateSleepTime() {
-    backoffCounter = Math.min(backoffCounter + 1, maximumBackoff);
-    long sleepTimeInMs = interval * backoffCounter;
-    nextRetryTime = nextRetryTime.plus(sleepTimeInMs, ChronoUnit.MILLIS);
-    return sleepTimeInMs;
+    currentTimeToWait = Math.min(Math.round(currentTimeToWait * BACKOFF_MULTIPLIER), maximumBackoff);
+    nextRetryTime = nextRetryTime.plus(Math.round(currentTimeToWait), ChronoUnit.MILLIS);
+    return currentTimeToWait;
   }
 
-  public long timeUntilNextRetryTime() {
+  public long getTimeUntilNextRetry() {
     long backoffTime = OffsetDateTime.now().until(nextRetryTime, ChronoUnit.MILLIS);
     backoffTime = Math.max(0, backoffTime);
     return backoffTime;
@@ -37,7 +52,7 @@ public class BackoffCalculator {
   }
 
   public void resetBackoff() {
-    backoffCounter = STARTING_BACKOFF;
+    currentTimeToWait = initialBackoff;
     nextRetryTime = OffsetDateTime.now().minusMinutes(1L);
   }
 }

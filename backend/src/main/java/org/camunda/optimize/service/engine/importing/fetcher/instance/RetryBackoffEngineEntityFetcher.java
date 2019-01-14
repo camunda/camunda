@@ -4,6 +4,7 @@ import org.camunda.optimize.dto.engine.EngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.EngineEntityFetcher;
 import org.camunda.optimize.service.util.BackoffCalculator;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
@@ -11,15 +12,8 @@ import java.util.List;
 public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto>
     extends EngineEntityFetcher {
 
+  @Autowired
   private BackoffCalculator backoffCalculator;
-
-  @PostConstruct
-  public void init() {
-    backoffCalculator = new BackoffCalculator(
-            configurationService.getMaximumBackoff(),
-            configurationService.getImportHandlerWait()
-    );
-  }
 
   RetryBackoffEngineEntityFetcher(EngineContext engineContext) {
     super(engineContext);

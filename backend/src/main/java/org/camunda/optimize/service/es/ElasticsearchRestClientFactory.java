@@ -13,7 +13,6 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
 
 
@@ -21,18 +20,18 @@ public class ElasticsearchRestClientFactory implements FactoryBean<RestHighLevel
 
   private final static Logger logger = LoggerFactory.getLogger(ElasticsearchRestClientFactory.class);
   private RestHighLevelClient esClient;
+
+  private final ConfigurationService configurationService;
+
+  private final BackoffCalculator backoffCalculator;
+
   @Autowired
-  private ConfigurationService configurationService;
+  public ElasticsearchRestClientFactory(ConfigurationService configurationService, BackoffCalculator backoffCalculator) {
 
-  private BackoffCalculator backoffCalculator;
-
-  @PostConstruct
-  public void init() {
-    backoffCalculator = new BackoffCalculator(
-      configurationService.getMaximumBackoff(),
-      configurationService.getImportHandlerWait()
-    );
+    this.configurationService = configurationService;
+    this.backoffCalculator = backoffCalculator;
   }
+
 
   @Override
   public RestHighLevelClient getObject() {

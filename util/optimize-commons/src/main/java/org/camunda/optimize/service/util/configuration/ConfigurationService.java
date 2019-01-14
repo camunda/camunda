@@ -66,7 +66,8 @@ public class ConfigurationService {
   private String decisionDefinitionXmlEndpoint;
 
   private String engineDateFormat;
-  private Long importHandlerWait;
+  private String optimizeDateFormat;
+  private Long initialBackoff;
   private Long maximumBackoff;
 
   // elasticsearch connection
@@ -383,11 +384,11 @@ public class ConfigurationService {
     return importIndexAutoStorageIntervalInSec;
   }
 
-  public long getImportHandlerWait() {
-    if (importHandlerWait == null) {
-      importHandlerWait = configJsonContext.read(ConfigurationServiceConstants.IMPORT_HANDLER_INTERVAL, Long.class);
+  public long getInitialBackoff() {
+    if (initialBackoff == null) {
+      initialBackoff = configJsonContext.read(ConfigurationServiceConstants.INITIAL_BACKOFF_INTERVAL, Long.class);
     }
-    return importHandlerWait;
+    return initialBackoff;
   }
 
   public long getMaximumBackoff() {
@@ -912,8 +913,12 @@ public class ConfigurationService {
     this.engineDateFormat = engineDateFormat;
   }
 
-  public void setImportHandlerWait(Long importHandlerWait) {
-    this.importHandlerWait = importHandlerWait;
+  public void setOptimizeDateFormat(String optimizeDateFormat) {
+    this.optimizeDateFormat = optimizeDateFormat;
+  }
+
+  public void setInitialBackoff(Long initialBackoff) {
+    this.initialBackoff = initialBackoff;
   }
 
   public void setMaximumBackoff(Long maximumBackoff) {

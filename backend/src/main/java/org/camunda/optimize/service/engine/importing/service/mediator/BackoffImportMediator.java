@@ -33,6 +33,7 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
 
   protected EngineContext engineContext;
 
+  @Autowired
   private BackoffCalculator backoffCalculator;
 
   public BackoffImportMediator(final EngineContext engineContext) {
@@ -42,10 +43,6 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
   @PostConstruct
   private void initialize() {
     init();
-    backoffCalculator = new BackoffCalculator(
-            configurationService.getMaximumBackoff(),
-            configurationService.getImportHandlerWait()
-    );
   }
 
   protected abstract void init();
@@ -112,7 +109,7 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
    * @return time to sleep for import process of an engine in general
    */
   public long getBackoffTimeInMs() {
-    return backoffCalculator.timeUntilNextRetryTime();
+    return backoffCalculator.getTimeUntilNextRetry();
   }
 
   @Override

@@ -29,7 +29,7 @@ public abstract class DataGenerator implements Runnable {
   private int nVersions;
   private int instanceCountToGenerate;
   private MessageEventCorrelater messageEventCorrelater;
-  private BackoffCalculator backoffCalculator = new BackoffCalculator(15L, 5000L);
+  private BackoffCalculator backoffCalculator = new BackoffCalculator(1L, 30L);
 
   protected SimpleEngineClient engineClient;
 

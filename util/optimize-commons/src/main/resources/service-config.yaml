@@ -120,11 +120,12 @@ import:
   handler:
     backoff:
       # Interval which is used for the backoff time calculation.
-      interval: 5000
+      initial: 1000
       # Once all pages are consumed, the import service component will
       # start scheduling fetching tasks in increasing periods of time,
       # controlled by 'backoff' counter.
-      max: 15
+      # This property sets maximal backoff interval in seconds
+      max: 30
   #States how often the import index should be stored to Elasticsearch.
   importIndexStorageIntervalInSec: 10
   # the time interval the import backs off from the current tip of the time, to reread potentially missed concurrent writes
