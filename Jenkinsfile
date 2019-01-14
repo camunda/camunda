@@ -358,7 +358,7 @@ pipeline {
           }
           steps {
             container('maven') {
-              runMaven('deploy:deploy -Pproduction -Dskip.fe.build -DskipTests -Dskip.docker')
+              runMaven('deploy:deploy -Dskip.fe.build -DskipTests -Dskip.docker -pl distro -am')
             }
           }
         }
