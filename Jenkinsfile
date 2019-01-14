@@ -370,7 +370,7 @@ pipeline {
           }
           steps {
             container('maven') {
-              runMaven('deploy -Pproduction -Dskip.fe.build -DskipTests')
+              runMaven('deploy -Pproduction -Dskip.fe.build -DskipTests -Dskip.docker')
             }
           }
         }
