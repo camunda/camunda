@@ -1,7 +1,7 @@
 package org.camunda.optimize.service.exceptions;
 
 
-public class OptimizeDecisionDefinitionFetchException extends RuntimeException {
+public class OptimizeDecisionDefinitionFetchException extends Exception {
   public OptimizeDecisionDefinitionFetchException() {
     super();
   }

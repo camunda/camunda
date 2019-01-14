@@ -16,6 +16,7 @@ import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionFetchEx
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,7 +41,8 @@ public class DecisionInstanceImportService {
     this.decisionDefinitionVersionResolverService = decisionDefinitionVersionResolverService;
   }
 
-  public void executeImport(List<HistoricDecisionInstanceDto> engineDtoList) {
+  public void executeImport(List<HistoricDecisionInstanceDto> engineDtoList)
+    throws OptimizeDecisionDefinitionFetchException {
     logger.trace("Importing entities from engine...");
     boolean newDataIsAvailable = !engineDtoList.isEmpty();
     if (newDataIsAvailable) {
@@ -59,10 +61,14 @@ public class DecisionInstanceImportService {
     }
   }
 
-  private List<DecisionInstanceDto> mapEngineEntitiesToOptimizeEntities(List<HistoricDecisionInstanceDto> engineEntities) {
-    return engineEntities.stream()
-      .map(this::mapEngineEntityToOptimizeEntity)
-      .collect(Collectors.toList());
+  private List<DecisionInstanceDto> mapEngineEntitiesToOptimizeEntities(List<HistoricDecisionInstanceDto> engineEntities)
+    throws OptimizeDecisionDefinitionFetchException {
+    List<DecisionInstanceDto> list = new ArrayList<>();
+    for (HistoricDecisionInstanceDto engineEntity : engineEntities) {
+      DecisionInstanceDto decisionInstanceDto = mapEngineEntityToOptimizeEntity(engineEntity);
+      list.add(decisionInstanceDto);
+    }
+    return list;
   }
 
   private ElasticsearchImportJob<DecisionInstanceDto> createElasticsearchImportJob(List<DecisionInstanceDto> decisionInstanceDtos) {
@@ -73,7 +79,8 @@ public class DecisionInstanceImportService {
     return importJob;
   }
 
-  public DecisionInstanceDto mapEngineEntityToOptimizeEntity(HistoricDecisionInstanceDto engineEntity) {
+  public DecisionInstanceDto mapEngineEntityToOptimizeEntity(HistoricDecisionInstanceDto engineEntity)
+    throws OptimizeDecisionDefinitionFetchException {
     DecisionInstanceDto decisionInstanceDto = new DecisionInstanceDto();
     decisionInstanceDto.setDecisionInstanceId(engineEntity.getId());
     decisionInstanceDto.setProcessDefinitionKey(engineEntity.getProcessDefinitionKey());
@@ -112,7 +119,8 @@ public class DecisionInstanceImportService {
     return decisionInstanceDto;
   }
 
-  private String resolveDecisionDefinitionVersion(final HistoricDecisionInstanceDto engineEntity) {
+  private String resolveDecisionDefinitionVersion(final HistoricDecisionInstanceDto engineEntity)
+    throws OptimizeDecisionDefinitionFetchException {
     return decisionDefinitionVersionResolverService
       .getVersionForDecisionDefinitionId(engineEntity.getDecisionDefinitionId())
       .orElseThrow(() -> {

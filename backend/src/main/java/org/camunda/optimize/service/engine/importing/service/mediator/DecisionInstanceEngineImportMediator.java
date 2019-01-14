@@ -9,6 +9,7 @@ import org.camunda.optimize.service.engine.importing.index.page.TimestampBasedIm
 import org.camunda.optimize.service.engine.importing.service.DecisionDefinitionVersionResolverService;
 import org.camunda.optimize.service.engine.importing.service.DecisionInstanceImportService;
 import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
+import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionFetchException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -55,11 +56,19 @@ public class DecisionInstanceEngineImportMediator extends BackoffImportMediator<
 
     if (!entitiesOfLastTimestamp.isEmpty() || !nextPageEntities.isEmpty()) {
       final List<HistoricDecisionInstanceDto> allEntities = ListUtils.union(entitiesOfLastTimestamp, nextPageEntities);
-      decisionInstanceImportService.executeImport(allEntities);
 
-      if (!nextPageEntities.isEmpty()) {
-        OffsetDateTime timestamp = nextPageEntities.get(nextPageEntities.size() - 1).getEvaluationTime();
-        importIndexHandler.updateTimestampOfLastEntity(timestamp);
+      try {
+        decisionInstanceImportService.executeImport(allEntities);
+        if (!nextPageEntities.isEmpty()) {
+          OffsetDateTime timestamp = nextPageEntities.get(nextPageEntities.size() - 1).getEvaluationTime();
+          importIndexHandler.updateTimestampOfLastEntity(timestamp);
+        }
+      } catch (OptimizeDecisionDefinitionFetchException e) {
+        logger.debug(
+          "Required Decision Definition not imported yet, skipping current decision instance import cycle.",
+          e.getMessage()
+        );
+        return false;
       }
     }
 

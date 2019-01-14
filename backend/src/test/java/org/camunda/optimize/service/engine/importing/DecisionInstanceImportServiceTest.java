@@ -10,6 +10,7 @@ import org.camunda.optimize.service.engine.importing.service.DecisionDefinitionV
 import org.camunda.optimize.service.engine.importing.service.DecisionInstanceImportService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
+import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionFetchException;
 import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.junit.Before;
 import org.junit.Test;
@@ -56,7 +57,7 @@ public class DecisionInstanceImportServiceTest {
   }
 
   @Test
-  public void testMappingOfAllFieldToOptimizeDto() {
+  public void testMappingOfAllFieldToOptimizeDto() throws OptimizeDecisionDefinitionFetchException {
     // given
     HistoricDecisionInstanceDto historicDecisionInstanceDto = new HistoricDecisionInstanceDto();
     historicDecisionInstanceDto.setId(UUID.randomUUID().toString());
@@ -120,7 +121,7 @@ public class DecisionInstanceImportServiceTest {
   }
 
   @Test
-  public void testSkipUnsupportedInputTypesWhenMappingToOptimizeDto() {
+  public void testSkipUnsupportedInputTypesWhenMappingToOptimizeDto() throws OptimizeDecisionDefinitionFetchException {
     // given
     HistoricDecisionInstanceDto historicDecisionInstanceDto = new HistoricDecisionInstanceDto();
 
@@ -154,7 +155,7 @@ public class DecisionInstanceImportServiceTest {
   }
 
   @Test
-  public void testSkipUnsupportedOutputTypesWhenMappingToOptimizeDto() {
+  public void testSkipUnsupportedOutputTypesWhenMappingToOptimizeDto() throws OptimizeDecisionDefinitionFetchException {
     // given
     HistoricDecisionInstanceDto historicDecisionInstanceDto = new HistoricDecisionInstanceDto();
 
