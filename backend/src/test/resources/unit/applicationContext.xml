@@ -27,6 +27,4 @@
 
   <bean id="restHighLevelClient"  class="org.camunda.optimize.test.it.factory.MockElasticsearchRestClientFactory"/>
 
-  <bean id="schemaInitializer"  class="org.camunda.optimize.service.es.ElasticSearchSchemaInitializer"/>
-
 </beans>

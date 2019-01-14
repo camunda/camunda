@@ -6,7 +6,6 @@ import org.camunda.optimize.service.es.writer.MetadataWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -14,7 +13,6 @@ import java.util.Optional;
 
 
 @Component
-@DependsOn({"elasticSearchSchemaInitializer"})
 public class MetadataService {
 
   @Autowired

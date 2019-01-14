@@ -11,7 +11,6 @@ import org.camunda.optimize.rest.engine.dto.UserDto;
 import org.camunda.optimize.rest.engine.dto.UserProfileDto;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
 import org.camunda.optimize.service.cleanup.OptimizeCleanupScheduler;
-import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -269,12 +268,6 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
       .path("authentication")
       .request()
       .post(Entity.json(entity));
-  }
-
-  public void initializeSchema() {
-    ElasticSearchSchemaInitializer schemaInitializer =
-      getApplicationContext().getBean(ElasticSearchSchemaInitializer.class);
-    schemaInitializer.initializeSchema();
   }
 
   public WebTarget target() {

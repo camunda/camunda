@@ -86,10 +86,10 @@ public class ReimportPreparation {
     logger.info("Recreating import indexes and engine data from Optimize...");
 
     final ElasticSearchSchemaManager schemaManager = new ElasticSearchSchemaManager(
-      configurationService, restHighLevelClient, TYPES_TO_CLEAR, new ObjectMapper()
+      configurationService, TYPES_TO_CLEAR, new ObjectMapper()
     );
 
-    schemaManager.createOptimizeIndices();
+    schemaManager.createOptimizeIndices(restHighLevelClient);
 
     logger.info("Finished recreating import and engine data indexes from Elasticsearch.");
   }

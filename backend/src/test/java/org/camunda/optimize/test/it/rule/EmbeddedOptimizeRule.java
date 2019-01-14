@@ -18,7 +18,6 @@ import org.camunda.optimize.service.engine.importing.index.page.TimestampBasedIm
 import org.camunda.optimize.service.engine.importing.service.RunningActivityInstanceImportService;
 import org.camunda.optimize.service.engine.importing.service.mediator.EngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.StoreIndexesEngineImportMediator;
-import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.writer.RunningActivityInstanceWriter;
@@ -188,10 +187,6 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   private ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
     return getOptimize().getElasticsearchImportJobExecutor();
-  }
-
-  public void initializeSchema() {
-    getOptimize().initializeSchema();
   }
 
   public OptimizeRequestExecutor getRequestExecutor() {
@@ -380,10 +375,6 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     return getApplicationContext().getBean(AlertService.class);
   }
 
-
-  public ElasticSearchSchemaInitializer getSchemaInitializer() {
-    return getApplicationContext().getBean(ElasticSearchSchemaInitializer.class);
-  }
 
   public ElasticSearchSchemaManager getElasticSearchSchemaManager() {
     return getApplicationContext().getBean(ElasticSearchSchemaManager.class);

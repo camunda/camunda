@@ -30,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.springframework.stereotype.Component;
 
@@ -45,7 +44,6 @@ import java.util.stream.Collectors;
 
 
 @Component
-@DependsOn({"elasticSearchSchemaInitializer"})
 public class AlertService {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 

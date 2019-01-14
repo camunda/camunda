@@ -15,6 +15,7 @@ import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -38,6 +39,8 @@ public class SchemaInitializerIT {
   public static ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public static EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
+  private  RestHighLevelClient esClient;
+
   @ClassRule
   public static RuleChain chain = RuleChain
     .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
@@ -46,14 +49,15 @@ public class SchemaInitializerIT {
   public void setUp() {
     // given
     elasticSearchRule.cleanAndVerify();
+    esClient = embeddedOptimizeRule.getElasticsearchClient();
   }
 
   @Test
   public void schemaIsNotInitializedTwice() {
 
     // when I initialize schema twice
-    embeddedOptimizeRule.getSchemaInitializer().initializeSchema();
-    embeddedOptimizeRule.getSchemaInitializer().initializeSchema();
+    initializeSchema();
+    initializeSchema();
 
     // then throws no errors
   }
@@ -62,17 +66,17 @@ public class SchemaInitializerIT {
   public void optimizeIndexExistsAfterSchemaInitialization() {
 
     // when
-    embeddedOptimizeRule.getSchemaInitializer().initializeSchema();
+    initializeSchema();
 
     // then
-    assertThat(embeddedOptimizeRule.getElasticSearchSchemaManager().schemaAlreadyExists(), is(true));
+    assertThat(embeddedOptimizeRule.getElasticSearchSchemaManager().schemaAlreadyExists(esClient), is(true));
   }
 
   @Test
   public void typesExistsAfterSchemaInitialization() throws IOException {
 
     // when
-    embeddedOptimizeRule.getSchemaInitializer().initializeSchema();
+    initializeSchema();
 
     // then
     assertTypeExists(ElasticsearchConstants.METADATA_TYPE);
@@ -107,12 +111,12 @@ public class SchemaInitializerIT {
   public void oldMappingsAreUpdated() throws IOException {
 
     // given schema is created
-    embeddedOptimizeRule.getSchemaInitializer().initializeSchema();
+    initializeSchema();
 
     // when there is a new mapping and I update the mapping
     MyUpdatedEventType updatedEventType = new MyUpdatedEventType(embeddedOptimizeRule.getConfigurationService());
     embeddedOptimizeRule.getElasticSearchSchemaManager().addMapping(updatedEventType);
-    embeddedOptimizeRule.getSchemaInitializer().initializeSchema();
+    initializeSchema();
 
     // then the mapping contains the new fields
     assertThatNewFieldExists();
@@ -127,7 +131,7 @@ public class SchemaInitializerIT {
       .types(metaDataType)
       .fields(MyUpdatedEventType.MY_NEW_FIELD);
     GetFieldMappingsResponse response =
-      embeddedOptimizeRule.getElasticsearchClient().indices().getFieldMapping(request, RequestOptions.DEFAULT);
+      esClient.indices().getFieldMapping(request, RequestOptions.DEFAULT);
 
     final MyUpdatedEventType updatedEventType = new MyUpdatedEventType(embeddedOptimizeRule.getConfigurationService());
     final FieldMappingMetaData fieldEntry =
@@ -143,7 +147,7 @@ public class SchemaInitializerIT {
   @Test
   public void newIndexIsNotAddedDynamically() {
     // given schema is created
-    embeddedOptimizeRule.getSchemaInitializer().initializeSchema();
+    initializeSchema();
 
     // then an exception is thrown
     thrown.expect(ElasticsearchStatusException.class);
@@ -156,7 +160,7 @@ public class SchemaInitializerIT {
   @Test
   public void onlyAcceptDocumentsThatComplyWithTheSchema() {
     // given schema is created
-    embeddedOptimizeRule.getSchemaInitializer().initializeSchema();
+    initializeSchema();
 
     // then
     thrown.expect(ElasticsearchStatusException.class);
@@ -170,4 +174,7 @@ public class SchemaInitializerIT {
     );
   }
 
+  private void initializeSchema() {
+    embeddedOptimizeRule.getElasticSearchSchemaManager().initializeSchema(esClient);
+  }
 }

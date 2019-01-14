@@ -33,6 +33,6 @@
 
   <bean id="tokenService"  class="org.camunda.optimize.test.it.factory.SpyTokenServiceFactory"/>
 
-  <bean id="restHighLevelClient"  class="org.camunda.optimize.service.es.ElasticsearchRestClientFactory"/>
+  <bean id="restHighLevelClient"  class="org.camunda.optimize.service.es.SchemaInitializingElasticsearchRestClientFactory"/>
 
 </beans>

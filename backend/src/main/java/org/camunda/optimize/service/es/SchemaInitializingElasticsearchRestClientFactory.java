@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es;
 
+import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -16,20 +17,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.io.IOException;
 
 
-public class ElasticsearchRestClientFactory implements FactoryBean<RestHighLevelClient>, DisposableBean {
+public class SchemaInitializingElasticsearchRestClientFactory
+  implements FactoryBean<RestHighLevelClient>, DisposableBean {
+  private final static Logger logger = LoggerFactory.getLogger(SchemaInitializingElasticsearchRestClientFactory.class);
 
-  private final static Logger logger = LoggerFactory.getLogger(ElasticsearchRestClientFactory.class);
   private RestHighLevelClient esClient;
 
   private final ConfigurationService configurationService;
-
+  private final ElasticSearchSchemaManager elasticSearchSchemaManager;
   private final BackoffCalculator backoffCalculator;
 
   @Autowired
-  public ElasticsearchRestClientFactory(ConfigurationService configurationService, BackoffCalculator backoffCalculator) {
-
+  public SchemaInitializingElasticsearchRestClientFactory(ConfigurationService configurationService,
+                                                          BackoffCalculator backoffCalculator,
+                                                          ElasticSearchSchemaManager elasticSearchSchemaManager) {
     this.configurationService = configurationService;
     this.backoffCalculator = backoffCalculator;
+    this.elasticSearchSchemaManager = elasticSearchSchemaManager;
   }
 
 
@@ -41,6 +45,8 @@ public class ElasticsearchRestClientFactory implements FactoryBean<RestHighLevel
 
       waitForElasticsearch(esClient);
       logger.info("Elasticsearch client has successfully been started");
+
+      elasticSearchSchemaManager.initializeSchema(getObject());
     }
     return esClient;
   }
