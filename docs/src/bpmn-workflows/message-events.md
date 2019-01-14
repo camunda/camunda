@@ -41,11 +41,18 @@ XML representation:
 
 ## Message Start Events
 
-A message start event allows to create a workflow instance by publishing a named message. A workflow can have more than one message start event, each with a unique message name. We can choose the right start event from a set of start events by publishing a named message.
+A message start event allows creating a workflow instance by publishing a named message.
+A workflow can have more than one message start event, each with a unique message name.
+We can choose the right start event from a set of start events using the message name.
 
-After a new version of the workflow is deployed, instances of the old version cannot be created by publishing messages. This is true even if the new version has different start events.
+When deploying a workflow, the following conditions apply:
+* The message name must be unique across all start events in the workflow definition.
+* When a new version of the workflow is deployed, subscriptions to the message start events of the old version will be canceled. Thus instances of the old version cannot be created by publishing messages. This is true even if the new version has different start events.
+* Currently, a workflow that has message start events cannot have a none start event.
 
-Currently, a workflow with message start events cannot have a none start event.
+The following behavior applies to published messages:
+* A message is correlated to a message start event if the message name matches. The correlation key of the message is ignored.
+* A message is not correlated to a message start event if it was published before the subscription was created, i.e. before the workflow was deployed. This is because the message could have been already correlated to the previous version of the workflow.
 
 XML representation
 
