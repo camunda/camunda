@@ -53,33 +53,28 @@
         <exclude>*/**</exclude>
       </excludes>
     </fileSet>
+
+    <fileSet>
+      <directory>src/reimport/</directory>
+      <outputDirectory>reimport/</outputDirectory>
+      <!-- these files will be included in files section -->
+      <excludes>
+        <exclude>reimport.bat</exclude>
+        <exclude>reimport.sh</exclude>
+      </excludes>
+    </fileSet>
   </fileSets>
 
   <files>
+    <!-- root directory -->
     <file>
       <source>${project.basedir}/../backend/target/optimize-backend-${project.version}.jar</source>
       <outputDirectory></outputDirectory>
     </file>
     <file>
-      <source>
-        ${project.basedir}/../upgrade/target/upgrade-optimize-from-${project.previousVersion}-to-${project.version}.jar
-      </source>
-      <outputDirectory>upgrade</outputDirectory>
-    </file>
-    <file>
       <source>src/README.txt</source>
       <filtered>true</filtered>
       <lineEnding>crlf</lineEnding>
-      <outputDirectory></outputDirectory>
-    </file>
-    <file>
-      <source>src/optimize-demo.bat</source>
-      <filtered>true</filtered>
-      <outputDirectory></outputDirectory>
-    </file>
-    <file>
-      <source>src/optimize-startup.bat</source>
-      <filtered>true</filtered>
       <outputDirectory></outputDirectory>
     </file>
     <file>
@@ -91,17 +86,57 @@
       <outputDirectory></outputDirectory>
     </file>
     <file>
+      <source>src/optimize-startup.sh</source>
+      <filtered>true</filtered>
+      <outputDirectory></outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+    <file>
+      <source>src/optimize-startup.bat</source>
+      <filtered>true</filtered>
+      <outputDirectory></outputDirectory>
+    </file>
+    <file>
       <source>src/optimize-demo.sh</source>
       <filtered>true</filtered>
       <outputDirectory></outputDirectory>
       <fileMode>0755</fileMode>
     </file>
     <file>
-      <source>src/optimize-startup.sh</source>
+      <source>src/optimize-demo.bat</source>
       <filtered>true</filtered>
       <outputDirectory></outputDirectory>
+    </file>
+
+    <!-- upgrade directory -->
+    <file>
+      <source>
+        ${project.basedir}/../upgrade/target/upgrade-optimize-from-${project.previousVersion}-to-${project.version}.jar
+      </source>
+      <outputDirectory>upgrade</outputDirectory>
+    </file>
+
+    <!-- reimport directory -->
+    <file>
+      <source>
+        ${project.basedir}/../util/optimize-reimport-preparation/target/optimize-reimport-preparation-${project.version}.jar
+      </source>
+      <outputDirectory>reimport</outputDirectory>
+    </file>
+    <file>
+      <source>src/reimport/reimport.sh</source>
+      <filtered>true</filtered>
+      <outputDirectory>reimport</outputDirectory>
       <fileMode>0755</fileMode>
     </file>
+    <file>
+      <source>src/reimport/reimport.bat</source>
+      <filtered>true</filtered>
+      <outputDirectory>reimport</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+
+    <!-- elasticsearch -->
     <file>
       <source>src/config/jvm.options</source>
       <outputDirectory>elasticsearch/elasticsearch-${elasticsearch.version}/config/</outputDirectory>
