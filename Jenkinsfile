@@ -256,9 +256,6 @@ pipeline {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
             }
-            failure {
-              archiveTestArtifacts('backend', 'migration')
-            }
           }
         }
         stage('Data upgrade test') {
@@ -311,9 +308,6 @@ pipeline {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
             }
-            failure {
-              archiveArtifacts( artifacts: "latest/**/*" )
-            }
           }
         }
         stage('IT 7.9') {
@@ -333,9 +327,6 @@ pipeline {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
             }
-            failure {
-              archiveTestArtifacts('backend', '7_9')
-            }
           }
         }
         stage('IT 7.8') {
@@ -354,9 +345,6 @@ pipeline {
           post {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-            }
-            failure {
-              archiveTestArtifacts('backend', '7_8')
             }
           }
         }
@@ -486,18 +474,6 @@ void dataUpgradeTestSteps() {
     sh ("""apt-get update && apt-get install -y jq""")
     runMaven("verify -Dskip.docker -Dskip.fe.build -pl qa/upgrade-optimize-data -am -Pupgrade-optimize-data")
   }
-}
-
-void archiveTestArtifacts(String srcDirectory, String destDirectory = null) {
-  if (destDirectory == null) {
-    destDirectory = srcDirectory
-  }
-
-  archiveArtifacts(
-    artifacts: "${destDirectory}/**/*",
-    allowEmptyResults: true,
-    onlyIfSuccessful: false
-  )
 }
 
 void runMaven(String cmd) {
