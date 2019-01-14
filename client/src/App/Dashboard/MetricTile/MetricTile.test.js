@@ -55,27 +55,37 @@ describe('<MetricTile>', () => {
   });
 
   it('should return a link with the active filters in place', () => {
+    const encodedFilter = encodeURIComponent('{"active":true}');
     expect(metricTileNode.props().to).toEqual(
-      '/instances?filter={"active":true}'
+      `/instances?filter=${encodedFilter}`
     );
     expect(metricTileNode.props().title).toEqual('View 123 Active');
   });
 
   it('should return a link with the running filters in place', () => {
+    // given
     const node = mountNode({type: 'running', label: 'Running'});
     const metricTileNode = node.find(Styled.MetricTile);
+    const encodedFilter = encodeURIComponent(
+      '{"active":true,"incidents":true}'
+    );
+
+    // then
     expect(metricTileNode.props().to).toEqual(
-      '/instances?filter={"active":true,"incidents":true}'
+      `/instances?filter=${encodedFilter}`
     );
     expect(metricTileNode.props().title).toEqual('View 123 Running');
   });
 
   it('should return a link with the incidents filters in place', () => {
+    // given
     const node = mountNode({type: 'incidents', label: 'Incidents'});
     const metricTileNode = node.find(Styled.MetricTile);
+    const encodedFilter = encodeURIComponent('{"incidents":true}');
 
+    // then
     expect(metricTileNode.props().to).toEqual(
-      '/instances?filter={"incidents":true}'
+      `/instances?filter=${encodedFilter}`
     );
     expect(metricTileNode.props().title).toEqual('View 123 Incidents');
   });

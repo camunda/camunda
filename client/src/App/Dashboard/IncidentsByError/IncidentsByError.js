@@ -35,7 +35,7 @@ export default class IncidentsByError extends React.Component {
           const query = getFilterQueryString({
             workflow: item.bpmnProcessId,
             version: `${item.version}`,
-            errorMessage: encodeURI(errorMessage),
+            errorMessage,
             incidents: true
           });
           const title = `View ${
@@ -62,9 +62,10 @@ export default class IncidentsByError extends React.Component {
 
   renderIncidentByError = item => {
     const query = getFilterQueryString({
-      errorMessage: encodeURI(item.errorMessage),
+      errorMessage: item.errorMessage,
       incidents: true
     });
+
     const title = `View ${item.instancesWithErrorCount} Instances with error ${
       item.errorMessage
     }`;

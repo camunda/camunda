@@ -62,20 +62,21 @@ class InstancesContainer extends Component {
       },
       () => {
         // only read the url filter once the fetched data is in the state
-        this.readUrlFilter();
+        const urlFilter = parseQueryString(this.props.location.search).filter;
+        this.readUrlFilter(urlFilter);
       }
     );
   }
 
   async componentDidUpdate(prevProps, prevState) {
     // url filter has changed
-    const hasUrlFilterChanged = !isEqual(
-      parseQueryString(prevProps.location.search).filter,
-      parseQueryString(this.props.location.search).filter
-    );
+    const prevUrlFilter = parseQueryString(prevProps.location.search).filter;
+    const currentUrlFilter = parseQueryString(this.props.location.search)
+      .filter;
+    const hasUrlFilterChanged = !isEqual(prevUrlFilter, currentUrlFilter);
 
     if (hasUrlFilterChanged) {
-      return this.readUrlFilter();
+      return this.readUrlFilter(currentUrlFilter);
     }
 
     // if any of these change, re-fetch workflowInstances
@@ -151,13 +152,13 @@ class InstancesContainer extends Component {
    * 1- fixes it in the url if it's not valid
    * 2- updates the state accordingly if it's valid
    */
-  readUrlFilter = async () => {
+  readUrlFilter = async urlFilter => {
     // updates the local storage with the curent state.filter
     const updateLocalStorageFilter = () => {
       this.props.storeStateLocally({filter: this.state.filter});
     };
 
-    const {isValid, update} = await this.validateUrlFilter();
+    const {isValid, update} = await this.validateUrlFilter(urlFilter);
 
     if (isValid) {
       return this.setState(update, updateLocalStorageFilter);
@@ -173,9 +174,7 @@ class InstancesContainer extends Component {
    * If the url filter is not valid, the update can be used to cleanup url filter.
    * @returns {isValid, update}
    */
-  validateUrlFilter = async () => {
-    const filter = parseQueryString(this.props.location.search).filter;
-
+  validateUrlFilter = async filter => {
     // (1) empty filter
     if (!filter) {
       return {isValid: false, update: {urlFilter: DEFAULT_FILTER}};

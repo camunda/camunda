@@ -8,8 +8,7 @@ export function getFilterQueryString(filter = {}) {
   const cleanedFilter = Object.entries(filter).reduce((obj, [key, value]) => {
     return !!value && value.length !== 0 ? {...obj, [key]: value} : obj;
   }, {});
-
-  return `?filter=${JSON.stringify(cleanedFilter)}`;
+  return `?filter=${encodeURIComponent(JSON.stringify(cleanedFilter))}`;
 }
 
 /**

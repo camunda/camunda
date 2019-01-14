@@ -84,9 +84,10 @@ describe('IncidentsByError', () => {
     );
 
     // header anchor
-    expect(headerNode.props().to).toBe(
-      '/instances?filter={"errorMessage":"JSON%20path%20$.paid%20has%20no%20result.","incidents":true}'
+    const encodedFilter = encodeURIComponent(
+      '{"errorMessage":"JSON path $.paid has no result.","incidents":true}'
     );
+    expect(headerNode.props().to).toBe(`/instances?filter=${encodedFilter}`);
     expect(headerNode.props().title).toBe(
       'View 36 Instances with error JSON path $.paid has no result.'
     );

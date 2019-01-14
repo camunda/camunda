@@ -15,12 +15,11 @@ export function parseQueryString(queryString = '') {
 
   queries.forEach((item, index) => {
     const [paramKey, paramValue] = queries[index].split('=');
-
-    if (isValidJSON(paramValue)) {
-      params[paramKey] = JSON.parse(paramValue);
+    const decodedValue = decodeURIComponent(paramValue);
+    if (isValidJSON(decodedValue)) {
+      params[paramKey] = JSON.parse(decodedValue);
     }
   });
-
   return params;
 }
 

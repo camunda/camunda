@@ -371,9 +371,13 @@ describe('InstancesContainer', () => {
         // when
         await flushPromises();
 
+        // then
+        const encodedFilter = encodeURIComponent(
+          '{"active":true,"incidents":true}'
+        );
         expect(noFilterRouterProps.history.push).toHaveBeenCalled();
         expect(noFilterRouterProps.history.push.mock.calls[0][0].search).toBe(
-          '?filter={"active":true,"incidents":true}'
+          `?filter=${encodedFilter}`
         );
       });
 
@@ -396,10 +400,14 @@ describe('InstancesContainer', () => {
         await flushPromises();
         node.update();
 
+        // then
+        const encodedFilter = encodeURIComponent(
+          '{"active":true,"incidents":true}'
+        );
         expect(invalidFilterRouterProps.history.push).toHaveBeenCalled();
         expect(
           invalidFilterRouterProps.history.push.mock.calls[0][0].search
-        ).toBe('?filter={"active":true,"incidents":true}');
+        ).toBe(`?filter=${encodedFilter}`);
       });
 
       it('when the workflow in url is invalid', async () => {

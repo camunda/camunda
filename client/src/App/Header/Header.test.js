@@ -182,6 +182,7 @@ describe('Header', () => {
     });
 
     it('it should add default filter if no filter read from localStorage', async () => {
+      // given
       const mockProps = {
         ...mockCollapsablePanelProps,
         getStateLocally: () => {
@@ -202,12 +203,16 @@ describe('Header', () => {
       await flushPromises();
       node.update();
 
+      // then
+      const encodedFilter = encodeURIComponent(
+        '{"active":true,"incidents":true}'
+      );
       expect(
         node
           .find('[data-test="header-link-filters"]')
           .childAt(0)
           .props().to
-      ).toEqual('/instances?filter={"active":true,"incidents":true}');
+      ).toEqual(`/instances?filter=${encodedFilter}`);
       expect(
         node
           .find('[data-test="header-link-filters"]')
