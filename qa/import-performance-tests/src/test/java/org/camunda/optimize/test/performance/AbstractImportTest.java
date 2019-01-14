@@ -51,6 +51,7 @@ public abstract class AbstractImportTest {
     maxImportDurationInMin = Long.parseLong(properties.getProperty("import.test.max.duration.in.min", "240"));
     elasticSearchRule.disableCleanup();
     configurationService = embeddedOptimizeRule.getConfigurationService();
+    configurationService.getCleanupServiceConfiguration().setEnabled(false);
   }
 
   protected void logStats() {
@@ -84,9 +85,7 @@ public abstract class AbstractImportTest {
     ScheduledExecutorService exec =
       Executors.newSingleThreadScheduledExecutor(new NamedThreadFactory(this.getClass().getSimpleName()));
     exec.scheduleAtFixedRate(
-      () -> {
-        logger.info("Progress of engine import: {}%", computeImportProgress());
-      },
+      () -> logger.info("Progress of engine import: {}%", computeImportProgress()),
       0,
       5,
       TimeUnit.SECONDS
@@ -99,7 +98,7 @@ public abstract class AbstractImportTest {
     Integer processInstancesImported = elasticSearchRule.getImportedCountOf(
       ElasticsearchConstants.PROC_INSTANCE_TYPE, configurationService
     );
-    Long totalInstances = null;
+    Long totalInstances;
     try {
       totalInstances = Math.max(engineDatabaseRule.countHistoricProcessInstances(), 1L);
       return Math.round(processInstancesImported.doubleValue() / totalInstances.doubleValue() * 100);
