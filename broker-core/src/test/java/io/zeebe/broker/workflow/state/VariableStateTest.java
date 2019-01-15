@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.workflow.state;
 
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -24,19 +26,22 @@ import static org.mockito.Mockito.when;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.util.ZeebeStateRule;
+import io.zeebe.broker.workflow.state.VariablesState.VariableListener;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ElementInstanceStateVariablesTest {
+public class VariableStateTest {
 
   @Rule public ZeebeStateRule stateRule = new ZeebeStateRule();
 
@@ -469,6 +474,116 @@ public class ElementInstanceStateVariablesTest {
     MsgPackUtil.assertEquality(scope2Doc, "{'x': 3}");
   }
 
+  @Test
+  public void shouldInvokeListenerOnCreate() {
+    // given
+    final RecordingVariableListener listener = new RecordingVariableListener();
+    variablesState.setListener(listener);
+
+    // when
+    variablesState.setVariableLocal(1L, wrapString("x"), wrapString("foo"));
+
+    // then
+    assertThat(listener.created).hasSize(1);
+    assertThat(listener.created.get(0).name).isEqualTo("x");
+    assertThat(listener.created.get(0).value).isEqualTo("foo".getBytes());
+    assertThat(listener.created.get(0).scopeInstanceKey).isEqualTo(1L);
+
+    assertThat(listener.updated).isEmpty();
+  }
+
+  @Test
+  public void shouldInvokeListenerOnUpdate() {
+    // given
+    final RecordingVariableListener listener = new RecordingVariableListener();
+    variablesState.setListener(listener);
+
+    // when
+    variablesState.setVariableLocal(1L, wrapString("x"), wrapString("foo"));
+    variablesState.setVariableLocal(1L, wrapString("x"), wrapString("bar"));
+
+    // then
+    assertThat(listener.created).hasSize(1);
+
+    assertThat(listener.updated).hasSize(1);
+    assertThat(listener.updated.get(0).name).isEqualTo("x");
+    assertThat(listener.updated.get(0).value).isEqualTo("bar".getBytes());
+    assertThat(listener.updated.get(0).scopeInstanceKey).isEqualTo(1L);
+  }
+
+  @Test
+  public void shouldNotInvokeListenerIfNotChanged() {
+    // given
+    final RecordingVariableListener listener = new RecordingVariableListener();
+    variablesState.setListener(listener);
+
+    // when
+    variablesState.setVariableLocal(1L, wrapString("x"), wrapString("foo"));
+    variablesState.setVariableLocal(1L, wrapString("x"), wrapString("foo"));
+
+    // then
+    assertThat(listener.created).hasSize(1);
+
+    assertThat(listener.updated).hasSize(0);
+  }
+
+  @Test
+  public void shouldInvokeListenerIfSetVariablesLocalFromDocument() {
+    // given
+    final RecordingVariableListener listener = new RecordingVariableListener();
+    variablesState.setListener(listener);
+
+    // when
+    variablesState.setVariablesLocalFromDocument(
+        1L, MsgPackUtil.asMsgPack("{'x':'foo', 'y':'bar'}"));
+
+    // then
+    assertThat(listener.created).hasSize(2);
+    assertThat(listener.created.get(0).name).isEqualTo("x");
+    assertThat(listener.created.get(0).value).isEqualTo(stringToMsgpack("foo"));
+    assertThat(listener.created.get(0).scopeInstanceKey).isEqualTo(1L);
+
+    assertThat(listener.created.get(1).name).isEqualTo("y");
+    assertThat(listener.created.get(1).value).isEqualTo(stringToMsgpack("bar"));
+    assertThat(listener.created.get(1).scopeInstanceKey).isEqualTo(1L);
+
+    assertThat(listener.updated).isEmpty();
+  }
+
+  @Test
+  public void shouldInvokeListenerIfSetVariablesFromDocument() {
+    // given
+    final RecordingVariableListener listener = new RecordingVariableListener();
+    variablesState.setListener(listener);
+
+    final long parentScope = 1L;
+    final long childScope = 2L;
+
+    declareScope(parentScope);
+    declareScope(parentScope, childScope);
+
+    variablesState.setVariablesLocalFromDocument(childScope, MsgPackUtil.asMsgPack("{'x':'foo'}"));
+
+    // when
+    variablesState.setVariablesFromDocument(
+        childScope, MsgPackUtil.asMsgPack("{'x':'bar', 'y':'bar'}"));
+
+    // then
+    assertThat(listener.created).hasSize(2);
+    assertThat(listener.created.get(1).name).isEqualTo("y");
+    assertThat(listener.created.get(1).value).isEqualTo(stringToMsgpack("bar"));
+    assertThat(listener.created.get(1).scopeInstanceKey).isEqualTo(parentScope);
+
+    assertThat(listener.updated).hasSize(1);
+    assertThat(listener.updated.get(0).name).isEqualTo("x");
+    assertThat(listener.updated.get(0).value).isEqualTo(stringToMsgpack("bar"));
+    assertThat(listener.updated.get(0).scopeInstanceKey).isEqualTo(childScope);
+  }
+
+  private byte[] stringToMsgpack(String value) {
+    return MsgPackUtil.encodeMsgPack(b -> b.packString(value)).byteArray();
+  }
+
   private void declareScope(long key) {
     declareScope(-1, key);
   }
@@ -503,5 +618,39 @@ public class ElementInstanceStateVariablesTest {
     }
 
     return workflowInstanceRecord;
+  }
+
+  private class RecordingVariableListener implements VariableListener {
+
+    private class VariableChange {
+      private final String name;
+      private final byte[] value;
+      private final long scopeInstanceKey;
+
+      VariableChange(String name, byte[] value, long scopeInstanceKey) {
+        this.name = name;
+        this.value = value;
+        this.scopeInstanceKey = scopeInstanceKey;
+      }
+    }
+
+    private final List<VariableChange> created = new ArrayList<>();
+    private final List<VariableChange> updated = new ArrayList<>();
+
+    @Override
+    public void onCreate(DirectBuffer name, DirectBuffer value, long scopeInstanceKey) {
+      final VariableChange change =
+          new VariableChange(
+              bufferAsString(name), BufferUtil.bufferAsArray(value), scopeInstanceKey);
+      created.add(change);
+    }
+
+    @Override
+    public void onUpdate(DirectBuffer name, DirectBuffer value, long scopeInstanceKey) {
+      final VariableChange change =
+          new VariableChange(
+              bufferAsString(name), BufferUtil.bufferAsArray(value), scopeInstanceKey);
+      updated.add(change);
+    }
   }
 }

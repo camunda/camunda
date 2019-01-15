@@ -22,6 +22,9 @@ import com.carrotsearch.hppc.cursors.ObjectCursor;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.RecordMetadata;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.test.exporter.ExporterIntegrationRule;
 import io.zeebe.util.ZbLogger;
 import java.io.IOException;
@@ -73,7 +76,22 @@ public class ElasticsearchExporterIT {
     assertIndexSettings();
 
     // assert all records which where recorded during the tests where exported
-    exporterBrokerRule.visitExportedRecords(this::assertRecordExported);
+    exporterBrokerRule.visitExportedRecords(
+        r -> {
+          if (shouldBeExported(r)) {
+            assertRecordExported(r);
+          }
+        });
+  }
+
+  private boolean shouldBeExported(Record<?> r) {
+    final RecordMetadata metadata = r.getMetadata();
+    final ValueType valueType = metadata.getValueType();
+    return metadata.getRecordType() == RecordType.EVENT
+        && (valueType == ValueType.DEPLOYMENT
+            || valueType == ValueType.WORKFLOW_INSTANCE
+            || valueType == ValueType.JOB
+            || valueType == ValueType.INCIDENT);
   }
 
   private void assertIndexSettings() {

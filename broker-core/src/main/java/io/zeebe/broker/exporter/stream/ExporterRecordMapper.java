@@ -26,6 +26,7 @@ import io.zeebe.broker.exporter.record.value.MessageStartEventSubscriptionRecord
 import io.zeebe.broker.exporter.record.value.MessageSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.RaftRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.TimerRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.VariableRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.WorkflowInstanceRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.WorkflowInstanceSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.deployment.DeployedWorkflowImpl;
@@ -36,6 +37,7 @@ import io.zeebe.broker.subscription.message.data.MessageStartEventSubscriptionRe
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.workflow.data.TimerRecord;
+import io.zeebe.broker.workflow.data.VariableRecord;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.RecordMetadata;
 import io.zeebe.exporter.record.RecordValue;
@@ -45,6 +47,7 @@ import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.exporter.record.value.MessageRecordValue;
 import io.zeebe.exporter.record.value.MessageSubscriptionRecordValue;
 import io.zeebe.exporter.record.value.RaftRecordValue;
+import io.zeebe.exporter.record.value.VariableRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.exporter.record.value.deployment.DeployedWorkflow;
@@ -120,6 +123,9 @@ public class ExporterRecordMapper {
         break;
       case MESSAGE_START_EVENT_SUBSCRIPTION:
         valueSupplier = this::ofMessageStartEventSubscriptionRecord;
+        break;
+      case VARIABLE:
+        valueSupplier = this::ofVariableRecord;
         break;
       default:
         return null;
@@ -336,6 +342,17 @@ public class ExporterRecordMapper {
         record.getElementInstanceKey(),
         record.getDueDate(),
         asString(record.getHandlerNodeId()));
+  }
+
+  private VariableRecordValue ofVariableRecord(LoggedEvent event) {
+    final VariableRecord record = new VariableRecord();
+    event.readValue(record);
+
+    return new VariableRecordValueImpl(
+        objectMapper,
+        asString(record.getName()),
+        asJson(record.getValue()),
+        record.getScopeInstanceKey());
   }
 
   // UTILS

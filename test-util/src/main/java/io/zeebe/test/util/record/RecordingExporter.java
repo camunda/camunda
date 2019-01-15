@@ -26,6 +26,7 @@ import io.zeebe.exporter.record.value.MessageStartEventSubscriptionRecordValue;
 import io.zeebe.exporter.record.value.MessageSubscriptionRecordValue;
 import io.zeebe.exporter.record.value.RaftRecordValue;
 import io.zeebe.exporter.record.value.TimerRecordValue;
+import io.zeebe.exporter.record.value.VariableRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.exporter.spi.Exporter;
@@ -39,6 +40,7 @@ import io.zeebe.protocol.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.intent.RaftIntent;
 import io.zeebe.protocol.intent.TimerIntent;
+import io.zeebe.protocol.intent.VariableIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import java.time.Duration;
@@ -181,6 +183,14 @@ public class RecordingExporter implements Exporter {
 
   public static TimerRecordStream timerRecords(final TimerIntent intent) {
     return timerRecords().withIntent(intent);
+  }
+
+  public static VariableRecordStream variableRecords() {
+    return new VariableRecordStream(records(ValueType.VARIABLE, VariableRecordValue.class));
+  }
+
+  public static VariableRecordStream variableRecords(final VariableIntent intent) {
+    return variableRecords().withIntent(intent);
   }
 
   public static class RecordIterator implements Iterator<Record<?>> {

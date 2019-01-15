@@ -30,6 +30,7 @@ import io.zeebe.broker.exporter.record.value.JobBatchRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.JobRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.MessageSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.RaftRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.VariableRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.WorkflowInstanceSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.deployment.DeployedWorkflowImpl;
 import io.zeebe.broker.exporter.record.value.deployment.DeploymentResourceImpl;
@@ -45,6 +46,7 @@ import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.util.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
+import io.zeebe.broker.workflow.data.VariableRecord;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.RecordValue;
@@ -54,6 +56,7 @@ import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.exporter.record.value.MessageRecordValue;
 import io.zeebe.exporter.record.value.MessageSubscriptionRecordValue;
 import io.zeebe.exporter.record.value.RaftRecordValue;
+import io.zeebe.exporter.record.value.VariableRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.logstreams.log.LoggedEvent;
@@ -76,9 +79,11 @@ import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.intent.RaftIntent;
+import io.zeebe.protocol.intent.VariableIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.raft.event.RaftConfigurationEvent;
+import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
@@ -669,6 +674,26 @@ public class ExporterStreamProcessorTest {
 
     // then
     assertRecordExported(JobBatchIntent.ACTIVATED, record, recordValue);
+  }
+
+  @Test
+  public void shouldExportVariableRecord() {
+    // given
+    final String name = "x";
+    final String value = "1";
+    final long scopeInstanceKey = 3;
+
+    final VariableRecord record =
+        new VariableRecord()
+            .setName(wrapString(name))
+            .setValue(MsgPackUtil.asMsgPack(value))
+            .setScopeInstanceKey(scopeInstanceKey);
+
+    final VariableRecordValue recordValue =
+        new VariableRecordValueImpl(OBJECT_MAPPER, name, value, scopeInstanceKey);
+
+    // then
+    assertRecordExported(VariableIntent.CREATED, record, recordValue);
   }
 
   @Test

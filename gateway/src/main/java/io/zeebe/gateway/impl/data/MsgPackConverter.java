@@ -90,10 +90,9 @@ public class MsgPackConverter {
     final JsonParser parser = inFormat.createParser(in);
     final JsonGenerator generator = outFormat.createGenerator(out, JSON_ENCODING);
     final JsonToken token = parser.nextToken();
-    if (token != JsonToken.START_OBJECT
-        && token != JsonToken.START_ARRAY
-        && token != JsonToken.VALUE_NULL) {
-      throw new RuntimeException("Document does not begin with an object or array");
+    if (!token.isStructStart() && !token.isScalarValue()) {
+      throw new RuntimeException(
+          "Document does not begin with an object, an array, or a scalar value");
     }
 
     generator.copyCurrentStructure(parser);

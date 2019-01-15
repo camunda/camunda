@@ -26,6 +26,7 @@ import io.zeebe.db.impl.DbString;
 import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackToken;
 import io.zeebe.msgpack.spec.MsgPackWriter;
+import io.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.BiConsumer;
@@ -59,6 +60,8 @@ public class VariablesState {
   private final DbLong scopeKey;
   private final DbString variableName;
   private final Variable variable;
+
+  private final Variable newVariable = new Variable();
   private final DirectBuffer variableNameView = new UnsafeBuffer(0, 0);
 
   // collecting variables
@@ -67,6 +70,8 @@ public class VariablesState {
 
   // setting variables
   private IndexedDocument indexedDocument = new IndexedDocument();
+
+  private VariableListener listener;
 
   public VariablesState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
     parentKey = new DbLong();
@@ -114,12 +119,29 @@ public class VariablesState {
       DirectBuffer value,
       int valueOffset,
       int valueLength) {
-    this.scopeKey.wrapLong(scopeKey);
-    variableNameView.wrap(name, nameOffset, nameLength);
-    this.variableName.wrapBuffer(variableNameView);
 
-    variable.wrapValue(value, valueOffset, valueLength);
-    variablesColumnFamily.put(scopeKeyVariableNameKey, variable);
+    newVariable.wrapValue(value, valueOffset, valueLength);
+    final DirectBuffer newValue = newVariable.getValue();
+
+    final DirectBuffer currentValue = getVariableLocal(scopeKey, name, nameOffset, nameLength);
+
+    if (currentValue == null) {
+      variablesColumnFamily.put(scopeKeyVariableNameKey, newVariable);
+
+      if (listener != null) {
+        listener.onCreate(variableName.getBuffer(), newValue, scopeKey);
+      }
+
+    } else if (!BufferUtil.equals(currentValue, newValue)) {
+      variablesColumnFamily.put(scopeKeyVariableNameKey, newVariable);
+
+      if (listener != null) {
+        listener.onUpdate(variableName.getBuffer(), newValue, scopeKey);
+      }
+
+    } else {
+      // not updated
+    }
   }
 
   private boolean hasVariableLocal(
@@ -132,8 +154,14 @@ public class VariablesState {
   }
 
   public DirectBuffer getVariableLocal(long scopeKey, DirectBuffer name) {
+    return getVariableLocal(scopeKey, name, 0, name.capacity());
+  }
+
+  private DirectBuffer getVariableLocal(
+      long scopeKey, DirectBuffer name, int nameOffset, int nameLength) {
     this.scopeKey.wrapLong(scopeKey);
-    this.variableName.wrapBuffer(name);
+    variableNameView.wrap(name, nameOffset, nameLength);
+    this.variableName.wrapBuffer(variableNameView);
 
     final Variable variable = variablesColumnFamily.get(scopeKeyVariableNameKey);
     return variable == null ? null : variable.getValue();
@@ -334,6 +362,14 @@ public class VariablesState {
     return variablesColumnFamily.isEmpty() && childParentColumnFamily.isEmpty();
   }
 
+  public void setListener(VariableListener listener) {
+    if (this.listener != null) {
+      throw new IllegalStateException("variable listener is already set");
+    }
+
+    this.listener = listener;
+  }
+
   private class IndexedDocument implements Iterable<Void> {
     // variable name offset -> variable value offset
     private Int2IntHashMap entries = new Int2IntHashMap(-1);
@@ -433,5 +469,11 @@ public class VariablesState {
     public void remove() {
       iterator.remove();
     }
+  }
+
+  public interface VariableListener {
+    void onCreate(DirectBuffer name, DirectBuffer value, long scopeInstanceKey);
+
+    void onUpdate(DirectBuffer name, DirectBuffer value, long scopeInstanceKey);
   }
 }
