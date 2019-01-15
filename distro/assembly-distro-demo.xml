@@ -13,7 +13,7 @@
 
   <dependencySets>
     <dependencySet>
-      <outputDirectory>server/</outputDirectory>
+      <outputDirectory>elasticsearch/</outputDirectory>
       <includes>
         <include>org.elasticsearch.distribution.zip:elasticsearch:zip</include>
       </includes>
@@ -104,7 +104,7 @@
     </file>
     <file>
       <source>src/config/jvm.options</source>
-      <outputDirectory>server/elasticsearch-${elasticsearch.version}/config/</outputDirectory>
+      <outputDirectory>elasticsearch/elasticsearch-${elasticsearch.version}/config/</outputDirectory>
     </file>
   </files>
 </assembly>

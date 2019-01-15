@@ -15,7 +15,7 @@ Contents:
                     which can be used to overwrite default values of Optimize configuration. Also the logging
                     level can be configured here.
 
-        server/elasticsearch/ (full distribution only)
+        elasticsearch/elasticsearch-${elasticsearch.version}/ (full distribution only)
 
                     this folder contains preconfigured Elasticsearch server.
 

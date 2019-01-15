@@ -42,7 +42,7 @@ mkdir -p $BASEDIR/log
 echo
 echo "Starting Elasticsearch...";
 echo
-exec /bin/bash "$BASEDIR/server/elasticsearch-${elasticsearch.version}/bin/elasticsearch" &
+exec /bin/bash "$BASEDIR/elasticsearch/elasticsearch-${elasticsearch.version}/bin/elasticsearch" &
 
 URL="http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=10s"
 checkStartup $URL "Elasticsearch"

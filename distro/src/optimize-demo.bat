@@ -29,7 +29,7 @@ set COMMAND=curl.exe -f -XGET http://localhost:9200/_cluster/health?wait_for_sta
 echo Environment is set up.
 
 echo Starting Elasticsearch ${elasticsearch.version}...
-start "Elasticsearch" call "%BASEDIR%server\elasticsearch-${elasticsearch.version}\bin\elasticsearch.bat"
+start "Elasticsearch" call "%BASEDIR%elasticsearch\elasticsearch-${elasticsearch.version}\bin\elasticsearch.bat"
 
 :: query elasticsearch if it's up
 :while1
