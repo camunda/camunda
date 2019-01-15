@@ -1,13 +1,13 @@
 import {isValid, addDays, startOfDay, addMinutes, format} from 'date-fns';
 
+import {compactObject} from '../index';
+
 /**
  * Returns a query string for the filter objects
  * removes keys with empty values (null, "", []) so that they don't appear in URL
  */
 export function getFilterQueryString(filter = {}) {
-  const cleanedFilter = Object.entries(filter).reduce((obj, [key, value]) => {
-    return !!value && value.length !== 0 ? {...obj, [key]: value} : obj;
-  }, {});
+  const cleanedFilter = compactObject(filter);
   return `?filter=${encodeURIComponent(JSON.stringify(cleanedFilter))}`;
 }
 

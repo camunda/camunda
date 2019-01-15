@@ -576,7 +576,7 @@ describe('InstancesContainer', () => {
           ...fullFilterWithWorkflow,
           endDate: '28 December 1955'
         };
-        node.setProps({...getRouterProps(newFilter)});
+        node.find('Instances').prop('onFilterChange')(newFilter);
         await flushPromises();
         node.update();
 
@@ -601,7 +601,7 @@ describe('InstancesContainer', () => {
         // when
         // change workflow by changing the version
         const newFilter = {...fullFilterWithWorkflow, version: '3'};
-        node.setProps({...getRouterProps(newFilter)});
+        node.find('Instances').prop('onFilterChange')(newFilter);
         await flushPromises();
         node.update();
 
@@ -725,7 +725,7 @@ describe('InstancesContainer', () => {
       node.update();
 
       // when
-      node.setProps(getRouterProps(INCIDENTS_FILTER));
+      node.find('Instances').prop('onFilterReset')();
       await flushPromises();
       node.update();
 

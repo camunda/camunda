@@ -23,6 +23,7 @@ import {
   getWorkflowByVersion
 } from 'modules/utils/filter';
 import {formatGroupedWorkflows} from 'modules/utils/instance';
+import {compactObject} from 'modules/utils';
 
 import Instances from './Instances';
 import {parseQueryString, decodeFields, fetchDiagramModel} from './service';
@@ -62,23 +63,12 @@ class InstancesContainer extends Component {
       },
       () => {
         // only read the url filter once the fetched data is in the state
-        const urlFilter = parseQueryString(this.props.location.search).filter;
-        this.readUrlFilter(urlFilter);
+        this.setFilterFromUrl();
       }
     );
   }
 
   async componentDidUpdate(prevProps, prevState) {
-    // url filter has changed
-    const prevUrlFilter = parseQueryString(prevProps.location.search).filter;
-    const currentUrlFilter = parseQueryString(this.props.location.search)
-      .filter;
-    const hasUrlFilterChanged = !isEqual(prevUrlFilter, currentUrlFilter);
-
-    if (hasUrlFilterChanged) {
-      return this.readUrlFilter(currentUrlFilter);
-    }
-
     // if any of these change, re-fetch workflowInstances
     const hasFirstElementChanged =
       prevState.firstElement !== this.state.firstElement;
@@ -86,12 +76,6 @@ class InstancesContainer extends Component {
     const hasFilterChanged = !isEqual(prevState.filter, this.state.filter);
 
     if (hasFilterChanged || hasSortingChanged || hasFirstElementChanged) {
-      // fetch stats when the state.filter has changed & there is a diagram
-      if (this.state.diagramModel.definitions && hasFilterChanged) {
-        const statistics = await this.fetchStatistics();
-        this.setState({statistics});
-      }
-
       const instances = await this.fetchWorkflowInstances();
 
       this.setState({
@@ -100,8 +84,22 @@ class InstancesContainer extends Component {
         workflowInstancesLoaded: true
       });
 
-      // update local storage data
-      this.props.storeStateLocally({filterCount: instances.totalCount});
+      if (!hasFilterChanged) {
+        return this.props.storeStateLocally({
+          filterCount: instances.totalCount
+        });
+      }
+
+      this.props.storeStateLocally({
+        filterCount: instances.totalCount,
+        filter: this.state.filter
+      });
+
+      // fetch stats when the state.filter has changed & there is a diagram
+      if (this.state.diagramModel.definitions) {
+        const statistics = await this.fetchStatistics();
+        this.setState({statistics});
+      }
     }
   }
 
@@ -148,152 +146,6 @@ class InstancesContainer extends Component {
   };
 
   /**
-   * Reads the current filter in url and either:
-   * 1- fixes it in the url if it's not valid
-   * 2- updates the state accordingly if it's valid
-   */
-  readUrlFilter = async urlFilter => {
-    // updates the local storage with the curent state.filter
-    const updateLocalStorageFilter = () => {
-      this.props.storeStateLocally({filter: this.state.filter});
-    };
-
-    const {isValid, update} = await this.validateUrlFilter(urlFilter);
-
-    if (isValid) {
-      return this.setState(update, updateLocalStorageFilter);
-    }
-
-    this.setFilterInURL(update.urlFilter);
-    updateLocalStorageFilter();
-  };
-
-  /**
-   * Parses the url filter and returns an update object containing the sanitized filter.
-   * If the url filter is valid, the update object can be used to cleanup the state.
-   * If the url filter is not valid, the update can be used to cleanup url filter.
-   * @returns {isValid, update}
-   */
-  validateUrlFilter = async filter => {
-    // (1) empty filter
-    if (!filter) {
-      return {isValid: false, update: {urlFilter: DEFAULT_FILTER}};
-    }
-
-    let {workflow, version, activityId, ...otherFilters} = filter;
-
-    const sorting = this.shouldResetSorting({filter})
-      ? DEFAULT_SORTING
-      : this.state.sorting;
-
-    // (2):
-    // - if there is no workflow or version and there is an activityId, clear filter from workflow, version & activityId
-    // - if there is no workflow or version and there is no activityId, reset diagramModel and statistics
-    if (!workflow || !version) {
-      return activityId
-        ? {isValid: false, update: {urlFilter: otherFilters}}
-        : {
-            isValid: true,
-            update: {
-              filter,
-              diagramModel: {},
-              statistics: [],
-              firstElement: DEFAULT_FIRST_ELEMENT,
-              sorting
-            }
-          };
-    }
-
-    // (3) validate workflow
-    const isWorkflowValid = Boolean(this.state.groupedWorkflows[workflow]);
-
-    // (3) if the workflow is invalid, remove it from the url filter
-    if (!isWorkflowValid) {
-      return {isValid: false, update: {urlFilter: otherFilters}};
-    }
-
-    // (4):
-    // - if the version is 'all' and there is an activityId, remove the activityId from the url filter
-    // - if the version is 'all' and there is no activityId, reset diagramModel & statistics
-    if (version === 'all') {
-      return activityId
-        ? {
-            isValid: false,
-            update: {urlFilter: {...otherFilters, workflow, version}}
-          }
-        : {
-            isValid: true,
-            update: {
-              filter,
-              diagramModel: {},
-              statistics: [],
-              firstElement: DEFAULT_FIRST_ELEMENT,
-              sorting
-            }
-          };
-    }
-
-    // check workflow & version combination
-    const workflowByVersion = getWorkflowByVersion(
-      this.state.groupedWorkflows[workflow],
-      version
-    );
-
-    // (5) if version is invalid, remove workflow from the url filter
-    if (!Boolean(workflowByVersion)) {
-      return {isValid: false, update: {urlFilter: otherFilters}};
-    }
-
-    const currentWorkflowByVersion = getWorkflowByVersion(
-      this.state.groupedWorkflows[this.state.filter.workflow],
-      this.state.filter.version
-    );
-
-    const hasWorkflowChanged = !isEqual(
-      workflowByVersion,
-      currentWorkflowByVersion
-    );
-
-    let {diagramModel} = this.state;
-
-    if (hasWorkflowChanged) {
-      diagramModel = await fetchDiagramModel(workflowByVersion.id);
-    }
-
-    // (6) if activityId is invalid, remove it from the url filter
-    if (activityId && !diagramModel.bpmnElements[activityId]) {
-      return {
-        isValid: false,
-        update: {urlFilter: {...otherFilters, workflow, version}}
-      };
-    }
-
-    // (7) if the workflow didn't change, we can immediatly update the state
-    if (!hasWorkflowChanged) {
-      return {
-        isValid: true,
-        update: {
-          filter,
-          firstElement: DEFAULT_FIRST_ELEMENT,
-          sorting
-        }
-      };
-    }
-
-    // (8) Set new data in state and clear current statistics
-    return {
-      isValid: true,
-      update: {
-        filter,
-        diagramModel,
-        statistics: [],
-        firstElement: DEFAULT_FIRST_ELEMENT,
-        sorting
-      }
-    };
-  };
-
-  /**
    * Helper function to determine based on filter & sorting if state.sorting should
    * be reset to its default value
    * e.g. when filter is only running and sorting is by end date
@@ -318,15 +170,21 @@ class InstancesContainer extends Component {
     });
   };
 
-  handleFilterChange = newFilter => {
+  handleFilterChange = async filterChange => {
+    const newFilter = compactObject({
+      ...this.state.filter,
+      ...filterChange
+    });
+
     if (!isEqual(newFilter, this.state.filter)) {
-      // only change the URL if a new value for a field is provided
-      this.setFilterInURL({...this.state.filter, ...newFilter});
+      await this.setFilterFromInput(newFilter);
     }
   };
 
-  handleFilterReset = () => {
-    this.setFilterInURL(DEFAULT_FILTER);
+  handleFilterReset = async () => {
+    if (!isEqual(DEFAULT_FILTER, this.state.filter)) {
+      await this.setFilterFromInput(DEFAULT_FILTER);
+    }
   };
 
   handleSortingChange = key => {
@@ -350,6 +208,134 @@ class InstancesContainer extends Component {
   };
 
   handleFirstElementChange = firstElement => this.setState({firstElement});
+
+  setFilterFromUrl = async () => {
+    const setFilterInUrlAndState = filter => {
+      this.setFilterInURL(filter);
+      this.setState({filter});
+    };
+
+    const filter = parseQueryString(this.props.location.search).filter;
+
+    // (1) empty filter
+    if (!filter) {
+      return setFilterInUrlAndState(DEFAULT_FILTER);
+    }
+
+    let {workflow, version, activityId, ...otherFilters} = filter;
+
+    // (2):
+    // - if there is no workflow or version (they are null or undefined) and there is an activityId, clear filter from workflow, version & activityId
+    // - if there is no workflow or version and there is no activityId, reset diagramModel and statistics
+    if (!workflow || !version) {
+      return activityId
+        ? setFilterInUrlAndState(otherFilters)
+        : this.setState({filter});
+    }
+
+    // (3) validate workflow
+    const isWorkflowValid = Boolean(this.state.groupedWorkflows[workflow]);
+
+    if (!isWorkflowValid) {
+      return setFilterInUrlAndState(otherFilters);
+    }
+
+    // (4):
+    // - if the version is 'all' and there is an activityId, remove the activityId
+    // - if the version is 'all' and there is no activityId, reset diagramModel & statistics
+    if (version === 'all') {
+      return activityId
+        ? setFilterInUrlAndState({...otherFilters, workflow, version})
+        : this.setState({
+            filter: {...otherFilters, workflow, version}
+          });
+    }
+
+    // check workflow & version combination
+    const workflowByVersion = getWorkflowByVersion(
+      this.state.groupedWorkflows[workflow],
+      version
+    );
+
+    // (5) if version is invalid, remove workflow from the url filter
+    if (!Boolean(workflowByVersion)) {
+      return setFilterInUrlAndState(otherFilters);
+    }
+
+    const hasWorkflowChanged =
+      workflow !== this.state.filter.workflow ||
+      version !== this.state.filter.version;
+
+    let {diagramModel} = this.state;
+
+    if (hasWorkflowChanged) {
+      diagramModel = await fetchDiagramModel(workflowByVersion.id);
+    }
+
+    // (6) if activityId is invalid, remove it from the url filter
+    if (activityId && !diagramModel.bpmnElements[activityId]) {
+      return setFilterInUrlAndState({...otherFilters, workflow, version});
+    }
+
+    // (7) if the workflow didn't change, we can immediatly update the state
+    if (!hasWorkflowChanged) {
+      return this.setState({
+        filter
+      });
+    }
+
+    // (8) Set new data in state and clear current statistics
+    return this.setState({
+      filter,
+      diagramModel
+    });
+  };
+
+  setFilterFromInput = async filter => {
+    this.setFilterInURL(filter);
+    let {workflow, version} = filter;
+
+    const sorting = this.shouldResetSorting({filter})
+      ? DEFAULT_SORTING
+      : this.state.sorting;
+
+    if (!workflow || !version || version === 'all') {
+      return this.setState({
+        filter,
+        diagramModel: {},
+        statistics: [],
+        firstElement: DEFAULT_FIRST_ELEMENT,
+        sorting
+      });
+    }
+
+    const hasWorkflowChanged =
+      workflow !== this.state.filter.workflow ||
+      version !== this.state.filter.version;
+
+    if (!hasWorkflowChanged) {
+      return this.setState({
+        filter,
+        firstElement: DEFAULT_FIRST_ELEMENT,
+        sorting
+      });
+    }
+
+    const {id} = getWorkflowByVersion(
+      this.state.groupedWorkflows[workflow],
+      version
+    );
+
+    const diagramModel = await fetchDiagramModel(id);
+
+    return this.setState({
+      filter,
+      diagramModel,
+      statistics: [],
+      firstElement: DEFAULT_FIRST_ELEMENT,
+      sorting
+    });
+  };
 
   render() {
     return (
