@@ -6,6 +6,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import java.util.List;
 
 public class IntegerVariableFilterDataDto extends OperatorMultipleValuesVariableFilterDataDto {
+  
   protected IntegerVariableFilterDataDto() {
     this(null, null);
   }
