@@ -8,12 +8,14 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.exceptions.ReportEvaluationException;
+import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -59,7 +61,7 @@ public abstract class AbstractSharingIT {
       ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion());
-    SingleReportDefinitionDto<ProcessReportDataDto> report = new SingleReportDefinitionDto<>();
+    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.setData(reportData);
     updateReport(reportId, report);
     return reportId;
@@ -67,9 +69,22 @@ public abstract class AbstractSharingIT {
 
   public static void assertErrorFields(ReportEvaluationException errorMessage) {
     assertThat(errorMessage.getReportDefinition(), is(notNullValue()));
-    assertThat(errorMessage.getReportDefinition().getData(), is(notNullValue()));
-    assertThat(errorMessage.getReportDefinition().getName(), is(notNullValue()));
-    assertThat(errorMessage.getReportDefinition().getId(), is(notNullValue()));
+    ReportDefinitionDto reportDefinitionDto = errorMessage.getReportDefinition();
+    if (reportDefinitionDto instanceof SingleProcessReportDefinitionDto) {
+      SingleProcessReportDefinitionDto singleProcessReport =
+        (SingleProcessReportDefinitionDto) reportDefinitionDto;
+      assertThat(singleProcessReport.getData(), is(notNullValue()));
+      assertThat(singleProcessReport.getName(), is(notNullValue()));
+      assertThat(singleProcessReport.getId(), is(notNullValue()));
+    } else if (reportDefinitionDto instanceof SingleDecisionReportDefinitionDto) {
+      SingleDecisionReportDefinitionDto singleDecisionReport =
+        (SingleDecisionReportDefinitionDto) reportDefinitionDto;
+      assertThat(singleDecisionReport.getData(), is(notNullValue()));
+      assertThat(singleDecisionReport.getName(), is(notNullValue()));
+      assertThat(singleDecisionReport.getId(), is(notNullValue()));
+    } else {
+      throw new OptimizeIntegrationTestException("Evaluation exception should return single report definition!");
+    }
   }
 
   protected ProcessInstanceEngineDto deployAndStartSimpleProcess(String definitionKey) {

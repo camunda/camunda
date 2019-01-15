@@ -9,8 +9,8 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -78,7 +78,7 @@ public class ForceReimportIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    List<SingleReportDefinitionDto> reports = getAllReports();
+    List<ReportDefinitionDto> reports = getAllReports();
     List<DashboardDefinitionDto> dashboards = getAllDashboards();
     List<AlertDefinitionDto> alerts = getAllAlerts();
 
@@ -198,15 +198,15 @@ public class ForceReimportIT {
     assertThat(response.getStatus(), is(204));
   }
 
-  protected SingleReportDefinitionDto getReportDefinitionDto(ProcessDefinitionEngineDto processDefinition) {
+  protected SingleProcessReportDefinitionDto getReportDefinitionDto(ProcessDefinitionEngineDto processDefinition) {
     return getReportDefinitionDto(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
   }
 
-  private SingleReportDefinitionDto getReportDefinitionDto(String processDefinitionKey,
+  private SingleProcessReportDefinitionDto getReportDefinitionDto(String processDefinitionKey,
                                                            String processDefinitionVersion) {
     ProcessReportDataDto reportData =
       ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNoneAsNumber(processDefinitionKey, processDefinitionVersion);
-    SingleReportDefinitionDto<ProcessReportDataDto> report = new SingleReportDefinitionDto<>();
+    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.setData(reportData);
     report.setId("something");
     report.setLastModifier("something");
@@ -251,16 +251,16 @@ public class ForceReimportIT {
     ReimportPreparation.main(new String[]{});
   }
 
-  private List<SingleReportDefinitionDto> getAllReports() {
+  private List<ReportDefinitionDto> getAllReports() {
     return getAllReportsWithQueryParam(new HashMap<>());
   }
 
-  private List<SingleReportDefinitionDto> getAllReportsWithQueryParam(Map<String, Object> queryParams) {
+  private List<ReportDefinitionDto> getAllReportsWithQueryParam(Map<String, Object> queryParams) {
     return embeddedOptimizeRule
             .getRequestExecutor()
             .buildGetAllReportsRequest()
             .addQueryParams(queryParams)
-            .executeAndReturnList(SingleReportDefinitionDto.class, 200);
+            .executeAndReturnList(ReportDefinitionDto.class, 200);
   }
 
   private ProcessDefinitionEngineDto deployAndStartSimpleServiceTask() {

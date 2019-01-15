@@ -1,14 +1,14 @@
 package org.camunda.optimize.service.es.reader;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.get.MultiGetItemResponse;
 import org.elasticsearch.action.get.MultiGetRequest;
@@ -118,6 +118,68 @@ public class ReportReader {
     return multiGetItemResponses;
   }
 
+  public SingleProcessReportDefinitionDto getSingleProcessReport(String reportId) {
+    logger.debug("Fetching single process report with id [{}]", reportId);
+    GetRequest getRequest = new GetRequest(
+        getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE),
+        SINGLE_PROCESS_REPORT_TYPE,
+        reportId)
+      .realtime(true);
+
+    GetResponse getResponse;
+    try {
+      getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format("Could not fetch single process report with id [%s]", reportId);
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    if (getResponse.isExists()) {
+      String responseAsString = getResponse.getSourceAsString();
+      try {
+        return objectMapper.readValue(responseAsString, SingleProcessReportDefinitionDto.class);
+      } catch (IOException e) {
+        logger.error("Was not able to retrieve single process report with id [{}] from Elasticsearch.", reportId);
+        throw new OptimizeRuntimeException("Can't fetch alert");
+      }
+    } else {
+      logger.error("Was not able to retrieve single process report with id [{}] from Elasticsearch.", reportId);
+      throw new NotFoundException("Single process report does not exist!");
+    }
+  }
+
+  public SingleDecisionReportDefinitionDto getSingleDecisionReport(String reportId) {
+    logger.debug("Fetching single decision report with id [{}]", reportId);
+    GetRequest getRequest = new GetRequest(
+        getOptimizeIndexAliasForType(SINGLE_DECISION_REPORT_TYPE),
+        SINGLE_DECISION_REPORT_TYPE,
+        reportId)
+      .realtime(true);
+
+    GetResponse getResponse;
+    try {
+      getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format("Could not fetch single decision report with id [%s]", reportId);
+      logger.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    if (getResponse.isExists()) {
+      String responseAsString = getResponse.getSourceAsString();
+      try {
+        return objectMapper.readValue(responseAsString, SingleDecisionReportDefinitionDto.class);
+      } catch (IOException e) {
+        logger.error("Was not able to retrieve single decision report with id [{}] from Elasticsearch.", reportId);
+        throw new OptimizeRuntimeException("Can't fetch alert");
+      }
+    } else {
+      logger.error("Was not able to retrieve single decision report with id [{}] from Elasticsearch.", reportId);
+      throw new NotFoundException("single decision report does not exist!");
+    }
+  }
+
   public List<ReportDefinitionDto> getAllReports() {
     logger.debug("Fetching all available reports");
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
@@ -149,18 +211,18 @@ public class ReportReader {
     );
   }
 
-  public List<SingleReportDefinitionDto<ProcessReportDataDto>> getAllSingleProcessReportsForIds(List<String> reportIds) {
+  public List<SingleProcessReportDefinitionDto> getAllSingleProcessReportsForIds(List<String> reportIds) {
     logger.debug("Fetching all available single process reports for ids [{}]", reportIds);
 
     String[] reportIdsAsArray = reportIds.toArray(new String[0]);
 
     SearchResponse searchResponse = performGetReportRequestForIds(reportIdsAsArray);
-    List<SingleReportDefinitionDto<ProcessReportDataDto>> singleReportDefinitionDtos =
+    List<SingleProcessReportDefinitionDto> singleReportDefinitionDtos =
       mapResponseToReportList(searchResponse);
 
     if (reportIds.size() != singleReportDefinitionDtos.size()) {
       List<String> fetchedReportIds = singleReportDefinitionDtos.stream()
-        .map(SingleReportDefinitionDto::getId)
+        .map(SingleProcessReportDefinitionDto::getId)
         .collect(Collectors.toList());
       String errorMessage =
         String.format("Error trying to fetch reports for given ids. Given ids [%s] and fetched [%s]. " +
@@ -173,16 +235,14 @@ public class ReportReader {
     return singleReportDefinitionDtos;
   }
 
-  private List<SingleReportDefinitionDto<ProcessReportDataDto>> mapResponseToReportList(SearchResponse searchResponse) {
-    List<SingleReportDefinitionDto<ProcessReportDataDto>> singleReportDefinitionDtos =
-      new ArrayList<>();
+  private List<SingleProcessReportDefinitionDto> mapResponseToReportList(SearchResponse searchResponse) {
+    List<SingleProcessReportDefinitionDto> singleReportDefinitionDtos = new ArrayList<>();
     for (SearchHit hit : searchResponse.getHits().getHits()) {
       String sourceAsString = hit.getSourceAsString();
       try {
-        SingleReportDefinitionDto<ProcessReportDataDto> singleReportDefinitionDto = objectMapper.readValue(
+        SingleProcessReportDefinitionDto singleReportDefinitionDto = objectMapper.readValue(
           sourceAsString,
-          new TypeReference<SingleReportDefinitionDto<ProcessReportDataDto>>() {
-          }
+          SingleProcessReportDefinitionDto.class
         );
         singleReportDefinitionDtos.add(singleReportDefinitionDto);
       } catch (IOException e) {
@@ -195,7 +255,7 @@ public class ReportReader {
       }
     }
     return singleReportDefinitionDtos;
-  }
+}
 
   private SearchResponse performGetReportRequestForIds(String[] reportIdsAsArray) {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();

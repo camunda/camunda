@@ -4,15 +4,17 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.report.ReportService;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.validation.constraints.NotNull;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -37,8 +39,12 @@ import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUser;
 @Component
 public class ReportRestService {
 
+  private final ReportService reportService;
+
   @Autowired
-  private ReportService reportService;
+  public ReportRestService(ReportService reportService) {
+    this.reportService = reportService;
+  }
 
   /**
    * Creates an empty new report.
@@ -49,9 +55,15 @@ public class ReportRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public IdDto createNewReport(@Context ContainerRequestContext requestContext,
-                               ReportDefinitionDto reportDefinitionDto) {
+                               @NotNull ReportDefinitionDto reportDefinitionDto) {
     String userId = getRequestUser(requestContext);
-    return reportService.createNewReportAndReturnId(userId, reportDefinitionDto);
+    if (reportDefinitionDto instanceof SingleProcessReportDefinitionDto) {
+      return reportService.createNewSingleProcessReport(userId);
+    } else if (reportDefinitionDto instanceof SingleDecisionReportDefinitionDto) {
+      return reportService.createNewSingleDecisionReport(userId);
+    } else {
+      return reportService.createNewCombinedProcessReport(userId);
+    }
   }
 
   /**
@@ -64,12 +76,19 @@ public class ReportRestService {
   public void updateReport(@Context ContainerRequestContext requestContext,
                            @PathParam("id") String reportId,
                            @QueryParam("force") boolean force,
-                           ReportDefinitionDto updatedReport) throws OptimizeException {
+                           @NotNull ReportDefinitionDto updatedReport) throws OptimizeException {
     String userId = getRequestUser(requestContext);
-    if (updatedReport instanceof SingleReportDefinitionDto) {
-      final SingleReportDefinitionDto<SingleReportDataDto> singleReportUpdate =
-        (SingleReportDefinitionDto<SingleReportDataDto>) updatedReport;
+    updatedReport.setId(reportId);
+    updatedReport.setLastModifier(userId);
+    updatedReport.setLastModified(LocalDateUtil.getCurrentDateTime());
+    if (updatedReport instanceof SingleProcessReportDefinitionDto) {
+      final SingleProcessReportDefinitionDto singleReportUpdate =
+        (SingleProcessReportDefinitionDto) updatedReport;
       reportService.updateSingleProcessReportWithAuthorizationCheck(reportId, singleReportUpdate, userId, force);
+    } else if (updatedReport instanceof SingleDecisionReportDefinitionDto) {
+      final SingleDecisionReportDefinitionDto singleReportUpdate =
+        (SingleDecisionReportDefinitionDto) updatedReport;
+      reportService.updateSingleDecisionReportWithAuthorizationCheck(reportId, singleReportUpdate, userId, force);
     } else {
       final CombinedReportDefinitionDto combinedReportUpdate = (CombinedReportDefinitionDto) updatedReport;
       reportService.updateCombinedProcessReportWithAuthorizationCheck(reportId, combinedReportUpdate, userId, force);
@@ -137,7 +156,7 @@ public class ReportRestService {
   @Path("/{id}/evaluate")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public ReportResultDto evaluateReport(@Context ContainerRequestContext requestContext,
+  public ReportResultDto evaluateReportById(@Context ContainerRequestContext requestContext,
                                         @PathParam("id") String reportId) {
     String userId = getRequestUser(requestContext);
     return reportService.evaluateSavedReport(userId, reportId);
@@ -152,8 +171,9 @@ public class ReportRestService {
   @Path("/evaluate")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public ReportResultDto evaluateReport(@Context ContainerRequestContext requestContext,
-                                        ReportDefinitionDto reportDefinitionDto) {
+  public ReportResultDto evaluateProvidedReport(@Context ContainerRequestContext requestContext,
+                                                @NotNull ReportDefinitionDto reportDefinitionDto) {
+
     String userId = getRequestUser(requestContext);
     return reportService.evaluateReport(userId, reportDefinitionDto);
   }

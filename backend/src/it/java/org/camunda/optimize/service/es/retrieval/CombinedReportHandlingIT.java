@@ -7,9 +7,9 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
@@ -302,7 +302,7 @@ public class CombinedReportHandlingIT {
 
     // when
     String combinedReportId = createNewCombinedReport(singleReportIdToUpdate, remainingSingleReportId);
-    SingleReportDefinitionDto<ProcessReportDataDto> report = new SingleReportDefinitionDto<>();
+    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     countFlowNodeFrequencyGroupByFlowNode.setVisualization(ProcessVisualization.TABLE);
     report.setData(countFlowNodeFrequencyGroupByFlowNode);
     updateReport(singleReportIdToUpdate, report, true);
@@ -339,7 +339,7 @@ public class CombinedReportHandlingIT {
 
     // when
     String combinedReportId = createNewCombinedReport(singleReportIdToUpdate, remainingSingleReportId);
-    SingleReportDefinitionDto<ProcessReportDataDto> report = new SingleReportDefinitionDto<>();
+    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     countFlowNodeFrequencyGroupByFlowNode.getGroupBy().setType(ProcessGroupByType.START_DATE);
     report.setData(countFlowNodeFrequencyGroupByFlowNode);
     updateReport(singleReportIdToUpdate, report, true);
@@ -376,7 +376,7 @@ public class CombinedReportHandlingIT {
 
     // when
     String combinedReportId = createNewCombinedReport(singleReportIdToUpdate, remainingSingleReportId);
-    SingleReportDefinitionDto<ProcessReportDataDto> report = new SingleReportDefinitionDto<>();
+    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     countFlowNodeFrequencyGroupByFlowNode.getView().setEntity(ProcessViewEntity.PROCESS_INSTANCE);
     report.setData(countFlowNodeFrequencyGroupByFlowNode);
     updateReport(singleReportIdToUpdate, report, true);
@@ -528,14 +528,11 @@ public class CombinedReportHandlingIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    CombinedProcessReportResultDto result =
-      evaluateUnsavedCombined(createCombinedReport(combinedReportId, singleReportId2));
+    Response response =
+      evaluateUnsavedCombinedReportAndReturnResponse(createCombinedReport(combinedReportId, singleReportId2));
 
     // then
-    Map<String, ProcessReportMapResultDto> resultMap = result.getResult();
-    assertThat(resultMap.size(), is(1));
-    Map<String, Long> flowNodeToCount = resultMap.get(singleReportId2).getResult();
-    assertThat(flowNodeToCount.size(), is(3));
+    assertThat(response.getStatus(), is(404));
   }
 
   private String createNewSingleMapReport(ProcessInstanceEngineDto engineDto) {
@@ -549,7 +546,7 @@ public class CombinedReportHandlingIT {
 
   private String createNewSingleMapReport(ProcessReportDataDto data) {
     String singleReportId = createNewSingleReport();
-    SingleReportDefinitionDto<ProcessReportDataDto> definitionDto = new SingleReportDefinitionDto<>();
+    SingleProcessReportDefinitionDto definitionDto = new SingleProcessReportDefinitionDto();
     definitionDto.setName(TEST_REPORT_NAME);
     definitionDto.setData(data);
     updateReport(singleReportId, definitionDto);
@@ -561,7 +558,7 @@ public class CombinedReportHandlingIT {
     String singleReportId = createNewSingleReport();
     ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode =
       createPiFrequencyCountGroupedByNone(engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion());
-    SingleReportDefinitionDto<ProcessReportDataDto> definitionDto = new SingleReportDefinitionDto<>();
+    SingleProcessReportDefinitionDto definitionDto = new SingleProcessReportDefinitionDto();
     definitionDto.setData(countFlowNodeFrequencyGroupByFlowNode);
     updateReport(singleReportId, definitionDto);
     return singleReportId;
@@ -571,7 +568,7 @@ public class CombinedReportHandlingIT {
     String singleReportId = createNewSingleReport();
     ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode =
       createProcessReportDataViewRawAsTable(engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion());
-    SingleReportDefinitionDto<ProcessReportDataDto> definitionDto = new SingleReportDefinitionDto<>();
+    SingleProcessReportDefinitionDto definitionDto = new SingleProcessReportDefinitionDto();
     definitionDto.setData(countFlowNodeFrequencyGroupByFlowNode);
     updateReport(singleReportId, definitionDto);
     return singleReportId;

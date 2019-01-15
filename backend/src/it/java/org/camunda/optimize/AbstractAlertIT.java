@@ -10,8 +10,8 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.alert.SyncListener;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -185,16 +185,16 @@ public abstract class AbstractAlertIT {
     return id;
   }
 
-  protected SingleReportDefinitionDto<ProcessReportDataDto> getReportDefinitionDto(ProcessDefinitionEngineDto processDefinition) {
+  protected SingleProcessReportDefinitionDto getReportDefinitionDto(ProcessDefinitionEngineDto processDefinition) {
     return getReportDefinitionDto(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
   }
 
 
-  protected SingleReportDefinitionDto<ProcessReportDataDto> getReportDefinitionDto(String processDefinitionKey, String processDefinitionVersion) {
+  protected SingleProcessReportDefinitionDto getReportDefinitionDto(String processDefinitionKey, String processDefinitionVersion) {
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNoneAsNumber(
       processDefinitionKey, processDefinitionVersion
     );
-    SingleReportDefinitionDto<ProcessReportDataDto> report = new SingleReportDefinitionDto<>();
+    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.setData(reportData);
     report.setId("something");
     report.setLastModifier("something");
@@ -218,7 +218,7 @@ public abstract class AbstractAlertIT {
     return deploySimpleServiceTaskProcess("aProcess");
   }
 
-  private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess(String definitionKey) throws IOException {
+  private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess(String definitionKey) {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess(definitionKey)
       .name("aProcessName")
         .startEvent()
@@ -241,11 +241,11 @@ public abstract class AbstractAlertIT {
     return id;
   }
 
-  private SingleReportDefinitionDto<ProcessReportDataDto> getDurationReportDefinitionDto(String processDefinitionKey, String processDefinitionVersion) {
+  private SingleProcessReportDefinitionDto getDurationReportDefinitionDto(String processDefinitionKey, String processDefinitionVersion) {
     ProcessReportDataDto reportData = createAvgPiDurationAsNumberGroupByNone(
       processDefinitionKey, processDefinitionVersion
     );
-    SingleReportDefinitionDto<ProcessReportDataDto> report = new SingleReportDefinitionDto<>();
+    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.setData(reportData);
     report.setId("something");
     report.setLastModifier("something");

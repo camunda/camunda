@@ -5,9 +5,13 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.EmailAlertEnabledDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionVisualization;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.service.es.reader.AlertReader;
 import org.camunda.optimize.service.es.writer.AlertWriter;
@@ -95,8 +99,8 @@ public class AlertService {
         allJobDetails.addAll(checkingDetails.values());
         allJobDetails.addAll(reminderDetails.values());
 
-        JobDetail[] jobDetails = allJobDetails.toArray(new JobDetail[allJobDetails.size()]);
-        Trigger[] triggers = allTriggers.toArray(new Trigger[allTriggers.size()]);
+        JobDetail[] jobDetails = allJobDetails.toArray(new JobDetail[0]);
+        Trigger[] triggers = allTriggers.toArray(new Trigger[0]);
 
         schedulerFactoryBean.setGlobalJobListeners(createReminderListener());
         schedulerFactoryBean.setTriggers(triggers);
@@ -234,7 +238,7 @@ public class AlertService {
     ValidationHelper.ensureNotEmpty("email", toCreate.getEmail());
   }
 
-  protected AlertDefinitionDto createAlertForUser(AlertCreationDto toCreate, String userId) {
+  private AlertDefinitionDto createAlertForUser(AlertCreationDto toCreate, String userId) {
     AlertDefinitionDto alert = alertWriter.createAlert(newAlert(toCreate, userId));
     scheduleAlert(alert);
     return alert;
@@ -328,23 +332,26 @@ public class AlertService {
    * Check if it's still evaluated as number.
    */
   public void deleteAlertsIfNeeded(String reportId, ReportDefinitionDto reportDefinition) {
-    if (reportDefinition instanceof SingleReportDefinitionDto) {
-      SingleReportDefinitionDto singleReport = (SingleReportDefinitionDto) reportDefinition;
-      if (!validateIfReportIsSuitableForAlert(singleReport)) {
+    if (reportDefinition instanceof SingleProcessReportDefinitionDto) {
+      SingleProcessReportDefinitionDto singleReport = (SingleProcessReportDefinitionDto) reportDefinition;
+      if (!validateIfProcessReportIsSuitableForAlert(singleReport)) {
         this.deleteAlertsForReport(reportId);
       }
     }
   }
 
-  public boolean validateIfReportIsSuitableForAlert(SingleReportDefinitionDto report) {
-    if (report.getData() instanceof ProcessReportDataDto) {
-      final ProcessReportDataDto data = (ProcessReportDataDto) report.getData();
-      return data.getGroupBy() != null
-        && ProcessGroupByType.NONE.equals(data.getGroupBy().getType())
-        && ProcessVisualization.NUMBER.equals(data.getVisualization());
-    } else {
-      return false;
-    }
+  public boolean validateIfProcessReportIsSuitableForAlert(SingleProcessReportDefinitionDto report) {
+    final ProcessReportDataDto data = report.getData();
+    return data != null && data.getGroupBy() != null
+      && ProcessGroupByType.NONE.equals(data.getGroupBy().getType())
+      && ProcessVisualization.NUMBER.equals(data.getVisualization());
+  }
+
+  public boolean validateIfDecisionReportIsSuitableForAlert(SingleDecisionReportDefinitionDto report) {
+    final DecisionReportDataDto data = report.getData();
+    return data != null && data.getGroupBy() != null
+      && DecisionGroupByType.NONE.equals(data.getGroupBy().getType())
+      && DecisionVisualization.NUMBER.equals(data.getVisualization());
   }
 
   public JobDetail createStatusCheckJobDetails(AlertDefinitionDto fakeReportAlert) {

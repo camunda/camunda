@@ -6,9 +6,8 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
 import org.junit.Before;
 import org.junit.Rule;
@@ -72,7 +71,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     assertThat(response.getStatus(), is(200));
 
     // when
-    SingleReportDefinitionDto<ProcessReportDataDto> report = getReportDefinitionDto(processDefinition);
+    SingleProcessReportDefinitionDto report = getReportDefinitionDto(processDefinition);
     report.getData().setGroupBy(new FlowNodesGroupByDto());
     report.getData().setVisualization(ProcessVisualization.HEAT);
     updateReport(simpleAlert.getReportId(), report);

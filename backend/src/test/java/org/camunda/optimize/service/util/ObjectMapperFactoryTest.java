@@ -4,9 +4,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportType;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -18,6 +22,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -27,8 +32,6 @@ import static org.junit.Assert.assertThat;
 @RunWith(MockitoJUnitRunner.class)
 public class ObjectMapperFactoryTest {
 
-  private ObjectMapperFactory objectMapperFactory;
-
   private ObjectMapper optimizeMapper;
   private ObjectMapper engineMapper;
 
@@ -37,9 +40,9 @@ public class ObjectMapperFactoryTest {
 
   @Before
   public void init() throws Exception {
-    configurationService = new ConfigurationService(new String[]{"service-config.yaml"});
-    this.optimizeDateTimeFormatterFactory = new OptimizeDateTimeFormatterFactory();
-    this.objectMapperFactory = new ObjectMapperFactory(
+    ConfigurationService configurationService = new ConfigurationService(new String[]{"service-config.yaml"});
+    OptimizeDateTimeFormatterFactory optimizeDateTimeFormatterFactory = new OptimizeDateTimeFormatterFactory();
+    ObjectMapperFactory objectMapperFactory = new ObjectMapperFactory(
       optimizeDateTimeFormatterFactory.getObject(), configurationService
     );
     optimizeMapper = optimizeMapper == null ? objectMapperFactory.createOptimizeMapper() : optimizeMapper;
@@ -50,7 +53,6 @@ public class ObjectMapperFactoryTest {
    * By default jackson fails if the external type id property is present but the actual property not.
    * In this case "reportType" is the external type id and "data" is the property.
    *
-   * @throws Exception
    * @see com.fasterxml.jackson.databind.DeserializationFeature#FAIL_ON_MISSING_EXTERNAL_TYPE_ID_PROPERTY
    */
   @Test
@@ -61,7 +63,43 @@ public class ObjectMapperFactoryTest {
     );
     assertThat(reportDefinitionDto.getCombined(), is(false));
     assertThat(reportDefinitionDto.getReportType(), is(ReportType.PROCESS));
-    assertThat(reportDefinitionDto.getData(), is(nullValue()));
+    assertThat(reportDefinitionDto, instanceOf(SingleProcessReportDefinitionDto.class));
+    SingleProcessReportDefinitionDto singleProcessReport =
+      (SingleProcessReportDefinitionDto) reportDefinitionDto;
+    assertThat(singleProcessReport.getData(), is(nullValue()));
+  }
+
+  @Test
+  public void testCanDeserializeToSingleProcessReport() throws Exception {
+    final SingleProcessReportDefinitionDto reportDefinitionDto = optimizeMapper.readValue(
+      getClass().getResourceAsStream("/test/data/single-process-report-definition-create-request.json"),
+      SingleProcessReportDefinitionDto.class
+    );
+    assertThat(reportDefinitionDto.getCombined(), is(false));
+    assertThat(reportDefinitionDto.getReportType(), is(ReportType.PROCESS));
+    assertThat(reportDefinitionDto, instanceOf(SingleProcessReportDefinitionDto.class));
+  }
+
+  @Test
+  public void testCanDeserializeToSingleDecisionReport() throws Exception {
+    final SingleDecisionReportDefinitionDto reportDefinitionDto = optimizeMapper.readValue(
+      getClass().getResourceAsStream("/test/data/single-decision-report-definition-create-request.json"),
+      SingleDecisionReportDefinitionDto.class
+    );
+    assertThat(reportDefinitionDto.getCombined(), is(false));
+    assertThat(reportDefinitionDto.getReportType(), is(ReportType.DECISION));
+    assertThat(reportDefinitionDto, instanceOf(SingleDecisionReportDefinitionDto.class));
+  }
+
+  @Test
+  public void testCanDeserializeToCombinedProcessReport() throws Exception {
+    final CombinedReportDefinitionDto reportDefinitionDto = optimizeMapper.readValue(
+      getClass().getResourceAsStream("/test/data/combined-process-report-definition-create-request.json"),
+      CombinedReportDefinitionDto.class
+    );
+    assertThat(reportDefinitionDto.getCombined(), is(true));
+    assertThat(reportDefinitionDto.getReportType(), is(ReportType.PROCESS));
+    assertThat(reportDefinitionDto, instanceOf(CombinedReportDefinitionDto.class));
   }
 
   @Test

@@ -1,7 +1,7 @@
 package org.camunda.optimize.rest.providers;
 
-import org.camunda.optimize.dto.optimize.rest.EvaluationErrorResponseDto;
-import org.camunda.optimize.service.exceptions.ReportEvaluationException;
+import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
+import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,11 +23,8 @@ public class ReportEvaluationExceptionMapper implements ExceptionMapper<ReportEv
       .build();
   }
 
-  private EvaluationErrorResponseDto mapToEvaluationErrorResponseDto(ReportEvaluationException reportEvaluationException) {
-    return new EvaluationErrorResponseDto(
-      reportEvaluationException.getMessage(),
-      reportEvaluationException.getReportDefinition()
-    );
+  private ErrorResponseDto mapToEvaluationErrorResponseDto(ReportEvaluationException evaluationException) {
+      return new ErrorResponseDto(evaluationException.getMessage(), evaluationException.getReportDefinition());
   }
 
 }

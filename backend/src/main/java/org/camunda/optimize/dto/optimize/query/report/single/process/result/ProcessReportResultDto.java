@@ -3,8 +3,7 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.result;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 
@@ -18,7 +17,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.RAW_RESULT_TYPE;
   @JsonSubTypes.Type(value = ProcessReportNumberResultDto.class, name = NUMBER_RESULT_TYPE),
   @JsonSubTypes.Type(value = RawDataProcessReportResultDto.class, name = RAW_RESULT_TYPE),
 })
-public abstract class ProcessReportResultDto extends SingleReportDefinitionDto<ProcessReportDataDto> implements ReportResultDto {
+public abstract class ProcessReportResultDto extends SingleProcessReportDefinitionDto implements ReportResultDto {
 
   protected long processInstanceCount;
 

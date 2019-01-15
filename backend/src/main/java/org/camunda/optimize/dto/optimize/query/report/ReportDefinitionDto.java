@@ -1,22 +1,8 @@
 package org.camunda.optimize.dto.optimize.query.report;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
-
 import java.time.OffsetDateTime;
 
-import static org.camunda.optimize.dto.optimize.ReportConstants.REPORT_DEFINITION_COMBINED_FIELD;
-
-@JsonTypeInfo(
-  use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = REPORT_DEFINITION_COMBINED_FIELD
-)
-@JsonSubTypes({
-  @JsonSubTypes.Type(value = SingleReportDefinitionDto.class, name = "false"),
-  @JsonSubTypes.Type(value = CombinedReportDefinitionDto.class, name = "true"),
-})
-public abstract class ReportDefinitionDto<DATA extends ReportDataDto> {
+public class ReportDefinitionDto {
 
   protected String id;
   protected String name;
@@ -25,10 +11,13 @@ public abstract class ReportDefinitionDto<DATA extends ReportDataDto> {
   protected String owner;
   protected String lastModifier;
 
-  protected Boolean combined;
-  protected DATA data;
+  private final Boolean combined;
+  private final ReportType reportType;
 
-  protected ReportType reportType;
+  protected ReportDefinitionDto(Boolean combined, ReportType reportType) {
+    this.combined = combined;
+    this.reportType = reportType;
+  }
 
   public String getId() {
     return id;
@@ -80,14 +69,6 @@ public abstract class ReportDefinitionDto<DATA extends ReportDataDto> {
 
   public Boolean getCombined() {
     return combined;
-  }
-
-  public DATA getData() {
-    return data;
-  }
-
-  public void setData(DATA data) {
-    this.data = data;
   }
 
   public ReportType getReportType() {

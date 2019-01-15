@@ -4,6 +4,7 @@ import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.NotFoundException;
@@ -33,6 +34,9 @@ public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
     }
     if (ForbiddenException.class.equals(errorClass)) {
       return Response.Status.FORBIDDEN;
+    }
+    if (BadRequestException.class.equals(errorClass)) {
+      return Response.Status.BAD_REQUEST;
     }
 
     return Response.Status.INTERNAL_SERVER_ERROR;

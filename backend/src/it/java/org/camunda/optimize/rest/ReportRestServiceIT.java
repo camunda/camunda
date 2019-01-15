@@ -6,11 +6,14 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.service.exceptions.ReportEvaluationException;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
 import org.camunda.optimize.service.sharing.AbstractSharingIT;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -35,7 +38,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 @RunWith(JUnitParamsRunner.class)
 public class ReportRestServiceIT {
 
-  private static final Object[] processAndDecisionReportType() {
+  private static Object[] processAndDecisionReportType() {
     return new Object[]{ReportType.PROCESS, ReportType.DECISION};
   }
 
@@ -139,8 +142,8 @@ public class ReportRestServiceIT {
     return ReportType.PROCESS.equals(reportType) ? constructProcessReportWithFakePD() : constructDecisionReportWithFakeDD();
   }
 
-  private SingleReportDefinitionDto<ProcessReportDataDto> constructProcessReportWithFakePD() {
-    SingleReportDefinitionDto<ProcessReportDataDto> reportDefinitionDto = new SingleReportDefinitionDto<>();
+  private SingleProcessReportDefinitionDto constructProcessReportWithFakePD() {
+    SingleProcessReportDefinitionDto reportDefinitionDto = new SingleProcessReportDefinitionDto();
     ProcessReportDataDto data = new ProcessReportDataDto();
     data.setProcessDefinitionVersion("FAKE");
     data.setProcessDefinitionKey("FAKE");
@@ -148,8 +151,8 @@ public class ReportRestServiceIT {
     return reportDefinitionDto;
   }
 
-  private SingleReportDefinitionDto<DecisionReportDataDto> constructDecisionReportWithFakeDD() {
-    SingleReportDefinitionDto<DecisionReportDataDto> reportDefinitionDto = new SingleReportDefinitionDto<>();
+  private SingleDecisionReportDefinitionDto constructDecisionReportWithFakeDD() {
+    SingleDecisionReportDefinitionDto reportDefinitionDto = new SingleDecisionReportDefinitionDto();
     DecisionReportDataDto data = new DecisionReportDataDto();
     data.setDecisionDefinitionVersion("FAKE");
     data.setDecisionDefinitionKey("FAKE");
@@ -430,8 +433,14 @@ public class ReportRestServiceIT {
       .execute(ReportEvaluationException.class, 500);
 
     // then
-    assertThat(errorMessage.getReportDefinition(), is(notNullValue()));
-    assertThat(errorMessage.getReportDefinition().getData(), is(notNullValue()));
+    if(errorMessage.getReportDefinition() instanceof CombinedReportDefinitionDto) {
+      CombinedReportDefinitionDto combinedProcessReport =
+        (CombinedReportDefinitionDto) errorMessage.getReportDefinition();
+      assertThat(combinedProcessReport, is(notNullValue()));
+      assertThat(combinedProcessReport.getData(), is(notNullValue()));
+    } else {
+      throw new OptimizeIntegrationTestException("Evaluation exception should contain combined process report!");
+    }
   }
 
   @Test
@@ -481,7 +490,7 @@ public class ReportRestServiceIT {
 
   private String createAndStoreDefaultProcessReportDefinition(ProcessReportDataDto processReportDataDto) {
     String id = addEmptyProcessReportToOptimize();
-    SingleReportDefinitionDto<ProcessReportDataDto> report = new SingleReportDefinitionDto<>();
+    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.setData(processReportDataDto);
     report.setId(id);
     report.setLastModifier(RANDOM_STRING);
@@ -496,7 +505,7 @@ public class ReportRestServiceIT {
 
   private String createAndStoreDefaultDecisionReportDefinition(DecisionReportDataDto decisionReportDataDto) {
     String id = addEmptyDecisionReportToOptimize();
-    SingleReportDefinitionDto<DecisionReportDataDto> report = new SingleReportDefinitionDto<>();
+    SingleDecisionReportDefinitionDto report = new SingleDecisionReportDefinitionDto();
     report.setData(decisionReportDataDto);
     report.setId(id);
     report.setLastModifier(RANDOM_STRING);

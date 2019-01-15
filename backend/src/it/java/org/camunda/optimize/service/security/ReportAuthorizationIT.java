@@ -10,8 +10,8 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -108,7 +108,7 @@ public class ReportAuthorizationIT {
     deployStartAndImportDefinition(definitionResourceType);
 
     // when
-    SingleReportDefinitionDto<ProcessReportDataDto> definition = constructReportWithDefinition(
+    SingleProcessReportDefinitionDto definition = constructReportWithDefinition(
       getDefinitionKey(definitionResourceType)
     );
     Response response = embeddedOptimizeRule
@@ -265,7 +265,7 @@ public class ReportAuthorizationIT {
     String singleReportId = createNewReport();
     ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode =
       createCountFlowNodeFrequencyGroupByFlowNode(processDefinitionKey, "1");
-    SingleReportDefinitionDto<ProcessReportDataDto> definitionDto = new SingleReportDefinitionDto<>();
+    SingleProcessReportDefinitionDto definitionDto = new SingleProcessReportDefinitionDto();
     definitionDto.setData(countFlowNodeFrequencyGroupByFlowNode);
     updateReport(singleReportId, definitionDto);
     return singleReportId;
@@ -306,7 +306,7 @@ public class ReportAuthorizationIT {
     reportData.setProcessDefinitionVersion("123");
     reportData.setFilter(Collections.emptyList());
     reportData.setConfiguration("aRandomConfiguration");
-    SingleReportDefinitionDto<ProcessReportDataDto> report = new SingleReportDefinitionDto<>();
+    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.setData(reportData);
     report.setName("MyReport");
     return report;
@@ -332,8 +332,8 @@ public class ReportAuthorizationIT {
     assertThat(response.getStatus(), is(204));
   }
 
-  private SingleReportDefinitionDto<ProcessReportDataDto> constructReportWithDefinition(String processDefinitionKey) {
-    SingleReportDefinitionDto<ProcessReportDataDto> reportDefinitionDto = new SingleReportDefinitionDto<>();
+  private SingleProcessReportDefinitionDto constructReportWithDefinition(String processDefinitionKey) {
+    SingleProcessReportDefinitionDto reportDefinitionDto = new SingleProcessReportDefinitionDto();
     ProcessReportDataDto data = createProcessReportDataViewRawAsTable(processDefinitionKey, "1");
     reportDefinitionDto.setData(data);
     return reportDefinitionDto;

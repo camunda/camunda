@@ -2,9 +2,9 @@ package org.camunda.optimize.service.es.retrieval;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
@@ -85,7 +85,7 @@ public class SingleReportHandlingIT {
     String id = createNewReport();
 
     // when
-    List<SingleReportDefinitionDto> reports = getAllReports();
+    List<ReportDefinitionDto> reports = getAllReports();
 
     // then
     assertThat(reports, is(notNullValue()));
@@ -103,7 +103,7 @@ public class SingleReportHandlingIT {
     ids.add(id2);
 
     // when
-    List<SingleReportDefinitionDto> reports = getAllReports();
+    List<ReportDefinitionDto> reports = getAllReports();
 
     // then
     assertThat(reports, is(notNullValue()));
@@ -119,7 +119,7 @@ public class SingleReportHandlingIT {
   public void noReportAvailableReturnsEmptyList() {
 
     // when
-    List<SingleReportDefinitionDto> reports = getAllReports();
+    List<ReportDefinitionDto> reports = getAllReports();
 
     // then
     assertThat(reports, is(notNullValue()));
@@ -139,7 +139,7 @@ public class SingleReportHandlingIT {
     processPartDto.setStart("start123");
     processPartDto.setEnd("end123");
     reportData.getParameters().setProcessPart(processPartDto);
-    SingleReportDefinitionDto<ProcessReportDataDto> report = new SingleReportDefinitionDto<>();
+    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.setData(reportData);
     report.setId("shouldNotBeUpdated");
     report.setLastModifier("shouldNotBeUpdatedManually");
@@ -151,12 +151,12 @@ public class SingleReportHandlingIT {
 
     // when
     updateReport(id, report);
-    List<SingleReportDefinitionDto> reports = getAllReports();
+    List<ReportDefinitionDto> reports = getAllReports();
 
     // then
     assertThat(reports.size(), is(1));
-    SingleReportDefinitionDto<ProcessReportDataDto> newReport =
-      (SingleReportDefinitionDto<ProcessReportDataDto>) reports.get(0);
+    SingleProcessReportDefinitionDto newReport =
+      (SingleProcessReportDefinitionDto) reports.get(0);
     assertThat(newReport.getData().getProcessDefinitionKey(), is("procdef"));
     assertThat(newReport.getData().getProcessDefinitionVersion(), is("123"));
     assertThat(newReport.getData().getConfiguration(), is("aRandomConfiguration"));
@@ -173,7 +173,7 @@ public class SingleReportHandlingIT {
   public void updateReportWithoutPDInformation() {
     // given
     String id = createNewReport();
-    SingleReportDefinitionDto<ProcessReportDataDto> updatedReport = new SingleReportDefinitionDto<>();
+    SingleProcessReportDefinitionDto updatedReport = new SingleProcessReportDefinitionDto();
     updatedReport.setData(new ProcessReportDataDto());
 
     //when
@@ -222,7 +222,7 @@ public class SingleReportHandlingIT {
     reportData.getFilter().addAll(DateUtilHelper.createFixedStartDateFilter(null, null));
     reportData.getFilter().addAll(createVariableFilter());
     reportData.getFilter().addAll(createExecutedFlowNodeFilter());
-    SingleReportDefinitionDto<ProcessReportDataDto> report = new SingleReportDefinitionDto<>();
+    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.setData(reportData);
     report.setId("shouldNotBeUpdated");
     report.setLastModifier("shouldNotBeUpdatedManually");
@@ -234,12 +234,12 @@ public class SingleReportHandlingIT {
 
     // when
     updateReport(id, report);
-    List<SingleReportDefinitionDto> reports = getAllReports();
+    List<ReportDefinitionDto> reports = getAllReports();
 
     // then
     assertThat(reports.size(), is(1));
-    SingleReportDefinitionDto<ProcessReportDataDto> newReport =
-      (SingleReportDefinitionDto<ProcessReportDataDto>) reports.get(0);
+    SingleProcessReportDefinitionDto newReport =
+      (SingleProcessReportDefinitionDto) reports.get(0);
     assertThat(newReport.getData(), is(notNullValue()));
     reportData = newReport.getData();
     assertThat(reportData.getFilter().size(), is(3));
@@ -269,7 +269,7 @@ public class SingleReportHandlingIT {
 
     // when
     updateReport(id, report);
-    List<SingleReportDefinitionDto> reports = getAllReports();
+    List<ReportDefinitionDto> reports = getAllReports();
 
     // then
     assertThat(reports.size(), is(1));
@@ -288,7 +288,7 @@ public class SingleReportHandlingIT {
     String reportId = createNewReport();
     ProcessReportDataDto reportData =
       createProcessReportDataViewRawAsTable(FOO_PROCESS_DEFINITION_KEY, FOO_PROCESS_DEFINITION_VERSION);
-    SingleReportDefinitionDto<ProcessReportDataDto> report = new SingleReportDefinitionDto<>();
+    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.setData(reportData);
     report.setName("name");
     OffsetDateTime now = OffsetDateTime.now();
@@ -343,7 +343,7 @@ public class SingleReportHandlingIT {
     // when
     Map<String, Object> queryParam = new HashMap<>();
     queryParam.put("orderBy", "name");
-    List<SingleReportDefinitionDto> reports = getAllReportsWithQueryParam(queryParam);
+    List<ReportDefinitionDto> reports = getAllReportsWithQueryParam(queryParam);
 
     // then
     assertThat(reports.size(), is(3));
@@ -376,7 +376,7 @@ public class SingleReportHandlingIT {
     // when
     Map<String, Object> queryParam = new HashMap<>();
     queryParam.put("orderBy", "lastModified");
-    List<SingleReportDefinitionDto> reports = getAllReportsWithQueryParam(queryParam);
+    List<ReportDefinitionDto> reports = getAllReportsWithQueryParam(queryParam);
 
     // then
     assertThat(reports.size(), is(3));
@@ -409,7 +409,7 @@ public class SingleReportHandlingIT {
     Map<String, Object> queryParam = new HashMap<>();
     queryParam.put("orderBy", "lastModified");
     queryParam.put("sortOrder", "desc");
-    List<SingleReportDefinitionDto> reports = getAllReportsWithQueryParam(queryParam);
+    List<ReportDefinitionDto> reports = getAllReportsWithQueryParam(queryParam);
 
     // then
     assertThat(reports.size(), is(3));
@@ -433,7 +433,7 @@ public class SingleReportHandlingIT {
     Map<String, Object> queryParam = new HashMap<>();
     queryParam.put("resultOffset", 1);
     queryParam.put("orderBy", "lastModified");
-    List<SingleReportDefinitionDto> reports = getAllReportsWithQueryParam(queryParam);
+    List<ReportDefinitionDto> reports = getAllReportsWithQueryParam(queryParam);
 
     // then
     assertThat(reports.size(), is(2));
@@ -442,7 +442,7 @@ public class SingleReportHandlingIT {
   }
 
   private ReportDefinitionDto constructReportWithFakePD() {
-    SingleReportDefinitionDto<ProcessReportDataDto> reportDefinitionDto = new SingleReportDefinitionDto<>();
+    SingleProcessReportDefinitionDto reportDefinitionDto = new SingleProcessReportDefinitionDto();
     ProcessReportDataDto data = new ProcessReportDataDto();
     data.setProcessDefinitionVersion("FAKE");
     data.setProcessDefinitionKey("FAKE");
@@ -465,7 +465,7 @@ public class SingleReportHandlingIT {
     Map<String, Object> queryParam = new HashMap<>();
     queryParam.put("numResults", 2);
     queryParam.put("orderBy", "lastModified");
-    List<SingleReportDefinitionDto> reports = getAllReportsWithQueryParam(queryParam);
+    List<ReportDefinitionDto> reports = getAllReportsWithQueryParam(queryParam);
 
     // then
     assertThat(reports.size(), is(2));
@@ -490,7 +490,7 @@ public class SingleReportHandlingIT {
     queryParam.put("orderBy", "lastModified");
     queryParam.put("reverseOrder", true);
     queryParam.put("resultOffset", 1);
-    List<SingleReportDefinitionDto> reports = getAllReportsWithQueryParam(queryParam);
+    List<ReportDefinitionDto> reports = getAllReportsWithQueryParam(queryParam);
 
     // then
     assertThat(reports.size(), is(1));
@@ -528,15 +528,15 @@ public class SingleReportHandlingIT {
             .execute(RawDataProcessReportResultDto.class, 200);
   }
 
-  private List<SingleReportDefinitionDto> getAllReports() {
+  private List<ReportDefinitionDto> getAllReports() {
     return getAllReportsWithQueryParam(new HashMap<>());
   }
 
-  private List<SingleReportDefinitionDto> getAllReportsWithQueryParam(Map<String, Object> queryParams) {
+  private List<ReportDefinitionDto> getAllReportsWithQueryParam(Map<String, Object> queryParams) {
     return embeddedOptimizeRule
             .getRequestExecutor()
             .buildGetAllReportsRequest()
             .addQueryParams(queryParams)
-            .executeAndReturnList(SingleReportDefinitionDto.class, 200);
+            .executeAndReturnList(ReportDefinitionDto.class, 200);
   }
 }

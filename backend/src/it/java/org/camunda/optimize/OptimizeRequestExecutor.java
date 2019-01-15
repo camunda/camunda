@@ -9,18 +9,19 @@ import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
@@ -37,6 +38,7 @@ import static org.camunda.optimize.AbstractAlertIT.ALERT;
 import static org.camunda.optimize.rest.util.AuthenticationUtil.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.rest.util.AuthenticationUtil.createOptimizeAuthCookieValue;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class OptimizeRequestExecutor {
@@ -232,19 +234,16 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildCreateSingleProcessReportRequest() {
-    return buildCreateSingleReportRequest(ReportType.PROCESS);
+    this.path = "report";
+    this.requestType = POST;
+    this.body = getBody(new SingleProcessReportDefinitionDto());
+    return this;
   }
 
   public OptimizeRequestExecutor buildCreateSingleDecisionReportRequest() {
-    return buildCreateSingleReportRequest(ReportType.DECISION);
-  }
-
-  private OptimizeRequestExecutor buildCreateSingleReportRequest(final ReportType reportType) {
     this.path = "report";
     this.requestType = POST;
-    this.body = getBody(new SingleReportDefinitionDto<>(
-      reportType == ReportType.PROCESS ? new ProcessReportDataDto() : new DecisionReportDataDto()
-    ));
+    this.body = getBody(new SingleDecisionReportDefinitionDto());
     return this;
   }
 
@@ -292,7 +291,21 @@ public class OptimizeRequestExecutor {
 
   public <T extends SingleReportDataDto> OptimizeRequestExecutor buildEvaluateSingleUnsavedReportRequest(T entity) {
     this.path = "report/evaluate";
-    this.body = getBody(new SingleReportDefinitionDto<>(entity));
+    if (entity instanceof ProcessReportDataDto) {
+      ProcessReportDataDto dataDto = (ProcessReportDataDto) entity;
+      SingleProcessReportDefinitionDto definitionDto = new SingleProcessReportDefinitionDto();
+      definitionDto.setData(dataDto);
+      this.body = getBody(definitionDto);
+    } else if (entity instanceof DecisionReportDataDto) {
+      DecisionReportDataDto dataDto = (DecisionReportDataDto) entity;
+      SingleDecisionReportDefinitionDto definitionDto = new SingleDecisionReportDefinitionDto();
+      definitionDto.setData(dataDto);
+      this.body = getBody(definitionDto);
+    } else if (entity == null) {
+      this.body = getBody(null);
+    } else {
+      throw new OptimizeIntegrationTestException("Unknown report data type!");
+    }
     this.requestType = POST;
     return this;
   }

@@ -4,11 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionUpdateDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionUpdateDto;
 import org.camunda.optimize.service.es.schema.type.CombinedReportType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -64,26 +64,10 @@ public class ReportWriter {
     this.objectMapper = objectMapper;
   }
 
-  private static String getOptimizeIndexTypeForReportType(final ReportType type) {
-    switch (type) {
-      case PROCESS:
-        return SINGLE_PROCESS_REPORT_TYPE;
-      case DECISION:
-        return SINGLE_DECISION_REPORT_TYPE;
-      default:
-        throw new IllegalStateException("Unsupported reportType: " + type);
-    }
-  }
-
-  public IdDto createNewCombinedReportAndReturnId(final String userId) {
-    final CombinedReportDefinitionDto reportDefinitionDto = new CombinedReportDefinitionDto();
-    return createNewCombinedReportAndReturnId(userId, reportDefinitionDto);
-  }
-
-  private IdDto createNewCombinedReportAndReturnId(final String userId,
-                                                   final CombinedReportDefinitionDto reportDefinitionDto) {
+  public IdDto createNewCombinedReport(final String userId) {
     logger.debug("Writing new combined report to Elasticsearch");
     final String id = IdGenerator.getNextId();
+    final CombinedReportDefinitionDto reportDefinitionDto = new CombinedReportDefinitionDto();
     reportDefinitionDto.setId(id);
     final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     reportDefinitionDto.setCreated(now);
@@ -120,11 +104,11 @@ public class ReportWriter {
     }
   }
 
-  public IdDto createNewSingleReportAndReturnId(final String userId,
-                                                final SingleReportDefinitionDto reportDefinitionDto) {
+  public IdDto createNewSingleProcessReport(final String userId) {
     logger.debug("Writing new single report to Elasticsearch");
 
     final String id = IdGenerator.getNextId();
+    final SingleProcessReportDefinitionDto reportDefinitionDto = new SingleProcessReportDefinitionDto();
     reportDefinitionDto.setId(id);
     final OffsetDateTime now = OffsetDateTime.now();
     reportDefinitionDto.setCreated(now);
@@ -132,23 +116,10 @@ public class ReportWriter {
     reportDefinitionDto.setOwner(userId);
     reportDefinitionDto.setLastModifier(userId);
     reportDefinitionDto.setName(DEFAULT_REPORT_NAME);
-    switch (reportDefinitionDto.getReportType()) {
-      case PROCESS:
-        reportDefinitionDto.setData(new ProcessReportDataDto());
-        break;
-      case DECISION:
-        reportDefinitionDto.setData(new DecisionReportDataDto());
-        break;
-      default:
-        throw new IllegalStateException("Unsupported type: " + reportDefinitionDto.getReportType());
-    }
 
     try {
-      final String optimizeIndexTypeForReportType =
-        getOptimizeIndexTypeForReportType(reportDefinitionDto.getReportType());
-
       IndexRequest request = new IndexRequest(
-        getOptimizeIndexAliasForType(optimizeIndexTypeForReportType), optimizeIndexTypeForReportType, id
+        getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE), SINGLE_PROCESS_REPORT_TYPE, id
       )
         .source(objectMapper.writeValueAsString(reportDefinitionDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
@@ -156,35 +127,74 @@ public class ReportWriter {
       IndexResponse indexResponse = esClient.index(request, RequestOptions.DEFAULT);
 
       if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
-        String message = "Could not write report to Elasticsearch.";
+        String message = "Could not write single process report to Elasticsearch.";
         logger.error(message);
         throw new OptimizeRuntimeException(message);
       }
 
-      logger.debug("Single Report with id [{}] has successfully been created.", id);
+      logger.debug("Single process report with id [{}] has successfully been created.", id);
       IdDto idDto = new IdDto();
       idDto.setId(id);
       return idDto;
     } catch (IOException e) {
-      String errorMessage = "Was not able to insert single report.";
+      String errorMessage = "Was not able to insert single process report.";
       logger.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
   }
 
-  public void updateSingleReport(final ReportDefinitionUpdateDto updatedReport) {
-    if (updatedReport.getData() instanceof ProcessReportDataDto) {
-      updateReport(updatedReport, SINGLE_PROCESS_REPORT_TYPE);
-    } else if (updatedReport.getData() instanceof DecisionReportDataDto) {
-      updateReport(updatedReport, SINGLE_DECISION_REPORT_TYPE);
+  public IdDto createNewSingleDecisionReport(final String userId) {
+    logger.debug("Writing new single report to Elasticsearch");
+
+    final String id = IdGenerator.getNextId();
+    final SingleDecisionReportDefinitionDto reportDefinitionDto = new SingleDecisionReportDefinitionDto();
+    reportDefinitionDto.setId(id);
+    final OffsetDateTime now = OffsetDateTime.now();
+    reportDefinitionDto.setCreated(now);
+    reportDefinitionDto.setLastModified(now);
+    reportDefinitionDto.setOwner(userId);
+    reportDefinitionDto.setLastModifier(userId);
+    reportDefinitionDto.setName(DEFAULT_REPORT_NAME);
+
+    try {
+      IndexRequest request = new IndexRequest(
+        getOptimizeIndexAliasForType(SINGLE_DECISION_REPORT_TYPE), SINGLE_DECISION_REPORT_TYPE, id
+      )
+        .source(objectMapper.writeValueAsString(reportDefinitionDto), XContentType.JSON)
+        .setRefreshPolicy(IMMEDIATE);
+
+      IndexResponse indexResponse = esClient.index(request, RequestOptions.DEFAULT);
+
+      if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
+        String message = "Could not write single decision report to Elasticsearch.";
+        logger.error(message);
+        throw new OptimizeRuntimeException(message);
+      }
+
+      logger.debug("Single decision report with id [{}] has successfully been created.", id);
+      IdDto idDto = new IdDto();
+      idDto.setId(id);
+      return idDto;
+    } catch (IOException e) {
+      String errorMessage = "Was not able to insert single decision report.";
+      logger.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
     }
+  }
+
+  public void updateSingleProcessReport(final SingleProcessReportDefinitionUpdateDto reportUpdate) {
+    updateReport(reportUpdate, SINGLE_PROCESS_REPORT_TYPE);
+  }
+
+  public void updateSingleDecisionReport(final SingleDecisionReportDefinitionUpdateDto reportUpdate) {
+    updateReport(reportUpdate, SINGLE_DECISION_REPORT_TYPE);
   }
 
   public void updateCombinedReport(final ReportDefinitionUpdateDto updatedReport) {
     updateReport(updatedReport, COMBINED_REPORT_TYPE);
   }
 
-  public void updateReport(ReportDefinitionUpdateDto updatedReport, String elasticsearchType) {
+  private void updateReport(ReportDefinitionUpdateDto updatedReport, String elasticsearchType) {
     logger.debug("Updating report with id [{}] in Elasticsearch", updatedReport.getId());
     try {
       UpdateRequest request =

@@ -1,6 +1,7 @@
 package org.camunda.optimize.dto.optimize.query.report.combined;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 
 import java.util.Map;

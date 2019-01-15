@@ -89,6 +89,12 @@
 
     <dependency>
       <groupId>org.glassfish.jersey.ext</groupId>
+      <artifactId>jersey-bean-validation</artifactId>
+      <version>${jersey.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.glassfish.jersey.ext</groupId>
       <artifactId>jersey-entity-filtering</artifactId>
       <version>${jersey.version}</version>
     </dependency>

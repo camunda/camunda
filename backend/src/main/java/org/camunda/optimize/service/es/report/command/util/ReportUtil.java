@@ -3,6 +3,7 @@ package org.camunda.optimize.service.es.report.command.util;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
@@ -59,6 +60,14 @@ public class ReportUtil {
     to.setName(from.getName());
     to.setOwner(from.getOwner());
     to.setCreated(from.getCreated());
+    to.setLastModifier(from.getLastModifier());
+    to.setLastModified(from.getLastModified());
+  }
+
+  public static void copyDefinitionMetaDataToUpdate(ReportDefinitionDto from, ReportDefinitionUpdateDto to) {
+    to.setId(from.getId());
+    to.setName(from.getName());
+    to.setOwner(from.getOwner());
     to.setLastModifier(from.getLastModifier());
     to.setLastModified(from.getLastModified());
   }

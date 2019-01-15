@@ -1,11 +1,13 @@
-package org.camunda.optimize.service.util;
+package org.camunda.optimize.service.util.mapper;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -43,12 +45,12 @@ public class ObjectMapperFactory {
     return buildObjectMapper(engineDateTimeFormatter);
   }
 
-  public ObjectMapper buildObjectMapper(DateTimeFormatter deserializationDateTimeFormatter) {
+  private ObjectMapper buildObjectMapper(DateTimeFormatter deserializationDateTimeFormatter) {
     JavaTimeModule javaTimeModule = new JavaTimeModule();
     javaTimeModule.addSerializer(OffsetDateTime.class, new CustomSerializer(this.optimizeDateTimeFormatter));
     javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomDeserializer(deserializationDateTimeFormatter));
 
-    return Jackson2ObjectMapperBuilder
+    ObjectMapper mapper = Jackson2ObjectMapperBuilder
       .json()
       .modules(javaTimeModule)
       .featuresToDisable(
@@ -65,5 +67,11 @@ public class ObjectMapperFactory {
         MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS
       )
       .build();
+
+    SimpleModule module = new SimpleModule();
+    module.addDeserializer(ReportDefinitionDto.class, new CustomReportDefinitionDeserializer(null, mapper));
+    mapper.registerModule(module);
+
+    return mapper;
   }
 }

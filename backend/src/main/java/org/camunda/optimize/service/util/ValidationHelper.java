@@ -19,7 +19,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Vari
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutedFlowNodeFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
-import org.camunda.optimize.service.exceptions.ReportEvaluationException;
+import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
 
 import java.util.Arrays;
 import java.util.List;

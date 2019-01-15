@@ -31,10 +31,10 @@ public class QueryParamAdjustmentUtil {
   static {
     Map <String, Comparator> reportDescComparators = new HashMap<>();
     reportComparators.put(
-      LAST_MODIFIED, Comparator.comparing(ReportDefinitionDto<ReportDataDto>::getLastModified).reversed()
+      LAST_MODIFIED, Comparator.comparing(ReportDefinitionDto::getLastModified).reversed()
     );
     reportComparators.put(
-      NAME, Comparator.comparing(ReportDefinitionDto<ReportDataDto>::getName)
+      NAME, Comparator.comparing(ReportDefinitionDto::getName)
     );
 
     variableComparators.put(NAME, Comparator.comparing(VariableRetrievalDto::getName));
