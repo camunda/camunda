@@ -6,6 +6,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import java.time.OffsetDateTime;
 
 public class DateVariableFilterDataDto extends VariableFilterDataDto<DateVariableFilterSubDataDto> {
+  
   protected DateVariableFilterDataDto() {
     this(null, null);
   }
