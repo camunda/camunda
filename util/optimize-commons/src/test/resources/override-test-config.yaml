@@ -12,8 +12,6 @@ es:
     username: ''
     password: ''
     ssl:
-      key: ''
       certificate: ''
       certificate_authorities: ''
-      verification_mode: ''
       enabled: true

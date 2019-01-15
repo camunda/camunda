@@ -44,10 +44,8 @@ public interface ConfigurationServiceConstants {
   String ELASTIC_SEARCH_SECURITY_USERNAME = "$.es.security.username";
   String ELASTIC_SEARCH_SECURITY_PASSWORD = "$.es.security.password";
   String ELASTIC_SEARCH_SECURITY_SSL_ENABLED = "$.es.security.ssl.enabled";
-  String ELASTIC_SEARCH_SECURITY_SSL_KEY = "$.es.security.ssl.key";
   String ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE = "$.es.security.ssl.certificate";
   String ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES = "$.es.security.ssl.certificate_authorities";
-  String ELASTIC_SEARCH_SECURITY_SSL_VERIFICATION_MODE = "$.es.security.ssl.verification_mode";
 
   String IMPORT_INDEX_AUTO_STORAGE_INTERVAL = "$.import.importIndexStorageIntervalInSec";
 

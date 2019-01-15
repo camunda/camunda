@@ -73,6 +73,7 @@ public class SchemaInitializingElasticsearchRestClientFactory
     try {
       return esClient.cluster().health(new ClusterHealthRequest(), RequestOptions.DEFAULT).getNumberOfNodes();
     } catch (IOException e) {
+      logger.error("Failed getting number of cluster nodes.", e);
       return 0;
     }
   }

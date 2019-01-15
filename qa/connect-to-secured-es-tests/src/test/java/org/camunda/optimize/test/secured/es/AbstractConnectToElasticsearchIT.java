@@ -1,11 +1,10 @@
 package org.camunda.optimize.test.secured.es;
 
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.core.Response;
 import java.io.IOException;
@@ -17,16 +16,21 @@ import java.nio.file.Paths;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class ConnectToSecuredElasticsearchIT {
+public abstract class AbstractConnectToElasticsearchIT {
 
-  private final Logger logger = LoggerFactory.getLogger(getClass());
-
-  private EmbeddedOptimizeRule embeddedOptimizeRule =
-    new EmbeddedOptimizeRule("classpath:embeddedOptimizeContext.xml");
+  private EmbeddedOptimizeRule embeddedOptimizeRule = getEmbeddedOptimizeRule();
 
   @Rule
   public RuleChain chain = RuleChain
     .outerRule(embeddedOptimizeRule);
+
+  protected abstract EmbeddedOptimizeRule getEmbeddedOptimizeRule();
+
+  @Before
+  public void before() throws Exception {
+    getEmbeddedOptimizeRule().stopOptimize();
+    getEmbeddedOptimizeRule().startOptimize();
+  }
 
   @Test
   public void connectToSecuredElasticsearch() throws IOException, URISyntaxException {

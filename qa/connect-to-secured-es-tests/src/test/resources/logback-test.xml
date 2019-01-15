@@ -8,9 +8,9 @@
     </encoder>
   </appender>
 
-  <logger name="org.camunda.optimize" level="debug" />
+  <logger name="org.camunda.optimize" level="ERROR" />
 
-  <root level="info">
+  <root level="ERROR">
     <appender-ref ref="STDOUT" />
   </root>
 </configuration>

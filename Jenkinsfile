@@ -12,41 +12,16 @@ String storeNumOfArtifacts() {
 
 def static PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
 
-def static CAMBPM_VERSION_LATEST() { return '7.10.0' }
+CAMBPM_VERSION_LATEST = "7.10.0"
+
+String getCamBpmDockerImage(String camBpmVersion) {
+  return "registry.camunda.cloud/camunda-bpm-platform-ee:${camBpmVersion}"
+}
 
 /************************ START OF PIPELINE ***********************/
 
-String camBpmPodspec(String camBpmDockerImage, boolean secured = false) {
-    String footer = (secured) ? """
-      - name: ELASTIC_PASSWORD
-        value: optimize
-      - name: xpack.ssl.certificate_authorities
-        value: /usr/share/elasticsearch/config/certs/ca/ca.crt
-      - name: xpack.ssl.certificate
-        value: /usr/share/elasticsearch/config/certs/optimize/optimize.crt
-      - name: xpack.ssl.key
-        value: /usr/share/elasticsearch/config/certs/optimize/optimize.key
-      - name: xpack.security.transport.ssl.verification_mode
-        value: certificate
-      - name: xpack.security.transport.ssl.enabled
-        value: true
-      - name: xpack.security.http.ssl.enabled
-        value: true
-    volumeMounts:
-    - name: es-config
-      mountPath: /usr/share/elasticsearch/config/certs/ca/ca.crt
-      subPath: ca.crt
-    - name: es-config
-      mountPath: /usr/share/elasticsearch/config/certs/ca/ca.key
-      subPath: ca.key
-    - name: es-config
-      mountPath: /usr/share/elasticsearch/config/certs/optimize/optimize.crt
-      subPath: optimize.crt
-    - name: es-config
-      mountPath: /usr/share/elasticsearch/config/certs/optimize/optimize.key
-      subPath: optimize.key
-    """ : ""
-    return """
+String basePodSpec() {
+  return """
 apiVersion: v1
 kind: Pod
 metadata:
@@ -98,6 +73,12 @@ spec:
       requests:
         cpu: 3
         memory: 3Gi
+    """
+}
+
+String camBpmContainerSpec(String camBpmVersion = CAMBPM_VERSION_LATEST) {
+  String camBpmDockerImage = getCamBpmDockerImage(camBpmVersion)
+  return """
   - name: cambpm
     image: ${camBpmDockerImage}
     tty: true
@@ -126,7 +107,36 @@ spec:
     - name: cambpm-config
       mountPath: /camunda/webapps/manager/META-INF/context.xml
       subPath: context.xml
-  - name: elasticsearch
+    """
+}
+
+String elasticSearchContainerSpec(boolean ssl = false, boolean basicAuth = false, httpPort = "9200") {
+  String basicAuthConfig = (basicAuth) ? """
+      - name: ELASTIC_PASSWORD
+        value: optimize
+        """ : ""
+  String sslConfig = (ssl) ? """
+      - name: xpack.security.http.ssl.enabled
+        value: true
+      - name: xpack.security.http.ssl.certificate_authorities
+        value: /usr/share/elasticsearch/config/certs/ca/ca.crt
+      - name: xpack.security.http.ssl.certificate
+        value: /usr/share/elasticsearch/config/certs/optimize/optimize.crt
+      - name: xpack.security.http.ssl.key
+        value: /usr/share/elasticsearch/config/certs/optimize/optimize.key
+    volumeMounts:
+      - name: es-config
+        mountPath: /usr/share/elasticsearch/config/certs/ca/ca.crt
+        subPath: ca.crt
+      - name: es-config
+        mountPath: /usr/share/elasticsearch/config/certs/optimize/optimize.crt
+        subPath: optimize.crt
+      - name: es-config
+        mountPath: /usr/share/elasticsearch/config/certs/optimize/optimize.key
+        subPath: optimize.key
+    """ : ""
+  return """
+  - name: elasticsearch-${httpPort}
     image: docker.elastic.co/elasticsearch/elasticsearch:6.2.0
     securityContext:
       privileged: true
@@ -135,28 +145,34 @@ spec:
     resources:
       requests:
         cpu: 1
-        memory: 2Gi
-    ports:
-      - containerPort: 9200
-        name: http
-        protocol: TCP
-      - containerPort: 9300
-        name: transport
-        protocol: TCP
+        memory: 1Gi
     env:
       - name: ES_NODE_NAME
         valueFrom:
           fieldRef:
             fieldPath: metadata.name
       - name: ES_JAVA_OPTS
-        value: "-Xms1g -Xmx1g"
+        value: "-Xms512m -Xmx512m"
       - name: bootstrap.memory_lock
         value: true
       - name: discovery.type
         value: single-node
+      - name: http.port
+        value: ${httpPort}
       - name: cluster.name
         value: elasticsearch
-    """ + footer
+   """ + basicAuthConfig + sslConfig
+}
+
+String integrationTestPodSpec(String camBpmVersion = CAMBPM_VERSION_LATEST) {
+  return basePodSpec() + camBpmContainerSpec(camBpmVersion) + elasticSearchContainerSpec()
+}
+
+ String securityTestPodSpec() {
+  esConfigBasicAuthAndSsl = elasticSearchContainerSpec(true, true, 9200)
+  esConfigSsl = elasticSearchContainerSpec(true, false, 9201)
+  esConfigBasicAuth = elasticSearchContainerSpec(false, true, 9202)
+  return basePodSpec() + camBpmContainerSpec() + esConfigBasicAuthAndSsl + esConfigSsl + esConfigBasicAuth
 }
 
 pipeline {
@@ -244,7 +260,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-migration_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml camBpmPodspec("camunda/camunda-bpm-platform:${CAMBPM_VERSION_LATEST()}")
+              yaml integrationTestPodSpec()
             }
           }
           steps {
@@ -264,7 +280,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-data-upgrade_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml camBpmPodspec("camunda/camunda-bpm-platform:${CAMBPM_VERSION_LATEST()}")
+              yaml integrationTestPodSpec()
             }
           }
           steps {
@@ -279,7 +295,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-security_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml camBpmPodspec("camunda/camunda-bpm-platform:${CAMBPM_VERSION_LATEST()}", true)
+              yaml securityTestPodSpec()
             }
           }
           steps {
@@ -297,7 +313,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-latest_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml camBpmPodspec("camunda/camunda-bpm-platform:${CAMBPM_VERSION_LATEST()}")
+              yaml integrationTestPodSpec()
             }
           }
           steps {
@@ -316,7 +332,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-7.9_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml camBpmPodspec('registry.camunda.cloud/camunda-bpm-platform-ee:7.9.7')
+              yaml integrationTestPodSpec('7.9.7')
             }
           }
           steps {
@@ -335,7 +351,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-7.8_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml camBpmPodspec('registry.camunda.cloud/camunda-bpm-platform-ee:7.8.13')
+              yaml integrationTestPodSpec('7.8.13')
             }
           }
           steps {

@@ -6,6 +6,7 @@ import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.ssl.SSLContexts;
+import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.client.RestClient;
@@ -17,9 +18,12 @@ import org.slf4j.LoggerFactory;
 import javax.net.ssl.SSLContext;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.util.Optional;
 
 public class ElasticsearchHighLevelRestClientBuilder {
 
@@ -36,7 +40,7 @@ public class ElasticsearchHighLevelRestClientBuilder {
   }
 
   private static RestClientBuilder buildDefaultRestClient(ConfigurationService configurationService, String protocol) {
-    return RestClient.builder(
+    final RestClientBuilder restClientBuilder = RestClient.builder(
       buildElasticsearchConnectionNodes(configurationService, protocol))
       .setRequestConfigCallback(
         requestConfigBuilder -> requestConfigBuilder
@@ -44,6 +48,16 @@ public class ElasticsearchHighLevelRestClientBuilder {
           .setSocketTimeout(0)
       )
       .setMaxRetryTimeoutMillis(Integer.MAX_VALUE);
+
+    buildCredentialsProviderIfConfigured(configurationService)
+      .ifPresent(
+        credentialsProvider ->
+          restClientBuilder.setHttpClientConfigCallback(
+            httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider)
+          )
+      );
+
+    return restClientBuilder;
   }
 
   private static HttpHost[] buildElasticsearchConnectionNodes(ConfigurationService configurationService,
@@ -61,16 +75,32 @@ public class ElasticsearchHighLevelRestClientBuilder {
 
   private static RestHighLevelClient buildSecuredRestClient(ConfigurationService configurationService) {
     try {
-      RestClientBuilder builder = buildDefaultRestClient(configurationService, HTTPS);
+      final RestClientBuilder builder = buildDefaultRestClient(configurationService, HTTPS);
 
-      // enable encrypted communication
-      KeyStore truststore = loadKeystore(configurationService);
-      final SSLContext sslContext = SSLContexts.custom()
-        .loadTrustMaterial(truststore, null)
-        .build();
+      final SSLContext sslContext;
+      final KeyStore truststore = loadCustomTrustStore(configurationService);
+      if (truststore.size() > 0) {
+        sslContext = SSLContexts.custom().loadTrustMaterial(truststore, null).build();
+      } else {
+        // default if custom truststore is empty
+        sslContext = SSLContext.getDefault();
+      }
 
-      // enable basic auth
-      final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+      builder.setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setSSLContext(sslContext));
+
+      return new RestHighLevelClient(builder);
+    } catch (Exception e) {
+      String message = "Could not build secured Elasticsearch client.";
+      throw new OptimizeRuntimeException(message, e);
+    }
+  }
+
+  private static Optional<CredentialsProvider> buildCredentialsProviderIfConfigured(
+    final ConfigurationService configurationService) {
+    CredentialsProvider credentialsProvider = null;
+    if (configurationService.getElasticsearchSecurityUsername() != null
+      && configurationService.getElasticsearchSecurityPassword() != null) {
+      credentialsProvider = new BasicCredentialsProvider();
       credentialsProvider.setCredentials(
         AuthScope.ANY,
         new UsernamePasswordCredentials(
@@ -78,44 +108,66 @@ public class ElasticsearchHighLevelRestClientBuilder {
           configurationService.getElasticsearchSecurityPassword()
         )
       );
-
-      builder
-        .setHttpClientConfigCallback(
-          httpClientBuilder -> {
-            httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
-            httpClientBuilder.setSSLContext(sslContext);
-            return httpClientBuilder;
-          }
-        );
-
-      return new RestHighLevelClient(builder);
-    } catch (Exception e) {
-      String message = "Could not build ";
-      throw new OptimizeRuntimeException(message, e);
+    } else {
+      logger.debug("Elasticsearch username and password not provided, skipping connection credential setup.");
     }
+    return Optional.ofNullable(credentialsProvider);
   }
 
-  private static KeyStore loadKeystore(ConfigurationService configurationService) {
+  private static KeyStore loadCustomTrustStore(ConfigurationService configurationService) {
     try {
-      //Put everything after here in your function.
-      KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
-      trustStore.load(null);//Make an empty store
-      FileInputStream fileInputStream =
-        new FileInputStream(configurationService.getElasticsearchSecuritySSLCertificate());
-      try (BufferedInputStream bis =
-             new BufferedInputStream(fileInputStream)) {
-        CertificateFactory cf = CertificateFactory.getInstance("X.509");
+      final KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
+      trustStore.load(null);
 
-        if (bis.available() > 0) {
-          Certificate cert = cf.generateCertificate(bis);
-          logger.debug("Found certificate: {}", cert);
-          trustStore.setCertificateEntry("elasticsearch-" + bis.available(), cert);
+      // load custom es server certificate if configured
+      final String serverCertificate = configurationService.getElasticsearchSecuritySSLCertificate();
+      if (serverCertificate != null) {
+        try {
+          Certificate cert = loadCertificateFromPath(serverCertificate);
+          trustStore.setCertificateEntry("elasticsearch-host", cert);
+        } catch (Exception e) {
+          String message = "Could not load configured server certificate for the secured Elasticsearch Connection!";
+          throw new OptimizeConfigurationException(message, e);
         }
-        return trustStore;
       }
+
+      // load trusted CA certificates
+      int caCertificateCounter = 0;
+      for (String caCertificatePath : configurationService.getElasticsearchSecuritySSLCertificateAuthorities()) {
+        try {
+          Certificate cert = loadCertificateFromPath(caCertificatePath);
+          trustStore.setCertificateEntry("custom-elasticsearch-ca-" + caCertificateCounter, cert);
+          caCertificateCounter++;
+        } catch (Exception e) {
+          String message = "Could not load CA authority certificate for the secured Elasticsearch Connection!";
+          throw new OptimizeConfigurationException(message, e);
+        }
+      }
+
+      return trustStore;
     } catch (Exception e) {
-      String message = "Could not load certificate to connect against secured Elasticsearch!";
+      String message = "Could not create certificate trustStore for the secured Elasticsearch Connection!";
       throw new OptimizeRuntimeException(message, e);
     }
   }
+
+  private static Certificate loadCertificateFromPath(final String certificatePath)
+    throws IOException, CertificateException {
+    Certificate cert;
+    final FileInputStream fileInputStream = new FileInputStream(certificatePath);
+    try (BufferedInputStream bis = new BufferedInputStream(fileInputStream)) {
+      CertificateFactory cf = CertificateFactory.getInstance("X.509");
+
+      if (bis.available() > 0) {
+        cert = cf.generateCertificate(bis);
+        logger.debug("Found certificate: {}", cert);
+      } else {
+        throw new OptimizeConfigurationException(
+          "Could not load certificate from file, file is empty. File: " + certificatePath
+        );
+      }
+    }
+    return cert;
+  }
+
 }

@@ -79,10 +79,8 @@ public class ConfigurationService {
   private String elasticsearchSecurityUsername;
   private String elasticsearchSecurityPassword;
   private Boolean elasticsearchSecuritySSLEnabled;
-  private String elasticsearchSecuritySSLKey;
   private String elasticsearchSecuritySSLCertificate;
   private List<String> elasticsearchSecuritySSLCertificateAuthorities;
-  private String elasticsearchSecuritySSLVerificationMode;
 
   // elasticsearch cluster settings
   private String elasticSearchClusterName;
@@ -795,35 +793,30 @@ public class ConfigurationService {
     return elasticsearchSecuritySSLEnabled;
   }
 
-  public String getElasticsearchSecuritySSLKey() {
-    if (elasticsearchSecuritySSLKey == null && getElasticsearchSecuritySSLEnabled()) {
-      elasticsearchSecuritySSLKey =
-        configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_KEY);
-      elasticsearchSecuritySSLKey = resolvePathAsAbsoluteUrl(elasticsearchSecuritySSLKey).getPath();
-    }
-    return elasticsearchSecuritySSLKey;
-  }
-
   public String getElasticsearchSecuritySSLCertificate() {
     if (elasticsearchSecuritySSLCertificate == null && getElasticsearchSecuritySSLEnabled()) {
-      elasticsearchSecuritySSLCertificate =
-        configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE);
-      elasticsearchSecuritySSLCertificate =
-        resolvePathAsAbsoluteUrl(elasticsearchSecuritySSLCertificate).getPath();
+      elasticsearchSecuritySSLCertificate = configJsonContext
+        .read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE);
+      if (elasticsearchSecuritySSLCertificate != null) {
+        elasticsearchSecuritySSLCertificate = resolvePathAsAbsoluteUrl(elasticsearchSecuritySSLCertificate).getPath();
+      }
     }
     return elasticsearchSecuritySSLCertificate;
   }
 
   public List<String> getElasticsearchSecuritySSLCertificateAuthorities() {
     if (elasticsearchSecuritySSLCertificateAuthorities == null && getElasticsearchSecuritySSLEnabled()) {
-      TypeRef<List<String>> typeRef = new TypeRef<List<String>>() {
-      };
-      List<String> authoritiesAsList =
-        configJsonContext.read(ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES, typeRef);
-      elasticsearchSecuritySSLCertificateAuthorities =
-        authoritiesAsList.stream().map(a -> resolvePathAsAbsoluteUrl(a).getPath()).collect(Collectors.toList());
+      // @formatter:off
+      TypeRef<List<String>> typeRef = new TypeRef<List<String>>() {};
+      // @formatter:on
+      List<String> authoritiesAsList = configJsonContext.read(
+        ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES, typeRef
+      );
+      elasticsearchSecuritySSLCertificateAuthorities = authoritiesAsList.stream()
+        .map(a -> resolvePathAsAbsoluteUrl(a).getPath())
+        .collect(Collectors.toList());
     }
-    return elasticsearchSecuritySSLCertificateAuthorities;
+    return Optional.ofNullable(elasticsearchSecuritySSLCertificateAuthorities).orElse(new ArrayList<>());
   }
 
   public OptimizeCleanupConfiguration getCleanupServiceConfiguration() {
@@ -871,14 +864,6 @@ public class ConfigurationService {
 
   public static String getEngineRestPath() {
     return ENGINE_REST_PATH;
-  }
-
-  public String getElasticsearchSecuritySSLVerificationMode() {
-    if (elasticsearchSecuritySSLVerificationMode == null) {
-      elasticsearchSecuritySSLVerificationMode =
-        configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_VERIFICATION_MODE);
-    }
-    return elasticsearchSecuritySSLVerificationMode;
   }
 
   public void setSharingEnabled(Boolean sharingEnabled) {
@@ -1061,20 +1046,12 @@ public class ConfigurationService {
     this.elasticsearchSecuritySSLEnabled = elasticsearchSecuritySSLEnabled;
   }
 
-  public void setElasticsearchSecuritySSLKey(String elasticsearchSecuritySSLKey) {
-    this.elasticsearchSecuritySSLKey = elasticsearchSecuritySSLKey;
-  }
-
   public void setElasticsearchSecuritySSLCertificate(String elasticsearchSecuritySSLCertificate) {
     this.elasticsearchSecuritySSLCertificate = elasticsearchSecuritySSLCertificate;
   }
 
   public void setElasticsearchSecuritySSLCertificateAuthorities(List<String> elasticsearchSecuritySSLCertificateAuthorities) {
     this.elasticsearchSecuritySSLCertificateAuthorities = elasticsearchSecuritySSLCertificateAuthorities;
-  }
-
-  public void setElasticsearchSecuritySSLVerificationMode(String elasticsearchSecuritySSLVerificationMode) {
-    this.elasticsearchSecuritySSLVerificationMode = elasticsearchSecuritySSLVerificationMode;
   }
 
   public void setElasticsearchConnectionNodes(List<ElasticsearchConnectionNodeConfiguration> elasticsearchConnectionNodes) {

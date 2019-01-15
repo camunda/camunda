@@ -5,10 +5,14 @@ import java.util.Map;
 import java.util.Optional;
 
 public class OptimizeConfigurationException extends OptimizeRuntimeException {
-  private final Map<String, String> deprecatedKeysAndDocumentationLink;
+  private Map<String, String> deprecatedKeysAndDocumentationLink = Collections.emptyMap();
 
   public OptimizeConfigurationException(String message) {
-    this(message, null);
+    super(message);
+  }
+
+  public OptimizeConfigurationException(String message, Exception e) {
+    super(message, e);
   }
 
   public OptimizeConfigurationException(String message, Map<String, String> deprecatedKeysAndDocumentationLink) {
