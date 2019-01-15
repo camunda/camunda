@@ -25,7 +25,6 @@ import static org.camunda.optimize.service.util.ProcessVariableHelper.STRING_TYP
     @JsonSubTypes.Type(value = BooleanVariableFilterDataDto.class, name = BOOLEAN_TYPE),
     @JsonSubTypes.Type(value = DateVariableFilterDataDto.class, name = DATE_TYPE),
 })
-
 public abstract class VariableFilterDataDto<DATA> implements FilterDataDto {
   @JsonProperty
   protected VariableType type;
