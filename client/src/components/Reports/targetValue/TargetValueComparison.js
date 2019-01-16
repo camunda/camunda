@@ -16,7 +16,7 @@ export default class TargetValueComparison extends React.Component {
   }
 
   getConfig = () => {
-    return this.props.configuration.targetValue || {};
+    return this.props.configuration.heatmapTargetValue || {};
   };
 
   toggleMode = () => {
@@ -34,10 +34,8 @@ export default class TargetValueComparison extends React.Component {
   setActive = active => {
     this.props.onChange({
       configuration: {
-        ...this.props.configuration,
-        targetValue: {
-          ...this.getConfig(),
-          active
+        heatmapTargetValue: {
+          active: {$set: active}
         }
       }
     });
@@ -58,10 +56,11 @@ export default class TargetValueComparison extends React.Component {
   confirmModal = values => {
     this.props.onChange({
       configuration: {
-        ...this.props.configuration,
-        targetValue: {
-          active: Object.keys(values).length > 0,
-          values
+        heatmapTargetValue: {
+          $set: {
+            active: Object.keys(values).length > 0,
+            values
+          }
         }
       }
     });

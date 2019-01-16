@@ -6,6 +6,21 @@ import {Select, BPMNDiagram, LoadingIndicator, Labeled} from 'components';
 import {loadProcessDefinitions} from 'services';
 
 import './ProcessDefinitionSelection.scss';
+import {loadProcessDefinitionXml} from '../../../components/Reports/service';
+
+import {addChangeHandler} from 'services/reportUpdate';
+
+addChangeHandler((report, change) => {
+  if (change.processDefinitionKey || change.processDefinitionVersion) {
+    if (report.groupBy && report.groupBy.type === 'variable') {
+      change.groupBy = {$set: null};
+      change.visualization = {$set: null};
+    }
+    change.filter = {
+      $set: report.filter.filter(({type}) => type !== 'executedFlowNodes' && type !== 'variable')
+    };
+  }
+});
 
 export default class ProcessDefinitionSelection extends React.Component {
   constructor(props) {
@@ -26,11 +41,22 @@ export default class ProcessDefinitionSelection extends React.Component {
     });
   };
 
-  propagateChange = (key, version) => {
-    this.props.onChange({
-      processDefinitionKey: key,
-      processDefinitionVersion: version
-    });
+  propagateChange = async (key, version) => {
+    const configuration = {};
+
+    if (key && version) {
+      configuration.xml = {$set: await loadProcessDefinitionXml(key, version)};
+    }
+
+    this.props.onChange(
+      {
+        processDefinitionKey: {$set: key},
+        processDefinitionVersion: {$set: version},
+        parameters: {$set: {}},
+        configuration
+      },
+      true
+    );
   };
 
   changeKey = async evt => {

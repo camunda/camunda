@@ -22,8 +22,8 @@ export default class ProcessDefinitionSelection extends React.Component {
 
   propagateChange = (key, version) => {
     this.props.onChange({
-      decisionDefinitionKey: key,
-      decisionDefinitionVersion: version
+      decisionDefinitionKey: {$set: key},
+      decisionDefinitionVersion: {$set: version}
     });
   };
 

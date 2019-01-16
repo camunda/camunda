@@ -35,7 +35,7 @@ export default class DurationHeatmapModal extends React.Component {
   }
 
   getConfig = () => {
-    return this.props.configuration.targetValue || {};
+    return this.props.configuration.heatmapTargetValue || {};
   };
 
   confirmModal = () => {

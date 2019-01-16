@@ -17,19 +17,6 @@ export default class Filter extends React.Component {
     };
   }
 
-  componentDidUpdate({processDefinitionKey, processDefinitionVersion}) {
-    if (
-      this.props.processDefinitionKey !== processDefinitionKey ||
-      this.props.processDefinitionVersion !== processDefinitionVersion
-    ) {
-      this.props.onChange({
-        filter: this.props.data.filter(
-          ({type}) => type !== 'executedFlowNodes' && type !== 'variable'
-        )
-      });
-    }
-  }
-
   openNewFilterModal = type => evt => {
     this.setState({newFilterType: type});
   };
@@ -65,7 +52,7 @@ export default class Filter extends React.Component {
 
     filters.splice(index, 1, newFilter);
 
-    this.props.onChange({filter: filters});
+    this.props.onChange({filter: {$set: filters}}, true);
     this.closeModal();
   };
 
@@ -83,7 +70,7 @@ export default class Filter extends React.Component {
       'canceledInstancesOnly'
     ]);
 
-    this.props.onChange({filter: [...filters, newFilter]});
+    this.props.onChange({filter: {$set: [...filters, newFilter]}}, true);
     this.closeModal();
   };
 
@@ -95,9 +82,12 @@ export default class Filter extends React.Component {
   };
 
   deleteFilter = oldFilter => {
-    this.props.onChange({
-      filter: this.props.data.filter(filter => oldFilter !== filter)
-    });
+    this.props.onChange(
+      {
+        filter: {$set: this.props.data.filter(filter => oldFilter !== filter)}
+      },
+      true
+    );
   };
 
   definitionConfig = () => {

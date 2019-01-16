@@ -6,17 +6,21 @@ import {formatters, isDurationValue} from 'services';
 
 import './Number.scss';
 
-export default function Number({data, formatter, errorMessage, targetValue, precision}) {
+export default function Number({report, data, formatter, errorMessage, targetValue, precision}) {
   if (isDurationValue(data)) {
     return <ReportBlankSlate message={errorMessage} />;
   }
 
   if (targetValue && targetValue.active) {
-    let {baseline: min, target: max} = targetValue.values;
-    if (typeof min === 'object') {
-      min = formatters.convertDurationToSingleNumber(min);
-      max = formatters.convertDurationToSingleNumber(max);
+    let min, max;
+    if (report.view.operation === 'count') {
+      min = targetValue.countProgress.baseline;
+      max = targetValue.countProgress.target;
+    } else {
+      min = formatters.convertDurationToSingleNumber(targetValue.durationProgress.baseline);
+      max = formatters.convertDurationToSingleNumber(targetValue.durationProgress.target);
     }
+
     return (
       <ProgressBar min={min} max={max} value={data} formatter={formatter} precision={precision} />
     );

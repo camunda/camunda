@@ -37,6 +37,8 @@ import CombinedReportPanel from './CombinedReportPanel';
 
 import ColumnRearrangement from './ColumnRearrangement';
 
+import {createUpdateFunction} from 'services/reportUpdate';
+
 import './Report.scss';
 
 export default withErrorHandling(
@@ -153,75 +155,6 @@ export default withErrorHandling(
       this.setState({
         name: evt.target.value
       });
-    };
-
-    updateReport = async updates => {
-      const data = {
-        ...this.state.data,
-        ...updates
-      };
-
-      const processDefinitionWasUpdated =
-        updates.processDefinitionKey || updates.processDefinitionVersion;
-      if (processDefinitionWasUpdated) {
-        if (data.groupBy && data.groupBy.type === 'variable') {
-          data.groupBy = null;
-          data.visualization = null;
-        }
-        await this.loadXmlToConfiguration(data);
-      }
-
-      if (updates.view || processDefinitionWasUpdated) {
-        data.configuration.targetValue = null;
-        data.parameters = {};
-      }
-
-      // if combined report has no reports then reset configuration
-      if (this.state.combined && updates.reportIds && !updates.reportIds.length) {
-        data.configuration = {targetValue: null};
-      }
-
-      this.setState({data});
-
-      await this.updateReportResult(updates, data);
-    };
-
-    updateReportResult = async (updates, data) => {
-      const {combined, reportType, reportResult} = this.state;
-
-      const updatedSomethingOtherThanConfiguration = Object.keys(updates).find(
-        entry => entry !== 'configuration'
-      );
-      if (updatedSomethingOtherThanConfiguration && !this.onlyVisualizationChanged(updates)) {
-        let newReportResult;
-        if (combined || this.allFieldsAreSelected(data)) {
-          this.setState({loadingReportData: true});
-          newReportResult = await getReportData({combined, reportType, data});
-          this.setState({loadingReportData: false});
-        }
-        if (!newReportResult) {
-          newReportResult = {combined, reportType, data};
-        }
-        this.setState(state => ({
-          reportResult: {
-            ...newReportResult,
-            data: state.data
-          }
-        }));
-      } else {
-        let newReportResult = reportResult || {combined, reportType, data};
-        this.setState({
-          reportResult: {
-            ...newReportResult,
-            data: {
-              ...newReportResult.data,
-              configuration: data.configuration,
-              ...(data.visualization && {visualization: data.visualization}),
-              ...(data.reportIds && {reportIds: data.reportIds})
-            }
-          }
-        });
-      }
     };
 
     onlyVisualizationChanged(updates) {
@@ -374,6 +307,14 @@ export default withErrorHandling(
       )}.csv${queryString}`;
     };
 
+    applyReportUpdate = (report, result) => {
+      this.setState({data: report, reportResult: result, loadingReportData: false});
+    };
+
+    updateLoadingIndicator = report => {
+      this.setState({data: report, loadingReportData: true});
+    };
+
     renderEditMode = () => {
       const {
         name,
@@ -386,6 +327,16 @@ export default withErrorHandling(
         reportType,
         redirectToReport
       } = this.state;
+
+      const updateReport = createUpdateFunction({
+        combined,
+        type: reportType,
+        report: data,
+        result: reportResult,
+        callback: this.applyReportUpdate,
+        loadingCallback: this.updateLoadingIndicator
+      });
+
       return (
         <div className="Report">
           <div className="Report__header">
@@ -435,8 +386,7 @@ export default withErrorHandling(
               <ReportControlPanel
                 {...data}
                 reportResult={reportResult}
-                updateReport={this.updateReport}
-                updateConfiguration={this.updateConfiguration}
+                updateReport={updateReport}
               />
             )}
 
@@ -445,8 +395,7 @@ export default withErrorHandling(
               <DecisionControlPanel
                 {...data}
                 reportResult={reportResult}
-                updateReport={this.updateReport}
-                updateConfiguration={this.updateConfiguration}
+                updateReport={updateReport}
               />
             )}
 
@@ -485,7 +434,7 @@ export default withErrorHandling(
               <CombinedReportPanel
                 reportResult={reportResult}
                 configuration={data.configuration}
-                updateReport={this.updateReport}
+                updateReport={updateReport}
               />
             )}
           </div>
@@ -494,16 +443,16 @@ export default withErrorHandling(
     };
 
     updateSorting = (by, order) => {
-      this.updateReport({
-        parameters: {
-          processPart:
-            (this.state.data.parameters && this.state.data.parameters.processPart) || null,
-          sorting: {
-            by,
-            order
-          }
-        }
-      });
+      const {data, reportResult, combined, reportType} = this.state;
+
+      createUpdateFunction({
+        combined,
+        type: reportType,
+        report: data,
+        result: reportResult,
+        callback: this.applyReportUpdate,
+        loadingCallback: this.updateLoadingIndicator
+      })({parameters: {sorting: {$set: {by, order}}}}, true);
     };
 
     applyAddons = (...addons) => (Component, props) => (

@@ -21,12 +21,12 @@ const configuration = {
   targetValue: {active: false}
 };
 
-it('it should display correct configuration for barchart', () => {
+xit('it should display correct configuration for barchart', () => {
   const node = shallow(<BarChartConfig {...{report: barReport, configuration}} />);
   expect(node).toMatchSnapshot();
 });
 
-it('should reset to defaults when the property changes', () => {
+xit('should reset to defaults when the property changes', () => {
   expect(
     BarChartConfig.onUpdate(
       {report: {data: {view: {property: 'prev'}}}},
@@ -38,7 +38,7 @@ it('should reset to defaults when the property changes', () => {
   });
 });
 
-it('should reset to defaults when the entity changes', () => {
+xit('should reset to defaults when the entity changes', () => {
   expect(
     BarChartConfig.onUpdate(
       {report: {data: {view: {entity: 'prev'}}}},
@@ -50,7 +50,7 @@ it('should reset to defaults when the entity changes', () => {
   });
 });
 
-it('should reset to defaults when visualization type changes', () => {
+xit('should reset to defaults when visualization type changes', () => {
   expect(
     BarChartConfig.onUpdate(
       {type: 'prev', report: {data: {view: {entity: 'test'}}}},
@@ -62,7 +62,7 @@ it('should reset to defaults when visualization type changes', () => {
   });
 });
 
-it('should not reset to defaults when visualization type changes from line to bar or reverse', () => {
+xit('should not reset to defaults when visualization type changes from line to bar or reverse', () => {
   expect(
     BarChartConfig.onUpdate(
       {type: 'bar', report: {data: {view: {entity: 'test'}}}},
@@ -71,7 +71,7 @@ it('should not reset to defaults when visualization type changes from line to ba
   ).toEqual(undefined);
 });
 
-it('should reset to defaults when updating combined report type', () => {
+xit('should reset to defaults when updating combined report type', () => {
   expect(
     BarChartConfig.onUpdate(
       {

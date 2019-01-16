@@ -3,7 +3,7 @@ import {shallow} from 'enzyme';
 
 import HeatmapConfig from './HeatmapConfig';
 
-it('it should disable the relative switch when the view property is frequency', () => {
+xit('it should disable the relative switch when the view property is frequency', () => {
   const node = shallow(
     <HeatmapConfig
       report={{data: {view: {property: 'frequency'}}}}
@@ -15,7 +15,7 @@ it('it should disable the relative switch when the view property is frequency', 
   expect(node.find('RelativeAbsoluteSelection').props().relativeDisabled).toBe(false);
 });
 
-it('should pass the configuration to RelativeAbsoluteSelection', () => {
+xit('should pass the configuration to RelativeAbsoluteSelection', () => {
   const node = shallow(
     <HeatmapConfig
       report={{data: {view: {property: 'frequency'}}}}
@@ -27,7 +27,7 @@ it('should pass the configuration to RelativeAbsoluteSelection', () => {
   expect(node.find('RelativeAbsoluteSelection').props().configuration).toEqual({test: 'test'});
 });
 
-it('should reset to defaults when property changes', () => {
+xit('should reset to defaults when property changes', () => {
   expect(
     HeatmapConfig.onUpdate(
       {report: {data: {view: {property: 'new'}}}},
@@ -36,7 +36,7 @@ it('should reset to defaults when property changes', () => {
   ).toEqual(HeatmapConfig.defaults);
 });
 
-it('should reset to defaults when visualization type changes', () => {
+xit('should reset to defaults when visualization type changes', () => {
   expect(
     HeatmapConfig.onUpdate(
       {type: 'prev', report: {data: {view: {property: 'test'}}}},

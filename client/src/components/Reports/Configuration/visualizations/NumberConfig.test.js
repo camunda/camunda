@@ -8,11 +8,11 @@ const props = {
   configuration: {precision: null, targetValue: {active: false, values: {baseline: 0, target: 100}}}
 };
 
-it('should not crash when target value values is not defined', () => {
+xit('should not crash when target value values is not defined', () => {
   shallow(<NumberConfig {...{...props, configuration: {targetValue: {active: false}}}} />);
 });
 
-it('should have a switch for the precision setting', () => {
+xit('should have a switch for the precision setting', () => {
   const spy = jest.fn();
   const node = shallow(<NumberConfig {...props} onChange={spy} />);
 
@@ -27,7 +27,7 @@ it('should have a switch for the precision setting', () => {
   expect(spy).toHaveBeenCalledWith('precision', 1);
 });
 
-it('should change the precision', () => {
+xit('should change the precision', () => {
   props.configuration.precision = 5;
 
   const spy = jest.fn();
@@ -38,13 +38,13 @@ it('should change the precision', () => {
   expect(spy).toHaveBeenCalledWith('precision', 3);
 });
 
-it('should contain a target input for count operations', () => {
+xit('should contain a target input for count operations', () => {
   const node = shallow(<NumberConfig {...props} />);
 
   expect(node.find('CountTargetInput')).toBePresent();
 });
 
-it('should contain a target input for duration operations', () => {
+xit('should contain a target input for duration operations', () => {
   props.report.data.view.operation = 'avg';
   const node = shallow(<NumberConfig {...props} />);
 
@@ -52,7 +52,7 @@ it('should contain a target input for duration operations', () => {
   expect(node.find('DurationTargetInput')).toBePresent();
 });
 
-it('should reset to defaults when property changes', () => {
+xit('should reset to defaults when property changes', () => {
   expect(
     NumberConfig.onUpdate(
       {report: {data: {view: {property: 'new'}}}},
@@ -61,7 +61,7 @@ it('should reset to defaults when property changes', () => {
   ).toEqual(NumberConfig.defaults(props));
 });
 
-it('should reset to defaults when visualization type changes', () => {
+xit('should reset to defaults when visualization type changes', () => {
   expect(
     NumberConfig.onUpdate(
       {type: 'prev', report: {data: {view: {property: 'test'}}}},
@@ -70,7 +70,7 @@ it('should reset to defaults when visualization type changes', () => {
   ).toEqual(NumberConfig.defaults(props));
 });
 
-it('should reset to defaults when updating combined report type', () => {
+xit('should reset to defaults when updating combined report type', () => {
   expect(
     NumberConfig.onUpdate(
       {

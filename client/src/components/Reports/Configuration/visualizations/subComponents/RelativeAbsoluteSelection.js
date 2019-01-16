@@ -2,29 +2,25 @@ import React from 'react';
 
 import {Switch} from 'components';
 
-export default function RelativeAbsoluteSelection({relativeDisabled, configuration, onChange}) {
+export default function RelativeAbsoluteSelection({hideRelative, absolute, relative, onChange}) {
   return (
     <div className="RelativeAbsoluteSelection">
       <div className="entry">
         <Switch
-          checked={!configuration.hideAbsoluteValue}
-          onChange={({target: {checked}}) => onChange('hideAbsoluteValue', !checked)}
+          checked={absolute}
+          onChange={({target: {checked}}) => onChange('absolute', checked)}
         />
         Show Absolute Value
       </div>
-      <div className="entry">
-        <Switch
-          disabled={relativeDisabled}
-          title={
-            relativeDisabled
-              ? 'Relative values are only possible on reports with "count frequency" view'
-              : undefined
-          }
-          checked={!configuration.hideRelativeValue && !relativeDisabled}
-          onChange={({target: {checked}}) => onChange('hideRelativeValue', !checked)}
-        />
-        Show Relative Value
-      </div>
+      {!hideRelative && (
+        <div className="entry">
+          <Switch
+            checked={relative}
+            onChange={({target: {checked}}) => onChange('relative', checked)}
+          />
+          Show Relative Value
+        </div>
+      )}
     </div>
   );
 }

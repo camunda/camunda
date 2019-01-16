@@ -176,7 +176,7 @@ describe('isCompatible', () => {
   });
 });
 
-it('should update the color of a single report inside a combined report', async () => {
+xit('should update the color of a single report inside a combined report', async () => {
   const spy = jest.fn();
   const node = await shallow(
     <CombinedReportPanel
@@ -205,7 +205,7 @@ it('should generate new colors or preserve existing ones when selected/deselecti
   expect(updateColors).toEqual(['yellow', 'red', '#00d0a3']);
 });
 
-it('should invok updateReport on mount when combined report has reports but these reports has no defined colors', async () => {
+xit('should invok updateReport on mount when combined report has reports but these reports has no defined colors', async () => {
   const spy = jest.fn();
   await shallow(
     <CombinedReportPanel

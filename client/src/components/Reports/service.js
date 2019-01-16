@@ -116,33 +116,33 @@ export function isChecked(data, current) {
 
 export function update({type, data, view, groupBy, visualization, callback}) {
   const update = {
-    [type]: data
+    [type]: {$set: data}
   };
 
   const config = {
     view,
     groupBy,
     visualization,
-    ...update
+    [type]: data
   };
 
   const nextGroup = getNext(config.view);
   if (nextGroup) {
     config.groupBy = nextGroup;
-    update.groupBy = nextGroup;
+    update.groupBy = {$set: nextGroup};
   }
 
   const nextVis = getNext(config.view, config.groupBy);
   if (nextVis) {
     config.visualization = nextVis;
-    update.visualization = nextVis;
+    update.visualization = {$set: nextVis};
   }
   if (!isAllowed(config.view, config.groupBy)) {
-    update.groupBy = null;
-    update.visualization = null;
+    update.groupBy = {$set: null};
+    update.visualization = {$set: null};
   } else if (!isAllowed(config.view, config.groupBy, config.visualization)) {
-    update.visualization = null;
+    update.visualization = {$set: null};
   }
 
-  callback(update);
+  callback(update, type !== 'visualization');
 }

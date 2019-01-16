@@ -46,13 +46,14 @@ export default class CombinedReportPanel extends React.Component {
         referenceReport: selectedReports.length ? selectedReports[0].data : null
       },
       () => {
-        if (selectedReports.length && !this.props.configuration.color) {
+        if (
+          selectedReports.length &&
+          !this.props.configuration.color &&
+          selectedReports[0].data.visualization !== 'table'
+        ) {
           this.props.updateReport({
             configuration: {
-              ...this.props.configuration,
-              ...(selectedReports[0].data.visualization !== 'table'
-                ? {color: this.getUpdatedColors(selectedReports)}
-                : {})
+              color: {$set: this.getUpdatedColors(selectedReports)}
             }
           });
         }
@@ -79,16 +80,15 @@ export default class CombinedReportPanel extends React.Component {
         referenceReport: newSelected.length ? selectedReport.data : null
       },
       () => {
-        const updates = {
-          reportIds: this.state.selectedReports.map(report => report.id),
-          configuration: {
-            ...this.props.configuration,
-            ...(selectedReport.data.visualization !== 'table'
-              ? {color: this.getUpdatedColors(selectedReports)}
-              : {})
-          }
+        const change = {
+          reportIds: {$set: this.state.selectedReports.map(report => report.id)}
         };
-        this.props.updateReport(updates);
+
+        if (selectedReport.data.visualization !== 'table') {
+          change.configuration = {color: {$set: this.getUpdatedColors(selectedReports)}};
+        }
+
+        this.props.updateReport(change, true);
       }
     );
   };
@@ -114,15 +114,15 @@ export default class CombinedReportPanel extends React.Component {
         selectedReports
       },
       () => {
-        this.props.updateReport({
-          reportIds: this.state.selectedReports.map(report => report.id),
-          configuration: {
-            ...this.props.configuration,
-            ...(selectedReports[0].data.visualization !== 'table'
-              ? {color: this.getUpdatedColors(prevOrderReports)}
-              : {})
-          }
-        });
+        const change = {
+          reportIds: {$set: this.state.selectedReports.map(report => report.id)}
+        };
+
+        if (selectedReports[0].data.visualization !== 'table') {
+          change.configuration = {color: {$set: this.getUpdatedColors(prevOrderReports)}};
+        }
+
+        this.props.updateReport(change);
       }
     );
   };
@@ -154,8 +154,7 @@ export default class CombinedReportPanel extends React.Component {
     newColorConfiguration[idx] = color;
     updateReport({
       configuration: {
-        ...configuration,
-        color: newColorConfiguration
+        color: {$set: newColorConfiguration}
       }
     });
   };

@@ -6,32 +6,33 @@ import './ChartTargetInput.scss';
 import {numberParser} from 'services';
 
 export default function ChartTargetInput({configuration: {targetValue}, onChange, report}) {
-  const definedTarget = targetValue && targetValue.active && targetValue.values;
-  const invalidTarget =
-    definedTarget && !numberParser.isNonNegativeNumber(targetValue.values.target);
+  const referenceReport = report.combined ? Object.values(report.result)[0] : report;
+  const type = referenceReport.data.view.operation === 'count' ? 'countChart' : 'durationChart';
 
   function setValues(prop, value) {
     onChange('targetValue', {
       ...targetValue,
-      values: {
-        ...(targetValue ? targetValue.values : {}),
+      [type]: {
+        ...targetValue[type],
         [prop]: value
       }
     });
   }
 
+  const isInvalid = !numberParser.isNonNegativeNumber(targetValue[type].value);
+
   return (
     <div className="ChartTargetInput">
-      <ButtonGroup className="buttonGroup" disabled={!definedTarget}>
+      <ButtonGroup className="buttonGroup" disabled={!targetValue.active}>
         <Button
           onClick={() => setValues('isBelow', false)}
-          className={classnames({'is-active': !definedTarget || !targetValue.values.isBelow})}
+          className={classnames({'is-active': !targetValue[type].isBelow})}
         >
           Above
         </Button>
         <Button
           onClick={() => setValues('isBelow', true)}
-          className={classnames({'is-active': definedTarget && targetValue.values.isBelow})}
+          className={classnames({'is-active': targetValue[type].isBelow})}
         >
           Below
         </Button>
@@ -40,20 +41,20 @@ export default function ChartTargetInput({configuration: {targetValue}, onChange
         className="targetInput"
         type="number"
         placeholder="Goal value"
-        value={definedTarget && !invalidTarget ? targetValue.values.target : ''}
-        onChange={({target: {value}}) => setValues('target', value)}
-        isInvalid={invalidTarget}
-        disabled={!definedTarget}
+        value={targetValue[type].value}
+        onChange={({target: {value}}) => setValues('value', value)}
+        isInvalid={isInvalid}
+        disabled={!targetValue.active}
       />
-      {invalidTarget && (
+      {isInvalid && (
         <ErrorMessage className="InvalidTargetError">Must be a non-negative number</ErrorMessage>
       )}
-      {isDurationReport(report) && (
+      {type === 'durationChart' && (
         <Select
           className="dataUnitSelect"
-          value={targetValue && targetValue.values ? targetValue.values.dateFormat : ''}
-          onChange={({target: {value}}) => setValues('dateFormat', value)}
-          disabled={!definedTarget}
+          value={targetValue[type].unit}
+          onChange={({target: {value}}) => setValues('unit', value)}
+          disabled={!targetValue.active}
         >
           <Select.Option value="millis">Milliseconds</Select.Option>
           <Select.Option value="seconds">Seconds</Select.Option>
@@ -67,11 +68,4 @@ export default function ChartTargetInput({configuration: {targetValue}, onChange
       )}
     </div>
   );
-}
-
-function isDurationReport(report) {
-  if (!report.combined && report.data) return report.data.view.property === 'duration';
-  else if (report.result && Object.values(report.result).length)
-    return Object.values(report.result)[0].data.view.property === 'duration';
-  else return false;
 }

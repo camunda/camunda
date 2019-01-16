@@ -28,8 +28,8 @@ const Heatmap = props => {
       <HeatmapOverlay
         key="heatmap"
         data={heat}
-        hideAbsoluteValue={props.hideAbsoluteValue}
-        hideRelativeValue={props.hideRelativeValue}
+        alwaysShowAbsolute={props.alwaysShowAbsolute}
+        alwaysShowRelative={props.alwaysShowRelative}
         formatter={(_, id) => {
           const node = document.createElement('div');
 
@@ -63,26 +63,28 @@ const Heatmap = props => {
     heatmapComponent = (
       <HeatmapOverlay
         data={data}
-        hideAbsoluteValue={props.hideAbsoluteValue}
-        hideRelativeValue={props.hideRelativeValue}
+        alwaysShowAbsolute={props.alwaysShowAbsolute}
+        alwaysShowRelative={props.alwaysShowRelative}
         formatter={data => {
-          const allDisabled =
-            (props.hideAbsoluteValue && props.hideRelativeValue) ||
-            (typeof props.hideAbsoluteValue === 'undefined' &&
-              typeof props.hideRelativeValue === 'undefined');
+          const absolute = props.formatter(data);
+          const relative = getRelativeValue(data, props.processInstanceCount);
 
-          const allEnabled = props.hideAbsoluteValue === false && props.hideRelativeValue === false;
-          const relativeOnly = props.hideRelativeValue === false && props.hideAbsoluteValue;
-
-          let formattedValue = props.formatter(data);
-
-          if (props.property === 'frequency' && (relativeOnly || allDisabled || allEnabled)) {
-            const relativeValue = getRelativeValue(data, props.processInstanceCount);
-            if (relativeOnly) formattedValue = relativeValue;
-            else formattedValue += `\u00A0(${relativeValue})`;
+          if (props.property === 'duration') {
+            return absolute;
           }
 
-          return formattedValue;
+          if (props.alwaysShowAbsolute && props.alwaysShowRelative) {
+            return absolute + `\u00A0(${relative})`;
+          }
+
+          if (props.alwaysShowAbsolute) {
+            return absolute;
+          }
+          if (props.alwaysShowRelative) {
+            return relative;
+          }
+
+          return absolute + `\u00A0(${relative})`;
         }}
       />
     );

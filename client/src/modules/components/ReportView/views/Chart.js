@@ -60,7 +60,7 @@ export default themed(
 
       this.destroyChart();
 
-      const isTargetLine = targetValue && targetValue.active && type === 'line';
+      const isTargetLine = targetValue.active && type === 'line';
 
       this.chart = new ChartRenderer(this.container, {
         type: isTargetLine ? 'targetLine' : type,
@@ -88,7 +88,7 @@ export default themed(
       let labels = Object.keys(Object.assign({}, ...dataArr));
       dataArr = uniteResults(dataArr, labels);
 
-      if (type === 'line' && targetValue && targetValue.active) {
+      if (type === 'line' && targetValue.active) {
         return {
           labels,
           datasets: isCombined
@@ -106,7 +106,7 @@ export default themed(
         return {
           label: this.props.reportsNames && this.props.reportsNames[index],
           data: Object.values(report),
-          ...this.createDatasetOptions(type, report, targetValue, datasetsColors[index], isCombined)
+          ...this.createDatasetOptions(type, report, targetValue, datasetsColors[index])
         };
       });
 
@@ -133,6 +133,7 @@ export default themed(
     createSingleTargetLineDataset = (targetValue, data, datasetColor, reportName) => {
       const isCombined = this.props.combined;
       const allValues = Object.values(data);
+      const type = this.chartType();
 
       const datasets = [
         {
@@ -142,7 +143,7 @@ export default themed(
           backgroundColor: 'transparent',
           legendColor: datasetColor,
           borderWidth: 2,
-          renderArea: targetValue.values.isBelow ? 'bottom' : 'top'
+          renderArea: targetValue[type].isBelow ? 'bottom' : 'top'
         },
         {
           label: reportName,
@@ -151,7 +152,7 @@ export default themed(
           backgroundColor: 'transparent',
           legendColor: datasetColor,
           borderWidth: 2,
-          renderArea: targetValue.values.isBelow ? 'top' : 'bottom'
+          renderArea: targetValue[type].isBelow ? 'top' : 'bottom'
         }
       ];
 
@@ -179,7 +180,7 @@ export default themed(
     componentDidMount = this.createNewChart;
     componentDidUpdate = this.createNewChart;
 
-    createDatasetOptions = (type, data, targetValue, datasetColor, isCombined) => {
+    createDatasetOptions = (type, data, targetValue, datasetColor) => {
       switch (type) {
         case 'pie':
           return {
@@ -195,9 +196,7 @@ export default themed(
             legendColor: datasetColor
           };
         case 'bar':
-          const barColor = targetValue
-            ? this.determineBarColor(targetValue, data, datasetColor)
-            : datasetColor;
+          const barColor = this.determineBarColor(targetValue, data, datasetColor);
           return {
             borderColor: barColor,
             backgroundColor: barColor,
@@ -228,19 +227,23 @@ export default themed(
       return colors;
     };
 
-    determineBarColor = ({active, values}, data, datasetColor) => {
-      if (!active) return datasetColor;
+    chartType = () =>
+      this.props.report.view.operation === 'count' ? 'countChart' : 'durationChart';
 
-      const barValue = values.dateFormat
-        ? convertToMilliseconds(values.target, values.dateFormat)
-        : values.target;
+    determineBarColor = (targetValue, data, datasetColor) => {
+      if (!targetValue.active) return datasetColor;
+
+      const type = this.chartType();
+      const {value, unit, isBelow} = targetValue[type];
+
+      const barValue = type === 'durationChart' ? convertToMilliseconds(value, unit) : value;
 
       const targetColor = this.props.combined
         ? this.getStripedColor(datasetColor)
         : this.getColorFor('targetBar');
 
       return Object.values(data).map(height => {
-        if (values.isBelow) return height < barValue ? datasetColor : targetColor;
+        if (isBelow) return height < barValue ? datasetColor : targetColor;
         else return height >= barValue ? datasetColor : targetColor;
       });
     };
@@ -296,8 +299,7 @@ export default themed(
 
     createBarOptions = (data, targetValue) => {
       const isCombined = this.props.combined;
-      const targetLine =
-        targetValue && targetValue.active ? this.getFormattedTargetValue(targetValue) : undefined;
+      const targetLine = targetValue.active ? this.getFormattedTargetValue(targetValue) : undefined;
       return {
         ...(this.props.configuration.pointMarkers === false
           ? {elements: {point: {radius: 0}}}
@@ -351,9 +353,14 @@ export default themed(
       };
     };
 
-    getFormattedTargetValue = ({values}) => {
-      if (!values.dateFormat) return values.target;
-      return convertToMilliseconds(values.target, values.dateFormat);
+    getFormattedTargetValue = targetValue => {
+      const type = this.chartType();
+
+      if (type === 'countChart') {
+        return targetValue[type].value;
+      } else {
+        return convertToMilliseconds(targetValue[type].value, targetValue[type].unit);
+      }
     };
 
     createDurationFormattingOptions = (data, targetLine, isCombined) => {
@@ -422,22 +429,15 @@ export default themed(
             // if pie chart then manually append labels to tooltips
             ...(type === 'pie' ? {beforeLabel: ({index}, {labels}) => labels[index]} : {}),
             label: ({index, datasetIndex}, {datasets}) => {
-              const {configuration: {hideAbsoluteValue, hideRelativeValue}} = this.props;
-              let formatted = '';
-              if (!hideAbsoluteValue)
-                formatted = this.props.formatter(datasets[datasetIndex].data[index]);
+              const formatted = this.props.formatter(datasets[datasetIndex].data[index]);
               let processInstanceCountArr = this.props.processInstanceCount;
-              if (
-                this.props.property === 'frequency' &&
-                processInstanceCountArr &&
-                !hideRelativeValue
-              ) {
+              if (this.props.property === 'frequency' && processInstanceCountArr) {
                 if (!this.props.combined) processInstanceCountArr = [processInstanceCountArr];
 
                 let processInstanceCount = processInstanceCountArr[datasetIndex];
                 // in the case of the line with target value we have 2 datasets for each report
                 // we have to divide by 2 to get the right index
-                if (type === 'line' && targetValue && targetValue.active) {
+                if (type === 'line' && targetValue.active) {
                   processInstanceCount = processInstanceCountArr[~~(datasetIndex / 2)];
                 }
                 return `${formatted} (${getRelativeValue(

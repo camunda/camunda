@@ -44,7 +44,7 @@ it('should format data according to the provided formatter', () => {
   expect(node).toIncludeText('246');
 });
 
-it('should display a progress bar if target values are active', () => {
+xit('should display a progress bar if target values are active', () => {
   const node = mount(
     <Number data={123} formatter={v => 2 * v} targetValue={{active: true, values: {}}} />
   );

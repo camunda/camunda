@@ -8,10 +8,7 @@ import DurationTargetInput from './subComponents/DurationTargetInput';
 import './NumberConfig.scss';
 
 export default function NumberConfig({report, configuration, onChange}) {
-  const targetValue =
-    configuration.targetValue && configuration.targetValue.values
-      ? configuration.targetValue
-      : NumberConfig.defaults({report}).targetValue;
+  const targetValue = configuration.targetValue;
 
   const precisionSet = typeof configuration.precision === 'number';
   const countOperation = report.data.view.operation === 'count';
@@ -56,28 +53,28 @@ export default function NumberConfig({report, configuration, onChange}) {
         </legend>
         {countOperation ? (
           <CountTargetInput
-            baseline={targetValue.values.baseline}
-            target={targetValue.values.target}
+            baseline={targetValue.countProgress.baseline}
+            target={targetValue.countProgress.target}
             disabled={!goalSet}
             onChange={(type, value) =>
               onChange('targetValue', {
                 ...targetValue,
-                values: {...targetValue.values, [type]: value}
+                countProgress: {...targetValue.countProgress, [type]: value}
               })
             }
           />
         ) : (
           <DurationTargetInput
-            baseline={targetValue.values.baseline}
-            target={targetValue.values.target}
+            baseline={targetValue.durationProgress.baseline}
+            target={targetValue.durationProgress.target}
             disabled={!goalSet}
             onChange={(type, subType, value) =>
               onChange('targetValue', {
                 ...targetValue,
-                values: {
-                  ...targetValue.values,
+                durationProgress: {
+                  ...targetValue.durationProgress,
                   [type]: {
-                    ...targetValue.values[type],
+                    ...targetValue.durationProgress[type],
                     [subType]: value
                   }
                 }
@@ -89,40 +86,3 @@ export default function NumberConfig({report, configuration, onChange}) {
     </div>
   );
 }
-
-NumberConfig.defaults = ({report}) => {
-  const {operation} = report.data.view;
-
-  return {
-    precision: null,
-    targetValue: {
-      active: false,
-      values:
-        operation === 'count'
-          ? {
-              baseline: 0,
-              target: 100
-            }
-          : {
-              baseline: {
-                value: 0,
-                unit: 'hours'
-              },
-              target: {
-                value: 2,
-                unit: 'hours'
-              }
-            }
-    }
-  };
-};
-
-NumberConfig.onUpdate = (prevProps, props) => {
-  if (props.report.combined) return prevProps.type !== props.type && NumberConfig.defaults(props);
-  if (
-    props.report.data.view.property !== prevProps.report.data.view.property ||
-    prevProps.type !== props.type
-  ) {
-    return NumberConfig.defaults(props);
-  }
-};

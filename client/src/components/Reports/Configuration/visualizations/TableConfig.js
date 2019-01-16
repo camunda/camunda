@@ -1,7 +1,6 @@
 import React from 'react';
 import ColumnSelection from './subComponents/ColumnSelection';
 import RelativeAbsoluteSelection from './subComponents/RelativeAbsoluteSelection';
-import ShowInstanceCount from './subComponents/ShowInstanceCount';
 
 export default function TableConfig({report, configuration, onChange}) {
   let typeSpecificComponent = null;
@@ -15,42 +14,27 @@ export default function TableConfig({report, configuration, onChange}) {
       break;
     case 'count':
       typeSpecificComponent = (
-        <RelativeAbsoluteSelection configuration={configuration} onChange={onChange} />
+        <RelativeAbsoluteSelection
+          absolute={!configuration.hideAbsoluteValue}
+          relative={!configuration.hideRelativeValue}
+          onChange={(type, value) => {
+            if (type === 'absolute') {
+              onChange('hideAbsoluteValue', !value);
+            } else {
+              onChange('hideRelativeValue', !value);
+            }
+          }}
+        />
       );
       break;
     default:
       typeSpecificComponent = null;
   }
 
-  return (
-    <>
-      {!report.combined && <ShowInstanceCount configuration={configuration} onChange={onChange} />}
-      {typeSpecificComponent}
-    </>
-  );
+  return typeSpecificComponent;
 }
 
-TableConfig.defaults = {
-  excludedColumns: [],
-  hideRelativeValue: false,
-  hideAbsoluteValue: false,
-  showInstanceCount: false
-};
-
-TableConfig.onUpdate = (prevProps, props) => {
-  if (props.report.combined) return prevProps.type !== props.type && TableConfig.defaults;
-  // if the view operation or report visualization changes, we need to reset to defaults
-  if (
-    (prevProps.report.data.view &&
-      props.report.data.view &&
-      prevProps.report.data.view.operation !== props.report.data.view.operation) ||
-    prevProps.type !== props.type
-  ) {
-    return TableConfig.defaults;
-  }
-};
-
-// disable popover for duration tables since they currently have no configuration
+// // disable popover for duration tables since they currently have no configuration
 TableConfig.isDisabled = report => {
   return (
     report.combined &&

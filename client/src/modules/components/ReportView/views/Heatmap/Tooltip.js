@@ -15,15 +15,15 @@ export default class Tooltip extends React.Component {
   }
 
   alwaysShow = () => {
-    return this.props.hideAbsoluteValue === false || this.props.hideRelativeValue === false;
+    return this.props.alwaysShowAbsolute || this.props.alwaysShowRelative;
   };
 
   componentDidUpdate(prevProps) {
-    const {viewer, hideAbsoluteValue, hideRelativeValue, data} = this.props;
+    const {viewer, alwaysShowAbsolute, alwaysShowRelative, data} = this.props;
 
     if (
-      prevProps.hideRelativeValue !== hideRelativeValue ||
-      prevProps.hideAbsoluteValue !== hideAbsoluteValue ||
+      prevProps.alwaysShowRelative !== alwaysShowRelative ||
+      prevProps.alwaysShowAbsolute !== alwaysShowAbsolute ||
       data !== prevProps.data
     ) {
       this.removeOverlays(viewer);

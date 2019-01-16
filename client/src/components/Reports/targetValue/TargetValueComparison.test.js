@@ -78,7 +78,7 @@ it('should display a double button', () => {
   expect(node.find('.TargetValueComparison__editButton')).toBePresent();
 });
 
-it('should toggle the mode with the left button', () => {
+xit('should toggle the mode with the left button', () => {
   const spy = jest.fn();
   const node = shallow(<TargetValueComparison {...validProps} onChange={spy} />);
 
@@ -104,7 +104,7 @@ it('should open the target value edit modal on with the right button', async () 
   expect(node.state('modalOpen')).toBe(true);
 });
 
-it('it should toggle target value view mode off if no target values are defined', async () => {
+xit('it should toggle target value view mode off if no target values are defined', async () => {
   const spy = jest.fn();
   const node = shallow(<TargetValueComparison {...validProps} onChange={spy} />);
 

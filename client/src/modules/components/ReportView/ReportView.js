@@ -236,9 +236,9 @@ export default class ReportView extends React.Component {
           props: {
             data: result,
             xml: data.configuration.xml,
-            hideRelativeValue: data.configuration.hideRelativeValue,
-            hideAbsoluteValue: data.configuration.hideAbsoluteValue,
-            targetValue: data.configuration.targetValue,
+            alwaysShowRelative: data.configuration.alwaysShowRelative,
+            alwaysShowAbsolute: data.configuration.alwaysShowAbsolute,
+            targetValue: data.configuration.heatmapTargetValue,
             property: data.view.property,
             processInstanceCount
           }
@@ -283,6 +283,7 @@ export default class ReportView extends React.Component {
     }
 
     config.props.errorMessage = defaultErrorMessage;
+    config.props.report = data;
 
     config.props = {
       ...config.props,

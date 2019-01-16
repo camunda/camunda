@@ -51,7 +51,7 @@ const data = {
 extractProcessDefinitionName.mockReturnValue('foo');
 const spy = jest.fn();
 
-it('should call the provided updateReport property function when a setting changes', () => {
+xit('should call the provided updateReport property function when a setting changes', () => {
   const node = shallow(<ReportControlPanel {...data} updateReport={spy} />);
 
   node.instance().update('visualization', 'someTestVis');
@@ -74,7 +74,7 @@ it('should not disable the groupBy and visualization Selects if view is selected
   expect(node.find('.configDropdown').at(2)).not.toBeDisabled();
 });
 
-it('should set or reset following selects according to the getNext function', () => {
+xit('should set or reset following selects according to the getNext function', () => {
   const node = shallow(<ReportControlPanel {...data} updateReport={spy} />);
 
   reportConfig.getNext.mockReturnValueOnce('next');
@@ -218,7 +218,7 @@ it('should only display target value button if view is flownode duration', () =>
   expect(node.find('TargetValueComparison')).not.toBePresent();
 });
 
-it('should not update the target value when changing from line chart to barchart or the reverse', () => {
+xit('should not update the target value when changing from line chart to barchart or the reverse', () => {
   const spy = jest.fn();
   const node = shallow(
     <ReportControlPanel

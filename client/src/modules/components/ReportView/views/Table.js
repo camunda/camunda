@@ -43,9 +43,9 @@ export default withErrorHandling(
       } = this.props;
 
       const displayRelativeValue = property === 'frequency' && !hideRelativeValue;
-      const displayAbsoluteValue = !hideAbsoluteValue;
+      const displayAbsoluteValue = property === 'duration' || !hideAbsoluteValue;
 
-      if (hideAbsoluteValue) {
+      if (!displayAbsoluteValue) {
         labels.length = 1;
       }
 

@@ -10,13 +10,3 @@ export default function LineChartConfig({configuration, onChange, report}) {
     </>
   );
 }
-LineChartConfig.defaults = props => {
-  return {
-    pointMarkers: true,
-    ...BarChartConfig.defaults(props)
-  };
-};
-
-LineChartConfig.onUpdate = (prevProps, props) => {
-  return BarChartConfig.onUpdate(prevProps, props) && LineChartConfig.defaults(props);
-};

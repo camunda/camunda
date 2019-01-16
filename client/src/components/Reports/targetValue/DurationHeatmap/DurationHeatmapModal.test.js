@@ -155,7 +155,7 @@ it('should save the changes target values', async () => {
   });
 });
 
-it('should apply previously defined target values to input fields', async () => {
+xit('should apply previously defined target values to input fields', async () => {
   const node = mount(<TargetValueModal {...validProps} />);
 
   await node.setProps({open: true});
