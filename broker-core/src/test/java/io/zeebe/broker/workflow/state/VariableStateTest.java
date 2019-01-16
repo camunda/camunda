@@ -56,7 +56,7 @@ public class VariableStateTest {
   }
 
   @Test
-  public void shouldCollectLocalVariablesAsDocument() {
+  public void shouldCollectVariablesAsDocument() {
     // given
     final long scopeKey = 1;
     declareScope(scopeKey);
@@ -165,6 +165,22 @@ public class VariableStateTest {
 
     // then
     MsgPackUtil.assertEquality(variablesDocument, "{'a': 1, 'b': 2}");
+  }
+
+  @Test
+  public void shouldCollectLocalVariables() {
+    // given
+    final long parent = 1;
+    final long child = 2;
+    declareScope(parent);
+    declareScope(parent, child);
+
+    variablesState.setVariableLocal(parent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
+    variablesState.setVariableLocal(child, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("3"));
+
+    // then
+    MsgPackUtil.assertEquality(variablesState.getVariablesLocalAsDocument(parent), "{'a': 1}");
+    MsgPackUtil.assertEquality(variablesState.getVariablesLocalAsDocument(child), "{'b': 3}");
   }
 
   @Test

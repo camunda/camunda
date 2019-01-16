@@ -284,6 +284,33 @@ public class VariablesState {
     return resultView;
   }
 
+  private int variableCount = 0;
+
+  public DirectBuffer getVariablesLocalAsDocument(long scopeKey) {
+
+    writer.wrap(documentResultBuffer, 0);
+
+    writer.reserveMapHeader();
+
+    variableCount = 0;
+
+    visitVariablesLocal(
+        scopeKey,
+        name -> true,
+        (name, value) -> {
+          writer.writeString(name.getBuffer());
+          writer.writeRaw(value.getValue());
+
+          variableCount += 1;
+        },
+        () -> false);
+
+    writer.writeReservedMapHeader(0, variableCount);
+
+    resultView.wrap(documentResultBuffer, 0, writer.getOffset());
+    return resultView;
+  }
+
   /**
    * Like {@link #visitVariablesLocal(long, Predicate, BiConsumer, BooleanSupplier)} but walks up
    * the scope hierarchy.

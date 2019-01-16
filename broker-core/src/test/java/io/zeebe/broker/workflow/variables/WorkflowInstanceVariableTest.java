@@ -85,11 +85,8 @@ public class WorkflowInstanceVariableTest {
     testClient.completeJobOfType("test", "{'x':1}");
 
     // then
-    // TODO (saig0) #1860: currently the job payload is always set in the scope of the task
     final Record<VariableRecordValue> variableRecord =
-        RecordingExporter.variableRecords(VariableIntent.CREATED)
-            .withScopeInstanceKey(workflowInstanceKey)
-            .getFirst();
+        RecordingExporter.variableRecords(VariableIntent.CREATED).getFirst();
     Assertions.assertThat(variableRecord.getValue())
         .hasScopeInstanceKey(workflowInstanceKey)
         .hasName("x")
