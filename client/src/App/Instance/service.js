@@ -75,3 +75,7 @@ export function getFlowNodeStateOverlays(activitiesDetails = {}) {
 
   return flowNodeStateOverlays;
 }
+
+export function isRunningInstance(state) {
+  return state === 'ACTIVE' || state === 'INCIDENTS';
+}

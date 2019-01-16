@@ -1,21 +1,32 @@
 import React, {Component, Fragment} from 'react';
 import PropTypes from 'prop-types';
+import {isEqual} from 'lodash';
 
 import SplitPane from 'modules/components/SplitPane';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 import Diagram from 'modules/components/Diagram';
-import * as api from 'modules/api/instances';
-import {fetchWorkflowXML} from 'modules/api/diagram';
-import {PAGE_TITLE} from 'modules/constants';
-import {getWorkflowName} from 'modules/utils/instance';
-import {parseDiagramXML} from 'modules/utils/bpmn';
 
 import InstanceDetail from './InstanceDetail';
 import Header from '../Header';
 import DiagramPanel from './DiagramPanel';
 import InstanceHistory from './InstanceHistory';
-import {getFlowNodeStateOverlays, getFlowNodesDetails} from './service';
+
+import {fetchWorkflowXML} from 'modules/api/diagram';
+import {PAGE_TITLE} from 'modules/constants';
+import {getWorkflowName} from 'modules/utils/instance';
+import {parseDiagramXML} from 'modules/utils/bpmn';
+
+import {
+  getFlowNodeStateOverlays,
+  getFlowNodesDetails,
+  isRunningInstance
+} from './service';
+
+import * as api from 'modules/api/instances';
+
 import * as Styled from './styled';
+
+const POLLING_WINDOW = 5000;
 
 export default class Instance extends Component {
   static propTypes = {
@@ -26,15 +37,20 @@ export default class Instance extends Component {
     }).isRequired
   };
 
-  state = {
-    instance: null,
-    selection: {
-      activityInstanceId: null,
-      flowNodeId: null
-    },
-    diagramModel: {},
-    loaded: false
-  };
+  constructor(props) {
+    super(props);
+    this.state = {
+      instance: null,
+      selection: {
+        activityInstanceId: null,
+        flowNodeId: null
+      },
+      diagramModel: {},
+      loaded: false
+    };
+
+    this.pollingTimer = null;
+  }
 
   async componentDidMount() {
     const id = this.props.match.params.id;
@@ -48,11 +64,20 @@ export default class Instance extends Component {
     const diagramXml = await fetchWorkflowXML(instance.workflowId);
     const diagramModel = await parseDiagramXML(diagramXml);
 
-    this.setState({
-      loaded: true,
-      instance,
-      diagramModel
-    });
+    this.setState(
+      {
+        loaded: true,
+        instance,
+        diagramModel
+      },
+      () => {
+        this.initializePolling(isRunningInstance(this.state.instance.state));
+      }
+    );
+  }
+
+  componentWillUnmount() {
+    this.clearPolling();
   }
 
   /**
@@ -121,6 +146,34 @@ export default class Instance extends Component {
         flowNodeId
       }
     });
+  };
+
+  initializePolling = shouldStart => {
+    if (shouldStart) {
+      this.pollingTimer = window.setTimeout(
+        this.detectChangesPoll,
+        POLLING_WINDOW
+      );
+    }
+  };
+
+  clearPolling = () => {
+    this.pollingTimer && window.clearTimeout(this.pollingTimer);
+    this.pollingTimer = null;
+  };
+
+  detectChangesPoll = async () => {
+    const id = this.state.instance.id;
+    const instance = await api.fetchWorkflowInstance(id);
+    const hasInstanceChanged =
+      !isEqual(instance.activities, this.state.instance.activities) ||
+      !isEqual(instance.operations, this.state.instance.operations);
+
+    if (hasInstanceChanged) {
+      this.setState({instance});
+    }
+
+    this.initializePolling(isRunningInstance(this.state.instance.state));
   };
 
   render() {

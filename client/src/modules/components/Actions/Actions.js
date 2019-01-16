@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import {isEqual} from 'lodash';
 
 import {OPERATION_TYPE, OPERATION_STATE} from 'modules/constants';
 import {applyOperation} from 'modules/api/instances';
@@ -34,7 +35,7 @@ export default class Actions extends React.Component {
 
   componentDidUpdate = prevProps => {
     const {operations} = this.props.instance;
-    if (operations.length > prevProps.instance.operations.length) {
+    if (!isEqual(operations, prevProps.instance.operations)) {
       // change operation state & failed operation icons when new page is loaded;
       const {state, type} = getLatestOperation(operations);
 
