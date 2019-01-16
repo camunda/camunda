@@ -16,14 +16,18 @@ import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -33,9 +37,11 @@ import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.get
 
 @Component
 public class ElasticSearchSchemaManager {
-  private static final Logger logger = LoggerFactory.getLogger(ElasticSearchSchemaManager.class);
 
+  private static final Logger logger = LoggerFactory.getLogger(ElasticSearchSchemaManager.class);
   private static final String INDEX_READ_ONLY_SETTING = "index.blocks.read_only_allow_delete";
+  private static final ToXContent.Params XCONTENT_PARAMS_FLAT_SETTINGS =
+    new ToXContent.MapParams(Collections.singletonMap("flat_settings", "true"));
 
   private ConfigurationService configurationService;
   private List<TypeMappingCreator> mappings;
@@ -177,10 +183,15 @@ public class ElasticSearchSchemaManager {
     Settings settings = Settings.builder()
       .put("action.auto_create_index", false)
       .build();
-    ClusterUpdateSettingsRequest request = new ClusterUpdateSettingsRequest();
-    request.persistentSettings(settings);
-    try {
-      esClient.cluster().putSettings(request, RequestOptions.DEFAULT);
+    ClusterUpdateSettingsRequest clusterUpdateSettingsRequest = new ClusterUpdateSettingsRequest();
+    clusterUpdateSettingsRequest.persistentSettings(settings);
+    try (XContentBuilder builder = XContentFactory.jsonBuilder()) {
+      // low level request as we need body serialized with flat_settings option for AWS hosted elasticsearch support
+      Request request = new Request("PUT", "/_cluster/settings");
+      request.setJsonEntity(Strings.toString(
+        clusterUpdateSettingsRequest.toXContent(builder, XCONTENT_PARAMS_FLAT_SETTINGS)
+      ));
+      esClient.getLowLevelClient().performRequest(request);
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Could not update index settings!", e);
     }
