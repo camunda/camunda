@@ -65,8 +65,7 @@ es:
     nodes:
     # the address/hostname under which the Elasticsearch node is available.
     - host: 'localhost'
-      # A port number used by Elasticsearch to accept HTTP connections. Currently,
-      # this port is only used in the upgrade jar.
+      # A port number used by Elasticsearch to accept HTTP connections.
       httpPort: 9200
 
   # define a secured connection to be able to communicate
