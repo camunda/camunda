@@ -27,8 +27,8 @@ const connectedSockets = [];
 
 function buildBackend() {
   return new Promise((resolve, reject) => {
-    const buildBackendProcess = spawn('mvn', ['clean', 'install', '-DskipTests', '-Dskip.docker'], {
-      cwd: path.resolve(__dirname, '..', '..', 'backend'),
+    const buildBackendProcess = spawn('mvn', ['clean', 'install', '-DskipTests', '-Dskip.docker', '-Dskip.fe.build', '-pl backend', '-am'], {
+      cwd: path.resolve(__dirname, '..', '..'),
       shell: true
     });
 
