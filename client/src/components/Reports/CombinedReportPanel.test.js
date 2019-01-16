@@ -1,6 +1,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 import {loadEntity} from 'services';
+import {ColorPicker} from 'components';
 import CombinedReportPanel from './CombinedReportPanel';
 
 jest.mock('services', () => {
@@ -15,39 +16,40 @@ jest.mock('services', () => {
   };
 });
 
+const singleReportData = {
+  processDefinitionKey: 'leadQualification',
+  processDefinitionVersion: '1',
+  view: {
+    operation: 'median',
+    entity: 'flowNode',
+    property: 'duration'
+  },
+  groupBy: {
+    type: 'flowNodes',
+    value: null
+  },
+  visualization: 'bar'
+};
+
 const reportsList = [
   {
-    id: '10d5cd05-6f7c-4f74-970c-f31e065f646b',
+    id: 'singleReport',
     name: 'Single Report',
     combined: false,
-    data: {
-      processDefinitionKey: 'leadQualification',
-      processDefinitionVersion: '1',
-      view: {
-        operation: 'median',
-        entity: 'flowNode',
-        property: 'duration'
-      },
-      groupBy: {
-        type: 'flowNodes',
-        value: null
-      },
-      visualization: 'bar'
-    }
+    data: singleReportData
   },
   {
-    id: '9100f0c9-4f8d-491d-b2ae-9d67d682a52d',
+    id: 'combinedReport',
     name: 'Combined Report',
     combined: true,
     data: {
       configuration: {},
-      reportIds: ['10d5cd05-6f7c-4f74-970c-f31e065f646b']
+      reportIds: ['singleReport']
     },
     result: {
-      '10d5cd05-6f7c-4f74-970c-f31e065f646b': {
-        data: {
-          visualization: ''
-        }
+      singleReport: {
+        id: 'singleReport',
+        data: singleReportData
       }
     }
   },
@@ -97,7 +99,7 @@ it('should have input checkbox for only single report items in the list', async 
     <CombinedReportPanel updateReport={() => {}} configuration={{}} reportResult={reportsList[1]} />
   );
   await node.update();
-  expect(JSON.stringify(node.find('TypeaheadMultipleSelection').props())).toMatch('Single Report');
+  expect(JSON.stringify(node.find('TypeaheadMultipleSelection').props())).toMatch('singleReport');
   expect(JSON.stringify(node.find('TypeaheadMultipleSelection').props())).not.toMatch(
     'Combined Report'
   );
@@ -194,15 +196,31 @@ xit('should update the color of a single report inside a combined report', async
 });
 
 it('should generate new colors or preserve existing ones when selected/deselecting or reordering reports', async () => {
+  const reportData = {data: {visualization: ''}};
+  const result = {
+    report1: {
+      id: 'report1',
+      ...reportData
+    },
+    report2: {
+      id: 'report2',
+      ...reportData
+    },
+    report3: {
+      id: 'report3',
+      ...reportData
+    }
+  };
+
   const node = await shallow(
-    <CombinedReportPanel reportResult={reportsList[1]} configuration={{color: ['red', 'yellow']}} />
+    <CombinedReportPanel
+      reportResult={{...reportsList[1], result}}
+      configuration={{color: [ColorPicker.dark.red, ColorPicker.dark.blue]}}
+    />
   );
+  const updatedColors = node.instance().getUpdatedColors([{id: 'report2'}, {id: 'report1'}]);
 
-  node.setState({selectedReports: [{id: 'report1'}, {id: 'report2'}, {id: 'report3'}]});
-
-  const updateColors = node.instance().getUpdatedColors([{id: 'report2'}, {id: 'report1'}]);
-
-  expect(updateColors).toEqual(['yellow', 'red', '#00d0a3']);
+  expect(updatedColors).toEqual([ColorPicker.dark.blue, ColorPicker.dark.red, '#00d0a3']);
 });
 
 xit('should invok updateReport on mount when combined report has reports but these reports has no defined colors', async () => {

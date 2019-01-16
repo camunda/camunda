@@ -11,8 +11,6 @@ export default class CombinedReportPanel extends React.Component {
 
     this.state = {
       reports: [],
-      selectedReports: [],
-      referenceReport: null,
       searchQuery: ''
     };
   }
@@ -27,25 +25,12 @@ export default class CombinedReportPanel extends React.Component {
         report.data.view.operation !== 'rawData'
     );
 
-    const reportIds = this.props.reportResult.data.reportIds;
-
-    if (!reportIds || !reportIds.length) return this.setState({reports});
-
-    const selectedReports = reports.filter(report =>
-      this.props.reportResult.data.reportIds.includes(report.id)
-    );
-
-    const notSelectedReports = reports.filter(
-      report => !this.props.reportResult.data.reportIds.includes(report.id)
-    );
-
     this.setState(
       {
-        reports: notSelectedReports,
-        selectedReports,
-        referenceReport: selectedReports.length ? selectedReports[0].data : null
+        reports
       },
       () => {
+        const selectedReports = this.getReportResult();
         if (
           selectedReports.length &&
           !this.props.configuration.color &&
@@ -62,79 +47,67 @@ export default class CombinedReportPanel extends React.Component {
   }
 
   update = (selectedReport, checked) => {
-    const {selectedReports, reports} = this.state;
-    let newReports = [];
+    const selectedReports = this.getReportResult();
+
     let newSelected = [];
     if (checked) {
-      newReports = reports.filter(report => report.id !== selectedReport.id);
       newSelected = [...selectedReports, selectedReport];
     } else {
-      newReports = [...reports, selectedReport];
       newSelected = selectedReports.filter(report => report.id !== selectedReport.id);
     }
 
-    this.setState(
-      {
-        reports: newReports,
-        selectedReports: newSelected,
-        referenceReport: newSelected.length ? selectedReport.data : null
-      },
-      () => {
-        const change = {
-          reportIds: {$set: this.state.selectedReports.map(report => report.id)}
-        };
+    const change = {
+      reportIds: {$set: newSelected.map(report => report.id)}
+    };
 
-        if (selectedReport.data.visualization !== 'table') {
-          change.configuration = {color: {$set: this.getUpdatedColors(selectedReports)}};
-        }
+    if (selectedReport.data.visualization !== 'table') {
+      change.configuration = {color: {$set: this.getUpdatedColors(selectedReports, newSelected)}};
+    }
 
-        this.props.updateReport(change, true);
-      }
-    );
+    this.props.updateReport(change, true);
   };
 
-  getUpdatedColors = prevOrderReports => {
+  getReportResult = () =>
+    this.props.reportResult.result ? Object.values(this.props.reportResult.result) : [];
+
+  getUpdatedColors = (prevOrderReports, newSelected) => {
+    const selectedReports = newSelected || this.getReportResult();
     let colorsHash = {};
     if (this.props.configuration.color)
       colorsHash = prevOrderReports.reduce((colors, report, i) => {
         return {...colors, [report.id]: this.props.configuration.color[i]};
       }, {});
 
-    const colors = ColorPicker.getColors(this.state.selectedReports.length).filter(
+    const colors = ColorPicker.getColors(selectedReports.length).filter(
       color => !Object.values(colorsHash).includes(color)
     );
 
-    return this.state.selectedReports.map((report, i) => colorsHash[report.id] || colors.pop());
+    return selectedReports.map((report, i) => colorsHash[report.id] || colors.pop());
   };
 
   updateReportsOrder = selectedReports => {
-    const prevOrderReports = this.state.selectedReports;
-    this.setState(
-      {
-        selectedReports
-      },
-      () => {
-        const change = {
-          reportIds: {$set: this.state.selectedReports.map(report => report.id)}
-        };
+    const prevOrderReports = selectedReports;
+    const change = {
+      reportIds: {$set: selectedReports.map(report => report.id)}
+    };
 
-        if (selectedReports[0].data.visualization !== 'table') {
-          change.configuration = {color: {$set: this.getUpdatedColors(prevOrderReports)}};
-        }
+    if (selectedReports[0].data.visualization !== 'table') {
+      change.configuration = {color: {$set: this.getUpdatedColors(prevOrderReports)}};
+    }
 
-        this.props.updateReport(change);
-      }
-    );
+    this.props.updateReport(change);
   };
 
   isCompatible = report => {
-    const {referenceReport} = this.state;
+    const referenceReport = this.getReportResult()[0];
+    if (!referenceReport) return true;
+    const referenceReportData = referenceReport.data;
     return (
-      !referenceReport ||
-      (this.checkSameGroupBy(referenceReport, report.data) &&
-        report.data.visualization === referenceReport.visualization &&
-        report.data.view.property === referenceReport.view.property &&
-        report.data.view.entity === referenceReport.view.entity)
+      !referenceReportData ||
+      (this.checkSameGroupBy(referenceReportData, report.data) &&
+        report.data.visualization === referenceReportData.visualization &&
+        report.data.view.property === referenceReportData.view.property &&
+        report.data.view.entity === referenceReportData.view.entity)
     );
   };
 
@@ -163,16 +136,22 @@ export default class CombinedReportPanel extends React.Component {
     searchQuery ? name.toLowerCase().includes(searchQuery.toLowerCase()) : true;
 
   render() {
-    const {reports, selectedReports, searchQuery} = this.state;
+    const {reports, searchQuery} = this.state;
     const {reportResult, configuration, updateReport} = this.props;
+    const reportIds = reportResult.data.reportIds;
+    let selectedReports = [];
 
     const combinableReportList = reports.filter(
-      report => this.search(searchQuery, report.name) && this.isCompatible(report)
+      report =>
+        this.search(searchQuery, report.name) &&
+        this.isCompatible(report) &&
+        !(reportIds || []).includes(report.id)
     );
 
     let configurationType;
-    if (reportResult.data.reportIds && reportResult.data.reportIds.length) {
-      configurationType = Object.values(reportResult.result)[0].data.visualization;
+    if (reportIds && reportIds.length) {
+      selectedReports = this.getReportResult();
+      configurationType = selectedReports[0].data.visualization;
       // combined number reports have bar chart visualization
       if (configurationType === 'number') configurationType = 'bar';
     }
@@ -197,6 +176,7 @@ export default class CombinedReportPanel extends React.Component {
           customItemSettings={(val, idx) => {
             if (!configurationType || configurationType === 'table') return;
             const selectedColor = configuration.color && configuration.color[idx];
+            if (!selectedColor) return;
             return (
               <Popover
                 title={
