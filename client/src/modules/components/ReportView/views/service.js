@@ -58,8 +58,9 @@ export function getBodyRows(
   const rows = allKeys.map(key => {
     const row = [key];
     unitedResults.forEach((result, i) => {
-      if (displayAbsoluteValue) row.push(formatter(result[key] || ''));
-      if (displayRelativeValue) row.push(getRelativeValue(result[key], processInstanceCount[i]));
+      const value = result[key];
+      if (displayAbsoluteValue) row.push(formatter(typeof value !== 'undefined' ? value : ''));
+      if (displayRelativeValue) row.push(getRelativeValue(value, processInstanceCount[i]));
     });
     return row;
   });

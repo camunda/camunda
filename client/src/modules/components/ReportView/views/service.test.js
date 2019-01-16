@@ -16,8 +16,8 @@ it('should unify the keys of all result object by filling empty ones with null',
 
 it('should return correctly formatted body rows', () => {
   expect(
-    getBodyRows([{a: 1, b: 2}, {a: '', b: 1}], ['a', 'b'], v => v, false, [100, 100], true)
-  ).toEqual([['a', 1, ''], ['b', 2, 1]]);
+    getBodyRows([{a: 1, b: 2}, {a: '', b: 0}], ['a', 'b'], v => v, false, [100, 100], true)
+  ).toEqual([['a', 1, ''], ['b', 2, 0]]);
 });
 
 it('should hide absolute values when sepcified from body rows', () => {
