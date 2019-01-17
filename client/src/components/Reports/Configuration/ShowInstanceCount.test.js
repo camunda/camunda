@@ -22,5 +22,5 @@ it('should call the onChange method when toggling the switch', () => {
 
   node.find('Switch').simulate('change', {target: {checked: false}});
 
-  expect(spy).toHaveBeenCalledWith('showInstanceCount', false);
+  expect(spy).toHaveBeenCalledWith({showInstanceCount: {$set: false}});
 });

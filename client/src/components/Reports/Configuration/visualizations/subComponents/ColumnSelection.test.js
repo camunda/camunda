@@ -26,7 +26,7 @@ it('should call the onChange handler', () => {
     .at(1)
     .simulate('change', {target: {checked: false}});
 
-  expect(spy).toHaveBeenCalledWith('excludedColumns', ['a']);
+  expect(spy).toHaveBeenCalledWith({excludedColumns: {$set: ['a']}});
 });
 
 it('should change the switches labels to space case instead of camelCase for non variables', () => {
@@ -55,7 +55,7 @@ it('should call change with all column names when all columns switch is disabled
     .at(0)
     .simulate('change', {target: {checked: false}});
 
-  expect(spy).toHaveBeenCalledWith('excludedColumns', ['a', 'b']);
+  expect(spy).toHaveBeenCalledWith({excludedColumns: {$set: ['a', 'b']}});
 });
 
 it('should call change with an empty array when all columns switch is enabled', () => {
@@ -76,5 +76,5 @@ it('should call change with an empty array when all columns switch is enabled', 
     .at(0)
     .simulate('change', {target: {checked: true}});
 
-  expect(spy).toHaveBeenCalledWith('excludedColumns', []);
+  expect(spy).toHaveBeenCalledWith({excludedColumns: {$set: []}});
 });

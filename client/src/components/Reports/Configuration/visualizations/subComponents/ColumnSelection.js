@@ -27,9 +27,11 @@ export default function ColumnSelection({report, onChange}) {
         checked={!excludedColumns.includes(prefix + column)}
         onChange={({target: {checked}}) => {
           if (checked) {
-            onChange('excludedColumns', excludedColumns.filter(entry => prefix + column !== entry));
+            onChange({
+              excludedColumns: {$set: excludedColumns.filter(entry => prefix + column !== entry)}
+            });
           } else {
-            onChange('excludedColumns', excludedColumns.concat(prefix + column));
+            onChange({excludedColumns: {$set: excludedColumns.concat(prefix + column)}});
           }
         }}
       />
@@ -46,7 +48,7 @@ export default function ColumnSelection({report, onChange}) {
           className="ColumnSelection__Switch"
           checked={excludedColumns.length !== allColumns.length}
           onChange={({target: {checked}}) =>
-            onChange('excludedColumns', checked ? [] : [...allColumns])
+            onChange({excludedColumns: {$set: checked ? [] : [...allColumns]}})
           }
         />
         All Columns

@@ -7,7 +7,7 @@ export default function ShowInstanceCount({configuration, onChange}) {
     <>
       <Switch
         checked={!!configuration.showInstanceCount}
-        onChange={({target: {checked}}) => onChange('showInstanceCount', checked)}
+        onChange={({target: {checked}}) => onChange({showInstanceCount: {$set: checked}})}
       />
       Show Instance Count
     </>

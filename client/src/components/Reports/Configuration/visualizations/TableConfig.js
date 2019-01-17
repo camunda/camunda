@@ -19,9 +19,9 @@ export default function TableConfig({report, configuration, onChange}) {
           relative={!configuration.hideRelativeValue}
           onChange={(type, value) => {
             if (type === 'absolute') {
-              onChange('hideAbsoluteValue', !value);
+              onChange({hideAbsoluteValue: {$set: !value}});
             } else {
-              onChange('hideRelativeValue', !value);
+              onChange({hideRelativeValue: {$set: !value}});
             }
           }}
         />

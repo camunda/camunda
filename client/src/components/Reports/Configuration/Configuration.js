@@ -18,8 +18,8 @@ function convertToChangeset(config) {
 
 export default class Configuration extends React.Component {
   resetToDefaults = () => {
-    this.props.onChange({
-      configuration: convertToChangeset({
+    this.updateConfiguration(
+      convertToChangeset({
         precision: null,
         targetValue: {
           active: false,
@@ -58,15 +58,11 @@ export default class Configuration extends React.Component {
         yLabel: '',
         color: [ColorPicker.dark.steelBlue]
       })
-    });
+    );
   };
 
-  updateConfiguration = (prop, value) => {
-    this.props.onChange({
-      configuration: {
-        [prop]: {$set: value}
-      }
-    });
+  updateConfiguration = change => {
+    this.props.onChange({configuration: change});
   };
 
   //TODO: remove me as soon as the backend correctly initializes the configuration field on report creation

@@ -12,7 +12,7 @@ export default function BarChartConfig({configuration, onChange, report}) {
           <legend>Select visualization color</legend>
           <ColorPicker
             selectedColor={configuration.color[0]}
-            onChange={color => onChange('color', [color])}
+            onChange={color => onChange({color: {$set: [color]}})}
           />
         </fieldset>
       )}
@@ -22,25 +22,20 @@ export default function BarChartConfig({configuration, onChange, report}) {
           label="x-axis"
           type="text"
           value={configuration.xLabel}
-          onChange={({target: {value}}) => onChange('xLabel', value)}
+          onChange={({target: {value}}) => onChange({xLabel: {$set: value}})}
         />
         <LabeledInput
           label="y-axis"
           type="text"
           value={configuration.yLabel}
-          onChange={({target: {value}}) => onChange('yLabel', value)}
+          onChange={({target: {value}}) => onChange({yLabel: {$set: value}})}
         />
       </fieldset>
       <fieldset className="goalLine">
         <legend>
           <Switch
             checked={configuration.targetValue.active}
-            onChange={({target: {checked}}) =>
-              onChange('targetValue', {
-                ...configuration.targetValue,
-                active: checked
-              })
-            }
+            onChange={({target: {checked}}) => onChange({targetValue: {active: {$set: checked}}})}
           />
           Goal
         </legend>

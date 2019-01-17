@@ -12,9 +12,9 @@ export default function HeatmapConfig(props) {
         relative={configuration.alwaysShowRelative}
         onChange={(type, value) => {
           if (type === 'absolute') {
-            onChange('alwaysShowAbsolute', value);
+            onChange({alwaysShowAbsolute: {$set: value}});
           } else {
-            onChange('alwaysShowRelative', value);
+            onChange({alwaysShowRelative: {$set: value}});
           }
         }}
       />

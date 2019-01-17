@@ -9,5 +9,5 @@ it('should invok onchange when changing switch for the point markers on line cha
     .find('Switch')
     .first()
     .simulate('change', {target: {checked: true}});
-  expect(spy).toHaveBeenCalledWith('pointMarkers', false);
+  expect(spy).toHaveBeenCalledWith({pointMarkers: {$set: false}});
 });

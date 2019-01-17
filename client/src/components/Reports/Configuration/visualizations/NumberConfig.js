@@ -20,7 +20,7 @@ export default function NumberConfig({report, configuration, onChange}) {
         <legend>
           <Switch
             checked={precisionSet}
-            onChange={evt => onChange('precision', evt.target.checked ? 1 : null)}
+            onChange={evt => onChange({precision: {$set: evt.target.checked ? 1 : null}})}
           />
           Limit Precision
         </legend>
@@ -31,7 +31,7 @@ export default function NumberConfig({report, configuration, onChange}) {
           onKeyDown={evt => {
             const number = parseInt(evt.key, 10);
             if (number) {
-              onChange('precision', number);
+              onChange({precision: {$set: number}});
             }
           }}
           value={precisionSet ? configuration.precision : 1}
@@ -43,12 +43,7 @@ export default function NumberConfig({report, configuration, onChange}) {
         <legend>
           <Switch
             checked={goalSet}
-            onChange={evt =>
-              onChange('targetValue', {
-                ...targetValue,
-                active: evt.target.checked
-              })
-            }
+            onChange={evt => onChange({targetValue: {active: {$set: evt.target.checked}}})}
           />Goal
         </legend>
         {countOperation ? (
@@ -57,10 +52,7 @@ export default function NumberConfig({report, configuration, onChange}) {
             target={targetValue.countProgress.target}
             disabled={!goalSet}
             onChange={(type, value) =>
-              onChange('targetValue', {
-                ...targetValue,
-                countProgress: {...targetValue.countProgress, [type]: value}
-              })
+              onChange({targetValue: {countProgress: {[type]: {$set: value}}}})
             }
           />
         ) : (
@@ -69,16 +61,7 @@ export default function NumberConfig({report, configuration, onChange}) {
             target={targetValue.durationProgress.target}
             disabled={!goalSet}
             onChange={(type, subType, value) =>
-              onChange('targetValue', {
-                ...targetValue,
-                durationProgress: {
-                  ...targetValue.durationProgress,
-                  [type]: {
-                    ...targetValue.durationProgress[type],
-                    [subType]: value
-                  }
-                }
-              })
+              onChange({targetValue: {durationProgress: {[type]: {[subType]: {$set: value}}}}})
             }
           />
         )}

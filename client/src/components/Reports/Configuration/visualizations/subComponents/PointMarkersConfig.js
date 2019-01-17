@@ -6,7 +6,7 @@ export default function PointMarkersConfig({configuration, onChange}) {
     <div className="PointMarkersConfig">
       <Switch
         checked={!configuration.pointMarkers}
-        onChange={({target: {checked}}) => onChange('pointMarkers', !checked)}
+        onChange={({target: {checked}}) => onChange({pointMarkers: {$set: !checked}})}
       />
       Disable point markers
     </div>

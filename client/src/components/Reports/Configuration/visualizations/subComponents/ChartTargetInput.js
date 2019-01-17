@@ -10,11 +10,11 @@ export default function ChartTargetInput({configuration: {targetValue}, onChange
   const type = referenceReport.data.view.operation === 'count' ? 'countChart' : 'durationChart';
 
   function setValues(prop, value) {
-    onChange('targetValue', {
-      ...targetValue,
-      [type]: {
-        ...targetValue[type],
-        [prop]: value
+    onChange({
+      targetValue: {
+        [type]: {
+          [prop]: {$set: value}
+        }
       }
     });
   }
