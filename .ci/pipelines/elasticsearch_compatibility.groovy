@@ -54,11 +54,11 @@ spec:
         value: tcp://localhost:2375
     resources:
       limits:
-        cpu: 2
-        memory: 4Gi
+        cpu: 3
+        memory: 3Gi
       requests:
-        cpu: 2
-        memory: 4Gi
+        cpu: 3
+        memory: 3Gi
   - name: cambpm
     image: ${CAMBPM_DOCKER_IMAGE(cambpmVersion)}
     env:
@@ -98,13 +98,10 @@ spec:
     - name: bootstrap.memory_lock
       value: true
     securityContext:
+      privileged: true
       capabilities:
-        add:
-          - IPC_LOCK
+        add: ["IPC_LOCK"]
     resources:
-      limits:
-        cpu: 1
-        memory: 2Gi
       requests:
         cpu: 1
         memory: 2Gi
