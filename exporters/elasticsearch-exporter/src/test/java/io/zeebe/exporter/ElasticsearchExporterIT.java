@@ -22,9 +22,6 @@ import com.carrotsearch.hppc.cursors.ObjectCursor;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.RecordMetadata;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.test.exporter.ExporterIntegrationRule;
 import io.zeebe.util.ZbLogger;
 import java.io.IOException;
@@ -47,14 +44,15 @@ public class ElasticsearchExporterIT {
 
   @Rule public final ExporterIntegrationRule exporterBrokerRule = new ExporterIntegrationRule();
 
+  private ElasticsearchExporterConfiguration configuration;
   private ElasticsearchTestClient esClient;
 
   @Before
   public void setUp() {
-    esClient =
-        createElasticsearchClient(
-            exporterBrokerRule.getExporterConfiguration(
-                "elasticsearch", ElasticsearchExporterConfiguration.class));
+    configuration =
+        exporterBrokerRule.getExporterConfiguration(
+            "elasticsearch", ElasticsearchExporterConfiguration.class);
+    esClient = createElasticsearchClient(configuration);
   }
 
   @After
@@ -78,20 +76,10 @@ public class ElasticsearchExporterIT {
     // assert all records which where recorded during the tests where exported
     exporterBrokerRule.visitExportedRecords(
         r -> {
-          if (shouldBeExported(r)) {
+          if (configuration.shouldIndexRecord(r)) {
             assertRecordExported(r);
           }
         });
-  }
-
-  private boolean shouldBeExported(Record<?> r) {
-    final RecordMetadata metadata = r.getMetadata();
-    final ValueType valueType = metadata.getValueType();
-    return metadata.getRecordType() == RecordType.EVENT
-        && (valueType == ValueType.DEPLOYMENT
-            || valueType == ValueType.WORKFLOW_INSTANCE
-            || valueType == ValueType.JOB
-            || valueType == ValueType.INCIDENT);
   }
 
   private void assertIndexSettings() {

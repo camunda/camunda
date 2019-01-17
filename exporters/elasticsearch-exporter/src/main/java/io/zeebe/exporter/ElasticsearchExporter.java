@@ -19,9 +19,7 @@ import io.zeebe.exporter.ElasticsearchExporterConfiguration.IndexConfiguration;
 import io.zeebe.exporter.context.Context;
 import io.zeebe.exporter.context.Controller;
 import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.RecordMetadata;
 import io.zeebe.exporter.spi.Exporter;
-import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import java.time.Duration;
 import org.slf4j.Logger;
@@ -74,7 +72,7 @@ public class ElasticsearchExporter implements Exporter {
 
   @Override
   public void export(Record record) {
-    if (shouldIndexRecord(record)) {
+    if (configuration.shouldIndexRecord(record)) {
       client.index(record);
     }
 
@@ -129,6 +127,9 @@ public class ElasticsearchExporter implements Exporter {
       if (index.raft) {
         createValueIndexTemplate(ValueType.RAFT);
       }
+      if (index.variable) {
+        createValueIndexTemplate(ValueType.VARIABLE);
+      }
       if (index.workflowInstance) {
         createValueIndexTemplate(ValueType.WORKFLOW_INSTANCE);
       }
@@ -149,50 +150,6 @@ public class ElasticsearchExporter implements Exporter {
   private void createValueIndexTemplate(final ValueType valueType) {
     if (!client.putIndexTemplate(valueType)) {
       log.warn("Put index template for value type {} was not acknowledged", valueType);
-    }
-  }
-
-  private boolean shouldIndexRecord(Record<?> record) {
-    final RecordMetadata metadata = record.getMetadata();
-    return shouldIndexRecordType(metadata.getRecordType())
-        && shouldIndexValueType(metadata.getValueType());
-  }
-
-  private boolean shouldIndexValueType(ValueType valueType) {
-    switch (valueType) {
-      case DEPLOYMENT:
-        return configuration.index.deployment;
-      case INCIDENT:
-        return configuration.index.incident;
-      case JOB:
-        return configuration.index.job;
-      case JOB_BATCH:
-        return configuration.index.jobBatch;
-      case MESSAGE:
-        return configuration.index.message;
-      case MESSAGE_SUBSCRIPTION:
-        return configuration.index.messageSubscription;
-      case RAFT:
-        return configuration.index.raft;
-      case WORKFLOW_INSTANCE:
-        return configuration.index.workflowInstance;
-      case WORKFLOW_INSTANCE_SUBSCRIPTION:
-        return configuration.index.workflowInstanceSubscription;
-      default:
-        return false;
-    }
-  }
-
-  private boolean shouldIndexRecordType(RecordType recordType) {
-    switch (recordType) {
-      case EVENT:
-        return configuration.index.event;
-      case COMMAND:
-        return configuration.index.command;
-      case COMMAND_REJECTION:
-        return configuration.index.rejection;
-      default:
-        return false;
     }
   }
 }
