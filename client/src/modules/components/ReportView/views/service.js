@@ -66,9 +66,3 @@ export function getBodyRows(
   });
   return rows;
 }
-
-export function calculateLinePosition(chart) {
-  const yAxis = chart.scales[chart.options.scales.yAxes[0].id];
-
-  return (1 - chart.options.lineAt / yAxis.max) * yAxis.height + yAxis.top;
-}

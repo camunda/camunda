@@ -1,4 +1,4 @@
-import {uniteResults, getFormattedLabels, getBodyRows, calculateLinePosition} from './service';
+import {uniteResults, getFormattedLabels, getBodyRows} from './service';
 
 jest.mock('request', () => ({
   get: jest.fn()
@@ -36,24 +36,4 @@ it('should hide absolute values when specified from labels', () => {
   expect(
     getFormattedLabels([['key', 'value'], ['key', 'value']], ['Report A', 'Report B'], false, false)
   ).toEqual([{columns: [], label: 'Report A'}, {columns: [], label: 'Report B'}]);
-});
-
-it('should calculate the correct position for the target value line', () => {
-  expect(
-    calculateLinePosition({
-      scales: {
-        test: {
-          max: 100,
-          height: 100,
-          top: 0
-        }
-      },
-      options: {
-        scales: {
-          yAxes: [{id: 'test'}]
-        },
-        lineAt: 20
-      }
-    })
-  ).toBe(80); // inverted y axis: height - lineAt = 100 - 20 = 80
 });
