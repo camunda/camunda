@@ -84,7 +84,11 @@ export default class Configuration extends React.Component {
 
     return (
       <li className="Configuration">
-        <Popover title={<Icon type="settings" />} disabled={!type || disabledComponent}>
+        <Popover
+          tooltip="Configuration Options"
+          title={<Icon type="settings" />}
+          disabled={!type || disabledComponent}
+        >
           <div className="content">
             {!report.combined && (
               <ShowInstanceCount
