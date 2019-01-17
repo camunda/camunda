@@ -41,6 +41,34 @@ const INSTANCE = createInstance({
   incidents: [INCIDENT],
   activities: activities
 });
+const COMPLETED_INSTANCE = createInstance({
+  id: '4294980768',
+  state: INSTANCE_STATE.COMPLETED,
+  activities: [
+    ...activities,
+    {
+      id: '88',
+      state: 'COMPLETED',
+      activityId: 'EndEvent_042s0oc',
+      startDate: '2019-01-15T12:48:49.747+0000',
+      endDate: '2019-01-15T12:48:49.747+0000'
+    }
+  ]
+});
+const CANCELED_INSTANCE = createInstance({
+  id: '4294980768',
+  state: INSTANCE_STATE.CANCELED,
+  activities: [
+    ...activities,
+    {
+      id: '88',
+      state: 'CANCELED',
+      activityId: 'EndEvent_042s0oc',
+      startDate: '2019-01-15T12:48:49.747+0000',
+      endDate: '2019-01-15T12:48:49.747+0000'
+    }
+  ]
+});
 
 // mock modules
 
@@ -252,6 +280,105 @@ describe('Instance', () => {
       mockActivities.forEach(({activityId}) => {
         expect(selectableFlowNodes.includes(activityId)).toBe(true);
       });
+    });
+  });
+
+  describe.only('check for updates poll', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+    afterEach(() => {
+      jest.clearAllTimers();
+    });
+
+    it('should set, for running instances, a 5s timeout after initial render', async () => {
+      // given
+      const node = shallowRenderComponent();
+      await flushPromises();
+      node.update();
+
+      expect(setTimeout).toHaveBeenCalledTimes(1);
+      expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 5000);
+    });
+
+    it('should not set, for completed instances, a 5s timeout after initial render', async () => {
+      // given
+      instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
+        COMPLETED_INSTANCE
+      );
+      const node = shallowRenderComponent();
+      await flushPromises();
+      node.update();
+
+      expect(setTimeout).toHaveBeenCalledTimes(0);
+      instancesApi.fetchWorkflowInstance.mockClear();
+    });
+
+    it('should not set, for canceled instances, a 5s timeout after initial render', async () => {
+      instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
+        CANCELED_INSTANCE
+      );
+      const node = shallowRenderComponent();
+      await flushPromises();
+      node.update();
+
+      expect(setTimeout).toHaveBeenCalledTimes(0);
+      instancesApi.fetchWorkflowInstance.mockClear();
+    });
+
+    it('should start a polling for changes', async () => {
+      // given
+      const node = shallowRenderComponent();
+      await flushPromises();
+      node.update();
+
+      // when first setTimeout is ran
+      jest.runOnlyPendingTimers();
+      await flushPromises();
+      node.update();
+
+      // expect another one setTimeout to have been started
+      expect(setTimeout).toBeCalledTimes(2);
+      expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 5000);
+      // expect setTimeout's executed function to fetch the instance
+      // 1st time on render, 2nd on first setTimeout
+      expect(instancesApi.fetchWorkflowInstance).toHaveBeenCalledTimes(2);
+
+      // when 2nd setTimeout is ran
+      jest.runOnlyPendingTimers();
+      await flushPromises();
+      node.update();
+
+      expect(setTimeout).toBeCalledTimes(3);
+      expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 5000);
+
+      // expect setTimeout's executed function to fetch the instance
+      // 1st time on render, 2nd on first setTimeout, 3rd on 2nd setTimeout
+      expect(instancesApi.fetchWorkflowInstance).toHaveBeenCalledTimes(3);
+    });
+
+    it.only('should stop the polling once the component has completed', async () => {
+      // given
+      instancesApi.fetchWorkflowInstance = jest
+        .fn()
+        .mockResolvedValue(COMPLETED_INSTANCE) // default
+        .mockResolvedValueOnce(INSTANCE) // 1st call
+        .mockResolvedValueOnce(COMPLETED_INSTANCE); // 2nd call
+
+      const node = shallowRenderComponent();
+      await flushPromises();
+      node.update();
+
+      // when first setTimeout is ran
+      jest.runOnlyPendingTimers();
+      await flushPromises();
+      node.update();
+
+      // expect polling to stop as Instance is now completed
+      expect(setTimeout).toBeCalledTimes(1);
+      // expect setTimeout's executed function to fetch the instance
+      // 1st time on render, 2nd on first setTimeout
+      expect(instancesApi.fetchWorkflowInstance).toHaveBeenCalledTimes(2);
     });
   });
 });

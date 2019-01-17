@@ -55,7 +55,6 @@ export default class Instance extends Component {
   async componentDidMount() {
     const id = this.props.match.params.id;
     const instance = await api.fetchWorkflowInstance(id);
-
     document.title = PAGE_TITLE.INSTANCE(
       instance.id,
       getWorkflowName(instance)
@@ -150,15 +149,12 @@ export default class Instance extends Component {
 
   initializePolling = shouldStart => {
     if (shouldStart) {
-      this.pollingTimer = window.setTimeout(
-        this.detectChangesPoll,
-        POLLING_WINDOW
-      );
+      this.pollingTimer = setTimeout(this.detectChangesPoll, POLLING_WINDOW);
     }
   };
 
   clearPolling = () => {
-    this.pollingTimer && window.clearTimeout(this.pollingTimer);
+    this.pollingTimer && clearTimeout(this.pollingTimer);
     this.pollingTimer = null;
   };
 
@@ -166,6 +162,7 @@ export default class Instance extends Component {
     const id = this.state.instance.id;
     const instance = await api.fetchWorkflowInstance(id);
     const hasInstanceChanged =
+      instance.state !== this.state.instance.state ||
       !isEqual(instance.activities, this.state.instance.activities) ||
       !isEqual(instance.operations, this.state.instance.operations);
 
