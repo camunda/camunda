@@ -19,5 +19,6 @@ className = "io.zeebe.exporter.ElasticsearchExporter"
   message = true
   messageSubscription = true
   raft = true
+  variable = true
   workflowInstance = true
   workflowInstanceSubscription = true
