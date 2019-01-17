@@ -149,12 +149,13 @@ class Alerts extends React.Component {
             </li>
           ))}
         </ul>
-        <ConfirmationModal
-          open={this.state.deleting !== false}
-          onClose={this.hideDeleteModal}
-          onConfirm={this.deleteAlert}
-          entityName={this.state.deleting && this.state.deleting.name}
-        />
+        {this.state.deleting && (
+          <ConfirmationModal
+            onClose={this.hideDeleteModal}
+            onConfirm={this.deleteAlert}
+            entityName={this.state.deleting && this.state.deleting.name}
+          />
+        )}
         {EditModal && (
           <EditModal
             onConfirm={this.updateOrCreateAlert}

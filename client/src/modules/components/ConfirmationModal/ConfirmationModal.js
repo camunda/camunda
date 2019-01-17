@@ -6,7 +6,7 @@ export default function ConfirmationModal(props) {
   const {entityName, conflict, ...modalProps} = props;
   const operation = conflict ? conflict.type : 'Delete';
   return (
-    <Modal {...modalProps}>
+    <Modal open={true} {...modalProps}>
       <Modal.Header>
         {operation} {entityName}
       </Modal.Header>
