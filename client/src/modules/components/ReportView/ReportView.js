@@ -187,6 +187,7 @@ export default class ReportView extends React.Component {
   };
 
   getConfig = (visualization, combined, result, data, processInstanceCount) => {
+    const {report, disableReportScrolling, customProps} = this.props;
     let config;
 
     switch (visualization) {
@@ -225,7 +226,7 @@ export default class ReportView extends React.Component {
             combined,
             configuration: data.configuration,
             sorting: data.parameters && data.parameters.sorting,
-            disableReportScrolling: this.props.disableReportScrolling,
+            disableReportScrolling: disableReportScrolling,
             property: data.view.property
           }
         };
@@ -250,7 +251,7 @@ export default class ReportView extends React.Component {
         config = {
           component: Chart,
           props: {
-            ...getChartProps(combined, result, data, processInstanceCount),
+            ...getChartProps(combined, result, data, processInstanceCount, report),
             configuration: data.configuration,
             combined,
             type: visualization,
@@ -269,7 +270,7 @@ export default class ReportView extends React.Component {
         break;
     }
 
-    config.props.reportType = this.props.report.reportType;
+    config.props.reportType = report.reportType;
 
     switch (data.view.property) {
       case 'frequency':
@@ -287,7 +288,7 @@ export default class ReportView extends React.Component {
 
     config.props = {
       ...config.props,
-      ...(this.props.customProps ? this.props.customProps[visualization] || {} : {})
+      ...(customProps ? customProps[visualization] || {} : {})
     };
 
     return this.getReportViewTemplate(

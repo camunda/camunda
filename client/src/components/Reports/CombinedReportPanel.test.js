@@ -197,6 +197,15 @@ xit('should update the color of a single report inside a combined report', async
 
 it('should generate new colors or preserve existing ones when selected/deselecting or reordering reports', async () => {
   const reportData = {data: {visualization: ''}};
+  const reportResult = {
+    id: 'combinedReport',
+    name: 'Combined Report',
+    combined: true,
+    data: {
+      configuration: {},
+      reportIds: ['report1', 'report2', 'report3']
+    }
+  };
   const result = {
     report1: {
       id: 'report1',
@@ -214,8 +223,8 @@ it('should generate new colors or preserve existing ones when selected/deselecti
 
   const node = await shallow(
     <CombinedReportPanel
-      reportResult={{...reportsList[1], result}}
-      configuration={{color: [ColorPicker.dark.red, ColorPicker.dark.blue]}}
+      reportResult={{...reportResult, result}}
+      configuration={{reportColors: [ColorPicker.dark.red, ColorPicker.dark.blue]}}
     />
   );
   const updatedColors = node.instance().getUpdatedColors([{id: 'report2'}, {id: 'report1'}]);

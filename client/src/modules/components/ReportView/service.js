@@ -17,14 +17,14 @@ export function getTableProps(combined, result, data, processInstanceCount) {
   };
 }
 
-export function getChartProps(combined, result, data, processInstanceCount) {
+export function getChartProps(combined, result, data, processInstanceCount, report) {
   if (combined) {
     const groupBy = data.groupBy;
     const isDate =
       groupBy.type === 'startDate' ||
       (groupBy.type === 'variable' && groupBy.value.type === 'Date');
 
-    const resultData = Object.keys(result).reduce(
+    const resultData = report.data.reportIds.reduce(
       (prev, reportId) => {
         return {
           data: [...prev.data, formatResult(data, result[reportId].result)],

@@ -1,56 +1,75 @@
-import {createColors} from './colorsUtils';
 import {createDatasetOptions, getTargetLineOptions} from './createChartOptions';
 import {uniteResults} from '../service';
 
-export default function createChartData({
+export default function createChartData({combined, ...props}) {
+  if (combined) {
+    return createCombinedChartData(props);
+  } else {
+    return createSingleChartData(props);
+  }
+}
+
+function createCombinedChartData({
   data,
   reportsNames,
   type,
   targetValue,
-  configuration: {color},
-  combined,
+  configuration: {reportColors},
   theme,
   isDate
 }) {
   const isDark = theme === 'dark';
-  let dataArr = combined ? data : [data];
 
-  const datasetsColors = color || createColors(dataArr.length, isDark);
-  let labels = Object.keys(Object.assign({}, ...dataArr));
-  dataArr = uniteResults(dataArr, labels);
-
-  if (type === 'line' && targetValue.active) {
-    return {
-      labels,
-      datasets: combined
-        ? createCombinedTargetLineDatasets(
-            dataArr,
-            reportsNames,
-            targetValue,
-            datasetsColors,
-            isDark
-          )
-        : createSingleTargetLineDataset(targetValue, dataArr[0], datasetsColors[0], false, isDark)
-    };
-  }
-
+  const labels = Object.keys(Object.assign({}, ...data));
   if (isDate)
     labels.sort((a, b) => {
       return new Date(a) - new Date(b);
     });
 
-  const datasets = dataArr.map((report, index) => {
-    return {
-      label: reportsNames && reportsNames[index],
-      data: Object.values(report),
-      ...createDatasetOptions(type, report, targetValue, datasetsColors[index], combined, isDark)
-    };
-  });
+  let datasets;
+  if (type === 'line' && targetValue.active) {
+    datasets = createCombinedTargetLineDatasets(
+      data,
+      reportsNames,
+      targetValue,
+      reportColors,
+      isDark
+    );
+  } else {
+    datasets = uniteResults(data, labels).map((report, index) => {
+      return {
+        label: reportsNames && reportsNames[index],
+        data: Object.values(report),
+        ...createDatasetOptions(type, report, targetValue, reportColors[index], true, isDark)
+      };
+    });
+  }
 
-  return {
-    labels,
-    datasets
-  };
+  return {labels, datasets};
+}
+
+function createSingleChartData({data, type, targetValue, configuration: {color}, theme, isDate}) {
+  const isDark = theme === 'dark';
+
+  const labels = Object.keys(data);
+  if (isDate)
+    labels.sort((a, b) => {
+      return new Date(a) - new Date(b);
+    });
+
+  let datasets;
+  if (type === 'line' && targetValue.active) {
+    datasets = createSingleTargetLineDataset(targetValue, data, color, false, isDark);
+  } else {
+    datasets = [
+      {
+        data: Object.values(data),
+        ...createDatasetOptions(type, data, targetValue, color, false, isDark)
+      }
+    ];
+  }
+
+  return {labels, datasets};
 }
 
 function createCombinedTargetLineDatasets(data, reportsNames, targetValue, datasetsColors, isDark) {
@@ -69,17 +88,10 @@ function createCombinedTargetLineDatasets(data, reportsNames, targetValue, datas
   }, []);
 }
 
-function createSingleTargetLineDataset(
-  targetValue,
-  data,
-  datasetColor,
-  reportName,
-  isCombined,
-  isDark
-) {
+function createSingleTargetLineDataset(targetValue, data, color, reportName, isCombined, isDark) {
   const allValues = Object.values(data);
   const {targetOptions, normalLineOptions} = getTargetLineOptions(
-    datasetColor,
+    color,
     targetValue.values.isBelow,
     isCombined,
     isDark

@@ -11,8 +11,8 @@ export default function BarChartConfig({configuration, onChange, report}) {
         <fieldset className="ColorSection">
           <legend>Select visualization color</legend>
           <ColorPicker
-            selectedColor={configuration.color[0]}
-            onChange={color => onChange({color: {$set: [color]}})}
+            selectedColor={configuration.color}
+            onChange={color => onChange({color: {$set: color}})}
           />
         </fieldset>
       )}

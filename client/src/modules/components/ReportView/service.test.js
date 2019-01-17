@@ -27,7 +27,7 @@ const combinedReport = {
   combined: true,
   data: {
     configuration: {},
-    reports: ['report A', 'report B']
+    reportIds: ['report A', 'report B']
   },
   result: {
     'report A': exampleDurationReport,
@@ -103,7 +103,7 @@ it('should sort time data ascending for charts', () => {
   expect(Object.keys(formatedResult)[0]).toBe('2015-03-25');
 });
 
-it('should return correct single table repot data proberties', () => {
+it('should return correct single table repot data properties', () => {
   const tableProps = getTableProps(
     exampleDurationReport.combined,
     exampleDurationReport.result,
@@ -118,7 +118,7 @@ it('should return correct single table repot data proberties', () => {
   });
 });
 
-it('should return correct cominbed table repot data proberties', () => {
+it('should return correct combined table report data properties', () => {
   const tableProps = getTableProps(
     combinedReport.combined,
     combinedReport.result,
@@ -134,7 +134,7 @@ it('should return correct cominbed table repot data proberties', () => {
   });
 });
 
-it('should return correct single chart repot data proberties', () => {
+it('should return correct single chart report data properties', () => {
   const chartProps = getChartProps(
     exampleDurationReport.combined,
     exampleDurationReport.result,
@@ -148,7 +148,7 @@ it('should return correct single chart repot data proberties', () => {
   });
 });
 
-it('should return correct cominbed chart repot data proberties for single report', () => {
+it('should return correct cominbed chart repot data properties for single report', () => {
   const exampleChartDurationReport = {
     ...exampleDurationReport,
     data: {
@@ -168,7 +168,8 @@ it('should return correct cominbed chart repot data proberties for single report
     combinedChartReport.combined,
     combinedChartReport.result,
     exampleChartDurationReport.data,
-    combinedChartReport.processInstanceCount
+    combinedChartReport.processInstanceCount,
+    combinedChartReport
   );
 
   expect(chartProps).toEqual({

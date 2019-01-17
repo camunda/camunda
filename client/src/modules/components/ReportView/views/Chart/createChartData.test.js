@@ -42,7 +42,7 @@ it('should create two datasets for each report in combined line charts with targ
   const chartData = createChartData({
     data: [data, data],
     reportsNames: ['test1', 'test2'],
-    configuration: {color: ['blue', 'yellow']},
+    configuration: {reportColors: ['blue', 'yellow']},
     type: 'line',
     targetValue,
     combined: true,
@@ -61,7 +61,7 @@ it('should return correct chart data object for a single report', () => {
   const result = createChartData({
     data,
     reportsNames: ['test'],
-    configuration: {color: ['testColor']},
+    configuration: {color: 'testColor'},
     type: 'line',
     targetValue: {active: false},
     combined: false,
@@ -73,7 +73,6 @@ it('should return correct chart data object for a single report', () => {
     labels: ['foo', 'bar'],
     datasets: [
       {
-        label: 'test',
         legendColor: 'testColor',
         data: [123, 5],
         borderColor: 'testColor',
@@ -93,7 +92,7 @@ it('should return correct chart data object for a combined report', () => {
   const result = createChartData({
     data,
     reportsNames: ['Report A', 'Report B'],
-    configuration: {color: ['blue', 'yellow']},
+    configuration: {reportColors: ['blue', 'yellow']},
     type: 'line',
     targetValue: {active: false},
     combined: true,

@@ -56,7 +56,7 @@ export default class Configuration extends React.Component {
         pointMarkers: true,
         xLabel: '',
         yLabel: '',
-        color: [ColorPicker.dark.steelBlue]
+        color: ColorPicker.dark.steelBlue
       })
     );
   };

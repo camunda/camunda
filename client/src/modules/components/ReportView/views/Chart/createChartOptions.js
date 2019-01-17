@@ -165,20 +165,20 @@ export function createDatasetOptions(type, data, targetValue, datasetColor, isCo
   }
 }
 
-export function getTargetLineOptions(datasetColor, isBelowTarget, isCombined, isDark) {
+export function getTargetLineOptions(color, isBelowTarget, isCombined, isDark) {
   return {
     targetOptions: {
-      borderColor: isCombined ? datasetColor : getColorFor('targetBar', isDark),
+      borderColor: isCombined ? color : getColorFor('targetBar', isDark),
       pointBorderColor: getColorFor('targetBar', isDark),
       backgroundColor: 'transparent',
-      legendColor: datasetColor,
+      legendColor: color,
       borderWidth: 2,
       renderArea: isBelowTarget ? 'bottom' : 'top'
     },
     normalLineOptions: {
-      borderColor: datasetColor,
+      borderColor: color,
       backgroundColor: 'transparent',
-      legendColor: datasetColor,
+      legendColor: color,
       borderWidth: 2,
       renderArea: isBelowTarget ? 'top' : 'bottom'
     }

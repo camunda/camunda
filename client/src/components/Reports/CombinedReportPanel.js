@@ -25,25 +25,7 @@ export default class CombinedReportPanel extends React.Component {
         report.data.view.operation !== 'rawData'
     );
 
-    this.setState(
-      {
-        reports
-      },
-      () => {
-        const selectedReports = this.getReportResult();
-        if (
-          selectedReports.length &&
-          !this.props.configuration.color &&
-          selectedReports[0].data.visualization !== 'table'
-        ) {
-          this.props.updateReport({
-            configuration: {
-              color: {$set: this.getUpdatedColors(selectedReports)}
-            }
-          });
-        }
-      }
-    );
+    this.setState({reports});
   }
 
   update = (selectedReport, checked) => {
@@ -61,21 +43,28 @@ export default class CombinedReportPanel extends React.Component {
     };
 
     if (selectedReport.data.visualization !== 'table') {
-      change.configuration = {color: {$set: this.getUpdatedColors(selectedReports, newSelected)}};
+      change.configuration = {
+        reportColors: {$set: this.getUpdatedColors(selectedReports, newSelected)}
+      };
     }
 
     this.props.updateReport(change, true);
   };
 
-  getReportResult = () =>
-    this.props.reportResult.result ? Object.values(this.props.reportResult.result) : [];
+  getReportResult = () => {
+    if (!this.props.reportResult.result) {
+      return [];
+    }
+
+    return this.props.reportResult.data.reportIds.map(id => this.props.reportResult.result[id]);
+  };
 
   getUpdatedColors = (prevOrderReports, newSelected) => {
     const selectedReports = newSelected || this.getReportResult();
     let colorsHash = {};
-    if (this.props.configuration.color)
+    if (this.props.configuration.reportColors)
       colorsHash = prevOrderReports.reduce((colors, report, i) => {
-        return {...colors, [report.id]: this.props.configuration.color[i]};
+        return {...colors, [report.id]: this.props.configuration.reportColors[i]};
       }, {});
 
     const colors = ColorPicker.getColors(selectedReports.length).filter(
@@ -92,7 +81,7 @@ export default class CombinedReportPanel extends React.Component {
     };
 
     if (selectedReports[0].data.visualization !== 'table') {
-      change.configuration = {color: {$set: this.getUpdatedColors(prevOrderReports)}};
+      change.configuration = {reportColors: {$set: this.getUpdatedColors(prevOrderReports)}};
     }
 
     this.props.updateReport(change);
@@ -123,11 +112,11 @@ export default class CombinedReportPanel extends React.Component {
 
   updateColor = idx => color => {
     const {configuration, updateReport} = this.props;
-    const newColorConfiguration = [...configuration.color];
+    const newColorConfiguration = [...configuration.reportColors];
     newColorConfiguration[idx] = color;
     updateReport({
       configuration: {
-        color: {$set: newColorConfiguration}
+        reportColors: {$set: newColorConfiguration}
       }
     });
   };
@@ -175,7 +164,7 @@ export default class CombinedReportPanel extends React.Component {
           format={v => v.name}
           customItemSettings={(val, idx) => {
             if (!configurationType || configurationType === 'table') return;
-            const selectedColor = configuration.color && configuration.color[idx];
+            const selectedColor = configuration.reportColors[idx];
             if (!selectedColor) return;
             return (
               <Popover
