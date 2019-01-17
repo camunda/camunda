@@ -22,7 +22,9 @@ import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_PAYLOAD;
 import static io.zeebe.test.broker.protocol.clientapi.PartitionTestClient.PROP_WORKFLOW_BPMN_PROCESS_ID;
 import static io.zeebe.test.util.TestUtil.waitUntil;
-import static io.zeebe.test.util.record.RecordingExporter.*;
+import static io.zeebe.test.util.record.RecordingExporter.jobBatchRecords;
+import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
+import static io.zeebe.test.util.record.RecordingExporter.workflowInstanceRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
@@ -95,9 +97,10 @@ public class ActivateJobsTest {
             .sendAndAwait();
 
     // then
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
     assertThat(response.getRejectionReason())
-        .isEqualTo("Job batch amount must be greater than zero, got 0");
+        .isEqualTo(
+            "Expected to activate job batch with amount to be greater than zero, but it was '0'");
   }
 
   @Test
@@ -118,9 +121,10 @@ public class ActivateJobsTest {
             .sendAndAwait();
 
     // then
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
     assertThat(response.getRejectionReason())
-        .isEqualTo("Job batch timeout must be greater than zero, got 0");
+        .isEqualTo(
+            "Expected to activate job batch with timeout to be greater than zero, but it was '0'");
   }
 
   @Test
@@ -141,8 +145,9 @@ public class ActivateJobsTest {
             .sendAndAwait();
 
     // then
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(response.getRejectionReason()).isEqualTo("Job batch type must not be empty");
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(response.getRejectionReason())
+        .isEqualTo("Expected to activate job batch with type to be present, but it was blank");
   }
 
   @Test
@@ -163,8 +168,9 @@ public class ActivateJobsTest {
             .sendAndAwait();
 
     // then
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(response.getRejectionReason()).isEqualTo("Job batch worker must not be empty");
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(response.getRejectionReason())
+        .isEqualTo("Expected to activate job batch with worker to be present, but it was blank");
   }
 
   @Test

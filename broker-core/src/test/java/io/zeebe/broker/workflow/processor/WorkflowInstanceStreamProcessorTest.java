@@ -37,6 +37,7 @@ import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.JobIntent;
@@ -148,9 +149,9 @@ public class WorkflowInstanceStreamProcessorTest {
     assertThat(rejection.getMetadata().getIntent()).isEqualTo(WorkflowInstanceIntent.CANCEL);
     assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
         .isEqualTo(
-            "Expected to find a running workflow instance with key "
+            "Expected to cancel a workflow instance with key '"
                 + createdEvent.getKey()
-                + ", but found no workflow instance.");
+                + "', but no such workflow was found");
   }
 
   @Test
@@ -405,8 +406,7 @@ public class WorkflowInstanceStreamProcessorTest {
 
     assertThat(rejection.getMetadata().getIntent())
         .isEqualTo(WorkflowInstanceSubscriptionIntent.OPEN);
-    assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
-        .isEqualTo("subscription is already open");
+    assertThat(rejection.getMetadata().getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
   }
 
   @Test
@@ -441,8 +441,7 @@ public class WorkflowInstanceStreamProcessorTest {
 
     assertThat(rejection.getMetadata().getIntent())
         .isEqualTo(WorkflowInstanceSubscriptionIntent.CORRELATE);
-    assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
-        .isEqualTo("subscription was already correlated or is closing");
+    assertThat(rejection.getMetadata().getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
 
     verify(streamProcessorRule.getMockSubscriptionCommandSender(), timeout(5_000).times(2))
         .correlateMessageSubscription(
@@ -489,8 +488,9 @@ public class WorkflowInstanceStreamProcessorTest {
 
     assertThat(rejection.getMetadata().getIntent())
         .isEqualTo(WorkflowInstanceSubscriptionIntent.CORRELATE);
-    assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
-        .isEqualTo("subscription was already correlated or is closing");
+    // since we mock the message partition, we never get the acknowledged CLOSE command, so our
+    // subscription remains in closing state
+    assertThat(rejection.getMetadata().getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
   }
 
   @Test
@@ -558,8 +558,7 @@ public class WorkflowInstanceStreamProcessorTest {
 
     assertThat(rejection.getMetadata().getIntent())
         .isEqualTo(WorkflowInstanceSubscriptionIntent.CLOSE);
-    assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
-        .isEqualTo("subscription is already closed");
+    assertThat(rejection.getMetadata().getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
   }
 
   @Test

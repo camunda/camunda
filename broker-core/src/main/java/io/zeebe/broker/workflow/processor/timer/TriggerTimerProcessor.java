@@ -43,6 +43,10 @@ import java.util.List;
 import org.agrona.DirectBuffer;
 
 public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> {
+  public static final String NO_TIMER_FOUND_MESSAGE =
+      "Expected to trigger timer with key '%d', but no such timer was found";
+  public static final String NO_EVENT_OCCURRED_MESSAGE =
+      "Expected to trigger a timer with key '%d', but the timer is not active anymore";
 
   private final CatchEventBehavior catchEventBehavior;
   private final WorkflowState workflowState;
@@ -66,7 +70,7 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
         workflowState.getTimerState().get(elementInstanceKey, record.getKey());
     if (timerInstance == null) {
       streamWriter.appendRejection(
-          record, RejectionType.NOT_APPLICABLE, "timer is already triggered or canceled");
+          record, RejectionType.NOT_FOUND, String.format(NO_TIMER_FOUND_MESSAGE, record.getKey()));
       return;
     }
 
@@ -100,7 +104,9 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
       }
     } else {
       streamWriter.appendRejection(
-          record, RejectionType.NOT_APPLICABLE, "activity is not active anymore");
+          record,
+          RejectionType.INVALID_STATE,
+          String.format(NO_EVENT_OCCURRED_MESSAGE, record.getKey()));
     }
   }
 
@@ -134,7 +140,7 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
     if (event.getTimer() == null) {
       final String message =
           String.format(
-              "Missing time cycle from repeating timer's associated boundary event %s",
+              "Expected to reschedule repeating timer for element with id '%s', but no timer definition was found",
               BufferUtil.bufferAsString(event.getId()));
       throw new IllegalStateException(message);
     }
@@ -154,17 +160,25 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
       WorkflowState state, long workflowKey, DirectBuffer id) {
     final DeployedWorkflow workflow = state.getWorkflowByKey(workflowKey);
     if (workflow == null) {
-      throw new IllegalStateException("No workflow found with key: " + workflowKey);
+      throw new IllegalStateException(
+          String.format(
+              "Expected to reschedule timer in workflow with key '%d', but no such workflow was found",
+              workflowKey));
     }
 
     final AbstractFlowElement element = workflow.getWorkflow().getElementById(id);
     if (element == null) {
-      throw new IllegalStateException("No element found with id: " + bufferAsString(id));
+      throw new IllegalStateException(
+          String.format(
+              "Expected to reschedule timer for element with id '%s', but no such element was found",
+              bufferAsString(id)));
     }
 
-    if (!ExecutableCatchEventElement.class.isInstance(element)) {
+    if (!(element instanceof ExecutableCatchEventElement)) {
       throw new IllegalStateException(
-          "Element with id " + bufferAsString(id) + " is not a message catch event");
+          String.format(
+              "Expected to reschedule timer for element with id '%s', but the element is not a timer catch event",
+              workflowKey));
     }
 
     return (ExecutableCatchEventElement) element;

@@ -91,9 +91,7 @@ public class JobUpdateRetriesTest {
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(response.getIntent()).isEqualTo(JobIntent.UPDATE_RETRIES);
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.getRejectionReason())
-        .isEqualTo("Expected to find job with key 123, but no job with given key exist.");
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
   }
 
   @Test
@@ -111,12 +109,7 @@ public class JobUpdateRetriesTest {
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(response.getIntent()).isEqualTo(JobIntent.UPDATE_RETRIES);
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.getRejectionReason())
-        .isEqualTo(
-            "Expected to find job with key "
-                + jobEvent.getKey()
-                + ", but no job with given key exist.");
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
   }
 
   @Test
@@ -180,8 +173,7 @@ public class JobUpdateRetriesTest {
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(response.getIntent()).isEqualTo(JobIntent.UPDATE_RETRIES);
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(response.getRejectionReason()).isEqualTo("Job retries must be positive");
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
   }
 
   @Test
@@ -201,7 +193,6 @@ public class JobUpdateRetriesTest {
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(response.getIntent()).isEqualTo(JobIntent.UPDATE_RETRIES);
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(response.getRejectionReason()).isEqualTo("Job retries must be positive");
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
   }
 }

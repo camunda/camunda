@@ -64,9 +64,9 @@ public class BrokerRejection {
       sb.append(" ");
     }
 
-    sb.append("was rejected. ");
+    sb.append("was rejected due to ");
     sb.append(describeRejectionType());
-    sb.append(" ");
+    sb.append(". ");
     sb.append(reason);
 
     return sb.toString();
@@ -74,15 +74,17 @@ public class BrokerRejection {
 
   private String describeRejectionType() {
     switch (type) {
-      case BAD_VALUE:
-        return "It has an invalid value.";
-      case NOT_APPLICABLE:
-        return "It is not applicable in the current state.";
-      case PROCESSING_ERROR:
-        return "The broker could not process it for internal reasons.";
+      case INVALID_ARGUMENT:
+        return "an argument that is invalid";
+      case NOT_FOUND:
+        return "a required entity which does not exist";
+      case INVALID_STATE:
+        return "a required entity in an unexpected state";
+      case ALREADY_EXISTS:
+        return "a duplication error";
       default:
         // Nothing
-        return "";
+        return "unexpected reason";
     }
   }
 

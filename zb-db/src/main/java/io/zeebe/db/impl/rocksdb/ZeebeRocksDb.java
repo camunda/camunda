@@ -94,7 +94,8 @@ class ZeebeRocksDb<ColumnFamilyNames extends Enum<ColumnFamilyNames>> extends Ro
     try {
       return (long) NATIVE_HANDLE_FIELD.get(object);
     } catch (IllegalAccessException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException(
+          "Unexpected error occurred trying to access private nativeHandle_ field", e);
     }
   }
 
@@ -150,7 +151,6 @@ class ZeebeRocksDb<ColumnFamilyNames extends Enum<ColumnFamilyNames>> extends Ro
     value.write(valueBuffer, 0);
 
     try {
-
       if (isInBatch()) {
         batch.put(columnFamilyHandle, key, value);
       } else {
@@ -164,8 +164,8 @@ class ZeebeRocksDb<ColumnFamilyNames extends Enum<ColumnFamilyNames>> extends Ro
             value.getLength(),
             columnFamilyHandle);
       }
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
+    } catch (Exception e) {
+      throw new RuntimeException("Unexpected error occurred trying to write RocksDB entry", e);
     }
   }
 
@@ -181,7 +181,7 @@ class ZeebeRocksDb<ColumnFamilyNames extends Enum<ColumnFamilyNames>> extends Ro
       operations.run();
       write(options, batch);
     } catch (RocksDBException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException("Unexpected error occurred during RocksDB batch operation", e);
     } finally {
       if (batch != null) {
         batch.close();
@@ -223,8 +223,8 @@ class ZeebeRocksDb<ColumnFamilyNames extends Enum<ColumnFamilyNames>> extends Ro
         valueViewBuffer.wrap(valueBuffer, 0, readBytes);
         return valueViewBuffer;
       }
-    } catch (RocksDBException rdbEx) {
-      throw new RuntimeException(rdbEx);
+    } catch (RocksDBException e) {
+      throw new RuntimeException("Unexpected error trying to read RocksDB entry", e);
     }
   }
 
@@ -256,8 +256,8 @@ class ZeebeRocksDb<ColumnFamilyNames extends Enum<ColumnFamilyNames>> extends Ro
               columnFamilyHandle);
 
       return readBytes != NOT_FOUND;
-    } catch (RocksDBException rdbEx) {
-      throw new RuntimeException(rdbEx);
+    } catch (RocksDBException e) {
+      throw new RuntimeException("Unexpected error occurred trying to read RocksDB entry", e);
     }
   }
 

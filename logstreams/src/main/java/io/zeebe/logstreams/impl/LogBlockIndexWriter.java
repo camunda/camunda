@@ -165,8 +165,8 @@ public class LogBlockIndexWriter extends Actor {
         lastBlockAddress = 0;
       }
     } catch (Exception e) {
-      LOG.error("Failed to recover block index.", e);
-      throw new RuntimeException("Failed to recover block index.", e);
+      LOG.error("Failed to recover block index", e);
+      throw new RuntimeException("Failed to recover block index", e);
     }
   }
 

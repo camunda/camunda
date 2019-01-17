@@ -31,6 +31,8 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class UpdatePayloadHandler implements WorkflowInstanceCommandHandler {
 
+  public static final String NO_ELEMENT_FOUND_MESSAGE =
+      "Expected to update the payload of failed element with key '%d', but no such element was found";
   private final WorkflowState workflowState;
 
   public UpdatePayloadHandler(WorkflowState workflowState) {
@@ -81,7 +83,8 @@ public class UpdatePayloadHandler implements WorkflowInstanceCommandHandler {
         responseWriter.writeEventOnCommand(
             command.getKey(), WorkflowInstanceIntent.PAYLOAD_UPDATED, value, command);
       } else {
-        commandContext.reject(RejectionType.NOT_APPLICABLE, "Workflow instance is not running");
+        commandContext.reject(
+            RejectionType.NOT_FOUND, String.format(NO_ELEMENT_FOUND_MESSAGE, command.getKey()));
       }
     }
   }

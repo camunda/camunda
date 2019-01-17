@@ -41,6 +41,8 @@ import org.agrona.collections.LongArrayList;
 
 public class PublishMessageProcessor implements TypedRecordProcessor<MessageRecord> {
 
+  public static final String ALREADY_PUBLISHED_MESSAGE =
+      "Expected to publish a new message with id '%s', but a message with that id was already published";
   private final MessageState messageState;
   private final MessageSubscriptionState subscriptionState;
   private final MessageStartEventSubscriptionState startEventSubscriptionState;
@@ -78,13 +80,11 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
             messageRecord.getCorrelationKey(),
             messageRecord.getMessageId())) {
       final String rejectionReason =
-          String.format(
-              "message with id '%s' is already published",
-              bufferAsString(messageRecord.getMessageId()));
+          String.format(ALREADY_PUBLISHED_MESSAGE, bufferAsString(messageRecord.getMessageId()));
 
-      streamWriter.appendRejection(command, RejectionType.BAD_VALUE, rejectionReason);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.BAD_VALUE, rejectionReason);
-
+      streamWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, rejectionReason);
+      responseWriter.writeRejectionOnCommand(
+          command, RejectionType.ALREADY_EXISTS, rejectionReason);
     } else {
       handleNewMessage(command, responseWriter, streamWriter, sideEffect);
     }

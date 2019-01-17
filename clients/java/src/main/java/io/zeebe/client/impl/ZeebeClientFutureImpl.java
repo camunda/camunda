@@ -62,8 +62,12 @@ public class ZeebeClientFutureImpl<ClientResponse, BrokerResponse>
   public ClientResponse join(final long timeout, final TimeUnit unit) {
     try {
       return get(timeout, unit);
-    } catch (final InterruptedException | ExecutionException | TimeoutException e) {
-      throw new RuntimeException(e);
+    } catch (final InterruptedException e) {
+      throw new RuntimeException("Unexpectedly interrupted awaiting client response", e);
+    } catch (final ExecutionException e) {
+      throw new RuntimeException("Unexpected error occurred awaiting client response", e);
+    } catch (final TimeoutException e) {
+      throw new RuntimeException("Timed out waiting on client response", e);
     }
   }
 

@@ -25,7 +25,8 @@ import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.intent.JobIntent;
 
 public class TimeOutProcessor implements CommandProcessor<JobRecord> {
-
+  public static final String NOT_ACTIVATED_JOB_MESSAGE =
+      "Expected to time out activated job with key '%d', but %s";
   private final JobState state;
 
   public TimeOutProcessor(JobState state) {
@@ -34,11 +35,29 @@ public class TimeOutProcessor implements CommandProcessor<JobRecord> {
 
   @Override
   public void onCommand(TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
-    if (state.isInState(command.getKey(), State.ACTIVATED)) {
+    final long jobKey = command.getKey();
+    final JobState.State jobState = state.getState(jobKey);
+
+    if (jobState == State.ACTIVATED) {
       state.timeout(command.getKey(), command.getValue());
       commandControl.accept(JobIntent.TIMED_OUT, command.getValue());
     } else {
-      commandControl.reject(RejectionType.NOT_APPLICABLE, "Job not activated");
+      final String textState;
+
+      switch (jobState) {
+        case ACTIVATABLE:
+          textState = "it must be activated first";
+          break;
+        case FAILED:
+          textState = "it is marked as failed";
+          break;
+        default:
+          textState = "no such job was found";
+          break;
+      }
+
+      commandControl.reject(
+          RejectionType.NOT_FOUND, String.format(NOT_ACTIVATED_JOB_MESSAGE, jobKey, textState));
     }
   }
 }

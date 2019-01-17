@@ -61,8 +61,8 @@ public class TriggerStartEventHandler implements BpmnStepHandler<ExecutableFlowE
             .getElementInstanceState()
             .removeStoredRecord(wfInstanceKey, deferredRecord.getKey(), Purpose.DEFERRED);
       } else {
-        throw new RuntimeException(
-            "Workflow has multiple start events but no deferred record was found");
+        throw new IllegalStateException(
+            "Expected workflow with multiple start events to have a deferred record, but no such token was found");
       }
     }
 

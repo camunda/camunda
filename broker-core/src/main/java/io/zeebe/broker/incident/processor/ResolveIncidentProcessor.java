@@ -35,8 +35,8 @@ import java.util.function.Consumer;
 
 public final class ResolveIncidentProcessor implements TypedRecordProcessor<IncidentRecord> {
 
-  public static final String RESOLVE_REJECT_MESSAGE =
-      "Expected to resolve an incident with key %d, but no incident found.";
+  public static final String NO_INCIDENT_FOUND_MSG =
+      "Expected to resolve incident with key '%d', but no such incident was found";
 
   private final BpmnStepProcessor stepProcessor;
   private final ZeebeState zeebeState;
@@ -77,10 +77,10 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter,
       long incidentKey) {
-    final String errorMessage = String.format(RESOLVE_REJECT_MESSAGE, incidentKey);
+    final String errorMessage = String.format(NO_INCIDENT_FOUND_MSG, incidentKey);
 
-    streamWriter.appendRejection(command, RejectionType.NOT_APPLICABLE, errorMessage);
-    responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_APPLICABLE, errorMessage);
+    streamWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
+    responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
   }
 
   private void attemptToResolveIncident(
@@ -98,7 +98,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
     }
   }
 
-  public void attemptToContinueWorkflowProcessing(
+  private void attemptToContinueWorkflowProcessing(
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter,
       Consumer<SideEffectProducer> sideEffect,
@@ -111,16 +111,14 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
       typedRecord.wrap(failedRecord);
 
       queue.clear();
-      queue.add(() -> responseWriter.flush());
-
-      stepProcessor.processRecord(
-          typedRecord, responseWriter, streamWriter, (producer) -> queue.add(producer));
+      queue.add(responseWriter::flush);
+      stepProcessor.processRecord(typedRecord, responseWriter, streamWriter, queue::add);
 
       sideEffect.accept(queue);
     }
   }
 
-  public void attemptToMakeJobActivatableAgain(long jobKey) {
+  private void attemptToMakeJobActivatableAgain(long jobKey) {
     final JobState jobState = zeebeState.getJobState();
     final JobRecord job = jobState.getJob(jobKey);
     if (job != null) {

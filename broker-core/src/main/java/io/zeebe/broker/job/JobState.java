@@ -200,14 +200,20 @@ public class JobState {
     return jobsColumnFamily.exists(this.jobKey);
   }
 
-  public boolean isInState(long key, State state) {
+  public State getState(long key) {
     jobKey.wrapLong(key);
 
     final DbByte storedState = statesJobColumnFamily.get(jobKey);
-    if (storedState != null) {
-      return storedState.getValue() == state.value;
+
+    if (storedState == null) {
+      return State.NOT_FOUND;
     }
-    return false;
+
+    return State.forValue(storedState.getValue());
+  }
+
+  public boolean isInState(long key, State state) {
+    return getState(key) == state;
   }
 
   public void forEachActivatableJobs(
@@ -246,12 +252,26 @@ public class JobState {
   public enum State {
     ACTIVATABLE((byte) 0),
     ACTIVATED((byte) 1),
-    FAILED((byte) 2);
+    FAILED((byte) 2),
+    NOT_FOUND((byte) 3);
 
     byte value;
 
     State(byte value) {
       this.value = value;
+    }
+
+    static State forValue(byte value) {
+      switch (value) {
+        case 0:
+          return ACTIVATABLE;
+        case 1:
+          return ACTIVATED;
+        case 2:
+          return FAILED;
+        default:
+          return NOT_FOUND;
+      }
     }
   }
 

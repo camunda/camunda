@@ -40,6 +40,8 @@ import org.agrona.DirectBuffer;
 public class TransformingDeploymentCreateProcessor
     implements TypedRecordProcessor<DeploymentRecord> {
 
+  public static final String DEPLOYMENT_ALREADY_EXISTS_MESSAGE =
+      "Expected to create a new deployment with key '%d', but there is already an existing deployment with that key";
   private final DeploymentTransformer deploymentTransformer;
   private final WorkflowState workflowState;
   private final CatchEventBehavior catchEventBehavior;
@@ -69,10 +71,9 @@ public class TransformingDeploymentCreateProcessor
         createTimerIfTimerStartEvent(command, streamWriter);
       } else {
         // should not be possible
-        responseWriter.writeRejectionOnCommand(
-            command, RejectionType.NOT_APPLICABLE, "Deployment already exist");
-        streamWriter.appendRejection(
-            command, RejectionType.NOT_APPLICABLE, "Deployment already exist");
+        final String reason = String.format(DEPLOYMENT_ALREADY_EXISTS_MESSAGE, key);
+        responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, reason);
+        streamWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, reason);
       }
     } else {
       responseWriter.writeRejectionOnCommand(

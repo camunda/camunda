@@ -189,20 +189,27 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
 
     final JobBatchRecord value = record.getValue();
 
+    final String format = "Expected to activate job batch with %s to be %s, but it was %s";
+
     if (value.getAmount() < 1) {
-      rejectionType = RejectionType.BAD_VALUE;
-      rejectionReason = "Job batch amount must be greater than zero, got " + value.getAmount();
+      rejectionType = RejectionType.INVALID_ARGUMENT;
+      rejectionReason =
+          String.format(
+              format, "amount", "greater than zero", String.format("'%d'", value.getAmount()));
     } else if (value.getTimeout() < 1) {
-      rejectionType = RejectionType.BAD_VALUE;
-      rejectionReason = "Job batch timeout must be greater than zero, got " + value.getTimeout();
+      rejectionType = RejectionType.INVALID_ARGUMENT;
+      rejectionReason =
+          String.format(
+              format, "timeout", "greater than zero", String.format("'%d'", value.getTimeout()));
     } else if (value.getType().capacity() < 1) {
-      rejectionType = RejectionType.BAD_VALUE;
-      rejectionReason = "Job batch type must not be empty";
+      rejectionType = RejectionType.INVALID_ARGUMENT;
+      rejectionReason = String.format(format, "type", "present", "blank");
     } else if (value.getWorker().capacity() < 1) {
-      rejectionType = RejectionType.BAD_VALUE;
-      rejectionReason = "Job batch worker must not be empty";
+      rejectionType = RejectionType.INVALID_ARGUMENT;
+      rejectionReason = String.format(format, "worker", "present", "blank");
     } else {
-      throw new IllegalStateException("Job batch command is valid and should not be rejected");
+      throw new IllegalStateException(
+          "Expected to reject an invalid activate job batch command, but it appears to be valid");
     }
 
     streamWriter.appendRejection(record, rejectionType, rejectionReason);

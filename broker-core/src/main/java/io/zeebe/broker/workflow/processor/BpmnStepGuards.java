@@ -74,7 +74,10 @@ public class BpmnStepGuards {
   public boolean shouldHandle(BpmnStepContext<?> context) {
     final Predicate<BpmnStepContext<?>> guard = stepGuards.get(context.getState());
     if (guard == null) {
-      throw new RuntimeException("no guard found for state: " + context.getState());
+      throw new RuntimeException(
+          String.format(
+              "Expected to process a guard condition for state '%s', but none given",
+              context.getState()));
     }
 
     return guard.test(context);

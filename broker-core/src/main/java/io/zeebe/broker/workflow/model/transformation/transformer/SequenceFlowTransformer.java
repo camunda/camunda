@@ -37,6 +37,10 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class SequenceFlowTransformer implements ModelElementTransformer<SequenceFlow> {
 
+  public static final String UNEXPECTED_TARGET_TYPE_MESSAGE =
+      "Expected sequence flow target type to be one of [Activity, Event, ExclusiveGateway, EventBaseGateway, or ParallelGateway], "
+          + "but actual target type was '%s'";
+
   @Override
   public Class<SequenceFlow> getType() {
     return SequenceFlow.class;
@@ -76,7 +80,8 @@ public class SequenceFlowTransformer implements ModelElementTransformer<Sequence
       }
 
     } else {
-      throw new RuntimeException("Unsupported element");
+      throw new RuntimeException(
+          String.format(UNEXPECTED_TARGET_TYPE_MESSAGE, target.getClass().getSimpleName()));
     }
 
     sequenceFlow.bindLifecycleState(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, step);

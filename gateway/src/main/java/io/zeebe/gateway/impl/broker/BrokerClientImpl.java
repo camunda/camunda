@@ -151,7 +151,7 @@ public class BrokerClientImpl implements BrokerClient {
 
       LOG.debug("Client closed.");
     } catch (final InterruptedException | ExecutionException | TimeoutException e) {
-      throw new RuntimeException("Could not shutdown client successfully", e);
+      throw new RuntimeException("Failed to gracefully shutdown client", e);
     }
   }
 
@@ -179,6 +179,7 @@ public class BrokerClientImpl implements BrokerClient {
     requestManager.sendRequest(request, responseConsumer, throwableConsumer);
   }
 
+  @Override
   public BrokerTopologyManager getTopologyManager() {
     return topologyManager;
   }

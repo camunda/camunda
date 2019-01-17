@@ -180,8 +180,7 @@ public class FailJobTest {
 
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.getRejectionReason()).isEqualTo("Job is not currently activated");
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
     assertThat(response.getIntent()).isEqualTo(JobIntent.FAIL);
   }
 
@@ -192,15 +191,15 @@ public class FailJobTest {
     apiRule.activateJobs(JOB_TYPE).await();
     final Record jobEvent = client.receiveFirstJobEvent(JobIntent.ACTIVATED);
 
-    client.failJob(jobEvent.getKey(), 3);
+    client.failJob(jobEvent.getKey(), 0);
 
     // when
     final ExecuteCommandResponse response = client.failJob(jobEvent.getKey(), 3);
 
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.getRejectionReason()).isEqualTo("Job is not currently activated");
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(response.getRejectionReason()).contains("is marked as failed");
     assertThat(response.getIntent()).isEqualTo(JobIntent.FAIL);
   }
 
@@ -214,8 +213,8 @@ public class FailJobTest {
 
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.getRejectionReason()).isEqualTo("Job is not currently activated");
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(response.getRejectionReason()).contains("must be activated first");
     assertThat(response.getIntent()).isEqualTo(JobIntent.FAIL);
   }
 
@@ -233,8 +232,7 @@ public class FailJobTest {
 
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.getRejectionReason()).isEqualTo("Job is not currently activated");
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
     assertThat(response.getIntent()).isEqualTo(JobIntent.FAIL);
   }
 }

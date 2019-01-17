@@ -29,11 +29,15 @@ import io.zeebe.broker.subscription.message.state.MessageSubscription;
 import io.zeebe.broker.subscription.message.state.MessageSubscriptionState;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
+import io.zeebe.util.buffer.BufferUtil;
 import java.util.function.Consumer;
 
 public class OpenMessageSubscriptionProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
 
+  public static final String SUBSCRIPTION_ALREADY_OPENED_MESSAGE =
+      "Expected to open a new message subscription for element with key '%d' and message name '%s', "
+          + "but there is already a message subscription for that element key and message name opened";
   private final MessageCorrelator messageCorrelator;
   private final MessageSubscriptionState subscriptionState;
   private final SubscriptionCommandSender commandSender;
@@ -62,7 +66,12 @@ public class OpenMessageSubscriptionProcessor
       sideEffect.accept(this::sendAcknowledgeCommand);
 
       streamWriter.appendRejection(
-          record, RejectionType.NOT_APPLICABLE, "subscription is already open");
+          record,
+          RejectionType.INVALID_STATE,
+          String.format(
+              SUBSCRIPTION_ALREADY_OPENED_MESSAGE,
+              subscriptionRecord.getElementInstanceKey(),
+              BufferUtil.bufferAsString(subscriptionRecord.getMessageName())));
       return;
     }
 

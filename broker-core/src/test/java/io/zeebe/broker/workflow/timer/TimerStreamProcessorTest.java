@@ -26,8 +26,8 @@ import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceStreamProcessorRule;
 import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.TimerIntent;
-import io.zeebe.util.buffer.BufferUtil;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -79,8 +79,7 @@ public class TimerStreamProcessorTest {
     final TypedRecord<TimerRecord> rejection = findTimerCommandRejection();
 
     assertThat(rejection.getMetadata().getIntent()).isEqualTo(TimerIntent.TRIGGER);
-    assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
-        .isEqualTo("timer is already triggered or canceled");
+    assertThat(rejection.getMetadata().getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
   }
 
   @Test
@@ -98,8 +97,7 @@ public class TimerStreamProcessorTest {
     final TypedRecord<TimerRecord> rejection = findTimerCommandRejection();
 
     assertThat(rejection.getMetadata().getIntent()).isEqualTo(TimerIntent.TRIGGER);
-    assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
-        .isEqualTo("timer is already triggered or canceled");
+    assertThat(rejection.getMetadata().getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
   }
 
   @Test
@@ -117,8 +115,7 @@ public class TimerStreamProcessorTest {
     final TypedRecord<TimerRecord> rejection = findTimerCommandRejection();
 
     assertThat(rejection.getMetadata().getIntent()).isEqualTo(TimerIntent.CANCEL);
-    assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
-        .isEqualTo("timer is already triggered or canceled");
+    assertThat(rejection.getMetadata().getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
   }
 
   private TypedRecord<TimerRecord> timerRecordForActivity(final String activityId) {

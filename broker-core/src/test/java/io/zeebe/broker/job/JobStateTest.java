@@ -114,7 +114,7 @@ public class JobStateTest {
 
     // then
     assertThat(jobState.exists(key)).isFalse();
-    assertThat(State.values()).noneMatch(state -> jobState.isInState(key, state));
+    assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
     assertThat(jobState.getJob(key)).isNull();
     refuteListedAsActivatable(key, jobRecord.getType());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
@@ -133,7 +133,7 @@ public class JobStateTest {
 
     // then
     assertThat(jobState.exists(key)).isFalse();
-    assertThat(State.values()).noneMatch(state -> jobState.isInState(key, state));
+    assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
     assertThat(jobState.getJob(key)).isNull();
     refuteListedAsActivatable(key, jobRecord.getType());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
@@ -153,7 +153,7 @@ public class JobStateTest {
 
     // then
     assertThat(jobState.exists(key)).isFalse();
-    assertThat(State.values()).noneMatch(state -> jobState.isInState(key, state));
+    assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
     assertThat(jobState.getJob(key)).isNull();
     refuteListedAsActivatable(key, jobRecord.getType());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);

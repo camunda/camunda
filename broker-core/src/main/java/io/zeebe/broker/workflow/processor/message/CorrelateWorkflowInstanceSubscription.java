@@ -32,6 +32,7 @@ import io.zeebe.broker.workflow.state.WorkflowInstanceSubscription;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
 import java.time.Duration;
 import java.util.function.Consumer;
@@ -41,6 +42,15 @@ public final class CorrelateWorkflowInstanceSubscription
 
   public static final Duration SUBSCRIPTION_TIMEOUT = Duration.ofSeconds(10);
   public static final Duration SUBSCRIPTION_CHECK_INTERVAL = Duration.ofSeconds(30);
+  public static final String NO_EVENT_OCCURRED_MESSAGE =
+      "Expected to correlate a workflow instance subscription with element key '%d' and message name '%s', "
+          + "but the subscription is not active anymore";
+  public static final String NO_SUBSCRIPTION_FOUND_MESSAGE =
+      "Expected to correlate workflow instance subscription with element key '%d' and message name '%s', "
+          + "but no such subscription was found";
+  public static final String ALREADY_CLOSING_MESSAGE =
+      "Expected to correlate workflow instance subscription with element key '%d' and message name '%s', "
+          + "but it is already closing";
 
   private final CatchEventBehavior catchEventBehavior;
   private final TopologyManager topologyManager;
@@ -91,10 +101,21 @@ public final class CorrelateWorkflowInstanceSubscription
 
     sideEffect.accept(this::sendAcknowledgeCommand);
     if (subscription == null || subscription.isClosing()) {
+      RejectionType type = RejectionType.NOT_FOUND;
+      String reason = NO_SUBSCRIPTION_FOUND_MESSAGE;
+
+      if (subscription != null) { // closing
+        type = RejectionType.INVALID_STATE;
+        reason = ALREADY_CLOSING_MESSAGE;
+      }
+
       streamWriter.appendRejection(
           record,
-          RejectionType.NOT_APPLICABLE,
-          "subscription was already correlated or is closing");
+          type,
+          String.format(
+              reason,
+              subscriptionRecord.getElementInstanceKey(),
+              BufferUtil.bufferAsString(subscriptionRecord.getMessageName())));
       return;
     }
 
@@ -114,7 +135,12 @@ public final class CorrelateWorkflowInstanceSubscription
           record.getKey(), WorkflowInstanceSubscriptionIntent.CORRELATED, subscriptionRecord);
     } else {
       streamWriter.appendRejection(
-          record, RejectionType.NOT_APPLICABLE, "activity is not active anymore");
+          record,
+          RejectionType.INVALID_STATE,
+          String.format(
+              NO_EVENT_OCCURRED_MESSAGE,
+              subscriptionRecord.getElementInstanceKey(),
+              BufferUtil.bufferAsString(subscriptionRecord.getMessageName())));
     }
   }
 
