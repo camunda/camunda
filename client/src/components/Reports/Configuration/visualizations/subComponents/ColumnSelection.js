@@ -39,8 +39,8 @@ export default function ColumnSelection({report, onChange}) {
   );
 
   return (
-    <div className="ColumnSelection">
-      <div className="ColumnSelection__notice">Table columns to include</div>
+    <fieldset className="ColumnSelection">
+      <legend>Table columns to include</legend>
       <div className="ColumnSelection__entry">
         <Switch
           className="ColumnSelection__Switch"
@@ -53,6 +53,6 @@ export default function ColumnSelection({report, onChange}) {
       </div>
       {normalColumns.map(renderEntry())}
       {variableColumns.map(renderEntry(VARIABLE_PREFIX, 'Variable: '))}
-    </div>
+    </fieldset>
   );
 }
