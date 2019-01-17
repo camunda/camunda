@@ -65,7 +65,7 @@ export default themed(
         options: createChartOptions({...this.props, targetValue}),
         plugins: [
           {
-            afterDraw: drawHorizentalLine
+            afterDatasetsDraw: drawHorizentalLine
           }
         ]
       });
