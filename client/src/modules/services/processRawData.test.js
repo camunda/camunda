@@ -100,6 +100,24 @@ it('should not make the process instance id a link if no endpoint is specified',
   expect(cell).toBe('123');
 });
 
+it('should make the decision instance id a link', () => {
+  const cell = processRawData({
+    reportType: 'decision',
+    data: [
+      {
+        decisionInstanceId: '123',
+        engineName: '1',
+        inputVariables: {},
+        outputVariables: {}
+      }
+    ],
+    endpoints: {1: {endpoint: 'http://camunda.com', engineName: 'a'}}
+  }).body[0][0];
+
+  expect(cell.type).toBe('a');
+  expect(cell.props.href).toBe('http://camunda.com/app/cockpit/a/#/decision-instance/123');
+});
+
 it('should show no data message when all column are excluded', () => {
   expect(
     processRawData({

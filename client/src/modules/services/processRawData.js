@@ -1,15 +1,30 @@
 import React from 'react';
 import {convertCamelToSpaces} from './formatters';
 
-function processDecisionRawData(data, columnOrder) {
+function processDecisionRawData(data, columnOrder, endpoints) {
   const instanceProps = Object.keys(data[0]).filter(
     entry => entry !== 'inputVariables' && entry !== 'outputVariables'
   );
   const inputVariables = Object.keys(data[0].inputVariables);
   const outputVariables = Object.keys(data[0].outputVariables);
 
+  function applyBehavior(type, instance) {
+    const content = instance[type];
+    if (type === 'decisionInstanceId') {
+      const {endpoint, engineName} = endpoints[instance.engineName] || {};
+      if (endpoint) {
+        return (
+          <a href={`${endpoint}/app/cockpit/${engineName}/#/decision-instance/${content}`}>
+            {content}
+          </a>
+        );
+      }
+    }
+    return content;
+  }
+
   const body = data.map(instance => {
-    const propertyValues = instanceProps.map(entry => instance[entry]);
+    const propertyValues = instanceProps.map(entry => applyBehavior(entry, instance));
     const inputVariableValues = inputVariables.map(entry => {
       const value = instance.inputVariables[entry].value;
       if (value === null) {
@@ -56,7 +71,7 @@ export default function processRawData({
   reportType
 }) {
   if (reportType === 'decision') {
-    return processDecisionRawData(data, columnOrder);
+    return processDecisionRawData(data, columnOrder, endpoints);
   }
 
   const allColumnsLength = Object.keys(data[0]).length - 1 + Object.keys(data[0].variables).length;
