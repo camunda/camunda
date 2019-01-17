@@ -25,16 +25,16 @@
         <module>upgrade-optimize-data</module>
     </modules>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>com.fasterxml.jackson</groupId>
-                <artifactId>jackson-bom</artifactId>
-                <version>${jackson.version}</version>
-                <scope>import</scope>
-                <type>pom</type>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
+    <dependencies>
+        <!-- required for using backend test-jar -->
+        <!-- workaround as test dependencies are not inherited -->
+        <!-- https://issues.apache.org/jira/browse/MNG-1378 -->
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpmime</artifactId>
+            <version>${httpclient.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
 </project>

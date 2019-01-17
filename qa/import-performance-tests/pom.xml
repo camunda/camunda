@@ -53,7 +53,6 @@
       <scope>test</scope>
     </dependency>
 
-    <!--testing-->
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -71,14 +70,6 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
-      <version>${spring.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-core</artifactId>
-      <version>${spring.version}</version>
       <scope>test</scope>
     </dependency>
 
@@ -89,31 +80,6 @@
       <scope>test</scope>
     </dependency>
 
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpmime</artifactId>
-      <!-- please note that it can conflict with transitive httpclient
-      from elasticsearch transport -->
-      <version>${httpclient.version}</version>
-      <exclusions>
-        <exclusion>
-          <artifactId>commons-codec</artifactId>
-          <groupId>commons-codec</groupId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <version>${logback.version}</version>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>

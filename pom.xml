@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.camunda.optimize</groupId>
@@ -33,8 +34,7 @@
     <elasticsearch.test.version>6.2.0</elasticsearch.test.version>
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.0/_using_another_logger.html -->
     <elasticsearch.log4j.version>2.9.1</elasticsearch.log4j.version>
-    <elasticsearch.plugin.version>5.7</elasticsearch.plugin.version>
-    <spring.version>4.3.4.RELEASE</spring.version>
+    <spring.version>5.1.4.RELEASE</spring.version>
     <mockito.version>2.2.0</mockito.version>
     <httpclient.version>4.5.2</httpclient.version>
     <hamcrest.version>1.3</hamcrest.version>
@@ -52,6 +52,25 @@
     <database>h2</database>
     <docker.compose.file>docker-compose.yml</docker.compose.file>
   </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-framework-bom</artifactId>
+        <version>${spring.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>${jackson.version}</version>
+        <scope>import</scope>
+        <type>pom</type>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <profiles>
     <profile>

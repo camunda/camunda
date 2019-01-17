@@ -17,12 +17,7 @@
       <version>${project.version}</version>
     </dependency>
 
-    <dependency>
-      <groupId>org.camunda.bpm.model</groupId>
-      <artifactId>camunda-dmn-model</artifactId>
-      <version>${camunda.engine.version}</version>
-    </dependency>
-
+    <!-- needed for complex variable DTO only available in test path-->
     <dependency>
       <groupId>org.camunda.optimize</groupId>
       <artifactId>optimize-backend</artifactId>
@@ -30,39 +25,18 @@
       <type>test-jar</type>
     </dependency>
 
-    <!--testing-->
     <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-test</artifactId>
-      <version>${spring.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-core</artifactId>
-      <version>${spring.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
+      <groupId>org.camunda.bpm.model</groupId>
+      <artifactId>camunda-dmn-model</artifactId>
+      <version>${camunda.engine.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpmime</artifactId>
-      <!-- please note that it can conflict with transitive httpclient
-      from elasticsearch transport -->
       <version>${httpclient.version}</version>
-      <exclusions>
-        <exclusion>
-          <artifactId>commons-codec</artifactId>
-          <groupId>commons-codec</groupId>
-        </exclusion>
-      </exclusions>
     </dependency>
+
   </dependencies>
 
   <build>

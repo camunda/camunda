@@ -2,6 +2,7 @@ package org.camunda.optimize.service.alert;
 
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
+import org.quartz.Job;
 import org.quartz.JobDetail;
 import org.quartz.JobKey;
 import org.quartz.SimpleTrigger;
@@ -21,7 +22,7 @@ import java.util.Map;
 import static org.quartz.SimpleScheduleBuilder.simpleSchedule;
 import static org.quartz.TriggerBuilder.newTrigger;
 
-public abstract class AbstractAlertFactory {
+public abstract class AbstractAlertFactory<T extends Job> {
 
   @Autowired
   private ApplicationContext applicationContext;
@@ -97,7 +98,7 @@ public abstract class AbstractAlertFactory {
 
   protected abstract AlertInterval getInterval(AlertDefinitionDto alert);
 
-  protected abstract  Class<?> getJobClass();
+  protected abstract Class<T> getJobClass();
 
   protected abstract String getJobGroup();
 

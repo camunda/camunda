@@ -10,53 +10,34 @@
 
   <artifactId>upgrade-optimize</artifactId>
 
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>com.fasterxml.jackson</groupId>
-        <artifactId>jackson-bom</artifactId>
-        <version>${jackson.version}</version>
-        <scope>import</scope>
-        <type>pom</type>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
-
   <dependencies>
 
+    <!-- Optimize dependencies -->
      <dependency>
       <groupId>org.camunda.optimize</groupId>
       <artifactId>optimize-commons</artifactId>
       <version>${project.version}</version>
     </dependency>
 
+    <!-- Test dependencies-->
     <dependency>
       <groupId>org.camunda.optimize</groupId>
       <artifactId>optimize-backend</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <artifactId>spring-beans</artifactId>
-          <groupId>org.springframework</groupId>
-        </exclusion>
-      </exclusions>
     </dependency>
-
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>${junit.version}</version>
       <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-all</artifactId>
       <version>${hamcrest.version}</version>
       <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
@@ -64,73 +45,10 @@
       <scope>test</scope>
     </dependency>
 
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <version>${logback.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <version>${slf4j.version}</version>
-    </dependency>
-
-    <!-- Fix error message Status Log4j2 could not find a logging implementation.
-    The error comes from the elasticsearch java client. So this can be removed
-    as soon as this dependency is not needed anymore.-->
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-to-slf4j</artifactId>
-      <version>${elasticsearch.log4j.version}</version>
-    </dependency>
-
-    <!-- Jaxon -->
-    <dependency>
-      <groupId>com.fasterxml.jackson.jaxrs</groupId>
-      <artifactId>jackson-jaxrs-json-provider</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.fasterxml.jackson.dataformat</groupId>
-      <artifactId>jackson-dataformat-yaml</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.fasterxml.jackson.datatype</groupId>
-      <artifactId>jackson-datatype-jsr310</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.jayway.jsonpath</groupId>
-      <artifactId>json-path</artifactId>
-      <version>${jsonpath.version}</version>
-    </dependency>
   </dependencies>
 
   <build>
     <plugins>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>copy-dependencies</id>
-            <phase>prepare-package</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${project.build.directory}/libs</outputDirectory>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -158,19 +76,6 @@
                 </transformer>
               </transformers>
             </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>templating-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>filtering-java-templates</id>
-            <goals>
-              <goal>filter-sources</goal>
-            </goals>
           </execution>
         </executions>
       </plugin>

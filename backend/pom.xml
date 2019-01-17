@@ -21,35 +21,53 @@
     <test.argLine>-Xmx2048m</test.argLine>
   </properties>
 
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>com.fasterxml.jackson</groupId>
-        <artifactId>jackson-bom</artifactId>
-        <version>${jackson.version}</version>
-        <scope>import</scope>
-        <type>pom</type>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
-
   <dependencies>
 
-    <!-- depend on frontend -->
+    <!-- Optimize dependencies -->
     <dependency>
       <groupId>org.camunda.optimize</groupId>
       <artifactId>client</artifactId>
       <version>${project.version}</version>
       <type>pom</type>
     </dependency>
-
     <dependency>
       <groupId>org.camunda.optimize</groupId>
       <artifactId>optimize-commons</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.camunda.optimize</groupId>
+      <artifactId>plugin</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 
-    <!-- jetty -->
+    <!-- Camunda dependencies -->
+    <dependency>
+      <groupId>org.camunda.bpm.model</groupId>
+      <artifactId>camunda-bpmn-model</artifactId>
+      <version>${camunda.engine.version}-ee</version>
+    </dependency>
+    <dependency>
+      <groupId>org.camunda.bpm</groupId>
+      <artifactId>camunda-license-check</artifactId>
+      <version>1.1.0</version>
+    </dependency>
+
+    <!-- Spring -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-websocket</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context-support</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-tx</artifactId>
+    </dependency>
+
+    <!-- Jetty -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
@@ -65,20 +83,16 @@
       <artifactId>jetty-servlets</artifactId>
       <version>${jetty.version}</version>
     </dependency>
-    <!--Jetty JSR-356 Websocket server side dependency -->
-    <dependency>
-      <groupId>org.eclipse.jetty.websocket</groupId>
-      <artifactId>javax-websocket-server-impl</artifactId>
-      <version>${jetty.version}</version>
-    </dependency>
-
-    <!--Jetty Websocket API server side dependency -->
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-server</artifactId>
       <version>${jetty.version}</version>
     </dependency>
-
+    <dependency>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>javax-websocket-server-impl</artifactId>
+      <version>${jetty.version}</version>
+    </dependency>
 
     <!-- JAX-RS -->
     <dependency>
@@ -86,19 +100,16 @@
       <artifactId>jersey-common</artifactId>
       <version>${jersey.version}</version>
     </dependency>
-
     <dependency>
       <groupId>org.glassfish.jersey.ext</groupId>
       <artifactId>jersey-bean-validation</artifactId>
       <version>${jersey.version}</version>
     </dependency>
-
     <dependency>
       <groupId>org.glassfish.jersey.ext</groupId>
       <artifactId>jersey-entity-filtering</artifactId>
       <version>${jersey.version}</version>
     </dependency>
-
     <dependency>
       <groupId>org.glassfish.jersey.media</groupId>
       <artifactId>jersey-media-json-jackson</artifactId>
@@ -110,66 +121,35 @@
         </exclusion>
       </exclusions>
     </dependency>
-
-    <!-- Jackson -->
     <dependency>
-      <groupId>com.fasterxml.jackson.jaxrs</groupId>
-      <artifactId>jackson-jaxrs-json-provider</artifactId>
-      <version>${jackson.version}</version>
+      <!-- no spring5 artifact as of when we migrated to spring 5 -->
+      <!-- although spring4 may suggests it only works for 4, it works with 5 -->
+      <!-- see https://github.com/jersey/jersey/pull/3737 for an eventual spring 5 module  in future -->
+      <groupId>org.glassfish.jersey.ext</groupId>
+      <artifactId>jersey-spring4</artifactId>
+      <version>${jersey.version}</version>
+      <exclusions>
+        <!-- excludes taken over from spring-boot pom -->
+        <exclusion>
+          <groupId>org.jvnet</groupId>
+          <artifactId>tiger-types</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.glassfish.hk2.external</groupId>
+          <artifactId>bean-validator</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.glassfish.hk2.external</groupId>
+          <artifactId>javax.inject</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.hibernate</groupId>
+          <artifactId>hibernate-validator</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
-    <dependency>
-      <groupId>com.fasterxml.jackson.dataformat</groupId>
-      <artifactId>jackson-dataformat-yaml</artifactId>
-      <version>${jackson.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-annotations</artifactId>
-      <version>${jackson.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-      <version>${jackson.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>com.fasterxml.jackson.datatype</groupId>
-      <artifactId>jackson-datatype-jsr310</artifactId>
-      <version>${jackson.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>com.jayway.jsonpath</groupId>
-      <artifactId>json-path</artifactId>
-      <version>${jsonpath.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>jul-to-slf4j</artifactId>
-      <version>${slf4j.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <version>${logback.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <version>${slf4j.version}</version>
-    </dependency>
-    <!-- needed for elasticsearch logs to be available over slf4j -->
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-to-slf4j</artifactId>
-      <version>${elasticsearch.log4j.version}</version>
-    </dependency>
-
+    <!-- Authentication -->
     <dependency>
       <groupId>com.auth0</groupId>
       <artifactId>java-jwt</artifactId>
@@ -182,125 +162,10 @@
       </exclusions>
     </dependency>
 
-    <!--This adds transitive dependency on spring, to control version exclude and add explicit dependencies-->
+    <!-- Jackson/JSON -->
     <dependency>
-      <groupId>org.glassfish.jersey.ext</groupId>
-      <artifactId>jersey-spring4</artifactId>
-      <version>${jersey.version}</version>
-      <exclusions>
-        <exclusion>
-          <artifactId>jackson-bom</artifactId>
-          <groupId>com.fasterxml.jackson</groupId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-websocket</artifactId>
-      <version>${spring.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-context-support</artifactId>
-      <version>${spring.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-tx</artifactId>
-      <version>${spring.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.camunda.bpm.model</groupId>
-      <artifactId>camunda-bpmn-model</artifactId>
-      <version>${camunda.engine.version}-ee</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.camunda.bpm</groupId>
-      <artifactId>camunda-license-check</artifactId>
-      <version>1.1.0</version>
-    </dependency>
-
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <version>27.0.1-jre</version>
-      <!-- or, for Android: -->
-    </dependency>
-
-    <!--testing-->
-    <dependency>
-      <groupId>org.camunda.bpm.model</groupId>
-      <artifactId>camunda-dmn-model</artifactId>
-      <version>${camunda.engine.version}-ee</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>pl.pragmatists</groupId>
-      <artifactId>JUnitParams</artifactId>
-      <version>1.1.1</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>${junit.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.hamcrest</groupId>
-      <artifactId>hamcrest-all</artifactId>
-      <version>${hamcrest.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-test</artifactId>
-      <version>${spring.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-      <version>${mockito.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>com.h2database</groupId>
-      <artifactId>h2</artifactId>
-      <version>1.4.190</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpmime</artifactId>
-      <!-- Please note that it can conflict with transitive httpclient
-      from elasticsearch transport -->
-      <version>${httpclient.version}</version>
-      <exclusions>
-        <exclusion>
-          <artifactId>commons-codec</artifactId>
-          <groupId>commons-codec</groupId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <!-- Plugin -->
-    <dependency>
-      <groupId>org.camunda.optimize</groupId>
-      <artifactId>plugin</artifactId>
-      <version>${project.version}</version>
+      <groupId>com.fasterxml.jackson.jaxrs</groupId>
+      <artifactId>jackson-jaxrs-json-provider</artifactId>
     </dependency>
 
     <!-- Quartz framework -->
@@ -323,6 +188,80 @@
       <version>1.5</version>
     </dependency>
 
+    <!-- CSV -->
+    <dependency>
+      <groupId>com.opencsv</groupId>
+      <artifactId>opencsv</artifactId>
+      <version>4.0</version>
+    </dependency>
+
+    <!-- Utilities -->
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>27.0.1-jre</version>
+    </dependency>
+
+    <!--Test dependencies-->
+    <dependency>
+      <groupId>org.camunda.bpm.model</groupId>
+      <artifactId>camunda-dmn-model</artifactId>
+      <version>${camunda.engine.version}-ee</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>pl.pragmatists</groupId>
+      <artifactId>JUnitParams</artifactId>
+      <version>1.1.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-all</artifactId>
+      <version>${hamcrest.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>${mockito.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <version>1.4.190</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpmime</artifactId>
+      <version>${httpclient.version}</version>
+      <exclusions>
+        <exclusion>
+          <artifactId>commons-codec</artifactId>
+          <groupId>commons-codec</groupId>
+        </exclusion>
+      </exclusions>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>com.icegreen</groupId>
       <artifactId>greenmail</artifactId>
@@ -336,19 +275,6 @@
       </exclusions>
     </dependency>
 
-    <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-      <version>2.2</version>
-      <scope>test</scope>
-    </dependency>
-
-    <!-- CSV -->
-    <dependency>
-      <groupId>com.opencsv</groupId>
-      <artifactId>opencsv</artifactId>
-      <version>4.0</version>
-    </dependency>
   </dependencies>
 
   <build>

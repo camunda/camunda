@@ -2,13 +2,11 @@ package org.camunda.optimize.service.alert;
 
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
-import org.quartz.Job;
 import org.springframework.stereotype.Component;
 
 
 @Component
-public class AlertReminderJobFactory extends AbstractAlertFactory {
-  private static final Class<? extends Job> ALERT_JOB_CLASS = AlertJob.class;
+public class AlertReminderJobFactory extends AbstractAlertFactory<AlertJob> {
 
   protected String getTriggerGroup() {
     return "statusReminder-trigger";
@@ -32,7 +30,7 @@ public class AlertReminderJobFactory extends AbstractAlertFactory {
   }
 
   @Override
-  protected Class<?> getJobClass() {
-    return ALERT_JOB_CLASS;
+  protected Class<AlertJob> getJobClass() {
+    return AlertJob.class;
   }
 }
