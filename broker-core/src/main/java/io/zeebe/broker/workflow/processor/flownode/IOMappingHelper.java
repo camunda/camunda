@@ -18,11 +18,13 @@
 package io.zeebe.broker.workflow.processor.flownode;
 
 import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
+import io.zeebe.broker.workflow.model.element.ExecutableServiceTask;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
 import io.zeebe.msgpack.mapping.Mapping;
 import io.zeebe.msgpack.mapping.MsgPackMergeTool;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 public class IOMappingHelper {
@@ -34,15 +36,34 @@ public class IOMappingHelper {
     final WorkflowInstanceRecord record = context.getValue();
     final ZeebeOutputBehavior outputBehavior = element.getOutputBehavior();
 
-    final DirectBuffer scopePayload =
-        context
-            .getElementInstanceState()
-            .getVariablesState()
-            .getVariablesAsDocument(record.getScopeInstanceKey());
     mergeTool.reset();
 
-    // TODO (saig0) #1613: if the activity has no output mappings then we don't need to propagate
-    // the variables
+    // (saig0): we need copy the buffer so that it is not overridden by the second variable request.
+    // This can be remove when #1852 is implemented.
+    final DirectBuffer scopePayload =
+        BufferUtil.cloneBuffer(
+            context
+                .getElementInstanceState()
+                .getVariablesState()
+                .getVariablesAsDocument(record.getScopeInstanceKey()));
+
+    final DirectBuffer instancePayload;
+
+    if (element instanceof ExecutableServiceTask && element.getOutputMappings().length > 0) {
+      // (saig0): if the activity has no output mappings then the payload is already merged. We
+      // can't use the local variables in this case for the record payload because it may contain
+      // variables from input mapping. This will go away together with the record payload.
+
+      instancePayload =
+          context
+              .getElementInstanceState()
+              .getVariablesState()
+              .getVariablesLocalAsDocument(context.getRecord().getKey());
+    } else {
+      // TODO (saig0) #1614: should use also the variables from the state when the message payload
+      // is set as local variables
+      instancePayload = record.getPayload();
+    }
 
     final DirectBuffer propagatedPayload;
     if (outputBehavior != ZeebeOutputBehavior.none) {
@@ -50,9 +71,7 @@ public class IOMappingHelper {
         mergeTool.mergeDocument(scopePayload);
       }
 
-      // TODO (saig0) #1613: we should use the variables from the state instead of the record
-      // payload
-      mergeTool.mergeDocumentStrictly(record.getPayload(), element.getOutputMappings());
+      mergeTool.mergeDocumentStrictly(instancePayload, element.getOutputMappings());
       propagatedPayload = mergeTool.writeResultToBuffer();
 
     } else {

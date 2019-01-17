@@ -35,7 +35,6 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
-import io.zeebe.test.util.JsonUtil;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
@@ -225,90 +224,6 @@ public class EmbeddedSubProcessTest {
 
     final Headers headers = jobCreatedEvent.getValue().getHeaders();
     Assertions.assertThat(headers).hasElementId("task");
-  }
-
-  @Test
-  public void shouldApplyInputMappings() {
-    // given
-    final BpmnModelInstance model =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .subProcess("subProces", b -> b.zeebeInput("$.key", "$.mappedKey"))
-            .embeddedSubProcess()
-            .startEvent()
-            .serviceTask("task", b -> b.zeebeTaskType("type"))
-            .endEvent()
-            .subProcessDone()
-            .endEvent()
-            .done();
-
-    testClient.deploy(model);
-
-    // when
-    testClient.createWorkflowInstance(PROCESS_ID, "{'key':'val'}");
-
-    // then
-    final Record<JobRecordValue> jobCreatedEvent =
-        testClient.receiveFirstJobEvent(JobIntent.CREATED);
-    JsonUtil.assertEquality(
-        jobCreatedEvent.getValue().getPayload(), "{'key':'val', 'mappedKey':'val'}");
-  }
-
-  @Test
-  public void shouldApplyOutputMappings() {
-    // given
-    final BpmnModelInstance model =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .subProcess("subProces", b -> b.zeebeOutput("$.key", "$.mappedKey"))
-            .embeddedSubProcess()
-            .startEvent()
-            .serviceTask("task", b -> b.zeebeTaskType("type"))
-            .endEvent()
-            .subProcessDone()
-            .endEvent()
-            .done();
-
-    testClient.deploy(model);
-    testClient.createWorkflowInstance(PROCESS_ID);
-
-    // when
-    testClient.completeJobOfType("type", "{'key': 'val'}");
-
-    // then
-    final Record<WorkflowInstanceRecordValue> instanceCompletedEvent =
-        testClient.receiveElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED);
-    JsonUtil.assertEquality(
-        instanceCompletedEvent.getValue().getPayload(), "{'key': 'val', 'mappedKey': 'val'}");
-  }
-
-  @Test
-  public void shouldApplyBothMappings() {
-    // given
-    final BpmnModelInstance model =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .subProcess(
-                "subProcess", b -> b.zeebeInput("$.key", "$.foo").zeebeOutput("$.foo", "$.key"))
-            .embeddedSubProcess()
-            .startEvent()
-            .serviceTask("task", b -> b.zeebeTaskType("type"))
-            .endEvent()
-            .subProcessDone()
-            .endEvent()
-            .done();
-
-    testClient.deploy(model);
-    testClient.createWorkflowInstance(PROCESS_ID, "{'key': 'val'}");
-
-    // when
-    testClient.completeJobOfType("type", "{'foo': 'val2'}");
-
-    // then
-    final Record<WorkflowInstanceRecordValue> instanceCompletedEvent =
-        testClient.receiveElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED);
-
-    JsonUtil.assertEquality(instanceCompletedEvent.getValue().getPayload(), "{'key': 'val2'}");
   }
 
   @Test

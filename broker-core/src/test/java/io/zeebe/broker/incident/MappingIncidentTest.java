@@ -17,11 +17,15 @@
  */
 package io.zeebe.broker.incident;
 
-import static io.zeebe.broker.incident.IncidentAssert.*;
+import static io.zeebe.broker.incident.IncidentAssert.assertIOMappingIncidentWithNoData;
+import static io.zeebe.broker.incident.IncidentAssert.assertIncidentContainErrorDetails;
+import static io.zeebe.broker.incident.IncidentAssert.assertIncidentRecordValue;
 import static io.zeebe.broker.test.MsgPackConstants.MSGPACK_PAYLOAD;
 import static io.zeebe.broker.test.MsgPackConstants.NODE_STRING_PATH;
 import static io.zeebe.broker.workflow.WorkflowAssert.assertWorkflowInstancePayload;
-import static io.zeebe.protocol.intent.IncidentIntent.*;
+import static io.zeebe.protocol.intent.IncidentIntent.CREATED;
+import static io.zeebe.protocol.intent.IncidentIntent.RESOLVE;
+import static io.zeebe.protocol.intent.IncidentIntent.RESOLVED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -407,7 +411,7 @@ public class MappingIncidentTest {
                 t ->
                     t.zeebeTaskType("external")
                         .zeebeInput("$.jsonObject", "$")
-                        .zeebeOutput("$.testAttr", "$"))
+                        .zeebeOutput("$.foo", "$"))
             .done());
 
     testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
@@ -419,7 +423,7 @@ public class MappingIncidentTest {
     final Record incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
-    assertIncidentContainErrorDetails(incidentEvent, "No data found for query $.testAttr.");
+    assertIncidentContainErrorDetails(incidentEvent, "No data found for query $.foo.");
   }
 
   @Test
