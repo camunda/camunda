@@ -145,6 +145,10 @@ pipeline {
 
   agent none
 
+  environment {
+    NEXUS = credentials("camunda-nexus")
+  }
+
   options {
     buildDiscarder(logRotator(numToKeepStr: '5'))
     timestamps()
