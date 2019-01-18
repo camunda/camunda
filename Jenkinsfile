@@ -179,7 +179,7 @@ pipeline {
   agent {
     kubernetes {
       cloud 'optimize-ci'
-      label "optimize-ci-build_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+      label "optimize-ci-build_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
       defaultContainer 'jnlp'
       yamlFile '.ci/podSpecs/builderAgent.yml'
     }
