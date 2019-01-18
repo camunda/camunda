@@ -79,13 +79,14 @@ public class IncidentTest {
     // given
     deploy();
 
-    clientRule
-        .getClient()
-        .newCreateInstanceCommand()
-        .bpmnProcessId("process")
-        .latestVersion()
-        .send()
-        .join();
+    final WorkflowInstanceEvent workflowInstanceEvent =
+        clientRule
+            .getClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId("process")
+            .latestVersion()
+            .send()
+            .join();
 
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(CREATED).getFirst();
@@ -93,7 +94,7 @@ public class IncidentTest {
     // when
     clientRule
         .getClient()
-        .newUpdatePayloadCommand(incident.getValue().getElementInstanceKey())
+        .newUpdatePayloadCommand(workflowInstanceEvent.getWorkflowInstanceKey())
         .payload(PAYLOAD)
         .send()
         .join();
@@ -109,13 +110,14 @@ public class IncidentTest {
     // given
     deploy();
 
-    clientRule
-        .getClient()
-        .newCreateInstanceCommand()
-        .bpmnProcessId("process")
-        .latestVersion()
-        .send()
-        .join();
+    final WorkflowInstanceEvent workflowInstanceEvent =
+        clientRule
+            .getClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId("process")
+            .latestVersion()
+            .send()
+            .join();
 
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(CREATED).getFirst();
@@ -123,7 +125,7 @@ public class IncidentTest {
     // when
     clientRule
         .getClient()
-        .newUpdatePayloadCommand(incident.getValue().getElementInstanceKey())
+        .newUpdatePayloadCommand(workflowInstanceEvent.getWorkflowInstanceKey())
         .payload(PAYLOAD)
         .send()
         .join();

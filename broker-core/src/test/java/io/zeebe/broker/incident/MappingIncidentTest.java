@@ -215,7 +215,7 @@ public class MappingIncidentTest {
         testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     // when
-    testClient.updatePayload(failureEvent.getKey(), PAYLOAD);
+    testClient.updatePayload(failureEvent.getValue().getScopeInstanceKey(), PAYLOAD);
     testClient.resolveIncident(incidentEvent.getKey());
 
     // then
@@ -301,12 +301,14 @@ public class MappingIncidentTest {
     final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
     // then incident is created
-    final Record failureEvent =
+    final Record<WorkflowInstanceRecordValue> failureEvent =
         testClient.receiveElementInState("service", WorkflowInstanceIntent.ELEMENT_READY);
-    final Record incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
+    final Record<IncidentRecordValue> incidentEvent =
+        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     // when
-    testClient.updatePayload(failureEvent.getKey(), "{'string':{'obj':'test'}}");
+    testClient.updatePayload(
+        failureEvent.getValue().getScopeInstanceKey(), "{'string':{'obj':'test'}}");
     testClient.resolveIncident(incidentEvent.getKey());
 
     // then
