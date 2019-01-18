@@ -1,6 +1,6 @@
 import React from 'react';
 import {mount} from 'enzyme';
-import {HashRouter as Router, Redirect} from 'react-router-dom';
+import {HashRouter as Router} from 'react-router-dom';
 
 import Dropdown from 'modules/components/Dropdown';
 import Header from './Header';
@@ -31,7 +31,7 @@ const INSTANCES_COUNT = 23;
 jest.mock(
   'react-router-dom/Redirect',
   () =>
-    function Redirect(props) {
+    function Redirect() {
       return <div />;
     }
 );
@@ -51,6 +51,15 @@ api.logout = mockResolvedAsyncFn();
 instancesApi.fetchWorkflowInstancesCount = mockResolvedAsyncFn(INSTANCES_COUNT);
 
 describe('Header', () => {
+  const mountComponent = component =>
+    mount(
+      <Router>
+        <ThemeProvider>
+          <CollapsablePanelProvider>{component}</CollapsablePanelProvider>
+        </ThemeProvider>
+      </Router>
+    );
+
   const mockValues = {
     filter: {foo: 'bar'},
     filterCount: 1,
@@ -63,21 +72,13 @@ describe('Header', () => {
   });
 
   describe('localState values', () => {
-    it('should render the right links', async () => {
+    it('should render the correct links', async () => {
       const mockProps = {
         ...mockValues,
         ...mockCollapsablePanelProps,
         getStateLocally: () => ({})
       };
-      const node = mount(
-        <Router>
-          <ThemeProvider>
-            <CollapsablePanelProvider>
-              <Header {...mockProps} />
-            </CollapsablePanelProvider>
-          </ThemeProvider>
-        </Router>
-      );
+      const node = mountComponent(<Header {...mockProps} />);
 
       // when
       await flushPromises();
@@ -148,15 +149,7 @@ describe('Header', () => {
         ...mockCollapsablePanelProps,
         getStateLocally: () => ({})
       };
-      const node = mount(
-        <Router>
-          <ThemeProvider>
-            <CollapsablePanelProvider>
-              <Header {...mockProps} />
-            </CollapsablePanelProvider>
-          </ThemeProvider>
-        </Router>
-      );
+      const node = mountComponent(<Header {...mockProps} />);
 
       // then
       expect(
@@ -190,15 +183,7 @@ describe('Header', () => {
         }
       };
 
-      const node = mount(
-        <Router>
-          <ThemeProvider>
-            <CollapsablePanelProvider>
-              <Header {...mockProps} />
-            </CollapsablePanelProvider>
-          </ThemeProvider>
-        </Router>
-      );
+      const node = mountComponent(<Header {...mockProps} />);
 
       await flushPromises();
       node.update();
@@ -223,19 +208,11 @@ describe('Header', () => {
 
     it("should get filterCount, selectionCount & instancesInSelectionsCount from localState if it's not provided by the props", async () => {
       // given
-      const propsMock = {
+      const mockProps = {
         ...mockCollapsablePanelProps,
         getStateLocally: () => mockValues
       };
-      const node = mount(
-        <Router>
-          <ThemeProvider>
-            <CollapsablePanelProvider>
-              <Header {...propsMock} />
-            </CollapsablePanelProvider>
-          </ThemeProvider>
-        </Router>
-      );
+      const node = mountComponent(<Header {...mockProps} />);
 
       await flushPromises();
       node.update();
@@ -277,15 +254,7 @@ describe('Header', () => {
         ...mockValues
       };
 
-      const node = mount(
-        <Router>
-          <ThemeProvider>
-            <CollapsablePanelProvider>
-              <Header {...mockProps} />
-            </CollapsablePanelProvider>
-          </ThemeProvider>
-        </Router>
-      );
+      const node = mountComponent(<Header {...mockProps} />);
 
       await flushPromises();
       node.update();
@@ -312,15 +281,7 @@ describe('Header', () => {
         ...mockValues
       };
 
-      const node = mount(
-        <Router>
-          <ThemeProvider>
-            <CollapsablePanelProvider>
-              <Header {...mockProps} />
-            </CollapsablePanelProvider>
-          </ThemeProvider>
-        </Router>
-      );
+      const node = mountComponent(<Header {...mockProps} />);
 
       // when
       await flushPromises();
@@ -356,15 +317,8 @@ describe('Header', () => {
         getStateLocally: () => ({})
       };
 
-      const node = mount(
-        <Router>
-          <ThemeProvider>
-            <CollapsablePanelProvider>
-              <Header {...mockProps} />
-            </CollapsablePanelProvider>
-          </ThemeProvider>
-        </Router>
-      );
+      const node = mountComponent(<Header {...mockProps} />);
+
       let dashboardNode = node.find('[data-test="header-link-dashboard"]');
 
       // then
@@ -378,15 +332,8 @@ describe('Header', () => {
         getStateLocally: () => ({})
       };
 
-      const node = mount(
-        <Router>
-          <ThemeProvider>
-            <CollapsablePanelProvider>
-              <Header {...mockProps} />
-            </CollapsablePanelProvider>
-          </ThemeProvider>
-        </Router>
-      );
+      const node = mountComponent(<Header {...mockProps} />);
+
       let dashboardNode = node.find('[data-test="header-link-dashboard"]');
 
       // then
@@ -402,15 +349,8 @@ describe('Header', () => {
         getStateLocally: () => ({})
       };
 
-      const node = mount(
-        <Router>
-          <ThemeProvider>
-            <CollapsablePanelProvider>
-              <Header {...mockProps} />
-            </CollapsablePanelProvider>
-          </ThemeProvider>
-        </Router>
-      );
+      const node = mountComponent(<Header {...mockProps} />);
+
       let filtersNode = node.find('[data-test="header-link-filters"]');
 
       // then
@@ -428,15 +368,7 @@ describe('Header', () => {
         isFiltersCollapsed: true
       };
 
-      const node = mount(
-        <Router>
-          <ThemeProvider>
-            <CollapsablePanelProvider>
-              <Header.WrappedComponent {...mockProps} />
-            </CollapsablePanelProvider>
-          </ThemeProvider>
-        </Router>
-      );
+      const node = mountComponent(<Header.WrappedComponent {...mockProps} />);
 
       // when
       await flushPromises();
@@ -457,15 +389,7 @@ describe('Header', () => {
         active: 'instances',
         getStateLocally: () => mockValues
       };
-      const node = mount(
-        <Router>
-          <ThemeProvider>
-            <CollapsablePanelProvider>
-              <Header.WrappedComponent {...mockProps} />
-            </CollapsablePanelProvider>
-          </ThemeProvider>
-        </Router>
-      );
+      const node = mountComponent(<Header.WrappedComponent {...mockProps} />);
       let selectionsNode = node.find('[data-test="header-link-selections"]');
 
       // then
@@ -480,15 +404,8 @@ describe('Header', () => {
         active: 'instances',
         getStateLocally: () => mockValues
       };
-      const node = mount(
-        <Router>
-          <ThemeProvider>
-            <CollapsablePanelProvider>
-              <Header {...mockProps} />
-            </CollapsablePanelProvider>
-          </ThemeProvider>
-        </Router>
-      );
+      const node = mountComponent(<Header {...mockProps} />);
+
       let selectionsNode = node.find('[data-test="header-link-selections"]');
 
       // then
@@ -503,15 +420,7 @@ describe('Header', () => {
         active: 'instances',
         filter: DEFAULT_FILTER
       };
-      const node = mount(
-        <Router>
-          <ThemeProvider>
-            <CollapsablePanelProvider>
-              <Header {...mockProps} />
-            </CollapsablePanelProvider>
-          </ThemeProvider>
-        </Router>
-      );
+      const node = mountComponent(<Header {...mockProps} />);
 
       // when
       await flushPromises();
@@ -531,15 +440,7 @@ describe('Header', () => {
         active: 'instances',
         filter: {incidents: true}
       };
-      const node = mount(
-        <Router>
-          <ThemeProvider>
-            <CollapsablePanelProvider>
-              <Header {...mockProps} />
-            </CollapsablePanelProvider>
-          </ThemeProvider>
-        </Router>
-      );
+      const node = mountComponent(<Header {...mockProps} />);
 
       // when
       await flushPromises();
@@ -559,15 +460,7 @@ describe('Header', () => {
         filter: {incidents: true},
         active: 'instances'
       };
-      const node = mount(
-        <Router>
-          <ThemeProvider>
-            <CollapsablePanelProvider>
-              <Header.WrappedComponent {...mockProps} />
-            </CollapsablePanelProvider>
-          </ThemeProvider>
-        </Router>
-      );
+      const node = mountComponent(<Header.WrappedComponent {...mockProps} />);
 
       // when
       await flushPromises();
@@ -586,15 +479,7 @@ describe('Header', () => {
         getStateLocally: () => ({}),
         filter: DEFAULT_FILTER
       };
-      const node = mount(
-        <Router>
-          <ThemeProvider>
-            <CollapsablePanelProvider>
-              <Header {...mockProps} />
-            </CollapsablePanelProvider>
-          </ThemeProvider>
-        </Router>
-      );
+      const node = mountComponent(<Header {...mockProps} />);
 
       // when
       await flushPromises();
@@ -615,17 +500,11 @@ describe('Header', () => {
         ...mockValues
       };
 
-      const node = mount(
-        <Router>
-          <ThemeProvider>
-            <CollapsablePanelProvider>
-              <Header
-                {...mockProps}
-                detail={<div data-test="header-detail">Detail</div>}
-              />
-            </CollapsablePanelProvider>
-          </ThemeProvider>
-        </Router>
+      const node = mountComponent(
+        <Header
+          {...mockProps}
+          detail={<div data-test="header-detail">Detail</div>}
+        />
       );
 
       expect(node.find('[data-test="header-detail"]')).toExist();
@@ -640,15 +519,7 @@ describe('Header', () => {
         filter: DEFAULT_FILTER
       };
 
-      const node = mount(
-        <Router>
-          <ThemeProvider>
-            <CollapsablePanelProvider>
-              <Header {...mockProps} />
-            </CollapsablePanelProvider>
-          </ThemeProvider>
-        </Router>
-      );
+      const node = mountComponent(<Header {...mockProps} />);
 
       await flushPromises();
       node.update();
@@ -660,15 +531,7 @@ describe('Header', () => {
       const mockProps = {
         getStateLocally: () => ({})
       };
-      const node = mount(
-        <Router>
-          <ThemeProvider>
-            <CollapsablePanelProvider>
-              <Header {...mockProps} />
-            </CollapsablePanelProvider>
-          </ThemeProvider>
-        </Router>
-      );
+      const node = mountComponent(<Header {...mockProps} />);
 
       // await user data fetching
       await flushPromises();
@@ -687,15 +550,7 @@ describe('Header', () => {
         ...mockCollapsablePanelProps,
         getStateLocally: () => ({})
       };
-      const node = mount(
-        <Router>
-          <ThemeProvider>
-            <CollapsablePanelProvider>
-              <Header {...mockProps} />
-            </CollapsablePanelProvider>
-          </ThemeProvider>
-        </Router>
-      );
+      const node = mountComponent(<Header {...mockProps} />);
 
       // await user data fetching
       await flushPromises();
@@ -710,15 +565,7 @@ describe('Header', () => {
         ...mockCollapsablePanelProps,
         getStateLocally: () => ({})
       };
-      const node = mount(
-        <Router>
-          <ThemeProvider>
-            <CollapsablePanelProvider>
-              <Header {...mockProps} router={{}} />
-            </CollapsablePanelProvider>
-          </ThemeProvider>
-        </Router>
-      );
+      const node = mountComponent(<Header {...mockProps} router={{}} />);
 
       //when
       node.find('button[data-test="dropdown-toggle"]').simulate('click');
