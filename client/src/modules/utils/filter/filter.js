@@ -88,7 +88,7 @@ export function getInstanceStatePayload(filter) {
 }
 
 /**
- * Before fetching the instances for the ListView
+ * Before fetching the instances
  * the filter field values need to be parsed
  * @param {Object} filter
  * @return {Object}
