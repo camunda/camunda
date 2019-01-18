@@ -452,12 +452,8 @@ export default withErrorHandling(
       this.updateReport({parameters: {sorting: {$set: {by, order}}}}, true);
     };
 
-    applyAddons = (...addons) => (Component, props) => (
-      <React.Fragment>
-        {this.renderWrapperAddons(addons, Component, props)}
-        {this.renderContentAddons(addons)}
-      </React.Fragment>
-    );
+    applyAddons = (...addons) => (Component, props) =>
+      this.renderWrapperAddons(addons, Component, props);
 
     renderWrapperAddons = ([{Wrapper}, ...rest], Component, props) => {
       const renderedRest = rest.length ? (
@@ -471,7 +467,7 @@ export default withErrorHandling(
           <Wrapper
             report={this.state.reportResult}
             data={this.state.data}
-            change={this.updateConfiguration}
+            updateReport={this.updateReport}
           >
             {renderedRest}
           </Wrapper>
@@ -479,35 +475,6 @@ export default withErrorHandling(
       } else {
         return renderedRest;
       }
-    };
-
-    renderContentAddons = addons =>
-      addons.map(({Content}, idx) => {
-        if (Content) {
-          return (
-            <Content
-              key={idx}
-              report={this.state.reportResult}
-              data={this.state.data}
-              change={this.updateConfiguration}
-            />
-          );
-        } else {
-          return null;
-        }
-      });
-
-    updateConfiguration = prop => newValue => {
-      const changes = {
-        combined: {$set: this.state.combined},
-        data: {configuration: {[prop]: {$set: newValue}}}
-      };
-      this.setState(
-        update(this.state, {
-          ...changes,
-          reportResult: changes
-        })
-      );
     };
 
     renderViewMode = () => {

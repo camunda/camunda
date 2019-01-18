@@ -175,7 +175,7 @@ function onlyNonNestedColumns(entry) {
 
 function byOrder(order) {
   return function(a, b) {
-    return order.indexOf(a) - order.indexOf(b);
+    return order.indexOf(a.label || a) - order.indexOf(b.label || b);
   };
 }
 

@@ -106,23 +106,27 @@ export default {
           // remove the original column
           list.splice(this.dragIdx + (this.dragIdx > idx), 1);
 
-          this.props.change('columnOrder')(
-            list.reduce(
-              (orders, entry, idx) => {
-                if (this.columnGroups[idx] === 'Input Variables') {
-                  orders.inputVariables.push(entry);
-                } else if (this.columnGroups[idx] === 'Output Variables') {
-                  orders.outputVariables.push(entry);
-                } else if (this.columnGroups[idx] === 'Variables') {
-                  orders.variables.push(entry);
-                } else {
-                  orders.instanceProps.push(entry);
-                }
-                return orders;
-              },
-              {instanceProps: [], variables: [], inputVariables: [], outputVariables: []}
-            )
-          );
+          this.props.updateReport({
+            configuration: {
+              columnOrder: {
+                $set: list.reduce(
+                  (orders, entry, idx) => {
+                    if (this.columnGroups[idx] === 'Input Variables') {
+                      orders.inputVariables.push(entry);
+                    } else if (this.columnGroups[idx] === 'Output Variables') {
+                      orders.outputVariables.push(entry);
+                    } else if (this.columnGroups[idx] === 'Variables') {
+                      orders.variables.push(entry);
+                    } else {
+                      orders.instanceProps.push(entry);
+                    }
+                    return orders;
+                  },
+                  {instanceProps: [], variables: [], inputVariables: [], outputVariables: []}
+                )
+              }
+            }
+          });
         }
       });
 
