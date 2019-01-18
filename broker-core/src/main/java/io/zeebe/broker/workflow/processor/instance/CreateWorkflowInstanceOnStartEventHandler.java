@@ -20,6 +20,7 @@ package io.zeebe.broker.workflow.processor.instance;
 import io.zeebe.broker.incident.processor.TypedWorkflowInstanceRecord;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElementContainer;
+import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.broker.workflow.processor.EventOutput;
@@ -53,18 +54,18 @@ public class CreateWorkflowInstanceOnStartEventHandler
 
     if (workflowDefinition != null) {
       final long workflowInstanceKey = state.getKeyGenerator().nextKey();
-      final DirectBuffer bpmnId = workflowDefinition.getWorkflow().getId();
+      final ExecutableWorkflow workflow = workflowDefinition.getWorkflow();
+      final DirectBuffer bpmnId = workflow.getId();
       final WorkflowInstanceRecord record = new WorkflowInstanceRecord();
       record
           .setBpmnProcessId(bpmnId)
           .setWorkflowKey(workflowDefinition.getKey())
           .setVersion(workflowDefinition.getVersion())
-          .setElementId(bpmnId)
           .setWorkflowInstanceKey(workflowInstanceKey);
 
       final EventOutput eventOutput = context.getOutput();
       eventOutput.appendFollowUpEvent(
-          workflowInstanceKey, WorkflowInstanceIntent.ELEMENT_READY, record);
+          workflowInstanceKey, WorkflowInstanceIntent.ELEMENT_READY, record, workflow);
 
       // Defer token which will be used by the start event
       eventRecord.setWorkflowInstanceKey(workflowInstanceKey);

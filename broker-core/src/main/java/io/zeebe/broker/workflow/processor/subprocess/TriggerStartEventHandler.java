@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.workflow.processor.subprocess;
 
+import io.zeebe.broker.workflow.model.element.ExecutableCatchEventElement;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElementContainer;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
@@ -42,9 +43,11 @@ public class TriggerStartEventHandler implements BpmnStepHandler<ExecutableFlowE
 
     final WorkflowInstanceRecord value = context.getValue();
 
-    if (element.getStartEvents().get(0).isNone()) {
+    final ExecutableCatchEventElement firstStartEvent = element.getStartEvents().get(0);
+    if (firstStartEvent.isNone()) {
       // if none start event
-      value.setElementId(element.getStartEvents().get(0).getId());
+      value.setElementId(firstStartEvent.getId());
+      value.setBpmnElementType(firstStartEvent.getElementType());
     } else {
       // if timer/message start event
 
@@ -56,6 +59,7 @@ public class TriggerStartEventHandler implements BpmnStepHandler<ExecutableFlowE
         final IndexedRecord deferredRecord = deferredRecords.get(0);
         final WorkflowInstanceRecord workflowInstanceRecord = deferredRecord.getValue();
         value.setElementId(workflowInstanceRecord.getElementId());
+        value.setBpmnElementType(workflowInstanceRecord.getBpmnElementType());
         value.setPayload(workflowInstanceRecord.getPayload());
         workflowState
             .getElementInstanceState()

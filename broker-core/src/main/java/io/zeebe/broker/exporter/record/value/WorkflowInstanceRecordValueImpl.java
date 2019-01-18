@@ -20,6 +20,7 @@ package io.zeebe.broker.exporter.record.value;
 import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.record.RecordValueWithPayloadImpl;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.BpmnElementType;
 import java.util.Objects;
 
 public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
@@ -30,6 +31,7 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
   private final long workflowKey;
   private final long workflowInstanceKey;
   private final long scopeInstanceKey;
+  private final BpmnElementType bpmnElementType;
 
   public WorkflowInstanceRecordValueImpl(
       final ExporterObjectMapper objectMapper,
@@ -39,7 +41,8 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
       final int version,
       final long workflowKey,
       final long workflowInstanceKey,
-      final long scopeInstanceKey) {
+      final long scopeInstanceKey,
+      final BpmnElementType bpmnElementType) {
     super(objectMapper, payload);
     this.bpmnProcessId = bpmnProcessId;
     this.elementId = elementId;
@@ -47,6 +50,7 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
     this.workflowKey = workflowKey;
     this.workflowInstanceKey = workflowInstanceKey;
     this.scopeInstanceKey = scopeInstanceKey;
+    this.bpmnElementType = bpmnElementType;
   }
 
   @Override
@@ -80,6 +84,11 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
   }
 
   @Override
+  public BpmnElementType getBpmnElementType() {
+    return bpmnElementType;
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -96,7 +105,8 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
         && workflowInstanceKey == that.workflowInstanceKey
         && scopeInstanceKey == that.scopeInstanceKey
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
-        && Objects.equals(elementId, that.elementId);
+        && Objects.equals(elementId, that.elementId)
+        && bpmnElementType == that.bpmnElementType;
   }
 
   @Override
@@ -108,7 +118,8 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
         version,
         workflowKey,
         workflowInstanceKey,
-        scopeInstanceKey);
+        scopeInstanceKey,
+        bpmnElementType);
   }
 
   @Override
@@ -128,6 +139,8 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
         + workflowInstanceKey
         + ", scopeInstanceKey="
         + scopeInstanceKey
+        + ", bpmnElementType="
+        + bpmnElementType
         + ", payload='"
         + payload
         + '\''

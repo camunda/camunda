@@ -110,7 +110,7 @@ public class WorkflowInstanceFunctionalTest {
   }
 
   @Test
-  public void shouldOccureEndEvent() {
+  public void shouldOccurEndEvent() {
     // given
     testClient.deploy(Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent("foo").done());
 

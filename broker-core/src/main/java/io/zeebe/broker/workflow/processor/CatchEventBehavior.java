@@ -38,6 +38,7 @@ import io.zeebe.model.bpmn.util.time.Timer;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResult;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResults;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -133,6 +134,11 @@ public class CatchEventBehavior {
       workflowInstanceRecord.wrap(source);
       workflowInstanceRecord.setPayload(eventPayload);
       workflowInstanceRecord.setElementId(eventHandlerId);
+      // check if source element is the element handling the event (i.e. receive task), otherwise
+      // triggered element is a boundary event
+      if (!source.getElementId().equals(eventHandlerId)) {
+        workflowInstanceRecord.setBpmnElementType(BpmnElementType.BOUNDARY_EVENT);
+      }
 
       streamWriter.appendFollowUpEvent(
           elementInstanceKey, WorkflowInstanceIntent.EVENT_OCCURRED, workflowInstanceRecord);

@@ -27,6 +27,7 @@ import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.util.ZeebeStateRule;
 import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -550,6 +551,7 @@ public class ElementInstanceStateTest {
     workflowInstanceRecord.setScopeInstanceKey(1001L);
     workflowInstanceRecord.setVersion(1);
     workflowInstanceRecord.setWorkflowKey(2);
+    workflowInstanceRecord.setBpmnElementType(BpmnElementType.START_EVENT);
 
     return workflowInstanceRecord;
   }
@@ -565,5 +567,6 @@ public class ElementInstanceStateTest {
     assertThat(record.getScopeInstanceKey()).isEqualTo(1001L);
     assertThat(record.getVersion()).isEqualTo(1);
     assertThat(record.getWorkflowKey()).isEqualTo(2);
+    assertThat(record.getBpmnElementType()).isEqualTo(BpmnElementType.START_EVENT);
   }
 }

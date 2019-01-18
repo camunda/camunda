@@ -29,6 +29,7 @@ import io.zeebe.broker.subscription.message.state.Message;
 import io.zeebe.broker.subscription.message.state.MessageStartEventSubscriptionState;
 import io.zeebe.broker.subscription.message.state.MessageState;
 import io.zeebe.broker.subscription.message.state.MessageSubscriptionState;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
@@ -183,6 +184,7 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
           record
               .setWorkflowKey(workflowKey)
               .setElementId(startEventId)
+              .setBpmnElementType(BpmnElementType.START_EVENT)
               .setPayload(command.getValue().getPayload());
 
           streamWriter.appendNewEvent(WorkflowInstanceIntent.EVENT_OCCURRED, record);

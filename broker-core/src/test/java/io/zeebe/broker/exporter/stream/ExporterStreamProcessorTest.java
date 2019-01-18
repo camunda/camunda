@@ -61,6 +61,7 @@ import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
@@ -556,10 +557,12 @@ public class ExporterStreamProcessorTest {
     final int workflowInstanceKey = 1234;
     final String elementId = "activity";
     final int scopeInstanceKey = 123;
+    final BpmnElementType bpmnElementType = BpmnElementType.SERVICE_TASK;
 
     final WorkflowInstanceRecord record =
         new WorkflowInstanceRecord()
             .setElementId(elementId)
+            .setBpmnElementType(bpmnElementType)
             .setPayload(PAYLOAD_MSGPACK)
             .setBpmnProcessId(wrapString(bpmnProcessId))
             .setVersion(version)
@@ -576,7 +579,8 @@ public class ExporterStreamProcessorTest {
             version,
             workflowKey,
             workflowInstanceKey,
-            scopeInstanceKey);
+            scopeInstanceKey,
+            bpmnElementType);
 
     // then
     assertRecordExported(WorkflowInstanceIntent.ELEMENT_READY, record, recordValue);
