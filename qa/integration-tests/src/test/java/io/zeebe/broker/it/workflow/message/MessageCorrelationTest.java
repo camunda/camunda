@@ -30,6 +30,7 @@ import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Collections;
@@ -115,8 +116,9 @@ public class MessageCorrelationTest {
         .join();
 
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_ACTIVATED)
-                .withElementId("catch-event")
+            RecordingExporter.workflowInstanceSubscriptionRecords(
+                    WorkflowInstanceSubscriptionIntent.OPENED)
+                .withMessageName("order canceled")
                 .exists())
         .isTrue();
 

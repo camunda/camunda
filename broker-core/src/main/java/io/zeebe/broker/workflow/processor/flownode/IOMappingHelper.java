@@ -88,7 +88,6 @@ public class IOMappingHelper {
 
   public <T extends ExecutableFlowNode> void applyInputMappings(BpmnStepContext<T> context) {
 
-    final WorkflowInstanceRecord value = context.getValue();
     final MsgPackMergeTool mergeTool = context.getMergeTool();
     final T element = context.getElement();
     final Mapping[] mappings = element.getInputMappings();
@@ -96,17 +95,21 @@ public class IOMappingHelper {
     if (mappings.length > 0) {
       mergeTool.reset();
 
-      // TODO (saig0) #1612: we should use the variables from the state instead of the record
-      // payload
-      mergeTool.mergeDocumentStrictly(value.getPayload(), element.getInputMappings());
+      final DirectBuffer scopeVariables =
+          context
+              .getElementInstanceState()
+              .getVariablesState()
+              .getVariablesAsDocument(context.getFlowScopeInstance().getKey());
 
+      mergeTool.mergeDocumentStrictly(scopeVariables, mappings);
       final DirectBuffer mappedPayload = mergeTool.writeResultToBuffer();
-      context.getValue().setPayload(mappedPayload);
 
       context
           .getElementInstanceState()
           .getVariablesState()
           .setVariablesLocalFromDocument(context.getRecord().getKey(), mappedPayload);
+
+      context.getValue().setPayload(mappedPayload);
     }
   }
 }

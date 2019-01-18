@@ -397,13 +397,14 @@ public class BrokerReprocessingTest {
     // given
     deploy(WORKFLOW_INCIDENT, "incident.bpmn");
 
-    clientRule
-        .getClient()
-        .newCreateInstanceCommand()
-        .bpmnProcessId(PROCESS_ID)
-        .latestVersion()
-        .send()
-        .join();
+    final WorkflowInstanceEvent instanceEvent =
+        clientRule
+            .getClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_ID)
+            .latestVersion()
+            .send()
+            .join();
 
     assertIncidentCreated();
     assertElementReady("task");
@@ -416,7 +417,7 @@ public class BrokerReprocessingTest {
 
     clientRule
         .getClient()
-        .newUpdatePayloadCommand(incident.getValue().getElementInstanceKey())
+        .newUpdatePayloadCommand(instanceEvent.getWorkflowInstanceKey())
         .payload("{\"foo\":\"bar\"}")
         .send()
         .join();
@@ -450,7 +451,7 @@ public class BrokerReprocessingTest {
 
     clientRule
         .getClient()
-        .newUpdatePayloadCommand(incident.getValue().getElementInstanceKey())
+        .newUpdatePayloadCommand(instanceEvent.getWorkflowInstanceKey())
         .payload("{\"x\":\"y\"}")
         .send()
         .join();
@@ -466,7 +467,7 @@ public class BrokerReprocessingTest {
 
     clientRule
         .getClient()
-        .newUpdatePayloadCommand(incident.getValue().getElementInstanceKey())
+        .newUpdatePayloadCommand(instanceEvent.getWorkflowInstanceKey())
         .payload("{\"foo\":\"bar\"}")
         .send()
         .join();
