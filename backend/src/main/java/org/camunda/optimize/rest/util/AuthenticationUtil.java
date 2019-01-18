@@ -1,6 +1,7 @@
 package org.camunda.optimize.rest.util;
 
 import com.auth0.jwt.JWT;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +24,7 @@ public class AuthenticationUtil {
 
   public static Optional<String> getSessionIssuer(String token) {
     try {
-      JWT decoded = JWT.decode(token);
+      final DecodedJWT decoded = JWT.decode(token);
       return Optional.of(decoded.getIssuer());
     } catch (Exception e) {
       String errorMessage = "Could not decode security token to extract issuer!";
