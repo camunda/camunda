@@ -115,6 +115,12 @@ public class CatchEventBehavior {
       // if the event belongs to an intermediate catch event
 
       final WorkflowInstanceRecord deferredRecord = storedRecord.getRecord().getValue();
+      // check if source element is the element handling the event (i.e. intermediate catch event),
+      // otherwise triggered element is a event based gateway
+      if (!deferredRecord.getElementId().equals(eventHandlerId)) {
+        deferredRecord.setBpmnElementType(BpmnElementType.INTERMEDIATE_CATCH_EVENT);
+      }
+
       deferredRecord.setPayload(eventPayload).setElementId(eventHandlerId);
 
       elementInstanceState.removeStoredRecord(
