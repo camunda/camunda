@@ -51,7 +51,7 @@ class Header extends React.Component {
     incidentsCount: 0
   };
 
-  componentDidMount = async () => {
+  componentDidMount = () => {
     this.setUser();
     this.localState = this.props.getStateLocally();
     localStateKeys.forEach(this.setValueFromPropsOrLocalState);
@@ -71,7 +71,7 @@ class Header extends React.Component {
       }
     });
 
-    // set defaulf filter when no filter is found in localState
+    // set default filter when no filter is found in localState
     if (!this.state.filter) {
       this.setState({filter: DEFAULT_FILTER});
     }
@@ -87,7 +87,7 @@ class Header extends React.Component {
    * @param {string} key: key for which to set the value
    */
   setValueFromPropsOrLocalState = key => {
-    let value =
+    const value =
       typeof this.props[key] === 'undefined'
         ? this.localState[key]
         : this.props[key];
@@ -120,7 +120,6 @@ class Header extends React.Component {
     const {active, detail} = this.props;
     const {firstname, lastname} = this.state.user || {};
 
-    // query for the incidents link
     const incidentsQuery = getFilterQueryString(FILTER_SELECTION.incidents);
     const runningQuery = getFilterQueryString(FILTER_SELECTION.running);
     const filterQuery = this.state.filter
