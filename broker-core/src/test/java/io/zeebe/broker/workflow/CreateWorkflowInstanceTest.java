@@ -516,4 +516,28 @@ public class CreateWorkflowInstanceTest {
         (List<Map<String, Object>>) deployment1.getValue().get("workflows");
     return (long) deployedWorkflows.get(0).get(PROP_WORKFLOW_KEY);
   }
+
+  @Test
+  public void shouldNotCreateWorkflowInstanceWithNoNoneStartEvent() {
+    final BpmnModelInstance definition =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .message(m -> m.id("msgId").name("msgname"))
+            .endEvent()
+            .done();
+
+    final ExecuteCommandResponse deployed =
+        apiRule.partitionClient().deployWithResponse(definition);
+    final long workflowKey = extractWorkflowKey(deployed);
+
+    final ExecuteCommandResponse response =
+        testClient.createWorkflowInstanceWithResponse("process");
+
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(response.getRejectionReason())
+        .isEqualTo(
+            String.format(
+                "Expected to create an instance of workflow with key '%d', but no none start event was found",
+                workflowKey));
+  }
 }

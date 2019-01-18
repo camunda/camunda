@@ -36,10 +36,9 @@ public class ExecutableFlowElementContainer extends ExecutableActivity {
     startEvents = new ArrayList<>();
   }
 
-  public ExecutableCatchEventElement getStartEvent() {
-    // return non-message start event
+  public ExecutableCatchEventElement getNoneStartEvent() {
     for (ExecutableCatchEventElement startEvent : startEvents) {
-      if (!startEvent.isMessage()) {
+      if (startEvent.isNone()) {
         return startEvent;
       }
     }
