@@ -258,7 +258,7 @@ pipeline {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build-it-migration_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              label "optimize-ci-build-it-migration_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
               yaml integrationTestPodSpec()
             }
@@ -278,7 +278,7 @@ pipeline {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build-it-data-upgrade_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              label "optimize-ci-build-it-data-upgrade_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
               yaml integrationTestPodSpec()
             }
@@ -293,7 +293,7 @@ pipeline {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build-it-security_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              label "optimize-ci-build-it-security_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
               yaml securityTestPodSpec()
             }
@@ -311,7 +311,7 @@ pipeline {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build-it-latest_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              label "optimize-ci-build-it-latest_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
               yaml integrationTestPodSpec()
             }
@@ -330,7 +330,7 @@ pipeline {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build-it-7.9_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              label "optimize-ci-build-it-7.9_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
               yaml integrationTestPodSpec('7.9.7')
             }
@@ -349,7 +349,7 @@ pipeline {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build-it-7.8_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              label "optimize-ci-build-it-7.8_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
               yaml integrationTestPodSpec('7.8.13')
             }
