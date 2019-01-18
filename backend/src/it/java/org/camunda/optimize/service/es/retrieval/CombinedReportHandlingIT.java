@@ -7,6 +7,7 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.configuration.ReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -45,6 +46,7 @@ import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.crea
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -89,6 +91,16 @@ public class CombinedReportHandlingIT {
     GetResponse getResponse = elasticSearchRule.getEsClient().get(getRequest, RequestOptions.DEFAULT);
 
     assertThat(getResponse.isExists(), is(true));
+    CombinedReportDefinitionDto definitionDto = elasticSearchRule.getObjectMapper()
+      .readValue(getResponse.getSourceAsString(), CombinedReportDefinitionDto.class);
+    assertThat(definitionDto.getData(), notNullValue());
+    CombinedReportDataDto data = definitionDto.getData();
+    assertThat(data.getConfiguration(), notNullValue());
+    assertThat(data.getConfiguration(), equalTo(new ReportConfigurationDto()));
+    assertThat(
+      data.getConfiguration().getColor(),
+      is(ReportConfigurationDto.DEFAULT_CONFIGURATION_COLOR)
+    );
   }
 
   @Test
@@ -120,6 +132,7 @@ public class CombinedReportHandlingIT {
     String singleReportId = createNewSingleNumberReport(engineDto);
     CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
     report.setData(createCombinedReport(singleReportId));
+    report.getData().getConfiguration().setPrecision(100);
     report.setId("shouldNotBeUpdated");
     report.setLastModifier("shouldNotBeUpdatedManually");
     report.setName("MyReport");
@@ -138,7 +151,7 @@ public class CombinedReportHandlingIT {
       .filter(r -> r instanceof CombinedReportDefinitionDto).findFirst().get();
     assertThat(newReport.getData().getReportIds().isEmpty(), is(false));
     assertThat(newReport.getData().getReportIds().get(0), is(singleReportId));
-    assertThat(newReport.getData().getConfiguration(), is("aRandomConfiguration"));
+    assertThat(newReport.getData().getConfiguration().getPrecision(), is(100));
     assertThat(newReport.getData().getVisualization(), is(ProcessVisualization.NUMBER));
     assertThat(newReport.getId(), is(id));
     assertThat(newReport.getCreated(), is(not(shouldBeIgnoredDate)));
@@ -193,7 +206,7 @@ public class CombinedReportHandlingIT {
     CombinedReportDataDto dataDto = result.getData();
     assertThat(dataDto.getReportIds().size(), is(1));
     assertThat(dataDto.getReportIds().get(0), is(singleReportId));
-    assertThat(dataDto.getConfiguration(), is("aRandomConfiguration"));
+    assertThat(report.getData().getConfiguration(), equalTo(new ReportConfigurationDto()));
   }
 
   @Test

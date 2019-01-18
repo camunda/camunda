@@ -15,10 +15,6 @@ public class SchemaUpgradeUtil {
   public static final String CREATE_SNAPSHOT = "create-snapshot";
   protected static Logger logger = LoggerFactory.getLogger(SchemaUpgradeUtil.class);
 
-  /**
-   * @param filePath -
-   * @return
-   */
   public static String readClasspathFileAsString(String filePath) {
     InputStream inputStream = SchemaUpgradeUtil.class.getClassLoader().getResourceAsStream(filePath);
     String data = null;

@@ -8,22 +8,18 @@ import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.get
 
 public class UpdateIndexStep implements UpgradeStep {
   private final String typeName;
-  private final String sourceVersion;
-  private final String targetVersion;
+  private final Integer targetVersion;
   private final String customMapping;
 
   public UpdateIndexStep(final String typeName,
-                         final String sourceVersion,
-                         final String targetVersion) {
-    this(typeName, sourceVersion, targetVersion, null);
+                         final Integer targetVersion) {
+    this(typeName, targetVersion, null);
   }
 
   public UpdateIndexStep(final String typeName,
-                         final String sourceVersion,
-                         final String targetVersion,
+                         final Integer targetVersion,
                          final String customMapping) {
     this.typeName = typeName;
-    this.sourceVersion = sourceVersion;
     this.targetVersion = targetVersion;
     this.customMapping = customMapping;
   }
@@ -31,8 +27,10 @@ public class UpdateIndexStep implements UpgradeStep {
   @Override
   public void execute(final ESIndexAdjuster esIndexAdjuster) {
     final String indexAlias = getOptimizeIndexAliasForType(typeName);
-    final String sourceIndexName = getOptimizeIndexNameForAliasAndVersion(indexAlias, sourceVersion);
-    final String targetIndexName = getOptimizeIndexNameForAliasAndVersion(indexAlias, targetVersion);
+    String sourceVersionAsString = String.valueOf(targetVersion - 1);
+    String targetVersionAsString = String.valueOf(targetVersion);
+    final String sourceIndexName = getOptimizeIndexNameForAliasAndVersion(indexAlias, sourceVersionAsString);
+    final String targetIndexName = getOptimizeIndexNameForAliasAndVersion(indexAlias, targetVersionAsString);
 
     String indexMappings = esIndexAdjuster.getIndexMappings(sourceIndexName);
     indexMappings = customMapping != null ? customMapping : indexMappings;

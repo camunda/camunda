@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
+import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -24,7 +25,6 @@ import java.time.format.DateTimeFormatter;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.Assert.assertThat;
 
@@ -66,7 +66,7 @@ public class ObjectMapperFactoryTest {
     assertThat(reportDefinitionDto, instanceOf(SingleProcessReportDefinitionDto.class));
     SingleProcessReportDefinitionDto singleProcessReport =
       (SingleProcessReportDefinitionDto) reportDefinitionDto;
-    assertThat(singleProcessReport.getData(), is(nullValue()));
+    assertThat(singleProcessReport.getData(), CoreMatchers.notNullValue());
   }
 
   @Test

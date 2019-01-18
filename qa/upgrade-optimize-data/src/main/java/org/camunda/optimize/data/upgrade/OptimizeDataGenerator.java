@@ -1,5 +1,6 @@
 package org.camunda.optimize.data.upgrade;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.engine.CredentialsDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
@@ -27,6 +28,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Vari
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutedFlowNodeFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import javax.ws.rs.client.Client;
@@ -36,7 +40,9 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -45,6 +51,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.rest.util.AuthenticationUtil.OPTIMIZE_AUTHORIZATION;
@@ -56,10 +63,14 @@ import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.crea
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone;
 
 public class OptimizeDataGenerator {
+
+  private static final Logger logger = LoggerFactory.getLogger(OptimizeDataGenerator.class);
+
   private static Client client;
   private static String authCookie;
   private static String processDefinitionKey;
   private static String processDefinitionVersion;
+  private static ObjectMapper objectMapper;
 
   public static void main(String[] args) throws Exception {
     ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext("optimizeDataUpgradeContext.xml");
@@ -67,6 +78,7 @@ public class OptimizeDataGenerator {
     OptimizeObjectMapperContextResolver provider = ctx.getBean(OptimizeObjectMapperContextResolver.class);
 
     client = ClientBuilder.newClient().register(provider);
+    objectMapper = ctx.getBean(ObjectMapper.class);
 
     validateAndStoreLicense();
     authenticateDemo();
@@ -225,14 +237,14 @@ public class OptimizeDataGenerator {
         && reportData.getGroupBy().getType().equals(ProcessGroupByType.START_DATE)) {
         combinedReportData.getReportIds().add(id);
       }
-      reportData.setConfiguration("{}");
+      reportData.setConfiguration(createDefaultReportConfiguration());
       reportData.setFilter(filters);
 
       SingleReportDefinitionDto reportUpdate = prepareReportUpdate(reportData, id);
       updateReport(id, reportUpdate);
     }
     if (!combinedReportData.getReportIds().isEmpty()) {
-      combinedReportData.setConfiguration("{}");
+      combinedReportData.setConfiguration(createDefaultReportConfiguration());
       reportIds.add(createCombinedReport(combinedReportData));
     }
     return reportIds;
@@ -316,6 +328,7 @@ public class OptimizeDataGenerator {
   private static List<ProcessReportDataDto> createDifferentReports() {
     List<ProcessReportDataDto> reportDefinitions = new ArrayList<>();
 
+
     reportDefinitions.add(
       createAvgPiDurationAsNumberGroupByNone(
         processDefinitionKey, processDefinitionVersion
@@ -362,7 +375,22 @@ public class OptimizeDataGenerator {
     reportDataDto.setVisualization(ProcessVisualization.BAR);
     reportDefinitions.add(reportDataDto);
 
+    Map reportConfigurationAsMap = createDefaultReportConfiguration();
+    reportDefinitions.forEach(r -> r.setConfiguration(reportConfigurationAsMap));
+
     return reportDefinitions;
+  }
+
+  private static Map createDefaultReportConfiguration() {
+    String pathToMapping = "2.3/report-configuration.json";
+    String configuration = readClasspathFileAsString(pathToMapping);
+    Map reportConfigurationAsMap;
+    try {
+      reportConfigurationAsMap = objectMapper.readValue(configuration, Map.class);
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException("Could not deserialize configuration structure as json!");
+    }
+    return reportConfigurationAsMap;
   }
 
   private static String createEmptySingleProcessReport(WebTarget target) {
@@ -388,5 +416,28 @@ public class OptimizeDataGenerator {
 
     return response.readEntity(new GenericType<List<ProcessDefinitionEngineDto>>() {
     });
+  }
+
+  private static String readClasspathFileAsString(String filePath) {
+    InputStream inputStream = OptimizeDataGenerator.class.getClassLoader().getResourceAsStream(filePath);
+    String data = null;
+    try {
+      data = readFromInputStream(inputStream);
+    } catch (IOException e) {
+      logger.error("can't read [{}] from classpath", filePath, e);
+    }
+    return data;
+  }
+
+  private static String readFromInputStream(InputStream inputStream) throws IOException {
+    try(ByteArrayOutputStream result = new ByteArrayOutputStream()) {
+      byte[] buffer = new byte[1024];
+      int length;
+      while ((length = inputStream.read(buffer)) != -1) {
+        result.write(buffer, 0, length);
+      }
+
+      return result.toString("UTF-8");
+    }
   }
 }

@@ -5,7 +5,7 @@ import org.camunda.optimize.dto.optimize.query.report.ReportType;
 
 public class SingleDecisionReportDefinitionDto extends ReportDefinitionDto {
 
-  protected DecisionReportDataDto data;
+  protected DecisionReportDataDto data = new DecisionReportDataDto();
 
   public SingleDecisionReportDefinitionDto() {
     super(false, ReportType.DECISION);

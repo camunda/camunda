@@ -2,6 +2,7 @@ package org.camunda.optimize.service.es.retrieval;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.configuration.ReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -40,6 +41,7 @@ import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.get
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -77,6 +79,18 @@ public class SingleReportHandlingIT {
 
     // then
     assertThat(getResponse.isExists(), is(true));
+    SingleProcessReportDefinitionDto definitionDto = elasticSearchRule.getObjectMapper()
+      .readValue(getResponse.getSourceAsString(), SingleProcessReportDefinitionDto.class);
+    assertThat(definitionDto.getData(), notNullValue());
+    ProcessReportDataDto data = definitionDto.getData();
+    assertThat(data.getFilter(), notNullValue());
+    assertThat(data.getParameters(), notNullValue());
+    assertThat(data.getConfiguration(), notNullValue());
+    assertThat(data.getConfiguration(), equalTo(new ReportConfigurationDto()));
+    assertThat(
+      data.getConfiguration().getColor(),
+      is(ReportConfigurationDto.DEFAULT_CONFIGURATION_COLOR)
+    );
   }
 
   @Test
@@ -134,7 +148,9 @@ public class SingleReportHandlingIT {
     reportData.setProcessDefinitionKey("procdef");
     reportData.setProcessDefinitionVersion("123");
     reportData.setFilter(Collections.emptyList());
-    reportData.setConfiguration("aRandomConfiguration");
+    ReportConfigurationDto configuration = new ReportConfigurationDto();
+    configuration.setyLabel("fooYLabel");
+    reportData.setConfiguration(configuration);
     ProcessPartDto processPartDto = new ProcessPartDto();
     processPartDto.setStart("start123");
     processPartDto.setEnd("end123");
@@ -159,7 +175,7 @@ public class SingleReportHandlingIT {
       (SingleProcessReportDefinitionDto) reports.get(0);
     assertThat(newReport.getData().getProcessDefinitionKey(), is("procdef"));
     assertThat(newReport.getData().getProcessDefinitionVersion(), is("123"));
-    assertThat(newReport.getData().getConfiguration(), is("aRandomConfiguration"));
+    assertThat(newReport.getData().getConfiguration().getyLabel(), is("fooYLabel"));
     assertThat(newReport.getData().getParameters().getProcessPart().getStart(), is("start123"));
     assertThat(newReport.getData().getParameters().getProcessPart().getEnd(), is("end123"));
     assertThat(newReport.getId(), is(id));

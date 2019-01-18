@@ -4,12 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionUpdateDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionUpdateDto;
-import org.camunda.optimize.service.es.schema.type.CombinedReportType;
+import org.camunda.optimize.service.es.schema.type.report.CombinedReportType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
@@ -75,6 +77,7 @@ public class ReportWriter {
     reportDefinitionDto.setOwner(userId);
     reportDefinitionDto.setLastModifier(userId);
     reportDefinitionDto.setName(DEFAULT_REPORT_NAME);
+    reportDefinitionDto.setData(new CombinedReportDataDto());
 
     try {
       IndexRequest request = new IndexRequest(
@@ -116,6 +119,7 @@ public class ReportWriter {
     reportDefinitionDto.setOwner(userId);
     reportDefinitionDto.setLastModifier(userId);
     reportDefinitionDto.setName(DEFAULT_REPORT_NAME);
+    reportDefinitionDto.setData(new ProcessReportDataDto());
 
     try {
       IndexRequest request = new IndexRequest(

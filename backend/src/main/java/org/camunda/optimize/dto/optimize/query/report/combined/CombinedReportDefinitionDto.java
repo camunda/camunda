@@ -5,7 +5,7 @@ import org.camunda.optimize.dto.optimize.query.report.ReportType;
 
 public class CombinedReportDefinitionDto extends ReportDefinitionDto {
 
-  protected CombinedReportDataDto data;
+  protected CombinedReportDataDto data = new CombinedReportDataDto();
 
   public CombinedReportDefinitionDto(CombinedReportDataDto data) {
     this();

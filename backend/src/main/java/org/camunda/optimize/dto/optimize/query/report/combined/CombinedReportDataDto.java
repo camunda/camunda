@@ -1,21 +1,22 @@
 package org.camunda.optimize.dto.optimize.query.report.combined;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.configuration.ReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 
 import java.util.List;
 
 public class CombinedReportDataDto implements ReportDataDto {
 
-  protected Object configuration;
+  protected ReportConfigurationDto configuration = new ReportConfigurationDto();
   protected ProcessVisualization visualization;
   protected List<String> reportIds;
 
-  public Object getConfiguration() {
+  public ReportConfigurationDto getConfiguration() {
     return configuration;
   }
 
-  public void setConfiguration(Object configuration) {
+  public void setConfiguration(ReportConfigurationDto configuration) {
     this.configuration = configuration;
   }
 

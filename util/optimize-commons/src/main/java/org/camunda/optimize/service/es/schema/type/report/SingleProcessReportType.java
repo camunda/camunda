@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.es.schema.type;
+package org.camunda.optimize.service.es.schema.type.report;
 
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;

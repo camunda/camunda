@@ -5,7 +5,7 @@ import org.camunda.optimize.dto.optimize.query.report.ReportType;
 
 public class SingleProcessReportDefinitionDto extends ReportDefinitionDto {
 
-  protected ProcessReportDataDto data;
+  protected ProcessReportDataDto data = new ProcessReportDataDto();
 
   public SingleProcessReportDefinitionDto() {
     super(false, ReportType.PROCESS);

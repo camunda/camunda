@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.es.schema.type;
+package org.camunda.optimize.service.es.schema.type.report;
 
 import org.camunda.optimize.service.es.schema.StrictTypeMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;

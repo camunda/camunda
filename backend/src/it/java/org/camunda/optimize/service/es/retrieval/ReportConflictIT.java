@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.configuration.ReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
@@ -419,7 +420,7 @@ public class ReportConflictIT {
   private static CombinedReportDataDto createCombinedReport(String... reportIds) {
     CombinedReportDataDto combinedReportDataDto = new CombinedReportDataDto();
     combinedReportDataDto.setReportIds(Arrays.asList(reportIds));
-    combinedReportDataDto.setConfiguration("aRandomConfiguration");
+    combinedReportDataDto.setConfiguration(new ReportConfigurationDto());
     return combinedReportDataDto;
   }
 

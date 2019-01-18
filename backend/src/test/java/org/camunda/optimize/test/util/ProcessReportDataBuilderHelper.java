@@ -2,6 +2,7 @@ package org.camunda.optimize.test.util;
 
 import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.configuration.ReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
@@ -750,7 +751,6 @@ public class ProcessReportDataBuilderHelper {
   public static CombinedReportDataDto createCombinedReport(String... reportIds) {
     CombinedReportDataDto combinedReportDataDto = new CombinedReportDataDto();
     combinedReportDataDto.setReportIds(Arrays.asList(reportIds));
-    combinedReportDataDto.setConfiguration("aRandomConfiguration");
     return combinedReportDataDto;
   }
 
