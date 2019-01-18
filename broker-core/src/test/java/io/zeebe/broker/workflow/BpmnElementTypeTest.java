@@ -152,6 +152,24 @@ public class BpmnElementTypeTest {
                   .done();
             }
           },
+          new BpmnElementTypeScenario(
+              "Intermediate Catch Event After Event Based Gateway",
+              BpmnElementType.INTERMEDIATE_CATCH_EVENT) {
+            @Override
+            BpmnModelInstance modelInstance() {
+              return Bpmn.createExecutableProcess(processId())
+                  .startEvent()
+                  .eventBasedGateway()
+                  .intermediateCatchEvent(elementId())
+                  .timerWithDuration("PT0.01S")
+                  .endEvent()
+                  .moveToLastGateway()
+                  .intermediateCatchEvent()
+                  .timerWithDuration("PT1H")
+                  .endEvent()
+                  .done();
+            }
+          },
           new BpmnElementTypeScenario("Message Boundary Event", BpmnElementType.BOUNDARY_EVENT) {
             @Override
             BpmnModelInstance modelInstance() {
