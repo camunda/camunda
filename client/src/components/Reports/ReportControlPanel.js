@@ -13,7 +13,7 @@ import {
 import {TargetValueComparison} from './targetValue';
 import {ProcessPart} from './ProcessPart';
 
-import {loadVariables, isChecked, update} from './service';
+import {loadVariables, loadProcessDefinitionXml, isChecked, update} from './service';
 
 import {Configuration} from './Configuration';
 
@@ -102,6 +102,27 @@ export default class ReportControlPanel extends React.Component {
     }
   };
 
+  changeDefinition = async (key, version) => {
+    const {groupBy, filter} = this.props;
+
+    const change = {
+      processDefinitionKey: {$set: key},
+      processDefinitionVersion: {$set: version},
+      parameters: {$set: {}},
+      filter: {$set: filter.filter(({type}) => type !== 'executedFlowNodes' && type !== 'variable')}
+    };
+
+    if (key && version) {
+      change.configuration = {xml: {$set: await loadProcessDefinitionXml(key, version)}};
+    }
+
+    if (groupBy && groupBy.type === 'variable') {
+      change.groupBy = {$set: null};
+    }
+
+    this.props.updateReport(change, true);
+  };
+
   render() {
     return (
       <div className="ReportControlPanel">
@@ -112,7 +133,7 @@ export default class ReportControlPanel extends React.Component {
                 <ProcessDefinitionSelection
                   {...this.definitionConfig()}
                   xml={this.props.configuration.xml}
-                  onChange={this.props.updateReport}
+                  onChange={this.changeDefinition}
                   renderDiagram={true}
                   enableAllVersionSelection={true}
                 />

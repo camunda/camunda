@@ -118,7 +118,12 @@ export default class AnalysisControlPanel extends React.Component {
               <ProcessDefinitionSelection
                 {...this.getDefinitionConfig()}
                 xml={this.props.xml}
-                onChange={this.props.onChange}
+                onChange={(key, version) =>
+                  this.props.onChange({
+                    processDefinitionKey: key,
+                    processDefinitionVersion: version
+                  })
+                }
               />
             </Popover>
             analyse how the branches of

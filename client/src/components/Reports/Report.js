@@ -37,8 +37,6 @@ import CombinedReportPanel from './CombinedReportPanel';
 
 import ColumnRearrangement from './ColumnRearrangement';
 
-import {createUpdateFunction} from 'services/reportUpdate';
-
 import './Report.scss';
 
 export default withErrorHandling(
@@ -307,12 +305,29 @@ export default withErrorHandling(
       )}.csv${queryString}`;
     };
 
-    applyReportUpdate = (report, result) => {
-      this.setState({data: report, reportResult: result, loadingReportData: false});
-    };
+    updateReport = async (change, needsReevaluation) => {
+      const newReport = update(this.state.data, change);
 
-    updateLoadingIndicator = report => {
-      this.setState({data: report, loadingReportData: true});
+      if (needsReevaluation) {
+        const {combined, reportType} = this.state;
+
+        const query = {
+          combined,
+          reportType,
+          data: newReport
+        };
+
+        this.setState({data: newReport, loadingReportData: true});
+        this.setState({
+          reportResult: (await getReportData(query)) || query,
+          loadingReportData: false
+        });
+      } else {
+        this.setState(({reportResult}) => ({
+          data: newReport,
+          reportResult: update(reportResult, {data: change})
+        }));
+      }
     };
 
     renderEditMode = () => {
@@ -327,15 +342,6 @@ export default withErrorHandling(
         reportType,
         redirectToReport
       } = this.state;
-
-      const updateReport = createUpdateFunction({
-        combined,
-        type: reportType,
-        report: data,
-        result: reportResult,
-        callback: this.applyReportUpdate,
-        loadingCallback: this.updateLoadingIndicator
-      });
 
       return (
         <div className="Report">
@@ -386,7 +392,7 @@ export default withErrorHandling(
               <ReportControlPanel
                 {...data}
                 reportResult={reportResult}
-                updateReport={updateReport}
+                updateReport={this.updateReport}
               />
             )}
 
@@ -395,7 +401,7 @@ export default withErrorHandling(
               <DecisionControlPanel
                 {...data}
                 reportResult={reportResult}
-                updateReport={updateReport}
+                updateReport={this.updateReport}
               />
             )}
 
@@ -434,7 +440,7 @@ export default withErrorHandling(
               <CombinedReportPanel
                 reportResult={reportResult}
                 configuration={data.configuration}
-                updateReport={updateReport}
+                updateReport={this.updateReport}
               />
             )}
           </div>
@@ -443,16 +449,7 @@ export default withErrorHandling(
     };
 
     updateSorting = (by, order) => {
-      const {data, reportResult, combined, reportType} = this.state;
-
-      createUpdateFunction({
-        combined,
-        type: reportType,
-        report: data,
-        result: reportResult,
-        callback: this.applyReportUpdate,
-        loadingCallback: this.updateLoadingIndicator
-      })({parameters: {sorting: {$set: {by, order}}}}, true);
+      this.updateReport({parameters: {sorting: {$set: {by, order}}}}, true);
     };
 
     applyAddons = (...addons) => (Component, props) => (
