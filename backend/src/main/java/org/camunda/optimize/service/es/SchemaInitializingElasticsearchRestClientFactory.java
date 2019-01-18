@@ -16,6 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.service.util.VersionChecker.checkESVersionSupport;
+
 
 public class SchemaInitializingElasticsearchRestClientFactory
   implements FactoryBean<RestHighLevelClient>, DisposableBean {
@@ -38,7 +40,7 @@ public class SchemaInitializingElasticsearchRestClientFactory
 
 
   @Override
-  public RestHighLevelClient getObject() {
+  public RestHighLevelClient getObject() throws IOException {
     if (esClient == null) {
       logger.info("Initializing Elasticsearch rest client...");
       esClient = ElasticsearchHighLevelRestClientBuilder.build(configurationService);
@@ -51,7 +53,7 @@ public class SchemaInitializingElasticsearchRestClientFactory
     return esClient;
   }
 
-  private void waitForElasticsearch(RestHighLevelClient esClient) {
+  private void waitForElasticsearch(RestHighLevelClient esClient) throws IOException {
     boolean isConnected = false;
     while (!isConnected) {
       try {
@@ -67,6 +69,7 @@ public class SchemaInitializingElasticsearchRestClientFactory
         throw new OptimizeRuntimeException(message, e);
       }
     }
+    checkESVersionSupport(esClient);
   }
 
   private int getNumberOfClusterNodes(RestHighLevelClient esClient) {
