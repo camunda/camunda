@@ -184,7 +184,9 @@ export default class ReportControlPanel extends React.Component {
                 flowNodeNames={this.state.flowNodeNames}
                 xml={this.props.configuration.xml}
                 processPart={this.props.parameters.processPart}
-                update={newPart => this.update('parameters', {processPart: newPart})}
+                update={newPart =>
+                  this.props.updateReport({parameters: {processPart: {$set: newPart}}}, true)
+                }
               />
             </li>
           )}
