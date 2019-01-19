@@ -30,6 +30,8 @@ import org.agrona.DirectBuffer;
 
 /** Represents the implementation of the logged event. */
 public class LoggedEventImpl implements ReadableFragment, LoggedEvent {
+
+  public static final int MAX_RECORD_SIZE = 0xFFFF;
   protected int fragmentOffset = -1;
   protected int messageOffset = -1;
   protected DirectBuffer buffer;
@@ -106,6 +108,11 @@ public class LoggedEventImpl implements ReadableFragment, LoggedEvent {
   @Override
   public short getMetadataLength() {
     return LogEntryDescriptor.getMetadataLength(buffer, messageOffset);
+  }
+
+  @Override
+  public int getMaxValueLength() {
+    return MAX_RECORD_SIZE - LogEntryDescriptor.headerLength(getMetadataLength());
   }
 
   @Override

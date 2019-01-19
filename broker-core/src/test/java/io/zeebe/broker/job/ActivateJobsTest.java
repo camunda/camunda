@@ -18,6 +18,7 @@
 package io.zeebe.broker.job;
 
 import static io.zeebe.exporter.record.Assertions.assertThat;
+import static io.zeebe.logstreams.impl.LoggedEventImpl.MAX_RECORD_SIZE;
 import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_PAYLOAD;
 import static io.zeebe.test.broker.protocol.clientapi.PartitionTestClient.PROP_WORKFLOW_BPMN_PROCESS_ID;
@@ -419,6 +420,22 @@ public class ActivateJobsTest {
     assertThat(customHeaders).isEqualTo(jobRecord.getValue().getCustomHeaders());
   }
 
+  @Test
+  public void shouldLimitJobsTo65KbSize() {
+    // given
+    final int payloadSize = MAX_RECORD_SIZE / 3;
+    final String payload = "{\"key\": \"" + RandomString.make(payloadSize) + "\"}";
+
+    // when
+    createJobs(JOB_TYPE, 3, payload);
+    final List<Job> jobs = activateJobs(JOB_TYPE, 3);
+
+    // then
+    assertThat(jobs).hasSize(2);
+    final List<Job> remainingJobs = activateJobs(JOB_TYPE, 1);
+    assertThat(remainingJobs).hasSize(1);
+  }
+
   private List<Long> createJobs(int amount) {
     return createJobs(JOB_TYPE, amount);
   }
@@ -430,8 +447,19 @@ public class ActivateJobsTest {
         .collect(Collectors.toList());
   }
 
+  private List<Long> createJobs(String jobType, int amount, String payload) {
+    return IntStream.range(0, amount)
+        .boxed()
+        .map(i -> createJob(jobType, payload))
+        .collect(Collectors.toList());
+  }
+
   private long createJob(String jobType) {
-    return apiRule.partitionClient().createJob(jobType, b -> b.zeebeTaskRetries(3), JSON_PAYLOAD);
+    return createJob(jobType, JSON_PAYLOAD);
+  }
+
+  private long createJob(String jobType, String payload) {
+    return apiRule.partitionClient().createJob(jobType, b -> b.zeebeTaskRetries(3), payload);
   }
 
   private List<Job> activateJobs(int amount) {

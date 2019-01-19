@@ -82,7 +82,7 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
     final long jobBatchKey = streamWriter.getKeyGenerator().nextKey();
 
     final AtomicInteger amount = new AtomicInteger(value.getAmount());
-    collectJobsToActivate(value, amount);
+    collectJobsToActivate(record, amount);
 
     // Collecting of jobs and update state and write ACTIVATED job events should be separate,
     // since otherwise this will cause some problems (weird behavior) with the reusing of objects
@@ -95,12 +95,12 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
     responseWriter.writeEventOnCommand(jobBatchKey, JobBatchIntent.ACTIVATED, value, record);
   }
 
-  private void collectJobsToActivate(JobBatchRecord value, AtomicInteger amount) {
+  private void collectJobsToActivate(TypedRecord<JobBatchRecord> record, AtomicInteger amount) {
+    final JobBatchRecord value = record.getValue();
     final ValueArray<JobRecord> jobIterator = value.jobs();
     final ValueArray<LongValue> jobKeyIterator = value.jobKeys();
 
     // collect jobs for activation
-
     variableNames.clear();
     final ValueArray<StringValue> variables = value.variables();
 
@@ -114,18 +114,21 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
     state.forEachActivatableJobs(
         value.getType(),
         (key, jobRecord) -> {
-          final int remainingAmount = amount.decrementAndGet();
-          if (remainingAmount >= 0) {
-            final long deadline = currentTimeMillis() + value.getTimeout();
+          int remainingAmount = amount.get();
+          final long deadline = currentTimeMillis() + value.getTimeout();
+          jobRecord.setDeadline(deadline).setWorker(value.getWorker());
+
+          if (remainingAmount >= 0
+              && value.getLength() + Long.BYTES + jobRecord.getLength()
+                  <= record.getMaxValueLength()) {
+            remainingAmount = amount.decrementAndGet();
             jobKeyIterator.add().setValue(key);
             final JobRecord arrayValueJob = jobIterator.add();
 
-            // clone job record to modify and add it
+            // clone job record since buffer is reused during iteration
             final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(jobRecord.getLength());
             jobRecord.write(buffer, 0);
-
             arrayValueJob.wrap(buffer);
-            arrayValueJob.setDeadline(deadline).setWorker(value.getWorker());
           }
 
           return remainingAmount > 0;
