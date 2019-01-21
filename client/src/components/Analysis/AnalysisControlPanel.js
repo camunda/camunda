@@ -1,4 +1,5 @@
 import classnames from 'classnames';
+import update from 'immutability-helper';
 import React from 'react';
 import {ActionItem, Popover, ProcessDefinitionSelection} from 'components';
 
@@ -135,7 +136,9 @@ export default class AnalysisControlPanel extends React.Component {
             <Filter
               data={this.props.filter}
               flowNodeNames={this.state.flowNodeNames}
-              onChange={this.props.onChange}
+              onChange={({filter}) =>
+                this.props.onChange({filter: update(this.props.filter, filter)})
+              }
               xml={this.props.xml}
               {...this.getDefinitionConfig()}
             />

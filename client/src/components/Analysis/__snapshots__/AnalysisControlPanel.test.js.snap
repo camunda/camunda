@@ -83,6 +83,7 @@ exports[`should display a sentence to describe what the user can do on this page
         <Filter
           data={null}
           flowNodeNames={null}
+          onChange={[Function]}
           processDefinitionKey=""
           processDefinitionVersion=""
           xml={null}
