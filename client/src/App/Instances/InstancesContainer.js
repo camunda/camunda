@@ -27,6 +27,7 @@ import {compactObject} from 'modules/utils';
 
 import Instances from './Instances';
 import {parseQueryString, decodeFields, fetchDiagramModel} from './service';
+
 class InstancesContainer extends Component {
   static propTypes = {
     getStateLocally: PropTypes.func.isRequired,
@@ -337,6 +338,16 @@ class InstancesContainer extends Component {
     });
   };
 
+  handleWorkflowInstancesRefresh = async () => {
+    const instances = await this.fetchWorkflowInstances();
+
+    this.setState({
+      workflowInstances: instances.workflowInstances,
+      filterCount: instances.totalCount,
+      workflowInstancesLoaded: true
+    });
+  };
+
   render() {
     return (
       <Instances
@@ -346,6 +357,7 @@ class InstancesContainer extends Component {
         onFilterReset={this.handleFilterReset}
         onFirstElementChange={this.handleFirstElementChange}
         onSort={this.handleSortingChange}
+        onWorkflowInstancesRefresh={this.handleWorkflowInstancesRefresh}
       />
     );
   }

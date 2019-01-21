@@ -16,7 +16,8 @@ import * as Styled from './styled';
 export default class Actions extends React.Component {
   static propTypes = {
     instance: PropTypes.object.isRequired,
-    selected: PropTypes.bool
+    selected: PropTypes.bool,
+    onButtonClick: PropTypes.func
   };
 
   state = {operationState: '', operationType: ''};
@@ -51,12 +52,14 @@ export default class Actions extends React.Component {
     }
   };
 
-  handleOnClick = operationType => {
+  handleOnClick = async operationType => {
     this.setState({operationState: OPERATION_STATE.SCHEDULED});
-    applyOperation(
+    await applyOperation(
       operationType,
       wrapIdinQuery(operationType, this.props.instance)
     );
+
+    this.props.onButtonClick && this.props.onButtonClick(this.props.instance);
   };
 
   renderItem = operationType => {

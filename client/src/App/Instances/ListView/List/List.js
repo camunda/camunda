@@ -33,7 +33,8 @@ class List extends React.Component {
     sorting: PropTypes.object,
     onSort: PropTypes.func,
     expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
-    isDataLoaded: PropTypes.bool
+    isDataLoaded: PropTypes.bool,
+    onActionButtonClick: PropTypes.func
   };
 
   constructor(props) {
@@ -152,6 +153,10 @@ class List extends React.Component {
     }
   }
 
+  handleActionButtonClick = instance => {
+    this.props.onActionButtonClick(instance);
+  };
+
   renderTableHead() {
     const isListEmpty = this.props.data.length === 0;
     const listHasFinishedInstances =
@@ -261,6 +266,10 @@ class List extends React.Component {
                 <Actions
                   instance={instance}
                   selected={this.isSelected(instance.id)}
+                  onButtonClick={this.handleActionButtonClick.bind(
+                    this,
+                    instance
+                  )}
                 />
               </TD>
             </TR>

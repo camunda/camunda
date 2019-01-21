@@ -50,7 +50,8 @@ export default class Instances extends Component {
       bpmnElements: PropTypes.object,
       definitions: PropTypes.object
     }).isRequired,
-    statistics: PropTypes.array.isRequired
+    statistics: PropTypes.array.isRequired,
+    onWorkflowInstancesRefresh: PropTypes.func
   };
 
   handleFlowNodeSelection = flowNodeId => {
@@ -145,6 +146,9 @@ To see a diagram, select a Workflow in the Filters panel.`}
                 sorting={this.props.sorting}
                 firstElement={this.props.firstElement}
                 onFirstElementChange={this.props.onFirstElementChange}
+                onWorkflowInstancesRefresh={
+                  this.props.onWorkflowInstancesRefresh
+                }
               />
             </Styled.Center>
           </Styled.Content>

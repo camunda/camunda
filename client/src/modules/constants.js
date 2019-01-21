@@ -22,6 +22,10 @@ export const FILTER_SELECTION = {
   active: {
     active: true,
     incidents: false
+  },
+  finished: {
+    completed: true,
+    canceled: true
   }
 };
 
@@ -143,6 +147,12 @@ export const OPERATION_STATE = {
   FAILED: 'FAILED',
   COMPLETED: 'COMPLETED'
 };
+
+export const ACTIVE_OPERATION_STATES = [
+  OPERATION_STATE.SCHEDULED,
+  OPERATION_STATE.LOCKED,
+  OPERATION_STATE.SENT
+];
 
 export const PAGE_TITLE = {
   LOGIN: 'Camunda Operate: Log In',

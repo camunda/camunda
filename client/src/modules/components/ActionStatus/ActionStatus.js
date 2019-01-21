@@ -1,18 +1,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import {OPERATION_STATE} from 'modules/constants';
+import {ACTIVE_OPERATION_STATES, OPERATION_STATE} from 'modules/constants';
 import {OPERATION_TYPE} from 'modules/constants';
 
 import StatusItems from './StatusItems';
 
 import * as Styled from './styled';
-
-const SCHEDULED_STATES = [
-  OPERATION_STATE.SCHEDULED,
-  OPERATION_STATE.LOCKED,
-  OPERATION_STATE.SENT
-];
 
 const getTitleByOperationType = (instanceId, type) => {
   switch (type) {
@@ -32,7 +26,7 @@ const ActionStatus = ({
   instance,
   ...props
 }) => {
-  if (SCHEDULED_STATES.includes(operationState)) {
+  if (ACTIVE_OPERATION_STATES.includes(operationState)) {
     return (
       <Styled.ActionSpinner
         selected={selected}
