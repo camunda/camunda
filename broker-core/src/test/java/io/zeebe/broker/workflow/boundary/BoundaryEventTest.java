@@ -22,9 +22,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.exporter.record.Assertions;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.exporter.record.value.TimerRecordValue;
+import io.zeebe.exporter.record.value.VariableRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -161,10 +163,9 @@ public class BoundaryEventTest {
     awaitProcessCompleted();
 
     // then
-    final Record<WorkflowInstanceRecordValue> boundaryTriggered =
-        testClient.receiveElementInState("event", WorkflowInstanceIntent.EVENT_TRIGGERED);
-    assertThat(boundaryTriggered.getValue().getPayloadAsMap())
-        .containsExactly(entry("key", "123"), entry("bar", 3));
+    final Record<VariableRecordValue> variableEvent =
+        RecordingExporter.variableRecords().withName("bar").getFirst();
+    Assertions.assertThat(variableEvent.getValue()).hasValue("3");
   }
 
   @Test

@@ -21,7 +21,6 @@ import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
-import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.protocol.impl.record.value.job.JobHeaders;
@@ -60,27 +59,10 @@ public final class JobCompletedEventProcessor implements TypedRecordProcessor<Jo
       elementInstance.setJobKey(-1);
       elementInstance.setValue(value);
 
-      final ExecutableFlowNode serviceTaks =
-          (ExecutableFlowNode)
-              workflowState
-                  .getWorkflowByKey(value.getWorkflowKey())
-                  .getWorkflow()
-                  .getElementById(value.getElementId());
-
-      if (serviceTaks.getOutputMappings().length > 0) {
-        workflowState
-            .getElementInstanceState()
-            .getVariablesState()
-            .setVariablesLocalFromDocument(elementInstanceKey, jobEvent.getPayload());
-
-      } else {
-        workflowState
-            .getElementInstanceState()
-            .getVariablesState()
-            .setVariablesFromDocument(value.getScopeInstanceKey(), jobEvent.getPayload());
-      }
-
-      workflowState.getElementInstanceState().flushDirtyState();
+      workflowState
+          .getElementInstanceState()
+          .getVariablesState()
+          .setPayload(elementInstanceKey, jobEvent.getPayload());
     }
   }
 }

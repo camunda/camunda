@@ -21,7 +21,9 @@ import io.zeebe.broker.workflow.model.element.ExecutableBoundaryEvent;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.broker.workflow.state.ElementInstance;
+import io.zeebe.broker.workflow.state.VariablesState;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import org.agrona.DirectBuffer;
 
 public class TriggerBoundaryEventHandler implements BpmnStepHandler<ExecutableBoundaryEvent> {
 
@@ -56,11 +58,24 @@ public class TriggerBoundaryEventHandler implements BpmnStepHandler<ExecutableBo
 
   private void triggerNonInterruptingBoundaryEvent(
       BpmnStepContext<ExecutableBoundaryEvent> context) {
-    context
-        .getOutput()
-        .appendNewEvent(WorkflowInstanceIntent.EVENT_TRIGGERING, context.getRecord().getValue());
+
+    final long eventInstanceKey =
+        context
+            .getOutput()
+            .appendNewEvent(
+                WorkflowInstanceIntent.EVENT_TRIGGERING, context.getRecord().getValue());
 
     // spawn a new token to continue at the event
     context.getFlowScopeInstance().spawnToken();
+
+    // TODO (saig0) #1899: since the events have a different key, we need to copy the payload to the
+    // new scope
+    final long elementInstanceKey = context.getRecord().getKey();
+    final VariablesState variablesState = context.getElementInstanceState().getVariablesState();
+    final DirectBuffer payload = variablesState.getPayload(elementInstanceKey);
+    if (payload != null) {
+      variablesState.setPayload(eventInstanceKey, payload);
+      variablesState.removePayload(elementInstanceKey);
+    }
   }
 }

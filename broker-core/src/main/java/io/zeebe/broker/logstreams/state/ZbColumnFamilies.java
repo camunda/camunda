@@ -40,6 +40,7 @@ public enum ZbColumnFamilies {
   // variable state
   ELEMENT_INSTANCE_CHILD_PARENT,
   VARIABLES,
+  PAYLOAD,
 
   // timer state
   TIMERS,

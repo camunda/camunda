@@ -210,14 +210,14 @@ public class ElementInstanceState {
 
   public void storeRecord(
       long scopeKey, TypedRecord<WorkflowInstanceRecord> record, Purpose purpose) {
-    final IndexedRecord indexedRecord =
-        new IndexedRecord(
-            record.getKey(),
-            (WorkflowInstanceIntent) record.getMetadata().getIntent(),
-            record.getValue());
+    final long key = record.getKey();
+    final WorkflowInstanceIntent intent = (WorkflowInstanceIntent) record.getMetadata().getIntent();
+    final WorkflowInstanceRecord value = record.getValue();
+
+    final IndexedRecord indexedRecord = new IndexedRecord(key, intent, value);
     final StoredRecord storedRecord = new StoredRecord(indexedRecord, purpose);
 
-    setRecordKeys(scopeKey, record.getKey(), purpose);
+    setRecordKeys(scopeKey, key, purpose);
 
     recordColumnFamily.put(recordKey, storedRecord);
     recordParentChildColumnFamily.put(recordParentStateRecordKey, DbNil.INSTANCE);
@@ -253,10 +253,6 @@ public class ElementInstanceState {
     final StoredRecord storedRecord = new StoredRecord(indexedRecord, Purpose.FAILED);
     recordKey.wrapLong(indexedRecord.getKey());
     recordColumnFamily.put(recordKey, storedRecord);
-  }
-
-  public List<IndexedRecord> getFinishedRecords(long scopeKey) {
-    return collectRecords(scopeKey, Purpose.FINISHED);
   }
 
   private List<IndexedRecord> collectRecords(long scopeKey, Purpose purpose) {

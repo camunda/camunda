@@ -17,20 +17,18 @@
  */
 package io.zeebe.broker.workflow.message;
 
-import static io.zeebe.broker.workflow.WorkflowAssert.assertWorkflowInstancePayload;
-import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
-
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.exporter.record.Assertions;
 import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.record.value.VariableRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ZeebePayloadMappingBuilder;
 import io.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.zeebe.model.bpmn.instance.ReceiveTask;
+import io.zeebe.model.bpmn.instance.StartEvent;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -64,11 +62,20 @@ public class MessageMappingTest {
           .message(m -> m.name("message").zeebeCorrelationKey("$.key"))
           .done();
 
-  private static final BpmnModelInstance BOUNDARY_EVENT_WORKFLOW =
+  private static final BpmnModelInstance INTERRUPTING_BOUNDARY_EVENT_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .serviceTask("task", b -> b.zeebeTaskType("type"))
           .boundaryEvent("catch")
+          .message(m -> m.name("message").zeebeCorrelationKey("$.key"))
+          .endEvent()
+          .done();
+
+  private static final BpmnModelInstance NON_INTERRUPTING_BOUNDARY_EVENT_WORKFLOW =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent()
+          .serviceTask("task", b -> b.zeebeTaskType("type"))
+          .boundaryEvent("catch", b -> b.cancelActivity(false))
           .message(m -> m.name("message").zeebeCorrelationKey("$.key"))
           .endEvent()
           .done();
@@ -97,10 +104,11 @@ public class MessageMappingTest {
   @Parameters(name = "{0}")
   public static Object[][] parameters() {
     return new Object[][] {
-      {"intermediate message catch event", CATCH_EVENT_WORKFLOW},
+      {"intermediate catch event", CATCH_EVENT_WORKFLOW},
       {"receive task", RECEIVE_TASK_WORKFLOW},
       {"event-based gateway", EVENT_BASED_GATEWAY_WORKFLOW},
-      {"boundary event", BOUNDARY_EVENT_WORKFLOW},
+      {"interrupting boundary event", INTERRUPTING_BOUNDARY_EVENT_WORKFLOW},
+      {"non-interrupting boundary event", NON_INTERRUPTING_BOUNDARY_EVENT_WORKFLOW},
     };
   }
 
@@ -122,13 +130,19 @@ public class MessageMappingTest {
     // given
     deployWorkflowWithMapping(e -> {});
 
-    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "order-123"));
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(PROCESS_ID, "{'key': 'order-66'}");
 
     // when
-    testClient.publishMessage("message", "order-123", asMsgPack("foo", "bar"));
+    testClient.publishMessage("message", "order-66", "{'foo': 'bar'}");
 
     // then
-    assertCompletedPayload("{'key':'order-123', 'foo':'bar'}");
+    final Record<VariableRecordValue> variableEvent =
+        RecordingExporter.variableRecords().withName("foo").getFirst();
+
+    Assertions.assertThat(variableEvent.getValue())
+        .hasValue("\"bar\"")
+        .hasScopeInstanceKey(workflowInstanceKey);
   }
 
   @Test
@@ -136,54 +150,39 @@ public class MessageMappingTest {
     // given
     deployWorkflowWithMapping(e -> e.zeebeOutputBehavior(ZeebeOutputBehavior.merge));
 
-    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "order-123"));
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(PROCESS_ID, "{'key': 'order-66'}");
 
     // when
-    testClient.publishMessage("message", "order-123", asMsgPack("foo", "bar"));
-
-    assertCompletedPayload("{'key':'order-123', 'foo':'bar'}");
-  }
-
-  @Test
-  public void shouldIgnoreMessagePayload() {
-    // given
-    deployWorkflowWithMapping(e -> e.zeebeOutputBehavior(ZeebeOutputBehavior.none));
-
-    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "order-123"));
-
-    // when
-    testClient.publishMessage("message", "order-123", asMsgPack("foo", "bar"));
+    testClient.publishMessage("message", "order-66", "{'foo': 'bar'}");
 
     // then
-    assertCompletedPayload("{'key':'order-123'}");
-  }
+    final Record<VariableRecordValue> variableEvent =
+        RecordingExporter.variableRecords().withName("foo").getFirst();
 
-  @Test
-  public void shouldOverrideWorkflowInstancePayload() {
-    // given
-    deployWorkflowWithMapping(e -> e.zeebeOutputBehavior(ZeebeOutputBehavior.overwrite));
-
-    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "order-123"));
-
-    // when
-    testClient.publishMessage("message", "order-123", asMsgPack("foo", "bar"));
-
-    // then
-    assertCompletedPayload("{'foo':'bar'}");
+    Assertions.assertThat(variableEvent.getValue())
+        .hasValue("\"bar\"")
+        .hasScopeInstanceKey(workflowInstanceKey);
   }
 
   @Test
   public void shouldMapMessagePayloadIntoInstancePayload() {
     // given
-    deployWorkflowWithMapping(e -> e.zeebeOutput("$", "$.message"));
+    deployWorkflowWithMapping(e -> e.zeebeOutput("$.foo", "$.message"));
 
-    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "order-123"));
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(PROCESS_ID, "{'key': 'order-66'}");
 
     // when
-    testClient.publishMessage("message", "order-123", asMsgPack("foo", "bar"));
+    testClient.publishMessage("message", "order-66", "{'foo': 'bar'}");
 
     // then
-    assertCompletedPayload("{'key':'order-123', 'message':{'foo':'bar'}}");
+    final Record<VariableRecordValue> variableEvent =
+        RecordingExporter.variableRecords().withName("message").getFirst();
+
+    Assertions.assertThat(variableEvent.getValue())
+        .hasValue("\"bar\"")
+        .hasScopeInstanceKey(workflowInstanceKey);
   }
 
   private void deployWorkflowWithMapping(Consumer<ZeebePayloadMappingBuilder<?>> c) {
@@ -191,20 +190,13 @@ public class MessageMappingTest {
     final ModelElementInstance element = modifiedWorkflow.getModelElementById("catch");
     if (element instanceof IntermediateCatchEvent) {
       c.accept(((IntermediateCatchEvent) element).builder());
+    } else if (element instanceof StartEvent) {
+      c.accept(((StartEvent) element).builder());
     } else if (element instanceof BoundaryEvent) {
       c.accept(((BoundaryEvent) element).builder());
     } else {
       c.accept(((ReceiveTask) element).builder());
     }
     testClient.deploy(modifiedWorkflow);
-  }
-
-  private void assertCompletedPayload(String payload) {
-    final Record<WorkflowInstanceRecordValue> completedEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withElementId(PROCESS_ID)
-            .getFirst();
-
-    assertWorkflowInstancePayload(completedEvent, payload);
   }
 }

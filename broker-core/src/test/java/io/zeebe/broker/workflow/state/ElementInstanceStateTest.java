@@ -397,34 +397,6 @@ public class ElementInstanceStateTest {
   }
 
   @Test
-  public void shouldStoreAndCollectMultipleRecords() {
-    // given
-    final WorkflowInstanceRecord workflowInstanceRecord = createWorkflowInstanceRecord();
-    elementInstanceState.newInstance(
-        100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-
-    // when
-    final TypedRecord<WorkflowInstanceRecord> typedRecord = mockTypedRecord(123L);
-    elementInstanceState.storeRecord(100, typedRecord, Purpose.DEFERRED);
-    final TypedRecord<WorkflowInstanceRecord> typedRecord2 = mockTypedRecord(124L);
-    elementInstanceState.storeRecord(100, typedRecord2, Purpose.FINISHED);
-
-    // then
-    final List<IndexedRecord> deferredRecords = elementInstanceState.getDeferredRecords(100);
-    final List<IndexedRecord> finishedRecords = elementInstanceState.getFinishedRecords(100);
-
-    assertThat(deferredRecords).hasSize(1);
-    final IndexedRecord deferredRecord = deferredRecords.get(0);
-    assertThat(deferredRecord.getKey()).isEqualTo(123L);
-    assertThat(deferredRecord.getState()).isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-
-    assertThat(finishedRecords).hasSize(1);
-    final IndexedRecord finishedRecord = finishedRecords.get(0);
-    assertThat(finishedRecord.getKey()).isEqualTo(124L);
-    assertThat(finishedRecord.getState()).isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-  }
-
-  @Test
   public void shouldRemoveSingleRecord() {
     // given
     final WorkflowInstanceRecord workflowInstanceRecord = createWorkflowInstanceRecord();

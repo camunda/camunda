@@ -72,7 +72,13 @@ public class TriggerStartEventHandler implements BpmnStepHandler<ExecutableFlowE
 
     value.setScopeInstanceKey(scopeInstanceKey);
 
-    context.getOutput().appendNewEvent(WorkflowInstanceIntent.EVENT_TRIGGERING, value);
+    final long eventInstanceKey =
+        context.getOutput().appendNewEvent(WorkflowInstanceIntent.EVENT_TRIGGERING, value);
+
+    context
+        .getElementInstanceState()
+        .getVariablesState()
+        .setPayload(eventInstanceKey, value.getPayload());
 
     // spawn a new token to continue at the start event
     context.getElementInstanceState().spawnToken(scopeInstanceKey);

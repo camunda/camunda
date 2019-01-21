@@ -468,6 +468,38 @@ public class VariableStateTest {
     MsgPackUtil.assertEquality(varA, "{'x': 1}");
   }
 
+  @Test
+  public void shouldSetVariablesFromDocumentNotInParentScope() {
+    // given
+    final long parent = 1;
+    final long child = 2;
+    declareScope(parent);
+    declareScope(parent, child);
+
+    variablesState.setVariableLocal(
+        parent, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("'should-not-overwrite-this'"));
+    variablesState.setVariableLocal(
+        child, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("'should-overwrite-this'"));
+
+    final DirectBuffer document = MsgPackUtil.asMsgPack(b -> b.put("a", 1).put("b", 2));
+
+    // when
+    variablesState.setVariablesFromDocument(child, document);
+
+    // then
+    final DirectBuffer varParent =
+        variablesState.getVariableLocal(parent, BufferUtil.wrapString("a"));
+    MsgPackUtil.assertEquality(varParent, "'should-not-overwrite-this'");
+
+    final DirectBuffer newVarParent =
+        variablesState.getVariableLocal(parent, BufferUtil.wrapString("b"));
+    MsgPackUtil.assertEquality(newVarParent, "2");
+
+    final DirectBuffer varChild =
+        variablesState.getVariableLocal(child, BufferUtil.wrapString("a"));
+    MsgPackUtil.assertEquality(varChild, "1");
+  }
+
   /** Making sure the method is reusable and does not leave data structures dirty */
   @Test
   public void shouldSetVariablesFromDocumentRepeatedly() {
@@ -594,6 +626,31 @@ public class VariableStateTest {
     assertThat(listener.updated.get(0).name).isEqualTo("x");
     assertThat(listener.updated.get(0).value).isEqualTo(stringToMsgpack("bar"));
     assertThat(listener.updated.get(0).scopeInstanceKey).isEqualTo(childScope);
+  }
+
+  @Test
+  public void shouldSetPayload() {
+    // when
+    variablesState.setPayload(1L, wrapString("a"));
+    variablesState.setPayload(2L, wrapString("b"));
+
+    // then
+    assertThat(variablesState.getPayload(1L)).isEqualTo(wrapString("a"));
+    assertThat(variablesState.getPayload(2L)).isEqualTo(wrapString("b"));
+  }
+
+  @Test
+  public void shouldRemovePayload() {
+    // given
+    variablesState.setPayload(1L, wrapString("a"));
+    variablesState.setPayload(2L, wrapString("b"));
+
+    // when
+    variablesState.removePayload(1L);
+
+    // then
+    assertThat(variablesState.getPayload(1L)).isNull();
+    assertThat(variablesState.getPayload(2L)).isEqualTo(wrapString("b"));
   }
 
   private byte[] stringToMsgpack(String value) {

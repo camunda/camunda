@@ -33,6 +33,7 @@ import io.zeebe.broker.workflow.state.ElementInstanceState;
 import io.zeebe.broker.workflow.state.StoredRecord;
 import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
 import io.zeebe.broker.workflow.state.TimerInstance;
+import io.zeebe.broker.workflow.state.VariablesState;
 import io.zeebe.broker.workflow.state.WorkflowInstanceSubscription;
 import io.zeebe.model.bpmn.util.time.Timer;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor;
@@ -106,6 +107,8 @@ public class CatchEventBehavior {
       DirectBuffer eventPayload,
       TypedStreamWriter streamWriter) {
 
+    boolean isOccurred = false;
+
     final ElementInstanceState elementInstanceState =
         state.getWorkflowState().getElementInstanceState();
     final StoredRecord storedRecord = elementInstanceState.getStoredRecord(elementInstanceKey);
@@ -129,7 +132,7 @@ public class CatchEventBehavior {
       streamWriter.appendFollowUpEvent(
           elementInstanceKey, WorkflowInstanceIntent.EVENT_OCCURRED, deferredRecord);
 
-      return true;
+      isOccurred = true;
 
     } else if (elementInstance != null
         && elementInstance.getState() == WorkflowInstanceIntent.ELEMENT_ACTIVATED) {
@@ -149,12 +152,14 @@ public class CatchEventBehavior {
       streamWriter.appendFollowUpEvent(
           elementInstanceKey, WorkflowInstanceIntent.EVENT_OCCURRED, workflowInstanceRecord);
 
-      return true;
-
-    } else {
-      // ignore the event if the element is left
-      return false;
+      isOccurred = true;
     }
+
+    if (isOccurred) {
+      elementInstanceState.getVariablesState().setPayload(elementInstanceKey, eventPayload);
+    }
+
+    return isOccurred;
   }
 
   public void deferEvent(BpmnStepContext<?> context) {
@@ -181,12 +186,22 @@ public class CatchEventBehavior {
         && storedRecord.getPurpose() == Purpose.DEFERRED
         && storedRecord.getRecord().getState() == WorkflowInstanceIntent.EVENT_OCCURRED) {
 
-      context
-          .getOutput()
-          .appendNewEvent(
-              WorkflowInstanceIntent.EVENT_TRIGGERING, storedRecord.getRecord().getValue());
+      final long eventInstanceKey =
+          context
+              .getOutput()
+              .appendNewEvent(
+                  WorkflowInstanceIntent.EVENT_TRIGGERING, storedRecord.getRecord().getValue());
 
       context.getOutput().removeDeferredEvent(scopeInstanceKey, elementInstanceKey);
+
+      // TODO (saig0) #1899: since the events have a different key, we need to copy the payload to
+      // the new scope
+      final VariablesState variablesState = context.getElementInstanceState().getVariablesState();
+      final DirectBuffer payload = variablesState.getPayload(elementInstanceKey);
+      if (payload != null) {
+        variablesState.setPayload(eventInstanceKey, payload);
+        variablesState.removePayload(elementInstanceKey);
+      }
     }
   }
 

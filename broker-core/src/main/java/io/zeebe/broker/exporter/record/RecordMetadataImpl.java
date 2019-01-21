@@ -32,12 +32,12 @@ import io.zeebe.protocol.intent.Intent;
 @JsonInclude(Include.NON_NULL)
 public class RecordMetadataImpl implements RecordMetadata {
   private final ExporterObjectMapper objectMapper;
-  private final int partitionId;
+  private final ValueType valueType;
   private final Intent intent;
   private final RecordType recordType;
+  private final int partitionId;
   private final RejectionType rejectionType;
   private final String rejectionReason;
-  private final ValueType valueType;
 
   public RecordMetadataImpl(
       ExporterObjectMapper objectMapper,

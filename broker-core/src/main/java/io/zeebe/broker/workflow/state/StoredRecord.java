@@ -74,7 +74,6 @@ public class StoredRecord implements DbValue {
   public enum Purpose {
     // Order is important, as we use the ordinal for persistence
     DEFERRED,
-    FAILED,
-    FINISHED
+    FAILED
   }
 }
