@@ -95,7 +95,7 @@ export default class ShareEntity extends React.Component {
               <div className="ShareEntity__clipboard">
                 <Icon type="embed" renderedIn="span" />
                 <span className="ShareEntity__label">Embed</span>
-                <span className="ShareEntity__label-description">{`Use the following URL to embed the ${
+                <span className="ShareEntity__label-description">{`Use the following HTML code to embed the ${
                   this.props.type
                 } into blogs and web pages:`}</span>
                 <CopyToClipboard

@@ -98,7 +98,7 @@ export default class ReportControlPanel extends React.Component {
     if (processDefintionName && processDefinitionVersion) {
       return `${processDefintionName} : ${processDefinitionVersion}`;
     } else {
-      return 'Select Process Definition';
+      return 'Select Process';
     }
   };
 

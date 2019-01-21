@@ -16,7 +16,7 @@ export default class DecisionControlPanel extends React.Component {
     if (decisionDefinitionKey && decisionDefinitionVersion) {
       return `${decisionDefinitionKey} : ${decisionDefinitionVersion}`;
     } else {
-      return 'Select Decision Definition';
+      return 'Select Decision';
     }
   };
 

@@ -73,7 +73,7 @@ export default class AnalysisControlPanel extends React.Component {
     if (processDefintionName && processDefinitionVersion) {
       return `${processDefintionName} : ${processDefinitionVersion}`;
     } else {
-      return 'Select Process Definition';
+      return 'Select Process';
     }
   };
 

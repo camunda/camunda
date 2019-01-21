@@ -106,7 +106,6 @@ export default withErrorHandling(
         loadSingleReport(this.id),
         async response => {
           const {name, lastModifier, lastModified, data, combined, reportType} = response;
-
           const reportResult = await getReportData(this.id);
           const stateData = data || (await this.initializeReport(combined));
           const sharingEnabled = await isSharingEnabled();
@@ -118,7 +117,7 @@ export default withErrorHandling(
               loaded: true,
               data: stateData,
               originalData: {...stateData},
-              reportResult: reportResult || {combined, data: stateData},
+              reportResult: reportResult || {combined, reportType, data: stateData},
               reportType,
               originalName: name,
               combined,
@@ -229,9 +228,9 @@ export default withErrorHandling(
 
     cancel = async () => {
       let reportResult = await getReportData(this.id);
-      const {combined, originalData, originalName} = this.state;
+      const {combined, reportType, originalData, originalName} = this.state;
       if (!reportResult) {
-        reportResult = {combined, data: originalData};
+        reportResult = {combined, reportType, data: originalData};
       }
       this.setState({
         name: originalName,

@@ -78,8 +78,6 @@ export default class ReportView extends React.Component {
       (this.isEmpty(data.decisionDefinitionKey) || this.isEmpty(data.decisionDefinitionVersion))
     ) {
       return this.buildInstructionMessage('a Decision Definition');
-    } else if (!type) {
-      return this.buildInstructionMessage('a Definition');
     } else {
       return this.checkViewAndRenderReport(report);
     }

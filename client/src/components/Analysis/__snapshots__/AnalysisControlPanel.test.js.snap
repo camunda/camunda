@@ -19,10 +19,10 @@ exports[`should display a sentence to describe what the user can do on this page
         For
         <Popover
           className="AnalysisControlPanel__popover"
-          title="Select Process Definition"
+          title="Select Process"
         >
           <div>
-            Select Process Definition
+            Select Process
              
             <ProcessDefinitionSelection
               onChange={[Function]}
