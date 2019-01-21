@@ -20,7 +20,6 @@ package io.zeebe.broker.workflow.repository;
 import io.zeebe.broker.transport.controlmessage.AbstractControlMessageHandler;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.impl.data.repository.GetWorkflowControlRequest;
 import io.zeebe.protocol.impl.data.repository.WorkflowMetadataAndResource;
 import io.zeebe.transport.ServerOutput;
@@ -31,7 +30,16 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.DirectBuffer;
 
 public class GetWorkflowControlMessageHandler extends AbstractControlMessageHandler {
-  private final AtomicReference<WorkflowRepositoryService> workflowRepositroyServiceRef =
+  private static final String WRONG_PARTITION_ERROR_MESSAGE =
+      "Expected to request workflow from partition '%d', but it should be requested from the leader of partition '%d'";
+  private static final String NO_WORKFLOW_WITH_KEY_MESSAGE =
+      "Expected to get workflow with key '%d', but no such workflow found";
+  private static final String NO_WORKFLOW_WITH_ID_MESSAGE =
+      "Expected to get workflow with BPMN process id '%s', but no such workflow found";
+  private static final String NO_WORKFLOW_WITH_ID_AND_VERSION_MESSAGE =
+      "Expected to get workflow with BPMN process id '%s' and version '%d', but no such workflow found";
+
+  private final AtomicReference<WorkflowRepositoryService> workflowRepositoryServiceRef =
       new AtomicReference<>();
 
   public GetWorkflowControlMessageHandler(final ServerOutput output) {
@@ -50,16 +58,15 @@ public class GetWorkflowControlMessageHandler extends AbstractControlMessageHand
       final DirectBuffer buffer,
       final long requestId,
       final int requestStreamId) {
-    final WorkflowRepositoryService repository = workflowRepositroyServiceRef.get();
+    final WorkflowRepositoryService repository = workflowRepositoryServiceRef.get();
 
     if (repository == null) {
-      sendErrorResponse(
+      sendResponse(
           actor,
-          requestStreamId,
-          requestId,
-          ErrorCode.PARTITION_NOT_FOUND,
-          "Workflow request must address the leader of the first partition %d",
-          Protocol.DEPLOYMENT_PARTITION);
+          () ->
+              errorResponseWriter
+                  .invalidDeploymentPartition(Protocol.DEPLOYMENT_PARTITION, partitionId)
+                  .tryWriteResponse(requestStreamId, requestId));
     } else {
       final GetWorkflowControlRequest controlRequest = new GetWorkflowControlRequest();
       controlRequest.wrap(buffer);
@@ -69,26 +76,23 @@ public class GetWorkflowControlMessageHandler extends AbstractControlMessageHand
 
       final ActorFuture<WorkflowMetadataAndResource> future;
 
-      final String errorMessage;
+      final String workflowIdentifier;
 
       if (workflowKey > 0) {
         future = repository.getWorkflowByKey(workflowKey);
-        errorMessage = String.format("No workflow found with key '%d'", workflowKey);
+        workflowIdentifier = String.format("key '%d'", workflowKey);
       } else {
         final int version = controlRequest.getVersion();
 
         if (version == -1) {
           future = repository.getLatestWorkflowByBpmnProcessId(controlRequest.getBpmnProcessId());
-          errorMessage =
-              String.format("No workflow found with BPMN process id '%s'", bpmnProcessId);
+          workflowIdentifier = String.format("BPMN process ID '%s'", bpmnProcessId);
         } else {
           future =
               repository.getWorkflowByBpmnProcessIdAndVersion(
                   controlRequest.getBpmnProcessId(), version);
-          errorMessage =
-              String.format(
-                  "No workflow found with BPMN process id '%s' and version '%d'",
-                  bpmnProcessId, version);
+          workflowIdentifier =
+              String.format("BPMN process ID '%s' and version '%d'", bpmnProcessId, version);
         }
       }
 
@@ -101,8 +105,12 @@ public class GetWorkflowControlMessageHandler extends AbstractControlMessageHand
               if (workflowAndResource != null) {
                 sendResponse(actor, requestStreamId, requestId, workflowAndResource);
               } else {
-                sendErrorResponse(
-                    actor, requestStreamId, requestId, ErrorCode.NOT_FOUND, errorMessage);
+                sendResponse(
+                    actor,
+                    () ->
+                        errorResponseWriter
+                            .workflowNotFound(workflowIdentifier)
+                            .tryWriteResponse(requestStreamId, requestId));
               }
             }
           });
@@ -110,6 +118,6 @@ public class GetWorkflowControlMessageHandler extends AbstractControlMessageHand
   }
 
   public void setWorkflowRepositoryService(final WorkflowRepositoryService service) {
-    workflowRepositroyServiceRef.set(service);
+    workflowRepositoryServiceRef.set(service);
   }
 }

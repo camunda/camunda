@@ -15,15 +15,18 @@
  */
 package io.zeebe.broker.it.workflow;
 
+import static io.zeebe.broker.it.util.StatusCodeMatcher.hasStatusCode;
+import static io.zeebe.broker.it.util.StatusDescriptionMatcher.descriptionContains;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.grpc.Status.Code;
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.commands.Workflow;
 import io.zeebe.client.api.commands.WorkflowResource;
 import io.zeebe.client.api.events.DeploymentEvent;
+import io.zeebe.client.cmd.ClientStatusException;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.util.StreamUtil;
@@ -139,10 +142,13 @@ public class WorkflowRepositoryTest {
     final ZeebeFuture<WorkflowResource> future =
         clientRule.getClient().newResourceRequest().workflowKey(123).send();
 
-    assertThatThrownBy(future::join)
-        // TODO(menski): embedded errors in grpc need for typing
-        // .isInstanceOf(BrokerErrorException.class)
-        .hasMessageContaining("No workflow found with key '123'");
+    // expect
+    exception.expect(ClientStatusException.class);
+    exception.expect(hasStatusCode(Code.NOT_FOUND));
+    exception.expect(descriptionContains("key '123'"));
+
+    // when
+    future.join();
   }
 
   @Test
@@ -150,10 +156,13 @@ public class WorkflowRepositoryTest {
     final ZeebeFuture<WorkflowResource> future =
         clientRule.getClient().newResourceRequest().bpmnProcessId("foo").latestVersion().send();
 
-    assertThatThrownBy(future::join)
-        // TODO(menski): embedded errors in grpc need for typing
-        // .isInstanceOf(BrokerErrorException.class)
-        .hasMessageContaining("No workflow found with BPMN process id 'foo'");
+    // expect
+    exception.expect(ClientStatusException.class);
+    exception.expect(hasStatusCode(Code.NOT_FOUND));
+    exception.expect(descriptionContains("BPMN process ID 'foo'"));
+
+    // when
+    future.join();
   }
 
   @Test

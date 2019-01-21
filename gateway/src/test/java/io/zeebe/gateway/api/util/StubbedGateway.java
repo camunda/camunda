@@ -22,8 +22,9 @@ import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.zeebe.gateway.Gateway;
 import io.zeebe.gateway.cmd.BrokerErrorException;
-import io.zeebe.gateway.cmd.ClientCommandRejectedException;
-import io.zeebe.gateway.cmd.ClientException;
+import io.zeebe.gateway.cmd.BrokerRejectionException;
+import io.zeebe.gateway.cmd.BrokerResponseException;
+import io.zeebe.gateway.cmd.IllegalBrokerResponseException;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.BrokerResponseConsumer;
 import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
@@ -102,14 +103,15 @@ public class StubbedGateway extends Gateway {
         if (response.isResponse()) {
           responseConsumer.accept(response.getKey(), response.getResponse());
         } else if (response.isRejection()) {
-          throwableConsumer.accept(new ClientCommandRejectedException(response.getRejection()));
+          throwableConsumer.accept(new BrokerRejectionException(response.getRejection()));
         } else if (response.isError()) {
           throwableConsumer.accept(new BrokerErrorException(response.getError()));
         } else {
-          throwableConsumer.accept(new ClientException("Unknown response received: " + response));
+          throwableConsumer.accept(
+              new IllegalBrokerResponseException("Unknown response received: " + response));
         }
       } catch (Exception e) {
-        throwableConsumer.accept(new ClientException("Failed to handle response", e));
+        throwableConsumer.accept(new BrokerResponseException(e));
       }
     }
 

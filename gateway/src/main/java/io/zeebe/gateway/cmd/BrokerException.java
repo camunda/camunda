@@ -13,20 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.cmd;
+package io.zeebe.gateway.cmd;
 
-public class ClientException extends RuntimeException {
-  private static final long serialVersionUID = 1L;
+/**
+ * Represents exceptional errors that occur in the gateway-broker client on the broker side, e.g.
+ * error responses, command rejections, etc.
+ *
+ * <p>Primary usage is wrapping around error responses so that these can be consumed by throwable
+ * handlers.
+ */
+public class BrokerException extends RuntimeException {
 
-  public ClientException(Throwable cause) {
-    super(cause);
-  }
+  private static final long serialVersionUID = -2808029505078161668L;
 
-  public ClientException(String message) {
+  public BrokerException(String message) {
     super(message);
   }
 
-  public ClientException(String message, Throwable cause) {
+  public BrokerException(String message, Throwable cause) {
     super(message, cause);
+  }
+
+  public BrokerException(Throwable cause) {
+    super(cause);
   }
 }

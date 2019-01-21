@@ -48,7 +48,9 @@ public class DocumentValue extends BinaryValue {
 
     if (!isValid) {
       throw new IllegalArgumentException(
-          "Document has invalid format. On root level an object is only allowed.");
+          String.format(
+              "Expected document to be a root level object, but was '%s'",
+              format.getType().name()));
     }
 
     super.wrap(buff, offset, length);

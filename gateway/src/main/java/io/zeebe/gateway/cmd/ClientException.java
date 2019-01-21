@@ -15,8 +15,18 @@
  */
 package io.zeebe.gateway.cmd;
 
+/**
+ * Represents exceptional errors that occur in the gateway-broker client on the client side (i.e.
+ * gateway side)
+ */
 public class ClientException extends RuntimeException {
   private static final long serialVersionUID = 1L;
+
+  public ClientException() {}
+
+  public ClientException(Throwable cause) {
+    super(cause);
+  }
 
   public ClientException(String message) {
     super(message);

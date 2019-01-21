@@ -19,9 +19,16 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import io.zeebe.gateway.ResponseMapper.BrokerResponseMapper;
+import io.zeebe.gateway.cmd.BrokerErrorException;
+import io.zeebe.gateway.cmd.BrokerRejectionException;
+import io.zeebe.gateway.cmd.ClientOutOfMemoryException;
+import io.zeebe.gateway.cmd.GrpcStatusException;
+import io.zeebe.gateway.cmd.GrpcStatusExceptionImpl;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.gateway.impl.broker.request.BrokerRequest;
+import io.zeebe.gateway.impl.broker.response.BrokerError;
+import io.zeebe.gateway.impl.broker.response.BrokerRejection;
 import io.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
@@ -50,6 +57,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadResponse;
+import io.zeebe.msgpack.MsgpackPropertyException;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
@@ -208,6 +216,11 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
     final BrokerRequest<BrokerResponseT> brokerRequest;
     try {
       brokerRequest = requestMapper.apply(grpcRequest);
+    } catch (MsgpackPropertyException e) {
+      streamObserver.onError(
+          convertThrowable(
+              new GrpcStatusExceptionImpl(e.getMessage(), Status.INVALID_ARGUMENT, e)));
+      return;
     } catch (Exception e) {
       streamObserver.onError(convertThrowable(e));
       return;
@@ -223,15 +236,67 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
         error -> streamObserver.onError(convertThrowable(error)));
   }
 
-  private static StatusRuntimeException convertThrowable(final Throwable cause) {
-    final String description;
+  private StatusRuntimeException convertThrowable(Throwable cause) {
+    Status status = Status.INTERNAL;
 
     if (cause instanceof ExecutionException) {
-      description = cause.getCause().getMessage();
-    } else {
-      description = cause.getMessage();
+      return convertThrowable(cause.getCause());
     }
 
-    return Status.INTERNAL.augmentDescription(description).withCause(cause).asRuntimeException();
+    if (cause instanceof BrokerErrorException) {
+      status = mapBrokerErrorToStatus(((BrokerErrorException) cause).getError());
+    } else if (cause instanceof BrokerRejectionException) {
+      status = mapRejectionToStatus(((BrokerRejectionException) cause).getRejection());
+    } else if (cause instanceof ClientOutOfMemoryException) {
+      status = Status.UNAVAILABLE.augmentDescription(cause.getMessage());
+    } else if (cause instanceof GrpcStatusException) {
+      status = ((GrpcStatusException) cause).getGrpcStatus();
+    } else {
+      status = status.augmentDescription("Unexpected error occurred during the request processing");
+    }
+
+    final StatusRuntimeException convertedThrowable = status.withCause(cause).asRuntimeException();
+    Loggers.GATEWAY_LOGGER.error("Error handling gRPC request", convertedThrowable);
+
+    return convertedThrowable;
+  }
+
+  private Status mapBrokerErrorToStatus(BrokerError error) {
+    switch (error.getCode()) {
+      case WORKFLOW_NOT_FOUND:
+        return Status.NOT_FOUND.augmentDescription(error.getMessage());
+      default:
+        return Status.INTERNAL.augmentDescription(
+            String.format(
+                "Unexpected error occurred between gateway and broker (code: %s)",
+                error.getCode()));
+    }
+  }
+
+  private Status mapRejectionToStatus(BrokerRejection rejection) {
+    final String description =
+        String.format(
+            "Command rejected with code '%s': %s", rejection.getIntent(), rejection.getReason());
+    final Status status;
+
+    switch (rejection.getType()) {
+      case INVALID_ARGUMENT:
+        status = Status.INVALID_ARGUMENT;
+        break;
+      case NOT_FOUND:
+        status = Status.NOT_FOUND;
+        break;
+      case ALREADY_EXISTS:
+        status = Status.ALREADY_EXISTS;
+        break;
+      case INVALID_STATE:
+        status = Status.FAILED_PRECONDITION;
+        break;
+      default:
+        status = Status.UNKNOWN;
+        break;
+    }
+
+    return status.augmentDescription(description);
   }
 }

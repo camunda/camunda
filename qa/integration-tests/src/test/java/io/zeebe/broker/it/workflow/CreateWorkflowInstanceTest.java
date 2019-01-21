@@ -15,16 +15,18 @@
  */
 package io.zeebe.broker.it.workflow;
 
+import static io.zeebe.broker.it.util.StatusCodeMatcher.hasStatusCode;
+import static io.zeebe.broker.it.util.StatusDescriptionMatcher.descriptionContains;
 import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertWorkflowInstanceCreated;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.entry;
 
+import io.grpc.Status.Code;
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
-import io.zeebe.client.cmd.ClientException;
+import io.zeebe.client.cmd.ClientStatusException;
 import io.zeebe.model.bpmn.Bpmn;
 import java.util.Collections;
 import org.junit.Before;
@@ -185,25 +187,22 @@ public class CreateWorkflowInstanceTest {
 
   @Test
   public void shouldThrowExceptionOnCompleteJobWithInvalidPayload() {
-    // given
+    // expect
+    exception.expect(ClientStatusException.class);
+    exception.expect(hasStatusCode(Code.INVALID_ARGUMENT));
+    exception.expect(
+        descriptionContains(
+            "Property 'payload' is invalid: Expected document to be a root level object, but was 'ARRAY'"));
 
     // when
-    final Throwable throwable =
-        catchThrowable(
-            () ->
-                clientRule
-                    .getClient()
-                    .newCreateInstanceCommand()
-                    .bpmnProcessId("anId")
-                    .latestVersion()
-                    .payload("[]")
-                    .send()
-                    .join());
-
-    // then
-    assertThat(throwable).isInstanceOf(ClientException.class);
-    assertThat(throwable.getMessage())
-        .contains("Document has invalid format. On root level an object is only allowed.");
+    clientRule
+        .getClient()
+        .newCreateInstanceCommand()
+        .bpmnProcessId("anId")
+        .latestVersion()
+        .payload("[]")
+        .send()
+        .join();
   }
 
   @Test
@@ -252,8 +251,8 @@ public class CreateWorkflowInstanceTest {
   @Test
   public void shouldRejectCreateBpmnProcessByIllegalId() {
     // expected
-    exception.expect(ClientException.class);
-    exception.expectMessage("Command (CREATE) was rejected");
+    exception.expect(ClientStatusException.class);
+    exception.expect(hasStatusCode(Code.NOT_FOUND));
 
     // when
     clientRule
@@ -268,8 +267,8 @@ public class CreateWorkflowInstanceTest {
   @Test
   public void shouldRejectCreateBpmnProcessByIllegalKey() {
     // expected
-    exception.expect(ClientException.class);
-    exception.expectMessage("Command (CREATE) was rejected");
+    exception.expect(ClientStatusException.class);
+    exception.expect(hasStatusCode(Code.NOT_FOUND));
 
     // when
     clientRule.getClient().newCreateInstanceCommand().workflowKey(99L).send().join();

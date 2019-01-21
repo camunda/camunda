@@ -26,7 +26,6 @@ public class BrokerRejection {
   private final long key;
   private final RejectionType type;
   private final String reason;
-  private final String message;
 
   public BrokerRejection(Intent intent, long key, RejectionType type, DirectBuffer reason) {
     this(intent, key, type, BufferUtil.bufferAsString(reason));
@@ -37,7 +36,6 @@ public class BrokerRejection {
     this.key = key;
     this.type = type;
     this.reason = reason;
-    this.message = buildRejectionMessage();
   }
 
   public RejectionType getType() {
@@ -48,48 +46,11 @@ public class BrokerRejection {
     return reason;
   }
 
-  public String getMessage() {
-    return message;
+  public Intent getIntent() {
+    return intent;
   }
 
-  private String buildRejectionMessage() {
-    final StringBuilder sb = new StringBuilder();
-    sb.append("Command (");
-    sb.append(intent);
-    sb.append(") ");
-
-    if (key >= 0) {
-      sb.append("for event with key ");
-      sb.append(key);
-      sb.append(" ");
-    }
-
-    sb.append("was rejected due to ");
-    sb.append(describeRejectionType());
-    sb.append(". ");
-    sb.append(reason);
-
-    return sb.toString();
-  }
-
-  private String describeRejectionType() {
-    switch (type) {
-      case INVALID_ARGUMENT:
-        return "an argument that is invalid";
-      case NOT_FOUND:
-        return "a required entity which does not exist";
-      case INVALID_STATE:
-        return "a required entity in an unexpected state";
-      case ALREADY_EXISTS:
-        return "a duplication error";
-      default:
-        // Nothing
-        return "unexpected reason";
-    }
-  }
-
-  @Override
-  public String toString() {
-    return message;
+  public long getKey() {
+    return key;
   }
 }

@@ -13,23 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.gateway.cmd;
+package io.zeebe.client.cmd;
 
-import io.zeebe.gateway.impl.broker.response.BrokerRejection;
+import io.grpc.Status;
+import io.grpc.Status.Code;
 
-/** A client command was rejected by the broker. */
-public class ClientCommandRejectedException extends ClientException {
-  private static final long serialVersionUID = 1L;
+public class ClientStatusException extends ClientException {
 
-  public ClientCommandRejectedException(BrokerRejection rejection) {
-    this(rejection.getMessage());
+  private static final long serialVersionUID = -6130332019397045094L;
+  private final Status status;
+
+  public ClientStatusException(Status status, Throwable cause) {
+    super(status.getDescription(), cause);
+    this.status = status;
   }
 
-  public ClientCommandRejectedException(String errorMessage) {
-    super(errorMessage);
+  public Status getStatus() {
+    return status;
   }
 
-  public ClientCommandRejectedException(String errorMessage, Throwable cause) {
-    super(errorMessage, cause);
+  public Code getStatusCode() {
+    return status.getCode();
   }
 }

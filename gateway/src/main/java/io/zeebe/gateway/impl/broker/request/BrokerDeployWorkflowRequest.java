@@ -17,6 +17,7 @@ package io.zeebe.gateway.impl.broker.request;
 
 import static io.zeebe.protocol.impl.record.value.deployment.ResourceType.getResourceType;
 
+import io.zeebe.gateway.cmd.InvalidBrokerRequestArgumentException;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowRequestObject.ResourceType;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -53,7 +54,12 @@ public class BrokerDeployWorkflowRequest extends BrokerExecuteCommand<Deployment
       case YAML:
         return io.zeebe.protocol.impl.record.value.deployment.ResourceType.YAML_WORKFLOW;
       default:
-        return getResourceType(resourceName);
+        try {
+          return getResourceType(resourceName);
+        } catch (RuntimeException e) {
+          throw new InvalidBrokerRequestArgumentException(
+              "name", "a string ending with either .bpmn or .yaml", resourceName, e);
+        }
     }
   }
 

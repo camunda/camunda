@@ -15,16 +15,18 @@
  */
 package io.zeebe.broker.it.workflow;
 
+import static io.zeebe.broker.it.util.StatusCodeMatcher.hasStatusCode;
+import static io.zeebe.broker.it.util.StatusDescriptionMatcher.descriptionContains;
 import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertWorkflowInstanceCompleted;
 import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertWorkflowInstancePayloadUpdated;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.entry;
 
+import io.grpc.Status.Code;
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.events.DeploymentEvent;
-import io.zeebe.client.cmd.ClientException;
+import io.zeebe.client.cmd.ClientStatusException;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
@@ -139,22 +141,21 @@ public class UpdatePayloadTest {
             .findFirst()
             .get();
 
-    // when
-    final Throwable throwable =
-        catchThrowable(
-            () ->
-                clientRule
-                    .getClient()
-                    .newUpdatePayloadCommand(
-                        workflowInstanceRecordValueRecord.getValue().getWorkflowInstanceKey())
-                    .payload("[]")
-                    .send()
-                    .join());
+    // expect
+    thrown.expect(ClientStatusException.class);
+    thrown.expect(hasStatusCode(Code.INVALID_ARGUMENT));
+    thrown.expect(
+        descriptionContains(
+            "Property 'payload' is invalid: Expected document to be a root level object, but was 'ARRAY'"));
 
-    // then
-    assertThat(throwable).isInstanceOf(ClientException.class);
-    assertThat(throwable.getMessage())
-        .contains("Document has invalid format. On root level an object is only allowed.");
+    // when
+    clientRule
+        .getClient()
+        .newUpdatePayloadCommand(
+            workflowInstanceRecordValueRecord.getValue().getWorkflowInstanceKey())
+        .payload("[]")
+        .send()
+        .join();
   }
 
   @Test
@@ -277,9 +278,8 @@ public class UpdatePayloadTest {
             .getWorkflowInstanceKey();
 
     // then
-    thrown.expect(ClientException.class);
-    thrown.expectMessage(
-        "Command (UPDATE_PAYLOAD) for event with key " + workflowInstanceKey + " was rejected");
+    thrown.expect(ClientStatusException.class);
+    thrown.expect(hasStatusCode(Code.NOT_FOUND));
 
     // when
     clientRule

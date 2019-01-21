@@ -13,20 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.cmd;
+package io.zeebe.gateway.cmd;
 
-public class ClientException extends RuntimeException {
-  private static final long serialVersionUID = 1L;
+import io.grpc.Status;
 
-  public ClientException(Throwable cause) {
-    super(cause);
-  }
-
-  public ClientException(String message) {
-    super(message);
-  }
-
-  public ClientException(String message, Throwable cause) {
-    super(message, cause);
-  }
+/**
+ * Exceptions liable to be thrown during gRPC request/response cycle should implement this in order
+ * to control which status is returned to the user.
+ */
+public interface GrpcStatusException {
+  /** @return the status to return if thrown during request/response processing */
+  Status getGrpcStatus();
 }

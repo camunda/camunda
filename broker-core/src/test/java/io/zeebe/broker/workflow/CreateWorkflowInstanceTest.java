@@ -396,9 +396,9 @@ public class CreateWorkflowInstanceTest {
 
     // then
     assertThat(throwable).isInstanceOf(RuntimeException.class);
-    assertThat(throwable.getMessage()).contains("Could not read property 'payload'.");
+    assertThat(throwable.getMessage()).contains("Could not read property 'payload'");
     assertThat(throwable.getMessage())
-        .contains("Document has invalid format. On root level an object is only allowed.");
+        .contains("Expected document to be a root level object, but was 'STRING'");
   }
 
   @Test
@@ -533,7 +533,7 @@ public class CreateWorkflowInstanceTest {
     final ExecuteCommandResponse response =
         testClient.createWorkflowInstanceWithResponse("process");
 
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
     assertThat(response.getRejectionReason())
         .isEqualTo(
             String.format(

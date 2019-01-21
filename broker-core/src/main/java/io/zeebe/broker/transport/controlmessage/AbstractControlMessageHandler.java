@@ -48,8 +48,12 @@ public abstract class AbstractControlMessageHandler implements ControlMessageHan
       final long requestId,
       final String errorMessage,
       final Object... args) {
-    sendErrorResponse(
-        actor, streamId, requestId, ErrorCode.REQUEST_PROCESSING_FAILURE, errorMessage, args);
+    sendResponse(
+        actor,
+        () ->
+            errorResponseWriter
+                .internalError(errorMessage, args)
+                .tryWriteResponse(streamId, requestId));
   }
 
   protected void sendErrorResponse(

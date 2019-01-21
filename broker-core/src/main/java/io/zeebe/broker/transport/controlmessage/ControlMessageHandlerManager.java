@@ -26,7 +26,6 @@ import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.dispatcher.Subscription;
 import io.zeebe.protocol.clientapi.ControlMessageRequestDecoder;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerResponse;
@@ -189,14 +188,11 @@ public class ControlMessageHandlerManager extends Actor implements FragmentHandl
     } else {
       sendResponse(
           actor,
-          () -> {
-            return errorResponseWriter
-                .errorCode(ErrorCode.MESSAGE_NOT_SUPPORTED)
-                .errorMessage(
-                    "Cannot handle control message with type '%s'.",
-                    getLastRequestMessageType().name())
-                .tryWriteResponseOrLogFailure(requestStreamId, requestId);
-          });
+          () ->
+              errorResponseWriter
+                  .unsupportedMessage(
+                      getLastRequestMessageType().name(), handlersByTypeId.keySet().toArray())
+                  .tryWriteResponseOrLogFailure(requestStreamId, requestId));
     }
 
     return FragmentHandler.CONSUME_FRAGMENT_RESULT;

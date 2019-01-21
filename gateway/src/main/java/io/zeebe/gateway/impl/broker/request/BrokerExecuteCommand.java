@@ -15,12 +15,10 @@
  */
 package io.zeebe.gateway.impl.broker.request;
 
-import io.zeebe.gateway.impl.broker.response.BrokerError;
-import io.zeebe.gateway.impl.broker.response.BrokerErrorResponse;
+import io.zeebe.gateway.cmd.UnsupportedBrokerResponseException;
 import io.zeebe.gateway.impl.broker.response.BrokerRejection;
 import io.zeebe.gateway.impl.broker.response.BrokerRejectionResponse;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
-import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.clientapi.RecordType;
@@ -108,13 +106,8 @@ public abstract class BrokerExecuteCommand<T> extends BrokerRequest<T> {
       final T responseDto = toResponseDto(response.getValue());
       return new BrokerResponse<>(responseDto, response.getPartitionId(), response.getKey());
     } else {
-      final BrokerError brokerError =
-          new BrokerError(
-              ErrorCode.SBE_UNKNOWN,
-              String.format(
-                  "Received unexpected value type '%s' in message, expected value type '%s'",
-                  response.getValueType().name(), request.getValueType().name()));
-      return new BrokerErrorResponse<>(brokerError);
+      throw new UnsupportedBrokerResponseException(
+          request.getValueType().name(), response.getValueType().name());
     }
   }
 

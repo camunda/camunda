@@ -39,7 +39,7 @@ public class ErrorResponseWriterTest {
 
   @Test
   public void shouldWriteResponse() {
-    responseWriter.errorCode(ErrorCode.PARTITION_NOT_FOUND).errorMessage("error message");
+    responseWriter.errorCode(ErrorCode.PARTITION_LEADER_MISMATCH).errorMessage("error message");
     final UnsafeBuffer buf = new UnsafeBuffer(new byte[responseWriter.getLength()]);
 
     // when
@@ -57,7 +57,7 @@ public class ErrorResponseWriterTest {
 
     responseDecoder.wrap(
         buf, offset, responseDecoder.sbeBlockLength(), responseDecoder.sbeSchemaVersion());
-    assertThat(responseDecoder.errorCode()).isEqualTo(ErrorCode.PARTITION_NOT_FOUND);
+    assertThat(responseDecoder.errorCode()).isEqualTo(ErrorCode.PARTITION_LEADER_MISMATCH);
     assertThat(responseDecoder.errorData()).isEqualTo("error message");
   }
 }

@@ -17,6 +17,7 @@ package io.zeebe.msgpack.property;
 
 import static io.zeebe.msgpack.value.DocumentValue.EMPTY_DOCUMENT;
 
+import io.zeebe.msgpack.MsgpackPropertyException;
 import io.zeebe.msgpack.value.DocumentValue;
 import org.agrona.DirectBuffer;
 
@@ -37,7 +38,11 @@ public class DocumentProperty extends BaseProperty<DocumentValue> {
   }
 
   public void setValue(DirectBuffer data, int offset, int length) {
-    this.value.wrap(data, offset, length);
-    this.isSet = true;
+    try {
+      this.value.wrap(data, offset, length);
+      this.isSet = true;
+    } catch (Exception e) {
+      throw new MsgpackPropertyException(key, e);
+    }
   }
 }

@@ -119,7 +119,7 @@ public class ExecuteCommandRequest implements BufferWriter {
     final ErrorResponse error = new ErrorResponse(msgPackHelper);
     try {
       error.wrap(responseBuffer, 0, responseBuffer.capacity());
-      return error.getErrorCode() == ErrorCode.PARTITION_NOT_FOUND;
+      return error.getErrorCode() == ErrorCode.PARTITION_LEADER_MISMATCH;
     } catch (final Exception e) {
       // ignore
       return false;
