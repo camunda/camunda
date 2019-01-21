@@ -10,7 +10,9 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -152,7 +154,7 @@ public class EngineDatabaseRule extends TestWatcher {
     String sql = "UPDATE ACT_HI_PROCINST " +
       "SET START_TIME_ = ? WHERE PROC_INST_ID_ = ?";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setTimestamp(1, java.sql.Timestamp.valueOf(startDate.toLocalDateTime()));
+    statement.setTimestamp(1, toLocalTimestampWithoutNanos(startDate));
     statement.setString(2, processInstanceId);
     statement.executeUpdate();
     connection.commit();
@@ -164,7 +166,7 @@ public class EngineDatabaseRule extends TestWatcher {
       "SET START_TIME_ = ? WHERE " +
       "PROC_INST_ID_ = ?";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setTimestamp(1, java.sql.Timestamp.valueOf(startDate.toLocalDateTime()));
+    statement.setTimestamp(1, toLocalTimestampWithoutNanos(startDate));
     statement.setString(2, processInstanceId);
     statement.executeUpdate();
     connection.commit();
@@ -176,7 +178,7 @@ public class EngineDatabaseRule extends TestWatcher {
       "SET START_TIME_ = ? WHERE " +
       "ID_ = (SELECT ID_ FROM ACT_HI_ACTINST WHERE ACT_ID_ = ? ORDER BY START_TIME_ LIMIT 1) ";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setTimestamp(1, java.sql.Timestamp.valueOf(startDate.toLocalDateTime()));
+    statement.setTimestamp(1, toLocalTimestampWithoutNanos(startDate));
     statement.setString(2, activityInstanceId);
     statement.executeUpdate();
     connection.commit();
@@ -189,7 +191,7 @@ public class EngineDatabaseRule extends TestWatcher {
       "SET START_TIME_ = ? WHERE " +
       "PROC_DEF_ID_ = ?";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setTimestamp(1, java.sql.Timestamp.valueOf(startDate.toLocalDateTime()));
+    statement.setTimestamp(1, toLocalTimestampWithoutNanos(startDate));
     statement.setString(2, processDefinitionId);
     statement.executeUpdate();
     connection.commit();
@@ -200,7 +202,7 @@ public class EngineDatabaseRule extends TestWatcher {
       "SET START_TIME_ = ? WHERE PROC_INST_ID_ = ?";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
     for (Map.Entry<String, OffsetDateTime> idToStartDate : processInstanceToDates.entrySet()) {
-      statement.setTimestamp(1, java.sql.Timestamp.valueOf(idToStartDate.getValue().toLocalDateTime()));
+      statement.setTimestamp(1, toLocalTimestampWithoutNanos(idToStartDate.getValue()));
       statement.setString(2, idToStartDate.getKey());
       statement.executeUpdate();
     }
@@ -213,7 +215,7 @@ public class EngineDatabaseRule extends TestWatcher {
       "SET END_TIME_ = ? WHERE " +
       "PROC_INST_ID_ = ?";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setTimestamp(1, java.sql.Timestamp.valueOf(endDate.toLocalDateTime()));
+    statement.setTimestamp(1, toLocalTimestampWithoutNanos(endDate));
     statement.setString(2, processInstanceId);
     statement.executeUpdate();
     connection.commit();
@@ -225,7 +227,7 @@ public class EngineDatabaseRule extends TestWatcher {
       "SET END_TIME_ = ? WHERE " +
       "ID_ = (SELECT ID_ FROM ACT_HI_ACTINST WHERE ACT_ID_ = ? ORDER BY END_TIME_ LIMIT 1) ";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setTimestamp(1, java.sql.Timestamp.valueOf(endDate.toLocalDateTime()));
+    statement.setTimestamp(1, toLocalTimestampWithoutNanos(endDate));
     statement.setString(2, activityInstanceId);
     statement.executeUpdate();
     connection.commit();
@@ -238,7 +240,7 @@ public class EngineDatabaseRule extends TestWatcher {
       "SET END_TIME_ = ? WHERE " +
       "PROC_DEF_ID_ = ?";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setTimestamp(1, java.sql.Timestamp.valueOf(endDate.toLocalDateTime()));
+    statement.setTimestamp(1, toLocalTimestampWithoutNanos(endDate));
     statement.setString(2, processDefinitionId);
     statement.executeUpdate();
     connection.commit();
@@ -249,7 +251,7 @@ public class EngineDatabaseRule extends TestWatcher {
       "SET END_TIME_ = ? WHERE PROC_INST_ID_ = ?";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
     for (Map.Entry<String, OffsetDateTime> idToActivityEndDate : processInstanceToDates.entrySet()) {
-      statement.setTimestamp(1, java.sql.Timestamp.valueOf(idToActivityEndDate.getValue().toLocalDateTime()));
+      statement.setTimestamp(1, toLocalTimestampWithoutNanos(idToActivityEndDate.getValue()));
       statement.setString(2, idToActivityEndDate.getKey());
       statement.executeUpdate();
     }
@@ -272,7 +274,7 @@ public class EngineDatabaseRule extends TestWatcher {
       "SET START_TIME_ = ? WHERE PROC_INST_ID_ = ?";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
     for (Map.Entry<String, OffsetDateTime> idToStartDate : processInstanceIdToStartDate.entrySet()) {
-      statement.setTimestamp(1, java.sql.Timestamp.valueOf(idToStartDate.getValue().toLocalDateTime()));
+      statement.setTimestamp(1, toLocalTimestampWithoutNanos(idToStartDate.getValue()));
       statement.setString(2, idToStartDate.getKey());
       statement.executeUpdate();
     }
@@ -283,7 +285,7 @@ public class EngineDatabaseRule extends TestWatcher {
     String sql = "UPDATE ACT_HI_PROCINST " +
       "SET END_TIME_ = ? WHERE PROC_INST_ID_ = ?";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setTimestamp(1, java.sql.Timestamp.valueOf(endDate.toLocalDateTime()));
+    statement.setTimestamp(1, toLocalTimestampWithoutNanos(endDate));
     statement.setString(2, processInstanceId);
     statement.executeUpdate();
     connection.commit();
@@ -295,7 +297,7 @@ public class EngineDatabaseRule extends TestWatcher {
       "SET END_TIME_ = ? WHERE PROC_INST_ID_ = ?";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
     for (Map.Entry<String, OffsetDateTime> idToStartDate : processInstanceIdToEndDate.entrySet()) {
-      statement.setTimestamp(1, java.sql.Timestamp.valueOf(idToStartDate.getValue().toLocalDateTime()));
+      statement.setTimestamp(1, toLocalTimestampWithoutNanos(idToStartDate.getValue()));
       statement.setString(2, idToStartDate.getKey());
       statement.executeUpdate();
     }
@@ -357,8 +359,8 @@ public class EngineDatabaseRule extends TestWatcher {
     final String sql = "UPDATE ACT_HI_DECINST " +
       "SET EVAL_TIME_ = ? WHERE EVAL_TIME_ >= ?";
     final PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setTimestamp(1, java.sql.Timestamp.valueOf(newEvaluationDateTime.toLocalDateTime()));
-    statement.setTimestamp(2, java.sql.Timestamp.valueOf(fromEvaluationDateTime.toLocalDateTime()));
+    statement.setTimestamp(1, toLocalTimestampWithoutNanos(newEvaluationDateTime));
+    statement.setTimestamp(2, toLocalTimestampWithoutNanos(fromEvaluationDateTime));
     statement.executeUpdate();
     connection.commit();
   }
@@ -368,7 +370,7 @@ public class EngineDatabaseRule extends TestWatcher {
     final String sql = "UPDATE ACT_HI_DECINST " +
       "SET EVAL_TIME_ = ? WHERE DEC_DEF_ID_ = ?";
     final PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setTimestamp(1, java.sql.Timestamp.valueOf(newEvaluationDateTime.toLocalDateTime()));
+    statement.setTimestamp(1, toLocalTimestampWithoutNanos(newEvaluationDateTime));
     statement.setString(2, decisionDefinitionId);
     statement.executeUpdate();
     connection.commit();
@@ -381,7 +383,7 @@ public class EngineDatabaseRule extends TestWatcher {
     final String sql = "SELECT ID_ FROM ACT_HI_DECINST " +
       "WHERE EVAL_TIME_ = ?";
     final PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setTimestamp(1, java.sql.Timestamp.valueOf(evaluationDateTime.toLocalDateTime()));
+    statement.setTimestamp(1, toLocalTimestampWithoutNanos(evaluationDateTime));
     final ResultSet resultSet = statement.executeQuery();
 
     while (resultSet.next()) {
@@ -414,5 +416,16 @@ public class EngineDatabaseRule extends TestWatcher {
 
   private boolean usePostgresOptimizations() {
     return DATABASE_POSTGRESQL.equals(database) && usePostgresOptimizations;
+  }
+
+  private Timestamp toLocalTimestampWithoutNanos(final OffsetDateTime offsetDateTime) {
+    // since Java 9 there is a new implementation of the underlying clock in Java
+    // https://bugs.openjdk.java.net/browse/JDK-8068730
+    // this introduces system specific increased precision when creating new date instances
+    //
+    // when using timestamps with the databasewe have to limit the presision to millis
+    // otherwise date equals queries like finishedAt queries won't work as expected with modified timestamps
+    // tue the added precision that is not available on the engines rest API
+    return Timestamp.valueOf(offsetDateTime.toLocalDateTime().truncatedTo(ChronoUnit.MILLIS));
   }
 }

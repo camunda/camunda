@@ -2,7 +2,7 @@ package org.camunda.optimize.test.query.performance;
 
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
-import org.apache.commons.collections.ListUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.instance.EndEvent;
 import org.camunda.bpm.model.bpmn.instance.StartEvent;

@@ -53,6 +53,13 @@
       <version>1.1.0</version>
     </dependency>
 
+    <!-- Javax XML -->
+    <dependency>
+      <groupId>javax.xml.bind</groupId>
+      <artifactId>jaxb-api</artifactId>
+      <version>2.3.1</version>
+    </dependency>
+
     <!-- Spring -->
     <dependency>
       <groupId>org.springframework</groupId>

@@ -240,7 +240,7 @@ public class ConfigurationService {
 
   private static void overwriteField(ObjectNode mainNode, JsonNode updateNode, String fieldName) {
     JsonNode value = updateNode.get(fieldName);
-    mainNode.put(fieldName, value);
+    mainNode.set(fieldName, value);
   }
 
   private Optional<DocumentContext> parseConfigFromLocations(List<InputStream> sources, YAMLMapper yamlMapper) {
