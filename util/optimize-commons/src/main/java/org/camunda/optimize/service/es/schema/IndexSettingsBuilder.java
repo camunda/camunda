@@ -21,7 +21,8 @@ public class IndexSettingsBuilder {
       .startObject()
         .field("refresh_interval", configurationService.getEsRefreshInterval())
         .field("number_of_replicas", configurationService.getEsNumberOfReplicas())
-        .field("number_of_shards", configurationService.getEsNumberOfShards());
+        .field("number_of_shards", configurationService.getEsNumberOfShards())
+        .field("max_ngram_diff", MAX_GRAM - 1);
         addAnalysis(builder)
       .endObject();
     // @formatter:on
