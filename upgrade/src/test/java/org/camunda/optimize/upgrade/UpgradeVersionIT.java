@@ -63,9 +63,9 @@ public class UpgradeVersionIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    Response aliasResponse = restClient.performRequest("HEAD", TEST_INDEX);
+    Response aliasResponse = restClient.getLowLevelClient().performRequest("HEAD", TEST_INDEX);
     assertThat(aliasResponse.getStatusLine().getStatusCode(), is(200));
-    Response indexResponse = restClient.performRequest(
+    Response indexResponse = restClient.getLowLevelClient().performRequest(
       "HEAD",
       getOptimizeIndexNameForAliasAndVersion(TEST_INDEX, TO_VERSION)
     );
@@ -86,7 +86,7 @@ public class UpgradeVersionIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    Response response = restClient.performRequest("HEAD", TEST_INDEX);
+    Response response = restClient.getLowLevelClient().performRequest("HEAD", TEST_INDEX);
     assertThat(response.getStatusLine().getStatusCode(), is(200));
   }
 
@@ -105,9 +105,9 @@ public class UpgradeVersionIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    Response aliasResponse = restClient.performRequest("HEAD", TEST_INDEX);
+    Response aliasResponse = restClient.getLowLevelClient().performRequest("HEAD", TEST_INDEX);
     assertThat(aliasResponse.getStatusLine().getStatusCode(), is(200));
-    Response indexWithVersionResponse = restClient.performRequest(
+    Response indexWithVersionResponse = restClient.getLowLevelClient().performRequest(
       "HEAD",
       getOptimizeIndexNameForAliasAndVersion(
         TEST_INDEX,
@@ -132,7 +132,7 @@ public class UpgradeVersionIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    Response response = restClient.performRequest(GET, TEST_INDEX + SEARCH);
+    Response response = restClient.getLowLevelClient().performRequest(GET, TEST_INDEX + SEARCH);
     String bodyAsJson = EntityUtils.toString(response.getEntity());
     String username = JsonPath.read(bodyAsJson, "$.hits.hits[0]._source.username");
     assertThat(username, is("admin"));
@@ -156,7 +156,7 @@ public class UpgradeVersionIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    Response response = restClient.performRequest(GET, TEST_INDEX + SEARCH);
+    Response response = restClient.getLowLevelClient().performRequest(GET, TEST_INDEX + SEARCH);
     String bodyAsJson = EntityUtils.toString(response.getEntity());
     String username = JsonPath.read(bodyAsJson, "$.hits.hits[0]._source.username");
     assertThat(username, is("admin"));
@@ -180,7 +180,7 @@ public class UpgradeVersionIT extends AbstractUpgradeIT {
 
     // then
     try {
-      restClient.performRequest(GET, TEST_INDEX + SEARCH);
+      restClient.getLowLevelClient().performRequest(GET, TEST_INDEX + SEARCH);
       fail("Should throw an exception, because index does not exist anymore!");
     } catch (Exception ex) {
       // expected
@@ -201,7 +201,7 @@ public class UpgradeVersionIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    Response response = restClient.performRequest(GET, OPTIMIZE_METADATA + SEARCH);
+    Response response = restClient.getLowLevelClient().performRequest(GET, OPTIMIZE_METADATA + SEARCH);
     String bodyAsJson = EntityUtils.toString(response.getEntity());
     String actualSchemaVersion =
       JsonPath.read(bodyAsJson, "$.hits.hits[0]._source." + MetadataType.SCHEMA_VERSION);

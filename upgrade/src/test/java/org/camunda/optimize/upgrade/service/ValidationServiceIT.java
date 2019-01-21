@@ -42,7 +42,7 @@ public class ValidationServiceIT extends AbstractUpgradeIT {
   @After
   public void tearDown() throws Exception {
     try {
-      restClient.performRequest("DELETE", OPTIMIZE_METADATA, Collections.emptyMap());
+      restClient.getLowLevelClient().performRequest("DELETE", OPTIMIZE_METADATA, Collections.emptyMap());
     } catch (IOException e) {
       //nothing to do
     }
@@ -52,7 +52,7 @@ public class ValidationServiceIT extends AbstractUpgradeIT {
   @Test
   public void versionValidationBreaksWithoutIndex() {
     try {
-      underTest.validateVersions(restClient, "2.0", "2.1");
+      underTest.validateVersions(restClient.getLowLevelClient(), "2.0", "2.1");
     } catch (UpgradeRuntimeException e) {
       //expected
       return;
@@ -68,7 +68,7 @@ public class ValidationServiceIT extends AbstractUpgradeIT {
 
     try {
       //when
-      underTest.validateVersions(restClient, "2.0", "2.1");
+      underTest.validateVersions(restClient.getLowLevelClient(), "2.0", "2.1");
     } catch (UpgradeRuntimeException e) {
       //expected
       //then
@@ -82,21 +82,21 @@ public class ValidationServiceIT extends AbstractUpgradeIT {
     HttpEntity entity = new NStringEntity(data, ContentType.APPLICATION_JSON);
     HashMap<String, String> refreshParams = new HashMap<>();
     refreshParams.put("refresh", "true");
-    Response post = restClient.performRequest(PUT, OPTIMIZE_METADATA + "/metadata/1", refreshParams, entity);
+    Response post = restClient.getLowLevelClient().performRequest(PUT, OPTIMIZE_METADATA + "/metadata/1", refreshParams, entity);
     assertThat(post.getStatusLine().getStatusCode(), is(201));
   }
 
   @Test
   public void versionValidationPassesWithMatchingVersion() throws Exception {
     //given
-    restClient.performRequest(PUT, OPTIMIZE_METADATA, Collections.emptyMap());
+    restClient.getLowLevelClient().performRequest(PUT, OPTIMIZE_METADATA, Collections.emptyMap());
     String data = "{\n" +
       "  \"schemaVersion\": \"2.0\"\n" +
       "}";
     addMetaData(data);
 
     //when
-    underTest.validateVersions(restClient, "2.0", "2.1");
+    underTest.validateVersions(restClient.getLowLevelClient(), "2.0", "2.1");
 
     //then - no exception
   }
@@ -104,7 +104,7 @@ public class ValidationServiceIT extends AbstractUpgradeIT {
   @Test
   public void toVersionIsNotAllowedToBeNull() throws Exception {
     //given
-    restClient.performRequest(PUT, OPTIMIZE_METADATA, Collections.emptyMap());
+    restClient.getLowLevelClient().performRequest(PUT, OPTIMIZE_METADATA, Collections.emptyMap());
     String data = "{\n" +
       "  \"schemaVersion\": \"2.0\"\n" +
       "}";
@@ -112,7 +112,7 @@ public class ValidationServiceIT extends AbstractUpgradeIT {
 
     try {
       //when
-      underTest.validateVersions(restClient, "2.0", null);
+      underTest.validateVersions(restClient.getLowLevelClient(), "2.0", null);
     } catch (UpgradeRuntimeException e) {
       //expected
       //then
@@ -125,7 +125,7 @@ public class ValidationServiceIT extends AbstractUpgradeIT {
   @Test
   public void toVersionIsNotAllowedToBeEmptyString() throws Exception {
     //given
-    restClient.performRequest(PUT, OPTIMIZE_METADATA, Collections.emptyMap());
+    restClient.getLowLevelClient().performRequest(PUT, OPTIMIZE_METADATA, Collections.emptyMap());
     String data = "{\n" +
       "  \"schemaVersion\": \"2.0\"\n" +
       "}";
@@ -133,7 +133,7 @@ public class ValidationServiceIT extends AbstractUpgradeIT {
 
     try {
       //when
-      underTest.validateVersions(restClient, "2.0", "");
+      underTest.validateVersions(restClient.getLowLevelClient(), "2.0", "");
     } catch (UpgradeRuntimeException e) {
       //expected
       //then

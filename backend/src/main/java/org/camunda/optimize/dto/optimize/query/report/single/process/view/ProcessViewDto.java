@@ -16,7 +16,15 @@ public class ProcessViewDto implements Combinable {
   }
 
   public ProcessViewDto(ProcessViewOperation operation) {
+    this(operation, null, null);
+  }
+
+  public ProcessViewDto(final ProcessViewOperation operation,
+                        final ProcessViewEntity entity,
+                        final ProcessViewProperty property) {
     this.operation = operation;
+    this.entity = entity;
+    this.property = property;
   }
 
   public ProcessViewOperation getOperation() {
