@@ -8,12 +8,14 @@ import {
   createInstance,
   createIncident,
   createActivities,
-  createDiagramNodes
+  createDiagramNodes,
+  createEvents
 } from 'modules/testUtils';
 
 import {INSTANCE_STATE, PAGE_TITLE} from 'modules/constants';
 import * as instancesApi from 'modules/api/instances/instances';
 import * as diagramApi from 'modules/api/diagram/diagram';
+import * as eventsApi from 'modules/api/events/events';
 import StateIconIncident from 'modules/components/Icon/state-icon-incident.svg';
 import {getWorkflowName} from 'modules/utils/instance';
 import {parseDiagramXML, parsedDiagram} from 'modules/utils/bpmn';
@@ -27,7 +29,7 @@ const xmlMock = '<foo />';
 
 const diagramNodes = createDiagramNodes();
 
-const activities = createActivities();
+const activities = createActivities(diagramNodes);
 
 const INCIDENT = createIncident({
   id: '4295763008',
@@ -69,6 +71,11 @@ const CANCELED_INSTANCE = createInstance({
     }
   ]
 });
+
+const mockEvents = createEvents(activities);
+
+// api mocks
+eventsApi.fetchEvents = mockResolvedAsyncFn(mockEvents);
 
 // mock modules
 
@@ -281,9 +288,41 @@ describe('Instance', () => {
         expect(selectableFlowNodes.includes(activityId)).toBe(true);
       });
     });
+
+    it('should fetch and provide events', async () => {
+      // given
+      const node = shallowRenderComponent();
+
+      // when
+      await flushPromises();
+      node.update();
+
+      // then
+      expect(eventsApi.fetchEvents).toBeCalledWith(INSTANCE.id);
+      expect(node.find('InstanceHistory').prop('events')).toEqual(mockEvents);
+    });
+
+    it('should provide metadata for the selected flow node', async () => {
+      // given
+      const node = shallowRenderComponent();
+      await flushPromises();
+      node.update();
+
+      // when
+      node.find('Diagram').prop('onFlowNodeSelected')('taskD');
+      node.update();
+
+      // then
+      expect(node.find('Diagram').prop('metadata')).toEqual({
+        'Flow Node Instance Id': 'id_0',
+        'Job Id': '66',
+        Started: '12 Dec 2018 00:00:00',
+        Completed: '12 Dec 2018 00:00:00'
+      });
+    });
   });
 
-  describe.only('check for updates poll', () => {
+  describe('check for updates poll', () => {
     beforeEach(() => {
       jest.useFakeTimers();
     });
@@ -357,7 +396,7 @@ describe('Instance', () => {
       expect(instancesApi.fetchWorkflowInstance).toHaveBeenCalledTimes(3);
     });
 
-    it.only('should stop the polling once the component has completed', async () => {
+    it('should stop the polling once the component has completed', async () => {
       // given
       instancesApi.fetchWorkflowInstance = jest
         .fn()

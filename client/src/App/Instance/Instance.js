@@ -5,25 +5,24 @@ import {isEqual} from 'lodash';
 import SplitPane from 'modules/components/SplitPane';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 import Diagram from 'modules/components/Diagram';
+import {PAGE_TITLE} from 'modules/constants';
+import {getWorkflowName} from 'modules/utils/instance';
+import {parseDiagramXML} from 'modules/utils/bpmn';
+import {compactObject} from 'modules/utils';
+import {formatDate} from 'modules/utils/date';
+import * as api from 'modules/api/instances';
+import {fetchWorkflowXML} from 'modules/api/diagram';
+import {fetchEvents} from 'modules/api/events';
 
 import InstanceDetail from './InstanceDetail';
 import Header from '../Header';
 import DiagramPanel from './DiagramPanel';
 import InstanceHistory from './InstanceHistory';
-
-import {fetchWorkflowXML} from 'modules/api/diagram';
-import {PAGE_TITLE} from 'modules/constants';
-import {getWorkflowName} from 'modules/utils/instance';
-import {parseDiagramXML} from 'modules/utils/bpmn';
-
 import {
   getFlowNodeStateOverlays,
   getFlowNodesDetails,
   isRunningInstance
 } from './service';
-
-import * as api from 'modules/api/instances';
-
 import * as Styled from './styled';
 
 const POLLING_WINDOW = 5000;
@@ -46,7 +45,8 @@ export default class Instance extends Component {
         flowNodeId: null
       },
       diagramModel: {},
-      loaded: false
+      loaded: false,
+      events: []
     };
 
     this.pollingTimer = null;
@@ -60,14 +60,18 @@ export default class Instance extends Component {
       getWorkflowName(instance)
     );
 
-    const diagramXml = await fetchWorkflowXML(instance.workflowId);
+    const [diagramXml, events] = await Promise.all([
+      fetchWorkflowXML(instance.workflowId),
+      fetchEvents(instance.id)
+    ]);
     const diagramModel = await parseDiagramXML(diagramXml);
 
     this.setState(
       {
         loaded: true,
         instance,
-        diagramModel
+        diagramModel,
+        events
       },
       () => {
         this.initializePolling(isRunningInstance(this.state.instance.state));
@@ -173,8 +177,33 @@ export default class Instance extends Component {
     this.initializePolling(isRunningInstance(this.state.instance.state));
   };
 
+  getMetadataFromaActivitiesDetails = activitiesDetails => {
+    const {
+      selection: {flowNodeId},
+      events
+    } = this.state;
+
+    if (!flowNodeId) {
+      return null;
+    }
+
+    const {activityInstanceId, metadata} = events.find(
+      event => event.activityId === flowNodeId && event.activityInstanceId
+    );
+
+    const {jobId} = metadata || {};
+    const {startDate, endDate} = activitiesDetails[activityInstanceId];
+
+    return compactObject({
+      'Flow Node Instance Id': activityInstanceId,
+      'Job Id': jobId,
+      Started: formatDate(startDate),
+      Completed: formatDate(endDate)
+    });
+  };
+
   render() {
-    const {loaded, diagramModel, instance, selection} = this.state;
+    const {loaded, diagramModel, instance, selection, events} = this.state;
 
     if (!loaded) {
       return 'Loading';
@@ -190,6 +219,8 @@ export default class Instance extends Component {
     );
 
     const flowNodeStateOverlays = getFlowNodeStateOverlays(activitiesDetails);
+
+    const metadata = this.getMetadataFromaActivitiesDetails(activitiesDetails);
 
     return (
       <Fragment>
@@ -207,6 +238,7 @@ export default class Instance extends Component {
                   selectedFlowNode={selection.flowNodeId}
                   flowNodeStateOverlays={flowNodeStateOverlays}
                   definitions={diagramModel.definitions}
+                  metadata={metadata}
                 />
               )}
             </DiagramPanel>
@@ -215,6 +247,7 @@ export default class Instance extends Component {
               activitiesDetails={activitiesDetails}
               selectedActivityInstanceId={selection.activityInstanceId}
               onActivityInstanceSelected={this.handleActivityInstanceSelection}
+              events={events}
             />
           </SplitPane>
         </Styled.Instance>

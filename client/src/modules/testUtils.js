@@ -45,6 +45,7 @@ const createRandomId = function* createRandomId(type) {
 const randomIdIterator = createRandomId('id');
 const randomActivityIdIterator = createRandomId('activityId');
 const randomJobIdIterator = createRandomId('jobId');
+const eventIdIterator = createRandomId('eventId');
 
 /**
  * @returns a mocked selection Object
@@ -335,8 +336,8 @@ export const createDiagramNodes = () => {
   };
 };
 
-export const createActivities = () => {
-  return Object.values(createDiagramNodes()).map(diagramNode =>
+export const createActivities = (diagramNodes = createDiagramNodes()) => {
+  return Object.values(diagramNodes).map(diagramNode =>
     createActivity({
       activityId: diagramNode.id
     })
@@ -373,3 +374,27 @@ export const createDefinitions = () => {
     targetNamespace: ''
   };
 };
+
+export const createEvents = activities =>
+  activities.map(node => ({
+    activityId: node.activityId,
+    activityInstanceId: node.id,
+    bpmnProcessId: node.activityId,
+    dateTime: '2019-01-21T08:34:07.121+0000',
+    eventSourceTyppe: 'JOB',
+    eventType: 'CREATED',
+    id: eventIdIterator.next().value,
+    metadata: {
+      incidentErrorMessage: null,
+      incidentErrorType: null,
+      jobCustomHeaders: {},
+      jobDeadline: null,
+      jobId: '66',
+      jobRetries: 3,
+      jobType: 'shipArticles',
+      jobWorker: '',
+      payload: '',
+      workflowId: '1',
+      workflowInstanceId: '53'
+    }
+  }));

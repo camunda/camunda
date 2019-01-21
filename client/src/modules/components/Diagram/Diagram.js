@@ -1,41 +1,17 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import BPMNViewer from 'bpmn-js/lib/NavigatedViewer';
-import {isEqual} from 'lodash';
+import {flatMap} from 'lodash';
+
 import {themed} from 'modules/theme';
-import {
-  ACTIVITY_STATE,
-  FLOW_NODE_STATE_OVERLAY_ID,
-  STATISTICS_OVERLAY_ID
-} from 'modules/constants';
-import incidentIcon from 'modules/components/Icon/diagram-badge-single-instance-incident.svg';
-import activeIcon from 'modules/components/Icon/diagram-badge-single-instance-active.svg';
-import completedLightIcon from 'modules/components/Icon/diagram-badge-single-instance-completed-light.svg';
-import completedDarkIcon from 'modules/components/Icon/diagram-badge-single-instance-completed-dark.svg';
-import canceledLightIcon from 'modules/components/Icon/diagram-badge-single-instance-canceled-light.svg';
-import canceledDarkIcon from 'modules/components/Icon/diagram-badge-single-instance-canceled-dark.svg';
+import {ACTIVITY_STATE} from 'modules/constants';
+
 import * as Styled from './styled';
 import DiagramControls from './DiagramControls';
+import StateOverlay from './StateOverlay';
+import StatisticOverlay from './StatisticOverlay';
+import PopoverOverlay from './PopoverOverlay';
 import {getDiagramColors} from './service';
-
-const iconMap = {
-  [ACTIVITY_STATE.INCIDENT]: {
-    light: incidentIcon,
-    dark: incidentIcon
-  },
-  [ACTIVITY_STATE.ACTIVE]: {
-    light: activeIcon,
-    dark: activeIcon
-  },
-  [ACTIVITY_STATE.COMPLETED]: {
-    light: completedLightIcon,
-    dark: completedDarkIcon
-  },
-  [ACTIVITY_STATE.TERMINATED]: {
-    light: canceledLightIcon,
-    dark: canceledDarkIcon
-  }
-};
 
 class Diagram extends React.Component {
   static propTypes = {
@@ -61,7 +37,8 @@ class Diagram extends React.Component {
         completed: PropTypes.number,
         canceled: PropTypes.number
       })
-    )
+    ),
+    metadata: PropTypes.object
   };
 
   constructor(props) {
@@ -104,18 +81,6 @@ class Diagram extends React.Component {
         selectedFlowNode
       );
     }
-
-    // Clear overlays of type flow-node-state and add new ones
-    if (!isEqual(this.props.flowNodeStateOverlays, prevFlowNodeStateOverlays)) {
-      this.clearOverlaysByType(FLOW_NODE_STATE_OVERLAY_ID);
-      this.props.flowNodeStateOverlays.forEach(this.addFlowNodeStateOverlay);
-    }
-
-    // Clear overlays for statistics
-    if (!isEqual(prevflowNodesStatistics, this.props.flowNodesStatistics)) {
-      this.clearOverlaysByType(STATISTICS_OVERLAY_ID);
-      this.props.flowNodesStatistics.forEach(this.addSatisticOverlays);
-    }
   }
 
   // 1- state.isViewerLoaded => true
@@ -124,9 +89,11 @@ class Diagram extends React.Component {
     if (e) {
       return console.log('Error rendering diagram:', e);
     }
+
     this.setState({
       isViewerLoaded: true
     });
+
     this.handleZoomReset();
 
     // in case onDiagramLoaded callback function is provided
@@ -143,14 +110,6 @@ class Diagram extends React.Component {
     if (this.props.selectedFlowNode) {
       this.handleSelectedFlowNode(this.props.selectedFlowNode);
     }
-
-    if (this.props.flowNodeStateOverlays) {
-      this.props.flowNodeStateOverlays.forEach(this.addFlowNodeStateOverlay);
-    }
-
-    if (this.props.flowNodesStatistics) {
-      this.props.flowNodesStatistics.forEach(this.addSatisticOverlays);
-    }
   };
 
   initViewer = () => {
@@ -166,18 +125,18 @@ class Diagram extends React.Component {
     );
   };
 
-  detachViewer = () => {
-    // detach Viewer
-    if (this.Viewer) {
-      this.Viewer.detach();
-      this.setState({
-        isViewerLoaded: false
-      });
-    }
-  };
-
   resetViewer = () => {
-    this.detachViewer();
+    if (this.Viewer) {
+      // if there is a viewer detatch it, update the state then init a new viewer
+      this.Viewer.detach();
+      return this.setState(
+        {
+          isViewerLoaded: false
+        },
+        this.initViewer
+      );
+    }
+
     this.initViewer();
   };
 
@@ -253,103 +212,53 @@ class Diagram extends React.Component {
     eventBus.on('element.click', this.handleElementClick);
   };
 
-  addFlowNodeStateOverlay = ({id, state}) => {
-    // Create an overlay dom element as an img
-    const img = document.createElement('img');
-    Object.assign(img, {
-      src: iconMap[state][this.props.theme],
-      width: 24,
-      height: 24,
-      // makes the icon non dragable and blocks click listener
-      style: 'pointer-events: none;'
-    });
-
-    // Add the created overlay to the diagram.
-    // Note that we also pass the type 'flow-node-state' to
-    // the overlay to be able to clear all overlays of such type. (cf. clearOverlaysByType)
-    this.Viewer.get('overlays').add(id, FLOW_NODE_STATE_OVERLAY_ID, {
-      position: {
-        bottom: 17,
-        left: -7
-      },
-      html: img
-    });
+  handleOverlayAdd = (...args) => {
+    this.Viewer.get('overlays').add(...args);
   };
 
-  addSatisticOverlays = statistic => {
+  handleOverlayClear = (...args) => this.Viewer.get('overlays').remove(...args);
+
+  renderFlowNodeStateOverlays = overlayProps => {
+    const {flowNodeStateOverlays} = this.props;
+
+    if (!flowNodeStateOverlays) {
+      return null;
+    }
+
+    return flowNodeStateOverlays.map(stateData => (
+      <StateOverlay key={stateData.id} {...stateData} {...overlayProps} />
+    ));
+  };
+
+  renderStatisticsOverlays = overlayProps => {
+    const {flowNodesStatistics} = this.props;
+
+    if (!flowNodesStatistics) {
+      return null;
+    }
+
     const states = ['active', 'incidents', 'canceled', 'completed'];
 
-    const positions = {
-      active: {
-        bottom: 9,
-        left: 0
-      },
-      incidents: {
-        bottom: 9,
-        right: 0
-      },
-      canceled: {
-        top: -16,
-        left: 0
-      },
-      completed: {
-        bottom: 1,
-        left: 17
-      }
-    };
-
-    const icons = {
-      active: iconMap[ACTIVITY_STATE.ACTIVE],
-      incidents: iconMap[ACTIVITY_STATE.INCIDENT],
-      canceled: iconMap[ACTIVITY_STATE.TERMINATED],
-      completed: iconMap[ACTIVITY_STATE.COMPLETED]
-    };
-
-    states.forEach(state => {
-      if (!statistic[state]) {
-        return;
-      }
-
-      const img = document.createElement('img');
-      const span = document.createElement('span');
-      const div = document.createElement('div');
-
-      Object.assign(img, {
-        src: icons[state][this.props.theme],
-        width: 24,
-        height: 24
-      });
-
-      Object.assign(span, {
-        style: Styled.span
-      });
-      Object.assign(div, {
-        style: Styled.getInlineStyle(state, this.props.theme)
-      });
-
-      var newContent = document.createTextNode(statistic[state]);
-      span.appendChild(newContent);
-      div.appendChild(img);
-      div.appendChild(span);
-
-      this.Viewer.get('overlays').add(
-        statistic.activityId,
-        STATISTICS_OVERLAY_ID,
-        {
-          position: positions[state],
-          html: div
-        }
-      );
-    });
-  };
-
-  clearOverlaysByType = type => {
-    this.Viewer.get('overlays').remove({
-      type
+    return flatMap(flowNodesStatistics, statistic => {
+      return states.map(state => (
+        <StatisticOverlay
+          key={`${state} ${statistic.activityId}`}
+          statistic={statistic}
+          state={state}
+          {...overlayProps}
+        />
+      ));
     });
   };
 
   render() {
+    const overlayProps = {
+      onOverlayAdd: this.handleOverlayAdd,
+      onOverlayClear: this.handleOverlayClear,
+      isViewerLoaded: this.state.isViewerLoaded,
+      theme: this.props.theme
+    };
+
     return (
       <Styled.Diagram>
         <Styled.DiagramCanvas ref={this.myRef} />
@@ -357,7 +266,17 @@ class Diagram extends React.Component {
           handleZoomIn={this.handleZoomIn}
           handleZoomOut={this.handleZoomOut}
           handleZoomReset={this.handleZoomReset}
-        />{' '}
+        />
+        {this.props.metadata && (
+          <PopoverOverlay
+            key={this.props.selectedFlowNode}
+            selectedFlowNode={this.props.selectedFlowNode}
+            metadata={this.props.metadata}
+            {...overlayProps}
+          />
+        )}
+        {this.renderFlowNodeStateOverlays(overlayProps)}
+        {this.renderStatisticsOverlays(overlayProps)}
       </Styled.Diagram>
     );
   }

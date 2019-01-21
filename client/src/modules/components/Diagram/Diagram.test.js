@@ -3,12 +3,12 @@ import {shallow, mount} from 'enzyme';
 
 import {createActivity} from 'modules/testUtils';
 import {Colors, ThemeProvider} from 'modules/theme';
-import {
-  ACTIVITY_STATE,
-  FLOW_NODE_STATE_OVERLAY_ID,
-  STATISTICS_OVERLAY_ID
-} from 'modules/constants';
+import {ACTIVITY_STATE, STATISTICS_OVERLAY_ID} from 'modules/constants';
 import {parsedDiagram} from 'modules/utils/bpmn';
+import {ReactComponent as IncidentIcon} from 'modules/components/Icon/diagram-badge-single-instance-incident.svg';
+import {ReactComponent as ActiveIcon} from 'modules/components/Icon/diagram-badge-single-instance-active.svg';
+import {ReactComponent as CompletedDarkIcon} from 'modules/components/Icon/diagram-badge-single-instance-completed-dark.svg';
+import {ReactComponent as CanceledDarkIcon} from 'modules/components/Icon/diagram-badge-single-instance-canceled-dark.svg';
 
 import Diagram from './Diagram';
 import DiagramControls from './DiagramControls';
@@ -228,42 +228,16 @@ describe('Diagram', () => {
       createActivity({state: ACTIVITY_STATE.TERMINATED})
     ];
 
-    it('should add flownode state overlays when the diagram loads', () => {
+    it('should render flownode state overlays', () => {
       // given
-      const node = shallowRenderNode({flowNodeStateOverlays});
-      const overlays = node.instance().Viewer.get('overlays');
+      const node = mountNode({flowNodeStateOverlays});
 
       // then
-      flowNodeStateOverlays.forEach(overlay => {
-        expect(overlays.add).toHaveBeenCalledWith(
-          overlay.id,
-          expect.any(String),
-          expect.any(Object)
-        );
-      });
-    });
-
-    it('should add flownode state overlays when they props value change', () => {
-      // given
-      const node = shallowRenderNode(flowNodeStateOverlays);
-      const newOverlays = [
-        createActivity({state: ACTIVITY_STATE.ACTIVE}),
-        createActivity({state: ACTIVITY_STATE.INCIDENT})
-      ];
-      node.setProps({flowNodeStateOverlays: newOverlays});
-      const overlays = node.instance().Viewer.get('overlays');
-
-      // then
-      expect(overlays.remove.mock.calls[0][0].type).toBe(
-        FLOW_NODE_STATE_OVERLAY_ID
-      );
-      newOverlays.forEach(overlay => {
-        expect(overlays.add).toHaveBeenCalledWith(
-          overlay.id,
-          expect.any(String),
-          expect.any(Object)
-        );
-      });
+      expect(node.find('Overlay')).toHaveLength(flowNodeStateOverlays.length);
+      expect(node.find(ActiveIcon)).toHaveLength(1);
+      expect(node.find(IncidentIcon)).toHaveLength(1);
+      expect(node.find(CompletedDarkIcon)).toHaveLength(1);
+      expect(node.find(CanceledDarkIcon)).toHaveLength(1);
     });
   });
 
@@ -279,24 +253,13 @@ describe('Diagram', () => {
           completed: 0
         }
       ];
-      const node = shallowRenderNode();
-
-      // when
-      node.setProps({flowNodesStatistics});
+      const node = mountNode({flowNodesStatistics});
 
       // then
-      const overlaysAddSpy = node.instance().Viewer.overlays.add;
-      expect(overlaysAddSpy.mock.calls[0][0]).toBe('ServiceTask_1un6ye3');
-      expect(overlaysAddSpy.mock.calls[0][1]).toBe(STATISTICS_OVERLAY_ID);
-
-      // position, color and content
-      expect(
-        overlaysAddSpy.mock.calls[0][2].html.style['background-color']
-      ).toBe('rgb(255, 61, 61)');
-      expect(overlaysAddSpy.mock.calls[0][2].position.top).toBe(undefined);
-      expect(overlaysAddSpy.mock.calls[0][2].position.right).toBe(0);
-      expect(overlaysAddSpy.mock.calls[0][2].html.textContent).toBe('7');
-      expect(overlaysAddSpy.mock.calls[0][2]).toMatchSnapshot();
+      const overlayNode = node.find('Overlay');
+      expect(overlayNode).toHaveLength(1);
+      expect(overlayNode.find(IncidentIcon)).toHaveLength(1);
+      expect(overlayNode.contains(7)).toBe(true);
     });
 
     it('should statistics overlays with active', () => {
@@ -310,25 +273,13 @@ describe('Diagram', () => {
           completed: 0
         }
       ];
-      const node = shallowRenderNode();
-
-      // when
-      node.setProps({flowNodesStatistics});
+      const node = mountNode({flowNodesStatistics});
 
       // then
-      const overlaysAddSpy = node.instance().Viewer.overlays.add;
-      expect(overlaysAddSpy).toHaveBeenCalledTimes(1);
-
-      expect(overlaysAddSpy.mock.calls[0][0]).toBe('ServiceTask_1un6ye3');
-      expect(overlaysAddSpy.mock.calls[0][1]).toBe(STATISTICS_OVERLAY_ID);
-      // position and color
-      expect(
-        overlaysAddSpy.mock.calls[0][2].html.style['background-color']
-      ).toBe('rgb(16, 208, 112)');
-      expect(overlaysAddSpy.mock.calls[0][2].position.top).toBe(undefined);
-      expect(overlaysAddSpy.mock.calls[0][2].position.left).toBe(0);
-      expect(overlaysAddSpy.mock.calls[0][2].html.textContent).toBe('7');
-      expect(overlaysAddSpy.mock.calls[0][2]).toMatchSnapshot();
+      const overlayNode = node.find('Overlay');
+      expect(overlayNode).toHaveLength(1);
+      expect(overlayNode.find(ActiveIcon)).toHaveLength(1);
+      expect(overlayNode.contains(7)).toBe(true);
     });
 
     it('should statistics overlays with completed state', () => {
@@ -342,18 +293,13 @@ describe('Diagram', () => {
           completed: 7
         }
       ];
-      const node = shallowRenderNode();
-
-      // when
-      node.setProps({flowNodesStatistics});
+      const node = mountNode({flowNodesStatistics});
 
       // then
-      const overlaysAddSpy = node.instance().Viewer.overlays.add;
-      expect(overlaysAddSpy).toHaveBeenCalledTimes(1);
-      expect(overlaysAddSpy.mock.calls[0][0]).toBe('ServiceTask_1un6ye3');
-      expect(overlaysAddSpy.mock.calls[0][1]).toBe(STATISTICS_OVERLAY_ID);
-      expect(overlaysAddSpy.mock.calls[0][2].html.textContent).toBe('7');
-      expect(overlaysAddSpy.mock.calls[0][2]).toMatchSnapshot();
+      const overlayNode = node.find('Overlay');
+      expect(overlayNode).toHaveLength(1);
+      expect(overlayNode.find(CompletedDarkIcon)).toHaveLength(1);
+      expect(overlayNode.contains(7)).toBe(true);
     });
 
     it('should statistics overlays with canceled state', () => {
@@ -367,18 +313,13 @@ describe('Diagram', () => {
           completed: 0
         }
       ];
-      const node = shallowRenderNode();
-
-      // when
-      node.setProps({flowNodesStatistics});
+      const node = mountNode({flowNodesStatistics});
 
       // then
-      const overlaysAddSpy = node.instance().Viewer.overlays.add;
-      expect(overlaysAddSpy).toHaveBeenCalledTimes(1);
-      expect(overlaysAddSpy.mock.calls[0][0]).toBe('ServiceTask_1un6ye3');
-      expect(overlaysAddSpy.mock.calls[0][1]).toBe(STATISTICS_OVERLAY_ID);
-      expect(overlaysAddSpy.mock.calls[0][2].html.textContent).toBe('7');
-      expect(overlaysAddSpy.mock.calls[0][2]).toMatchSnapshot();
+      const overlayNode = node.find('Overlay');
+      expect(overlayNode).toHaveLength(1);
+      expect(overlayNode.find(CanceledDarkIcon)).toHaveLength(1);
+      expect(overlayNode.contains(7)).toBe(true);
     });
   });
 });

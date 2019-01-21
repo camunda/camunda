@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 
 import SplitPane from 'modules/components/SplitPane';
 import Copyright from 'modules/components/Copyright';
-import {fetchEvents} from 'modules/api/events';
 
 import InstanceLog from './InstanceLog';
 import InstanceEvents from './InstanceEvents';
@@ -17,11 +16,11 @@ export default class InstanceHistory extends React.Component {
     instance: PropTypes.object.isRequired,
     activitiesDetails: PropTypes.object,
     selectedActivityInstanceId: PropTypes.string,
-    onActivityInstanceSelected: PropTypes.func
+    onActivityInstanceSelected: PropTypes.func,
+    events: PropTypes.array.isRequired
   };
 
   state = {
-    events: [],
     groupedEvents: [],
     selectedEventRow: {
       key: null,
@@ -29,14 +28,19 @@ export default class InstanceHistory extends React.Component {
     }
   };
 
-  async componentDidMount() {
-    const events = await fetchEvents(this.props.instance.id);
-    this.setState({events});
+  componentDidMount() {
+    const {activitiesDetails, events} = this.props;
+    if (!isEmpty(activitiesDetails) && events.length) {
+      const groupedEvents = getGroupedEvents({
+        events,
+        activitiesDetails
+      });
+      return this.setState({groupedEvents});
+    }
   }
 
-  componentDidUpdate(prevProps, prevState) {
-    const {activitiesDetails, selectedActivityInstanceId} = this.props;
-    const {events} = this.state;
+  componentDidUpdate(prevProps) {
+    const {activitiesDetails, selectedActivityInstanceId, events} = this.props;
 
     if (isEmpty(activitiesDetails) || !events.length) {
       return;
@@ -44,7 +48,7 @@ export default class InstanceHistory extends React.Component {
 
     const haveActivitiesDetailsChanged =
       activitiesDetails !== prevProps.activitiesDetails;
-    const haveEventsChanged = events !== prevState.events;
+    const haveEventsChanged = events !== prevProps.events;
     const hasSelectedActivityInstanceIdChanged =
       selectedActivityInstanceId !== prevProps.selectedActivityInstanceId;
 
@@ -95,7 +99,7 @@ export default class InstanceHistory extends React.Component {
     if (selectedActivityInstanceId && filteredEvents) {
       filteredEvents = getActivityInstanceEvents({
         activityInstanceId: selectedActivityInstanceId,
-        events: filteredEvents
+        events: this.state.groupedEvents
       });
     }
 

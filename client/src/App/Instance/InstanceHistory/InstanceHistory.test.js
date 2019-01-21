@@ -3,8 +3,6 @@ import {shallow} from 'enzyme';
 
 import SplitPane from 'modules/components/SplitPane';
 import Copyright from 'modules/components/Copyright';
-import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
-import * as api from 'modules/api/events/events';
 
 import InstanceHistory from './InstanceHistory';
 import InstanceLog from './InstanceLog';
@@ -72,27 +70,11 @@ const mockActivitiesDetails = {
   bar: {id: 'bar', name: 'bar name', activityId: 'barAID'}
 };
 
-api.fetchEvents = mockResolvedAsyncFn(mockEvents);
-
 describe('InstanceHistory', () => {
-  it('should have the right initial state', () => {
-    // given
-    const instance = new InstanceHistory();
-
-    // then
-    expect(instance.state).toEqual({
-      events: [],
-      groupedEvents: [],
-      selectedEventRow: {
-        key: null,
-        payload: null
-      }
-    });
-  });
-
-  it('should render a panel with InstanceLog section and Copyright', async () => {
+  it('should render a panel with InstanceLog section and Copyright', () => {
     // given
     const mockProps = {
+      events: mockEvents,
       instance: {id: 'someInstanceId'},
       selectedActivityInstanceId: 'foo',
       onActivityInstanceSelected: jest.fn()
@@ -100,8 +82,6 @@ describe('InstanceHistory', () => {
 
     const node = shallow(<InstanceHistory {...mockProps} />);
 
-    await flushPromises();
-    node.update();
     node.setProps({activitiesDetails: mockActivitiesDetails});
     node.update();
 
@@ -156,7 +136,8 @@ describe('InstanceHistory', () => {
     it('should set the payload and key of the selected event row', () => {
       // given
       const mockProps = {
-        instance: {}
+        instance: {},
+        events: []
       };
       const node = shallow(<InstanceHistory {...mockProps} />);
       const expectedPayload = {a: 'b'};
@@ -179,7 +160,8 @@ describe('InstanceHistory', () => {
     it('should set the payload to null if the selected row payload is not parsable', () => {
       // given
       const mockProps = {
-        instance: {}
+        instance: {},
+        events: []
       };
       const node = shallow(<InstanceHistory {...mockProps} />);
       const selectedEventRow = {
@@ -201,7 +183,8 @@ describe('InstanceHistory', () => {
     it("should reset the selected event row if it's selected again", () => {
       // given
       const mockProps = {
-        instance: {}
+        instance: {},
+        events: []
       };
       const node = shallow(<InstanceHistory {...mockProps} />);
       const expectedPayload = {a: 'b'};
