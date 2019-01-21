@@ -34,7 +34,7 @@ public class VersionChecker {
     supportedEngines.add("7.10.0");
     supportedEngines.add("7.11.0");
     supportedES.add("6.2.0");
-    supportedES.add("6.3.0");
+    supportedES.add("6.3.1");
     supportedES.add("6.4.0");
     supportedES.add("6.5.0");
     warningES.add("6.6.0");
