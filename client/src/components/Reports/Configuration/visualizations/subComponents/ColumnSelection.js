@@ -2,6 +2,7 @@ import React from 'react';
 
 import {Switch} from 'components';
 import {formatters} from 'services';
+import AllColumnsButtons from './AllColumnsButtons';
 
 import './ColumnSelection.scss';
 
@@ -19,6 +20,7 @@ export default function ColumnSelection({report, onChange}) {
     ...normalColumns,
     ...variableColumns.map(variable => VARIABLE_PREFIX + variable)
   ];
+  const excludedColumnsCount = excludedColumns.length;
 
   const renderEntry = (prefix = '', label = '') => column => (
     <div key={column} className="ColumnSelection__entry">
@@ -43,16 +45,12 @@ export default function ColumnSelection({report, onChange}) {
   return (
     <fieldset className="ColumnSelection">
       <legend>Table columns to include</legend>
-      <div className="ColumnSelection__entry">
-        <Switch
-          className="ColumnSelection__Switch"
-          checked={excludedColumns.length !== allColumns.length}
-          onChange={({target: {checked}}) =>
-            onChange({excludedColumns: {$set: checked ? [] : [...allColumns]}})
-          }
-        />
-        All Columns
-      </div>
+      <AllColumnsButtons
+        allEnabled={!excludedColumnsCount}
+        allDisabled={excludedColumnsCount === allColumns.length}
+        enableAll={() => onChange({excludedColumns: {$set: []}})}
+        disableAll={() => onChange({excludedColumns: {$set: allColumns}})}
+      />
       {normalColumns.map(renderEntry())}
       {variableColumns.map(renderEntry(VARIABLE_PREFIX, 'Variable: '))}
     </fieldset>
