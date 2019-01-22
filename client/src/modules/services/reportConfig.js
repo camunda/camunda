@@ -16,6 +16,7 @@ export const groupBy = {
     data: {
       type: 'startDate',
       value: [
+        {data: {unit: 'automatic'}, label: 'Automatic'},
         {data: {unit: 'year'}, label: 'Year'},
         {data: {unit: 'month'}, label: 'Month'},
         {data: {unit: 'week'}, label: 'Week'},
