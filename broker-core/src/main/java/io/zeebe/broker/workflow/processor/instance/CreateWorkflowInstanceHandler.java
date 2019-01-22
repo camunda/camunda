@@ -34,6 +34,9 @@ public class CreateWorkflowInstanceHandler implements WorkflowInstanceCommandHan
 
   public static final String NO_WORKFLOW_FOUND_MESSAGE =
       "Expected to create an instance of workflow with key '%d', but no such workflow was found";
+  public static final String NO_START_EVENT_FOUND_MESSAGE =
+      "Expected to create an instance of workflow with key '%d', but no none start event was found";
+
   private final WorkflowState workflowState;
 
   public CreateWorkflowInstanceHandler(WorkflowState workflowState) {
@@ -49,26 +52,32 @@ public class CreateWorkflowInstanceHandler implements WorkflowInstanceCommandHan
     final DeployedWorkflow workflowDefinition = getWorkflowDefinition(command);
 
     if (workflowDefinition != null) {
-      final long workflowInstanceKey = commandContext.getKeyGenerator().nextKey();
-      command.setWorkflowInstanceKey(workflowInstanceKey);
-      final ExecutableWorkflow workflow = workflowDefinition.getWorkflow();
-      final DirectBuffer bpmnId = workflow.getId();
-      command
-          .setBpmnProcessId(bpmnId)
-          .setWorkflowKey(workflowDefinition.getKey())
-          .setVersion(workflowDefinition.getVersion());
+      if (workflowDefinition.getWorkflow().getNoneStartEvent() != null) {
+        final long workflowInstanceKey = commandContext.getKeyGenerator().nextKey();
+        command.setWorkflowInstanceKey(workflowInstanceKey);
+        final ExecutableWorkflow workflow = workflowDefinition.getWorkflow();
+        final DirectBuffer bpmnId = workflow.getId();
+        command
+            .setBpmnProcessId(bpmnId)
+            .setWorkflowKey(workflowDefinition.getKey())
+            .setVersion(workflowDefinition.getVersion());
 
-      final EventOutput eventOutput = commandContext.getOutput();
-      eventOutput.appendFollowUpEvent(
-          workflowInstanceKey, WorkflowInstanceIntent.ELEMENT_READY, command, workflow);
+        final EventOutput eventOutput = commandContext.getOutput();
+        eventOutput.appendFollowUpEvent(
+            workflowInstanceKey, WorkflowInstanceIntent.ELEMENT_READY, command, workflow);
 
-      workflowState
-          .getElementInstanceState()
-          .getVariablesState()
-          .setVariablesLocalFromDocument(workflowInstanceKey, command.getPayload());
+        workflowState
+            .getElementInstanceState()
+            .getVariablesState()
+            .setVariablesLocalFromDocument(workflowInstanceKey, command.getPayload());
 
-      responseWriter.writeEventOnCommand(
-          workflowInstanceKey, WorkflowInstanceIntent.ELEMENT_READY, command, record);
+        responseWriter.writeEventOnCommand(
+            workflowInstanceKey, WorkflowInstanceIntent.ELEMENT_READY, command, record);
+      } else {
+        commandContext.reject(
+            RejectionType.NOT_FOUND,
+            String.format(NO_START_EVENT_FOUND_MESSAGE, workflowDefinition.getKey()));
+      }
     } else {
       commandContext.reject(
           RejectionType.NOT_FOUND,
