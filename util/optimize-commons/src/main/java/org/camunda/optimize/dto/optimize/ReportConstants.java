@@ -35,6 +35,7 @@ public class ReportConstants {
   public static final String DATE_UNIT_WEEK = "week";
   public static final String DATE_UNIT_DAY = "day";
   public static final String DATE_UNIT_HOUR = "hour";
+  public static final String DATE_UNIT_AUTOMATIC = "automatic";
 
   public static final String TABLE_VISUALIZATION = "table";
   public static final String HEAT_VISUALIZATION = "heat";

@@ -50,6 +50,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static org.camunda.optimize.service.es.report.command.util.ReportUtil.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.test.util.ProcessVariableFilterUtilHelper.createBooleanVariableFilter;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -334,6 +335,55 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
   }
 
   private Object[] parametersForEmptyIntervalBetweenTwoProcessInstances() {
+    return new Object[]{
+      new Object[]{ProcessReportDataType.AVG_PROC_INST_DUR_GROUP_BY_START_DATE, 4000L},
+      new Object[]{ProcessReportDataType.MIN_PROC_INST_DUR_GROUP_BY_START_DATE, 1000L},
+      new Object[]{ProcessReportDataType.MAX_PROC_INST_DUR_GROUP_BY_START_DATE, 9000L},
+      new Object[]{ProcessReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_START_DATE, 2000L}
+    };
+  }
+
+  @Test
+  @Parameters
+  public void automaticIntervalSelectionWorks(ProcessReportDataType reportDataType,
+                                              long expectedTodayDuration) throws Exception {
+    // given
+    OffsetDateTime startDate = OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC);
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
+    String processDefinitionKey = processInstanceDto.getProcessDefinitionKey();
+    String processDefinitionVersion = processInstanceDto.getProcessDefinitionVersion();
+
+    adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 1L);
+    processInstanceDto = engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
+    adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 9L);
+    processInstanceDto = engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
+    adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 2L);
+    ProcessInstanceEngineDto processInstanceDto3 =
+      engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
+    adjustProcessInstanceDates(processInstanceDto3.getId(), startDate, -2L, 1L);
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
+      .setReportDataType(reportDataType)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setDateInterval(GroupByDateUnit.AUTOMATIC)
+      .build();
+    ProcessReportMapResultDto result = evaluateReport(reportData);
+
+    // then
+    Map<String, Long> resultMap = result.getResult();
+    assertThat(resultMap.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
+    ArrayList<Long> resultValues = new ArrayList<>(resultMap.values());
+    assertThat(resultValues.get(0), is(expectedTodayDuration));
+    assertThat(resultValues.stream().filter(v -> v > 0L).count(), is(2L));
+    assertThat(resultValues.get(resultMap.size() - 1), is(1000L));
+  }
+
+  private Object[] parametersForAutomaticIntervalSelectionWorks() {
     return new Object[]{
       new Object[]{ProcessReportDataType.AVG_PROC_INST_DUR_GROUP_BY_START_DATE, 4000L},
       new Object[]{ProcessReportDataType.MIN_PROC_INST_DUR_GROUP_BY_START_DATE, 1000L},

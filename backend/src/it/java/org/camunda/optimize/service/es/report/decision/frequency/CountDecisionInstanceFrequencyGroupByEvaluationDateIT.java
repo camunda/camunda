@@ -21,9 +21,11 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 
+import static org.camunda.optimize.service.es.report.command.util.ReportUtil.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.test.util.DecisionFilterUtilHelper.createDoubleInputVariableFilter;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -192,6 +194,44 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
   }
 
   @Test
+  public void automaticIntervalSelectionWorks() throws Exception {
+    // given
+    final OffsetDateTime beforeStart = OffsetDateTime.now();
+
+    // third bucket
+    final DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
+    final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
+    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+
+    final OffsetDateTime thirdBucketEvaluationDate = beforeStart.minus(2, ChronoUnit.DAYS);
+    engineDatabaseRule.changeDecisionInstanceEvaluationDate(beforeStart, thirdBucketEvaluationDate);
+
+    // second empty bucket
+    final OffsetDateTime secondBucketEvaluationDate = beforeStart.minus(1, ChronoUnit.DAYS);
+
+    // first bucket
+    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
+      decisionDefinitionDto1, decisionDefinitionVersion1, GroupByDateUnit.AUTOMATIC
+    );
+
+    // then
+    Map<String, Long> resultMap = result.getResult();
+    assertThat(resultMap.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
+    ArrayList<Long> resultValues = new ArrayList<>(resultMap.values());
+    assertThat(resultValues.get(0), is(2L));
+    assertThat(resultValues.stream().mapToInt(Long::intValue).sum(), is(5));
+    assertThat(resultValues.get(resultMap.size() - 1), is(3L));
+  }
+
+  @Test
   public void reportEvaluationSingleBucketAllVersionsGroupByYear() {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
@@ -303,6 +343,12 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     assertThat(response.getStatus(), is(500));
   }
 
+  private static GroupByDateUnit[] groupByDateUnits() {
+    return Arrays.stream(GroupByDateUnit.values())
+      .filter(v -> !v.equals(GroupByDateUnit.AUTOMATIC))
+      .toArray(GroupByDateUnit[]::new);
+  }
+
   @Test
   public void optimizeExceptionOnGroupByTypeIsNull() {
     // given
@@ -318,10 +364,6 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
 
     // then
     assertThat(response.getStatus(), is(400));
-  }
-
-  private static final GroupByDateUnit[] groupByDateUnits() {
-    return GroupByDateUnit.values();
   }
 
   private DecisionReportMapResultDto evaluateDecisionInstanceFrequencyByEvaluationDate(

@@ -2,6 +2,7 @@ package org.camunda.optimize.dto.optimize.query.report.single.group;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
+import static org.camunda.optimize.dto.optimize.ReportConstants.DATE_UNIT_AUTOMATIC;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DATE_UNIT_DAY;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DATE_UNIT_HOUR;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DATE_UNIT_MONTH;
@@ -14,6 +15,7 @@ public enum GroupByDateUnit {
   WEEK(DATE_UNIT_WEEK),
   DAY(DATE_UNIT_DAY),
   HOUR(DATE_UNIT_HOUR),
+  AUTOMATIC(DATE_UNIT_AUTOMATIC),
   ;
 
   private final String id;

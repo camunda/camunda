@@ -6,13 +6,13 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.group.valu
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.service.es.report.command.decision.DecisionReportCommand;
-import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -28,6 +28,7 @@ import java.util.Map;
 
 import static org.camunda.optimize.service.es.report.command.util.ReportUtil.getDateHistogramInterval;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.EVALUATION_DATE_TIME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
@@ -60,7 +61,7 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
       .fetchSource(false)
-      .aggregation(createAggregation(groupBy.getUnit()))
+      .aggregation(createAggregation(groupBy.getUnit(), query))
       .size(0);
     SearchRequest searchRequest =
       new SearchRequest(getOptimizeIndexAliasForType(DECISION_INSTANCE_TYPE))
@@ -88,12 +89,14 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
     return mapResult;
   }
 
-  private AggregationBuilder createAggregation(final GroupByDateUnit unit) throws OptimizeException {
-    DateHistogramInterval interval = getDateHistogramInterval(unit);
+  private AggregationBuilder createAggregation(final GroupByDateUnit unit,
+                                               final QueryBuilder query) throws OptimizeException {
+    DateHistogramInterval interval =
+      getDateHistogramInterval(unit, esClient, query, DECISION_INSTANCE_TYPE, EVALUATION_DATE_TIME);
     return AggregationBuilders
       .dateHistogram(DATE_HISTOGRAM_AGGREGATION)
       .order(BucketOrder.key(false))
-      .field(DecisionInstanceType.EVALUATION_DATE_TIME)
+      .field(EVALUATION_DATE_TIME)
       .dateHistogramInterval(interval);
   }
 

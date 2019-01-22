@@ -6,13 +6,13 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Start
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.StartDateGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
-import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -21,6 +21,7 @@ import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInter
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -28,6 +29,7 @@ import java.util.Map;
 
 import static org.camunda.optimize.service.es.report.command.util.ReportUtil.getDateHistogramInterval;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.START_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 
@@ -57,7 +59,7 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessRepo
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
       .fetchSource(false)
-      .aggregation(createAggregation(groupByStartDate.getUnit()))
+      .aggregation(createAggregation(groupByStartDate.getUnit(), query))
       .size(0);
     SearchRequest searchRequest =
       new SearchRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
@@ -85,12 +87,12 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessRepo
     return mapResult;
   }
 
-  private AggregationBuilder createAggregation(GroupByDateUnit unit) throws OptimizeException {
-    DateHistogramInterval interval = getDateHistogramInterval(unit);
+  private AggregationBuilder createAggregation(GroupByDateUnit unit, QueryBuilder query) throws OptimizeException {
+    DateHistogramInterval interval = getDateHistogramInterval(unit, esClient, query, PROC_INSTANCE_TYPE, START_DATE);
     return AggregationBuilders
       .dateHistogram(DATE_HISTOGRAM_AGGREGATION)
       .order(BucketOrder.key(false))
-      .field(ProcessInstanceType.START_DATE)
+      .field(START_DATE)
       .dateHistogramInterval(interval);
   }
 
@@ -102,7 +104,7 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessRepo
     for (Histogram.Bucket entry : agg.getBuckets()) {
       DateTime key = (DateTime) entry.getKey();    // Key
       long docCount = entry.getDocCount();         // Doc count
-      String formattedDate = key.toString(OPTIMIZE_DATE_FORMAT);
+      String formattedDate = key.withZone(DateTimeZone.getDefault()).toString(OPTIMIZE_DATE_FORMAT);
       result.put(formattedDate, docCount);
     }
     return result;

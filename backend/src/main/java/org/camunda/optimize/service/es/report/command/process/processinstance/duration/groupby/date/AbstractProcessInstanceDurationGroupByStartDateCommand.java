@@ -7,13 +7,13 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.value
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
 import org.camunda.optimize.service.es.report.command.util.ReportUtil;
-import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.START_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 
@@ -60,7 +61,7 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
       .fetchSource(false)
-      .aggregation(createAggregation(groupByStartDate.getUnit()))
+      .aggregation(createAggregation(groupByStartDate.getUnit(), query))
       .size(0);
     SearchRequest searchRequest =
       new SearchRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
@@ -104,11 +105,12 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
     return result;
   }
 
-  private AggregationBuilder createAggregation(GroupByDateUnit unit) throws OptimizeException {
-    DateHistogramInterval interval = ReportUtil.getDateHistogramInterval(unit);
+  private AggregationBuilder createAggregation(GroupByDateUnit unit, QueryBuilder query) throws OptimizeException {
+    DateHistogramInterval interval =
+      ReportUtil.getDateHistogramInterval(unit, esClient, query, PROC_INSTANCE_TYPE, START_DATE);
     return AggregationBuilders
       .dateHistogram(DATE_HISTOGRAM_AGGREGATION)
-      .field(ProcessInstanceType.START_DATE)
+      .field(START_DATE)
       .order(BucketOrder.key(false))
       .dateHistogramInterval(interval)
       .subAggregation(

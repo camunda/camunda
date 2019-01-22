@@ -423,9 +423,9 @@ public class EngineDatabaseRule extends TestWatcher {
     // https://bugs.openjdk.java.net/browse/JDK-8068730
     // this introduces system specific increased precision when creating new date instances
     //
-    // when using timestamps with the databasewe have to limit the presision to millis
+    // when using timestamps with the data base we have to limit the precision to millis
     // otherwise date equals queries like finishedAt queries won't work as expected with modified timestamps
-    // tue the added precision that is not available on the engines rest API
+    // due to the added precision that is not available on the engines REST-API
     return Timestamp.valueOf(offsetDateTime.toLocalDateTime().truncatedTo(ChronoUnit.MILLIS));
   }
 }
