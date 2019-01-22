@@ -2,6 +2,10 @@
 
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
+boolean slaveDisconnected() {
+    return currentBuild.rawBuild.getLog(100) ==~ /.*ChannelClosedException.*/
+}
+
 String storeNumOfBuilds() {
   return env.BRANCH_NAME == 'master' ? '30' : '10'
 }
@@ -204,12 +208,14 @@ pipeline {
         VERSION = readMavenPom().getVersion()
       }
       steps {
-        container('maven') {
-          runMaven('install -Pproduction,docs -Dskip.docker -DskipTests -T\$LIMITS_CPU')
+        retry(2) {
+          container('maven') {
+            runMaven('install -Pproduction,docs -Dskip.docker -DskipTests -T\$LIMITS_CPU')
+          }
+          stash name: "optimize-stash-client", includes: "client/build/**"
+          stash name: "optimize-stash-upgrade", includes: "upgrade/target/upgrade*.jar"
+          stash name: "optimize-stash-distro", includes: "m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*-production.tar.gz,m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*.xml,m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*.pom"
         }
-        stash name: "optimize-stash-client", includes: "client/build/**"
-        stash name: "optimize-stash-upgrade", includes: "upgrade/target/upgrade*.jar"
-        stash name: "optimize-stash-distro", includes: "m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*-production.tar.gz,m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*.xml,m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*.pom"
       }
       post {
         success {
@@ -221,8 +227,10 @@ pipeline {
       parallel {
         stage('Backend') {
           steps {
-            container('maven') {
-              runMaven('test -Dskip.fe.build -Dskip.docker -T\$LIMITS_CPU')
+            retry(2) {
+              container('maven') {
+                runMaven('test -Dskip.fe.build -Dskip.docker -T\$LIMITS_CPU')
+              }
             }
           }
           post {
@@ -233,11 +241,13 @@ pipeline {
         }
         stage('Frontend') {
           steps {
-            container('node') {
-              sh('''
-                cd ./client
-                yarn test:ci
-              ''')
+            retry(2) {
+              container('node') {
+                sh('''
+                  cd ./client
+                  yarn test:ci
+                ''')
+              }
             }
           }
           post {
@@ -264,9 +274,11 @@ pipeline {
             }
           }
           steps {
-            unstash name: "optimize-stash-upgrade"
-            unstash name: "optimize-stash-client"
-            migrationTestSteps()
+            retry(2) {
+              unstash name: "optimize-stash-upgrade"
+              unstash name: "optimize-stash-client"
+              migrationTestSteps()
+            }
           }
           post {
             always {
@@ -284,9 +296,11 @@ pipeline {
             }
           }
           steps {
-            unstash name: "optimize-stash-upgrade"
-            unstash name: "optimize-stash-distro"
-            dataUpgradeTestSteps()
+            retry(2) {
+              unstash name: "optimize-stash-upgrade"
+              unstash name: "optimize-stash-distro"
+              dataUpgradeTestSteps()
+            }
           }
         }
         stage('Security') {
@@ -299,7 +313,9 @@ pipeline {
             }
           }
           steps {
-            securityTestSteps()
+            retry(2) {
+              securityTestSteps()
+            }
           }
           post {
             always {
@@ -317,8 +333,10 @@ pipeline {
             }
           }
           steps {
-            unstash name: "optimize-stash-client"
-            integrationTestSteps('latest')
+            retry(2) {
+              unstash name: "optimize-stash-client"
+              integrationTestSteps('latest')
+            }
           }
           post {
             always {
@@ -336,8 +354,10 @@ pipeline {
             }
           }
           steps {
-            unstash name: "optimize-stash-client"
-            integrationTestSteps('7.9')
+            retry(2) {
+              unstash name: "optimize-stash-client"
+              integrationTestSteps('7.9')
+            }
           }
           post {
             always {
@@ -355,8 +375,10 @@ pipeline {
             }
           }
           steps {
-            unstash name: "optimize-stash-client"
-            integrationTestSteps('7.8')
+            retry(2) {
+              unstash name: "optimize-stash-client"
+              integrationTestSteps('7.8')
+            }
           }
           post {
             always {
@@ -373,8 +395,10 @@ pipeline {
             branch 'master'
           }
           steps {
-            container('maven') {
-              runMaven('deploy -Dskip.fe.build -DskipTests -Dskip.docker -pl distro -am')
+            retry(2) {
+              container('maven') {
+                runMaven('deploy -Dskip.fe.build -DskipTests -Dskip.docker -pl distro -am')
+              }
             }
           }
         }
@@ -389,25 +413,27 @@ pipeline {
             GCR_REGISTRY = credentials('docker-registry-ci3')
           }
           steps {
-            container('docker') {
-              sh ("""
-                echo '${GCR_REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
+            retry(2) {
+              container('docker') {
+                sh ("""
+                  echo '${GCR_REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
 
-                docker build -t ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} \
-                  --build-arg=SKIP_DOWNLOAD=true \
-                  --build-arg=VERSION=${VERSION} \
-                  --build-arg=SNAPSHOT=${SNAPSHOT} \
-                  --build-arg=USERNAME=${NEXUS_USR} \
-                  --build-arg=PASSWORD=${NEXUS_PSW} \
-                  .
+                  docker build -t ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} \
+                    --build-arg=SKIP_DOWNLOAD=true \
+                    --build-arg=VERSION=${VERSION} \
+                    --build-arg=SNAPSHOT=${SNAPSHOT} \
+                    --build-arg=USERNAME=${NEXUS_USR} \
+                    --build-arg=PASSWORD=${NEXUS_PSW} \
+                    .
 
-                docker push ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG}
+                  docker push ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG}
 
-                if [ "${env.BRANCH_NAME}" = 'master' ]; then
-                  docker tag ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} ${PROJECT_DOCKER_IMAGE()}:latest
-                  docker push ${PROJECT_DOCKER_IMAGE()}:latest
-                fi
-              """)
+                  if [ "${env.BRANCH_NAME}" = 'master' ]; then
+                    docker tag ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} ${PROJECT_DOCKER_IMAGE()}:latest
+                    docker push ${PROJECT_DOCKER_IMAGE()}:latest
+                  fi
+                """)
+              }
             }
           }
         }
@@ -428,7 +454,20 @@ pipeline {
 
   post {
     changed {
-      buildNotification(currentBuild.result)
+      // Do not send email if the slave disconnected
+      script {
+        if (!slaveDisconnected()){
+          buildNotification(currentBuild.result)
+        }
+      }
+    }
+    failure {
+      // Retrigger the build if the slave disconnected
+      script {
+        if (slaveDisconnected()) {
+          build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
+        }
+      }
     }
   }
 }
