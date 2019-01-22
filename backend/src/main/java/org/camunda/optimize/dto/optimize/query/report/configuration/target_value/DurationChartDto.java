@@ -1,5 +1,7 @@
 package org.camunda.optimize.dto.optimize.query.report.configuration.target_value;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.Objects;
 
 public class DurationChartDto {
@@ -16,6 +18,7 @@ public class DurationChartDto {
     this.unit = unit;
   }
 
+  @JsonProperty(value="isBelow")
   public Boolean getBelow() {
     return isBelow;
   }

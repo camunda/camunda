@@ -1,5 +1,7 @@
 package org.camunda.optimize.dto.optimize.query.report.configuration.target_value;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.Objects;
 
 public class CountChartDto {
@@ -7,6 +9,7 @@ public class CountChartDto {
   private Boolean isBelow = false;
   private Integer value = 100;
 
+  @JsonProperty(value="isBelow")
   public Boolean getBelow() {
     return isBelow;
   }
