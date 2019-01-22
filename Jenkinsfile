@@ -480,6 +480,7 @@ void migrationTestSteps() {
   container('maven') {
     sh ("""apt-get update && apt-get install -y jq""")
     runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend -am -Pproduction,engine-latest")
+    runMaven("verify -Dskip.docker -Dskip.fe.build -pl upgrade")
     runMaven("verify -Dskip.docker -Dskip.fe.build -pl qa/upgrade-es-schema-tests -Pupgrade-es-schema-tests")
     runMaven("verify -Dskip.docker -Dskip.fe.build -pl util/optimize-reimport-preparation -Pit")
   }

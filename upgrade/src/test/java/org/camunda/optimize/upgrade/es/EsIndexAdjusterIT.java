@@ -25,7 +25,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class EsIndexAdjusterTest {
+public class EsIndexAdjusterIT {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 

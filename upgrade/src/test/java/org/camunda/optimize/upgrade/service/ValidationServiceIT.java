@@ -4,7 +4,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.AbstractUpgradeTest;
+import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.elasticsearch.client.Response;
 import org.junit.After;
@@ -17,12 +17,16 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 
+import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEmptyEnvConfig;
+import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEnvFolder;
+import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.deleteEnvConfig;
+import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.deleteEnvFolderWithConfig;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 
-public class ValidationServiceTest extends AbstractUpgradeTest {
+public class ValidationServiceIT extends AbstractUpgradeIT {
   public static final String OPTIMIZE_METADATA = "optimize-metadata";
   public static final String PUT = "PUT";
   @Rule

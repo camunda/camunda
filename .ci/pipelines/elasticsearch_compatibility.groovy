@@ -134,7 +134,7 @@ void integrationTestSteps() {
           credentialsId: 'camunda-jenkins-github-ssh',
           poll: false
   container('maven') {
-    runMaven("verify -Dskip.docker -Pproduction,it,engine-latest -pl backend -am -T\$LIMITS_CPU")
+    runMaven("verify -Dskip.docker -Pproduction,it,engine-latest -pl backend,upgrade -am -T\$LIMITS_CPU")
   }
 }
 

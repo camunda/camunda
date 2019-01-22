@@ -7,10 +7,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static junit.framework.TestCase.fail;
+import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEnvConfig;
+import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.deleteEnvFolderWithConfig;
 
-public class OverwriteConfigurationsTest extends AbstractUpgradeTest {
-
-  private static final String TEST_INDEX = "test-index";
+public class OverwriteConfigurationsTest {
 
   @Before
   public void setUp() throws Exception {

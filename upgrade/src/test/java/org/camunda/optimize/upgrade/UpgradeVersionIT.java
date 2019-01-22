@@ -18,12 +18,13 @@ import org.junit.Test;
 import java.io.IOException;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexNameForAliasAndVersion;
+import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEmptyEnvConfig;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
 
-public class UpgradeVersionTest extends AbstractUpgradeTest {
+public class UpgradeVersionIT extends AbstractUpgradeIT {
 
   private static final String SEARCH = "/_search";
   private static final String MAPPING = "/_mapping";
