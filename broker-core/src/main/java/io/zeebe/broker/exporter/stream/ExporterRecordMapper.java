@@ -331,7 +331,8 @@ public class ExporterRecordMapper {
         Duration.ofMillis(record.getTimeout()),
         record.getAmount(),
         jobKeys,
-        jobs);
+        jobs,
+        record.getTruncated());
   }
 
   private RecordValue ofTimerRecord(LoggedEvent event) {

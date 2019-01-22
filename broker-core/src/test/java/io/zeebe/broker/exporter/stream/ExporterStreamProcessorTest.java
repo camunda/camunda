@@ -619,7 +619,12 @@ public class ExporterStreamProcessorTest {
     final String worker = "worker";
 
     final JobBatchRecord record =
-        new JobBatchRecord().setAmount(amount).setTimeout(timeout).setType(type).setWorker(worker);
+        new JobBatchRecord()
+            .setAmount(amount)
+            .setTimeout(timeout)
+            .setType(type)
+            .setWorker(worker)
+            .setTruncated(true);
 
     record.jobKeys().add().setValue(3L);
     final JobRecord jobRecord = record.jobs().add();
@@ -674,7 +679,8 @@ public class ExporterStreamProcessorTest {
             Duration.ofMillis(timeout),
             amount,
             Arrays.asList(3L),
-            Arrays.asList(jobRecordValue));
+            Arrays.asList(jobRecordValue),
+            record.getTruncated());
 
     // then
     assertRecordExported(JobBatchIntent.ACTIVATED, record, recordValue);

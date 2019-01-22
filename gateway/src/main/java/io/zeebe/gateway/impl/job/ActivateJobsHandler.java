@@ -53,9 +53,25 @@ public class ActivateJobsHandler {
       int remainingAmount,
       String jobType,
       StreamObserver<ActivateJobsResponse> responseObserver) {
-    if (remainingAmount > 0 && partitionIdIterator.hasNext()) {
+    activateJobs(request, partitionIdIterator, remainingAmount, jobType, responseObserver, false);
+  }
+
+  private void activateJobs(
+      BrokerActivateJobsRequest request,
+      PartitionIdIterator partitionIdIterator,
+      int remainingAmount,
+      String jobType,
+      StreamObserver<ActivateJobsResponse> responseObserver,
+      boolean pollPrevPartition) {
+
+    if (remainingAmount > 0 && (pollPrevPartition || partitionIdIterator.hasNext())) {
+      final int partitionId =
+          pollPrevPartition
+              ? partitionIdIterator.getCurrentPartitionId()
+              : partitionIdIterator.next();
+
       // partitions to check and jobs to activate left
-      request.setPartitionId(partitionIdIterator.next());
+      request.setPartitionId(partitionId);
       request.setAmount(remainingAmount);
       brokerClient.sendRequest(
           request,
@@ -66,12 +82,14 @@ public class ActivateJobsHandler {
             if (jobsCount > 0) {
               responseObserver.onNext(grpcResponse);
             }
+
             activateJobs(
                 request,
                 partitionIdIterator,
                 remainingAmount - jobsCount,
                 jobType,
-                responseObserver);
+                responseObserver,
+                response.getTruncated());
           },
           error -> {
             Loggers.GATEWAY_LOGGER.warn(

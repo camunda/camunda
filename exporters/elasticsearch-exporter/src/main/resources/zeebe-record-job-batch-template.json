@@ -76,6 +76,9 @@
                   "type": "text"
                 }
               }
+            },
+            "truncated": {
+              "type": "boolean"
             }
           }
         }

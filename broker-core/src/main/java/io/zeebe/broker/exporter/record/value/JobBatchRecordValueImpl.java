@@ -32,6 +32,7 @@ public class JobBatchRecordValueImpl extends RecordValueImpl implements JobBatch
   private final int amount;
   private final List<Long> jobKeys;
   private final List<JobRecordValue> jobs;
+  private final boolean truncated;
 
   public JobBatchRecordValueImpl(
       final ExporterObjectMapper objectMapper,
@@ -40,7 +41,8 @@ public class JobBatchRecordValueImpl extends RecordValueImpl implements JobBatch
       final Duration timeout,
       final int amount,
       final List<Long> jobKeys,
-      final List<JobRecordValue> jobs) {
+      final List<JobRecordValue> jobs,
+      boolean truncated) {
     super(objectMapper);
     this.type = type;
     this.worker = worker;
@@ -48,6 +50,7 @@ public class JobBatchRecordValueImpl extends RecordValueImpl implements JobBatch
     this.amount = amount;
     this.jobKeys = jobKeys;
     this.jobs = jobs;
+    this.truncated = truncated;
   }
 
   @Override
@@ -81,6 +84,11 @@ public class JobBatchRecordValueImpl extends RecordValueImpl implements JobBatch
   }
 
   @Override
+  public boolean isTruncated() {
+    return truncated;
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -94,12 +102,13 @@ public class JobBatchRecordValueImpl extends RecordValueImpl implements JobBatch
         && Objects.equals(worker, that.worker)
         && Objects.equals(timeout, that.timeout)
         && Objects.equals(jobKeys, that.jobKeys)
-        && Objects.equals(jobs, that.jobs);
+        && Objects.equals(jobs, that.jobs)
+        && truncated == that.truncated;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, worker, timeout, amount, jobKeys, jobs);
+    return Objects.hash(type, worker, timeout, amount, jobKeys, jobs, truncated);
   }
 
   @Override
@@ -108,6 +117,8 @@ public class JobBatchRecordValueImpl extends RecordValueImpl implements JobBatch
         + "type='"
         + type
         + '\''
+        + ", truncated="
+        + truncated
         + ", worker='"
         + worker
         + '\''
