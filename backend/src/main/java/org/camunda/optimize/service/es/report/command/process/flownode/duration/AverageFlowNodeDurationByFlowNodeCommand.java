@@ -10,11 +10,15 @@ public class AverageFlowNodeDurationByFlowNodeCommand extends AbstractFlowNodeDu
   @Override
   protected AggregationBuilder addOperation(String aggregationName, String field) {
     return avg(aggregationName)
-                  .field(field);
+      .field(field);
   }
 
   @Override
   protected Long processOperationAggregation(ParsedAvg aggregation) {
-    return Math.round(aggregation.getValue());
+    if (Double.isInfinite(aggregation.getValue())) {
+      return 0L;
+    } else {
+      return Math.round(aggregation.getValue());
+    }
   }
 }

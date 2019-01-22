@@ -16,6 +16,11 @@ public class MedianFlowNodeDurationByFlowNodeCommand extends AbstractFlowNodeDur
 
   @Override
   protected Long processOperationAggregation(ParsedTDigestPercentiles aggregation) {
-    return Math.round(aggregation.percentile(50));
+    double median = aggregation.percentile(50);
+    if (Double.isNaN(median) || Double.isInfinite(median)){
+      return 0L;
+    } else {
+      return Math.round(median);
+    }
   }
 }

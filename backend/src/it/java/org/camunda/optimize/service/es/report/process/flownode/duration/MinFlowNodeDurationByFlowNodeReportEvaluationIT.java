@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
+import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.HashMap;
@@ -45,6 +46,7 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
   public static final String PROCESS_DEFINITION_KEY = "123";
   private static final String SERVICE_TASK_ID = "aSimpleServiceTask";
   private static final String SERVICE_TASK_ID_2 = "aSimpleServiceTask2";
+  private static final String USER_TASK = "userTask";
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
@@ -270,6 +272,31 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
   }
 
   @Test
+  public void runningActivitiesAreNotConsidered() throws SQLException {
+    // given
+    ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskDefinition();
+    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
+    engineDatabaseRule.changeActivityDuration(processInstanceDto.getId(), START_EVENT, 100L);
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    ProcessReportDataDto reportData =
+      createMinFlowNodeDurationGroupByFlowNodeHeatmapReport(
+        processDefinition.getKey(),
+        processDefinition.getVersionAsString()
+      );
+    ProcessReportMapResultDto result = evaluateReport(reportData);
+
+    // then
+    Map<String, Long> flowNodeIdToDuration = result.getResult();
+    assertThat(flowNodeIdToDuration.size(), is(1));
+    assertThat(flowNodeIdToDuration.get(START_EVENT), is(100L));
+    assertThat(flowNodeIdToDuration.get(USER_TASK), nullValue());
+    assertThat(flowNodeIdToDuration.get(END_EVENT), nullValue());
+  }
+
+  @Test
   public void processDefinitionContainsMultiInstanceBody() throws Exception {
     // given
     BpmnModelInstance subProcess = Bpmn.createExecutableProcess("subProcess")
@@ -482,6 +509,15 @@ public class MinFlowNodeDurationByFlowNodeReportEvaluationIT {
         .serviceTask("task2")
           .camundaExpression("${true}")
         .connectTo("mergeGateway")
+      .done();
+    return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
+  }
+
+  private ProcessDefinitionEngineDto deploySimpleUserTaskDefinition() {
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess" )
+      .startEvent(START_EVENT)
+      .userTask(USER_TASK)
+      .endEvent(END_EVENT)
       .done();
     return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }

@@ -15,6 +15,10 @@ public class MaxFlowNodeDurationByFlowNodeCommand extends AbstractFlowNodeDurati
 
   @Override
   protected Long processOperationAggregation(ParsedMax aggregation) {
-    return Math.round(aggregation.getValue());
+    if (Double.isInfinite(aggregation.getValue())){
+      return 0L;
+    } else {
+      return Math.round(aggregation.getValue());
+    }
   }
 }
