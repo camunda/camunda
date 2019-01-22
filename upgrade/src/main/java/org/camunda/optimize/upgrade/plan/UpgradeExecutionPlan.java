@@ -17,7 +17,6 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -75,15 +74,15 @@ public class UpgradeExecutionPlan implements UpgradePlan {
   }
 
   private void addDirectoryToClasspath(String s) throws Exception {
-    //need to do add path to Classpath with reflection since the URLClassLoader.addURL(URL url) method is protected
-    // taken from: https://stackoverflow.com/a/21931044
-    File f = new File(s);
-    URI u = f.toURI();
-    URLClassLoader urlClassLoader = (URLClassLoader) ClassLoader.getSystemClassLoader();
-    Class<URLClassLoader> urlClass = URLClassLoader.class;
-    Method method = urlClass.getDeclaredMethod("addURL", URL.class);
-    method.setAccessible(true);
-    method.invoke(urlClassLoader, u.toURL());
+    // need to change classloader to add path to Classpath
+    // UrlClassLoader is no longer te default since Java 9
+    // taken from: https://stackoverflow.com/a/7884402
+    // and https://stackoverflow.com/a/48323948
+    final File f = new File(s);
+    final URI u = f.toURI();
+    final ClassLoader previousClassLoader = Thread.currentThread().getContextClassLoader();
+    ClassLoader urlClassLoader = URLClassLoader.newInstance(new URL[]{u.toURL()}, previousClassLoader);
+    Thread.currentThread().setContextClassLoader(urlClassLoader);
   }
 
   private void defineLogbackLoggingConfiguration() {
