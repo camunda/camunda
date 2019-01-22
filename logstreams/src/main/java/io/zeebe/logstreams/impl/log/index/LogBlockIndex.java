@@ -42,16 +42,18 @@ import org.agrona.concurrent.AtomicBuffer;
  * requested.
  */
 public class LogBlockIndex implements SnapshotSupport {
-  protected final AtomicBuffer indexBuffer;
+  public static final double GROW_FACTOR = 1.25;
 
-  protected final int capacity;
+  private final Function<Integer, AtomicBuffer> bufferAllocator;
+
+  protected AtomicBuffer indexBuffer;
+  protected int capacity;
 
   protected long lastVirtualPosition = -1;
 
   public LogBlockIndex(int capacity, Function<Integer, AtomicBuffer> bufferAllocator) {
-    final int requiredBufferCapacity = dataOffset() + (capacity * entryLength());
-
-    this.indexBuffer = bufferAllocator.apply(requiredBufferCapacity);
+    this.bufferAllocator = bufferAllocator;
+    this.indexBuffer = allocateBuffer(capacity);
     this.capacity = capacity;
 
     reset();
@@ -164,9 +166,7 @@ public class LogBlockIndex implements SnapshotSupport {
     final int newIndexSize = 1 + currentIndexSize;
 
     if (newIndexSize > capacity) {
-      throw new RuntimeException(
-          String.format(
-              "LogBlockIndex capacity of %d entries reached. Cannot add new block.", capacity));
+      expandIndexBuffer();
     }
 
     if (lastVirtualPosition >= logPosition) {
@@ -187,6 +187,21 @@ public class LogBlockIndex implements SnapshotSupport {
     indexBuffer.putIntOrdered(indexSizeOffset(), newIndexSize);
 
     return newIndexSize;
+  }
+
+  private AtomicBuffer allocateBuffer(int capacity) {
+    final int requiredBufferCapacity = dataOffset() + (capacity * entryLength());
+    return bufferAllocator.apply(requiredBufferCapacity);
+  }
+
+  private void expandIndexBuffer() {
+    final int newCapacity = Math.toIntExact(Math.round(capacity * GROW_FACTOR));
+    final AtomicBuffer newBuffer = allocateBuffer(newCapacity);
+
+    newBuffer.putBytes(0, indexBuffer.byteArray());
+
+    this.indexBuffer = newBuffer;
+    this.capacity = newCapacity;
   }
 
   /** @return the current size of the index */
