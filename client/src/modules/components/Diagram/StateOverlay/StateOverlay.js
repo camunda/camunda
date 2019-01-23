@@ -42,7 +42,7 @@ export default function StateOverlay(props) {
       TargetIcon = theme === 'light' ? CanceledLightIcon : CanceledDarkIcon;
       break;
     default:
-      TargetIcon = null;
+      TargetIcon = () => null;
   }
 
   return (

@@ -62,7 +62,7 @@ export default function StatisticOverlay(props) {
       TargetIcon = theme === 'light' ? CompletedLightIcon : CompletedDarkIcon;
       break;
     default:
-      TargetIcon = null;
+      TargetIcon = () => null;
   }
 
   return (
