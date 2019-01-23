@@ -122,7 +122,10 @@ export default class AnalysisControlPanel extends React.Component {
                 onChange={(key, version) =>
                   this.props.onChange({
                     processDefinitionKey: key,
-                    processDefinitionVersion: version
+                    processDefinitionVersion: version,
+                    filter: this.props.filter.filter(
+                      ({type}) => type !== 'executedFlowNodes' && type !== 'variable'
+                    )
                   })
                 }
               />
