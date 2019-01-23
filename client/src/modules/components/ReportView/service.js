@@ -88,9 +88,12 @@ function getCombinedProps(result) {
 
 export function formatResult(data, result) {
   const groupBy = data.groupBy;
-  let unit = groupBy.unit;
-  if (!unit && groupBy.type === 'startDate') unit = groupBy.value.unit;
-  else if (!unit && groupBy.type === 'variable' && groupBy.value.type === 'Date') unit = 'second';
+  let unit;
+  if (groupBy.value && groupBy.type === 'startDate') {
+    unit = determineUnit(groupBy.value.unit, result);
+  } else if (groupBy.value && groupBy.type === 'variable' && groupBy.value.type === 'Date') {
+    unit = 'second';
+  }
 
   if (!unit || !result || data.view.operation === 'rawData') {
     // the result data is no time series
@@ -135,4 +138,36 @@ function getDateFormat(unit) {
       dateFormat = 'YYYY-MM-DD HH:mm:ss';
   }
   return dateFormat;
+}
+
+function determineUnit(unit, resultData) {
+  if (unit === 'automatic') {
+    return determineUnitForAutomaticIntervalSelection(resultData);
+  } else {
+    // in this case the unit was already defined by the user
+    // and can just directly be used.
+    return unit;
+  }
+}
+
+function determineUnitForAutomaticIntervalSelection(resultData) {
+  const dates = Object.keys(resultData).sort((a, b) => {
+    return a < b ? 1 : -1;
+  });
+  if (dates.length > 1) {
+    const firstEntry = moment(dates[0]);
+    const secondEntry = moment(dates[1]);
+    const intervalInMs = firstEntry.diff(secondEntry);
+    const intervals = [
+      {value: 1000 * 60 * 60 * 24 * 30 * 12, unit: 'year'},
+      {value: 1000 * 60 * 60 * 24 * 30, unit: 'month'},
+      {value: 1000 * 60 * 60 * 24, unit: 'day'},
+      {value: 1000 * 60 * 60, unit: 'hour'},
+      {value: 0, unit: 'second'},
+      {value: -Infinity, unit: 'day'}
+    ];
+    return intervals.find(({value}) => intervalInMs >= value).unit;
+  } else {
+    return 'day';
+  }
 }

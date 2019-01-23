@@ -12,7 +12,9 @@ const exampleDurationReport = {
     },
     groupBy: {
       type: 'startDate',
-      unit: 'day'
+      value: {
+        unit: 'day'
+      }
     },
     visualization: 'table',
     configuration: {}
@@ -177,5 +179,78 @@ it('should return correct cominbed chart repot data properties for single report
     reportsNames: ['report A', 'report A'],
     isDate: true,
     processInstanceCount: [100, 100]
+  });
+});
+
+describe('automatic interval selection', () => {
+  const autoData = {
+    processDefinitionKey: 'aKey',
+    processDefinitionVersion: '1',
+    view: {
+      operation: 'foo'
+    },
+    groupBy: {
+      type: 'startDate',
+      value: {
+        unit: 'automatic'
+      }
+    },
+    visualization: 'table',
+    configuration: {}
+  };
+
+  it('should use seconds when interval is less than hour', () => {
+    const result = {
+      '2017-12-27T14:21:56.000': 2,
+      '2017-12-27T14:21:57.000': 3
+    };
+
+    const formatedResult = formatResult(autoData, result);
+
+    expect(formatedResult).toEqual({'2017-12-27 14:21:57': 3, '2017-12-27 14:21:56': 2});
+  });
+
+  it('should use hours when interval is less than a day', () => {
+    const result = {
+      '2017-12-27T13:21:56.000': 2,
+      '2017-12-27T14:25:57.000': 3
+    };
+
+    const formatedResult = formatResult(autoData, result);
+
+    expect(formatedResult).toEqual({'2017-12-27 14:00:00': 3, '2017-12-27 13:00:00': 2});
+  });
+
+  it('should use day when interval is less than a month', () => {
+    const result = {
+      '2017-12-20T14:21:56.000': 2,
+      '2017-12-27T14:25:57.000': 3
+    };
+
+    const formatedResult = formatResult(autoData, result);
+
+    expect(formatedResult).toEqual({'2017-12-27': 3, '2017-12-20': 2});
+  });
+
+  it('should use month when interval is less than a year', () => {
+    const result = {
+      '2017-05-20T14:21:56.000': 2,
+      '2017-12-27T14:25:57.000': 3
+    };
+
+    const formatedResult = formatResult(autoData, result);
+
+    expect(formatedResult).toEqual({'Dec 2017': 3, 'May 2017': 2});
+  });
+
+  it('should use year when interval is greater than/equal a year', () => {
+    const result = {
+      '2015-05-20T14:21:56.000': 2,
+      '2017-12-27T14:25:57.000': 3
+    };
+
+    const formatedResult = formatResult(autoData, result);
+
+    expect(formatedResult).toEqual({'2017': 3, '2015': 2});
   });
 });
