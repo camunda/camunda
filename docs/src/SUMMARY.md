@@ -56,6 +56,8 @@
     * [Testing](java-client/testing.md)
 * [Go Client](go-client/README.md)
     * [Get Started](go-client/get-started.md)
+* [gRPC API](grpc/README.md)
+    * [Reference](grpc/reference.md)
 * [Operations](operations/README.md)
     * [The zeebe.cfg.toml file](operations/the-zeebecfgtoml-file.md)
     * [Setting up a cluster](operations/setting-up-a-cluster.md)
