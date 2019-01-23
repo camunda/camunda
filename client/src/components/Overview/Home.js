@@ -154,7 +154,7 @@ class Home extends React.Component {
                       <h3>{itemData.name}</h3>
                       {itemData.combined && <span>Combined</span>}
                       {itemData.reportType &&
-                        itemData.reportType === 'decision' && <span>DMN</span>}
+                        itemData.reportType === 'decision' && <span>Decision</span>}
                     </div>
                     <div className="extraInfo">
                       <span className="data custom">{getReportInfo(itemData)}</span>

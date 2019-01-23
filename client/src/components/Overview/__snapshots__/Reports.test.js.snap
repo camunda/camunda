@@ -11,17 +11,17 @@ exports[`should have a Dropdown with more creation options 1`] = `
   <DropdownOption
     onClick={[Function]}
   >
-    Create BPMN Report
+    Create Process Report
   </DropdownOption>
   <DropdownOption
     onClick={[Function]}
   >
-    Create Combined BPMN Report
+    Create Combined Process Report
   </DropdownOption>
   <DropdownOption
     onClick={[Function]}
   >
-    Create DMN Report
+    Create Decision Report
   </DropdownOption>
 </Dropdown>
 `;

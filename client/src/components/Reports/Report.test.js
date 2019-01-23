@@ -273,7 +273,7 @@ it('should contain a Control Panel in edit mode for a single report', () => {
   expect(node).toIncludeText('ControlPanel');
 });
 
-it('should contain a decision control panel in edit mode for dmn reports', () => {
+it('should contain a decision control panel in edit mode for decision reports', () => {
   props.match.params.viewMode = 'edit';
 
   const report = {

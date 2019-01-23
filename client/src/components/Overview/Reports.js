@@ -44,8 +44,9 @@ class Reports extends React.Component {
   componentDidMount = this.loadReports;
 
   createCombinedReport = async () => this.setState({redirect: await createReport(true, 'process')});
-  createReport = async () => this.setState({redirect: await createReport(false, 'process')});
-  createDMNReport = async () => this.setState({redirect: await createReport(false, 'decision')});
+  createProcessReport = async () => this.setState({redirect: await createReport(false, 'process')});
+  createDecisionReport = async () =>
+    this.setState({redirect: await createReport(false, 'decision')});
 
   duplicateReport = report => async evt => {
     evt.target.blur();
@@ -95,7 +96,7 @@ class Reports extends React.Component {
 
     const empty = !loading &&
       this.state.entities.length === 0 && (
-        <NoEntities label="Report" createFunction={this.createReport} />
+        <NoEntities label="Report" createFunction={this.createProcessReport} />
       );
 
     const search = !loading &&
@@ -109,15 +110,19 @@ class Reports extends React.Component {
           <HeaderIcon /> Reports
         </h1>
         <div className="createButton">
-          <Button color="green" onClick={this.createReport}>
-            Create BPMN Report
+          <Button color="green" onClick={this.createProcessReport}>
+            Create Process Report
           </Button>
           <Dropdown label={<Icon type="down" />}>
-            <Dropdown.Option onClick={this.createReport}>Create BPMN Report</Dropdown.Option>
-            <Dropdown.Option onClick={this.createCombinedReport}>
-              Create Combined BPMN Report
+            <Dropdown.Option onClick={this.createProcessReport}>
+              Create Process Report
             </Dropdown.Option>
-            <Dropdown.Option onClick={this.createDMNReport}>Create DMN Report</Dropdown.Option>
+            <Dropdown.Option onClick={this.createCombinedReport}>
+              Create Combined Process Report
+            </Dropdown.Option>
+            <Dropdown.Option onClick={this.createDecisionReport}>
+              Create Decision Report
+            </Dropdown.Option>
           </Dropdown>
         </div>
         {error}
@@ -141,7 +146,7 @@ class Reports extends React.Component {
                         <h3>{formatters.getHighlightedText(itemData.name, this.state.search)}</h3>
                         {itemData.combined && <span>Combined</span>}
                         {itemData.reportType &&
-                          itemData.reportType === 'decision' && <span>DMN</span>}
+                          itemData.reportType === 'decision' && <span>Decision</span>}
                       </div>
                       <div className="extraInfo">
                         <span className="data custom">{getReportInfo(itemData)}</span>

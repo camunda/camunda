@@ -133,10 +133,10 @@ it('should display combined tag for combined reports', () => {
   expect(node.find('.reports .dataTitle')).toIncludeText('Combined');
 });
 
-it('should display dmn tag for decision reports', () => {
+it('should display decision tag for decision reports', () => {
   loadReports.mockReturnValue([decisionReport]);
 
   const node = shallow(<Home {...props} />);
 
-  expect(node.find('.reports .dataTitle')).toIncludeText('DMN');
+  expect(node.find('.reports .dataTitle')).toIncludeText('Decision');
 });
