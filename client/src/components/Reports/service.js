@@ -119,6 +119,10 @@ export function update({type, data, view, groupBy, visualization, callback}) {
     [type]: {$set: data}
   };
 
+  if (type === 'view' && (data.property !== 'duration' || data.entity !== 'processInstance')) {
+    update.parameters = {processPart: {$set: null}};
+  }
+
   const config = {
     view,
     groupBy,
