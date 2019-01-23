@@ -40,22 +40,19 @@ public class ValidationService {
       Response metadataResponse = restClient
         .performRequest("GET", metaDataIndex + "/_search", Collections.emptyMap());
 
-      boolean schemaMatches = false;
+      String schemaVersion = null;
       if (metadataResponse.getStatusLine().getStatusCode() == 200) {
         String entityString = EntityUtils.toString(metadataResponse.getEntity());
         Integer readTotal = JsonPath.read(entityString, "$.hits.total");
         if (readTotal == 1) {
-          String schemaVersion =
-            JsonPath.read(entityString, "$.hits.hits[0]._source." + METADATA_TYPE_SCHEMA_VERSION);
-          if (fromVersion.equals(schemaVersion)) {
-            schemaMatches = true;
-          }
+          schemaVersion = JsonPath.read(entityString, "$.hits.hits[0]._source." + METADATA_TYPE_SCHEMA_VERSION);
         }
       }
 
-      if (!schemaMatches) {
+      if (!fromVersion.equals(schemaVersion)) {
         throw new UpgradeRuntimeException(
-          "Schema version saved in Metadata does not match required [" + fromVersion + "]") ;
+          "Schema version saved in Metadata [" + schemaVersion + "] does not match required [" + fromVersion + "]"
+        );
       }
     } catch (IOException e) {
       logger.error("can't get metadata", e);
