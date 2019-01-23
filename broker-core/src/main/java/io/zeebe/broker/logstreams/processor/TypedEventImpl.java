@@ -33,6 +33,10 @@ public class TypedEventImpl implements TypedRecord {
     this.value = value;
   }
 
+  public int getMaxValueLength() {
+    return this.rawEvent.getMaxValueLength();
+  }
+
   public long getPosition() {
     return rawEvent.getPosition();
   }
