@@ -68,13 +68,13 @@ es:
       # A port number used by Elasticsearch to accept HTTP connections.
       httpPort: 9200
 
-  # define a secured connection to be able to communicate
-  # with an Elasticsearch instance secured with x-pack
+  # Elasticsearch security settings
   security:
-    # the x-pack username
+    # the basic auth (x-pack) username
     username: null
-    # the x-pack password of the user
+    # the basic auth (x-pack) password
     password: null
+    # SSL/HTTPS secured connection settings
     ssl:
       # path to a PEM encoded file containing the certificate (or certificate chain)
       # that will be presented to clients when they connect.
@@ -85,6 +85,7 @@ es:
       certificate_authorities: []
       # used to enable or disable TLS/SSL for the HTTP connection
       enabled: false
+
   settings:
     index:
       # How often should the data replicated in case of node failure.
