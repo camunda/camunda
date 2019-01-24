@@ -24,8 +24,7 @@ export function getCombinedChartProps(result, data, report) {
   };
 }
 
-export function getCombinedTableProps(result) {
-  const reports = Object.keys(result).map(reportId => result[reportId]);
+export function getCombinedTableProps(reportResult, report) {
   const initialData = {
     labels: [],
     reportsNames: [],
@@ -33,7 +32,8 @@ export function getCombinedTableProps(result) {
     processInstanceCount: []
   };
 
-  const combinedProps = reports.reduce((prevReport, report) => {
+  const combinedProps = report.data.reportIds.reduce((prevReport, reportId) => {
+    const report = reportResult[reportId];
     const {data, result, processInstanceCount, name} = report;
 
     // build 2d array of all labels

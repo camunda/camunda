@@ -38,7 +38,7 @@ const getConfig = (props, data) => {
       config = {
         Component: Table,
         props: {
-          ...getCombinedTableProps(result),
+          ...getCombinedTableProps(result, report),
           combined: true,
           configuration: data.configuration,
           sorting: data.parameters && data.parameters.sorting,

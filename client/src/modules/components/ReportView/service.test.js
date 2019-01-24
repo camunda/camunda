@@ -106,7 +106,7 @@ it('should sort time data ascending for charts', () => {
 });
 
 it('should return correct combined table report data properties', () => {
-  const tableProps = getCombinedTableProps(combinedReport.result);
+  const tableProps = getCombinedTableProps(combinedReport.result, combinedReport);
 
   expect(tableProps).toEqual({
     labels: [['foo', 'foo'], ['foo', 'foo']],
