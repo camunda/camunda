@@ -34,6 +34,14 @@ spec:
     - vm.max_map_count=262144
     securityContext:
       privileged: true
+  - name: cleanup
+    image: busybox
+    imagePullPolicy: Always
+    command: ["rm", "-fr", "/usr/share/elasticsearch/data/*"]
+    volumeMounts:
+      - name: es-storage
+        mountPath: /usr/share/elasticsearch/data
+        subPath: data
   containers:
   - name: maven
     image: ${MAVEN_DOCKER_IMAGE()}
