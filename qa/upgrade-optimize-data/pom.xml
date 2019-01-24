@@ -48,8 +48,7 @@
       <id>upgrade-optimize-data</id>
       <build>
         <plugins>
-          <!-- add requirements check for required BINARIES and/or OS -->
-          <!-- 1. Download previous Optimize version -->
+          <!-- 1. Unpack previous & current Optimize version -->
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-dependency-plugin</artifactId>
@@ -107,13 +106,31 @@
                   </arguments>
                 </configuration>
               </execution>
+              <!-- Shutdown test environment after integration testing -->
+              <execution>
+                <id>docker-remove</id>
+                <phase>post-integration-test</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <configuration>
+                  <skip>${skip.docker}</skip>
+                  <executable>docker-compose</executable>
+                  <workingDirectory>../../</workingDirectory>
+                  <arguments>
+                    <argument>-f</argument>
+                    <argument>${docker.compose.file}</argument>
+                    <argument>down</argument>
+                  </arguments>
+                </configuration>
+              </execution>
             </executions>
           </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-antrun-plugin</artifactId>
+            <!-- 3. Make sure CamBPM and ES are up and running -->
             <executions>
-              <!-- 3. Make sure CamBPM and ES are up and running -->
               <execution>
                 <id>check-cambpm-is-up</id>
                 <goals>
@@ -167,7 +184,6 @@
                 <configuration>
                   <target>
                     <echo message="Starting Optimize ${project.previousVersion}..." />
-
                     <exec dir="${project.build.directory}/prevVersion/" executable="${project.build.directory}/prevVersion/optimize-startup.sh" spawn="true" />
 
                     <echo message="Wait for Optimize to start..." />
@@ -176,7 +192,6 @@
                     </waitfor>
 
                     <echo message="Waiting for Optimize to populate ES..." />
-
                     <exec executable="/bin/bash">
                       <arg value="-c" />
                       <arg value="until test $(curl -s 'http://localhost:9200/optimize-metadata/_count' | jq '.count // 0') -eq 1; do sleep 2; done" />
@@ -189,31 +204,15 @@
                     </exec>
 
                     <echo message="Killing Optimize ${project.previousVersion}..." />
-
                     <exec executable="/bin/bash">
                       <arg value="-c" />
                       <arg value="pkill -f org.camunda.optimize.Main" />
                     </exec>
 
-                    <echo message="Copying new configuration file into upgrade directory..." />
-
-                    <!-- In case some configurations have been deprecated we need to use the new version of the config file -->
-                    <exec dir="${project.build.directory}/../../../" executable="/bin/bash">
-                      <arg value="-c" />
-                      <arg value="cp distro/src/environment/environment-config.yaml ${project.build.directory}/prevVersion/environment/environment-config.yaml" />
-                    </exec>
-
                     <echo message="Running migration script from ${project.previousVersion} to ${project.version}..." />
-
-                    <!-- upgrade-optimize-from-${project.previousVersion}-to-${project.version}.jar must be executed within $OPTIMIZE_HOME/upgrade to reuse existing Optimize configuration -->
-                    <exec dir="${project.build.directory}/../../../" executable="/bin/bash">
+                    <exec dir="${project.build.directory}/currVersion" executable="/bin/bash">
                       <arg value="-c" />
-                      <arg value="cp upgrade/target/upgrade-optimize-from-${project.previousVersion}-to-${project.version}.jar ${project.build.directory}/prevVersion/upgrade/upgrade-optimize.jar" />
-                    </exec>
-
-                    <exec executable="/bin/bash">
-                      <arg value="-c" />
-                      <arg value="set -o pipefail; java -jar ${project.build.directory}/prevVersion/upgrade/upgrade-optimize.jar --skip-warning | sed 's/^/[OPTIMIZE MIGRATION SCRIPT]: /'" />
+                      <arg value="set -o pipefail; ./upgrade/upgrade.sh --skip-warning | sed 's/^/[OPTIMIZE MIGRATION SCRIPT]: /'" />
                     </exec>
 
                     <echo message="Starting Optimize ${project.version}..." />

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -13,19 +14,14 @@
   <dependencies>
 
     <!-- Optimize dependencies -->
-     <dependency>
-      <groupId>org.camunda.optimize</groupId>
-      <artifactId>optimize-commons</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <!-- Test dependencies-->
     <dependency>
       <groupId>org.camunda.optimize</groupId>
       <artifactId>optimize-backend</artifactId>
       <version>${project.version}</version>
-      <scope>test</scope>
+      <scope>provided</scope>
     </dependency>
+
+    <!-- Test dependencies-->
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -49,36 +45,6 @@
 
   <build>
     <plugins>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-            <configuration>
-              <filters>
-                <filter>
-                  <artifact>org.bouncycastle:*</artifact>
-                  <excludes>
-                    <exclude>META-INF/*.SF</exclude>
-                    <exclude>META-INF/*.DSA</exclude>
-                    <exclude>META-INF/*.RSA</exclude>
-                  </excludes>
-                </filter>
-              </filters>
-              <transformers>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>org.camunda.optimize.upgrade.main.UpgradeMain</mainClass>
-                </transformer>
-              </transformers>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -119,7 +85,7 @@
                 <argument>--force-recreate</argument>
                 <argument>--renew-anon-volumes</argument>
                 <argument>elasticsearch</argument>
-               </arguments>
+              </arguments>
             </configuration>
           </execution>
           <execution>
@@ -150,15 +116,15 @@
             <configuration>
               <skip>${skip.docker}</skip>
               <target name="check-es-is-up" description="Check whether ES is running">
-                <echo message="Check ES is running..." />
+                <echo message="Check ES is running..."/>
                 <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                  <socket server="localhost" port="9200" />
+                  <socket server="localhost" port="9200"/>
                 </waitfor>
-                <echo message="ES http socket is open. Checking for ES cluster state..." />
+                <echo message="ES http socket is open. Checking for ES cluster state..."/>
                 <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                  <http url="http://localhost:9200/_cluster/state" />
+                  <http url="http://localhost:9200/_cluster/state"/>
                 </waitfor>
-                <echo message="ES is running." />
+                <echo message="ES is running."/>
               </target>
             </configuration>
             <goals>

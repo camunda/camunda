@@ -10,9 +10,8 @@ import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
+import java.io.InputStream;
 import java.util.Collections;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
@@ -20,7 +19,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_TY
 
 
 public class ValidationService {
-  private static final String ENVIRONMENT_CONFIG_YAML_REL_PATH = "/../environment/environment-config.yaml";
+  private static final String ENVIRONMENT_CONFIG_FILE = "environment-config.yaml";
   private static final Logger logger = LoggerFactory.getLogger(ValidationService.class);
 
   private ConfigurationService configurationService;
@@ -61,30 +60,22 @@ public class ValidationService {
 
     if (toVersion == null || toVersion.isEmpty()) {
       throw new UpgradeRuntimeException(
-          "New schema version is not allowed to be empty or null!") ;
+        "New schema version is not allowed to be empty or null!");
     }
   }
 
-  public void validateExecutionPath() {
-    File config = null;
-    try {
-      String executionFolderPath =
-        ValidationService.class.
-          getProtectionDomain()
-          .getCodeSource()
-          .getLocation()
-          .toURI()
-          .getPath();
-      executionFolderPath = executionFolderPath.substring(0, executionFolderPath.lastIndexOf("/"));
-      executionFolderPath = executionFolderPath.replaceAll("%20"," ");
-      String fullPath = executionFolderPath + ENVIRONMENT_CONFIG_YAML_REL_PATH;
-      logger.debug("reading from [{}]", fullPath);
-      config = new File(fullPath);
-    } catch (URISyntaxException e) {
-      logger.error("can't resolve current path", e);
+  public void validateEnvironmentConfigInClasspath() {
+    boolean configAvailable = false;
+    try (InputStream resourceAsStream =
+           ValidationService.class.getResourceAsStream("/" + ENVIRONMENT_CONFIG_FILE)) {
+      if (resourceAsStream != null) {
+        configAvailable = true;
+      }
+    } catch (IOException e) {
+      logger.error("can't resolve " + ENVIRONMENT_CONFIG_FILE, e);
     }
 
-    if (config == null || !config.exists() || !config.canRead()) {
+    if (!configAvailable) {
       throw new UpgradeRuntimeException(
         "The upgrade has to be executed from \"upgrade\" folder in the Optimize root directory!"
       );

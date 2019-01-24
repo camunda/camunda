@@ -18,9 +18,7 @@ import java.util.Collections;
 import java.util.HashMap;
 
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEmptyEnvConfig;
-import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEnvFolder;
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.deleteEnvConfig;
-import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.deleteEnvFolderWithConfig;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -48,7 +46,7 @@ public class ValidationServiceIT extends AbstractUpgradeIT {
     } catch (IOException e) {
       //nothing to do
     }
-    deleteEnvFolderWithConfig();
+    deleteEnvConfig();
   }
 
   @Test
@@ -153,18 +151,15 @@ public class ValidationServiceIT extends AbstractUpgradeIT {
     thrown.expectMessage("The upgrade has to be executed from \"upgrade\" folder in the Optimize root directory!");
 
     //when
-    underTest.validateExecutionPath();
+    underTest.validateEnvironmentConfigInClasspath();
   }
 
   @Test
   public void validateThrowsExceptionWithoutEnvironmentConfig() throws Exception {
-    //given
-    createEnvFolder();
-
     boolean thrown = false;
     //when
     try {
-      underTest.validateExecutionPath();
+      underTest.validateEnvironmentConfigInClasspath();
     } catch (RuntimeException e) {
       //expected
       thrown = true;
@@ -179,7 +174,7 @@ public class ValidationServiceIT extends AbstractUpgradeIT {
     createEmptyEnvConfig();
 
     //when
-    underTest.validateExecutionPath();
+    underTest.validateEnvironmentConfigInClasspath();
 
     deleteEnvConfig();
   }

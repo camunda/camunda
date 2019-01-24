@@ -18,6 +18,7 @@
       <groupId>org.camunda.optimize</groupId>
       <artifactId>optimize-backend</artifactId>
       <version>${project.version}</version>
+      <scope>provided</scope>
     </dependency>
 
     <!-- Test dependencies-->

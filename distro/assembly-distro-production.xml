@@ -19,6 +19,7 @@
       </excludes>
       <outputDirectory>environment/</outputDirectory>
     </fileSet>
+
     <fileSet>
       <!--create empty plugin directory-->
       <directory>src/</directory>
@@ -27,14 +28,17 @@
         <exclude>*/**</exclude>
       </excludes>
     </fileSet>
+
     <fileSet>
-      <!--create empty upgrade directory-->
-      <directory>src/</directory>
+      <directory>src/upgrade</directory>
       <outputDirectory>/upgrade</outputDirectory>
+      <!-- these files will be included in files section -->
       <excludes>
-        <exclude>*/**</exclude>
+        <exclude>upgrade.bat</exclude>
+        <exclude>upgrade.sh</exclude>
       </excludes>
     </fileSet>
+
     <fileSet>
       <directory>src/reimport/</directory>
       <outputDirectory>reimport/</outputDirectory>
@@ -84,6 +88,18 @@
         ${project.basedir}/../upgrade/target/upgrade-optimize-from-${project.previousVersion}-to-${project.version}.jar
       </source>
       <outputDirectory>upgrade</outputDirectory>
+    </file>
+    <file>
+      <source>src/upgrade/upgrade.sh</source>
+      <filtered>true</filtered>
+      <outputDirectory>upgrade</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+    <file>
+      <source>src/upgrade/upgrade.bat</source>
+      <filtered>true</filtered>
+      <outputDirectory>upgrade</outputDirectory>
+      <fileMode>0755</fileMode>
     </file>
 
     <!-- reimport directory -->

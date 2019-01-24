@@ -16,9 +16,8 @@ public class EnvironmentConfigUtil {
     createEnvConfig("");
   }
 
-
   public static void createEnvConfig(String content) throws Exception {
-    File env = EnvironmentConfigUtil.createEnvFolder();
+    File env = getClasspathFolder();
     File config = new File(env.getAbsolutePath() + "/environment-config.yaml");
 
     if (!config.exists()) {
@@ -33,28 +32,8 @@ public class EnvironmentConfigUtil {
     }
   }
 
-  public static File createEnvFolder() throws Exception {
-    File env = getEnvFolder();
-    if (!env.exists()) {
-      env.mkdirs();
-    }
-    return env;
-  }
-
-  public static void deleteEnvFolderWithConfig() throws Exception {
-    deleteEnvConfig();
-    deleteEnvFolder();
-  }
-
-  public static void deleteEnvFolder() throws Exception {
-    File env = getEnvFolder();
-    if (env.exists()) {
-      env.delete();
-    }
-  }
-
   public static void deleteEnvConfig() throws Exception {
-    File env = getEnvFolder();
+    File env = getClasspathFolder();
     File config = new File(env.getAbsolutePath() + "/environment-config.yaml");
 
     if (config.exists()) {
@@ -62,14 +41,13 @@ public class EnvironmentConfigUtil {
     }
   }
 
-  public static File getEnvFolder() throws URISyntaxException {
-    String executionFolderPath =
-      ValidationService.class.
-        getProtectionDomain()
-        .getCodeSource()
-        .getLocation()
-        .toURI()
-        .getPath();
-    return new File(executionFolderPath + "/../environment");
+  public static File getClasspathFolder() throws URISyntaxException {
+    String executionFolderPath = ValidationService.class.
+      getProtectionDomain()
+      .getCodeSource()
+      .getLocation()
+      .toURI()
+      .getPath();
+    return new File(executionFolderPath);
   }
 }

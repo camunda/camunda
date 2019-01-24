@@ -8,18 +8,18 @@ import org.junit.Test;
 
 import static junit.framework.TestCase.fail;
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEnvConfig;
-import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.deleteEnvFolderWithConfig;
+import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.deleteEnvConfig;
 
 public class OverwriteConfigurationsTest {
 
   @Before
   public void setUp() throws Exception {
-    deleteEnvFolderWithConfig();
+    deleteEnvConfig();
   }
 
   @After
   public void cleanUp() throws Exception {
-    deleteEnvFolderWithConfig();
+    deleteEnvConfig();
   }
 
   @Test

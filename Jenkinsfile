@@ -213,7 +213,6 @@ pipeline {
             runMaven('install -Pproduction,docs -Dskip.docker -DskipTests -T\$LIMITS_CPU')
           }
           stash name: "optimize-stash-client", includes: "client/build/**"
-          stash name: "optimize-stash-upgrade", includes: "upgrade/target/upgrade*.jar"
           stash name: "optimize-stash-distro", includes: "m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*-production.tar.gz,m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*.xml,m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*.pom"
         }
       }
@@ -275,7 +274,7 @@ pipeline {
           }
           steps {
             retry(2) {
-              unstash name: "optimize-stash-upgrade"
+              unstash name: "optimize-stash-distro"
               unstash name: "optimize-stash-client"
               migrationTestSteps()
             }
@@ -297,7 +296,6 @@ pipeline {
           }
           steps {
             retry(2) {
-              unstash name: "optimize-stash-upgrade"
               unstash name: "optimize-stash-distro"
               dataUpgradeTestSteps()
             }
