@@ -274,7 +274,13 @@ public class ReportWriter {
     Script removeReportIdFromCombinedReportsScript = new Script(
       ScriptType.INLINE,
       Script.DEFAULT_SCRIPT_LANG,
-      "ctx._source.data.reportIds.removeIf(id -> id.equals(params.idToRemove))",
+      "def reportIds = ctx._source.data.reportIds;" +
+        "for(int i=0; i<reportIds.size(); i++) {" +
+        "  if(params.idToRemove.equals(reportIds.get(i))) {" +
+        "     ctx._source.data.reportIds.remove(i);" +
+        "     ctx._source.data.configuration.reportColors.remove(i);" +
+        "  }" +
+        "}",
       Collections.singletonMap("idToRemove", reportId)
     );
 

@@ -32,6 +32,7 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -296,6 +297,38 @@ public class CombinedReportHandlingIT {
       .findFirst();
     assertThat(combinedReport.isPresent(), is(true));
     CombinedReportDataDto dataDto = combinedReport.get().getData();
+    assertThat(dataDto.getReportIds().size(), is(1));
+    assertThat(dataDto.getReportIds().get(0), is(remainingSingleReportId));
+  }
+
+  @Test
+  public void deletedSingleReportColorsAreAlsoRemovedFromCombinedReportWhenForced() {
+    // given
+    ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
+    String singleReportIdToDelete = createNewSingleMapReport(engineDto);
+    String remainingSingleReportId = createNewSingleMapReport(engineDto);
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
+    CombinedReportDataDto combinedReportData = createCombinedReport(singleReportIdToDelete, remainingSingleReportId);
+    combinedReportData.getConfiguration().setReportColors(Arrays.asList("red", "blue"));
+    report.setData(combinedReportData);
+
+    String combinedReportId = createNewCombinedReport(report);
+    deleteReport(singleReportIdToDelete, true);
+    List<ReportDefinitionDto> reports = getAllReports();
+
+    // then
+    Optional<CombinedReportDefinitionDto> combinedReport = reports.stream()
+      .filter(r -> r instanceof CombinedReportDefinitionDto)
+      .map(r -> (CombinedReportDefinitionDto)r)
+      .findFirst();
+    assertThat(combinedReport.isPresent(), is(true));
+    CombinedReportDataDto dataDto = combinedReport.get().getData();
+    assertThat(dataDto.getConfiguration().getReportColors().size(), is(1));
+    assertThat(dataDto.getConfiguration().getReportColors().get(0), is("blue"));
     assertThat(dataDto.getReportIds().size(), is(1));
     assertThat(dataDto.getReportIds().get(0), is(remainingSingleReportId));
   }
@@ -587,12 +620,16 @@ public class CombinedReportHandlingIT {
     return singleReportId;
   }
 
-  private String createNewCombinedReport(String... singleReportIds) {
+  private String createNewCombinedReport(CombinedReportDefinitionDto report) {
     String reportId = createNewCombinedReport();
-    CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
-    report.setData(createCombinedReport(singleReportIds));
     updateReport(reportId, report);
     return reportId;
+  }
+
+  private String createNewCombinedReport(String... singleReportIds) {
+    CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
+    report.setData(createCombinedReport(singleReportIds));
+    return createNewCombinedReport(report);
   }
 
   private ProcessInstanceEngineDto deploySimpleServiceTaskProcessDefinition() {
