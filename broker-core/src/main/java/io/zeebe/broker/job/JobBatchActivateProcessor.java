@@ -129,6 +129,8 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
             final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(jobRecord.getLength());
             jobRecord.write(buffer, 0);
             arrayValueJob.wrap(buffer);
+          } else {
+            value.setTruncated(true);
           }
 
           return remainingAmount > 0;

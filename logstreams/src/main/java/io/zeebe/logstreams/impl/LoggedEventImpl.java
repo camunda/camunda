@@ -25,13 +25,13 @@ import static io.zeebe.logstreams.impl.LogEntryDescriptor.headerLength;
 
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.clientapi.VarDataEncodingEncoder;
 import io.zeebe.util.buffer.BufferReader;
 import org.agrona.DirectBuffer;
 
 /** Represents the implementation of the logged event. */
 public class LoggedEventImpl implements ReadableFragment, LoggedEvent {
 
-  public static final int MAX_RECORD_SIZE = 0xFFFF;
   protected int fragmentOffset = -1;
   protected int messageOffset = -1;
   protected DirectBuffer buffer;
@@ -112,7 +112,8 @@ public class LoggedEventImpl implements ReadableFragment, LoggedEvent {
 
   @Override
   public int getMaxValueLength() {
-    return MAX_RECORD_SIZE - LogEntryDescriptor.headerLength(getMetadataLength());
+    return VarDataEncodingEncoder.lengthMaxValue()
+        - LogEntryDescriptor.headerLength(getMetadataLength());
   }
 
   @Override

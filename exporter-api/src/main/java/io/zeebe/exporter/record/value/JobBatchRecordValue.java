@@ -46,4 +46,7 @@ public interface JobBatchRecordValue extends RecordValue {
 
   /** @return the jobs assigned to this batch */
   List<JobRecordValue> getJobs();
+
+  /** @return the broker has more JobRecords that couldn't fit in this batch */
+  boolean isTruncated();
 }

@@ -17,6 +17,7 @@ package io.zeebe.protocol.impl.record.value.job;
 
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.ArrayProperty;
+import io.zeebe.msgpack.property.BooleanProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
@@ -37,6 +38,7 @@ public class JobBatchRecord extends UnpackedObject {
   private final ArrayProperty<JobRecord> jobsProp = new ArrayProperty<>("jobs", new JobRecord());
   private final ArrayProperty<StringValue> variablesProp =
       new ArrayProperty<>("variables", new StringValue());
+  private final BooleanProperty truncatedProp = new BooleanProperty("truncated", false);
 
   public JobBatchRecord() {
     this.declareProperty(typeProp)
@@ -45,7 +47,8 @@ public class JobBatchRecord extends UnpackedObject {
         .declareProperty(amountProp)
         .declareProperty(jobKeysProp)
         .declareProperty(jobsProp)
-        .declareProperty(variablesProp);
+        .declareProperty(variablesProp)
+        .declareProperty(truncatedProp);
   }
 
   public DirectBuffer getType() {
@@ -114,5 +117,14 @@ public class JobBatchRecord extends UnpackedObject {
 
   public ValueArray<StringValue> variables() {
     return variablesProp;
+  }
+
+  public JobBatchRecord setTruncated(boolean truncated) {
+    truncatedProp.setValue(truncated);
+    return this;
+  }
+
+  public boolean getTruncated() {
+    return truncatedProp.getValue();
   }
 }

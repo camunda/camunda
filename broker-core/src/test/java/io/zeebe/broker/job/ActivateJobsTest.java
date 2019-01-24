@@ -18,7 +18,6 @@
 package io.zeebe.broker.job;
 
 import static io.zeebe.exporter.record.Assertions.assertThat;
-import static io.zeebe.logstreams.impl.LoggedEventImpl.MAX_RECORD_SIZE;
 import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_PAYLOAD;
 import static io.zeebe.test.broker.protocol.clientapi.PartitionTestClient.PROP_WORKFLOW_BPMN_PROCESS_ID;
@@ -40,6 +39,7 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.clientapi.VarDataEncodingEncoder;
 import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.JobBatchIntent;
@@ -421,9 +421,9 @@ public class ActivateJobsTest {
   }
 
   @Test
-  public void shouldLimitJobsTo65KbSize() {
+  public void shouldLimitJobsInBatch() {
     // given
-    final int payloadSize = MAX_RECORD_SIZE / 3;
+    final int payloadSize = VarDataEncodingEncoder.lengthMaxValue() / 3;
     final String payload = "{\"key\": \"" + RandomString.make(payloadSize) + "\"}";
 
     // when
@@ -441,10 +441,7 @@ public class ActivateJobsTest {
   }
 
   private List<Long> createJobs(String jobType, int amount) {
-    return IntStream.range(0, amount)
-        .boxed()
-        .map(i -> createJob(jobType))
-        .collect(Collectors.toList());
+    return createJobs(jobType, amount, JSON_PAYLOAD);
   }
 
   private List<Long> createJobs(String jobType, int amount, String payload) {
@@ -452,10 +449,6 @@ public class ActivateJobsTest {
         .boxed()
         .map(i -> createJob(jobType, payload))
         .collect(Collectors.toList());
-  }
-
-  private long createJob(String jobType) {
-    return createJob(jobType, JSON_PAYLOAD);
   }
 
   private long createJob(String jobType, String payload) {
