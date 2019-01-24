@@ -398,3 +398,12 @@ export const createEvents = activities =>
       workflowInstanceId: '53'
     }
   }));
+
+export const createBeautifiedMetadata = activityId => ({
+  Completed: '--',
+  'Flow Node Instance Id': activityId,
+  'Job Id': '67',
+  Started: '28 Jan 2019 13:37:46',
+  incidentErrorMessage: 'Cannot connect to server delivery05',
+  incidentErrorType: 'JOB_NO_RETRIES'
+});

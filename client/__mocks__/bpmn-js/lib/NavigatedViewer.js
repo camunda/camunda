@@ -12,7 +12,8 @@ class Viewer {
     this.elementRegistry = {
       getGraphics: jest.fn(() => ({
         querySelector: jest.fn(() => ({setAttribute: jest.fn()}))
-      }))
+      })),
+      get: jest.fn(id => ({businessObject: {name: id}}))
     };
     this.eventBus = {on: jest.fn()};
     this.overlays = {add: jest.fn(), remove: jest.fn()};

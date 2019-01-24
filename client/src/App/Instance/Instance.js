@@ -8,7 +8,6 @@ import Diagram from 'modules/components/Diagram';
 import {PAGE_TITLE} from 'modules/constants';
 import {getWorkflowName} from 'modules/utils/instance';
 import {parseDiagramXML} from 'modules/utils/bpmn';
-import {compactObject} from 'modules/utils';
 import {formatDate} from 'modules/utils/date';
 import * as api from 'modules/api/instances';
 import {fetchWorkflowXML} from 'modules/api/diagram';
@@ -21,7 +20,8 @@ import InstanceHistory from './InstanceHistory';
 import {
   getFlowNodeStateOverlays,
   getFlowNodesDetails,
-  isRunningInstance
+  isRunningInstance,
+  beautifyMetadataKey
 } from './service';
 import * as Styled from './styled';
 
@@ -197,23 +197,38 @@ export default class Instance extends Component {
       events
     } = this.state;
 
-    if (!flowNodeId) {
-      return null;
-    }
-
-    const {activityInstanceId, metadata} = events.find(
-      event => event.activityId === flowNodeId && event.activityInstanceId
+    // get the last event corresponding to the given flowNodeId (= activityId)
+    const {activityInstanceId, metadata} = events.reduce(
+      (acc, event) =>
+        event.activityId === flowNodeId && event.activityInstanceId
+          ? event
+          : acc,
+      null
     );
 
-    const {jobId} = metadata || {};
+    // get corresponding start and end dates
     const {startDate, endDate} = activitiesDetails[activityInstanceId];
 
-    return compactObject({
-      'Flow Node Instance Id': activityInstanceId,
-      'Job Id': jobId,
-      Started: formatDate(startDate),
-      Completed: formatDate(endDate)
-    });
+    // return a cleaned-up and beautified metadata object
+    return Object.entries({
+      ...metadata,
+      activityInstanceId,
+      startDate,
+      endDate
+    }).reduce((cleanMetadata, [key, value]) => {
+      const beautifiedKey = beautifyMetadataKey(key);
+
+      if (['startDate', 'endDate'].includes(key)) {
+        return {...cleanMetadata, [beautifiedKey]: formatDate(value)};
+      }
+
+      // ignore other empty values
+      if (!value) {
+        return cleanMetadata;
+      }
+
+      return {...cleanMetadata, [beautifiedKey]: value};
+    }, {});
   };
 
   render() {
@@ -234,7 +249,9 @@ export default class Instance extends Component {
 
     const flowNodeStateOverlays = getFlowNodeStateOverlays(activitiesDetails);
 
-    const metadata = this.getMetadataFromaActivitiesDetails(activitiesDetails);
+    const metadata = !selection.flowNodeId
+      ? null
+      : this.getMetadataFromaActivitiesDetails(activitiesDetails);
 
     return (
       <Fragment>
@@ -249,7 +266,7 @@ export default class Instance extends Component {
                 <Diagram
                   onFlowNodeSelected={this.handleFlowNodeSelection}
                   selectableFlowNodes={selectableFlowNodes}
-                  selectedFlowNode={selection.flowNodeId}
+                  selectedFlowNodeId={selection.flowNodeId}
                   flowNodeStateOverlays={flowNodeStateOverlays}
                   definitions={diagramModel.definitions}
                   metadata={metadata}

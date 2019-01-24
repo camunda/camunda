@@ -1,5 +1,7 @@
 import styled from 'styled-components';
-import {Colors, themeStyle} from 'modules/theme';
+
+import Modal from 'modules/components/Modal';
+import {Colors, themed, themeStyle} from 'modules/theme';
 
 export const Popover = styled.div`
   &:before,
@@ -70,3 +72,64 @@ export const MetadataRow = styled.tr`
     margin-right: 6px;
   }
 `;
+
+export const MoreButton = themed(styled.button`
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: 0;
+  font-size: 12px;
+  text-decoration: underline;
+  color: ${themeStyle({
+    dark: Colors.darkLinkBlue,
+    light: Colors.lightLinkBlue
+  })};
+`);
+
+export const ModalBody = themed(styled(Modal.Body)`
+  color: ${themeStyle({
+    dark: '#ffffff',
+    light: Colors.uiLight06
+  })};
+
+  background-color: ${themeStyle({
+    dark: Colors.uiDark01,
+    light: Colors.uiLight04
+  })};
+
+  position: relative;
+  counter-reset: line;
+
+  & pre {
+    margin: 0;
+  }
+`);
+
+export const CodeLine = themed(styled.p`
+  margin: 3px;
+  line-height: 14px;
+  &:before {
+    counter-increment: line;
+    content: counter(line);
+    padding-left: 18px;
+    padding-right: 9px;
+    opacity: 0.5;
+    color: ${themeStyle({
+      dark: '#ffffff',
+      light: '#000000'
+    })};
+    font-size: 12px;
+  }
+`);
+
+export const LinesSeparator = themed(styled.span`
+  position: absolute;
+  top: 0;
+  left: 34px;
+  height: 100%;
+  width: 1px;
+  background-color: ${themeStyle({
+    dark: Colors.uiDark02,
+    light: Colors.uiLight05
+  })};
+`);

@@ -8,9 +8,11 @@ export default function Button(props) {
 }
 
 Button.propTypes = {
-  size: PropTypes.oneOf(['medium', 'large'])
+  size: PropTypes.oneOf(['medium', 'large']),
+  color: PropTypes.oneOf(['main', 'primary'])
 };
 
 Button.defaultProps = {
-  size: 'medium'
+  size: 'medium',
+  color: 'main'
 };

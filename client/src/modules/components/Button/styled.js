@@ -2,52 +2,6 @@ import styled, {css} from 'styled-components';
 
 import {Colors, themed, themeStyle} from 'modules/theme';
 
-const hoverStyle = css`
-  &:hover {
-    background-color: ${themeStyle({
-      dark: '#6b6f74',
-      light: '#cdd4df'
-    })};
-    border-color: ${themeStyle({
-      dark: '#7f8289',
-      light: '#9ea9b7'
-    })};
-  }
-`;
-
-const activeStyle = css`
-  &:active {
-    background-color: ${themeStyle({
-      dark: Colors.uiDark04,
-      light: Colors.uiLight03
-    })};
-    border-color: ${themeStyle({
-      dark: Colors.uiDark05,
-      light: '#88889a'
-    })};
-  }
-`;
-
-const disabledStyle = css`
-  &:disabled {
-    cursor: not-allowed;
-
-    background-color: ${themeStyle({
-      dark: '#34353a',
-      light: '#f1f2f5'
-    })};
-    border-color: ${themeStyle({
-      dark: Colors.uiDark05,
-      light: Colors.uiLight03
-    })};
-    color: ${themeStyle({
-      dark: 'rgba(247, 248, 250, 0.5)',
-      light: 'rgba(69, 70, 78, 0.5)'
-    })};
-    box-shadow: none;
-  }
-`;
-
 const sizeStyle = ({size}) => {
   const mediumSizeStyle = css`
     height: 35px;
@@ -66,12 +20,89 @@ const sizeStyle = ({size}) => {
   return size === 'medium' ? mediumSizeStyle : largeSizeStyle;
 };
 
-export const Button = themed(styled.button`
-  border: solid 1px
-    ${themeStyle({
-      dark: Colors.uiDark06,
-      light: Colors.uiLight03
+const colorStyle = ({color}) => {
+  const primaryStyle = css`
+    box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.35);
+    background-color: ${Colors.selections};
+    color: ${Colors.uiLight02};
+
+    &:hover {
+      background-color: ${Colors.primaryButton03};
+      color: #ffffff;
+    }
+
+    &:active {
+      background-color: ${Colors.primaryButton02};
+      color: ${Colors.uiLight02};
+    }
+
+    &:disabled {
+      color: rgba(247, 248, 250, 0.6);
+    }
+  `;
+
+  const mainStyle = css`
+    box-shadow: 0 2px 2px 0
+      ${themeStyle({
+        dark: 'rgba(0, 0, 0, 0.35)',
+        light: 'rgba(0, 0, 0, 0.08)'
+      })};
+
+    color: ${themeStyle({
+      dark: Colors.uiLight02,
+      light: 'rgba(69, 70, 78, 0.9)'
     })};
+
+    background-color: ${themeStyle({
+      dark: Colors.uiDark05,
+      light: Colors.uiLight05
+    })};
+
+    &:hover {
+      background-color: ${themeStyle({
+        dark: '#6b6f74',
+        light: '#cdd4df'
+      })};
+      border-color: ${themeStyle({
+        dark: '#7f8289',
+        light: '#9ea9b7'
+      })};
+    }
+
+    &:active {
+      background-color: ${themeStyle({
+        dark: Colors.uiDark04,
+        light: Colors.uiLight03
+      })};
+      border-color: ${themeStyle({
+        dark: Colors.uiDark05,
+        light: '#88889a'
+      })};
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+
+      background-color: ${themeStyle({
+        dark: '#34353a',
+        light: '#f1f2f5'
+      })};
+      border-color: ${themeStyle({
+        dark: Colors.uiDark05,
+        light: Colors.uiLight03
+      })};
+      color: ${themeStyle({
+        dark: 'rgba(247, 248, 250, 0.5)',
+        light: 'rgba(69, 70, 78, 0.5)'
+      })};
+      box-shadow: none;
+    }
+  `;
+
+  return color === 'primary' ? primaryStyle : mainStyle;
+};
+
+export const Button = themed(styled.button`
   border-radius: 3px;
   box-shadow: 0 2px 2px 0
     ${themeStyle({
@@ -82,17 +113,6 @@ export const Button = themed(styled.button`
   font-family: IBMPlexSans;
   font-weight: 600;
 
-  color: ${themeStyle({
-    dark: Colors.uiLight02,
-    light: 'rgba(69, 70, 78, 0.9)'
-  })};
-  background-color: ${themeStyle({
-    dark: Colors.uiDark05,
-    light: Colors.uiLight05
-  })};
-
-  ${hoverStyle};
-  ${activeStyle};
-  ${disabledStyle};
+  ${colorStyle};
   ${sizeStyle};
 `);

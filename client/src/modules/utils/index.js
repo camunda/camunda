@@ -17,3 +17,14 @@ export function compactObject(object) {
     return !!value ? {...obj, [key]: value} : obj;
   }, {});
 }
+
+/**
+ * @returns a filtered object containing only entries of the provided keys
+ * @param {*} object
+ * @param any[] keys
+ */
+export function pickFromObject(object, keys) {
+  return Object.entries(object).reduce((result, [key, value]) => {
+    return !keys.includes(key) ? result : {...result, [key]: value};
+  }, {});
+}

@@ -79,3 +79,18 @@ export function getFlowNodeStateOverlays(activitiesDetails = {}) {
 export function isRunningInstance(state) {
   return state === 'ACTIVE' || state === 'INCIDENTS';
 }
+
+export function beautifyMetadataKey(key) {
+  switch (key) {
+    case 'activityInstanceId':
+      return 'Flow Node Instance Id';
+    case 'jobId':
+      return 'Job Id';
+    case 'startDate':
+      return 'Started';
+    case 'endDate':
+      return 'Completed';
+    default:
+      return key;
+  }
+}

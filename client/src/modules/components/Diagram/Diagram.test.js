@@ -1,9 +1,9 @@
 import React from 'react';
 import {shallow, mount} from 'enzyme';
 
-import {createActivity} from 'modules/testUtils';
+import {createActivity, createBeautifiedMetadata} from 'modules/testUtils';
 import {Colors, ThemeProvider} from 'modules/theme';
-import {ACTIVITY_STATE, STATISTICS_OVERLAY_ID} from 'modules/constants';
+import {ACTIVITY_STATE} from 'modules/constants';
 import {parsedDiagram} from 'modules/utils/bpmn';
 import {ReactComponent as IncidentIcon} from 'modules/components/Icon/diagram-badge-single-instance-incident.svg';
 import {ReactComponent as ActiveIcon} from 'modules/components/Icon/diagram-badge-single-instance-active.svg';
@@ -115,11 +115,11 @@ describe('Diagram', () => {
   describe('selected flownode marker', () => {
     it('should remove marker when an already selected node gets selected', () => {
       // given
-      const node = shallowRenderNode({selectedFlowNode: 'nodeA'});
+      const node = shallowRenderNode({selectedFlowNodeId: 'nodeA'});
       const canvas = node.instance().Viewer.get('canvas');
 
       // when
-      node.setProps({selectedFlowNode: 'nodeB'});
+      node.setProps({selectedFlowNodeId: 'nodeB'});
 
       // then
       expect(canvas.addMarker).toHaveBeenCalledWith('nodeA', 'op-selected');
@@ -128,11 +128,11 @@ describe('Diagram', () => {
 
     it('should remove marker when an already selected node gets selected', () => {
       // given
-      const node = shallowRenderNode({selectedFlowNode: null});
+      const node = shallowRenderNode({selectedFlowNodeId: null});
       const canvas = node.instance().Viewer.get('canvas');
 
       // when
-      node.setProps({selectedFlowNode: 'nodeA'});
+      node.setProps({selectedFlowNodeId: 'nodeA'});
 
       // then
       expect(canvas.addMarker).toHaveBeenCalledWith('nodeA', 'op-selected');
@@ -146,7 +146,7 @@ describe('Diagram', () => {
       const canvas = node.instance().Viewer.get('canvas');
 
       // when
-      node.setProps({selectedFlowNode: 'nodeA'});
+      node.setProps({selectedFlowNodeId: 'nodeA'});
 
       // then
       expect(canvas.addMarker).toHaveBeenCalledWith('nodeA', 'op-selectable');
@@ -160,7 +160,7 @@ describe('Diagram', () => {
       const onFlowNodeSelected = jest.fn();
       const node = shallowRenderNode({
         selectableFlowNodes: ['nodeA', 'nodeB'],
-        selectedFlowNode: null,
+        selectedFlowNodeId: null,
         onFlowNodeSelected
       });
 
@@ -176,7 +176,7 @@ describe('Diagram', () => {
       const onFlowNodeSelected = jest.fn();
       const node = shallowRenderNode({
         selectableFlowNodes: ['nodeA', 'nodeB'],
-        selectedFlowNode: 'nodeA',
+        selectedFlowNodeId: 'nodeA',
         onFlowNodeSelected
       });
 
@@ -192,7 +192,7 @@ describe('Diagram', () => {
       const onFlowNodeSelected = jest.fn();
       const node = shallowRenderNode({
         selectableFlowNodes: ['nodeA', 'nodeB'],
-        selectedFlowNode: 'nodeA',
+        selectedFlowNodeId: 'nodeA',
         onFlowNodeSelected
       });
 
@@ -208,7 +208,7 @@ describe('Diagram', () => {
       const onFlowNodeSelected = jest.fn();
       const node = shallowRenderNode({
         selectableFlowNodes: ['nodeA', 'nodeB'],
-        selectedFlowNode: null,
+        selectedFlowNodeId: null,
         onFlowNodeSelected
       });
 
@@ -241,7 +241,7 @@ describe('Diagram', () => {
     });
   });
 
-  describe('addflowNodesStatisticss', () => {
+  describe('flownodes statistics overlays', () => {
     it('should statistics overlays with incidents', () => {
       // given
       const flowNodesStatistics = [
@@ -321,5 +321,59 @@ describe('Diagram', () => {
       expect(overlayNode.find(CanceledDarkIcon)).toHaveLength(1);
       expect(overlayNode.contains(7)).toBe(true);
     });
+  });
+
+  describe('metadata popover', () => {
+    const {activityId} = createActivity();
+    const mockBeautifiedMetadata = createBeautifiedMetadata(activityId);
+    const summary = {
+      'Job Id': mockBeautifiedMetadata['Job Id'],
+      'Flow Node Instance Id': mockBeautifiedMetadata['Flow Node Instance Id'],
+      Started: mockBeautifiedMetadata['Started'],
+      Completed: mockBeautifiedMetadata['Completed']
+    };
+
+    it('should render a popover containing the summary of the metadata', () => {
+      // given
+      const node = mountNode({
+        selectedFlowNodeId: activityId,
+        metadata: mockBeautifiedMetadata
+      });
+
+      // then
+      const overlayNode = node.find('Overlay');
+      expect(overlayNode).toHaveLength(1);
+      const overlayNodeText = overlayNode.text();
+      Object.entries(summary).forEach(([key, value]) => {
+        expect(overlayNodeText.includes(key)).toBe(true);
+        expect(overlayNodeText.includes(value)).toBe(true);
+      });
+    });
+
+    it('should render a modal with the detailed metadata', () => {
+      // given
+      const node = mountNode({
+        selectedFlowNodeId: activityId,
+        metadata: mockBeautifiedMetadata
+      });
+      const overlayNode = node.find('Overlay');
+      const moreButton = overlayNode.find('button[data-test="more-metadata"]');
+      const codeQuotedText = text => `&quot;${text}&quot;`;
+
+      // when
+      moreButton.simulate('click');
+      node.update();
+
+      // then
+      const modalNode = node.find('Modal');
+      expect(modalNode).toHaveLength(1);
+      const modalNodeText = modalNode.text();
+      Object.entries(mockBeautifiedMetadata).forEach(([key, value]) => {
+        expect(modalNodeText.includes(key)).toBe(true);
+        expect(modalNodeText.includes(value)).toBe(true);
+      });
+    });
+
+    it('should render a close button in the modal', () => {});
   });
 });

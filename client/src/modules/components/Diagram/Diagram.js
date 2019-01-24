@@ -17,11 +17,10 @@ class Diagram extends React.Component {
   static propTypes = {
     theme: PropTypes.string.isRequired,
     definitions: PropTypes.object.isRequired,
-    // callback function called when flowNodesDetails is ready
     onDiagramLoaded: PropTypes.func,
     clickableFlowNodes: PropTypes.arrayOf(PropTypes.string),
     selectableFlowNodes: PropTypes.arrayOf(PropTypes.string),
-    selectedFlowNode: PropTypes.string,
+    selectedFlowNodeId: PropTypes.string,
     onFlowNodeSelected: PropTypes.func,
     flowNodeStateOverlays: PropTypes.arrayOf(
       PropTypes.shape({
@@ -58,7 +57,7 @@ class Diagram extends React.Component {
   componentDidUpdate({
     theme: prevTheme,
     definitions: prevDefinitions,
-    selectedFlowNode,
+    selectedFlowNodeId,
     flowNodeStateOverlays: prevFlowNodeStateOverlays,
     flowNodesStatistics: prevflowNodesStatistics
   }) {
@@ -70,15 +69,15 @@ class Diagram extends React.Component {
     }
 
     const hasSelectedFlowNodeChanged =
-      this.props.selectedFlowNode !== selectedFlowNode;
+      this.props.selectedFlowNodeId !== selectedFlowNodeId;
 
     // In case only the selectedFlowNode changed.
     // This also means that the Viewer is already initiated so we can safely
     // call this.handleSelectedFlowNode.
     if (this.state.isViewerLoaded && hasSelectedFlowNodeChanged) {
       this.handleSelectedFlowNode(
-        this.props.selectedFlowNode,
-        selectedFlowNode
+        this.props.selectedFlowNodeId,
+        selectedFlowNodeId
       );
     }
   }
@@ -107,8 +106,8 @@ class Diagram extends React.Component {
       this.handleSelectableFlowNodes(this.props.selectableFlowNodes);
     }
 
-    if (this.props.selectedFlowNode) {
-      this.handleSelectedFlowNode(this.props.selectedFlowNode);
+    if (this.props.selectedFlowNodeId) {
+      this.handleSelectedFlowNode(this.props.selectedFlowNodeId);
     }
   };
 
@@ -182,27 +181,27 @@ class Diagram extends React.Component {
     });
   };
 
-  handleSelectedFlowNode = (selectedFlowNode, prevSelectedFlowNode) => {
+  handleSelectedFlowNode = (selectedFlowNodeId, prevSelectedFlowNodeId) => {
     // clear previously selected flow node marker is there is one
-    if (prevSelectedFlowNode) {
-      this.removeMarker(prevSelectedFlowNode, 'op-selected');
+    if (prevSelectedFlowNodeId) {
+      this.removeMarker(prevSelectedFlowNodeId, 'op-selected');
     }
 
     // add marker for newly selected flow node if there is one
-    if (selectedFlowNode) {
-      this.addMarker(selectedFlowNode, 'op-selected');
+    if (selectedFlowNodeId) {
+      this.addMarker(selectedFlowNodeId, 'op-selected');
     }
   };
 
   handleElementClick = ({element = {}}) => {
-    const {selectedFlowNode} = this.props;
+    const {selectedFlowNodeId} = this.props;
     const isSelectableElement =
       this.props.selectableFlowNodes.filter(id => id === element.id).length > 0;
 
     // Only select the flownode if it's selectable and if it's not already selected.
-    if (isSelectableElement && element.id !== selectedFlowNode) {
+    if (isSelectableElement && element.id !== selectedFlowNodeId) {
       return this.props.onFlowNodeSelected(element.id);
-    } else if (selectedFlowNode) {
+    } else if (selectedFlowNodeId) {
       this.props.onFlowNodeSelected(null);
     }
   };
@@ -251,6 +250,26 @@ class Diagram extends React.Component {
     });
   };
 
+  getFlownNodeName = flownodeId => {
+    const fallbackName = '';
+
+    if (!this.Viewer) {
+      return fallbackName;
+    }
+
+    const elementRegistry = this.Viewer.get('elementRegistry');
+
+    if (!elementRegistry) {
+      return fallbackName;
+    }
+
+    return (
+      this.Viewer.get('elementRegistry').get(flownodeId) || {
+        businessObject: {name: fallbackName}
+      }
+    ).businessObject.name;
+  };
+
   render() {
     const overlayProps = {
       onOverlayAdd: this.handleOverlayAdd,
@@ -269,8 +288,11 @@ class Diagram extends React.Component {
         />
         {this.props.metadata && (
           <PopoverOverlay
-            key={this.props.selectedFlowNode}
-            selectedFlowNode={this.props.selectedFlowNode}
+            key={this.props.selectedFlowNodeId}
+            selectedFlowNode={{
+              id: this.props.selectedFlowNodeId,
+              name: this.getFlownNodeName(this.props.selectedFlowNodeId)
+            }}
             metadata={this.props.metadata}
             {...overlayProps}
           />
