@@ -1,4 +1,4 @@
-import {getTableProps, formatResult, getChartProps} from './service';
+import {getCombinedTableProps, formatResult, getCombinedChartProps} from './service';
 
 const exampleDurationReport = {
   name: 'report A',
@@ -105,48 +105,14 @@ it('should sort time data ascending for charts', () => {
   expect(Object.keys(formatedResult)[0]).toBe('2015-03-25');
 });
 
-it('should return correct single table repot data properties', () => {
-  const tableProps = getTableProps(
-    exampleDurationReport.combined,
-    exampleDurationReport.result,
-    exampleDurationReport.data,
-    exampleDurationReport.processInstanceCount
-  );
-
-  expect(tableProps).toEqual({
-    data: {'2015-03-26': 3, '2015-03-25': 2},
-    labels: ['foo', 'foo'],
-    processInstanceCount: 100
-  });
-});
-
 it('should return correct combined table report data properties', () => {
-  const tableProps = getTableProps(
-    combinedReport.combined,
-    combinedReport.result,
-    combinedReport.data,
-    combinedReport.processInstanceCount
-  );
+  const tableProps = getCombinedTableProps(combinedReport.result);
 
   expect(tableProps).toEqual({
     labels: [['foo', 'foo'], ['foo', 'foo']],
     reportsNames: ['report A', 'report A'],
     data: [{'2015-03-25': 2, '2015-03-26': 3}, {'2015-03-25': 2, '2015-03-26': 3}],
     processInstanceCount: [100, 100]
-  });
-});
-
-it('should return correct single chart report data properties', () => {
-  const chartProps = getChartProps(
-    exampleDurationReport.combined,
-    exampleDurationReport.result,
-    exampleDurationReport.data,
-    exampleDurationReport.processInstanceCount
-  );
-
-  expect(chartProps).toEqual({
-    data: {'2015-03-26': 3, '2015-03-25': 2},
-    processInstanceCount: 100
   });
 });
 
@@ -166,11 +132,9 @@ it('should return correct cominbed chart repot data properties for single report
     }
   };
 
-  const chartProps = getChartProps(
-    combinedChartReport.combined,
+  const chartProps = getCombinedChartProps(
     combinedChartReport.result,
     exampleChartDurationReport.data,
-    combinedChartReport.processInstanceCount,
     combinedChartReport
   );
 

@@ -3,52 +3,28 @@ import {reportConfig} from 'services';
 
 const {view, groupBy, getLabelFor} = reportConfig;
 
-export function getTableProps(combined, result, data, processInstanceCount) {
-  if (combined) {
-    return getCombinedProps(result);
-  }
-  const viewLabel = getLabelFor(view, data.view);
-  const groupByLabel = getLabelFor(groupBy, data.groupBy);
-  const formattedResult = formatResult(data, result);
+export function getCombinedChartProps(result, data, report) {
+  const groupBy = data.groupBy;
+  const isDate =
+    groupBy.type === 'startDate' || (groupBy.type === 'variable' && groupBy.value.type === 'Date');
+
+  const resultData = report.data.reportIds.reduce(
+    (prev, reportId) => {
+      return {
+        data: [...prev.data, formatResult(data, result[reportId].result)],
+        reportsNames: [...prev.reportsNames, result[reportId].name],
+        processInstanceCount: [...prev.processInstanceCount, result[reportId].processInstanceCount]
+      };
+    },
+    {data: [], reportsNames: [], processInstanceCount: []}
+  );
   return {
-    data: formattedResult,
-    labels: [groupByLabel, viewLabel],
-    processInstanceCount
+    isDate,
+    ...resultData
   };
 }
 
-export function getChartProps(combined, result, data, processInstanceCount, report) {
-  if (combined) {
-    const groupBy = data.groupBy;
-    const isDate =
-      groupBy.type === 'startDate' ||
-      (groupBy.type === 'variable' && groupBy.value.type === 'Date');
-
-    const resultData = report.data.reportIds.reduce(
-      (prev, reportId) => {
-        return {
-          data: [...prev.data, formatResult(data, result[reportId].result)],
-          reportsNames: [...prev.reportsNames, result[reportId].name],
-          processInstanceCount: [
-            ...prev.processInstanceCount,
-            result[reportId].processInstanceCount
-          ]
-        };
-      },
-      {data: [], reportsNames: [], processInstanceCount: []}
-    );
-    return {
-      isDate,
-      ...resultData
-    };
-  }
-  return {
-    data: formatResult(data, result),
-    processInstanceCount
-  };
-}
-
-function getCombinedProps(result) {
+export function getCombinedTableProps(result) {
   const reports = Object.keys(result).map(reportId => result[reportId]);
   const initialData = {
     labels: [],
@@ -115,6 +91,10 @@ export function formatResult(data, result) {
       formattedResult[formattedDate] = result[key];
     });
   return formattedResult;
+}
+
+export function isEmpty(str) {
+  return !str || 0 === str.length;
 }
 
 function getDateFormat(unit) {
