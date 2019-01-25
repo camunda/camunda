@@ -42,7 +42,7 @@ export default themed(
     };
 
     createNewChart = () => {
-      const {data, type} = this.props;
+      const {data, type, report} = this.props;
 
       if (!data || typeof data !== 'object') {
         return;
@@ -50,14 +50,10 @@ export default themed(
 
       this.destroyChart();
 
-      const chartType =
-        this.props.report.view.operation === 'count' ? 'countChart' : 'durationChart';
-      const targetValue = {
-        active: this.props.targetValue.active,
-        values: this.props.targetValue[chartType]
-      };
+      const chartType = report.view.operation === 'count' ? 'countChart' : 'durationChart';
+      const targetValue = this.props.targetValue.active && this.props.targetValue[chartType];
 
-      const isTargetLine = targetValue.active && type === 'line';
+      const isTargetLine = targetValue && type === 'line';
 
       this.chart = new ChartRenderer(this.container, {
         type: isTargetLine ? 'targetLine' : type,

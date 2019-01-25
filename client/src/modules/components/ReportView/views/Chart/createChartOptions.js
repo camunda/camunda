@@ -70,7 +70,7 @@ export default function createChartOptions({
 }
 
 function createBarOptions(data, targetValue, configuration, property, stacked, isCombined, isDark) {
-  const targetLine = targetValue.active ? getFormattedTargetValue(targetValue) : undefined;
+  const targetLine = targetValue && getFormattedTargetValue(targetValue);
   return {
     ...(configuration.pointMarkers === false ? {elements: {point: {radius: 0}}} : {}),
     legend: {
@@ -117,7 +117,7 @@ function createBarOptions(data, targetValue, configuration, property, stacked, i
         }
       ]
     },
-    // plugin proberty
+    // plugin property
     lineAt: targetLine
   };
 }

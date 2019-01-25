@@ -5,67 +5,95 @@ import classnames from 'classnames';
 import './ChartTargetInput.scss';
 import {numberParser} from 'services';
 
-export default function ChartTargetInput({configuration: {targetValue}, onChange, report}) {
-  const referenceReport = report.combined ? Object.values(report.result)[0] : report;
-  const type = referenceReport.data.view.operation === 'count' ? 'countChart' : 'durationChart';
+export default class ChartTargetInput extends React.Component {
+  state = {
+    value: '0'
+  };
 
-  function setValues(prop, value) {
-    onChange({
+  componentDidMount() {
+    this.setState({value: this.props.configuration.targetValue[this.getType()].value});
+  }
+
+  getType = () => {
+    const {report} = this.props;
+
+    const referenceReport = report.combined ? Object.values(report.result)[0] : report;
+    return referenceReport.data.view.operation === 'count' ? 'countChart' : 'durationChart';
+  };
+
+  setValue = (prop, value) => {
+    if (prop === 'value') {
+      this.setState({value});
+
+      if (!numberParser.isNonNegativeNumber(value)) {
+        return;
+      }
+
+      value = +value;
+    }
+
+    this.props.onChange({
       targetValue: {
-        [type]: {
+        [this.getType()]: {
           [prop]: {$set: value}
         }
       }
     });
-  }
+  };
 
-  const isInvalid = !numberParser.isNonNegativeNumber(targetValue[type].value);
+  render() {
+    const {configuration: {targetValue}} = this.props;
 
-  return (
-    <div className="ChartTargetInput">
-      <ButtonGroup className="buttonGroup" disabled={!targetValue.active}>
-        <Button
-          onClick={() => setValues('isBelow', false)}
-          className={classnames({'is-active': !targetValue[type].isBelow})}
-        >
-          Above
-        </Button>
-        <Button
-          onClick={() => setValues('isBelow', true)}
-          className={classnames({'is-active': targetValue[type].isBelow})}
-        >
-          Below
-        </Button>
-      </ButtonGroup>
-      <Input
-        className="targetInput"
-        type="number"
-        placeholder="Goal value"
-        value={targetValue[type].value}
-        onChange={({target: {value}}) => setValues('value', value)}
-        isInvalid={isInvalid}
-        disabled={!targetValue.active}
-      />
-      {isInvalid && (
-        <ErrorMessage className="InvalidTargetError">Must be a non-negative number</ErrorMessage>
-      )}
-      {type === 'durationChart' && (
-        <Select
-          className="dataUnitSelect"
-          value={targetValue[type].unit}
-          onChange={({target: {value}}) => setValues('unit', value)}
+    const type = this.getType();
+
+    const isInvalid = !numberParser.isNonNegativeNumber(this.state.value);
+
+    return (
+      <div className="ChartTargetInput">
+        <ButtonGroup className="buttonGroup" disabled={!targetValue.active}>
+          <Button
+            onClick={() => this.setValue('isBelow', false)}
+            className={classnames({'is-active': !targetValue[type].isBelow})}
+          >
+            Above
+          </Button>
+          <Button
+            onClick={() => this.setValue('isBelow', true)}
+            className={classnames({'is-active': targetValue[type].isBelow})}
+          >
+            Below
+          </Button>
+        </ButtonGroup>
+        <Input
+          className="targetInput"
+          type="number"
+          placeholder="Goal value"
+          value={this.state.value}
+          onChange={({target: {value}}) => this.setValue('value', value)}
+          isInvalid={isInvalid}
           disabled={!targetValue.active}
-        >
-          <Select.Option value="millis">Milliseconds</Select.Option>
-          <Select.Option value="seconds">Seconds</Select.Option>
-          <Select.Option value="minutes">Minutes</Select.Option>
-          <Select.Option value="hours">Hours</Select.Option>
-          <Select.Option value="days">Days</Select.Option>
-          <Select.Option value="weeks">Weeks</Select.Option>
-          <Select.Option value="months">Months</Select.Option>
-          <Select.Option value="years">Years</Select.Option>
-        </Select>
-      )}
-    </div>
-  );
+        />
+        {isInvalid && (
+          <ErrorMessage className="InvalidTargetError">Must be a non-negative number</ErrorMessage>
+        )}
+        {type === 'durationChart' && (
+          <Select
+            className="dataUnitSelect"
+            value={targetValue[type].unit}
+            onChange={({target: {value}}) => this.setValue('unit', value)}
+            disabled={!targetValue.active}
+          >
+            <Select.Option value="millis">Milliseconds</Select.Option>
+            <Select.Option value="seconds">Seconds</Select.Option>
+            <Select.Option value="minutes">Minutes</Select.Option>
+            <Select.Option value="hours">Hours</Select.Option>
+            <Select.Option value="days">Days</Select.Option>
+            <Select.Option value="weeks">Weeks</Select.Option>
+            <Select.Option value="months">Months</Select.Option>
+            <Select.Option value="years">Years</Select.Option>
+          </Select>
+        )}
+      </div>
+    );
+  }
 }

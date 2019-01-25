@@ -21,7 +21,7 @@ export function formatTooltip(
     let processInstanceCount = processInstanceCountData[datasetIndex];
     // in the case of the line with target value we have 2 datasets for each report
     // we have to divide by 2 to get the right index
-    if (type === 'line' && targetValue.active) {
+    if (type === 'line' && targetValue) {
       processInstanceCount = processInstanceCountData[~~(datasetIndex / 2)];
     }
     return `${formatted} (${getRelativeValue(
@@ -61,7 +61,7 @@ export function calculateLinePosition(chart) {
 }
 
 export function drawHorizentalLine(chart) {
-  if (chart.options.lineAt >= 0) {
+  if (typeof chart.options.lineAt === 'number') {
     const ctx = chart.chart.ctx;
     const xAxe = chart.scales[chart.options.scales.xAxes[0].id];
     const lineAt = calculateLinePosition(chart);
@@ -141,7 +141,7 @@ export function createDurationFormattingOptions(data, targetLine, isCombined) {
   };
 }
 
-export function getFormattedTargetValue({values}) {
-  if (!values.unit) return values.value;
-  return convertToMilliseconds(values.value, values.unit);
+export function getFormattedTargetValue({unit, value}) {
+  if (!unit) return value;
+  return convertToMilliseconds(value, unit);
 }

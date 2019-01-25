@@ -30,7 +30,7 @@ it('should include the relative value in tooltips', () => {
   const response = formatTooltip(
     {index: 0, datasetIndex: 0},
     {datasets: [{data: [2.5]}]},
-    {active: false},
+    false,
     {},
     v => v,
     [5],
@@ -68,18 +68,13 @@ it('should generate correct colors in label tooltips for bar charts', () => {
   });
 });
 
-it('should set LineAt option to undefined if the target value is not active', () => {
-  const value = getFormattedTargetValue({active: false, values: {}});
-  expect(value).toBe(undefined);
-});
-
 it('should set LineAt option to target value if it is active', () => {
-  const value = getFormattedTargetValue({active: true, values: {value: 10}});
+  const value = getFormattedTargetValue({value: 10});
   expect(value).toBe(10);
 });
 
 it('should invoke convertToMilliSeconds when target value is set to Date Format', () => {
-  getFormattedTargetValue({active: true, values: {value: 10, unit: 'millis'}});
+  getFormattedTargetValue({value: 10, unit: 'millis'});
   expect(convertToMilliseconds).toBeCalledWith(10, 'millis');
 });
 

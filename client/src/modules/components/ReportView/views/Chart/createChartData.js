@@ -27,7 +27,7 @@ function createCombinedChartData({
     });
 
   let datasets;
-  if (type === 'line' && targetValue.active) {
+  if (type === 'line' && targetValue) {
     datasets = createCombinedTargetLineDatasets(
       data,
       reportsNames,
@@ -58,7 +58,7 @@ function createSingleChartData({data, type, targetValue, configuration: {color},
     });
 
   let datasets;
-  if (type === 'line' && targetValue.active) {
+  if (type === 'line' && targetValue) {
     datasets = createSingleTargetLineDataset(targetValue, data, color, false, isDark);
   } else {
     datasets = [
@@ -92,7 +92,7 @@ function createSingleTargetLineDataset(targetValue, data, color, reportName, isC
   const allValues = Object.values(data);
   const {targetOptions, normalLineOptions} = getTargetLineOptions(
     color,
-    targetValue.values.isBelow,
+    targetValue.isBelow,
     isCombined,
     isDark
   );

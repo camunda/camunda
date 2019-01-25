@@ -18,7 +18,7 @@ jest.mock('./colorsUtils', () => {
 
 it('should create two datasets for line chart with target values', () => {
   const data = [{foo: 123, bar: 5, dar: 5}];
-  const targetValue = {active: true, values: {target: 10}};
+  const targetValue = {target: 10};
 
   const chartData = createChartData({
     data,
@@ -38,7 +38,7 @@ it('should create two datasets for each report in combined line charts with targ
 
   const data = {foo: 123, bar: 5, dar: 5};
   uniteResults.mockReturnValue([data, data]);
-  const targetValue = {active: true, values: {target: 10}};
+  const targetValue = {target: 10};
   const chartData = createChartData({
     data: [data, data],
     reportsNames: ['test1', 'test2'],
@@ -63,7 +63,7 @@ it('should return correct chart data object for a single report', () => {
     reportsNames: ['test'],
     configuration: {color: 'testColor'},
     type: 'line',
-    targetValue: {active: false},
+    targetValue: false,
     combined: false,
     theme: 'light',
     isDate: false
@@ -94,7 +94,7 @@ it('should return correct chart data object for a combined report', () => {
     reportsNames: ['Report A', 'Report B'],
     configuration: {reportColors: ['blue', 'yellow']},
     type: 'line',
-    targetValue: {active: false},
+    targetValue: false,
     combined: true,
     theme: 'light',
     isDate: false
