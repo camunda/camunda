@@ -77,6 +77,7 @@ class InstancesContainer extends Component {
     const hasFilterChanged = !isEqual(prevState.filter, this.state.filter);
 
     if (hasFilterChanged || hasSortingChanged || hasFirstElementChanged) {
+      this.setState({workflowInstancesLoaded: false});
       const instances = await this.fetchWorkflowInstances();
 
       this.setState({
@@ -339,6 +340,7 @@ class InstancesContainer extends Component {
   };
 
   handleWorkflowInstancesRefresh = async () => {
+    this.setState({workflowInstancesLoaded: false});
     const instances = await this.fetchWorkflowInstances();
 
     this.setState({

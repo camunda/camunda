@@ -2,11 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import SplitPane from 'modules/components/SplitPane';
-import {
-  EXPAND_STATE,
-  FILTER_SELECTION,
-  DEFAULT_MAX_RESULTS
-} from 'modules/constants';
+import {EXPAND_STATE, FILTER_SELECTION} from 'modules/constants';
 
 import List from './List';
 import ListFooter from './ListFooter';
@@ -45,6 +41,36 @@ export default class ListView extends React.Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
+    const hasListChanged =
+      !prevProps.instancesLoaded && this.props.instancesLoaded;
+
+    const hasEntriesPerPageChanged =
+      this.props.instancesLoaded &&
+      this.state.entriesPerPage !== prevState.entriesPerPage;
+
+    if (hasListChanged) {
+      this.resetInstancesWithActiveOperations();
+      this.checkForInstancesWithActiveOperations();
+    }
+
+    // this.props.instances does not change, so hasListChanged = false
+    if (hasEntriesPerPageChanged) {
+      const activeIds = this.state.instancesWithActiveOperations.map(
+        item => item.id
+      );
+      const idsInView = this.props.instances
+        .slice(0, this.state.entriesPerPage)
+        .map(item => item.id);
+
+      const activeIdsInView = activeIds.filter(item =>
+        idsInView.includes(item)
+      );
+
+      if (!activeIdsInView.length) {
+        this.resetInstancesWithActiveOperations();
+      }
+    }
+
     if (
       prevState.instancesWithActiveOperations.length !==
       this.state.instancesWithActiveOperations.length
@@ -53,7 +79,7 @@ export default class ListView extends React.Component {
         // first call of initializePolling
         this.pollingTimer === null && this.initializePolling();
       } else {
-        // stop polling as all operations have finished
+        // stop polling, no active operations
         this.clearPolling();
       }
     }
@@ -63,12 +89,32 @@ export default class ListView extends React.Component {
     this.clearPolling();
   }
 
+  resetInstancesWithActiveOperations = () => {
+    this.setState({instancesWithActiveOperations: []});
+  };
+
+  checkForInstancesWithActiveOperations = () => {
+    const instancesInView = this.props.instances.slice(
+      0,
+      this.state.entriesPerPage
+    );
+    const instancesWithActiveOperations = getInstancesWithActiveOperations(
+      instancesInView
+    );
+
+    if (instancesWithActiveOperations.length > 0) {
+      this.setState({
+        instancesWithActiveOperations
+      });
+    }
+  };
+
   initializePolling = () => {
     const shouldStart = this.state.instancesWithActiveOperations.length !== 0;
 
     if (shouldStart) {
       this.pollingTimer = setTimeout(
-        this.detectInstanceChangesPoll,
+        this.detectInstancesChangesPoll,
         POLLING_WINDOW
       );
     }
@@ -79,13 +125,11 @@ export default class ListView extends React.Component {
     this.pollingTimer = null;
   };
 
-  detectInstanceChangesPoll = async () => {
+  detectInstancesChangesPoll = async () => {
     const ids = this.state.instancesWithActiveOperations.map(
       instance => instance.id
     );
-
     const instancesByIds = await this.fetchWorkflowInstancesByIds(ids);
-
     const instancesWithActiveOperations = getInstancesWithActiveOperations(
       instancesByIds
     );
@@ -94,12 +138,10 @@ export default class ListView extends React.Component {
       instancesWithActiveOperations.length !==
       this.state.instancesWithActiveOperations.length
     ) {
-      this.setState({instancesWithActiveOperations}, () => {
-        this.props.onWorkflowInstancesRefresh();
-      });
+      this.props.onWorkflowInstancesRefresh();
+    } else {
+      this.initializePolling();
     }
-
-    this.initializePolling();
   };
 
   fetchWorkflowInstancesByIds = async ids => {
@@ -118,7 +160,7 @@ export default class ListView extends React.Component {
     return instances.workflowInstances;
   };
 
-  handleOperationTrigger = instance => {
+  handleActionButtonClick = instance => {
     this.setState(prevState => {
       return {
         instancesWithActiveOperations: [
@@ -138,7 +180,6 @@ export default class ListView extends React.Component {
       onWorkflowInstancesRefresh,
       ...paneProps
     } = this.props;
-
     const isListEmpty = this.props.instances.length === 0;
 
     return (
@@ -156,7 +197,7 @@ export default class ListView extends React.Component {
               this.setState({entriesPerPage})
             }
             isDataLoaded={this.props.instancesLoaded}
-            onActionButtonClick={this.handleOperationTrigger}
+            onActionButtonClick={this.handleActionButtonClick}
           />
         </Styled.PaneBody>
         <SplitPane.Pane.Footer>
