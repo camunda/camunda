@@ -157,6 +157,10 @@ void buildNotification(String buildStatus) {
   emailext subject: subject, body: body, recipientProviders: recipients
 }
 
+void runMaven(String cmd) {
+  sh ("mvn ${cmd} -s settings.xml -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn")
+}
+
 pipeline {
 
   agent {
@@ -197,8 +201,8 @@ pipeline {
     stage('Performance') {
       steps {
         container('maven') {
-          sh 'mvn -T\$LIMITS_CPU -DskipTests -Dskip.fe.build -Dskip.docker -s settings.xml clean install -B'
-          sh 'mvn -Dupgrade.timeout.seconds=${UPGRADE_TIMEOUT} -Pstatic-data-upgrade-es-schema-tests -pl qa/upgrade-es-schema-tests -s settings.xml clean verify -B'
+          runMaven('-T\$LIMITS_CPU -DskipTests -Dskip.fe.build -Dskip.docker clean install')
+          runMaven('-Dupgrade.timeout.seconds=${UPGRADE_TIMEOUT} -Pstatic-data-upgrade-es-schema-tests -pl qa/upgrade-es-schema-tests clean verify')
         }
       }
       post {
