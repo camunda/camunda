@@ -19,7 +19,6 @@ package io.zeebe.broker.workflow.state;
 
 import static io.zeebe.db.impl.ZeebeDbConstants.ZB_DB_BYTE_ORDER;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
-import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 import static io.zeebe.util.buffer.BufferUtil.readIntoBuffer;
 import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
 
@@ -36,16 +35,12 @@ public class PersistedWorkflow implements DbValue {
   final UnsafeBuffer bpmnProcessId = new UnsafeBuffer(0, 0);
   final UnsafeBuffer resourceName = new UnsafeBuffer(0, 0);
   final UnsafeBuffer resource = new UnsafeBuffer(0, 0);
-  private boolean filled;
-
-  public PersistedWorkflow() {}
 
   public void wrap(DeploymentResource resource, Workflow workflow, long workflowKey) {
-    // TODO is cloning necessary ?!
-    this.resource.wrap(cloneBuffer(resource.getResource()));
-    this.resourceName.wrap(cloneBuffer(resource.getResourceName()));
+    this.resource.wrap(resource.getResource());
+    this.resourceName.wrap(resource.getResourceName());
+    this.bpmnProcessId.wrap(workflow.getBpmnProcessId());
 
-    this.bpmnProcessId.wrap(cloneBuffer(workflow.getBpmnProcessId()));
     this.version = workflow.getVersion();
     this.key = workflowKey;
   }
@@ -103,29 +98,6 @@ public class PersistedWorkflow implements DbValue {
     valueOffset = writeIntoBuffer(buffer, valueOffset, resourceName);
     valueOffset = writeIntoBuffer(buffer, valueOffset, resource);
     assert (valueOffset - offset) == getLength() : "End offset differs with getLength()";
-  }
-
-  public int writeKeyToBuffer(MutableDirectBuffer buffer, int offset) {
-    final int keyOffset = writeWorkflowKey(buffer, offset, bpmnProcessId, version);
-    assert (keyOffset - offset) == getKeyLength() : "End offset differs with getKeyLength()";
-    return keyOffset;
-  }
-
-  public void writeKey(MutableDirectBuffer keyBuffer, int offset) {
-    writeKeyToBuffer(keyBuffer, offset);
-  }
-
-  public static int writeWorkflowKey(
-      MutableDirectBuffer buffer, int offset, DirectBuffer bpmnProcessId, int version) {
-    int keyOffset = offset;
-    keyOffset = writeIntoBuffer(buffer, keyOffset, bpmnProcessId);
-    buffer.putInt(keyOffset, version, ZB_DB_BYTE_ORDER);
-    keyOffset += Integer.BYTES;
-    return keyOffset;
-  }
-
-  public int getKeyLength() {
-    return bpmnProcessId.capacity() + Long.BYTES;
   }
 
   @Override

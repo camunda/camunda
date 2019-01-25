@@ -157,6 +157,26 @@ public class WorkflowStateTest {
   }
 
   @Test
+  public void shouldNotOverwritePreviousRecord() {
+    // given
+    final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
+
+    // when
+    workflowState.putDeployment(1, deploymentRecord);
+    deploymentRecord.workflows().iterator().next().setKey(212).setBpmnProcessId("other");
+
+    // then
+    final DeployedWorkflow deployedWorkflow =
+        workflowState.getWorkflowByProcessIdAndVersion(wrapString("processId"), 1);
+
+    assertThat(deployedWorkflow.getKey())
+        .isNotEqualTo(deploymentRecord.workflows().iterator().next().getKey());
+    assertThat(deploymentRecord.workflows().iterator().next().getBpmnProcessId())
+        .isEqualTo(BufferUtil.wrapString("other"));
+    assertThat(deployedWorkflow.getBpmnProcessId()).isEqualTo(BufferUtil.wrapString("processId"));
+  }
+
+  @Test
   public void shouldStoreDifferentWorkflowVersionsOnPutDeployments() {
     // given
 

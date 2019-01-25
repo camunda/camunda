@@ -358,6 +358,23 @@ public class JobStateTest {
     jobState.delete(1L, jobWithoutDeadline);
   }
 
+  @Test
+  public void shouldNotOverwritePreviousRecord() {
+    // given
+    final long key = 1L;
+    final JobRecord writtenRecord = newJobRecord();
+
+    // when
+    jobState.create(key, writtenRecord);
+    writtenRecord.setType("foo");
+
+    // then
+    final JobRecord readRecord = jobState.getJob(key);
+    assertThat(readRecord.getType()).isNotEqualTo(writtenRecord.getType());
+    assertThat(readRecord.getType()).isEqualTo(BufferUtil.wrapString("test"));
+    assertThat(writtenRecord.getType()).isEqualTo(BufferUtil.wrapString("foo"));
+  }
+
   private void createAndActivateJobRecord(final long key, final JobRecord record) {
     jobState.create(key, record);
     jobState.activate(key, record);
