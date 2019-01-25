@@ -74,7 +74,7 @@ export default class Instance extends Component {
         events
       },
       () => {
-        this.initializePolling(isRunningInstance(this.state.instance.state));
+        this.initializePolling();
       }
     );
   }
@@ -151,8 +151,10 @@ export default class Instance extends Component {
     });
   };
 
-  initializePolling = shouldStart => {
-    if (shouldStart) {
+  initializePolling = () => {
+    const {instance} = this.state;
+
+    if (isRunningInstance(instance.state)) {
       this.pollingTimer = setTimeout(this.detectChangesPoll, POLLING_WINDOW);
     }
   };
@@ -163,18 +165,18 @@ export default class Instance extends Component {
   };
 
   detectChangesPoll = async () => {
-    const id = this.state.instance.id;
-    const instance = await api.fetchWorkflowInstance(id);
+    const {id, state, activities, operations} = this.state.instance;
+    const newInstance = await api.fetchWorkflowInstance(id);
     const hasInstanceChanged =
-      instance.state !== this.state.instance.state ||
-      !isEqual(instance.activities, this.state.instance.activities) ||
-      !isEqual(instance.operations, this.state.instance.operations);
+      newInstance.state !== state ||
+      !isEqual(newInstance.activities, activities) ||
+      !isEqual(newInstance.operations, operations);
 
-    if (hasInstanceChanged) {
-      this.setState({instance});
-    }
-
-    this.initializePolling(isRunningInstance(this.state.instance.state));
+    hasInstanceChanged
+      ? this.setState({instance: newInstance}, () => {
+          this.initializePolling();
+        })
+      : this.initializePolling();
   };
 
   getMetadataFromaActivitiesDetails = activitiesDetails => {
