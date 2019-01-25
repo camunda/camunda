@@ -25,7 +25,9 @@ import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.cmd.ClientException;
+import io.zeebe.exporter.record.Assertions;
 import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.VariableRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -94,13 +96,16 @@ public class MessageCorrelationTest {
     // then
     assertWorkflowInstanceCompleted(PROCESS_ID);
 
-    final Record<WorkflowInstanceRecordValue> record =
+    final Record<WorkflowInstanceRecordValue> workflowInstanceEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERED)
             .withElementId("catch-event")
             .getFirst();
 
-    assertThat(record.getValue().getPayloadAsMap())
-        .containsExactly(entry("orderId", "order-123"), entry("foo", "bar"));
+    final Record<VariableRecordValue> variableEvent =
+        RecordingExporter.variableRecords().withName("foo").getFirst();
+    Assertions.assertThat(variableEvent.getValue())
+        .hasValue("\"bar\"")
+        .hasScopeInstanceKey(workflowInstanceEvent.getValue().getWorkflowInstanceKey());
   }
 
   @Test

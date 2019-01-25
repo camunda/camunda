@@ -20,6 +20,8 @@ package io.zeebe.broker.workflow.state;
 import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
 import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.ZeebeDb;
+import io.zeebe.db.impl.DbBuffer;
+import io.zeebe.db.impl.DbBufferView;
 import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbString;
@@ -55,13 +57,18 @@ public class VariablesState {
   private final DbLong childKey;
 
   // (scope key, variable name) => (variable value)
-  private final ColumnFamily<DbCompositeKey<DbLong, DbString>, Variable> variablesColumnFamily;
+  private final ColumnFamily<DbCompositeKey<DbLong, DbString>, DbBufferView> variablesColumnFamily;
   private final DbCompositeKey<DbLong, DbString> scopeKeyVariableNameKey;
   private final DbLong scopeKey;
   private final DbString variableName;
-  private final Variable variable;
+  private final DbBufferView variable;
 
-  private final Variable newVariable = new Variable();
+  // (scope key) => (payload)
+  private final ColumnFamily<DbLong, DbBuffer> payloadColumnFamily;
+  private final DbLong payloadScopeKey = new DbLong();
+  private final DbBuffer payload = new DbBuffer();
+
+  private final DbBufferView newVariable = new DbBufferView();
   private final DirectBuffer variableNameView = new UnsafeBuffer(0, 0);
 
   // collecting variables
@@ -83,9 +90,12 @@ public class VariablesState {
     scopeKey = new DbLong();
     variableName = new DbString();
     scopeKeyVariableNameKey = new DbCompositeKey<>(scopeKey, variableName);
-    variable = new Variable();
+    variable = new DbBufferView();
     variablesColumnFamily =
         zeebeDb.createColumnFamily(ZbColumnFamilies.VARIABLES, scopeKeyVariableNameKey, variable);
+
+    payloadColumnFamily =
+        zeebeDb.createColumnFamily(ZbColumnFamilies.PAYLOAD, payloadScopeKey, payload);
   }
 
   public void setVariablesLocalFromDocument(long scopeKey, DirectBuffer document) {
@@ -120,7 +130,7 @@ public class VariablesState {
       int valueOffset,
       int valueLength) {
 
-    newVariable.wrapValue(value, valueOffset, valueLength);
+    newVariable.wrapBuffer(value, valueOffset, valueLength);
     final DirectBuffer newValue = newVariable.getValue();
 
     final DirectBuffer currentValue = getVariableLocal(scopeKey, name, nameOffset, nameLength);
@@ -163,7 +173,7 @@ public class VariablesState {
     variableNameView.wrap(name, nameOffset, nameLength);
     this.variableName.wrapBuffer(variableNameView);
 
-    final Variable variable = variablesColumnFamily.get(scopeKeyVariableNameKey);
+    final DbBufferView variable = variablesColumnFamily.get(scopeKeyVariableNameKey);
     return variable == null ? null : variable.getValue();
   }
 
@@ -318,7 +328,7 @@ public class VariablesState {
   private void visitVariables(
       long scopeKey,
       Predicate<DbString> filter,
-      BiConsumer<DbString, Variable> variableConsumer,
+      BiConsumer<DbString, DbBufferView> variableConsumer,
       BooleanSupplier completionCondition) {
     long currentScope = scopeKey;
 
@@ -344,7 +354,7 @@ public class VariablesState {
   private boolean visitVariablesLocal(
       long scopeKey,
       Predicate<DbString> variableFilter,
-      BiConsumer<DbString, Variable> variableConsumer,
+      BiConsumer<DbString, DbBufferView> variableConsumer,
       BooleanSupplier completionCondition) {
     this.scopeKey.wrapLong(scopeKey);
 
@@ -385,8 +395,28 @@ public class VariablesState {
         () -> false);
   }
 
+  public void setPayload(long scopeKey, DirectBuffer payloadBuffer) {
+    payloadScopeKey.wrapLong(scopeKey);
+    payload.wrapBuffer(payloadBuffer);
+    payloadColumnFamily.put(payloadScopeKey, payload);
+  }
+
+  public DirectBuffer getPayload(long scopeKey) {
+    payloadScopeKey.wrapLong(scopeKey);
+    final DbBuffer payload = payloadColumnFamily.get(payloadScopeKey);
+
+    return payload == null ? null : payload.getValue();
+  }
+
+  public void removePayload(long scopeKey) {
+    payloadScopeKey.wrapLong(scopeKey);
+    payloadColumnFamily.delete(payloadScopeKey);
+  }
+
   public boolean isEmpty() {
-    return variablesColumnFamily.isEmpty() && childParentColumnFamily.isEmpty();
+    return variablesColumnFamily.isEmpty()
+        && childParentColumnFamily.isEmpty()
+        && payloadColumnFamily.isEmpty();
   }
 
   public void setListener(VariableListener listener) {

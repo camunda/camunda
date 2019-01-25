@@ -18,72 +18,52 @@
 package io.zeebe.broker.workflow.processor.flownode;
 
 import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
-import io.zeebe.broker.workflow.model.element.ExecutableServiceTask;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
+import io.zeebe.broker.workflow.state.VariablesState;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
 import io.zeebe.msgpack.mapping.Mapping;
 import io.zeebe.msgpack.mapping.MsgPackMergeTool;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 public class IOMappingHelper {
 
   public <T extends ExecutableFlowNode> void applyOutputMappings(BpmnStepContext<T> context) {
+    final VariablesState variablesState = context.getElementInstanceState().getVariablesState();
+    final MsgPackMergeTool mergeTool = context.getMergeTool();
 
     final T element = context.getElement();
-    final MsgPackMergeTool mergeTool = context.getMergeTool();
     final WorkflowInstanceRecord record = context.getValue();
-    final ZeebeOutputBehavior outputBehavior = element.getOutputBehavior();
+    final long elementInstanceKey = context.getRecord().getKey();
+    final long scopeInstanceKey = record.getScopeInstanceKey();
+    final boolean hasOutputMappings = element.getOutputMappings().length > 0;
 
-    mergeTool.reset();
+    final DirectBuffer payload = variablesState.getPayload(elementInstanceKey);
+    if (payload != null) {
 
-    // (saig0): we need copy the buffer so that it is not overridden by the second variable request.
-    // This can be remove when #1852 is implemented.
-    final DirectBuffer scopePayload =
-        BufferUtil.cloneBuffer(
-            context
-                .getElementInstanceState()
-                .getVariablesState()
-                .getVariablesAsDocument(record.getScopeInstanceKey()));
+      if (hasOutputMappings) {
+        variablesState.setVariablesLocalFromDocument(elementInstanceKey, payload);
 
-    final DirectBuffer instancePayload;
-
-    if (element instanceof ExecutableServiceTask && element.getOutputMappings().length > 0) {
-      // (saig0): if the activity has no output mappings then the payload is already merged. We
-      // can't use the local variables in this case for the record payload because it may contain
-      // variables from input mapping. This will go away together with the record payload.
-
-      instancePayload =
-          context
-              .getElementInstanceState()
-              .getVariablesState()
-              .getVariablesLocalAsDocument(context.getRecord().getKey());
-    } else {
-      // TODO (saig0) #1614: should use also the variables from the state when the message payload
-      // is set as local variables
-      instancePayload = record.getPayload();
-    }
-
-    final DirectBuffer propagatedPayload;
-    if (outputBehavior != ZeebeOutputBehavior.none) {
-      if (element.getOutputBehavior() != ZeebeOutputBehavior.overwrite) {
-        mergeTool.mergeDocument(scopePayload);
+      } else {
+        variablesState.setVariablesFromDocument(scopeInstanceKey, payload);
       }
 
-      mergeTool.mergeDocumentStrictly(instancePayload, element.getOutputMappings());
-      propagatedPayload = mergeTool.writeResultToBuffer();
-
-    } else {
-      propagatedPayload = scopePayload;
+      variablesState.removePayload(elementInstanceKey);
     }
 
-    context
-        .getElementInstanceState()
-        .getVariablesState()
-        .setVariablesFromDocument(record.getScopeInstanceKey(), propagatedPayload);
+    if (element.getOutputBehavior() != ZeebeOutputBehavior.none && hasOutputMappings) {
+      mergeTool.reset();
 
-    record.setPayload(propagatedPayload);
+      final DirectBuffer variables = variablesState.getVariablesAsDocument(elementInstanceKey);
+
+      mergeTool.mergeDocumentStrictly(variables, element.getOutputMappings());
+      final DirectBuffer mergedPayload = mergeTool.writeResultToBuffer();
+
+      variablesState.setVariablesFromDocument(scopeInstanceKey, mergedPayload);
+    }
+
+    // TODO (saig0) #1852: temporary way to calculate the right payload
+    record.setPayload(variablesState.getVariablesAsDocument(scopeInstanceKey));
   }
 
   public <T extends ExecutableFlowNode> void applyInputMappings(BpmnStepContext<T> context) {

@@ -21,16 +21,36 @@ import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.*;
+import io.zeebe.exporter.record.value.DeploymentRecordValue;
+import io.zeebe.exporter.record.value.IncidentRecordValue;
+import io.zeebe.exporter.record.value.JobRecordValue;
+import io.zeebe.exporter.record.value.MessageRecordValue;
+import io.zeebe.exporter.record.value.TimerRecordValue;
+import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.intent.*;
+import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.protocol.intent.IncidentIntent;
+import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.intent.MessageIntent;
+import io.zeebe.protocol.intent.TimerIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.MsgPackUtil;
-import io.zeebe.test.util.record.*;
+import io.zeebe.test.util.record.DeploymentRecordStream;
+import io.zeebe.test.util.record.IncidentRecordStream;
+import io.zeebe.test.util.record.JobBatchRecordStream;
+import io.zeebe.test.util.record.JobRecordStream;
+import io.zeebe.test.util.record.MessageRecordStream;
+import io.zeebe.test.util.record.MessageSubscriptionRecordStream;
+import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.TimerRecordStream;
+import io.zeebe.test.util.record.WorkflowInstanceRecordStream;
+import io.zeebe.test.util.record.WorkflowInstanceSubscriptionRecordStream;
 import io.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayOutputStream;
 import java.time.Duration;
@@ -312,6 +332,11 @@ public class PartitionTestClient {
   public ExecuteCommandResponse publishMessage(
       final String messageName, final String correlationKey, final DirectBuffer payload) {
     return publishMessage(messageName, correlationKey, BufferUtil.bufferAsArray(payload));
+  }
+
+  public ExecuteCommandResponse publishMessage(
+      final String messageName, final String correlationKey, final String payload) {
+    return publishMessage(messageName, correlationKey, MsgPackUtil.asMsgPackReturnArray(payload));
   }
 
   public ExecuteCommandResponse publishMessage(

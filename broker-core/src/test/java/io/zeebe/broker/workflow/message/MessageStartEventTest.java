@@ -124,6 +124,25 @@ public class MessageStartEventTest {
   }
 
   @Test
+  public void shouldMergeMessagePayload() {
+    // given
+    testClient.deployWithResponse(createWorkflowWithOneMessageStartEvent());
+
+    // wait until subscription is opened
+    assertThat(
+            messageStartEventSubscriptionRecords(MessageStartEventSubscriptionIntent.OPENED)
+                .exists())
+        .isTrue();
+
+    // when
+    testClient.publishMessage(MESSAGE_NAME1, "order-123", asMsgPack("foo", "bar"));
+
+    // then
+    assertThat(RecordingExporter.variableRecords().withName("foo").withValue("\"bar\"").exists())
+        .isTrue();
+  }
+
+  @Test
   public void shouldApplyOutputMappingsOfMessageStartEvent() {
     // given
     testClient.deployWithResponse(createWorkflowWithMessageStartEventOutputMapping());
@@ -138,11 +157,9 @@ public class MessageStartEventTest {
     testClient.publishMessage(MESSAGE_NAME1, "order-123", asMsgPack("foo", "bar"));
 
     // then
-    final Record<WorkflowInstanceRecordValue> record =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERED)
-            .getFirst();
-
-    assertThat(record.getValue().getPayloadAsMap()).containsEntry("mappedfoo", "bar");
+    assertThat(
+            RecordingExporter.variableRecords().withName("mappedfoo").withValue("\"bar\"").exists())
+        .isTrue();
   }
 
   @Test

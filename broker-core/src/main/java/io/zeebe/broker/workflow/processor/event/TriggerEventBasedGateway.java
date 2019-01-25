@@ -20,15 +20,30 @@ package io.zeebe.broker.workflow.processor.event;
 import io.zeebe.broker.workflow.model.element.ExecutableCatchEventElement;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
+import io.zeebe.broker.workflow.state.VariablesState;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import org.agrona.DirectBuffer;
 
 public class TriggerEventBasedGateway implements BpmnStepHandler<ExecutableCatchEventElement> {
 
   @Override
   public void handle(BpmnStepContext<ExecutableCatchEventElement> context) {
+    final long elementInstanceKey = context.getRecord().getKey();
 
-    context.getCatchEventBehavior().unsubscribeFromEvents(context.getRecord().getKey(), context);
+    context.getCatchEventBehavior().unsubscribeFromEvents(elementInstanceKey, context);
 
-    context.getOutput().appendNewEvent(WorkflowInstanceIntent.EVENT_TRIGGERING, context.getValue());
+    final long eventInstanceKey =
+        context
+            .getOutput()
+            .appendNewEvent(WorkflowInstanceIntent.EVENT_TRIGGERING, context.getValue());
+
+    // TODO (saig0) #1899: since the events have a different key, we need to copy the payload to the
+    // new scope
+    final VariablesState variablesState = context.getElementInstanceState().getVariablesState();
+    final DirectBuffer payload = variablesState.getPayload(elementInstanceKey);
+    if (payload != null) {
+      variablesState.setPayload(eventInstanceKey, payload);
+      variablesState.removePayload(elementInstanceKey);
+    }
   }
 }
