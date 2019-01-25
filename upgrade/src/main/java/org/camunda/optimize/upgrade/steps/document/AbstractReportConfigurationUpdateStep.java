@@ -2,10 +2,14 @@ package org.camunda.optimize.upgrade.steps.document;
 
 import org.elasticsearch.index.query.QueryBuilder;
 
+import java.util.Map;
+
 public class AbstractReportConfigurationUpdateStep extends UpdateDataStep {
 
-  public AbstractReportConfigurationUpdateStep(final String typeName, final QueryBuilder query,
-                                               final String updateScript, final Object parameters) {
+  public AbstractReportConfigurationUpdateStep(final String typeName,
+                                               final QueryBuilder query,
+                                               final String updateScript,
+                                               final Map<String, Object> parameters) {
     super(typeName, query, updateScript, parameters);
   }
 

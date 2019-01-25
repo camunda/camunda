@@ -1,58 +1,37 @@
 package org.camunda.optimize.upgrade.service;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.entity.ContentType;
-import org.apache.http.nio.entity.NStringEntity;
+import com.google.common.collect.Lists;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
-import org.elasticsearch.client.Response;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEmptyEnvConfig;
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.deleteEnvConfig;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-
 public class ValidationServiceIT extends AbstractUpgradeIT {
-  public static final String OPTIMIZE_METADATA = "optimize-metadata";
-  public static final String PUT = "PUT";
+
   @Rule
   public ExpectedException thrown = ExpectedException.none();
 
   private ValidationService underTest;
 
   @Before
-  public void setUp() {
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
     underTest = new ValidationService(new ConfigurationService());
-    initClient();
-    cleanAllDataFromElasticsearch();
-  }
-
-  @After
-  public void tearDown() throws Exception {
-    try {
-      restClient.getLowLevelClient().performRequest("DELETE", OPTIMIZE_METADATA, Collections.emptyMap());
-    } catch (IOException e) {
-      //nothing to do
-    }
-    deleteEnvConfig();
+    initSchema(Lists.newArrayList(METADATA_TYPE));
   }
 
   @Test
   public void versionValidationBreaksWithoutIndex() {
     try {
-      underTest.validateVersions(restClient.getLowLevelClient(), "2.0", "2.1");
+      underTest.validateVersions(restClient, "2.0", "2.1");
     } catch (UpgradeRuntimeException e) {
       //expected
       return;
@@ -68,7 +47,7 @@ public class ValidationServiceIT extends AbstractUpgradeIT {
 
     try {
       //when
-      underTest.validateVersions(restClient.getLowLevelClient(), "2.0", "2.1");
+      underTest.validateVersions(restClient, "2.0", "2.1");
     } catch (UpgradeRuntimeException e) {
       //expected
       //then
@@ -78,25 +57,13 @@ public class ValidationServiceIT extends AbstractUpgradeIT {
     fail("Exception expected");
   }
 
-  public void addMetaData(String data) throws IOException {
-    HttpEntity entity = new NStringEntity(data, ContentType.APPLICATION_JSON);
-    HashMap<String, String> refreshParams = new HashMap<>();
-    refreshParams.put("refresh", "true");
-    Response post = restClient.getLowLevelClient().performRequest(PUT, OPTIMIZE_METADATA + "/metadata/1", refreshParams, entity);
-    assertThat(post.getStatusLine().getStatusCode(), is(201));
-  }
-
   @Test
   public void versionValidationPassesWithMatchingVersion() throws Exception {
     //given
-    restClient.getLowLevelClient().performRequest(PUT, OPTIMIZE_METADATA, Collections.emptyMap());
-    String data = "{\n" +
-      "  \"schemaVersion\": \"2.0\"\n" +
-      "}";
-    addMetaData(data);
+    addVersionToElasticsearch("2.0");
 
     //when
-    underTest.validateVersions(restClient.getLowLevelClient(), "2.0", "2.1");
+    underTest.validateVersions(restClient, "2.0", "2.1");
 
     //then - no exception
   }
@@ -104,15 +71,11 @@ public class ValidationServiceIT extends AbstractUpgradeIT {
   @Test
   public void toVersionIsNotAllowedToBeNull() throws Exception {
     //given
-    restClient.getLowLevelClient().performRequest(PUT, OPTIMIZE_METADATA, Collections.emptyMap());
-    String data = "{\n" +
-      "  \"schemaVersion\": \"2.0\"\n" +
-      "}";
-    addMetaData(data);
+    addVersionToElasticsearch("2.0");
 
     try {
       //when
-      underTest.validateVersions(restClient.getLowLevelClient(), "2.0", null);
+      underTest.validateVersions(restClient, "2.0", null);
     } catch (UpgradeRuntimeException e) {
       //expected
       //then
@@ -125,15 +88,11 @@ public class ValidationServiceIT extends AbstractUpgradeIT {
   @Test
   public void toVersionIsNotAllowedToBeEmptyString() throws Exception {
     //given
-    restClient.getLowLevelClient().performRequest(PUT, OPTIMIZE_METADATA, Collections.emptyMap());
-    String data = "{\n" +
-      "  \"schemaVersion\": \"2.0\"\n" +
-      "}";
-    addMetaData(data);
+    addVersionToElasticsearch("2.0");
 
     try {
       //when
-      underTest.validateVersions(restClient.getLowLevelClient(), "2.0", "");
+      underTest.validateVersions(restClient, "2.0", "");
     } catch (UpgradeRuntimeException e) {
       //expected
       //then
@@ -144,28 +103,16 @@ public class ValidationServiceIT extends AbstractUpgradeIT {
   }
 
   @Test
-  public void validateThrowsExceptionWithoutEnvironmentFolder() {
+  public void validateThrowsExceptionWithoutEnvironmentConfig() throws Exception {
+    // given
+    deleteEnvConfig();
 
     //throws
     thrown.expect(RuntimeException.class);
-    thrown.expectMessage("The upgrade has to be executed from \"upgrade\" folder in the Optimize root directory!");
+    thrown.expectMessage("Couldn't read environment-config.yaml from environment folder in Optimize root!");
 
     //when
     underTest.validateEnvironmentConfigInClasspath();
-  }
-
-  @Test
-  public void validateThrowsExceptionWithoutEnvironmentConfig() throws Exception {
-    boolean thrown = false;
-    //when
-    try {
-      underTest.validateEnvironmentConfigInClasspath();
-    } catch (RuntimeException e) {
-      //expected
-      thrown = true;
-    }
-
-    assertThat(thrown, is(true));
   }
 
   @Test
@@ -175,7 +122,5 @@ public class ValidationServiceIT extends AbstractUpgradeIT {
 
     //when
     underTest.validateEnvironmentConfigInClasspath();
-
-    deleteEnvConfig();
   }
 }

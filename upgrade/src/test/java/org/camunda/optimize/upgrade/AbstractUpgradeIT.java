@@ -1,62 +1,94 @@
 package org.camunda.optimize.upgrade;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
+import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.es.schema.TypeMappingCreator;
+import org.camunda.optimize.service.es.schema.type.MetadataType;
+import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.camunda.optimize.upgrade.util.SchemaUpgradeUtil;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.junit.After;
+import org.junit.Before;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.List;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEmptyEnvConfig;
+import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.deleteEnvConfig;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 
 public abstract class AbstractUpgradeIT {
 
-  public static final String PUT = "PUT";
-  public static final String OPTIMIZE_METADATA = "optimize-metadata";
+  public static final MetadataType METADATA_TYPE = new MetadataType();
 
+  protected ObjectMapper objectMapper;
   protected RestHighLevelClient restClient;
 
-  protected void initClient() {
+  @Before
+  protected void setUp() throws Exception {
+    if (objectMapper == null) {
+      objectMapper = new ObjectMapperFactory(
+        new OptimizeDateTimeFormatterFactory().getObject(),
+        new ConfigurationService()
+      ).createOptimizeMapper();
+    }
     if (restClient == null) {
       restClient = ElasticsearchHighLevelRestClientBuilder.build(new ConfigurationService());
     }
+    cleanAllDataFromElasticsearch();
+    createEmptyEnvConfig();
   }
 
   @After
-  public void after() {
+  public void after() throws Exception {
     cleanAllDataFromElasticsearch();
+    deleteEnvConfig();
+  }
+
+  public void initSchema(List<TypeMappingCreator> mappingCreators) {
+    final ElasticSearchSchemaManager elasticSearchSchemaManager = new ElasticSearchSchemaManager(
+      new ConfigurationService(), mappingCreators, objectMapper
+    );
+    elasticSearchSchemaManager.initializeSchema(restClient);
   }
 
   protected void addVersionToElasticsearch(String version) throws IOException {
-    restClient.getLowLevelClient().performRequest(PUT, OPTIMIZE_METADATA, Collections.emptyMap());
-    String data = "{\n" +
-      "  \"schemaVersion\": \"" + version + "\"\n" +
-      "}";
-    HttpEntity entity = new NStringEntity(data, ContentType.APPLICATION_JSON);
-    HashMap<String, String> refreshParams = new HashMap<>();
-    refreshParams.put("refresh", "true");
-    Response post = restClient.getLowLevelClient().performRequest(PUT, OPTIMIZE_METADATA + "/metadata/1", refreshParams, entity);
-    assertThat(post.getStatusLine().getStatusCode(), is(201));
+    final IndexRequest indexRequest = new IndexRequest(
+      getOptimizeIndexAliasForType(METADATA_TYPE.getType()),
+      METADATA_TYPE.getType(),
+      "1"
+    );
+    indexRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+    indexRequest.source(ImmutableMap.of(MetadataType.SCHEMA_VERSION, version), XContentType.JSON);
+
+    final IndexResponse index = restClient.index(indexRequest, RequestOptions.DEFAULT);
+    assertThat(index.status().getStatus(), is(201));
   }
 
   protected void cleanAllDataFromElasticsearch() {
     try {
-      restClient.getLowLevelClient().performRequest("DELETE", "_all", Collections.emptyMap());
+      restClient.indices().delete(new DeleteIndexRequest("_all"), RequestOptions.DEFAULT);
     } catch (IOException e) {
-      //nothing to do
+      throw new RuntimeException("Failed cleaning elasticsearch");
     }
   }
 

@@ -1,7 +1,6 @@
 package org.camunda.optimize.upgrade;
 
-import com.jayway.jsonpath.JsonPath;
-import org.apache.http.util.EntityUtils;
+import com.google.common.collect.Lists;
 import org.camunda.optimize.service.es.schema.type.MetadataType;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
@@ -11,25 +10,20 @@ import org.camunda.optimize.upgrade.steps.schema.CreateIndexAliasForExistingInde
 import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.DeleteIndexStep;
 import org.camunda.optimize.upgrade.util.SchemaUpgradeUtil;
-import org.elasticsearch.client.Response;
+import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
-
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexNameForAliasAndVersion;
-import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEmptyEnvConfig;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.fail;
 
 public class UpgradeVersionIT extends AbstractUpgradeIT {
-
-  private static final String SEARCH = "/_search";
-  private static final String MAPPING = "/_mapping";
-
-  private static final String GET = "GET";
 
   private static final String TEST_TYPE = "users";
   private static final String TEST_INDEX = "optimize-users";
@@ -38,15 +32,12 @@ public class UpgradeVersionIT extends AbstractUpgradeIT {
   private static final String TO_VERSION = "2.1.0";
 
   @Before
-  public void init() throws Exception {
-    initClient();
-    cleanAllDataFromElasticsearch();
-    try {
-      addVersionToElasticsearch(FROM_VERSION);
-    } catch (IOException e) {
-      // ignore
-    }
-    createEmptyEnvConfig();
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+
+    initSchema(Lists.newArrayList(METADATA_TYPE));
+    addVersionToElasticsearch(FROM_VERSION);
   }
 
   @Test
@@ -63,13 +54,21 @@ public class UpgradeVersionIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    Response aliasResponse = restClient.getLowLevelClient().performRequest("HEAD", TEST_INDEX);
-    assertThat(aliasResponse.getStatusLine().getStatusCode(), is(200));
-    Response indexResponse = restClient.getLowLevelClient().performRequest(
-      "HEAD",
-      getOptimizeIndexNameForAliasAndVersion(TEST_INDEX, TO_VERSION)
+    assertThat(
+      restClient.indices().exists(
+        new GetIndexRequest().indices(TEST_INDEX).features(GetIndexRequest.Feature.ALIASES),
+        RequestOptions.DEFAULT
+      ),
+      is(true)
     );
-    assertThat(indexResponse.getStatusLine().getStatusCode(), is(200));
+    final String versionedIndexName = getOptimizeIndexNameForAliasAndVersion(TEST_INDEX, TO_VERSION);
+    assertThat(
+      restClient.indices().exists(
+        new GetIndexRequest().indices(versionedIndexName).features(GetIndexRequest.Feature.MAPPINGS),
+        RequestOptions.DEFAULT
+      ),
+      is(true)
+    );
   }
 
   @Test
@@ -86,8 +85,13 @@ public class UpgradeVersionIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    Response response = restClient.getLowLevelClient().performRequest("HEAD", TEST_INDEX);
-    assertThat(response.getStatusLine().getStatusCode(), is(200));
+    assertThat(
+      restClient.indices().exists(
+        new GetIndexRequest().indices(TEST_INDEX).features(GetIndexRequest.Feature.MAPPINGS),
+        RequestOptions.DEFAULT
+      ),
+      is(true)
+    );
   }
 
   @Test
@@ -105,16 +109,21 @@ public class UpgradeVersionIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    Response aliasResponse = restClient.getLowLevelClient().performRequest("HEAD", TEST_INDEX);
-    assertThat(aliasResponse.getStatusLine().getStatusCode(), is(200));
-    Response indexWithVersionResponse = restClient.getLowLevelClient().performRequest(
-      "HEAD",
-      getOptimizeIndexNameForAliasAndVersion(
-        TEST_INDEX,
-        TO_VERSION
-      )
+    assertThat(
+      restClient.indices().exists(
+        new GetIndexRequest().indices(TEST_INDEX).features(GetIndexRequest.Feature.ALIASES),
+        RequestOptions.DEFAULT
+      ),
+      is(true)
     );
-    assertThat(indexWithVersionResponse.getStatusLine().getStatusCode(), is(200));
+    final String versionedIndexName = getOptimizeIndexNameForAliasAndVersion(TEST_INDEX, TO_VERSION);
+    assertThat(
+      restClient.indices().exists(
+        new GetIndexRequest().indices(versionedIndexName).features(GetIndexRequest.Feature.MAPPINGS),
+        RequestOptions.DEFAULT
+      ),
+      is(true)
+    );
   }
 
   @Test
@@ -132,12 +141,10 @@ public class UpgradeVersionIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    Response response = restClient.getLowLevelClient().performRequest(GET, TEST_INDEX + SEARCH);
-    String bodyAsJson = EntityUtils.toString(response.getEntity());
-    String username = JsonPath.read(bodyAsJson, "$.hits.hits[0]._source.username");
-    assertThat(username, is("admin"));
-    String password = JsonPath.read(bodyAsJson, "$.hits.hits[0]._source.password");
-    assertThat(password, is("admin"));
+    final SearchResponse searchResponse = restClient.search(new SearchRequest(TEST_INDEX), RequestOptions.DEFAULT);
+    assertThat(searchResponse.getHits().getHits().length, is(1));
+    assertThat(searchResponse.getHits().getHits()[0].getSourceAsMap().get("username"), is("admin"));
+    assertThat(searchResponse.getHits().getHits()[0].getSourceAsMap().get("password"), is("admin"));
   }
 
   @Test
@@ -156,12 +163,10 @@ public class UpgradeVersionIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    Response response = restClient.getLowLevelClient().performRequest(GET, TEST_INDEX + SEARCH);
-    String bodyAsJson = EntityUtils.toString(response.getEntity());
-    String username = JsonPath.read(bodyAsJson, "$.hits.hits[0]._source.username");
-    assertThat(username, is("admin"));
-    String password = JsonPath.read(bodyAsJson, "$.hits.hits[0]._source.password");
-    assertThat(password, is("admin1"));
+    final SearchResponse searchResponse = restClient.search(new SearchRequest(TEST_INDEX), RequestOptions.DEFAULT);
+    assertThat(searchResponse.getHits().getHits().length, is(1));
+    assertThat(searchResponse.getHits().getHits()[0].getSourceAsMap().get("username"), is("admin"));
+    assertThat(searchResponse.getHits().getHits()[0].getSourceAsMap().get("password"), is("admin1"));
   }
 
   @Test
@@ -179,12 +184,10 @@ public class UpgradeVersionIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    try {
-      restClient.getLowLevelClient().performRequest(GET, TEST_INDEX + SEARCH);
-      fail("Should throw an exception, because index does not exist anymore!");
-    } catch (Exception ex) {
-      // expected
-    }
+    assertThat(
+      restClient.indices().exists(new GetIndexRequest().indices(TEST_INDEX), RequestOptions.DEFAULT),
+      is(false)
+    );
   }
 
   @Test
@@ -201,11 +204,15 @@ public class UpgradeVersionIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    Response response = restClient.getLowLevelClient().performRequest(GET, OPTIMIZE_METADATA + SEARCH);
-    String bodyAsJson = EntityUtils.toString(response.getEntity());
-    String actualSchemaVersion =
-      JsonPath.read(bodyAsJson, "$.hits.hits[0]._source." + MetadataType.SCHEMA_VERSION);
-    assertThat(actualSchemaVersion, is(TO_VERSION));
+    final SearchResponse searchResponse = restClient.search(
+      new SearchRequest(getOptimizeIndexAliasForType(METADATA_TYPE.getType())),
+      RequestOptions.DEFAULT
+    );
+    assertThat(searchResponse.getHits().getHits().length, is(1));
+    assertThat(
+      searchResponse.getHits().getHits()[0].getSourceAsMap().get(MetadataType.SCHEMA_VERSION),
+      is(TO_VERSION)
+    );
   }
 
   private InsertDataStep buildInsertDataStep() {

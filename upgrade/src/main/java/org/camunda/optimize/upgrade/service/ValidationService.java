@@ -1,21 +1,20 @@
 package org.camunda.optimize.upgrade.service;
 
-import com.jayway.jsonpath.JsonPath;
-import org.apache.http.util.EntityUtils;
+import org.camunda.optimize.service.es.schema.type.MetadataType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
-import org.elasticsearch.client.Response;
-import org.elasticsearch.client.RestClient;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_TYPE_SCHEMA_VERSION;
 
 
 public class ValidationService {
@@ -32,20 +31,19 @@ public class ValidationService {
     configurationService.validateNoDeprecatedConfigKeysUsed();
   }
 
-  public void validateVersions(RestClient restClient, String fromVersion, String toVersion) {
+  public void validateVersions(RestHighLevelClient restClient, String fromVersion, String toVersion) {
 
     try {
-      String metaDataIndex = getOptimizeIndexAliasForType(ElasticsearchConstants.METADATA_TYPE);
-      Response metadataResponse = restClient
-        .performRequest("GET", metaDataIndex + "/_search", Collections.emptyMap());
+      final SearchResponse metadataSearchResponse = restClient.search(
+        new SearchRequest(getOptimizeIndexAliasForType(ElasticsearchConstants.METADATA_TYPE)),
+        RequestOptions.DEFAULT
+      );
 
       String schemaVersion = null;
-      if (metadataResponse.getStatusLine().getStatusCode() == 200) {
-        String entityString = EntityUtils.toString(metadataResponse.getEntity());
-        Integer readTotal = JsonPath.read(entityString, "$.hits.total");
-        if (readTotal == 1) {
-          schemaVersion = JsonPath.read(entityString, "$.hits.hits[0]._source." + METADATA_TYPE_SCHEMA_VERSION);
-        }
+      if (metadataSearchResponse.getHits().getHits().length > 0) {
+        schemaVersion = (String) metadataSearchResponse.getHits().getHits()[0]
+          .getSourceAsMap()
+          .get(MetadataType.SCHEMA_VERSION);
       }
 
       if (!fromVersion.equals(schemaVersion)) {
@@ -72,12 +70,12 @@ public class ValidationService {
         configAvailable = true;
       }
     } catch (IOException e) {
-      logger.error("can't resolve " + ENVIRONMENT_CONFIG_FILE, e);
+      logger.error("Can't resolve " + ENVIRONMENT_CONFIG_FILE, e);
     }
 
     if (!configAvailable) {
       throw new UpgradeRuntimeException(
-        "The upgrade has to be executed from \"upgrade\" folder in the Optimize root directory!"
+        "Couldn't read " + ENVIRONMENT_CONFIG_FILE + " from environment folder in Optimize root!"
       );
     }
   }

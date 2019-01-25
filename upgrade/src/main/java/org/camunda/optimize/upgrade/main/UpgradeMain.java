@@ -2,7 +2,6 @@ package org.camunda.optimize.upgrade.main;
 
 import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
-import org.camunda.optimize.upgrade.main.impl.UpgradeFrom22To23;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom23To24;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom24To25;
 
@@ -27,7 +26,6 @@ public class UpgradeMain {
   private static Map<String, Upgrade> upgrades = new HashMap<>();
 
   static {
-    upgrades.put("2.3.0", new UpgradeFrom22To23());
     upgrades.put("2.4.0", new UpgradeFrom23To24());
     upgrades.put("2.5.0", new UpgradeFrom24To25());
   }

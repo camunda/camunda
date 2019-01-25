@@ -3,11 +3,15 @@ package org.camunda.optimize.upgrade.es;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpEntity;
 import org.apache.http.ProtocolVersion;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.message.BasicStatusLine;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -19,8 +23,7 @@ import java.io.IOException;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.Assert.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -30,23 +33,34 @@ public class EsIndexAdjusterIT {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @Mock
-  private RestClient restClient;
+  private RestHighLevelClient restClient;
+  @Mock
+  private RestClient lowLevelRestClient;
 
   @Mock
   private ConfigurationService configurationService;
 
+  @Before
+  public void init() {
+    when(restClient.getLowLevelClient()).thenReturn(lowLevelRestClient);
+  }
+
   @Test
   public void testFailOnReindexError() throws IOException {
     // given
-    final ESIndexAdjuster underTest = new ESIndexAdjuster(
-      restClient, configurationService
-    );
+    final ESIndexAdjuster underTest = new ESIndexAdjuster(restClient, configurationService);
     final String index1 = "index1";
     final String index2 = "index2";
     final String taskId = "12345";
 
     final Response esResponse = createEsResponse(new ReindexTaskResponse(taskId));
-    when(restClient.performRequest(eq("POST"), eq("_reindex"), any(), any(), any())).thenReturn(esResponse);
+    when(lowLevelRestClient.performRequest(
+      argThat(argument ->
+                argument != null
+                  && argument.getMethod().equals(HttpPost.METHOD_NAME)
+                  && argument.getEndpoint().equals("_reindex")
+      )
+    )).thenReturn(esResponse);
 
     // the task response contains an error
     final TaskResponse taskResponseWithError = new TaskResponse(
@@ -55,7 +69,13 @@ public class EsIndexAdjusterIT {
       new TaskResponse.Error("error", "failed hard", "reindex")
     );
     final Response taskStatusResponse = createEsResponse(taskResponseWithError);
-    when(restClient.performRequest(eq("GET"), eq("_tasks/" + taskId))).thenReturn(taskStatusResponse);
+    when(lowLevelRestClient.performRequest(
+      argThat(argument ->
+                argument != null
+                  && argument.getMethod().equals(HttpGet.METHOD_NAME)
+                  && argument.getEndpoint().equals("_tasks/" + taskId)
+      )
+    )).thenReturn(taskStatusResponse);
 
     // when I execute a reindex
     UpgradeRuntimeException expectedException = null;

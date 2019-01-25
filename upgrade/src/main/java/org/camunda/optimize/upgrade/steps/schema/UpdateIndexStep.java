@@ -32,11 +32,11 @@ public class UpdateIndexStep implements UpgradeStep {
     final String sourceIndexName = getOptimizeIndexNameForAliasAndVersion(indexAlias, sourceVersionAsString);
     final String targetIndexName = getOptimizeIndexNameForAliasAndVersion(indexAlias, targetVersionAsString);
 
-    String indexMappings = esIndexAdjuster.getIndexMappings(sourceIndexName);
-    indexMappings = customMapping != null ? customMapping : indexMappings;
+    String indexSettingsAndMappings = esIndexAdjuster.getIndexMappings(sourceIndexName);
+    indexSettingsAndMappings = customMapping != null ? customMapping : indexSettingsAndMappings;
 
     // create new index and reindex data to it
-    esIndexAdjuster.createIndex(targetIndexName, indexMappings);
+    esIndexAdjuster.createIndex(targetIndexName, indexSettingsAndMappings);
     esIndexAdjuster.reindex(sourceIndexName, targetIndexName, typeName, typeName);
     esIndexAdjuster.addAlias(targetIndexName, indexAlias);
     esIndexAdjuster.deleteIndex(sourceIndexName);

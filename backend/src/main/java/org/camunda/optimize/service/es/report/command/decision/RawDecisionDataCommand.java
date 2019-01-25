@@ -13,6 +13,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
+import org.elasticsearch.search.sort.NestedSortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 
@@ -97,8 +98,7 @@ public class RawDecisionDataCommand extends DecisionReportCommand<RawDataDecisio
         SortBuilders.fieldSort(sortByField).order(sortOrder)
           // this ensures the query doesn't fail on unknown properties but just ignores them
           // this is done to ensure consistent behavior compared to unknown variable names as ES doesn't fail there
-          // https://www.elastic.co/guide/en/elasticsearch/reference/6.0/search-request-sort
-          // .html#_ignoring_unmapped_fields
+          // https://www.elastic.co/guide/en/elasticsearch/reference/6.0/search-request-sort.html#_ignoring_unmapped_fields
           .unmappedType("short")
       );
     }
@@ -143,8 +143,10 @@ public class RawDecisionDataCommand extends DecisionReportCommand<RawDataDecisio
 
     return SortBuilders
       .fieldSort(variableValuePath)
-      .setNestedPath(variablePath)
-      .setNestedFilter(termQuery(variableIdPath, inputVariableId))
+      .setNestedSort(
+        new NestedSortBuilder(variablePath)
+          .setFilter(termQuery(variableIdPath, inputVariableId))
+      )
       .order(sortOrder);
   }
 

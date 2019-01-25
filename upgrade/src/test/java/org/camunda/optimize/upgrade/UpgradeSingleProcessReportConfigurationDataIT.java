@@ -1,17 +1,12 @@
 package org.camunda.optimize.upgrade;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.query.report.configuration.ReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.configuration.heatmap_target_value.HeatmapTargetValueEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.configuration.target_value.TargetValueUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.type.report.AbstractReportType;
 import org.camunda.optimize.service.es.schema.type.report.SingleProcessReportType;
-import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
@@ -31,7 +26,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
-import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEmptyEnvConfig;
 import static org.camunda.optimize.upgrade.util.SchemaUpgradeUtil.getDefaultReportConfigurationAsMap;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -58,30 +52,16 @@ public class UpgradeSingleProcessReportConfigurationDataIT extends AbstractUpgra
   private static final String REPORT_23_COUNT_PI_FREQUENCY_GROUP_BY_NONE_TARGETVALUE = "cde03d27-7c50-4a4f-a8b8-528c7aefc928";
   private static final String REPORT_24_PI_DURATION_GROUP_BY_NONE_TARGETVALUE = "6afd9f54-de24-4499-b9d8-c90010ebf3ca";
 
-  private ObjectMapper objectMapper;
-
   @Before
-  public void init() throws Exception {
-    objectMapper = new ObjectMapperFactory(
-      new OptimizeDateTimeFormatterFactory().getObject(),
-      new ConfigurationService()
-    ).createOptimizeMapper();
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
 
-    initClient();
-    cleanAllDataFromElasticsearch();
-
-    final ElasticSearchSchemaManager elasticSearchSchemaManager = new ElasticSearchSchemaManager(
-      new ConfigurationService(),
-      Lists.newArrayList(SINGLE_PROCESS_REPORT_TYPE),
-      objectMapper
-    );
-    elasticSearchSchemaManager.initializeSchema(restClient);
+    initSchema(Lists.newArrayList(METADATA_TYPE, SINGLE_PROCESS_REPORT_TYPE));
 
     addVersionToElasticsearch(FROM_VERSION);
 
     executeBulk("steps/configuration_upgrade/23-single-process-report-bulk");
-
-    createEmptyEnvConfig();
   }
 
   @Test

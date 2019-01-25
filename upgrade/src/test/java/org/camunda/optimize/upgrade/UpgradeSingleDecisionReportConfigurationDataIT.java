@@ -1,15 +1,10 @@
 package org.camunda.optimize.upgrade;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.query.report.configuration.ReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.type.report.AbstractReportType;
 import org.camunda.optimize.service.es.schema.type.report.SingleDecisionReportType;
-import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.document.UpgradeSingleDecisionReportSettingsFrom23Step;
@@ -22,7 +17,6 @@ import org.junit.Test;
 import java.io.IOException;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
-import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEmptyEnvConfig;
 import static org.camunda.optimize.upgrade.util.SchemaUpgradeUtil.getDefaultReportConfigurationAsMap;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -36,30 +30,16 @@ public class UpgradeSingleDecisionReportConfigurationDataIT extends AbstractUpgr
 
   private static final String REPORT_ID = "683633bb-4c71-4c3e-a6b9-9d870f064ae9";
 
-  private ObjectMapper objectMapper;
-
   @Before
-  public void init() throws Exception {
-    objectMapper = new ObjectMapperFactory(
-      new OptimizeDateTimeFormatterFactory().getObject(),
-      new ConfigurationService()
-    ).createOptimizeMapper();
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
 
-    initClient();
-    cleanAllDataFromElasticsearch();
-
-    final ElasticSearchSchemaManager elasticSearchSchemaManager = new ElasticSearchSchemaManager(
-      new ConfigurationService(),
-      Lists.newArrayList(SINGLE_DECISION_REPORT_TYPE),
-      objectMapper
-    );
-    elasticSearchSchemaManager.initializeSchema(restClient);
+    initSchema(Lists.newArrayList(METADATA_TYPE, SINGLE_DECISION_REPORT_TYPE));
 
     addVersionToElasticsearch(FROM_VERSION);
 
     executeBulk("steps/configuration_upgrade/23-single-decision-report-bulk");
-
-    createEmptyEnvConfig();
   }
 
   @Test

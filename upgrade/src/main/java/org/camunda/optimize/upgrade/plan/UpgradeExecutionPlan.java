@@ -7,7 +7,7 @@ import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.camunda.optimize.upgrade.service.ValidationService;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
-import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +21,7 @@ public class UpgradeExecutionPlan implements UpgradePlan {
 
   private Logger logger = LoggerFactory.getLogger(getClass());
 
-  private RestClient client;
+  private RestHighLevelClient client;
   private ConfigurationService configurationService;
   private List<UpgradeStep> upgradeSteps = new ArrayList<>();
   private String fromVersion;
@@ -35,7 +35,7 @@ public class UpgradeExecutionPlan implements UpgradePlan {
     validationService = new ValidationService(configurationService);
     validationService.validateConfiguration();
 
-    client = ElasticsearchHighLevelRestClientBuilder.build(configurationService).getLowLevelClient();
+    client = ElasticsearchHighLevelRestClientBuilder.build(configurationService);
   }
 
   @Override

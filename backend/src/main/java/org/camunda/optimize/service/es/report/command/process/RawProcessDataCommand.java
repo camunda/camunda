@@ -12,6 +12,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.NestedSortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 
@@ -91,11 +92,10 @@ public class RawProcessDataCommand extends ProcessReportCommand<RawDataProcessRe
         searchSourceBuilder.sort(
           SortBuilders
             .fieldSort(variableField + "." + VARIABLE_VALUE)
-            .setNestedPath(variableField)
-            .setNestedFilter(
-              termQuery(variableField + "." + VARIABLE_NAME, variableName)
-            )
-            .order(sortOrder)
+            .setNestedSort(
+              new NestedSortBuilder(variableField)
+                .setFilter(termQuery(variableField + "." + VARIABLE_NAME, variableName))
+            ).order(sortOrder)
         );
       }
     } else {

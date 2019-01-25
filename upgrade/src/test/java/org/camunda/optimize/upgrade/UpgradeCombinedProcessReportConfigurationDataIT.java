@@ -1,6 +1,5 @@
 package org.camunda.optimize.upgrade;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
@@ -10,13 +9,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisu
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewOperation;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
-import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.type.report.AbstractReportType;
 import org.camunda.optimize.service.es.schema.type.report.CombinedReportType;
 import org.camunda.optimize.service.es.schema.type.report.SingleProcessReportType;
-import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.document.UpgradeCombinedReportSettingsFrom23Step;
@@ -35,7 +31,6 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
-import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEmptyEnvConfig;
 import static org.camunda.optimize.upgrade.util.ReportUtil.buildSingleReportIdToVisualizationAndViewMap;
 import static org.camunda.optimize.upgrade.util.SchemaUpgradeUtil.getDefaultReportConfigurationAsMap;
 import static org.hamcrest.CoreMatchers.is;
@@ -56,31 +51,17 @@ public class UpgradeCombinedProcessReportConfigurationDataIT extends AbstractUpg
   private static final String REPORT_222_ID_BAR_DURATION_TARGETVALUE = "a1531a9b-f667-4338-b050-7e81df642c10";
   private static final String REPORT_222_ID_NUMBER_DURATION_TARGETVALUE = "e762ea28-2f90-4038-8884-c4780170bd49";
 
-  private ObjectMapper objectMapper;
-
   @Before
-  public void init() throws Exception {
-    objectMapper = new ObjectMapperFactory(
-      new OptimizeDateTimeFormatterFactory().getObject(),
-      new ConfigurationService()
-    ).createOptimizeMapper();
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
 
-    initClient();
-    cleanAllDataFromElasticsearch();
-
-    final ElasticSearchSchemaManager elasticSearchSchemaManager = new ElasticSearchSchemaManager(
-      new ConfigurationService(),
-      Lists.newArrayList(SINGLE_PROCESS_REPORT_TYPE, COMBINED_REPORT_TYPE),
-      objectMapper
-    );
-    elasticSearchSchemaManager.initializeSchema(restClient);
+    initSchema(Lists.newArrayList(METADATA_TYPE, SINGLE_PROCESS_REPORT_TYPE, COMBINED_REPORT_TYPE));
 
     addVersionToElasticsearch(FROM_VERSION);
 
     executeBulk("steps/configuration_upgrade/23-single-process-report-bulk");
     executeBulk("steps/configuration_upgrade/23-combined-report-bulk");
-
-    createEmptyEnvConfig();
   }
 
   @Test
