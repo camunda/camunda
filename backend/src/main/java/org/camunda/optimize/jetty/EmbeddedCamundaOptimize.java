@@ -126,6 +126,9 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     sslContextFactory.setKeyStorePath(keystoreLocation);
     sslContextFactory.setKeyStorePassword(keystorePass);
     sslContextFactory.setKeyManagerPassword(keystorePass);
+    // not relevant for server setup but otherwise we get a warning on startup
+    // see https://github.com/eclipse/jetty.project/issues/3049
+    sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
 
     ServerConnector sslConnector = new ServerConnector(server,
         new SslConnectionFactory(sslContextFactory, PROTOCOL),
