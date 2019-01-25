@@ -167,10 +167,22 @@ export default class Instance extends Component {
   detectChangesPoll = async () => {
     const {id, state, activities, operations} = this.state.instance;
     const newInstance = await api.fetchWorkflowInstance(id);
+
+    // hasNewState: for example, instance goes from ACTIVE to COMPLETED
+    const hasNewState = newInstance.state !== state;
+
+    // hasNewActivities: for example: Start Retry on instance with incident and state=ACTIVE,
+    // and Retry is successful; state is still ACTIVE, but instance.activities changed
+    const hasNewActivities = !isEqual(newInstance.activities, activities);
+
+    // hasNewOperations: for example: Start Retry on instance with incident and state=ACTIVE,
+    // and retry failed; state is still ACTIVE, activities didn't chage (node is still with incident),
+    // only instance.operations has info about change
+    // check all operations as order is not guarenteed when user clicks multiple buttons
+    const hasNewOperations = !isEqual(newInstance.operations, operations);
+
     const hasInstanceChanged =
-      newInstance.state !== state ||
-      !isEqual(newInstance.activities, activities) ||
-      !isEqual(newInstance.operations, operations);
+      hasNewState || hasNewActivities || hasNewOperations;
 
     hasInstanceChanged
       ? this.setState({instance: newInstance}, () => {
