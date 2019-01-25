@@ -1,5 +1,9 @@
 package org.camunda.optimize.service.export;
 
+import org.camunda.optimize.dto.optimize.query.report.VariableType;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 
 import java.time.OffsetDateTime;
@@ -14,26 +18,76 @@ public class RawDataHelper {
   public static final String FIXED_TIME_VARIABLE = "2018-02-23T12:31:08.048+01:00";
 
   public static List<RawDataProcessInstanceDto> getRawDataProcessInstanceDtos() {
-    List<RawDataProcessInstanceDto> toMap = new ArrayList<>();
-    RawDataProcessInstanceDto instance_1 = new RawDataProcessInstanceDto();
-    instance_1.setProcessDefinitionId("test_id");
-    instance_1.setProcessDefinitionKey("test_key");
-    instance_1.setStartDate(OffsetDateTime.parse(FIXED_TIME));
-    instance_1.setEndDate(OffsetDateTime.parse(FIXED_TIME));
-    instance_1.setBusinessKey("aBusinessKey");
-    Map<String, Object> vars_1 = new HashMap<>();
-    vars_1.put("1", "test");
-    instance_1.setVariables(vars_1);
-    toMap.add(instance_1);
+    final List<RawDataProcessInstanceDto> toMap = new ArrayList<>();
 
-    RawDataProcessInstanceDto instance_2 = new RawDataProcessInstanceDto();
-    Map<String, Object> vars_2 = new HashMap<>();
-    vars_2.put("2", OffsetDateTime.parse(FIXED_TIME_VARIABLE));
-    instance_2.setVariables(vars_2);
-    toMap.add(instance_2);
+    final RawDataProcessInstanceDto instance1 = new RawDataProcessInstanceDto();
+    instance1.setProcessDefinitionId("test_id");
+    instance1.setProcessDefinitionKey("test_key");
+    instance1.setStartDate(OffsetDateTime.parse(FIXED_TIME));
+    instance1.setEndDate(OffsetDateTime.parse(FIXED_TIME));
+    instance1.setBusinessKey("aBusinessKey");
 
-    RawDataProcessInstanceDto instance_3 = new RawDataProcessInstanceDto();
-    toMap.add(instance_3);
+    final Map<String, Object> variables1 = new HashMap<>();
+    variables1.put("1", "test");
+    instance1.setVariables(variables1);
+    toMap.add(instance1);
+
+    final RawDataProcessInstanceDto instance2 = new RawDataProcessInstanceDto();
+    final Map<String, Object> variables2 = new HashMap<>();
+    variables2.put("2", OffsetDateTime.parse(FIXED_TIME_VARIABLE));
+    instance2.setVariables(variables2);
+    toMap.add(instance2);
+
+    final RawDataProcessInstanceDto instance3 = new RawDataProcessInstanceDto();
+    toMap.add(instance3);
+
+    return toMap;
+  }
+
+  public static List<RawDataDecisionInstanceDto> getRawDataDecisionInstanceDtos() {
+    final List<RawDataDecisionInstanceDto> toMap = new ArrayList<>();
+
+    final RawDataDecisionInstanceDto instance1 = new RawDataDecisionInstanceDto();
+    toMap.add(instance1);
+    instance1.setDecisionDefinitionId("test_id");
+    instance1.setDecisionDefinitionKey("test_key");
+    instance1.setEvaluationDateTime(OffsetDateTime.parse(FIXED_TIME));
+
+    final Map<String, InputVariableEntry> inputs = new HashMap<>();
+    inputs.put("1", new InputVariableEntry("1", "1", VariableType.BOOLEAN, "true"));
+    inputs.put("2", new InputVariableEntry("2", "2", VariableType.DATE, FIXED_TIME_VARIABLE));
+    inputs.put("3", new InputVariableEntry("3", "3", VariableType.DOUBLE, "3.3"));
+    inputs.put("4", new InputVariableEntry("4", "4", VariableType.INTEGER, "1"));
+    inputs.put("5", new InputVariableEntry("5", "5", VariableType.LONG, "1000"));
+    inputs.put("6", new InputVariableEntry("6", "6", VariableType.SHORT, "1"));
+    inputs.put("7", new InputVariableEntry("7", "7", VariableType.STRING, "hello"));
+    instance1.setInputVariables(inputs);
+
+    final Map<String, OutputVariableEntry> outputs = new HashMap<>();
+    outputs.put("1", new OutputVariableEntry("1", "1", VariableType.BOOLEAN, "true"));
+    outputs.put("2", new OutputVariableEntry("2", "2", VariableType.BOOLEAN, "true", "false"));
+    outputs.put("3", new OutputVariableEntry("3", "3", VariableType.DATE, FIXED_TIME_VARIABLE));
+    outputs.put("4", new OutputVariableEntry("4", "4", VariableType.DATE, FIXED_TIME_VARIABLE, FIXED_TIME_VARIABLE));
+    outputs.put("5", new OutputVariableEntry("5", "5", VariableType.DOUBLE, "3.3"));
+    outputs.put("6", new OutputVariableEntry("6", "6", VariableType.DOUBLE, "3.3", "4.4"));
+    outputs.put("7", new OutputVariableEntry("7", "7", VariableType.INTEGER, "1"));
+    outputs.put("8", new OutputVariableEntry("8", "8", VariableType.INTEGER, "1", "2"));
+    outputs.put("9", new OutputVariableEntry("9", "9", VariableType.LONG, "1000"));
+    outputs.put("10", new OutputVariableEntry("10", "10", VariableType.LONG, "1000", "2000"));
+    outputs.put("11", new OutputVariableEntry("11", "11", VariableType.SHORT, "1"));
+    outputs.put("12", new OutputVariableEntry("12", "12", VariableType.SHORT, "1", "2"));
+    outputs.put("13", new OutputVariableEntry("13", "13", VariableType.STRING, "hello"));
+    outputs.put("14", new OutputVariableEntry("14", "14", VariableType.STRING, "hello1", "hello2"));
+    instance1.setOutputVariables(outputs);
+
+    final RawDataDecisionInstanceDto instance2 = new RawDataDecisionInstanceDto();
+    instance2.setInputVariables(inputs);
+    instance2.setOutputVariables(outputs);
+    toMap.add(instance2);
+
+    final RawDataDecisionInstanceDto instance3 = new RawDataDecisionInstanceDto();
+    toMap.add(instance3);
+
     return toMap;
   }
 }

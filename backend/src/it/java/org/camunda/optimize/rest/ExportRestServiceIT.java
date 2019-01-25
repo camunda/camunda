@@ -3,14 +3,18 @@ package org.camunda.optimize.rest;
 import org.apache.commons.io.IOUtils;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.util.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -37,19 +41,18 @@ public class ExportRestServiceIT {
 
   @Rule
   public RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule)
-      .around(engineRule)
-      .around(embeddedOptimizeRule);
-
+    .outerRule(elasticSearchRule)
+    .around(engineRule)
+    .around(embeddedOptimizeRule);
 
   @Test
   public void exportWithoutAuthorization() {
     // when
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .withoutAuthentication()
-            .buildCsvExportRequest("fake_id", "my_file.csv")
-            .execute();
+      .getRequestExecutor()
+      .withoutAuthentication()
+      .buildCsvExportRequest("fake_id", "my_file.csv")
+      .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(307));
@@ -57,38 +60,61 @@ public class ExportRestServiceIT {
   }
 
   @Test
-  public void exportExistingReportWithoutFilename() {
+  public void exportExistingRawProcessReportWithoutFilename() {
     //given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
-    String reportId = createAndStoreDefaultValidReportDefinition(
-        processInstance.getProcessDefinitionKey(),
-        processInstance.getProcessDefinitionVersion()
+    String reportId = createAndStoreDefaultValidRawProcessReportDefinition(
+      processInstance.getProcessDefinitionKey(),
+      processInstance.getProcessDefinitionVersion()
     );
 
     // when
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCsvExportRequest(reportId, "")
-            .execute();
+      .getRequestExecutor()
+      .buildCsvExportRequest(reportId, "")
+      .execute();
 
     // then
     assertThat(response.getStatus(), is(404));
   }
 
   @Test
-  public void exportExistingReport() throws IOException {
+  public void exportExistingRawProcessReport() throws IOException {
     //given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
-    String reportId = createAndStoreDefaultValidReportDefinition(
-        processInstance.getProcessDefinitionKey(),
-        processInstance.getProcessDefinitionVersion()
+    String reportId = createAndStoreDefaultValidRawProcessReportDefinition(
+      processInstance.getProcessDefinitionKey(),
+      processInstance.getProcessDefinitionVersion()
     );
 
     // when
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCsvExportRequest(reportId, "my_file.csv")
-            .execute();
+      .getRequestExecutor()
+      .buildCsvExportRequest(reportId, "my_file.csv")
+      .execute();
+
+    // then
+    assertThat(response.getStatus(), is(200));
+    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    IOUtils.copy(response.readEntity(InputStream.class), bos);
+    byte[] result = bos.toByteArray();
+    assertThat(result.length, is(not(0)));
+  }
+
+  @Test
+  public void exportExistingRawDecisionReport() throws IOException {
+    //given
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineRule.deployAndStartDecisionDefinition();
+    String reportId = createAndStoreDefaultValidRawDecisionReportDefinition(
+      decisionDefinitionEngineDto.getKey(),
+      String.valueOf(decisionDefinitionEngineDto.getVersion())
+    );
+
+    // when
+    Response response = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCsvExportRequest(reportId, "my_file.csv")
+      .execute();
 
     // then
     assertThat(response.getStatus(), is(200));
@@ -103,15 +129,15 @@ public class ExportRestServiceIT {
     //given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     String reportId = createAndStoreDefaultInvalidReportDefinition(
-            processInstance.getProcessDefinitionKey(),
-            processInstance.getProcessDefinitionVersion()
+      processInstance.getProcessDefinitionKey(),
+      processInstance.getProcessDefinitionVersion()
     );
 
     // when
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCsvExportRequest(reportId, "my_file.csv")
-            .execute();
+      .getRequestExecutor()
+      .buildCsvExportRequest(reportId, "my_file.csv")
+      .execute();
 
     // then
     assertThat(response.getStatus(), is(500));
@@ -122,29 +148,62 @@ public class ExportRestServiceIT {
   public void exportNotExistingReport() {
     // when
     Response response =
-        embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCsvExportRequest("UFUK", "IGDE.csv")
-            .execute();
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildCsvExportRequest("UFUK", "IGDE.csv")
+        .execute();
     // then
     assertThat(response.getStatus(), is(404));
   }
 
-  private String createAndStoreDefaultValidReportDefinition(String processDefinitionKey, String processDefinitionVersion) {
-    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper
-            .createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+  @Test
+  public void unsupportedReportResultHasNoCSV() {
+    //given
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
-    return createAndStoreDefaultReportDefinition(reportData);
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    ProcessReportDataDto currentReport = ProcessReportDataBuilderHelper.createAvgPiDurationAsNumberGroupByNone(
+      processInstance.getProcessDefinitionKey(),processInstance.getProcessDefinitionVersion());
+    String reportId = createAndStoreDefaultProcessReportDefinition(currentReport);
+
+    // when
+    Response response = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCsvExportRequest(reportId, "my_file.csv")
+      .execute();
+
+    // then
+    assertThat(response.getStatus(), is(404));
   }
 
-  private String createAndStoreDefaultInvalidReportDefinition(String processDefinitionKey, String processDefinitionVersion) {
+  private String createAndStoreDefaultValidRawProcessReportDefinition(String processDefinitionKey,
+                                                                      String processDefinitionVersion) {
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper
-            .createCountFlowNodeFrequencyGroupByFlowNodeNumber(processDefinitionKey, processDefinitionVersion);
+      .createProcessReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
 
-    return createAndStoreDefaultReportDefinition(reportData);
+    return createAndStoreDefaultProcessReportDefinition(reportData);
   }
 
-  private String createAndStoreDefaultReportDefinition(ProcessReportDataDto reportData) {
+  private String createAndStoreDefaultValidRawDecisionReportDefinition(String decisionDefinitionKey,
+                                                                       String decisionDefinitionVersion) {
+    DecisionReportDataDto reportData = DecisionReportDataBuilder.createDecisionReportDataViewRawAsTable(
+      decisionDefinitionKey, decisionDefinitionVersion
+    );
+
+    return createAndStoreDefaultDecisionReportDefinition(reportData);
+  }
+
+  private String createAndStoreDefaultInvalidReportDefinition(String processDefinitionKey,
+                                                              String processDefinitionVersion) {
+    ProcessReportDataDto reportData = ProcessReportDataBuilderHelper
+      .createCountFlowNodeFrequencyGroupByFlowNodeNumber(processDefinitionKey, processDefinitionVersion);
+
+    return createAndStoreDefaultProcessReportDefinition(reportData);
+  }
+
+  private String createAndStoreDefaultProcessReportDefinition(ProcessReportDataDto reportData) {
     String id = createNewProcessReport();
 
     SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
@@ -160,21 +219,44 @@ public class ExportRestServiceIT {
     return id;
   }
 
+  private String createAndStoreDefaultDecisionReportDefinition(DecisionReportDataDto decisionReportDataDto) {
+    String id = addEmptyDecisionReportToOptimize();
+    SingleDecisionReportDefinitionDto report = new SingleDecisionReportDefinitionDto();
+    report.setData(decisionReportDataDto);
+    report.setId(id);
+    report.setLastModifier("something");
+    report.setName("something");
+    OffsetDateTime someDate = OffsetDateTime.now().plusHours(1);
+    report.setCreated(someDate);
+    report.setLastModified(someDate);
+    report.setOwner("something");
+    updateReport(id, report);
+    return id;
+  }
+
+  private String addEmptyDecisionReportToOptimize() {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateSingleDecisionReportRequest()
+      .execute(IdDto.class, 200)
+      .getId();
+  }
+
   private void updateReport(String id, ReportDefinitionDto updatedReport) {
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildUpdateReportRequest(id, updatedReport)
-            .execute();
+      .getRequestExecutor()
+      .buildUpdateReportRequest(id, updatedReport)
+      .execute();
     assertThat(response.getStatus(), is(204));
   }
 
 
   private String createNewProcessReport() {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateSingleProcessReportRequest()
-            .execute(IdDto.class, 200)
-            .getId();
+      .getRequestExecutor()
+      .buildCreateSingleProcessReportRequest()
+      .execute(IdDto.class, 200)
+      .getId();
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleProcess() {
@@ -183,10 +265,10 @@ public class ExportRestServiceIT {
 
   private ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables) {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-        .name("aProcessName")
-        .startEvent()
-        .endEvent()
-        .done();
+      .name("aProcessName")
+      .startEvent()
+      .endEvent()
+      .done();
     return engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
 }

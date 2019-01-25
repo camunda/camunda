@@ -27,6 +27,7 @@ import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUser;
 @Secured
 @Component
 public class ExportRestService {
+
   @Autowired
   private ExportService exportService;
 
@@ -34,23 +35,25 @@ public class ExportRestService {
   // octet stream on success, json on potential error
   @Produces(value = {MediaType.APPLICATION_OCTET_STREAM, MediaType.APPLICATION_JSON})
   @Path("csv/{reportId}/{fileName}")
-  public Response getCsvReport(
-    @Context ContainerRequestContext requestContext,
-    @PathParam("reportId") String reportId,
-    @PathParam("fileName") String fileName,
-    @QueryParam("excludedColumns") String excludedColumnsString
-  ) {
-    String userId = getRequestUser(requestContext);
-    String resultFileName = fileName == null ? System.currentTimeMillis() + ".csv" : fileName;
-    Set<String> excludedColumns = Optional.ofNullable(excludedColumnsString)
+  public Response getCsvReport(@Context ContainerRequestContext requestContext,
+                               @PathParam("reportId") String reportId,
+                               @PathParam("fileName") String fileName,
+                               @QueryParam("excludedColumns") String excludedColumnsString) {
+    final String userId = getRequestUser(requestContext);
+    final String resultFileName = fileName == null ? System.currentTimeMillis() + ".csv" : fileName;
+    final Set<String> excludedColumns = Optional.ofNullable(excludedColumnsString)
       .map(strings -> Arrays.stream(strings.split(",")).collect(Collectors.toSet()))
       .orElse(Collections.emptySet());
 
-    return Response
-      .ok(
-        exportService.getCSVForReport(userId, reportId, excludedColumns),
-        MediaType.APPLICATION_OCTET_STREAM
-      ).header("Content-Disposition", "attachment; filename=" + resultFileName)
-      .build();
+    final Optional<byte[]> csvForReport = 
+      exportService.getCsvBytesForEvaluatedReportResult(userId, reportId, excludedColumns);
+
+    return csvForReport
+      .map(csvBytes -> Response
+        .ok(csvBytes, MediaType.APPLICATION_OCTET_STREAM)
+        .header("Content-Disposition", "attachment; filename=" + resultFileName)
+        .build()
+      )
+      .orElse(Response.status(Response.Status.NOT_FOUND).build());
   }
 }

@@ -1,31 +1,82 @@
 package org.camunda.optimize.service.export;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
+import java.util.Collections;
+import java.util.Optional;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
-
+@RunWith(MockitoJUnitRunner.class)
 public class ExportServiceTest {
 
-  @Test
-  public void writeRawDataToBytes() throws IOException {
-    //given
-    ExportService exportService = new ExportService();
-    List<RawDataProcessInstanceDto> toMap = RawDataHelper.getRawDataProcessInstanceDtos();
+  @Mock
+  private AuthorizationCheckReportEvaluationHandler reportService;
 
-    byte[] csvContent = exportService.writeRawDataToBytes(toMap);
+  @Mock
+  private ConfigurationService configurationService;
 
-    Path path = Paths.get(this.getClass().getResource("/csv/raw_data.csv").getPath());
-    byte[] expectedContent = Files.readAllBytes(path);;
+  @InjectMocks
+  private ExportService exportService;
 
-    assertArrayEquals(csvContent, expectedContent);
+  @Before
+  public void init() {
+    when(configurationService.getExportCsvLimit()).thenReturn(100);
+    when(configurationService.getExportCsvOffset()).thenReturn(0);
   }
+
+  @Test
+  public void rawProcessReportCsvExport() throws IOException {
+    // given
+    final RawDataProcessReportResultDto rawDataProcessReportResultDto = new RawDataProcessReportResultDto();
+    rawDataProcessReportResultDto.setResult(RawDataHelper.getRawDataProcessInstanceDtos());
+    when(reportService.evaluateSavedReport(any(), any())).thenReturn(rawDataProcessReportResultDto);
+
+    // when
+    Optional<byte[]> csvContent = exportService.getCsvBytesForEvaluatedReportResult("", "", Collections.emptySet());
+
+    assertThat(csvContent.isPresent(), is(true));
+
+    byte[] expectedContent = readFileFromClasspath("/csv/raw_process_data.csv");
+    assertThat(csvContent.get(), is(expectedContent));
+  }
+
+  @Test
+  public void rawDecisionReportCsvExport() throws IOException {
+    // given
+    final RawDataDecisionReportResultDto rawDataDecisionReportResultDto = new RawDataDecisionReportResultDto();
+    rawDataDecisionReportResultDto.setResult(RawDataHelper.getRawDataDecisionInstanceDtos());
+    when(reportService.evaluateSavedReport(any(), any())).thenReturn(rawDataDecisionReportResultDto);
+
+    // when
+    Optional<byte[]> csvContent = exportService.getCsvBytesForEvaluatedReportResult("", "", Collections.emptySet());
+
+    assertThat(csvContent.isPresent(), is(true));
+
+    byte[] expectedContent = readFileFromClasspath("/csv/raw_decision_data.csv");
+    assertThat(csvContent.get(), is(expectedContent));
+  }
+
+  private byte[] readFileFromClasspath(final String s) throws IOException {
+    Path path = Paths.get(this.getClass().getResource(s).getPath());
+    return Files.readAllBytes(path);
+  }
+
 
 }
