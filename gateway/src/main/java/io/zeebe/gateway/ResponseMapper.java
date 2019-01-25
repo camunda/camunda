@@ -18,7 +18,7 @@ package io.zeebe.gateway;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsArray;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import io.zeebe.gateway.cmd.ClientException;
+import io.zeebe.gateway.cmd.UnknownPartitionRoleException;
 import io.zeebe.gateway.impl.data.MsgPackConverter;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
@@ -41,7 +41,6 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadResponse;
 import io.zeebe.msgpack.value.LongValue;
 import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
-import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto.BrokerDto;
 import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto.PartitionDto;
 import io.zeebe.protocol.impl.data.repository.WorkflowMetadataAndResource;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -57,19 +56,14 @@ public class ResponseMapper {
 
   private static final MsgPackConverter MSG_PACK_CONVERTER = new MsgPackConverter();
 
-  private static PartitionBrokerRole remapPartitionBrokerRoleEnum(
-      final BrokerDto brokerDto, final PartitionDto partition) {
+  private static PartitionBrokerRole remapPartitionBrokerRoleEnum(final PartitionDto partition) {
     switch (partition.getState()) {
       case LEADER:
         return PartitionBrokerRole.LEADER;
       case FOLLOWER:
         return PartitionBrokerRole.FOLLOWER;
       default:
-        throw new ClientException(
-            "Unknown broker role in response for partition "
-                + partition
-                + " on broker "
-                + brokerDto);
+        throw new UnknownPartitionRoleException(partition.getPartitionId(), partition.getState());
     }
   }
 
@@ -98,7 +92,7 @@ public class ResponseMapper {
                       partition -> {
                         final Partition.Builder partitionBuilder = Partition.newBuilder();
                         partitionBuilder.setPartitionId(partition.getPartitionId());
-                        partitionBuilder.setRole(remapPartitionBrokerRoleEnum(broker, partition));
+                        partitionBuilder.setRole(remapPartitionBrokerRoleEnum(partition));
                         brokerInfo.addPartitions(partitionBuilder);
                       });
 

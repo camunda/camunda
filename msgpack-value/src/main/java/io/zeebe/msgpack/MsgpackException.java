@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.cmd;
+package io.zeebe.msgpack;
 
-public class ClientException extends RuntimeException {
-  private static final long serialVersionUID = 1L;
+public class MsgpackException extends RuntimeException {
+  public MsgpackException() {}
 
-  public ClientException(Throwable cause) {
-    super(cause);
-  }
-
-  public ClientException(String message) {
+  public MsgpackException(String message) {
     super(message);
   }
 
-  public ClientException(String message, Throwable cause) {
+  public MsgpackException(String message, Throwable cause) {
     super(message, cause);
+  }
+
+  public MsgpackException(Throwable cause) {
+    super(cause);
   }
 }

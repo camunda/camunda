@@ -13,20 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.cmd;
+package io.zeebe.gateway.cmd;
 
-public class ClientException extends RuntimeException {
-  private static final long serialVersionUID = 1L;
+public class NoTopologyAvailableException extends ClientException {
+  private static final long serialVersionUID = 7035483927294101779L;
 
-  public ClientException(Throwable cause) {
-    super(cause);
-  }
-
-  public ClientException(String message) {
+  public NoTopologyAvailableException(String message) {
     super(message);
   }
 
-  public ClientException(String message, Throwable cause) {
+  public NoTopologyAvailableException(String message, Throwable cause) {
     super(message, cause);
   }
 }

@@ -19,9 +19,7 @@ package io.zeebe.broker.workflow.repository;
 
 import io.zeebe.broker.transport.controlmessage.AbstractControlMessageHandler;
 import io.zeebe.msgpack.value.ValueArray;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.impl.data.repository.ListWorkflowsControlRequest;
 import io.zeebe.protocol.impl.data.repository.ListWorkflowsResponse;
 import io.zeebe.protocol.impl.data.repository.WorkflowMetadata;
@@ -56,13 +54,12 @@ public class ListWorkflowsControlMessageHandler extends AbstractControlMessageHa
     final WorkflowRepositoryService repository = workflowRepositoryServiceRef.get();
 
     if (repository == null) {
-      sendErrorResponse(
+      sendResponse(
           actor,
-          requestStreamId,
-          requestId,
-          ErrorCode.PARTITION_NOT_FOUND,
-          "Workflow request must address the leader of the first partition %d",
-          Protocol.DEPLOYMENT_PARTITION);
+          () ->
+              errorResponseWriter
+                  .invalidDeploymentPartition(partitionId, requestStreamId)
+                  .tryWriteResponse(requestStreamId, requestStreamId));
     } else {
       final ListWorkflowsControlRequest controlRequest = new ListWorkflowsControlRequest();
       controlRequest.wrap(buffer);

@@ -15,18 +15,20 @@
  */
 package io.zeebe.broker.it.job;
 
+import static io.zeebe.broker.it.util.StatusCodeMatcher.hasStatusCode;
+import static io.zeebe.broker.it.util.StatusDescriptionMatcher.descriptionContains;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.entry;
 
+import io.grpc.Status.Code;
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.it.util.ZeebeAssertHelper;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.response.ActivatedJob;
-import io.zeebe.client.cmd.ClientException;
+import io.zeebe.client.cmd.ClientStatusException;
 import java.util.Collections;
 import org.junit.Before;
 import org.junit.Rule;
@@ -105,15 +107,15 @@ public class CompleteJobTest {
 
   @Test
   public void shouldThrowExceptionOnCompleteJobWithInvalidPayload() {
-    // when
-    final Throwable throwable =
-        catchThrowable(
-            () -> clientRule.getClient().newCompleteCommand(jobKey).payload("[]").send().join());
+    // expect
+    thrown.expect(ClientStatusException.class);
+    thrown.expect(hasStatusCode(Code.INVALID_ARGUMENT));
+    thrown.expect(
+        descriptionContains(
+            "Property 'payload' is invalid: Expected document to be a root level object, but was 'ARRAY'"));
 
-    // then
-    assertThat(throwable).isInstanceOf(ClientException.class);
-    assertThat(throwable.getMessage())
-        .contains("Document has invalid format. On root level an object is only allowed.");
+    // when
+    clientRule.getClient().newCompleteCommand(jobKey).payload("[]").send().join();
   }
 
   @Test
@@ -159,14 +161,9 @@ public class CompleteJobTest {
     final long jobKey = clientRule.createSingleJob("bar");
     jobClient.newCompleteCommand(jobKey).send().join();
 
-    // then
-    thrown.expect(ClientException.class);
-    thrown.expectMessage(
-        "Command (COMPLETE) for event with key "
-            + jobKey
-            + " was rejected due to a required entity which does not exist. Expected to complete job with key '"
-            + jobKey
-            + "', but no such job was found");
+    // expect
+    thrown.expect(ClientStatusException.class);
+    thrown.expect(hasStatusCode(Code.NOT_FOUND));
 
     // when
     jobClient.newCompleteCommand(jobKey).send().join();

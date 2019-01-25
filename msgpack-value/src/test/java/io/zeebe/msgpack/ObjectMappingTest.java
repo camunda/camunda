@@ -299,9 +299,9 @@ public class ObjectMappingTest {
     final UnsafeBuffer buf = new UnsafeBuffer(new byte[1024]);
 
     // then
-    exception.expect(RuntimeException.class);
+    exception.expect(MsgpackPropertyException.class);
     exception.expectMessage(
-        "Cannot write property 'enumProp'; neither value, nor default value specified");
+        "Property 'enumProp' is invalid: Expected a value or default value to be set before writing, but has nothing");
 
     // when
     pojo.write(buf, 0);
@@ -313,8 +313,9 @@ public class ObjectMappingTest {
     final POJO pojo = new POJO();
 
     // then
-    exception.expect(RuntimeException.class);
-    exception.expectMessage("Property 'enumProp' has no valid value");
+    exception.expect(MsgpackPropertyException.class);
+    exception.expectMessage(
+        "Property 'enumProp' is invalid: Expected a value or default value to be specified, but has nothing");
 
     // when
     pojo.getLength();

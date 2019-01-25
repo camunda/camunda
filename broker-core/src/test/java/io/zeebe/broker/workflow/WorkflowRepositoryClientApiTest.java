@@ -22,19 +22,21 @@ import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInsta
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_KEY;
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.clientapi.ControlMessageType;
+import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ControlMessageResponse;
+import io.zeebe.test.broker.protocol.clientapi.ErrorResponseException;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import java.util.List;
 import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 public class WorkflowRepositoryClientApiTest {
@@ -49,8 +51,6 @@ public class WorkflowRepositoryClientApiTest {
   public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
-
-  @Rule public ExpectedException expectedException = ExpectedException.none();
 
   @Test
   public void shouldRequestWorkflowByKey() {
@@ -83,71 +83,72 @@ public class WorkflowRepositoryClientApiTest {
 
   @Test
   public void shouldNotGetWorkflowByNonExistingKey() {
-    expectedException.expect(RuntimeException.class);
-    expectedException.expectMessage("NOT_FOUND - No workflow found with key '1231'");
-
-    apiRule
-        .createControlMessageRequest()
-        .messageType(ControlMessageType.GET_WORKFLOW)
-        .data()
-        .put(PROP_WORKFLOW_KEY, 1231)
-        .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "")
-        .put(PROP_WORKFLOW_VERSION, -1)
-        .done()
-        .sendAndAwait();
+    assertThatThrownBy(
+            () ->
+                apiRule
+                    .createControlMessageRequest()
+                    .messageType(ControlMessageType.GET_WORKFLOW)
+                    .data()
+                    .put(PROP_WORKFLOW_KEY, 1231)
+                    .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "")
+                    .put(PROP_WORKFLOW_VERSION, -1)
+                    .done()
+                    .sendAndAwait())
+        .isInstanceOf(ErrorResponseException.class)
+        .hasFieldOrPropertyWithValue("errorCode", ErrorCode.WORKFLOW_NOT_FOUND);
   }
 
   @Test
   public void shouldNotGetWorkflowByNonExistingBpmnProcessKey() {
-    expectedException.expect(RuntimeException.class);
-    expectedException.expectMessage(
-        "NOT_FOUND - No workflow found with BPMN process id 'notExisting'");
-
-    apiRule
-        .createControlMessageRequest()
-        .messageType(ControlMessageType.GET_WORKFLOW)
-        .data()
-        .put(PROP_WORKFLOW_KEY, -1)
-        .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "notExisting")
-        .put(PROP_WORKFLOW_VERSION, -1)
-        .done()
-        .sendAndAwait();
+    assertThatThrownBy(
+            () ->
+                apiRule
+                    .createControlMessageRequest()
+                    .messageType(ControlMessageType.GET_WORKFLOW)
+                    .data()
+                    .put(PROP_WORKFLOW_KEY, -1)
+                    .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "notExisting")
+                    .put(PROP_WORKFLOW_VERSION, -1)
+                    .done()
+                    .sendAndAwait())
+        .isInstanceOf(ErrorResponseException.class)
+        .hasFieldOrPropertyWithValue("errorCode", ErrorCode.WORKFLOW_NOT_FOUND);
   }
 
   @Test
   public void shouldNotGetWorkflowByNonExistingBpmnProcessKeyAndVersion() {
-    expectedException.expect(RuntimeException.class);
-    expectedException.expectMessage(
-        "NOT_FOUND - No workflow found with BPMN process id 'notExisting' and version '99'");
-
-    apiRule
-        .createControlMessageRequest()
-        .messageType(ControlMessageType.GET_WORKFLOW)
-        .data()
-        .put(PROP_WORKFLOW_KEY, -1)
-        .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "notExisting")
-        .put(PROP_WORKFLOW_VERSION, 99)
-        .done()
-        .sendAndAwait();
+    assertThatThrownBy(
+            () ->
+                apiRule
+                    .createControlMessageRequest()
+                    .messageType(ControlMessageType.GET_WORKFLOW)
+                    .data()
+                    .put(PROP_WORKFLOW_KEY, -1)
+                    .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "notExisting")
+                    .put(PROP_WORKFLOW_VERSION, 99)
+                    .done()
+                    .sendAndAwait())
+        .isInstanceOf(ErrorResponseException.class)
+        .hasFieldOrPropertyWithValue("errorCode", ErrorCode.WORKFLOW_NOT_FOUND);
   }
 
   @Test
   public void shouldNotGetWorkflowByExistingBpmnProcessKeyAndNonExistingVersion() {
     apiRule.partitionClient().deployWithResponse(WORKFLOW);
 
-    expectedException.expect(RuntimeException.class);
-    expectedException.expectMessage(
-        "NOT_FOUND - No workflow found with BPMN process id 'process' and version '99'");
-
-    apiRule
-        .createControlMessageRequest()
-        .messageType(ControlMessageType.GET_WORKFLOW)
-        .data()
-        .put(PROP_WORKFLOW_KEY, -1)
-        .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
-        .put(PROP_WORKFLOW_VERSION, 99)
-        .done()
-        .sendAndAwait();
+    assertThatThrownBy(
+            () ->
+                apiRule
+                    .createControlMessageRequest()
+                    .messageType(ControlMessageType.GET_WORKFLOW)
+                    .data()
+                    .put(PROP_WORKFLOW_KEY, -1)
+                    .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
+                    .put(PROP_WORKFLOW_VERSION, 99)
+                    .done()
+                    .sendAndAwait())
+        .isInstanceOf(ErrorResponseException.class)
+        .hasFieldOrPropertyWithValue("errorCode", ErrorCode.WORKFLOW_NOT_FOUND);
   }
 
   @Test

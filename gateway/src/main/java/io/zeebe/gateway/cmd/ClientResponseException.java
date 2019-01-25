@@ -13,20 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.cmd;
+package io.zeebe.gateway.cmd;
 
-public class ClientException extends RuntimeException {
-  private static final long serialVersionUID = 1L;
+/**
+ * Represents exceptional errors that occur sending a client request and/or handling its response.
+ */
+public class ClientResponseException extends ClientException {
 
-  public ClientException(Throwable cause) {
-    super(cause);
-  }
+  private static final long serialVersionUID = -1143986732133851047L;
 
-  public ClientException(String message) {
+  public ClientResponseException(String message) {
     super(message);
   }
 
-  public ClientException(String message, Throwable cause) {
+  public ClientResponseException(Throwable cause) {
+    super(cause);
+  }
+
+  public ClientResponseException(String message, Throwable cause) {
     super(message, cause);
   }
 }

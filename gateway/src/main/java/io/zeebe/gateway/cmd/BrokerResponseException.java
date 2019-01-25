@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.cmd;
+package io.zeebe.gateway.cmd;
 
-public class ClientException extends RuntimeException {
-  private static final long serialVersionUID = 1L;
+public class BrokerResponseException extends BrokerException {
+  private static final long serialVersionUID = 4563550916179626168L;
 
-  public ClientException(Throwable cause) {
-    super(cause);
-  }
-
-  public ClientException(String message) {
+  public BrokerResponseException(String message) {
     super(message);
   }
 
-  public ClientException(String message, Throwable cause) {
+  public BrokerResponseException(String message, Throwable cause) {
     super(message, cause);
+  }
+
+  public BrokerResponseException(Throwable cause) {
+    super(cause);
   }
 }

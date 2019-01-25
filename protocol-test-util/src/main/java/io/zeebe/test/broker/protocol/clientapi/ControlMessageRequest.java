@@ -104,8 +104,8 @@ public class ControlMessageRequest implements BufferWriter {
       error.wrap(responseBuffer, 0, responseBuffer.capacity());
       final ErrorCode errorCode = error.getErrorCode();
       final String message = error.getErrorData();
-      return errorCode == ErrorCode.PARTITION_NOT_FOUND
-          || errorCode == ErrorCode.REQUEST_PROCESSING_FAILURE
+      return errorCode == ErrorCode.PARTITION_LEADER_MISMATCH
+          || errorCode == ErrorCode.INTERNAL_ERROR
               && (message.matches(".*Partition .* not found.*")
                   || message.matches(
                       ".*No subscription management processor registered for partition.*"));

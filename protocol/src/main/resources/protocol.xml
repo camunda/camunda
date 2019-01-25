@@ -20,14 +20,15 @@
 
     <enum name="errorCode" encodingType="uint8" semanticType="String"
       description="The error code of an error">
-      <validValue name="MESSAGE_NOT_SUPPORTED">0</validValue>
-      <validValue name="PARTITION_NOT_FOUND">1</validValue>
-      <validValue name="REQUEST_WRITE_FAILURE">2</validValue>
-      <validValue name="INVALID_CLIENT_VERSION">3</validValue>
-      <validValue name="REQUEST_TIMEOUT">4</validValue>
-      <validValue name="REQUEST_PROCESSING_FAILURE">5</validValue>
-      <validValue name="INVALID_MESSAGE">6</validValue>
-      <validValue name="NOT_FOUND">7</validValue>
+      <validValue name="INTERNAL_ERROR">0</validValue>
+      <validValue name="PARTITION_LEADER_MISMATCH">1</validValue>
+      <validValue name="UNSUPPORTED_MESSAGE">3</validValue>
+      <validValue name="INVALID_CLIENT_VERSION">4</validValue>
+      <validValue name="MALFORMED_REQUEST">5</validValue>
+      <validValue name="INVALID_MESSAGE_TEMPLATE">6</validValue>
+      <validValue name="UNSUPPORTED_MESSAGE">7</validValue>
+      <validValue name="INVALID_DEPLOYMENT_PARTITION">8</validValue>
+      <validValue name="WORKFLOW_NOT_FOUND">9</validValue>
     </enum>
 
     <enum name="ValueType" encodingType="uint8" description="The type of a record value">

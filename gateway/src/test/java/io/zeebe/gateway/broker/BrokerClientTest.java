@@ -135,7 +135,7 @@ public class BrokerClientTest {
     broker
         .onExecuteCommandRequest(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
         .respondWithError()
-        .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
+        .errorCode(ErrorCode.INTERNAL_ERROR)
         .errorData("test")
         .register();
 
@@ -144,7 +144,7 @@ public class BrokerClientTest {
 
     assertThat(response.isError()).isTrue();
     final BrokerError error = response.getError();
-    assertThat(error.getCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
+    assertThat(error.getCode()).isEqualTo(ErrorCode.INTERNAL_ERROR);
     assertThat(error.getMessage()).isEqualTo("test");
 
     // then
@@ -175,7 +175,7 @@ public class BrokerClientTest {
 
     // then
     exception.expect(ExecutionException.class);
-    exception.expectMessage("Failed to read response: Catch Me");
+    exception.expectMessage("Catch Me");
 
     // when
     client.sendRequest(request).join();
@@ -187,7 +187,7 @@ public class BrokerClientTest {
     broker
         .onExecuteCommandRequest(ValueType.WORKFLOW_INSTANCE, JobIntent.CREATE)
         .respondWithError()
-        .errorCode(ErrorCode.PARTITION_NOT_FOUND)
+        .errorCode(ErrorCode.PARTITION_LEADER_MISMATCH)
         .errorData("")
         .register();
 

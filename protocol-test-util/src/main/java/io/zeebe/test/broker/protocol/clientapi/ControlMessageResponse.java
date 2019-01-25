@@ -51,11 +51,7 @@ public class ControlMessageResponse implements BufferReader {
     if (messageHeaderDecoder.templateId() != responseDecoder.sbeTemplateId()) {
       if (messageHeaderDecoder.templateId() == ErrorResponseDecoder.TEMPLATE_ID) {
         errorResponse.wrap(responseBuffer, offset, length);
-        throw new RuntimeException(
-            "Unexpected error response from broker: "
-                + errorResponse.getErrorCode()
-                + " - "
-                + errorResponse.getErrorData());
+        throw new ErrorResponseException(errorResponse);
       } else {
         throw new RuntimeException(
             "Unexpected response from broker. Template id " + messageHeaderDecoder.templateId());

@@ -59,7 +59,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class ZeebeClientImpl implements ZeebeClient {
-
   private final ZeebeClientConfiguration config;
   private final ZeebeObjectMapper objectMapper;
   private final GatewayStub asyncStub;
@@ -127,20 +126,24 @@ public class ZeebeClientImpl implements ZeebeClient {
 
     try {
       if (!executorService.awaitTermination(15, TimeUnit.SECONDS)) {
-        throw new ClientException("Failed to await termination of job worker executor");
+        throw new ClientException(
+            "Timed out awaiting termination of job worker executor after 15 seconds");
       }
     } catch (InterruptedException e) {
-      throw new ClientException("Failed to await termination of job worker exectuor", e);
+      throw new ClientException(
+          "Unexpected interrupted awaiting termination of job worker executor", e);
     }
 
     channel.shutdown();
 
     try {
       if (!channel.awaitTermination(15, TimeUnit.SECONDS)) {
-        throw new ClientException("Failed to await termination of in-flight requests");
+        throw new ClientException(
+            "Timed out awaiting termination of in-flight request channel after 15 seconds");
       }
     } catch (InterruptedException e) {
-      throw new ClientException("Failed to await termination of in-flight requests", e);
+      throw new ClientException(
+          "Unexpectedly interrupted awaiting termination of in-flight request channel", e);
     }
   }
 
@@ -213,7 +216,7 @@ public class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public FailJobCommandStep1 newFailCommand(long jobKey) { // TODO Auto-generated method stub
+  public FailJobCommandStep1 newFailCommand(long jobKey) {
     return jobClient.newFailCommand(jobKey);
   }
 }

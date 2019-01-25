@@ -16,10 +16,10 @@
 package io.zeebe.gateway.impl.broker.request;
 
 import io.zeebe.gateway.Loggers;
+import io.zeebe.gateway.cmd.UnsupportedBrokerResponseException;
 import io.zeebe.gateway.impl.broker.response.BrokerError;
 import io.zeebe.gateway.impl.broker.response.BrokerErrorResponse;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
-import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
 import io.zeebe.protocol.clientapi.ErrorResponseEncoder;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
@@ -84,7 +84,8 @@ public abstract class BrokerRequest<T> implements BufferWriter {
         final BrokerError error = new BrokerError(errorResponse);
         return new BrokerErrorResponse<>(error);
       } else {
-        return new BrokerErrorResponse<>(unknownMessageError(responseBuffer));
+        throw new UnsupportedBrokerResponseException(
+            headerDecoder.schemaId(), headerDecoder.templateId(), schemaId, templateId);
       }
     } catch (Exception e) {
       // Log response buffer for debugging purpose
@@ -116,14 +117,5 @@ public abstract class BrokerRequest<T> implements BufferWriter {
     wrapResponseHeader(buffer);
 
     return headerDecoder.schemaId() == schemaId && headerDecoder.templateId() == templateId;
-  }
-
-  protected BrokerError unknownMessageError(DirectBuffer buffer) {
-    wrapResponseHeader(buffer);
-    return new BrokerError(
-        ErrorCode.SBE_UNKNOWN,
-        String.format(
-            "Received unknown message with schema id '%d' and template id '%d'. Expected schema id '%d' and template id '%d'",
-            headerDecoder.schemaId(), headerDecoder.templateId(), schemaId, templateId));
   }
 }

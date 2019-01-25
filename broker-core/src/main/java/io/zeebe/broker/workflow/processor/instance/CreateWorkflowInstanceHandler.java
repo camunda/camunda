@@ -75,7 +75,7 @@ public class CreateWorkflowInstanceHandler implements WorkflowInstanceCommandHan
             workflowInstanceKey, WorkflowInstanceIntent.ELEMENT_READY, command, record);
       } else {
         commandContext.reject(
-            RejectionType.NOT_FOUND,
+            RejectionType.INVALID_STATE,
             String.format(NO_START_EVENT_FOUND_MESSAGE, workflowDefinition.getKey()));
       }
     } else {

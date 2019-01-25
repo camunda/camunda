@@ -187,9 +187,9 @@ public class CompleteJobTest {
 
     // then
     assertThat(throwable).isInstanceOf(RuntimeException.class);
-    assertThat(throwable.getMessage()).contains("Could not read property 'payload'.");
+    assertThat(throwable.getMessage()).contains("Could not read property 'payload'");
     assertThat(throwable.getMessage())
-        .contains("Document has invalid format. On root level an object is only allowed.");
+        .contains("Expected document to be a root level object, but was 'INTEGER'");
   }
 
   @Test
