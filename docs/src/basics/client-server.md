@@ -11,15 +11,15 @@ Clients are libraries that you embed in an application (e.g. a microservice that
 * Handling operational issues (updating workflow instance payloads, resolving incidents)
 
 More about Zeebe clients:
-* Clients connect to the Zeebe gateway via [gRPC](https://grpc.io), which uses http/2-based transport.
+* Clients connect to the Zeebe gateway via [gRPC](https://grpc.io), which uses http/2-based transport. To learn more about gRPC in Zeebe, check out the [gRPC section of the docs](/grpc/README.html).
 * The Zeebe project includes officially-supported Java and Go clients, and gRPC makes it possible to generate clients in a range of different programming languages. [Community clients](https://awesome.zeebe.io) have been created in other languages, including C#, Ruby, and JavaScript.
 * Client applications can be scaled up and down completely separately from Zeebe--the Zeebe brokers do not execute any business logic.
 
 ## Gateway
 
-The gateway, which proxies requests to brokers, acts as a single entry point to a Zeebe cluster. This makes the cluster relatively easy to secure.
+The gateway, which proxies requests to brokers, serves as a single entry point to a Zeebe cluster. 
 
-The gateway is stateless and sessionless, and gateways can be replicated as necessary for load balancing and high availability.
+The gateway is stateless and sessionless, and gateways can be added as necessary for load balancing and high availability.
 
 ## Broker
 
