@@ -265,7 +265,7 @@ export default class ReportControlPanel extends React.Component {
                 <Dropdown.Option
                   key={idx}
                   checked={checked}
-                  onClick={() => this.update(type, subData)}
+                  onClick={() => update(type, subData, this.props)}
                 >
                   {entry.label}
                 </Dropdown.Option>
@@ -287,7 +287,7 @@ export default class ReportControlPanel extends React.Component {
       <Dropdown.Option
         key={key}
         checked={checked}
-        onClick={() => this.update(type, data)}
+        onClick={() => update(type, data, this.props)}
         disabled={disabled}
       >
         {label}
@@ -356,7 +356,7 @@ export default class ReportControlPanel extends React.Component {
                 title={variable.name}
                 onClick={evt => {
                   evt.nativeEvent.isCloseEvent = true;
-                  this.update('groupBy', {type: 'variable', value: {...variable}});
+                  update('groupBy', {type: 'variable', value: variable}, this.props);
                 }}
               >
                 {formatters.getHighlightedText(variable.name, this.state.variableTypeaheadValue)}
@@ -389,16 +389,5 @@ export default class ReportControlPanel extends React.Component {
     if (!evt.nativeEvent.isCloseEvent) {
       evt.stopPropagation();
     }
-  };
-
-  update = (type, data) => {
-    update({
-      type,
-      data,
-      view: this.props.view,
-      groupBy: this.props.groupBy,
-      visualization: this.props.visualization,
-      callback: this.props.updateReport
-    });
   };
 }

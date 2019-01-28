@@ -92,7 +92,11 @@ export default class DecisionControlPanel extends React.Component {
           const subData = {...data, [submenu]: entry.data};
           const checked = isChecked(subData, this.props[type]);
           return (
-            <Dropdown.Option key={idx} checked={checked} onClick={() => this.update(type, subData)}>
+            <Dropdown.Option
+              key={idx}
+              checked={checked}
+              onClick={() => update(type, subData, this.props)}
+            >
               {entry.label}
             </Dropdown.Option>
           );
@@ -113,22 +117,11 @@ export default class DecisionControlPanel extends React.Component {
       <Dropdown.Option
         key={key}
         checked={checked}
-        onClick={() => this.update(type, data)}
+        onClick={() => update(type, data, this.props)}
         disabled={disabled}
       >
         {label}
       </Dropdown.Option>
     );
-  };
-
-  update = (type, data) => {
-    update({
-      type,
-      data,
-      view: this.props.view,
-      groupBy: this.props.groupBy,
-      visualization: this.props.visualization,
-      callback: this.props.updateReport
-    });
   };
 }

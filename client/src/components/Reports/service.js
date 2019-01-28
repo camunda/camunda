@@ -114,39 +114,65 @@ export function isChecked(data, current) {
   );
 }
 
-export function update({type, data, view, groupBy, visualization, callback}) {
-  const update = {
-    [type]: {$set: data}
-  };
+export function update(type, data, props) {
+  switch (type) {
+    case 'view':
+      return updateView(data, props);
+    case 'groupBy':
+      return updateGroupBy(data, props);
+    case 'visualization':
+      return updateVisualization(data, props);
+    default:
+      throw new Error('Tried to update unknown property');
+  }
+}
 
-  if (type === 'view' && (data.property !== 'duration' || data.entity !== 'processInstance')) {
-    update.parameters = {processPart: {$set: null}};
+function updateView(newView, props) {
+  const changes = {view: {$set: newView}};
+
+  if (newView.property !== 'duration' || newView.entity !== 'processInstance') {
+    changes.parameters = {processPart: {$set: null}};
   }
 
-  const config = {
-    view,
-    groupBy,
-    visualization,
-    [type]: data
-  };
-
-  const nextGroup = getNext(config.view);
-  if (nextGroup) {
-    config.groupBy = nextGroup;
-    update.groupBy = {$set: nextGroup};
+  const newGroup = getNext(newView) || props.groupBy;
+  // we need to compare the string representation for changes, because groupBy is an object, not a string
+  if (newGroup && JSON.stringify(newGroup) !== JSON.stringify(props.groupBy)) {
+    changes.groupBy = {$set: newGroup};
   }
 
-  const nextVis = getNext(config.view, config.groupBy);
-  if (nextVis) {
-    config.visualization = nextVis;
-    update.visualization = {$set: nextVis};
-  }
-  if (!isAllowed(config.view, config.groupBy)) {
-    update.groupBy = {$set: null};
-    update.visualization = {$set: null};
-  } else if (!isAllowed(config.view, config.groupBy, config.visualization)) {
-    update.visualization = {$set: null};
+  const newVisualization = getNext(newView, newGroup) || props.visualization;
+  if (newVisualization && newVisualization !== props.visualization) {
+    changes.visualization = {$set: newVisualization};
   }
 
-  callback(update, type !== 'visualization');
+  if (!isAllowed(newView, newGroup)) {
+    changes.groupBy = {$set: null};
+    changes.visualization = {$set: null};
+  }
+
+  if (!isAllowed(newView, newGroup, newVisualization)) {
+    changes.visualization = {$set: null};
+  }
+
+  return props.updateReport(changes, true);
+}
+
+function updateGroupBy(newGroupBy, props) {
+  const changes = {groupBy: {$set: newGroupBy}};
+
+  const newVisualization = getNext(props.view, newGroupBy);
+
+  if (newVisualization) {
+    // if we have a predetermined next visualization, we set it
+    changes.visualization = {$set: newVisualization};
+  } else if (!isAllowed(props.view, newGroupBy, props.visualization)) {
+    // if the current visualization is not valid anymore for the new group, we reset it
+    changes.visualization = {$set: null};
+  }
+
+  return props.updateReport(changes, true);
+}
+
+function updateVisualization(newVisualization, props) {
+  return props.updateReport({visualization: {$set: newVisualization}});
 }
