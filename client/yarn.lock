@@ -2468,8 +2468,8 @@ concat-stream@^1.5.0:
     typedarray "^0.0.6"
 
 concat-stream@~1.4.1, concat-stream@~1.4.5:
-  version "1.4.10"
-  resolved "https://registry.yarnpkg.com/concat-stream/-/concat-stream-1.4.10.tgz#acc3bbf5602cb8cc980c6ac840fa7d8603e3ef36"
+  version "1.4.11"
+  resolved "https://registry.yarnpkg.com/concat-stream/-/concat-stream-1.4.11.tgz#1dc9f666f2621da9c618b1e7f8f3b2ff70b5f76f"
   dependencies:
     inherits "~2.0.1"
     readable-stream "~1.1.9"
