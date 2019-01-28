@@ -13,7 +13,7 @@
   <properties>
     <version.camunda>${camunda.engine.version}</version.camunda>
     <failOnMissingWebXml>false</failOnMissingWebXml>
-    <allure.version>1.4.23.HOTFIX1</allure.version>
+    <allure.version>1.5.4</allure.version>
     <aspectj.version>1.8.9</aspectj.version>
   </properties>
 
