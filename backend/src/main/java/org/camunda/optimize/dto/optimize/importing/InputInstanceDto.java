@@ -9,11 +9,11 @@ public class InputInstanceDto {
   private VariableType type;
   private String value;
 
-  protected InputInstanceDto() {
+  public InputInstanceDto() {
   }
 
   public InputInstanceDto(final String id, final String clauseId, final String clauseName, final VariableType type,
-                          final String value) {
+                           final String value) {
     this.id = id;
     this.clauseId = clauseId;
     this.clauseName = clauseName;

@@ -206,6 +206,15 @@ plugin:
     # Looks in the given base package list for authentication extractor plugins.
     # If empty, the standard Optimize authentication mechanism is used.
     basePackages: []
+  decisionInputImport:
+    #Look in the given base package list for Decision input import adaption plugins.
+    #If empty, the import is not influenced.
+    basePackages: []
+  decisionOutputImport:
+    #Look in the given base package list for Decision output import adaption plugins.
+    #If empty, the import is not influenced.
+    basePackages: []
+
 
 serialization:
   # Define a custom date format that should be used for

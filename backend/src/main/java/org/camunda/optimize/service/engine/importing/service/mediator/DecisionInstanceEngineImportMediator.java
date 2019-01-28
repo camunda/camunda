@@ -2,6 +2,8 @@ package org.camunda.optimize.service.engine.importing.service.mediator;
 
 import org.apache.commons.collections.ListUtils;
 import org.camunda.optimize.dto.engine.HistoricDecisionInstanceDto;
+import org.camunda.optimize.plugin.DecisionInputImportAdapterProvider;
+import org.camunda.optimize.plugin.DecisionOutputImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.DecisionInstanceFetcher;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.DecisionInstanceImportIndexHandler;
@@ -30,6 +32,10 @@ public class DecisionInstanceEngineImportMediator extends BackoffImportMediator<
   private DecisionInstanceWriter decisionInstanceWriter;
   @Autowired
   private DecisionDefinitionVersionResolverService decisionDefinitionVersionResolverService;
+  @Autowired
+  private DecisionInputImportAdapterProvider decisionInputImportAdapterProvider;
+  @Autowired
+  private DecisionOutputImportAdapterProvider decisionOutputImportAdapterProvider;
 
   public DecisionInstanceEngineImportMediator(final EngineContext engineContext) {
     super(engineContext);
@@ -40,7 +46,12 @@ public class DecisionInstanceEngineImportMediator extends BackoffImportMediator<
     importIndexHandler = provider.getDecisionInstanceImportIndexHandler(engineContext.getEngineAlias());
     decisionInstanceFetcher = beanHelper.getInstance(DecisionInstanceFetcher.class, engineContext);
     decisionInstanceImportService = new DecisionInstanceImportService(
-      decisionInstanceWriter, elasticsearchImportJobExecutor, engineContext, decisionDefinitionVersionResolverService
+      decisionInstanceWriter,
+      elasticsearchImportJobExecutor,
+      engineContext,
+      decisionDefinitionVersionResolverService,
+      decisionInputImportAdapterProvider,
+      decisionOutputImportAdapterProvider
     );
   }
 

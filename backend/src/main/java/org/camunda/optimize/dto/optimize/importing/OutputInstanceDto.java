@@ -12,7 +12,7 @@ public class OutputInstanceDto {
   private VariableType type;
   private String value;
 
-  protected OutputInstanceDto() {
+  public OutputInstanceDto() {
   }
 
   public OutputInstanceDto(final String id, final String clauseId, final String clauseName, final String ruleId,
@@ -57,5 +57,37 @@ public class OutputInstanceDto {
 
   public String getValue() {
     return value;
+  }
+
+  public void setId(String id) {
+    this.id = id;
+  }
+
+  public void setClauseId(String clauseId) {
+    this.clauseId = clauseId;
+  }
+
+  public void setClauseName(String clauseName) {
+    this.clauseName = clauseName;
+  }
+
+  public void setRuleId(String ruleId) {
+    this.ruleId = ruleId;
+  }
+
+  public void setRuleOrder(Integer ruleOrder) {
+    this.ruleOrder = ruleOrder;
+  }
+
+  public void setVariableName(String variableName) {
+    this.variableName = variableName;
+  }
+
+  public void setType(VariableType type) {
+    this.type = type;
+  }
+
+  public void setValue(String value) {
+    this.value = value;
   }
 }

@@ -131,7 +131,7 @@ public class VariableImportAdapterPluginIT {
     // when
     List<VariableRetrievalDto> variablesResponseDtos = getVariables(processDefinition);
 
-    //then only half the variables are added to Optimize
+    //then all the variables are added to Optimize
     assertThat(variablesResponseDtos.size(), is(2));
   }
 

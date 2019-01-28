@@ -34,6 +34,8 @@ public interface ConfigurationServiceConstants {
   String VARIABLE_IMPORT_PLUGIN_BASE_PACKAGES = "$.plugin.variableImport.basePackages";
   String ENGINE_REST_FILTER_PLUGIN_BASE_PACKAGES = "$.plugin.engineRestFilter.basePackages";
   String AUTHENTICATION_EXTRACTOR_BASE_PACKAGES = "$.plugin.authenticationExtractor.basePackages";
+  String DECISION_INPUT_IMPORT_PLUGIN_BASE_PACKAGES = "$.plugin.decisionInputImport.basePackages";
+  String DECISION_OUTPUT_IMPORT_PLUGIN_BASE_PACKAGES = "$.plugin.decisionOutputImport.basePackages";
   String ELASTIC_SEARCH_CLUSTER_NAME = "$.es.connection.clusterName";
   String ELASTIC_SEARCH_CONNECTION_TIMEOUT = "$.es.connection.timeout";
   String ELASTIC_SEARCH_SCROLL_TIMEOUT = "$.es.scrollTimeout";

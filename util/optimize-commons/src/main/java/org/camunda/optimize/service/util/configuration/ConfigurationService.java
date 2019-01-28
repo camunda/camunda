@@ -38,7 +38,8 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants
+  .ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.cutTrailingSlash;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.resolvePathAsAbsoluteUrl;
@@ -109,6 +110,8 @@ public class ConfigurationService {
   private List<String> variableImportPluginBasePackages;
   private List<String> engineRestFilterPluginBasePackages;
   private List<String> authenticationExtractorPluginBasePackages;
+  private List<String> DecisionOutputImportPluginBasePackages;
+  private List<String> DecisionInputImportPluginBasePackages;
 
   private Long engineImportActivityInstanceMaxPageSize;
   private String containerHost;
@@ -321,7 +324,8 @@ public class ConfigurationService {
     if (elasticsearchConnectionNodes == null) {
       // @formatter:off
       TypeRef<List<ElasticsearchConnectionNodeConfiguration>> typeRef =
-        new TypeRef<List<ElasticsearchConnectionNodeConfiguration>>() {};
+        new TypeRef<List<ElasticsearchConnectionNodeConfiguration>>() {
+        };
       // @formatter:on
       elasticsearchConnectionNodes =
         configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_CONNECTION_NODES, typeRef);
@@ -334,6 +338,20 @@ public class ConfigurationService {
       elasticSearchClusterName = configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_CLUSTER_NAME);
     }
     return elasticSearchClusterName;
+  }
+
+  public List<String> getDecisionOutputImportPluginBasePackages() {
+    if (DecisionOutputImportPluginBasePackages == null) {
+      TypeRef<List<String>> typeRef = new TypeRef<List<String>>() {
+      };
+      DecisionOutputImportPluginBasePackages =
+        configJsonContext.read(ConfigurationServiceConstants.DECISION_OUTPUT_IMPORT_PLUGIN_BASE_PACKAGES, typeRef);
+    }
+    return DecisionOutputImportPluginBasePackages;
+  }
+
+  public void setDecisionOutputImportPluginBasePackages(List<String> decisionOutputImportPluginBasePackages) {
+    this.DecisionOutputImportPluginBasePackages = decisionOutputImportPluginBasePackages;
   }
 
   public String getUserValidationEndpoint() {
@@ -612,6 +630,16 @@ public class ConfigurationService {
       containerKeystorePassword = configJsonContext.read(ConfigurationServiceConstants.CONTAINER_KEYSTORE_PASSWORD);
     }
     return containerKeystorePassword;
+  }
+
+  public List<String> getDecisionInputImportPluginBasePackages() {
+    if (DecisionInputImportPluginBasePackages == null) {
+      TypeRef<List<String>> typeRef = new TypeRef<List<String>>() {
+      };
+      DecisionInputImportPluginBasePackages =
+        configJsonContext.read(ConfigurationServiceConstants.DECISION_INPUT_IMPORT_PLUGIN_BASE_PACKAGES, typeRef);
+    }
+    return DecisionInputImportPluginBasePackages;
   }
 
   public String getContainerKeystoreLocation() {
@@ -994,6 +1022,10 @@ public class ConfigurationService {
     this.containerKeystoreLocation = containerKeystoreLocation;
   }
 
+  public void setDecisionInputImportPluginBasePackages(List<String> decisionInputImportPluginBasePackages) {
+    this.DecisionInputImportPluginBasePackages = decisionInputImportPluginBasePackages;
+  }
+
   public void setContainerHttpsPort(Integer containerHttpsPort) {
     this.containerHttpsPort = containerHttpsPort;
   }
@@ -1050,11 +1082,13 @@ public class ConfigurationService {
     this.elasticsearchSecuritySSLCertificate = elasticsearchSecuritySSLCertificate;
   }
 
-  public void setElasticsearchSecuritySSLCertificateAuthorities(List<String> elasticsearchSecuritySSLCertificateAuthorities) {
+  public void setElasticsearchSecuritySSLCertificateAuthorities(List<String>
+                                                                  elasticsearchSecuritySSLCertificateAuthorities) {
     this.elasticsearchSecuritySSLCertificateAuthorities = elasticsearchSecuritySSLCertificateAuthorities;
   }
 
-  public void setElasticsearchConnectionNodes(List<ElasticsearchConnectionNodeConfiguration> elasticsearchConnectionNodes) {
+  public void setElasticsearchConnectionNodes(List<ElasticsearchConnectionNodeConfiguration>
+                                                elasticsearchConnectionNodes) {
     this.elasticsearchConnectionNodes = elasticsearchConnectionNodes;
   }
 

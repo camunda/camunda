@@ -4,6 +4,8 @@ import org.camunda.optimize.dto.engine.HistoricDecisionInputInstanceDto;
 import org.camunda.optimize.dto.engine.HistoricDecisionInstanceDto;
 import org.camunda.optimize.dto.engine.HistoricDecisionOutputInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
+import org.camunda.optimize.plugin.DecisionInputImportAdapterProvider;
+import org.camunda.optimize.plugin.DecisionOutputImportAdapterProvider;
 import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.service.DecisionDefinitionVersionResolverService;
@@ -43,6 +45,12 @@ public class DecisionInstanceImportServiceTest {
   @Mock
   private DecisionDefinitionVersionResolverService decisionDefinitionVersionResolverService;
 
+  @Mock
+  private DecisionInputImportAdapterProvider decisionInputImportAdapterProvider;
+
+  @Mock
+  private DecisionOutputImportAdapterProvider decisionOutputImportAdapterProvider;
+
   private DecisionInstanceImportService underTest;
 
   @Before
@@ -52,7 +60,8 @@ public class DecisionInstanceImportServiceTest {
       .thenReturn(Optional.of(VERSION_RESULT));
 
     this.underTest = new DecisionInstanceImportService(
-      decisionInstanceWriter, elasticsearchImportJobExecutor, engineContext, decisionDefinitionVersionResolverService
+      decisionInstanceWriter, elasticsearchImportJobExecutor, engineContext, decisionDefinitionVersionResolverService,
+      decisionInputImportAdapterProvider, decisionOutputImportAdapterProvider
     );
   }
 

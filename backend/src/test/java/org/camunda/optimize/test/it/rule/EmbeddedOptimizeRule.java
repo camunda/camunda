@@ -49,6 +49,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   private String context = null;
   private Logger logger = LoggerFactory.getLogger(EmbeddedOptimizeRule.class);
   private OptimizeRequestExecutor requestExecutor;
+  private ObjectMapper objectMapper;
 
   /**
    * 1. Reset import start indexes
@@ -196,11 +197,12 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   protected void starting(Description description) {
     try {
       startOptimize();
+      objectMapper = getApplicationContext().getBean(ObjectMapper.class);
       requestExecutor =
         new OptimizeRequestExecutor(
           getOptimize().target(),
           getAuthorizationCookieValue(),
-          getApplicationContext().getBean(ObjectMapper.class)
+          objectMapper
         );
       resetImportStartIndexes();
     } catch (Exception e) {
@@ -352,6 +354,10 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   public OptimizeCleanupScheduler getCleanupScheduler() {
     return getOptimize().getCleanupService();
+  }
+
+  public ObjectMapper getObjectMapper() {
+    return objectMapper;
   }
 
   /**
