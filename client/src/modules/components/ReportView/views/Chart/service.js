@@ -61,7 +61,7 @@ export function calculateLinePosition(chart) {
 }
 
 export function drawHorizentalLine(chart) {
-  if (typeof chart.options.lineAt === 'number') {
+  if (chart.options.lineAt >= 0 && chart.options.lineAt !== false) {
     const ctx = chart.chart.ctx;
     const xAxe = chart.scales[chart.options.scales.xAxes[0].id];
     const lineAt = calculateLinePosition(chart);

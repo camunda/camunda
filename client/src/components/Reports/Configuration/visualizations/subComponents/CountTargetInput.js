@@ -17,6 +17,8 @@ export default function CountTargetInput({baseline, target, disabled, onChange})
     <ControlGroup className="CountTargetInput">
       <LabeledInput
         label="Baseline"
+        type="number"
+        min="0"
         value={baseline}
         disabled={disabled}
         isInvalid={baselineInvalid}
@@ -26,6 +28,8 @@ export default function CountTargetInput({baseline, target, disabled, onChange})
       </LabeledInput>
       <LabeledInput
         label="Target"
+        type="number"
+        min="0"
         value={target}
         disabled={disabled}
         isInvalid={targetInvalid || tooLow}

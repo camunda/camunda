@@ -24,25 +24,25 @@ export default class Configuration extends React.Component {
         targetValue: {
           active: false,
           countProgress: {
-            baseline: 0,
-            target: 100
+            baseline: '0',
+            target: '100'
           },
           durationProgress: {
             baseline: {
-              value: 0,
+              value: '0',
               unit: 'hours'
             },
             target: {
-              value: 2,
+              value: '2',
               unit: 'hours'
             }
           },
           countChart: {
-            value: 100,
+            value: '100',
             isBelow: false
           },
           durationChart: {
-            value: 2,
+            value: '2',
             unit: 'hours',
             isBelow: false
           }

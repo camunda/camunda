@@ -22,6 +22,8 @@ export default function DurationTargetInput({baseline, target, disabled, onChang
     <ControlGroup className="DurationTargetInput">
       <LabeledInput
         label="Baseline"
+        type="number"
+        min="0"
         value={baseline.value}
         disabled={disabled}
         isInvalid={baselineInvalid}
@@ -38,6 +40,8 @@ export default function DurationTargetInput({baseline, target, disabled, onChang
       </LabeledInput>
       <LabeledInput
         label="Target"
+        type="number"
+        min="0"
         value={target.value}
         disabled={disabled}
         isInvalid={targetInvalid || tooLow}
