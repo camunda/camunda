@@ -40,7 +40,7 @@ export async function isSharingEnabled() {
   return json.enabled;
 }
 
-export async function getReportData(query) {
+export async function evaluateReport(query) {
   let response;
 
   try {

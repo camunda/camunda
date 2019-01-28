@@ -22,7 +22,7 @@ import {
   loadSingleReport,
   loadProcessDefinitionXml,
   remove,
-  getReportData,
+  evaluateReport,
   saveReport,
   shareReport,
   revokeReportSharing,
@@ -48,17 +48,11 @@ export default withErrorHandling(
       this.isNew = props.location.search === '?new';
 
       this.state = {
-        name: null,
-        lastModified: null,
-        lastModifier: null,
         loaded: false,
         loadingReportData: false,
         redirect: false,
-        originalName: null,
         confirmModalVisible: false,
         serverError: null,
-        combined: false,
-        reportType: 'process',
         redirectToReport: false,
         conflict: null,
         sharingEnabled: false
@@ -76,23 +70,12 @@ export default withErrorHandling(
       return {theOnlyKey: null, latestVersion: null};
     };
 
-    initializeReport = async combined => {
-      if (combined)
-        return {
-          reportIds: null,
-          configuration: {}
-        };
+    loadTheOnlyDefinition = async () => {
       const {theOnlyKey, latestVersion} = await this.getTheOnlyDefinition();
 
       const data = {
         processDefinitionKey: theOnlyKey || '',
-        processDefinitionVersion: latestVersion || '',
-        view: null,
-        groupBy: null,
-        visualization: null,
-        filter: [],
-        configuration: {},
-        parameters: {}
+        processDefinitionVersion: latestVersion || ''
       };
 
       await this.loadXmlToConfiguration(data);
@@ -101,34 +84,15 @@ export default withErrorHandling(
     };
 
     componentDidMount = async () => {
-      const isNew = this.isNew;
       await this.props.mightFail(
         loadSingleReport(this.id),
         async response => {
-          const {name, lastModifier, lastModified, data, combined, reportType} = response;
-          const reportResult = await getReportData(this.id);
-          const stateData = data || (await this.initializeReport(combined));
-          const sharingEnabled = await isSharingEnabled();
-          this.setState(
-            {
-              name,
-              lastModifier,
-              lastModified,
-              loaded: true,
-              data: stateData,
-              originalData: {...stateData},
-              reportResult: reportResult || {combined, reportType, data: stateData},
-              reportType,
-              originalName: name,
-              combined,
-              sharingEnabled
-            },
-            async () => {
-              if (isNew) {
-                this.save();
-              }
-            }
-          );
+          this.setState({
+            loaded: true,
+            originalData: response,
+            report: (await evaluateReport(this.id)) || response,
+            sharingEnabled: await isSharingEnabled()
+          });
         },
         error => {
           const serverError = error.status;
@@ -150,25 +114,9 @@ export default withErrorHandling(
 
     updateName = evt => {
       this.setState({
-        name: evt.target.value
+        report: update(this.state.report, {name: {$set: evt.target.value}})
       });
     };
-
-    onlyVisualizationChanged(updates) {
-      const {visualization, groupBy, view} = this.state.data;
-      return (
-        // there should be a visualization change
-        updates.visualization &&
-        // visualization data should be loaded before
-        visualization &&
-        // new visualization is different
-        updates.visualization !== visualization &&
-        // should be the same view
-        (!updates.view || updates.view === view) &&
-        // should be the same groupBy
-        (!updates.groupBy || !groupBy || updates.groupBy.type === groupBy.type)
-      );
-    }
 
     loadXmlToConfiguration = async data => {
       if (data.processDefinitionKey && data.processDefinitionVersion) {
@@ -180,33 +128,18 @@ export default withErrorHandling(
       }
     };
 
-    allFieldsAreSelected = data => {
-      const {processDefinitionKey, decisionDefinitionKey, view, groupBy, visualization} = data;
-      const key = processDefinitionKey || decisionDefinitionKey;
-      return this.isNotEmpty(key) && view && groupBy && visualization;
-    };
-
     isNotEmpty = str => {
       return str && str.length > 0;
     };
 
     save = async evt => {
+      const {name, data, reportType, combined} = this.state.report;
       await this.props.mightFail(
-        saveReport(
-          this.id,
-          {
-            name: this.state.name,
-            data: this.state.data,
-            reportType: this.state.reportType,
-            combined: this.state.combined
-          },
-          this.state.conflict !== null
-        ),
+        saveReport(this.id, {name, data, reportType, combined}, this.state.conflict !== null),
         () => {
           this.setState({
             confirmModalVisible: false,
-            originalData: {...this.state.data},
-            originalName: this.state.name,
+            originalData: this.state.report,
             redirectToReport: !!evt,
             conflict: null
           });
@@ -227,15 +160,13 @@ export default withErrorHandling(
     };
 
     cancel = async () => {
-      let reportResult = await getReportData(this.id);
-      const {combined, reportType, originalData, originalName} = this.state;
-      if (!reportResult) {
-        reportResult = {combined, reportType, data: originalData};
+      let report = await evaluateReport(this.id);
+      const {originalData} = this.state;
+      if (!report) {
+        report = originalData;
       }
       this.setState({
-        name: originalName,
-        data: {...originalData},
-        reportResult
+        report
       });
     };
 
@@ -265,7 +196,7 @@ export default withErrorHandling(
     };
 
     shouldShowCSVDownload = () => {
-      const {reportType, reportResult: {data, result}} = this.state;
+      const {report: {data, result, reportType}} = this.state;
 
       return (
         data.visualization === 'table' &&
@@ -276,9 +207,9 @@ export default withErrorHandling(
     };
 
     maxRawDataEntriesExceeded = () => {
-      if (!this.state.reportResult) return false;
+      if (!this.state.report) return false;
 
-      const {data, result, processInstanceCount} = this.state.reportResult;
+      const {data, result, processInstanceCount} = this.state.report;
       return !!(
         result &&
         result.length &&
@@ -291,7 +222,7 @@ export default withErrorHandling(
     };
 
     constructCSVDownloadLink = () => {
-      const {excludedColumns} = this.state.data.configuration;
+      const {excludedColumns} = this.state.report.data.configuration;
 
       const queryString = excludedColumns
         ? `?excludedColumns=${excludedColumns
@@ -300,47 +231,36 @@ export default withErrorHandling(
         : '';
 
       return `api/export/csv/${this.id}/${encodeURIComponent(
-        this.state.name.replace(/\s/g, '_')
+        this.state.report.name.replace(/\s/g, '_')
       )}.csv${queryString}`;
     };
 
     updateReport = async (change, needsReevaluation) => {
-      const newReport = update(this.state.data, change);
+      const newReport = update(this.state.report.data, change);
 
       if (needsReevaluation) {
-        const {combined, reportType} = this.state;
-
         const query = {
-          combined,
-          reportType,
+          ...this.state.report,
           data: newReport
         };
 
-        this.setState({data: newReport, loadingReportData: true});
         this.setState({
-          reportResult: (await getReportData(query)) || query,
+          loadingReportData: true
+        });
+        this.setState({
+          report: (await evaluateReport(query)) || query,
           loadingReportData: false
         });
       } else {
-        this.setState(({reportResult}) => ({
-          data: newReport,
-          reportResult: update(reportResult, {data: change})
+        this.setState(({report}) => ({
+          report: update(report, {data: change})
         }));
       }
     };
 
     renderEditMode = () => {
-      const {
-        name,
-        lastModifier,
-        lastModified,
-        data,
-        reportResult,
-        loadingReportData,
-        combined,
-        reportType,
-        redirectToReport
-      } = this.state;
+      const {report, loadingReportData, redirectToReport} = this.state;
+      const {name, lastModifier, lastModified, data, combined, reportType} = report;
 
       return (
         <div className="Report">
@@ -354,11 +274,11 @@ export default withErrorHandling(
                 value={name || ''}
                 className="Report__name-input"
                 placeholder="Report Name"
-                isInvalid={!this.state.name}
+                isInvalid={!name}
               />
-              {!this.state.name && (
+              {!name && (
                 <ErrorMessage className="Report__warning">
-                  Report's name can not be empty
+                  {"Report's name can not be empty"}
                 </ErrorMessage>
               )}
               <div className="Report__metadata">
@@ -368,7 +288,7 @@ export default withErrorHandling(
             <div className="Report__tools">
               <button
                 className="Button Report__tool-button Report__save-button"
-                disabled={!this.state.name}
+                disabled={!name}
                 onClick={this.save}
               >
                 <Icon type="check" />
@@ -390,7 +310,7 @@ export default withErrorHandling(
             reportType === 'process' && (
               <ReportControlPanel
                 {...data}
-                reportResult={reportResult}
+                reportResult={report}
                 updateReport={this.updateReport}
               />
             )}
@@ -399,15 +319,15 @@ export default withErrorHandling(
             reportType === 'decision' && (
               <DecisionControlPanel
                 {...data}
-                reportResult={reportResult}
+                reportResult={report}
                 updateReport={this.updateReport}
               />
             )}
 
           {this.maxRawDataEntriesExceeded() && (
             <Message type="warning">
-              The raw data table below only shows {reportResult.result.length} process instances out
-              of a total of {reportResult.processInstanceCount}
+              The raw data table below only shows {report.result.length} process instances out of a
+              total of {report.processInstanceCount}
             </Message>
           )}
 
@@ -425,7 +345,7 @@ export default withErrorHandling(
                 <LoadingIndicator />
               ) : (
                 <ReportView
-                  report={reportResult}
+                  report={report}
                   applyAddons={this.applyAddons(ColumnRearrangement)}
                   customProps={{
                     table: {
@@ -437,7 +357,7 @@ export default withErrorHandling(
             </div>
             {combined && (
               <CombinedReportPanel
-                reportResult={reportResult}
+                reportResult={report}
                 configuration={data.configuration}
                 updateReport={this.updateReport}
               />
@@ -464,8 +384,8 @@ export default withErrorHandling(
       if (Wrapper) {
         return (
           <Wrapper
-            report={this.state.reportResult}
-            data={this.state.data}
+            report={this.state.report}
+            data={this.state.report.data}
             updateReport={this.updateReport}
           >
             {renderedRest}
@@ -477,7 +397,8 @@ export default withErrorHandling(
     };
 
     renderViewMode = () => {
-      const {name, lastModifier, lastModified, reportResult, sharingEnabled} = this.state;
+      const {report, sharingEnabled} = this.state;
+      const {name, lastModifier, lastModified} = report;
       return (
         <div className="Report">
           <div className="Report__header">
@@ -534,7 +455,7 @@ export default withErrorHandling(
           </div>
           <div className="Report__view">
             <div className="Report__content">
-              <ReportView report={reportResult} />
+              <ReportView report={report} />
             </div>
           </div>
         </div>
@@ -557,7 +478,7 @@ export default withErrorHandling(
     render() {
       const {viewMode} = this.props.match.params;
 
-      const {loaded, redirect, serverError, confirmModalVisible, conflict, name} = this.state;
+      const {loaded, report, redirect, serverError, confirmModalVisible, conflict} = this.state;
 
       if (serverError) {
         return <ErrorPage entity="report" statusCode={serverError} />;
@@ -571,6 +492,7 @@ export default withErrorHandling(
         return <Redirect to="/reports" />;
       }
 
+      const {name} = report;
       return (
         <div className="Report-container">
           <ConfirmationModal

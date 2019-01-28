@@ -3,7 +3,7 @@ import {mount, shallow} from 'enzyme';
 
 import Report from './Report';
 import {
-  getReportData,
+  evaluateReport,
   loadSingleReport,
   remove,
   saveReport,
@@ -61,7 +61,7 @@ jest.mock('./service', () => {
   return {
     loadSingleReport: jest.fn(),
     remove: jest.fn(),
-    getReportData: jest.fn(),
+    evaluateReport: jest.fn(),
     saveReport: jest.fn(),
     loadProcessDefinitionXml: jest.fn(),
     isSharingEnabled: jest.fn().mockReturnValue(true)
@@ -116,7 +116,7 @@ const props = {
   location: {}
 };
 
-const sampleReport = {
+const report = {
   name: 'name',
   lastModifier: 'lastModifier',
   lastModified: '2017-11-11T11:11:11.1111+0200',
@@ -124,19 +124,14 @@ const sampleReport = {
   combined: false,
   data: {
     processDefinitionKey: null,
-    configuration: {}
-  }
-};
-
-const reportResult = {
-  data: {
+    configuration: {},
     visualization: 'table'
   },
   result: [1, 2, 3]
 };
 
-loadSingleReport.mockReturnValue(sampleReport);
-getReportData.mockReturnValue(reportResult);
+loadSingleReport.mockReturnValue(report);
+evaluateReport.mockReturnValue(report);
 loadProcessDefinitionXml.mockReturnValue('some xml');
 
 beforeEach(() => {
@@ -167,7 +162,7 @@ it('should initially load data', () => {
 it('should initially evaluate the report', () => {
   mount(shallow(<Report {...props} />).get(0));
 
-  expect(getReportData).toHaveBeenCalled();
+  expect(evaluateReport).toHaveBeenCalled();
 });
 
 it('should display the key properties of a report', () => {
@@ -175,18 +170,17 @@ it('should display the key properties of a report', () => {
 
   node.setState({
     loaded: true,
-    reportResult,
-    ...sampleReport
+    report
   });
 
-  expect(node).toIncludeText(sampleReport.name);
-  expect(node).toIncludeText(sampleReport.lastModifier);
+  expect(node).toIncludeText(report.name);
+  expect(node).toIncludeText(report.lastModifier);
   expect(node).toIncludeText('some date');
 });
 
 it('should provide a link to edit mode in view mode', () => {
   const node = mount(shallow(<Report {...props} />).get(0));
-  node.setState({loaded: true, reportResult, ...sampleReport});
+  node.setState({loaded: true, report});
 
   expect(node.find('.Report__edit-button')).toBePresent();
 });
@@ -195,8 +189,7 @@ it('should open a deletion modal on delete button click', async () => {
   const node = mount(shallow(<Report {...props} />).get(0));
   node.setState({
     loaded: true,
-    reportResult,
-    ...sampleReport
+    report
   });
 
   await node
@@ -211,8 +204,7 @@ it('should remove a report when delete is invoked', () => {
   const node = mount(shallow(<Report {...props} />).get(0));
   node.setState({
     loaded: true,
-    reportResult,
-    ...sampleReport,
+    report,
     ConfirmModalVisible: true
   });
 
@@ -225,8 +217,7 @@ it('should redirect to the report list on report deletion', async () => {
   const node = mount(shallow(<Report {...props} />).get(0));
   node.setState({
     loaded: true,
-    reportResult,
-    ...sampleReport,
+    report,
     ConfirmModalVisible: true
   });
 
@@ -238,7 +229,7 @@ it('should redirect to the report list on report deletion', async () => {
 
 it('should contain a ReportView with the report evaluation result', () => {
   const node = mount(shallow(<Report {...props} />).get(0));
-  node.setState({loaded: true, reportResult, ...sampleReport});
+  node.setState({loaded: true, report});
 
   expect(node).toIncludeText('ReportView');
 });
@@ -247,7 +238,6 @@ it('should not contain a Control Panel in edit mode for a combined report', () =
   props.match.params.viewMode = 'edit';
 
   const combinedReport = {
-    ...sampleReport,
     combined: true,
     result: {
       test: {
@@ -259,7 +249,7 @@ it('should not contain a Control Panel in edit mode for a combined report', () =
   };
 
   const node = mount(shallow(<Report {...props} />).get(0));
-  node.setState({loaded: true, reportResult: combinedReport, ...combinedReport});
+  node.setState({loaded: true, report: {...report, ...combinedReport}});
 
   expect(node).not.toIncludeText('ControlPanel');
 });
@@ -268,7 +258,7 @@ it('should contain a Control Panel in edit mode for a single report', () => {
   props.match.params.viewMode = 'edit';
 
   const node = mount(shallow(<Report {...props} />).get(0));
-  node.setState({loaded: true, reportResult, ...sampleReport});
+  node.setState({loaded: true, report});
 
   expect(node).toIncludeText('ControlPanel');
 });
@@ -276,20 +266,15 @@ it('should contain a Control Panel in edit mode for a single report', () => {
 it('should contain a decision control panel in edit mode for decision reports', () => {
   props.match.params.viewMode = 'edit';
 
-  const report = {
-    ...sampleReport,
-    reportType: 'decision'
-  };
-
   const node = mount(shallow(<Report {...props} />).get(0));
-  node.setState({loaded: true, reportResult, ...report});
+  node.setState({loaded: true, report: {...report, reportType: 'decision'}});
 
   expect(node).toIncludeText('DecisionControlPanel');
 });
 
 it('should not contain a Control Panel in non-edit mode', () => {
   const node = mount(shallow(<Report {...props} />).get(0));
-  node.setState({loaded: true, reportResult, ...sampleReport});
+  node.setState({loaded: true, report});
 
   expect(node).not.toIncludeText('ControlPanel');
 });
@@ -317,14 +302,13 @@ xit('should evaluate the report after updating', async () => {
         type: 'bar'
       },
       visualization: 'number'
-    },
-    ...sampleReport
+    }
   });
 
-  getReportData.mockClear();
+  evaluateReport.mockClear();
   await node.instance().updateReport({visualization: 'customTestVis'});
 
-  expect(getReportData).toHaveBeenCalled();
+  expect(evaluateReport).toHaveBeenCalled();
 });
 
 xit('should not evaluate the report after updating only the configuration', async () => {
@@ -341,14 +325,13 @@ xit('should not evaluate the report after updating only the configuration', asyn
         type: 'bar'
       },
       visualization: 'number'
-    },
-    ...sampleReport
+    }
   });
 
-  getReportData.mockClear();
+  evaluateReport.mockClear();
   await node.instance().updateReport({configuration: 'someOtherConfiguration'});
 
-  expect(getReportData).not.toHaveBeenCalled();
+  expect(evaluateReport).not.toHaveBeenCalled();
 });
 
 xit('should reset the report data to its original state after canceling', async () => {
@@ -366,22 +349,23 @@ xit('should reset the report data to its original state after canceling', async 
 
 it('should save a changed report', async () => {
   const node = mount(shallow(<Report {...props} />).get(0));
+  node.setState({loaded: true, report});
 
-  node.instance().save();
+  await node.instance().save();
 
   expect(saveReport).toHaveBeenCalled();
 });
 
 it('should render a sharing popover', () => {
   const node = mount(shallow(<Report {...props} />).get(0));
-  node.setState({loaded: true, reportResult, ...sampleReport});
+  node.setState({loaded: true, report});
 
   expect(node.find('.Report__share-button').first()).toIncludeText('Share');
 });
 
 it('should show a download csv button with the correct link when report is a table', () => {
   const node = mount(shallow(<Report {...props} />).get(0));
-  node.setState({loaded: true, reportResult, ...sampleReport});
+  node.setState({loaded: true, report});
 
   expect(node.find('.Report__csv-download-button')).toBePresent();
 
@@ -391,16 +375,17 @@ it('should show a download csv button with the correct link when report is a tab
     .getAttribute('href');
 
   expect(href).toContain(props.match.params.id);
-  expect(href).toContain(sampleReport.name);
+  expect(href).toContain(report.name);
 });
 
 it('should reflect excluded columns in the csv download link', () => {
   const node = mount(shallow(<Report {...props} />).get(0));
   node.setState({
     loaded: true,
-    reportResult,
-    ...sampleReport,
-    data: {configuration: {excludedColumns: ['prop1', 'var__VariableName']}}
+    report: {
+      ...report,
+      data: {...report.data, configuration: {excludedColumns: ['prop1', 'var__VariableName']}}
+    }
   });
 
   expect(node.find('.Report__csv-download-button')).toBePresent();
@@ -417,13 +402,13 @@ it('should not show a csv download button when report is not a table', () => {
   const node = mount(shallow(<Report {...props} />).get(0));
   node.setState({
     loaded: true,
-    reportResult: {
+    report: {
+      ...report,
       data: {
         visualization: 'someOtherVis'
       },
       result: [1, 2, 3]
-    },
-    ...sampleReport
+    }
   });
 
   expect(node.find('.Report__csv-download-button')).not.toBePresent();
@@ -431,7 +416,7 @@ it('should not show a csv download button when report is not a table', () => {
 
 it('should not show a csv download button when report is for decision', () => {
   const node = mount(shallow(<Report {...props} />).get(0));
-  node.setState({loaded: true, reportResult, ...sampleReport, reportType: 'decision'});
+  node.setState({loaded: true, report: {...report, reportType: 'decision'}});
 
   expect(node.find('.Report__csv-download-button')).not.toBePresent();
 });
@@ -443,7 +428,9 @@ describe('edit mode', async () => {
     await node.instance().componentDidMount();
 
     await node.setState({
-      name: '',
+      report: {
+        name: ''
+      },
       loaded: true
     });
 
@@ -469,15 +456,17 @@ describe('edit mode', async () => {
     await node.instance().componentDidMount();
 
     node.setState({
-      data: {
-        filter: [],
-        view: {
-          operation: 'foo'
-        },
-        groupBy: {
-          type: 'variable'
-        },
-        visualization: 'number'
+      report: {
+        data: {
+          filter: [],
+          view: {
+            operation: 'foo'
+          },
+          groupBy: {
+            type: 'variable'
+          },
+          visualization: 'number'
+        }
       }
     });
 
@@ -496,15 +485,17 @@ describe('edit mode', async () => {
     await node.instance().componentDidMount();
 
     node.setState({
-      data: {
-        filter: [],
-        view: {
-          operation: 'foo'
-        },
-        groupBy: {
-          type: 'none'
-        },
-        visualization: 'number'
+      report: {
+        data: {
+          filter: [],
+          view: {
+            operation: 'foo'
+          },
+          groupBy: {
+            type: 'none'
+          },
+          visualization: 'number'
+        }
       }
     });
 
@@ -520,7 +511,7 @@ describe('edit mode', async () => {
     props.match.params.viewMode = 'edit';
 
     const node = mount(shallow(<Report {...props} />).get(0));
-    node.setState({loaded: true});
+    node.setState({loaded: true, report});
 
     expect(node.find('.Report__save-button')).toBePresent();
     expect(node.find('.Report__cancel-button')).toBePresent();
@@ -530,7 +521,7 @@ describe('edit mode', async () => {
   it('should provide name edit input', async () => {
     props.match.params.viewMode = 'edit';
     const node = mount(shallow(<Report {...props} />).get(0));
-    node.setState({loaded: true, name: 'test name'});
+    node.setState({loaded: true, report: {name: 'test name'}});
 
     expect(node.find('input#name')).toBePresent();
   });
@@ -538,7 +529,7 @@ describe('edit mode', async () => {
   it('should invoke update on save click', async () => {
     props.match.params.viewMode = 'edit';
     const node = mount(shallow(<Report {...props} />).get(0));
-    node.setState({loaded: true, name: 'test name'});
+    node.setState({loaded: true, report: {name: ''}});
 
     node.find('.Report__save-button').simulate('click');
 
@@ -548,7 +539,7 @@ describe('edit mode', async () => {
   it('should disable save button if report name is empty', async () => {
     props.match.params.viewMode = 'edit';
     const node = mount(shallow(<Report {...props} />).get(0));
-    node.setState({loaded: true, name: ''});
+    node.setState({loaded: true, report: {name: ''}});
 
     expect(node.find('.Report__save-button')).toBeDisabled();
   });
@@ -556,17 +547,17 @@ describe('edit mode', async () => {
   it('should update name on input change', async () => {
     props.match.params.viewMode = 'edit';
     const node = mount(shallow(<Report {...props} />).get(0));
-    node.setState({loaded: true, name: 'test name'});
+    node.setState({loaded: true, report: {name: 'test name'}});
 
     const input = 'asdf';
     node.find(`input[id="name"]`).simulate('change', {target: {value: input}});
-    expect(node).toHaveState('name', input);
+    expect(node.state().report.name).toBe(input);
   });
 
   it('should reset name on cancel', async () => {
     props.match.params.viewMode = 'edit';
     const node = await mount(shallow(<Report {...props} />).get(0));
-    node.setState({loaded: true});
+    node.setState({loaded: true, report});
 
     const input = 'asdf';
     await node.find(`input[id="name"]`).simulate('change', {target: {value: input}});
@@ -574,7 +565,7 @@ describe('edit mode', async () => {
     await node.instance().componentDidMount();
 
     await node.instance().cancel();
-    expect(node).toHaveState('name', 'name');
+    expect(node.state().report.name).toBe('name');
   });
 
   it('should invoke cancel', async () => {
@@ -582,7 +573,7 @@ describe('edit mode', async () => {
     const node = mount(shallow(<Report {...props} />).get(0));
 
     const spy = jest.spyOn(node.instance(), 'cancel');
-    node.setState({loaded: true});
+    node.setState({loaded: true, report});
 
     const input = 'asdf';
     await node.find(`input[id="name"]`).simulate('change', {target: {value: input}});
@@ -590,7 +581,7 @@ describe('edit mode', async () => {
 
     await node.find('.Report__cancel-button').simulate('click');
     expect(spy).toHaveBeenCalled();
-    expect(node).toHaveState('name', 'name');
+    expect(node.state().report.name).toBe('name');
   });
 
   it('should use original data as result data if report cant be evaluated on cancel', async () => {
@@ -601,13 +592,16 @@ describe('edit mode', async () => {
     node.setState({
       loaded: true,
       originalData: {
-        processDefinitionKey: '123'
+        ...report,
+        data: {
+          processDefinitionKey: '123'
+        }
       }
     });
-    getReportData.mockReturnValueOnce(null);
+    evaluateReport.mockReturnValueOnce(null);
     await node.instance().cancel();
 
-    expect(node.state().reportResult.data.processDefinitionKey).toEqual('123');
+    expect(node.state().report.data.processDefinitionKey).toEqual('123');
   });
 
   // re-enable this test once https://github.com/airbnb/enzyme/issues/1604 is fixed
@@ -630,84 +624,13 @@ describe('edit mode', async () => {
   //   ).toBe(document.activeElement);
   // });
 
-  it("should select the only procDef and it's latest version by default", async () => {
-    props.match.params.viewMode = 'edit';
-
-    const node = mount(shallow(<Report {...props} />).get(0));
-
-    loadSingleReport.mockReturnValueOnce({});
-
-    await node.instance().componentDidMount();
-
-    expect(node.state().data.processDefinitionKey).toBe('key');
-    expect(node.state().data.processDefinitionVersion).toBe(2);
-  });
-
-  describe('onlyVisualizationChanged', () => {
-    it('should return false if visualization data is not loaded before', async () => {
-      const node = mount(shallow(<Report {...props} />).get(0));
-      await node.instance().componentDidMount();
-      node.setState({
-        data: {
-          view: 'test view',
-          groupBy: {type: 'name'},
-          configuration: {}
-        }
-      });
-      const updates = {
-        visualization: 'barchart',
-        view: 'test view',
-        groupBy: {type: 'name'}
-      };
-      expect(!!node.instance().onlyVisualizationChanged(updates)).toBe(false);
-    });
-
-    it('should return false if groupBy or view also changed', async () => {
-      const node = mount(shallow(<Report {...props} />).get(0));
-      await node.instance().componentDidMount();
-      node.setState({
-        data: {
-          visualization: 'table',
-          view: 'test view',
-          groupBy: {type: 'name'},
-          configuration: {}
-        }
-      });
-      const updates = {
-        visualization: 'barchart',
-        view: 'another view',
-        groupBy: {type: 'another name'}
-      };
-      expect(node.instance().onlyVisualizationChanged(updates)).toBe(false);
-    });
-
-    it('should return true if only visualization has changed', async () => {
-      const node = mount(shallow(<Report {...props} />).get(0));
-      await node.instance().componentDidMount();
-      node.setState({
-        data: {
-          visualization: 'table',
-          view: 'test view',
-          groupBy: {type: 'name'},
-          configuration: {}
-        }
-      });
-      const updates = {
-        visualization: 'barchart',
-        view: 'test view',
-        groupBy: {type: 'name'}
-      };
-      expect(node.instance().onlyVisualizationChanged(updates)).toBe(true);
-    });
-  });
-
   it('should show a warning message when process instance count exceeds the maximum shown', async () => {
     props.match.params.viewMode = 'edit';
     const node = mount(shallow(<Report {...props} />).get(0));
     await node.instance().componentDidMount();
 
     node.setState({
-      reportResult: {
+      report: {
         data: {
           visualization: 'table',
           view: {
@@ -729,12 +652,15 @@ describe('edit mode', async () => {
     incompatibleFilters.mockReturnValue(true);
 
     node.setState({
-      data: {
-        visualization: 'table',
-        view: {
-          operation: 'rawData'
-        },
-        filter: ['some data']
+      report: {
+        ...report,
+        data: {
+          visualization: 'table',
+          view: {
+            operation: 'rawData'
+          },
+          filter: ['some data']
+        }
       }
     });
 
@@ -749,8 +675,7 @@ describe('edit mode', async () => {
     const node = mount(shallow(<Report {...props} />).get(0));
     node.setState({
       loaded: true,
-      reportResult,
-      ...sampleReport
+      report
     });
 
     await node
@@ -772,8 +697,7 @@ describe('edit mode', async () => {
     const node = mount(shallow(<Report {...props} />).get(0));
     node.setState({
       loaded: true,
-      reportResult,
-      ...sampleReport
+      report
     });
 
     await node.find('.Report__save-button').simulate('click');
@@ -787,14 +711,16 @@ describe('edit mode', async () => {
     props.match.params.viewMode = 'edit';
 
     const combinedReport = {
-      ...sampleReport,
-      combined: true,
-      data: {
-        reportIds: ['test'],
-        configuration: {
-          targetValue: {
-            active: true,
-            value: 25
+      report: {
+        ...report,
+        combined: true,
+        data: {
+          reportIds: ['test'],
+          configuration: {
+            targetValue: {
+              active: true,
+              value: 25
+            }
           }
         }
       }
@@ -803,11 +729,11 @@ describe('edit mode', async () => {
     const node = mount(shallow(<Report {...props} />).get(0));
     node.setState({
       loaded: true,
-      reportResult: combinedReport,
+      report: combinedReport,
       ...combinedReport
     });
 
-    getReportData.mockReturnValue(combinedReport);
+    evaluateReport.mockReturnValue(combinedReport);
 
     node.instance().updateReport({reportIds: []});
 
@@ -821,8 +747,7 @@ describe('edit mode', async () => {
 
     const node = shallow(<ReportComponent {...props} />);
     node.setState({
-      loaded: true,
-      ...sampleReport
+      loaded: true
     });
 
     node
