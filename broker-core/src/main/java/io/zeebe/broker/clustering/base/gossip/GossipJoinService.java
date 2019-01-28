@@ -50,9 +50,7 @@ public class GossipJoinService implements Service<Void> {
     gossip = gossipInjector.getValue();
 
     final List<SocketAddress> initalContactPoints =
-        clusterCfg
-            .getInitialContactPoints()
-            .stream()
+        clusterCfg.getInitialContactPoints().stream()
             .map(SocketAddress::from)
             .collect(Collectors.toList());
 

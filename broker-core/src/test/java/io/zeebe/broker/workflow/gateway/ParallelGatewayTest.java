@@ -391,9 +391,7 @@ public class ParallelGatewayTest {
   }
 
   private static boolean isServiceTaskInProcess(String activityId, BpmnModelInstance process) {
-    return process
-        .getModelElementsByType(ServiceTask.class)
-        .stream()
+    return process.getModelElementsByType(ServiceTask.class).stream()
         .anyMatch(t -> t.getId().equals(activityId));
   }
 }

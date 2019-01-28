@@ -73,9 +73,7 @@ public class JobWorkerWithMultiplePartitionsTest {
     waitUntil(() -> handler.getHandledJobs().size() == 3);
 
     final Integer[] receivedPartitionIds =
-        handler
-            .getHandledJobs()
-            .stream()
+        handler.getHandledJobs().stream()
             .map(ActivatedJob::getKey)
             .map(Protocol::decodePartitionId)
             .toArray(Integer[]::new);

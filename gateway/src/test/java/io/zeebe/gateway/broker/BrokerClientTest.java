@@ -363,9 +363,7 @@ public class BrokerClientTest {
 
     // then
     final long actualTopologyRequests =
-        broker
-            .getReceivedControlMessageRequests()
-            .stream()
+        broker.getReceivedControlMessageRequests().stream()
             .filter(r -> r.messageType() == ControlMessageType.REQUEST_TOPOLOGY)
             .count();
 
@@ -390,9 +388,7 @@ public class BrokerClientTest {
 
     // then
     final long actualTopologyRequests =
-        broker
-            .getReceivedControlMessageRequests()
-            .stream()
+        broker.getReceivedControlMessageRequests().stream()
             .filter(r -> r.messageType() == ControlMessageType.REQUEST_TOPOLOGY)
             .count();
 
@@ -446,9 +442,7 @@ public class BrokerClientTest {
     // wait for a hanging topology request
     waitUntil(
         () ->
-            broker
-                    .getReceivedControlMessageRequests()
-                    .stream()
+            broker.getReceivedControlMessageRequests().stream()
                     .filter(r -> r.messageType() == ControlMessageType.REQUEST_TOPOLOGY)
                     .count()
                 == 1);

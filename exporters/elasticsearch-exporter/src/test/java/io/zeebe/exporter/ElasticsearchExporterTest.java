@@ -309,8 +309,7 @@ public class ElasticsearchExporterTest {
 
     // when
     final List<Record> exported =
-        testHarness
-            .stream(
+        testHarness.stream(
                 r ->
                     r.getMetadata()
                         .setValueType(ValueType.WORKFLOW_INSTANCE)

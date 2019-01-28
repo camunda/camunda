@@ -67,8 +67,7 @@ public class WorkflowInstanceAssert
     final DirectBuffer elementIdBuffer = BufferUtil.wrapString(elementId);
 
     final Optional<TypedRecord<WorkflowInstanceRecord>> terminatingRecordOptional =
-        actual
-            .stream()
+        actual.stream()
             .filter(
                 r ->
                     r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_TERMINATING
@@ -93,8 +92,7 @@ public class WorkflowInstanceAssert
     //   - is in an event in the terminating flow scope
     //   - is a non-terminating event
     final Optional<TypedRecord<WorkflowInstanceRecord>> firstViolatingRecord =
-        actual
-            .stream()
+        actual.stream()
             .filter(
                 r ->
                     ((TypedEventImpl) r).getSourceEventPosition() > terminatingRecord.getPosition())

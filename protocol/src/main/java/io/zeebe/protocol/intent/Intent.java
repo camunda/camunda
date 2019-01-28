@@ -136,8 +136,7 @@ public interface Intent {
   }
 
   static int maxCardinality() {
-    return INTENT_CLASSES
-        .stream()
+    return INTENT_CLASSES.stream()
         .mapToInt(clazz -> clazz.getEnumConstants().length)
         .max()
         .getAsInt();

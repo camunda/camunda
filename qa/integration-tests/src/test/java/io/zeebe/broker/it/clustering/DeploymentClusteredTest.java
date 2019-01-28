@@ -126,9 +126,7 @@ public class DeploymentClusteredTest {
     clusteringRule.restartBroker(2);
 
     // then create wf instance on each partition
-    clusteringRule
-        .getPartitionIds()
-        .stream()
+    clusteringRule.getPartitionIds().stream()
         .forEach(
             partitionId -> {
               final long instanceKey =

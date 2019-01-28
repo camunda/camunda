@@ -129,8 +129,7 @@ public class WorkflowPersistenceCache {
     final List<ExecutableWorkflow> definitions = transformer.transformDefinitions(modelInstance);
 
     final ExecutableWorkflow executableWorkflow =
-        definitions
-            .stream()
+        definitions.stream()
             .filter((w) -> BufferUtil.equals(persistedWorkflow.getBpmnProcessId(), w.getId()))
             .findFirst()
             .get();

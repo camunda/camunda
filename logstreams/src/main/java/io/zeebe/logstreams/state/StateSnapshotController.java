@@ -72,8 +72,7 @@ public class StateSnapshotController implements SnapshotController {
 
     if (!snapshots.isEmpty()) {
       recoveredMetadata =
-          snapshots
-              .stream()
+          snapshots.stream()
               .sorted(Comparator.reverseOrder())
               .filter(filter)
               .findFirst()

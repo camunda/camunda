@@ -31,9 +31,7 @@ public class FlowNodeValidator implements ModelElementValidator<FlowNode> {
   public void validate(FlowNode element, ValidationResultCollector validationResultCollector) {
     if (!(element instanceof ExclusiveGateway)) {
       final boolean hasAnyConditionalFlow =
-          element
-              .getOutgoing()
-              .stream()
+          element.getOutgoing().stream()
               .filter(s -> s.getConditionExpression() != null)
               .findAny()
               .isPresent();

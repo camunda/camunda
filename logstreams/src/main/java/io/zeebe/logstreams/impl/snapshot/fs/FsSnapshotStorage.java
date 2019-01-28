@@ -47,8 +47,7 @@ public class FsSnapshotStorage implements SnapshotStorage {
 
     if (!snapshotFiles.isEmpty()) {
       final List<File> committedSortedSnapshotFiles =
-          snapshotFiles
-              .stream()
+          snapshotFiles.stream()
               .filter((f) -> isCommitted(f, name))
               .sorted(Comparator.comparingLong((f) -> position(f, name)))
               .collect(Collectors.toList());
