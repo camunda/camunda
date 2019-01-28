@@ -159,6 +159,23 @@ public class IncidentStateTest {
     assertThat(jobIncidentKey).isEqualTo(IncidentState.MISSING_INCIDENT);
   }
 
+  @Test
+  public void shouldNotOverwritePreviousRecord() {
+    // given
+    final long key = 1L;
+    final IncidentRecord writtenRecord = createJobIncident();
+
+    // when
+    incidentState.createIncident(key, writtenRecord);
+    writtenRecord.setJobKey(2048);
+
+    // then
+    final IncidentRecord readRecord = incidentState.getIncidentRecord(1L);
+    assertThat(readRecord.getJobKey()).isNotEqualTo(writtenRecord.getJobKey());
+    assertThat(readRecord.getJobKey()).isEqualTo(1234);
+    assertThat(writtenRecord.getJobKey()).isEqualTo(2048);
+  }
+
   public IncidentRecord createJobIncident() {
     final IncidentRecord expectedRecord = new IncidentRecord();
     expectedRecord.setJobKey(1234);

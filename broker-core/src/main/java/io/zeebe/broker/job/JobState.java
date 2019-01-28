@@ -35,7 +35,11 @@ import org.agrona.DirectBuffer;
 public class JobState {
 
   // key => job record value
-  private final UnpackedObjectValue jobRecord;
+  // we need two separate wrapper to not interfere with get and put
+  // see https://github.com/zeebe-io/zeebe/issues/1914
+  private final UnpackedObjectValue jobRecordToRead;
+  private final UnpackedObjectValue jobRecordToWrite;
+
   private final DbLong jobKey;
   private final ColumnFamily<DbLong, UnpackedObjectValue> jobsColumnFamily;
 
@@ -55,10 +59,12 @@ public class JobState {
   private final ZeebeDb<ZbColumnFamilies> zeebeDb;
 
   public JobState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
-    jobRecord = new UnpackedObjectValue();
-    jobRecord.wrapObject(new JobRecord());
+    jobRecordToRead = new UnpackedObjectValue();
+    jobRecordToRead.wrapObject(new JobRecord());
+
+    jobRecordToWrite = new UnpackedObjectValue();
     jobKey = new DbLong();
-    jobsColumnFamily = zeebeDb.createColumnFamily(ZbColumnFamilies.JOBS, jobKey, jobRecord);
+    jobsColumnFamily = zeebeDb.createColumnFamily(ZbColumnFamilies.JOBS, jobKey, jobRecordToRead);
 
     jobState = new DbByte();
     statesJobColumnFamily =
@@ -182,7 +188,7 @@ public class JobState {
           final long deadline = compositeKey.getFirst().getValue();
           final boolean isDue = deadline < upperBound;
           if (isDue) {
-            final Long jobKey = compositeKey.getSecond().getValue();
+            final long jobKey = compositeKey.getSecond().getValue();
             final JobRecord job = getJob(jobKey);
 
             if (job == null) {
@@ -277,8 +283,8 @@ public class JobState {
 
   private void updateJobRecord(long key, JobRecord updatedValue) {
     jobKey.wrapLong(key);
-    jobRecord.wrapObject(updatedValue);
-    jobsColumnFamily.put(jobKey, jobRecord);
+    jobRecordToWrite.wrapObject(updatedValue);
+    jobsColumnFamily.put(jobKey, jobRecordToWrite);
   }
 
   private void updateJobState(State newState) {

@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.subscription.message.data.MessageStartEventSubscriptionRecord;
 import io.zeebe.broker.util.ZeebeStateRule;
+import io.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Before;
@@ -127,6 +128,31 @@ public class MessageStartEventSubscriptionStateTest {
 
     assertThat(state.exists(subscription1)).isFalse();
     assertThat(state.exists(subscription2)).isTrue();
+  }
+
+  @Test
+  public void shouldNotOverwritePreviousRecord() {
+    // given
+    final long key = 1L;
+    final MessageStartEventSubscriptionRecord writtenRecord =
+        createSubscription("msg", "start", key);
+
+    // when
+    state.put(writtenRecord);
+    writtenRecord.setMessageName(BufferUtil.wrapString("foo"));
+
+    // then
+    state.visitSubscriptionsByMessageName(
+        BufferUtil.wrapString("msg"),
+        readRecord -> {
+          assertThat(readRecord.getMessageName()).isNotEqualTo(writtenRecord.getMessageName());
+          assertThat(readRecord.getMessageName()).isEqualTo(BufferUtil.wrapString("msg"));
+          assertThat(writtenRecord.getMessageName()).isEqualTo(BufferUtil.wrapString("foo"));
+        });
+
+    final MessageStartEventSubscriptionRecord secondSub = createSubscription("msg", "start", 23);
+    state.exists(secondSub);
+    assertThat(writtenRecord.getMessageName()).isEqualTo(BufferUtil.wrapString("foo"));
   }
 
   private MessageStartEventSubscriptionRecord createSubscription(
