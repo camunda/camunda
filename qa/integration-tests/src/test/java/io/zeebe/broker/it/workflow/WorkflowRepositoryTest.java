@@ -217,8 +217,7 @@ public class WorkflowRepositoryTest {
   }
 
   private long getWorkflowKey(final String bpmnProcessId, final int version) {
-    return deployedWorkflows
-        .stream()
+    return deployedWorkflows.stream()
         .filter(w -> w.getBpmnProcessId().equals(bpmnProcessId) && w.getVersion() == version)
         .findAny()
         .map(Workflow::getWorkflowKey)

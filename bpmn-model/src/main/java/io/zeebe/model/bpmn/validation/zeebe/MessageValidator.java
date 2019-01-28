@@ -57,15 +57,11 @@ public class MessageValidator implements ModelElementValidator<Message> {
   private void validateIfReferredByStartEvent(
       Message element, ValidationResultCollector validationResultCollector) {
     final Collection<StartEvent> startEvents =
-        element
-            .getParentElement()
-            .getChildElementsByType(Process.class)
-            .stream()
+        element.getParentElement().getChildElementsByType(Process.class).stream()
             .flatMap(p -> p.getChildElementsByType(StartEvent.class).stream())
             .collect(Collectors.toList());
     final long numReferredStartEvents =
-        startEvents
-            .stream()
+        startEvents.stream()
             .flatMap(i -> i.getEventDefinitions().stream())
             .filter(
                 e ->
@@ -85,15 +81,11 @@ public class MessageValidator implements ModelElementValidator<Message> {
 
   private boolean isReferedByCatchEvent(Message element) {
     final Collection<IntermediateCatchEvent> intermediateCatchEvents =
-        element
-            .getParentElement()
-            .getChildElementsByType(Process.class)
-            .stream()
+        element.getParentElement().getChildElementsByType(Process.class).stream()
             .flatMap(p -> p.getChildElementsByType(IntermediateCatchEvent.class).stream())
             .collect(Collectors.toList());
 
-    return intermediateCatchEvents
-        .stream()
+    return intermediateCatchEvents.stream()
         .flatMap(i -> i.getEventDefinitions().stream())
         .anyMatch(
             e ->
@@ -103,10 +95,7 @@ public class MessageValidator implements ModelElementValidator<Message> {
 
   private boolean isReferedByReceiveTask(Message element) {
     final Collection<ReceiveTask> receiveTasks =
-        element
-            .getParentElement()
-            .getChildElementsByType(Process.class)
-            .stream()
+        element.getParentElement().getChildElementsByType(Process.class).stream()
             .flatMap(p -> p.getChildElementsByType(ReceiveTask.class).stream())
             .collect(Collectors.toList());
 

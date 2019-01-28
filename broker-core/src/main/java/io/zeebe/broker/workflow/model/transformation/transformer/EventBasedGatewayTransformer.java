@@ -52,9 +52,7 @@ public class EventBasedGatewayTransformer implements ModelElementTransformer<Eve
 
   private List<ExecutableCatchEventElement> getConnectedCatchEvents(
       final ExecutableEventBasedGateway gateway) {
-    return gateway
-        .getOutgoing()
-        .stream()
+    return gateway.getOutgoing().stream()
         .map(e -> (ExecutableCatchEventElement) e.getTarget())
         .collect(Collectors.toList());
   }

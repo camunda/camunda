@@ -980,9 +980,7 @@ public class ClientTransportTest {
     // then
     waitUntil(() -> channelListener.getOpenedConnections().size() >= 2);
     final long openedConnections =
-        channelListener
-            .getOpenedConnections()
-            .stream()
+        channelListener.getOpenedConnections().stream()
             .filter(this::containsServerAddress1)
             .count();
     assertThat(openedConnections).isGreaterThanOrEqualTo(2);

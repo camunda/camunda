@@ -83,9 +83,7 @@ public class ServiceTaskTransformer implements ModelElementTransformer<ServiceTa
 
     if (taskHeaders != null) {
       final List<ZeebeHeader> validHeaders =
-          taskHeaders
-              .getHeaders()
-              .stream()
+          taskHeaders.getHeaders().stream()
               .filter(this::isValidHeader)
               .collect(Collectors.toList());
 

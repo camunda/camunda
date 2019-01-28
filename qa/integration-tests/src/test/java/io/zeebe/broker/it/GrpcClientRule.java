@@ -90,9 +90,7 @@ public class GrpcClientRule extends ExternalResource {
   public List<Integer> getPartitions() {
     final Topology topology = client.newTopologyRequest().send().join();
 
-    return topology
-        .getBrokers()
-        .stream()
+    return topology.getBrokers().stream()
         .flatMap(i -> i.getPartitions().stream())
         .filter(PartitionInfo::isLeader)
         .map(PartitionInfo::getPartitionId)

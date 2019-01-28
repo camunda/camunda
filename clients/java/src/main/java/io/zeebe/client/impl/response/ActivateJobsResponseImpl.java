@@ -32,9 +32,7 @@ public class ActivateJobsResponseImpl implements ActivateJobsResponse {
 
   public void addResponse(
       io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse activateJobsResponse) {
-    activateJobsResponse
-        .getJobsList()
-        .stream()
+    activateJobsResponse.getJobsList().stream()
         .map(r -> new ActivatedJobImpl(objectMapper, r))
         .forEach(jobs::add);
   }

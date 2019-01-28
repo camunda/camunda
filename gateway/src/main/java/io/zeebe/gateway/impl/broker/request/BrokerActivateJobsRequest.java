@@ -50,8 +50,7 @@ public class BrokerActivateJobsRequest extends BrokerExecuteCommand<JobBatchReco
 
   public BrokerActivateJobsRequest setVariables(List<String> fetchVariables) {
     final ValueArray<StringValue> variables = requestDto.variables();
-    fetchVariables
-        .stream()
+    fetchVariables.stream()
         .map(BufferUtil::wrapString)
         .forEach(buffer -> variables.add().wrap(buffer));
 

@@ -113,8 +113,7 @@ public class WorkflowRepositoryService implements Service<WorkflowRepositoryServ
   }
 
   private List<WorkflowMetadata> createMetadataList(final Collection<DeployedWorkflow> workflows) {
-    return workflows
-        .stream()
+    return workflows.stream()
         .map(
             workflow ->
                 new WorkflowMetadata()

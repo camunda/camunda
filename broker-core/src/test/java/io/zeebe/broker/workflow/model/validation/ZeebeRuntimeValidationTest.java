@@ -206,10 +206,7 @@ public class ZeebeRuntimeValidationTest {
     // then
     final List<ExpectedValidationResult> unmatchedExpectations = new ArrayList<>(expectedResults);
     final List<ValidationResult> unmatchedResults =
-        results
-            .getResults()
-            .values()
-            .stream()
+        results.getResults().values().stream()
             .flatMap(l -> l.stream())
             .collect(Collectors.toList());
 

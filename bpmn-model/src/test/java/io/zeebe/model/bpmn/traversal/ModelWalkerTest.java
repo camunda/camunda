@@ -61,15 +61,13 @@ public class ModelWalkerTest {
 
     // then
     final List<BaseElement> visitedBaseElements =
-        visitedElements
-            .stream()
+        visitedElements.stream()
             .filter(e -> e instanceof BaseElement)
             .map(e -> (BaseElement) e)
             .collect(Collectors.toList());
 
     final List<String> subprocessVisitingOrder =
-        visitedBaseElements
-            .stream()
+        visitedBaseElements.stream()
             .filter(e -> e instanceof SubProcess)
             .map(e -> e.getId())
             .collect(Collectors.toList());

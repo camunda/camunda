@@ -22,9 +22,7 @@ import java.util.stream.Collectors;
 
 public class ModelUtil {
   public static List<MessageEventDefinition> getActivityMessageBoundaryEvents(Activity activity) {
-    return activity
-        .getBoundaryEvents()
-        .stream()
+    return activity.getBoundaryEvents().stream()
         .flatMap(event -> event.getEventDefinitions().stream())
         .filter(definition -> definition instanceof MessageEventDefinition)
         .map(MessageEventDefinition.class::cast)

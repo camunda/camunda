@@ -61,11 +61,8 @@ public class EventBasedGatewayValidator implements ModelElementValidator<EventBa
       validationResultCollector.addError(0, ERROR_UNSUPPORTED_TARGET_NODE);
     }
 
-    getMessageEventDefinitions(outgoingSequenceFlows)
-        .map(MessageEventDefinition::getMessage)
-        .collect(Collectors.groupingBy(Message::getName, Collectors.counting()))
-        .entrySet()
-        .stream()
+    getMessageEventDefinitions(outgoingSequenceFlows).map(MessageEventDefinition::getMessage)
+        .collect(Collectors.groupingBy(Message::getName, Collectors.counting())).entrySet().stream()
         .filter(e -> e.getValue() > 1)
         .forEach(
             e ->
@@ -91,16 +88,14 @@ public class EventBasedGatewayValidator implements ModelElementValidator<EventBa
 
     } else {
       final EventDefinition eventDefinition = eventDefinitions.iterator().next();
-      return SUPPORTED_EVENTS
-          .stream()
+      return SUPPORTED_EVENTS.stream()
           .anyMatch(e -> e.isAssignableFrom(eventDefinition.getClass()));
     }
   }
 
   private Stream<MessageEventDefinition> getMessageEventDefinitions(
       Collection<SequenceFlow> outgoingSequenceFlows) {
-    return outgoingSequenceFlows
-        .stream()
+    return outgoingSequenceFlows.stream()
         .map(SequenceFlow::getTarget)
         .filter(t -> t instanceof IntermediateCatchEvent)
         .map(IntermediateCatchEvent.class::cast)

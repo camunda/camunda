@@ -61,8 +61,7 @@ public class MockController implements Controller {
   public void runScheduledTasks(Duration elapsed) {
     final Duration upperBound = elapsed.plusMillis(lastRanAtMs);
 
-    scheduledTasks
-        .stream()
+    scheduledTasks.stream()
         .filter(t -> t.getDelay().compareTo(upperBound) <= 0)
         .sorted(Comparator.comparing(MockScheduledTask::getDelay))
         .forEach(MockScheduledTask::run);

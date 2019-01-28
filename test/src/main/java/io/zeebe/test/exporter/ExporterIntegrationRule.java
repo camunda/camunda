@@ -159,9 +159,7 @@ public class ExporterIntegrationRule extends ExternalResource {
 
   /** @return the currently configured exporters */
   public List<ExporterCfg> getConfiguredExporters() {
-    return getBrokerConfig()
-        .getExporters()
-        .stream()
+    return getBrokerConfig().getExporters().stream()
         .filter(cfg -> !cfg.getId().equals(TEST_RECORD_EXPORTER_ID))
         .collect(Collectors.toList());
   }
@@ -180,8 +178,7 @@ public class ExporterIntegrationRule extends ExternalResource {
    * @return instantiated configuration class based on the exporter args map
    */
   public <T> T getExporterConfiguration(String id, Class<T> configurationClass) {
-    return getConfiguredExporters()
-        .stream()
+    return getConfiguredExporters().stream()
         .filter(cfg -> cfg.getId().equals(id))
         .findFirst()
         .map(cfg -> convertMapToConfig(cfg.getArgs(), configurationClass))

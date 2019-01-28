@@ -157,16 +157,8 @@ public class ActivateJobsTest {
             .boxed()
             .flatMap(
                 i ->
-                    client
-                        .newActivateJobsCommand()
-                        .jobType(JOB_TYPE)
-                        .amount(1)
-                        .workerName("worker")
-                        .timeout(1000)
-                        .send()
-                        .join()
-                        .getJobs()
-                        .stream())
+                    client.newActivateJobsCommand().jobType(JOB_TYPE).amount(1).workerName("worker")
+                        .timeout(1000).send().join().getJobs().stream())
             .map(ActivatedJob::getKey)
             .map(Protocol::decodePartitionId)
             .collect(Collectors.toList());

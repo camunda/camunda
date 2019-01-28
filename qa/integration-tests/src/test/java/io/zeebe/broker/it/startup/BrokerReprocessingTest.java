@@ -782,8 +782,7 @@ public class BrokerReprocessingTest {
         () -> {
           clock.addTime(pollingInterval);
           // not using RecordingExporter.jobRecords cause it is blocking
-          return RecordingExporter.getRecords()
-              .stream()
+          return RecordingExporter.getRecords().stream()
               .filter(r -> r.getMetadata().getValueType() == ValueType.JOB)
               .anyMatch(r -> r.getMetadata().getIntent() == JobIntent.TIMED_OUT);
         });

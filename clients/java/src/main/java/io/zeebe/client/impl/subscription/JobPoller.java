@@ -71,9 +71,7 @@ public class JobPoller implements StreamObserver<ActivateJobsResponse> {
   @Override
   public void onNext(ActivateJobsResponse activateJobsResponse) {
     activatedJobs += activateJobsResponse.getJobsCount();
-    activateJobsResponse
-        .getJobsList()
-        .stream()
+    activateJobsResponse.getJobsList().stream()
         .map(job -> new ActivatedJobImpl(objectMapper, job))
         .forEach(jobConsumer);
   }
