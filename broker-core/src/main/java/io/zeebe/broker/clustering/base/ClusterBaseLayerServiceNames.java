@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.clustering.base;
 
+import io.atomix.core.Atomix;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
@@ -37,6 +38,8 @@ public class ClusterBaseLayerServiceNames {
       ServiceName.newServiceName("cluster.base.gossip", Gossip.class);
   public static final ServiceName<Void> GOSSIP_JOIN_SERVICE =
       ServiceName.newServiceName("cluster.base.gossip.join", Void.class);
+  public static final ServiceName<Atomix> ATOMIX_SERVICE =
+      ServiceName.newServiceName("cluster.base.atomix", Atomix.class);
 
   public static final ServiceName<Void> RAFT_BOOTSTRAP_SERVICE =
       ServiceName.newServiceName("cluster.base.raft.bootstrap", Void.class);
