@@ -55,7 +55,7 @@
     <plugin.version.elasticsearch>6.9</plugin.version.elasticsearch>
     <plugin.version.exec>1.6.0</plugin.version.exec>
     <plugin.version.failsafe>2.22.1</plugin.version.failsafe>
-    <plugin.version.fmt>2.7</plugin.version.fmt>
+    <plugin.version.fmt>2.8</plugin.version.fmt>
     <plugin.version.license>3.0</plugin.version.license>
     <plugin.version.protobuf-maven-plugin>0.6.1</plugin.version.protobuf-maven-plugin>
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
