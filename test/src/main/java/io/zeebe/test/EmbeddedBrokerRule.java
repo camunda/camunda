@@ -313,6 +313,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
     network.getManagement().setPort(SocketUtil.getNextAddress().port());
     network.getReplication().setPort(SocketUtil.getNextAddress().port());
     network.getSubscription().setPort(SocketUtil.getNextAddress().port());
+    network.getAtomix().setPort(SocketUtil.getNextAddress().port());
   }
 
   static class TestService implements Service<TestService> {

@@ -17,9 +17,9 @@
  */
 package io.zeebe.broker.clustering;
 
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_JOIN_SERVICE;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_SERVICE;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.CLUSTERING_BASE_LAYER;
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.GOSSIP_JOIN_SERVICE;
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.GOSSIP_SERVICE;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.RAFT_BOOTSTRAP_SERVICE;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.RAFT_CONFIGURATION_MANAGER;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.RAFT_SERVICE_GROUP;
@@ -30,8 +30,8 @@ import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_CL
 import static io.zeebe.broker.transport.TransportServiceNames.clientTransport;
 
 import io.zeebe.broker.clustering.base.connections.RemoteAddressManager;
-import io.zeebe.broker.clustering.base.gossip.GossipJoinService;
-import io.zeebe.broker.clustering.base.gossip.GossipService;
+import io.zeebe.broker.clustering.base.gossip.AtomixJoinService;
+import io.zeebe.broker.clustering.base.gossip.AtomixService;
 import io.zeebe.broker.clustering.base.partitions.BootstrapPartitions;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManagerService;
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
@@ -40,7 +40,6 @@ import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
-import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.servicecontainer.CompositeServiceBuilder;
 import io.zeebe.servicecontainer.ServiceContainer;
 
@@ -74,7 +73,7 @@ public class ClusterComponent implements Component {
 
     baseLayerInstall
         .createService(TOPOLOGY_MANAGER_SERVICE, topologyManagerService)
-        .dependency(GOSSIP_SERVICE, topologyManagerService.getGossipInjector())
+        .dependency(ATOMIX_SERVICE, topologyManagerService.getAtomixInjector())
         .groupReference(RAFT_SERVICE_GROUP, topologyManagerService.getRaftReference())
         .install();
 
@@ -100,24 +99,15 @@ public class ClusterComponent implements Component {
       final CompositeServiceBuilder baseLayerInstall,
       final SystemContext context,
       final NodeInfo localMember) {
-    final GossipService gossipService = new GossipService(context.getBrokerConfiguration());
-    baseLayerInstall
-        .createService(GOSSIP_SERVICE, gossipService)
-        .dependency(
-            TransportServiceNames.clientTransport(TransportServiceNames.MANAGEMENT_API_CLIENT_NAME),
-            gossipService.getClientTransportInjector())
-        .dependency(
-            TransportServiceNames.bufferingServerTransport(
-                TransportServiceNames.MANAGEMENT_API_SERVER_NAME),
-            gossipService.getBufferingServerTransportInjector())
-        .install();
 
-    // TODO: decide whether failure to join gossip cluster should result in broker startup fail
-    final GossipJoinService gossipJoinService =
-        new GossipJoinService(context.getBrokerConfiguration().getCluster(), localMember);
+    final AtomixService atomixService = new AtomixService(context.getBrokerConfiguration());
+    baseLayerInstall.createService(ATOMIX_SERVICE, atomixService).install();
+
+    final AtomixJoinService atomixJoinService = new AtomixJoinService();
     baseLayerInstall
-        .createService(GOSSIP_JOIN_SERVICE, gossipJoinService)
-        .dependency(GOSSIP_SERVICE, gossipJoinService.getGossipInjector())
+        .createService(ATOMIX_JOIN_SERVICE, atomixJoinService)
+        .dependency(TOPOLOGY_MANAGER_SERVICE)
+        .dependency(ATOMIX_SERVICE, atomixJoinService.getAtomixInjector())
         .install();
   }
 
@@ -133,6 +123,7 @@ public class ClusterComponent implements Component {
         new BootstrapPartitions(context.getBrokerConfiguration());
     baseLayerInstall
         .createService(RAFT_BOOTSTRAP_SERVICE, raftBootstrapService)
+        .dependency(ATOMIX_JOIN_SERVICE)
         .dependency(
             RAFT_CONFIGURATION_MANAGER, raftBootstrapService.getConfigurationManagerInjector())
         .install();
