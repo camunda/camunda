@@ -35,6 +35,8 @@ public class NetworkCfg implements ConfigurationEntry {
   private SocketBindingReplicationCfg replication = new SocketBindingReplicationCfg();
   private SocketBindingSubscriptionCfg subscription = new SocketBindingSubscriptionCfg();
 
+  private SocketBindingAtomixCfg atomix = new SocketBindingAtomixCfg();
+
   @Override
   public void init(
       final BrokerCfg brokerCfg, final String brokerBase, final Environment environment) {
@@ -43,6 +45,7 @@ public class NetworkCfg implements ConfigurationEntry {
     management.applyDefaults(this);
     replication.applyDefaults(this);
     subscription.applyDefaults(this);
+    atomix.applyDefaults(this);
   }
 
   private void applyEnvironment(final Environment environment) {
@@ -104,6 +107,14 @@ public class NetworkCfg implements ConfigurationEntry {
 
   public void setSubscription(final SocketBindingSubscriptionCfg subscription) {
     this.subscription = subscription;
+  }
+
+  public SocketBindingAtomixCfg getAtomix() {
+    return atomix;
+  }
+
+  public void setAtomix(SocketBindingAtomixCfg atomix) {
+    this.atomix = atomix;
   }
 
   @Override
