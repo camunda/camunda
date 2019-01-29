@@ -16,12 +16,16 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
 
   public static final String IMPORT_POSITION_INDEX_PATTERN = "operate-import-position";
   public static final String WORKFLOW_INSTANCE_INDEX_PATTERN = "operate-workflow-instance";
+  public static final String LIST_VIEW_INDEX_PATTERN = "operate-list-view";
+  public static final String OPERATION_INDEX_PATTERN = "operate-operation";
   public static final String EVENT_INDEX_PATTERN = "operate-event";
   public static final String WORKFLOW_INDEX_PATTERN = "operate-workflow";
 
   private String importPositionIndexName = IMPORT_POSITION_INDEX_PATTERN +"_";
   private String eventIndexName = EVENT_INDEX_PATTERN +"_";
   private String workflowInstanceIndexName = WORKFLOW_INSTANCE_INDEX_PATTERN +"_";
+  private String listViewIndexName = LIST_VIEW_INDEX_PATTERN +"_";
+  private String operationIndexName = OPERATION_INDEX_PATTERN +"_";
   private String workflowIndexName = WORKFLOW_INDEX_PATTERN +"_";
   private String importPositionAlias = IMPORT_POSITION_INDEX_PATTERN + "_alias";
   private String workflowAlias = WORKFLOW_INDEX_PATTERN + "_alias";
@@ -47,6 +51,22 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
 
   public void setWorkflowInstanceIndexName(String workflowInstanceIndexName) {
     this.workflowInstanceIndexName = workflowInstanceIndexName;
+  }
+
+  public String getListViewIndexName() {
+    return listViewIndexName;
+  }
+
+  public void setListViewIndexName(String listViewIndexName) {
+    this.listViewIndexName = listViewIndexName;
+  }
+
+  public String getOperationIndexName() {
+    return operationIndexName;
+  }
+
+  public void setOperationIndexName(String operationIndexName) {
+    this.operationIndexName = operationIndexName;
   }
 
   public String getWorkflowIndexName() {

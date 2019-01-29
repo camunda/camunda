@@ -1,0 +1,111 @@
+package org.camunda.operate.es.schema.templates;
+
+import java.io.IOException;
+import org.camunda.operate.property.OperateProperties;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+@Component
+public class ListViewTemplate extends AbstractTemplateCreator {
+
+  public static final String ID = "id";
+  public static final String KEY = "key";
+  public static final String WORKFLOW_INSTANCE_ID = "workflowInstanceId";
+  public static final String BPMN_PROCESS_ID = "bpmnProcessId";
+  public static final String WORKFLOW_VERSION = "workflowVersion";
+  public static final String WORKFLOW_ID = "workflowId";
+  public static final String WORKFLOW_NAME = "workflowName";
+  public static final String START_DATE = "startDate";
+  public static final String END_DATE = "endDate";
+  public static final String STATE = "state";
+
+  public static final String ACTIVITY_ID = "activityId";
+  public static final String ACTIVITY_STATE = "activityState";
+  public static final String ACTIVITY_TYPE = "activityType";
+
+  public static final String INCIDENT_KEY = "incidentKey";
+  public static final String INCIDENT_JOB_KEY = "incidentJobKey";
+  public static final String ERROR_MSG = "errorMessage";
+
+  public static final String JOIN_RELATION = "joinRelation";
+  public static final String WORKFLOW_INSTANCE_JOIN_RELATION = "workflowInstance";
+  public static final String ACTIVITIES_JOIN_RELATION = "activity";
+
+  @Autowired
+  private OperateProperties operateProperties;
+
+  @Override
+  public String getMainIndexName() {
+    return operateProperties.getElasticsearch().getListViewIndexName();
+  }
+
+  @Override
+  protected XContentBuilder addProperties(XContentBuilder builder) throws IOException {
+    XContentBuilder newBuilder =  builder
+      .startObject(ID)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(WORKFLOW_INSTANCE_ID)
+        .field("type", "keyword")
+      .endObject()
+      //workflow instance fields
+      .startObject(WORKFLOW_ID)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(WORKFLOW_NAME)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(WORKFLOW_VERSION)
+        .field("type", "long")
+      .endObject()
+      .startObject(BPMN_PROCESS_ID)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(STATE)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(START_DATE)
+        .field("type", "date")
+        .field("format", operateProperties.getElasticsearch().getDateFormat())
+      .endObject()
+      .startObject(END_DATE)
+        .field("type", "date")
+        .field("format", operateProperties.getElasticsearch().getDateFormat())
+      .endObject()
+      //incident fields
+      .startObject(INCIDENT_KEY)
+        .field("type", "long")
+      .endObject()
+      .startObject(ERROR_MSG)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(INCIDENT_JOB_KEY)
+        .field("type", "keyword")
+      .endObject()
+      //activity instance fields
+      .startObject(ACTIVITY_ID)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(ACTIVITY_STATE)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(ACTIVITY_TYPE)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(JOIN_RELATION)
+        .field("type", "join")
+        .startObject("relations")
+          .field(WORKFLOW_INSTANCE_JOIN_RELATION, ACTIVITIES_JOIN_RELATION)
+        .endObject()
+      .endObject()
+      .startObject(PARTITION_ID)
+        .field("type", "integer")
+      .endObject()
+      .startObject(KEY)
+        .field("type", "long")
+      .endObject();
+    return newBuilder;
+  }
+
+}

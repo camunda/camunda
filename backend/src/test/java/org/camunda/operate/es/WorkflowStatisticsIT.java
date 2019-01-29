@@ -20,11 +20,14 @@ import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.IncidentState;
+import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
+import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.rest.dto.ActivityStatisticsDto;
-import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
-import org.camunda.operate.rest.dto.WorkflowInstanceRequestDto;
+import org.camunda.operate.rest.dto.listview.ListViewQueryDto;
+import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
@@ -36,6 +39,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.util.TestUtil.createActivityInstance;
+import static org.camunda.operate.util.TestUtil.createActivityInstanceWithIncident;
 import static org.camunda.operate.util.TestUtil.createIncident;
 import static org.camunda.operate.util.TestUtil.createWorkflowInstance;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -79,7 +83,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
     createData(workflowId);
 
-    final WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(workflowId);
+    final ListViewRequestDto query = createGetAllWorkflowInstancesQuery(workflowId);
     query.getQueries().get(0).setActivityId("taskA");
 
     final List<ActivityStatisticsDto> activityStatisticsDtos = getActivityStatistics(query);
@@ -91,7 +95,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
   @Test
   public void testFailStatisticsWithNoWorkflowId() throws Exception {
-    final WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(null);
+    final ListViewRequestDto query = createGetAllWorkflowInstancesQuery(null);
 
     MockHttpServletRequestBuilder request = post(QUERY_WORKFLOW_STATISTICS_URL)
       .content(mockMvcTestRule.json(query))
@@ -109,7 +113,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
     String bpmnProcessId = "demoProcess";
 
-    final WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(null);
+    final ListViewRequestDto query = createGetAllWorkflowInstancesQuery(null);
     query.getQueries().get(0).setBpmnProcessId(bpmnProcessId);
 
     MockHttpServletRequestBuilder request = post(QUERY_WORKFLOW_STATISTICS_URL)
@@ -129,7 +133,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
     createData(workflowId);
 
-    final WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(workflowId);
+    final ListViewRequestDto query = createGetAllWorkflowInstancesQuery(workflowId);
     query.getQueries().get(0).setWorkflowIds(Arrays.asList(workflowId, "otherWorkflowId"));
 
     MockHttpServletRequestBuilder request = post(QUERY_WORKFLOW_STATISTICS_URL)
@@ -149,7 +153,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     String workflowId = "1";
     String bpmnProcessId = "demoProcess";
     Integer version = 1;
-    final WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(workflowId);
+    final ListViewRequestDto query = createGetAllWorkflowInstancesQuery(workflowId);
     query.getQueries().get(0).setBpmnProcessId(bpmnProcessId);
     query.getQueries().get(0).setWorkflowVersion(1);
 
@@ -170,7 +174,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
     createData(workflowId);
 
-    final WorkflowInstanceRequestDto query = new WorkflowInstanceRequestDto();
+    final ListViewRequestDto query = new ListViewRequestDto();
 
     MockHttpServletRequestBuilder request = post(QUERY_WORKFLOW_STATISTICS_URL)
       .content(mockMvcTestRule.json(query))
@@ -189,8 +193,8 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
     createData(workflowId);
 
-    final WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(workflowId);
-    query.getQueries().add(new WorkflowInstanceQueryDto());
+    final ListViewRequestDto query = createGetAllWorkflowInstancesQuery(workflowId);
+    query.getQueries().add(new ListViewQueryDto());
 
 
     MockHttpServletRequestBuilder request = post(QUERY_WORKFLOW_STATISTICS_URL)
@@ -204,8 +208,8 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo("Exactly one query must be specified in the request.");
   }
 
-  private WorkflowInstanceRequestDto createGetAllWorkflowInstancesQuery(String workflowId) {
-    WorkflowInstanceQueryDto q = new WorkflowInstanceQueryDto();
+  private ListViewRequestDto createGetAllWorkflowInstancesQuery(String workflowId) {
+    ListViewQueryDto q = new ListViewQueryDto();
     q.setRunning(true);
     q.setActive(true);
     q.setIncidents(true);
@@ -215,12 +219,12 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     if (workflowId != null) {
       q.setWorkflowIds(Arrays.asList(workflowId));
     }
-    WorkflowInstanceRequestDto request = new WorkflowInstanceRequestDto();
+    ListViewRequestDto request = new ListViewRequestDto();
     request.getQueries().add(q);
     return request;
   }
 
-  private void getStatisticsAndAssert(WorkflowInstanceRequestDto query) throws Exception {
+  private void getStatisticsAndAssert(ListViewRequestDto query) throws Exception {
     final List<ActivityStatisticsDto> activityStatisticsDtos = getActivityStatistics(query);
 
     assertThat(activityStatisticsDtos).hasSize(5);
@@ -241,7 +245,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     );
   }
 
-  private List<ActivityStatisticsDto> getActivityStatistics(WorkflowInstanceRequestDto query) throws Exception {
+  private List<ActivityStatisticsDto> getActivityStatistics(ListViewRequestDto query) throws Exception {
     MockHttpServletRequestBuilder request = post(QUERY_WORKFLOW_STATISTICS_URL)
       .content(mockMvcTestRule.json(query))
       .contentType(mockMvcTestRule.getContentType());
@@ -277,102 +281,96 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
    */
   private void createData(String workflowId) {
 
-    List<WorkflowInstanceEntity> instances = new ArrayList<>();
+    List<OperateEntity> instances = new ArrayList<>();
 
-    WorkflowInstanceEntity inst = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.ACTIVE, "taskA", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.ACTIVE, "taskA", null));    //duplicated on purpose, to be sure, that we sount workflow instances, but not activity inctanses
+    WorkflowInstanceForListViewEntity inst = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "start", null);
+    createActivityInstance(inst.getId(), ActivityState.ACTIVE, "taskA", null);
+    createActivityInstance(inst.getId(), ActivityState.ACTIVE, "taskA", null);    //duplicated on purpose, to be sure, that we count workflow instances, but not activity inctanses
     instances.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.ACTIVE, "taskA", null));
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "start", null);
+    createActivityInstance(inst.getId(), ActivityState.ACTIVE, "taskA", null);
     instances.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.CANCELED, workflowId);
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskA", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskB", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.TERMINATED, "taskC", null));
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "start", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskA", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskB", null);
+    createActivityInstance(inst.getId(), ActivityState.TERMINATED, "taskC", null);
     instances.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.CANCELED, workflowId);
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskA", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskB", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.TERMINATED, "taskC", null));
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "start", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskA", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskB", null);
+    createActivityInstance(inst.getId(), ActivityState.TERMINATED, "taskC", null);
     instances.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskA", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskB", null));
-    ActivityInstanceEntity task = createActivityInstance(ActivityState.INCIDENT, "taskC", null);
-    inst.getActivities().add(task);
-    inst.getIncidents().add(createIncident(IncidentState.ACTIVE, task.getActivityId(), task.getId()));
-    inst.getIncidents().add(createIncident(IncidentState.RESOLVED, task.getActivityId(), task.getId()));
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "start", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskA", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskB", null);
+    ActivityInstanceForListViewEntity task = createActivityInstanceWithIncident(inst.getId(), ActivityState.ACTIVE, "error", null);
+    task.setActivityId("taskC");
     instances.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskA", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskB", null));
-    task = createActivityInstance(ActivityState.INCIDENT, "taskC", null);
-    inst.getActivities().add(task);
-    inst.getIncidents().add(createIncident(IncidentState.ACTIVE, task.getActivityId(), task.getId()));
-    inst.getIncidents().add(createIncident(IncidentState.RESOLVED, task.getActivityId(), task.getId()));
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "start", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskA", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskB", null);
+    task = createActivityInstanceWithIncident(inst.getId(), ActivityState.ACTIVE, "error", null);
+    task.setActivityId("taskC");
     instances.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.CANCELED, workflowId);
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskA", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskB", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskC", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.TERMINATED, "taskD", null));
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "start", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskA", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskB", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskC", null);
+    createActivityInstance(inst.getId(), ActivityState.TERMINATED, "taskD", null);
     instances.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskA", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskB", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskC", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskD", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.ACTIVE, "taskE", null));
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "start", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskA", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskB", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskC", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskD", null);
+    createActivityInstance(inst.getId(), ActivityState.ACTIVE, "taskE", null);
     instances.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskA", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskB", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskC", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskD", null));
-    task = createActivityInstance(ActivityState.INCIDENT, "taskE", null);
-    inst.getActivities().add(task);
-    inst.getIncidents().add(createIncident(IncidentState.ACTIVE, task.getActivityId(), task.getId()));
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "start", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskA", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskB", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskC", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskD", null);
+    task = createActivityInstanceWithIncident(inst.getId(), ActivityState.ACTIVE, "error", null);
+    task.setActivityId("taskE");
+
+    inst = createWorkflowInstance(WorkflowInstanceState.COMPLETED, workflowId);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "start", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskA", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskB", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskC", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskD", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskE", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "end", ActivityType.END_EVENT);
     instances.add(inst);
 
     inst = createWorkflowInstance(WorkflowInstanceState.COMPLETED, workflowId);
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskA", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskB", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskC", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskD", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskE", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "end", ActivityType.END_EVENT));
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "start", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskA", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskB", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskC", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskD", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "taskE", null);
+    createActivityInstance(inst.getId(), ActivityState.COMPLETED, "end", ActivityType.END_EVENT);
     instances.add(inst);
 
-    inst = createWorkflowInstance(WorkflowInstanceState.COMPLETED, workflowId);
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "start", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskA", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskB", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskC", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskD", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "taskE", null));
-    inst.getActivities().add(createActivityInstance(ActivityState.COMPLETED, "end", ActivityType.END_EVENT));
-    instances.add(inst);
-
-    elasticsearchTestRule.persist(instances.toArray(new WorkflowInstanceEntity[instances.size()]));
+    elasticsearchTestRule.persistNew(instances.toArray(new WorkflowInstanceEntity[instances.size()]));
 
   }
 

@@ -21,23 +21,29 @@ import java.util.Map;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.entities.WorkflowInstanceEntity;
-import org.camunda.operate.es.reader.WorkflowInstanceReader;
-import org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate;
+import org.camunda.operate.es.reader.ListViewReader;
+import org.camunda.operate.es.reader.OperationReader;
+import org.camunda.operate.es.schema.templates.OperationTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.WorkflowInstanceBatchOperationDto;
-import org.camunda.operate.rest.dto.WorkflowInstanceRequestDto;
+import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.rest.exception.InvalidRequestException;
 import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
+import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.reindex.BulkByScrollResponse;
+import org.elasticsearch.index.reindex.UpdateByQueryAction;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.SearchHit;
@@ -47,6 +53,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @Component
 public class BatchOperationWriter {
@@ -54,7 +63,7 @@ public class BatchOperationWriter {
   private static final Logger logger = LoggerFactory.getLogger(BatchOperationWriter.class);
 
   @Autowired
-  private WorkflowInstanceReader workflowInstanceReader;
+  private ListViewReader listViewReader;
 
   @Autowired
   private OperateProperties operateProperties;
@@ -66,7 +75,10 @@ public class BatchOperationWriter {
   private ObjectMapper objectMapper;
 
   @Autowired
-  private WorkflowInstanceTemplate workflowInstanceTemplate;
+  private OperationTemplate operationTemplate;
+
+  @Autowired
+  private OperationReader operationReader;
 
   /**
    * Finds operation, which are scheduled or locked with expired timeout, in the amount of configured batch size, and locks them.
@@ -81,58 +93,37 @@ public class BatchOperationWriter {
     final int batchSize = operateProperties.getOperationExecutor().getBatchSize();
 
     //select workflow instances, which has scheduled operations, or locked with expired lockExpirationTime
-    final List<WorkflowInstanceEntity> workflowInstanceEntities = workflowInstanceReader.acquireOperations(batchSize);
+    final List<OperationEntity> operationEntities = operationReader.acquireOperations(batchSize);
 
     BulkRequestBuilder bulkRequest = esClient.prepareBulk();
 
     //lock the operations
-    for (WorkflowInstanceEntity workflowInstanceEntity: workflowInstanceEntities) {
-      //TODO lock workflow instance https://www.elastic.co/guide/en/elasticsearch/guide/current/concurrency-solutions.html#document-locking
-      final List<OperationEntity> operations = workflowInstanceEntity.getOperations();
-      for (OperationEntity operation: operations) {
-        if (operation.getState().equals(OperationState.SCHEDULED) ||
-          (operation.getState().equals(OperationState.LOCKED) && operation.getLockExpirationTime().isBefore(OffsetDateTime.now()))) {
-          //lock operation: update workerId, state, lockExpirationTime
-          operation.setState(OperationState.LOCKED);
-          operation.setLockOwner(workerId);
-          operation.setLockExpirationTime(OffsetDateTime.now().plus(lockTimeout, ChronoUnit.MILLIS));
+    for (OperationEntity operation: operationEntities) {
+      if (operation.getState().equals(OperationState.SCHEDULED) ||
+        (operation.getState().equals(OperationState.LOCKED) && operation.getLockExpirationTime().isBefore(OffsetDateTime.now()))) {
+        //lock operation: update workerId, state, lockExpirationTime
+        operation.setState(OperationState.LOCKED);
+        operation.setLockOwner(workerId);
+        operation.setLockExpirationTime(OffsetDateTime.now().plus(lockTimeout, ChronoUnit.MILLIS));
 
-          CollectionUtil.addToMap(result, workflowInstanceEntity.getId(), operation);
-          bulkRequest.add(createUpdateByIdRequest(workflowInstanceEntity.getId(), operation, false));
+        CollectionUtil.addToMap(result, operation.getWorkflowInstanceId(), operation);
+        bulkRequest.add(createUpdateByIdRequest(operation, false));
 
-        }
       }
-      //TODO unlock workflow instance (???)
     }
     ElasticsearchUtil.processBulkRequest(bulkRequest, true);
     logger.debug("{} operations locked", result.entrySet().stream().mapToLong(e -> e.getValue().size()).sum());
     return result;
   }
 
-  private UpdateRequestBuilder createUpdateByIdRequest(String workflowInstanceId, OperationEntity operation, boolean refreshImmediately) throws PersistenceException {
+  private UpdateRequestBuilder createUpdateByIdRequest(OperationEntity operation, boolean refreshImmediately) throws PersistenceException {
     try {
 
       Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(operation), HashMap.class);
 
-      Map<String, Object> params = new HashMap<>();
-      params.put("operation", jsonMap);
-
-      String script =
-        "for (int j = 0; j < ctx._source.operations.size(); j++) {" +
-          "if (ctx._source.operations[j].id == params.operation.id) {" +
-            "ctx._source.operations[j].state = params.operation.state;" +
-            "ctx._source.operations[j].lockOwner = params.operation.lockOwner;" +
-            "ctx._source.operations[j].lockExpirationTime = params.operation.lockExpirationTime;" +
-            "ctx._source.operations[j].endDate = params.operation.endDate;" +
-            "ctx._source.operations[j].errorMessage = params.operation.errorMessage;" +
-            "break;" +
-          "}" +
-        "}";
-
-      Script updateScript = new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, params);
       UpdateRequestBuilder updateRequestBuilder = esClient
-        .prepareUpdate(workflowInstanceTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, workflowInstanceId)
-        .setScript(updateScript);
+        .prepareUpdate(operationTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, operation.getId())
+        .setDoc(jsonMap);
       if (refreshImmediately) {
         updateRequestBuilder = updateRequestBuilder.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
       }
@@ -140,50 +131,53 @@ public class BatchOperationWriter {
     } catch (IOException e) {
       logger.error("Error preparing the query to update operation", e);
       throw new PersistenceException(String.format("Error preparing the query to update operation [%s] for workflow instance id [%s]",
-        operation.getId(), workflowInstanceId), e);
+        operation.getId(), operation.getWorkflowInstanceId()), e);
     }
 
   }
 
-  public UpdateRequestBuilder createOperationCompletedRequest(String workflowInstanceId, OperationType operationType) throws PersistenceException {
+  public void completeOperation(String workflowInstanceId, OperationType operationType) throws PersistenceException {
     try {
-
       Map<String, Object> params = new HashMap<>();
-      params.put("type", operationType.toString());
-      params.put("stateSent", OperationState.SENT.toString());
-      params.put("stateLocked", OperationState.LOCKED.toString());
-      params.put("stateCompleted", OperationState.COMPLETED.toString());
       params.put("endDate", OffsetDateTime.now());
 
       Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(params), HashMap.class);
 
       String script =
-        "for (int j = 0; j < ctx._source.operations.size(); j++) {" +
-          "if (ctx._source.operations[j].type == params.type" +
-            "&& (ctx._source.operations[j].state == params.stateSent || " +
-                "ctx._source.operations[j].state == params.stateLocked)) {" +
-            "ctx._source.operations[j].state = params.stateCompleted;" +
-            "ctx._source.operations[j].endDate = params.endDate;" +
-            "ctx._source.operations[j].lockOwner = null;" +
-            "ctx._source.operations[j].lockExpirationTime = null;" +
-            "break;" +
-          "}" +
-        "}";
-
+            "ctx._source.state = " + OperationState.COMPLETED.toString() + ";" +
+            "ctx._source.endDate = params.endDate;" +
+            "ctx._source.lockOwner = null;" +
+            "ctx._source.lockExpirationTime = null;";
       Script updateScript = new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, jsonMap);
-      return esClient
-        .prepareUpdate(workflowInstanceTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, workflowInstanceId)
-        .setScript(updateScript);
+
+      QueryBuilder query =
+        joinWithAnd(
+          termQuery(OperationTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId),
+          termsQuery(OperationTemplate.STATE, OperationState.SENT.name(), OperationState.LOCKED.name()),
+          termQuery(OperationTemplate.TYPE, operationType.name())
+          );
+
+      BulkByScrollResponse response =
+        UpdateByQueryAction.INSTANCE.newRequestBuilder(esClient)
+          .source(operationTemplate.getMainIndexName())
+          .filter(query)
+          .size(1)
+          .script(updateScript).get();
+      for (BulkItemResponse.Failure failure: response.getBulkFailures()) {
+        logger.error(String.format("Complete operation failed for operation id [%s]: %s", failure.getId(),
+          failure.getMessage()), failure.getCause());
+        throw new PersistenceException("Complete operation failed: " + failure.getMessage(), failure.getCause());
+      }
+
     } catch (IOException e) {
       logger.error("Error preparing the query to complete operation", e);
       throw new PersistenceException(String.format("Error preparing the query to complete operation of type [%s] for workflow instance id [%s]",
         operationType, workflowInstanceId), e);
     }
-
   }
 
-  public void updateOperation(String workflowInstanceId, OperationEntity operation) throws PersistenceException {
-    final UpdateRequestBuilder updateRequest = createUpdateByIdRequest(workflowInstanceId, operation, true);
+  public void updateOperation(OperationEntity operation) throws PersistenceException {
+    final UpdateRequestBuilder updateRequest = createUpdateByIdRequest(operation, true);
     ElasticsearchUtil.executeUpdate(updateRequest);
   }
 
@@ -196,7 +190,7 @@ public class BatchOperationWriter {
 
     final int batchSize = operateProperties.getElasticsearch().getBatchSize();
 
-    final SearchRequestBuilder searchRequest = workflowInstanceReader.createSearchRequest(new WorkflowInstanceRequestDto(batchOperationRequest.getQueries()));
+    final SearchRequestBuilder searchRequest = listViewReader.createSearchRequest(new ListViewRequestDto(batchOperationRequest.getQueries()));
     TimeValue keepAlive = new TimeValue(60000);
 
     SearchResponse scrollResp = searchRequest.setScroll(keepAlive).setSize(batchSize).get();
@@ -219,35 +213,28 @@ public class BatchOperationWriter {
     logger.debug("Persisting [{}] operations to Elasticsearch", hits.getHits().length);
     BulkRequestBuilder bulkRequest = esClient.prepareBulk();
     for (SearchHit searchHit : hits.getHits()) {
-      final WorkflowInstanceEntity workflowInstanceEntity = ElasticsearchUtil.fromSearchHit(searchHit.getSourceAsString(), objectMapper,WorkflowInstanceEntity.class);
-      bulkRequest.add(createRequestToAddOperation(workflowInstanceEntity, batchOperationRequest));
+      bulkRequest.add(createRequestToAddOperation(searchHit.getId(), batchOperationRequest));
     }
     ElasticsearchUtil.processBulkRequest(bulkRequest);
   }
 
-  private UpdateRequestBuilder createRequestToAddOperation(WorkflowInstanceEntity entity, WorkflowInstanceBatchOperationDto batchOperationRequest)
+  private IndexRequestBuilder createRequestToAddOperation(String workflowInstanceId, WorkflowInstanceBatchOperationDto batchOperationRequest)
     throws PersistenceException {
     OperationEntity operationEntity = new OperationEntity();
     operationEntity.generateId();
+    operationEntity.setWorkflowInstanceId(workflowInstanceId);
     operationEntity.setType(batchOperationRequest.getOperationType());
     operationEntity.setStartDate(OffsetDateTime.now());
     operationEntity.setState(OperationState.SCHEDULED);
 
     try {
-      Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(operationEntity), HashMap.class);
-      Map<String, Object> params = new HashMap<>();
-      params.put("operation", jsonMap);
-
-      String script = "ctx._source.operations.add(params.operation);";
-
-      Script updateScript = new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, params);
       return esClient
-        .prepareUpdate(workflowInstanceTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
-        .setScript(updateScript);
+        .prepareIndex(operationTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, operationEntity.getId())
+        .setSource(objectMapper.writeValueAsString(operationEntity), XContentType.JSON);
     } catch (IOException e) {
       logger.error("Error preparing the query to insert operation", e);
       throw new PersistenceException(String.format("Error preparing the query to insert operation [%s] for workflow instance id [%s]",
-        batchOperationRequest.getOperationType(), entity.getId()), e);
+        batchOperationRequest.getOperationType(), workflowInstanceId), e);
     }
 
   }

@@ -41,23 +41,8 @@ public class EventTemplate extends AbstractTemplateCreator {
   private OperateProperties operateProperties;
 
   @Override
-  public String getTemplateName() {
-    return operateProperties.getElasticsearch().getEventIndexName() + "template";
-  }
-
-  @Override
-  public String getIndexPattern() {
-    return operateProperties.getElasticsearch().getEventIndexName() + "*";
-  }
-
-  @Override
   public String getMainIndexName() {
     return operateProperties.getElasticsearch().getEventIndexName();
-  }
-
-  @Override
-  public String getAlias() {
-    return operateProperties.getElasticsearch().getEventIndexName() + "alias";
   }
 
   @Override

@@ -10,22 +10,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.operate.rest.dto;
+package org.camunda.operate.rest.dto.listview;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class WorkflowInstanceResponseDto {
+public class ListViewResponseDto {
 
-  private List<WorkflowInstanceDto> workflowInstances = new ArrayList<>();
+  private List<ListViewWorkflowInstanceDto> workflowInstances = new ArrayList<>();
 
   private long totalCount;
 
-  public List<WorkflowInstanceDto> getWorkflowInstances() {
+  public List<ListViewWorkflowInstanceDto> getWorkflowInstances() {
     return workflowInstances;
   }
 
-  public void setWorkflowInstances(List<WorkflowInstanceDto> workflowInstances) {
+  public void setWorkflowInstances(List<ListViewWorkflowInstanceDto> workflowInstances) {
     this.workflowInstances = workflowInstances;
   }
 
@@ -44,7 +44,7 @@ public class WorkflowInstanceResponseDto {
     if (o == null || getClass() != o.getClass())
       return false;
 
-    WorkflowInstanceResponseDto that = (WorkflowInstanceResponseDto) o;
+    ListViewResponseDto that = (ListViewResponseDto) o;
 
     if (totalCount != that.totalCount)
       return false;

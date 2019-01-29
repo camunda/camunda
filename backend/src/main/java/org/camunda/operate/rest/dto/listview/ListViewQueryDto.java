@@ -1,4 +1,4 @@
-package org.camunda.operate.rest.dto;
+package org.camunda.operate.rest.dto.listview;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -6,7 +6,7 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
 @ApiModel("Workflow instance query")
-public class WorkflowInstanceQueryDto {
+public class ListViewQueryDto {
 
   private boolean running;
   private boolean active;
@@ -46,7 +46,7 @@ public class WorkflowInstanceQueryDto {
 
   private VariablesQueryDto variablesQuery;
 
-  public WorkflowInstanceQueryDto() {
+  public ListViewQueryDto() {
   }
 
   public boolean isRunning() {
@@ -200,7 +200,7 @@ public class WorkflowInstanceQueryDto {
     if (o == null || getClass() != o.getClass())
       return false;
 
-    WorkflowInstanceQueryDto that = (WorkflowInstanceQueryDto) o;
+    ListViewQueryDto that = (ListViewQueryDto) o;
 
     if (running != that.running)
       return false;

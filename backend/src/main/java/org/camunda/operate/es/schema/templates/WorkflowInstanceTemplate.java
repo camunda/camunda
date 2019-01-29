@@ -43,21 +43,6 @@ public class WorkflowInstanceTemplate extends AbstractTemplateCreator {
   private OperateProperties operateProperties;
 
   @Override
-  public String getTemplateName() {
-    return operateProperties.getElasticsearch().getWorkflowInstanceIndexName() + "template";
-  }
-
-  @Override
-  public String getAlias() {
-    return operateProperties.getElasticsearch().getWorkflowInstanceIndexName() + "alias";
-  }
-
-  @Override
-  public String getIndexPattern() {
-    return operateProperties.getElasticsearch().getWorkflowInstanceIndexName() + "*";
-  }
-
-  @Override
   public String getMainIndexName() {
     return operateProperties.getElasticsearch().getWorkflowInstanceIndexName();
   }

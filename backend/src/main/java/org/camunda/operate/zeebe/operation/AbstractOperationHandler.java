@@ -41,7 +41,7 @@ public abstract class AbstractOperationHandler implements OperationHandler {
         operation.setLockOwner(null);
         operation.setEndDate(OffsetDateTime.now());
         operation.setErrorMessage(errorMsg);
-        batchOperationWriter.updateOperation(workflowInstance.getId(), operation);
+        batchOperationWriter.updateOperation(operation);
         logger.debug("Operation {} failed with message: {} ", operation.getId(), operation.getErrorMessage());
         break;
       }
@@ -55,7 +55,7 @@ public abstract class AbstractOperationHandler implements OperationHandler {
         operation.setState(OperationState.SENT);
         operation.setLockExpirationTime(null);
         operation.setLockOwner(null);
-        batchOperationWriter.updateOperation(workflowInstance.getId(), operation);
+        batchOperationWriter.updateOperation(operation);
         logger.debug("Operation {} was sent to Zeebe", operation.getId());
         break;
       }

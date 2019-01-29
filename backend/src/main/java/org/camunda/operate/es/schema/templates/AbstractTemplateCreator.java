@@ -45,5 +45,20 @@ public abstract class AbstractTemplateCreator implements TemplateCreator {
     return source;
   }
 
+  @Override
+  public String getTemplateName() {
+    return getMainIndexName() + "template";
+  }
+
+  @Override
+  public String getAlias() {
+    return getMainIndexName() + "alias";
+  }
+
+  @Override
+  public String getIndexPattern() {
+    return getMainIndexName() + "*";
+  }
+
   protected abstract XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException;
 }

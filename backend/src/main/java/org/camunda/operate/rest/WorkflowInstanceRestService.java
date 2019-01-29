@@ -5,15 +5,16 @@ import java.util.List;
 import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
 
 import org.camunda.operate.entities.WorkflowInstanceEntity;
+import org.camunda.operate.es.reader.ListViewReader;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.rest.dto.ActivityStatisticsDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceBatchOperationDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceDto;
-import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
-import org.camunda.operate.rest.dto.WorkflowInstanceRequestDto;
-import org.camunda.operate.rest.dto.WorkflowInstanceResponseDto;
+import org.camunda.operate.rest.dto.listview.ListViewQueryDto;
+import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
+import org.camunda.operate.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.rest.exception.InvalidRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -44,18 +45,21 @@ public class WorkflowInstanceRestService {
   @Autowired
   private WorkflowInstanceReader workflowInstanceReader;
 
+  @Autowired
+  private ListViewReader listViewReader;
+
   @ApiOperation("Query workflow instances by different parameters")
   @PostMapping
-  public WorkflowInstanceResponseDto queryWorkflowInstances(
-      @RequestBody WorkflowInstanceRequestDto workflowInstanceRequest,
-      @RequestParam("firstResult") Integer firstResult,
-      @RequestParam("maxResults") Integer maxResults) {
-    for (WorkflowInstanceQueryDto query : workflowInstanceRequest.getQueries()) {
+  public ListViewResponseDto queryWorkflowInstances(
+      @RequestBody ListViewRequestDto workflowInstanceRequest,
+      @RequestParam("firstResult") Integer firstResult,   //required
+      @RequestParam("maxResults") Integer maxResults) {   //required
+    for (ListViewQueryDto query : workflowInstanceRequest.getQueries()) {
       if (query.getWorkflowVersion() != null && query.getBpmnProcessId() == null) {
         throw new InvalidRequestException("BpmnProcessId must be provided in request, when workflow version is not null.");
       }
     }
-    return workflowInstanceReader.queryWorkflowInstances(workflowInstanceRequest, firstResult, maxResults);
+    return listViewReader.queryWorkflowInstances(workflowInstanceRequest, firstResult, maxResults);
   }
 
   @ApiOperation("Perform batch operation on selection (async)")
@@ -74,8 +78,8 @@ public class WorkflowInstanceRestService {
 
   @ApiOperation("Get activity instance statistics")
   @PostMapping(path = "/statistics")
-  public Collection<ActivityStatisticsDto> getStatistics(@RequestBody WorkflowInstanceRequestDto workflowInstanceRequest) {
-    final List<WorkflowInstanceQueryDto> queries = workflowInstanceRequest.getQueries();
+  public Collection<ActivityStatisticsDto> getStatistics(@RequestBody ListViewRequestDto workflowInstanceRequest) {
+    final List<ListViewQueryDto> queries = workflowInstanceRequest.getQueries();
     if (queries.size() != 1) {
       throw new InvalidRequestException("Exactly one query must be specified in the request.");
     }
@@ -86,7 +90,7 @@ public class WorkflowInstanceRestService {
     if ( (workflowIds != null && workflowIds.size() == 1) == (bpmnProcessId != null && workflowVersion != null) ) {
       throw new InvalidRequestException("Exactly one workflow must be specified in the request (via workflowIds or bpmnProcessId/version).");
     }
-    return workflowInstanceReader.getActivityStatistics(queries.get(0));
+    return listViewReader.getActivityStatistics(queries.get(0));
   }
 
 }

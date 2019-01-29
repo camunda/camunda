@@ -6,8 +6,8 @@ import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.OperateZeebeEntity;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ElasticsearchUtil;
-import org.camunda.operate.zeebeimport.transformers.AbstractRecordTransformer;
 import org.camunda.operate.zeebeimport.record.RecordImpl;
+import org.camunda.operate.zeebeimport.transformers.AbstractRecordTransformer;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.client.transport.TransportClient;
 import org.slf4j.Logger;
@@ -30,6 +30,9 @@ public class ElasticsearchBulkProcessor extends Thread {
   @Autowired
   private Map<ValueType, AbstractRecordTransformer> zeebeRecordTransformersMap;
 
+  @Autowired
+  private ListViewZeebeRecordProcessor listViewZeebeRecordProcessor;
+
   public void persistZeebeRecords(List<? extends RecordImpl> zeebeRecords) throws PersistenceException {
 
       logger.debug("Writing [{}] Zeebe records to Elasticsearch", zeebeRecords.size());
@@ -42,6 +45,13 @@ public class ElasticsearchBulkProcessor extends Thread {
         } else {
           final List<OperateZeebeEntity> operateEntities = transformer.convert(record);
           bulkRequest = addToBulk(bulkRequest, operateEntities);
+        }
+
+        //TODO new processing
+        if (record.getMetadata().getValueType().equals(ValueType.WORKFLOW_INSTANCE)) {
+          listViewZeebeRecordProcessor.processWorkflowInstanceRecord(record, bulkRequest);
+        } else if (record.getMetadata().getValueType().equals(ValueType.INCIDENT)) {
+          listViewZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
         }
       }
       ElasticsearchUtil.processBulkRequest(bulkRequest, true);

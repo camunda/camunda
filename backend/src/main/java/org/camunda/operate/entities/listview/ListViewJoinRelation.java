@@ -10,20 +10,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.operate.rest.dto;
+package org.camunda.operate.entities.listview;
 
-public class VariablesQueryDto {
+public class ListViewJoinRelation {
 
   private String name;
 
-  private Object value;
+  private String parent;
 
-  public VariablesQueryDto() {
+  public ListViewJoinRelation() {
   }
 
-  public VariablesQueryDto(String variableName, Object variableValue) {
-    this.name = variableName;
-    this.value = variableValue;
+  public ListViewJoinRelation(String name) {
+
+    this.name = name;
   }
 
   public String getName() {
@@ -34,12 +34,12 @@ public class VariablesQueryDto {
     this.name = name;
   }
 
-  public Object getValue() {
-    return value;
+  public String getParent() {
+    return parent;
   }
 
-  public void setValue(Object value) {
-    this.value = value;
+  public void setParent(String parent) {
+    this.parent = parent;
   }
 
   @Override
@@ -49,17 +49,17 @@ public class VariablesQueryDto {
     if (o == null || getClass() != o.getClass())
       return false;
 
-    VariablesQueryDto that = (VariablesQueryDto) o;
+    ListViewJoinRelation that = (ListViewJoinRelation) o;
 
     if (name != null ? !name.equals(that.name) : that.name != null)
       return false;
-    return value != null ? value.equals(that.value) : that.value == null;
+    return parent != null ? parent.equals(that.parent) : that.parent == null;
   }
 
   @Override
   public int hashCode() {
     int result = name != null ? name.hashCode() : 0;
-    result = 31 * result + (value != null ? value.hashCode() : 0);
+    result = 31 * result + (parent != null ? parent.hashCode() : 0);
     return result;
   }
 }

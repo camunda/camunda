@@ -38,7 +38,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.rest.IncidentRestService.INCIDENT_URL;
 import static org.camunda.operate.util.TestUtil.createIncident;
-import static org.camunda.operate.util.TestUtil.createWorkflowInstance;
+import static org.camunda.operate.util.TestUtil.createWorkflowInstanceEntity;
 import static org.camunda.operate.util.TestUtil.createWorkflowVersions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -191,35 +191,35 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     //Demo process v1
     String workflowId = workflowVersions.get(0).getId();
     //instance #1
-    WorkflowInstanceEntity workflowInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
+    WorkflowInstanceEntity workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId);
     createIncidents(workflowInstance, 1, 1);
     instances.add(workflowInstance);
     //instance #2
-    workflowInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
+    workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId);
     createIncidents(workflowInstance, 1, 1, true);
     instances.add(workflowInstance);
     //instance #3
-    workflowInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
+    workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId);
     createIncidents(workflowInstance, 1, 0);
     instances.add(workflowInstance);
     //instances #4,5,6
     for (int i = 4; i<=6; i++) {
-      instances.add(createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId));
+      instances.add(createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId));
     }
 
     //Demo process v2
     workflowId = workflowVersions.get(1).getId();
     //instance #1
-    workflowInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
+    workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId);
     createIncidents(workflowInstance, 2, 0, true);
     instances.add(workflowInstance);
     //instances #2-7
     for (int i = 2; i<=7; i++) {
-      instances.add(createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId));
+      instances.add(createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId));
     }
     //instances #8-9
     for (int i = 8; i<=9; i++) {
-      instances.add(createWorkflowInstance(WorkflowInstanceState.COMPLETED, workflowId));
+      instances.add(createWorkflowInstanceEntity(WorkflowInstanceState.COMPLETED, workflowId));
     }
 
     workflowVersions = createWorkflowVersions(ORDER_BPMN_PROCESS_ID, ORDER_PROCESS_NAME, 2);
@@ -229,22 +229,22 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     workflowId = workflowVersions.get(0).getId();
     //instances #1-5
     for (int i = 1; i<=5; i++) {
-      instances.add(createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId));
+      instances.add(createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId));
     }
 
     //Order process v2
     workflowId = workflowVersions.get(1).getId();
     //instance #1
-    workflowInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
+    workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId);
     createIncidents(workflowInstance, 0, 1);
     instances.add(workflowInstance);
     //instance #2
-    workflowInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
+    workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId);
     createIncidents(workflowInstance, 2, 0);
     instances.add(workflowInstance);
     //instances #3,4
     for (int i = 3; i<=4; i++) {
-      instances.add(createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId));
+      instances.add(createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId));
     }
 
     //Loan process v1
@@ -253,13 +253,13 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     workflowId = workflowVersions.get(0).getId();
     //instances #1-3
     for (int i = 1; i<=3; i++) {
-      workflowInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
+      workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId);
       createIncidents(workflowInstance, 0, 2);
       instances.add(workflowInstance);
     }
     //instances #4-5
     for (int i = 4; i<=5; i++) {
-      instances.add(createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId));
+      instances.add(createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId));
     }
 
     elasticsearchTestRule.persist(instances.toArray(new OperateEntity[instances.size()]));

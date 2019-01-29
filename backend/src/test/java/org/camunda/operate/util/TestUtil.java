@@ -27,8 +27,10 @@ import org.camunda.operate.entities.SequenceFlowEntity;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
-import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
-import org.camunda.operate.rest.dto.WorkflowInstanceRequestDto;
+import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
+import org.camunda.operate.rest.dto.listview.ListViewQueryDto;
+import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
 
 public abstract class TestUtil {
 
@@ -39,11 +41,87 @@ public abstract class TestUtil {
     return UUID.randomUUID().toString().substring(0, length);
   }
 
-  public static WorkflowInstanceEntity createWorkflowInstance(WorkflowInstanceState state) {
+  public static WorkflowInstanceForListViewEntity createWorkflowInstance(WorkflowInstanceState state) {
     return createWorkflowInstance(state, null);
   }
 
-  public static WorkflowInstanceEntity createWorkflowInstance(WorkflowInstanceState state, String workflowId) {
+  public static WorkflowInstanceForListViewEntity createWorkflowInstance(WorkflowInstanceState state, String workflowId) {
+    WorkflowInstanceForListViewEntity workflowInstance = new WorkflowInstanceForListViewEntity();
+    workflowInstance.setId(UUID.randomUUID().toString());
+    final int i = random.nextInt(10);
+    workflowInstance.setBpmnProcessId("testProcess" + i);
+    workflowInstance.setWorkflowName("Test process" + i);
+    workflowInstance.setWorkflowVersion(i);
+    workflowInstance.setStartDate(DateUtil.getRandomStartDate());
+    if (state.equals(WorkflowInstanceState.COMPLETED) || state.equals(WorkflowInstanceState.CANCELED)) {
+      final OffsetDateTime endDate = DateUtil.getRandomEndDate();
+      workflowInstance.setEndDate(endDate);
+    }
+    workflowInstance.setState(state);
+    workflowInstance.setWorkflowId(workflowId);
+    return workflowInstance;
+  }
+
+  public static WorkflowInstanceForListViewEntity createWorkflowInstance(OffsetDateTime startDate, OffsetDateTime endDate) {
+    WorkflowInstanceForListViewEntity workflowInstance = new WorkflowInstanceForListViewEntity();
+    workflowInstance.setId(UUID.randomUUID().toString());
+    final int i = random.nextInt(10);
+    workflowInstance.setBpmnProcessId("testProcess" + i);
+    workflowInstance.setWorkflowName("Test process" + i);
+    workflowInstance.setWorkflowVersion(i);
+    workflowInstance.setStartDate(startDate);
+    workflowInstance.setState(WorkflowInstanceState.ACTIVE);
+    if (endDate != null) {
+      workflowInstance.setEndDate(endDate);
+      workflowInstance.setState(WorkflowInstanceState.COMPLETED);
+    }
+    return workflowInstance;
+  }
+
+  public static ActivityInstanceForListViewEntity createActivityInstanceWithIncident(String workflowInstanceId, ActivityState state, String errorMsg, Long incidentKey) {
+    ActivityInstanceForListViewEntity activityInstanceForListViewEntity = createActivityInstance(workflowInstanceId, state);
+    createIncident(activityInstanceForListViewEntity, errorMsg, incidentKey);
+    return activityInstanceForListViewEntity;
+  }
+
+  public static void createIncident(ActivityInstanceForListViewEntity activityInstanceForListViewEntity, String errorMsg, Long incidentKey) {
+    if (incidentKey != null) {
+      activityInstanceForListViewEntity.setIncidentKey(incidentKey);
+    } else {
+      activityInstanceForListViewEntity.setIncidentKey(random.nextLong());
+    }
+    if (errorMsg != null) {
+      activityInstanceForListViewEntity.setErrorMessage(errorMsg);
+    } else {
+      activityInstanceForListViewEntity.setErrorMessage(ERROR_MSG);
+    }
+  }
+
+  public static ActivityInstanceForListViewEntity createActivityInstance(String workflowInstanceId, ActivityState state) {
+    return createActivityInstance(workflowInstanceId, state, "start", null);
+  }
+
+  public static ActivityInstanceForListViewEntity createActivityInstance(String workflowInstanceId, ActivityState state, String activityId, ActivityType activityType) {
+    ActivityInstanceForListViewEntity activityInstanceEntity = new ActivityInstanceForListViewEntity();
+    activityInstanceEntity.setWorkflowInstanceId(workflowInstanceId);
+    activityInstanceEntity.setId(UUID.randomUUID().toString());
+    activityInstanceEntity.setActivityId(activityId);
+    activityInstanceEntity.setActivityType(activityType);
+    activityInstanceEntity.setActivityState(state);
+    activityInstanceEntity.getJoinRelation().setParent(workflowInstanceId);
+    return activityInstanceEntity;
+  }
+
+  public static ActivityInstanceForListViewEntity createActivityInstance(String workflowInstanceId, ActivityState state, String activityId) {
+    return createActivityInstance(workflowInstanceId, state, activityId, ActivityType.SERVICE_TASK);
+  }
+
+
+  public static WorkflowInstanceEntity createWorkflowInstanceEntity(WorkflowInstanceState state) {
+    return createWorkflowInstanceEntity(state, null);
+  }
+
+  public static WorkflowInstanceEntity createWorkflowInstanceEntity(WorkflowInstanceState state, String workflowId) {
     WorkflowInstanceEntity workflowInstance = new WorkflowInstanceEntity();
     workflowInstance.setId(UUID.randomUUID().toString());
     final int i = random.nextInt(10);
@@ -60,7 +138,7 @@ public abstract class TestUtil {
     return workflowInstance;
   }
 
-  public static WorkflowInstanceEntity createWorkflowInstance(OffsetDateTime startDate, OffsetDateTime endDate) {
+  public static WorkflowInstanceEntity createWorkflowInstanceEntity(OffsetDateTime startDate, OffsetDateTime endDate) {
     WorkflowInstanceEntity workflowInstance = new WorkflowInstanceEntity();
     workflowInstance.setId(UUID.randomUUID().toString());
     final int i = random.nextInt(10);
@@ -103,11 +181,11 @@ public abstract class TestUtil {
     return incidentEntity;
   }
 
-  public static ActivityInstanceEntity createActivityInstance(ActivityState state) {
-    return createActivityInstance(state, "start", null);
+  public static ActivityInstanceEntity createActivityInstanceEntity(ActivityState state) {
+    return createActivityInstanceEntity(state, "start", null);
   }
 
-  public static ActivityInstanceEntity createActivityInstance(ActivityState state, String activityId, ActivityType activityType) {
+  public static ActivityInstanceEntity createActivityInstanceEntity(ActivityState state, String activityId, ActivityType activityType) {
     ActivityInstanceEntity activityInstanceEntity = new ActivityInstanceEntity();
     activityInstanceEntity.setId(UUID.randomUUID().toString());
     activityInstanceEntity.setActivityId(activityId);
@@ -140,15 +218,15 @@ public abstract class TestUtil {
     return sequenceFlowEntity;
   }
 
-  public static WorkflowInstanceRequestDto createWorkflowInstanceQuery(Consumer<WorkflowInstanceQueryDto> filtersSupplier) {
-    WorkflowInstanceRequestDto request = new WorkflowInstanceRequestDto();
-    WorkflowInstanceQueryDto query = new WorkflowInstanceQueryDto();
+  public static ListViewRequestDto createWorkflowInstanceQuery(Consumer<ListViewQueryDto> filtersSupplier) {
+    ListViewRequestDto request = new ListViewRequestDto();
+    ListViewQueryDto query = new ListViewQueryDto();
     filtersSupplier.accept(query);
     request.getQueries().add(query);
     return request;
   }
 
-  public static WorkflowInstanceRequestDto createGetAllWorkflowInstancesQuery() {
+  public static ListViewRequestDto createGetAllWorkflowInstancesQuery() {
     return
       createWorkflowInstanceQuery(q -> {
         q.setRunning(true);
@@ -160,20 +238,20 @@ public abstract class TestUtil {
       });
   }
 
-  public static WorkflowInstanceRequestDto createGetAllWorkflowInstancesQuery(Consumer<WorkflowInstanceQueryDto> filtersSupplier) {
-    final WorkflowInstanceRequestDto workflowInstanceQuery = createGetAllWorkflowInstancesQuery();
+  public static ListViewRequestDto createGetAllWorkflowInstancesQuery(Consumer<ListViewQueryDto> filtersSupplier) {
+    final ListViewRequestDto workflowInstanceQuery = createGetAllWorkflowInstancesQuery();
     filtersSupplier.accept(workflowInstanceQuery.getQueries().get(0));
 
     return workflowInstanceQuery;
   }
 
-  public static WorkflowInstanceRequestDto createGetAllFinishedQuery(Consumer<WorkflowInstanceQueryDto> filtersSupplier) {
-    final WorkflowInstanceRequestDto workflowInstanceQuery = createGetAllFinishedQuery();
+  public static ListViewRequestDto createGetAllFinishedQuery(Consumer<ListViewQueryDto> filtersSupplier) {
+    final ListViewRequestDto workflowInstanceQuery = createGetAllFinishedQuery();
     filtersSupplier.accept(workflowInstanceQuery.getQueries().get(0));
     return workflowInstanceQuery;
   }
 
-  public static WorkflowInstanceRequestDto createGetAllFinishedQuery() {
+  public static ListViewRequestDto createGetAllFinishedQuery() {
     return
       createWorkflowInstanceQuery(q -> {
         q.setFinished(true);

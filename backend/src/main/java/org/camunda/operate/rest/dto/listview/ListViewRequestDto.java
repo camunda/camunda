@@ -10,13 +10,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.operate.rest.dto;
+package org.camunda.operate.rest.dto.listview;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.camunda.operate.rest.dto.SortingDto;
 import org.camunda.operate.rest.exception.InvalidRequestException;
 
-public class WorkflowInstanceRequestDto {
+public class ListViewRequestDto {
 
   public static final String SORT_BY_ID = "id";
   public static final String SORT_BY_START_DATE = "startDate";
@@ -34,22 +35,22 @@ public class WorkflowInstanceRequestDto {
     VALID_SORT_BY_VALUES.add(SORT_BY_WORFLOW_VERSION);
   }
 
-  public WorkflowInstanceRequestDto() {
+  public ListViewRequestDto() {
   }
 
-  public WorkflowInstanceRequestDto(List<WorkflowInstanceQueryDto> queries) {
+  public ListViewRequestDto(List<ListViewQueryDto> queries) {
     this.queries = queries;
   }
 
-  private List<WorkflowInstanceQueryDto> queries = new ArrayList<>();
+  private List<ListViewQueryDto> queries = new ArrayList<>();
 
   private SortingDto sorting;
 
-  public List<WorkflowInstanceQueryDto> getQueries() {
+  public List<ListViewQueryDto> getQueries() {
     return queries;
   }
 
-  public void setQueries(List<WorkflowInstanceQueryDto> queries) {
+  public void setQueries(List<ListViewQueryDto> queries) {
     this.queries = queries;
   }
 
@@ -71,7 +72,7 @@ public class WorkflowInstanceRequestDto {
     if (o == null || getClass() != o.getClass())
       return false;
 
-    WorkflowInstanceRequestDto that = (WorkflowInstanceRequestDto) o;
+    ListViewRequestDto that = (ListViewRequestDto) o;
 
     if (queries != null ? !queries.equals(that.queries) : that.queries != null)
       return false;

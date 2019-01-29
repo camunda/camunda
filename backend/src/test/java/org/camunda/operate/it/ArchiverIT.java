@@ -25,12 +25,12 @@ import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.es.archiver.Archiver;
 import org.camunda.operate.es.archiver.ArchiverHelper;
-import org.camunda.operate.es.reader.WorkflowInstanceReader;
+import org.camunda.operate.es.reader.ListViewReader;
 import org.camunda.operate.es.schema.templates.EventTemplate;
 import org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate;
 import org.camunda.operate.exceptions.ReindexException;
 import org.camunda.operate.property.OperateProperties;
-import org.camunda.operate.rest.dto.WorkflowInstanceResponseDto;
+import org.camunda.operate.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.util.IdTestUtil;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
@@ -55,7 +55,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 public class ArchiverIT extends OperateZeebeIntegrationTest {
 
   @Autowired
-  private WorkflowInstanceReader workflowInstanceReader;
+  private ListViewReader listViewReader;
 
   @Autowired
   private Archiver archiver;
@@ -151,7 +151,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   }
 
   private void assertAllInstancesInAlias(int count) {
-    final WorkflowInstanceResponseDto responseDto = workflowInstanceReader
+    final ListViewResponseDto responseDto = listViewReader
       .queryWorkflowInstances(TestUtil.createGetAllWorkflowInstancesQuery(), 0, count + 100);
     assertThat(responseDto.getTotalCount()).isEqualTo(count);
   }

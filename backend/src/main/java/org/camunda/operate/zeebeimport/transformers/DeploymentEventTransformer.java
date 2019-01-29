@@ -27,8 +27,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.camunda.operate.entities.ActivityEntity;
-import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.OperateZeebeEntity;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.zeebeimport.record.value.DeploymentRecordValueImpl;

@@ -17,17 +17,22 @@ import java.util.UUID;
 
 public class OperationEntity extends OperateEntity {
 
+  private String workflowInstanceId;
   private OperationType type;
-
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;
-
   private OffsetDateTime lockExpirationTime;
   private String lockOwner;
-
   private OperationState state;
-
   private String errorMessage;
+
+  public String getWorkflowInstanceId() {
+    return workflowInstanceId;
+  }
+
+  public void setWorkflowInstanceId(String workflowInstanceId) {
+    this.workflowInstanceId = workflowInstanceId;
+  }
 
   public OperationType getType() {
     return type;
@@ -100,6 +105,8 @@ public class OperationEntity extends OperateEntity {
 
     OperationEntity that = (OperationEntity) o;
 
+    if (workflowInstanceId != null ? !workflowInstanceId.equals(that.workflowInstanceId) : that.workflowInstanceId != null)
+      return false;
     if (type != that.type)
       return false;
     if (startDate != null ? !startDate.equals(that.startDate) : that.startDate != null)
@@ -118,6 +125,7 @@ public class OperationEntity extends OperateEntity {
   @Override
   public int hashCode() {
     int result = super.hashCode();
+    result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
     result = 31 * result + (type != null ? type.hashCode() : 0);
     result = 31 * result + (startDate != null ? startDate.hashCode() : 0);
     result = 31 * result + (endDate != null ? endDate.hashCode() : 0);

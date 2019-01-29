@@ -18,14 +18,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.camunda.operate.entities.ActivityEntity;
 import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.OperateZeebeEntity;
 import org.camunda.operate.entities.SequenceFlowEntity;
-import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.util.DateUtil;
@@ -46,10 +44,10 @@ import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_READY;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.EVENT_ACTIVATED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.EVENT_ACTIVATING;
+import static io.zeebe.protocol.intent.WorkflowInstanceIntent.EVENT_TRIGGERED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.EVENT_TRIGGERING;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.GATEWAY_ACTIVATED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.EVENT_TRIGGERED;
 
 @Component
 public class WorkflowInstanceRecordTransformer implements AbstractRecordTransformer {
