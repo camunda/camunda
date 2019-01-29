@@ -23,8 +23,8 @@ export default themed(StateIcon);
 
 StateIcon.propTypes = {
   instance: PropTypes.shape({
-    incidents: PropTypes.arrayOf(PropTypes.object).isRequired,
-    state: PropTypes.string.isRequired
+    incidents: PropTypes.arrayOf(PropTypes.object),
+    state: PropTypes.string.isRequired.isRequired
   }).isRequired,
   theme: PropTypes.string.isRequired
 };

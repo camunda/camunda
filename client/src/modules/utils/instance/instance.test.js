@@ -20,6 +20,7 @@ const activeWithIncidents = {
     }
   ]
 };
+const incident = {state: INCIDENT, incidents: []};
 const completed = {state: COMPLETED, incidents: []};
 const canceled = {state: CANCELED, incidents: []};
 
@@ -59,6 +60,12 @@ describe('instance utils', () => {
       const state = instanceUtils.getInstanceState(activeWithIncidents);
 
       expect(state).not.toEqual(activeWithIncidents.state);
+      expect(state).toEqual(INCIDENT);
+    });
+
+    it('should return the right state for an instance with state="INCIDENT"', () => {
+      const state = instanceUtils.getInstanceState(incident);
+
       expect(state).toEqual(INCIDENT);
     });
   });
@@ -111,10 +118,10 @@ describe('instance utils', () => {
         );
       });
 
-    it('should return "" when no operations are available', () => {
+    it('should return {} when no operations are available', () => {
       mockOperations = [];
       createMockOperations(0, mockOperations);
-      expect(instanceUtils.getLatestOperation(mockOperations)).toEqual('');
+      expect(instanceUtils.getLatestOperation(mockOperations)).toEqual({});
     });
 
     it('should retrun operations sorted in ascending order by startDate', () => {

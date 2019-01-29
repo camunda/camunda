@@ -1,15 +1,11 @@
-import {orderBy} from 'lodash';
-
 import {INSTANCE_STATE} from 'modules/constants';
 
 /**
- * @returns an array of operations sorted in ascending order by startDate
+ * @returns the last operation from an operations list or an empty {}
  * @param {*} operations array of operations
  */
 export const getLatestOperation = (operations = []) => {
-  return operations.length > 0
-    ? orderBy(operations, ['startDate'], ['desc'])[0]
-    : '';
+  return operations.length > 0 ? operations[0] : {};
 };
 
 export const getActiveIncident = (incidents = []) => {
@@ -25,10 +21,16 @@ export const getActiveIncident = (incidents = []) => {
 };
 
 export function getInstanceState({state, incidents}) {
-  if (state === INSTANCE_STATE.COMPLETED || state === INSTANCE_STATE.CANCELED) {
+  if (
+    state === INSTANCE_STATE.COMPLETED ||
+    state === INSTANCE_STATE.CANCELED ||
+    state === INSTANCE_STATE.INCIDENT
+  ) {
     return state;
   }
 
+  // on Single instance view, instance.state is ACTIVE for active instance & instance with incident
+  // so we look at instance.incidents t
   const hasActiveIncident = Boolean(getActiveIncident(incidents));
   return hasActiveIncident ? INSTANCE_STATE.INCIDENT : INSTANCE_STATE.ACTIVE;
 }

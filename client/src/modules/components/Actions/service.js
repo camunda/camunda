@@ -23,8 +23,9 @@ export const wrapIdinQuery = (operationType, instance) => {
  * @returns a boolean showing if the current instance has an incident
  * @param {*} instance object with complete instance data
  */
-export const isWithIncident = instance =>
-  getInstanceState(instance) === INSTANCE_STATE.INCIDENT;
+export const isWithIncident = instance => {
+  return getInstanceState(instance) === INSTANCE_STATE.INCIDENT;
+};
 
 /**
  * @returns a boolean showing if the current instance is running.
