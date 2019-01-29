@@ -78,7 +78,7 @@ public class UpgradeCombinedProcessReportConfigurationDataIT extends AbstractUpg
     );
 
     assertThat(configuration.getTargetValue().getActive(), is(true));
-    assertThat(configuration.getTargetValue().getCountChart().getValue(), is(3.0D));
+    assertThat(configuration.getTargetValue().getCountChart().getValue(), is("3"));
     assertThat(configuration.getTargetValue().getCountChart().getBelow(), is(true));
   }
 
@@ -96,7 +96,7 @@ public class UpgradeCombinedProcessReportConfigurationDataIT extends AbstractUpg
     );
 
     assertThat(configuration.getTargetValue().getActive(), is(true));
-    assertThat(configuration.getTargetValue().getCountChart().getValue(), is(2.0D));
+    assertThat(configuration.getTargetValue().getCountChart().getValue(), is("2"));
     assertThat(configuration.getTargetValue().getCountChart().getBelow(), is(true));
 
   }
@@ -115,7 +115,7 @@ public class UpgradeCombinedProcessReportConfigurationDataIT extends AbstractUpg
     );
 
     assertThat(configuration.getTargetValue().getActive(), is(true));
-    assertThat(configuration.getTargetValue().getCountChart().getValue(), is(1.0D));
+    assertThat(configuration.getTargetValue().getCountChart().getValue(), is("1"));
     assertThat(configuration.getTargetValue().getCountChart().getBelow(), is(true));
   }
 
@@ -133,7 +133,7 @@ public class UpgradeCombinedProcessReportConfigurationDataIT extends AbstractUpg
     );
 
     assertThat(configuration.getTargetValue().getActive(), is(true));
-    assertThat(configuration.getTargetValue().getDurationChart().getValue(), is(4.0D));
+    assertThat(configuration.getTargetValue().getDurationChart().getValue(), is("4"));
     assertThat(configuration.getTargetValue().getDurationChart().getBelow(), is(true));
     assertThat(configuration.getTargetValue().getDurationChart().getUnit(), is(TargetValueUnit.HOURS));
   }
@@ -152,7 +152,7 @@ public class UpgradeCombinedProcessReportConfigurationDataIT extends AbstractUpg
     );
 
     assertThat(configuration.getTargetValue().getActive(), is(true));
-    assertThat(configuration.getTargetValue().getDurationChart().getValue(), is(3.0D));
+    assertThat(configuration.getTargetValue().getDurationChart().getValue(), is("3"));
     assertThat(configuration.getTargetValue().getDurationChart().getBelow(), is(true));
     assertThat(configuration.getTargetValue().getDurationChart().getUnit(), is(TargetValueUnit.SECONDS));
   }
@@ -171,7 +171,7 @@ public class UpgradeCombinedProcessReportConfigurationDataIT extends AbstractUpg
     );
 
     assertThat(configuration.getTargetValue().getActive(), is(true));
-    assertThat(configuration.getTargetValue().getDurationChart().getValue(), is(1.0D));
+    assertThat(configuration.getTargetValue().getDurationChart().getValue(), is("1"));
     assertThat(configuration.getTargetValue().getDurationChart().getUnit(), is(TargetValueUnit.HOURS));
     assertThat(configuration.getTargetValue().getDurationChart().getBelow(), is(true));
   }

@@ -7,7 +7,7 @@ import java.util.Objects;
 public class CountChartDto {
 
   private Boolean isBelow = false;
-  private Double value = 100.0;
+  private String value = "100";
 
   @JsonProperty(value="isBelow")
   public Boolean getBelow() {
@@ -18,11 +18,11 @@ public class CountChartDto {
     isBelow = below;
   }
 
-  public Double getValue() {
+  public String getValue() {
     return value;
   }
 
-  public void setValue(Double value) {
+  public void setValue(String value) {
     this.value = value;
   }
 

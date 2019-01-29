@@ -170,7 +170,7 @@ public class UpgradeSingleProcessReportConfigurationDataIT extends AbstractUpgra
       .getValues()
       .get("approveInvoice");
     assertThat(approveInvoiceTargetValue.getUnit(), is(TargetValueUnit.WEEKS));
-    assertThat(approveInvoiceTargetValue.getValue(), is(1.0D));
+    assertThat(approveInvoiceTargetValue.getValue(), is("1"));
   }
 
   @Test
@@ -187,7 +187,7 @@ public class UpgradeSingleProcessReportConfigurationDataIT extends AbstractUpgra
     );
 
     assertThat(configuration.getTargetValue().getActive(), is(true));
-    assertThat(configuration.getTargetValue().getCountChart().getValue(), is(1.5D));
+    assertThat(configuration.getTargetValue().getCountChart().getValue(), is("1.5"));
     assertThat(configuration.getTargetValue().getCountChart().getBelow(), is(false));
   }
 
@@ -205,7 +205,7 @@ public class UpgradeSingleProcessReportConfigurationDataIT extends AbstractUpgra
     );
 
     assertThat(configuration.getTargetValue().getActive(), is(true));
-    assertThat(configuration.getTargetValue().getCountChart().getValue(), is(1.5D));
+    assertThat(configuration.getTargetValue().getCountChart().getValue(), is("1.5"));
     assertThat(configuration.getTargetValue().getCountChart().getBelow(), is(false));
 
   }
@@ -224,7 +224,7 @@ public class UpgradeSingleProcessReportConfigurationDataIT extends AbstractUpgra
     );
 
     assertThat(configuration.getTargetValue().getActive(), is(true));
-    assertThat(configuration.getTargetValue().getDurationChart().getValue(), is(1.0D));
+    assertThat(configuration.getTargetValue().getDurationChart().getValue(), is("1"));
     assertThat(configuration.getTargetValue().getDurationChart().getBelow(), is(true));
     assertThat(configuration.getTargetValue().getDurationChart().getUnit(), is(TargetValueUnit.SECONDS));
   }
@@ -243,7 +243,7 @@ public class UpgradeSingleProcessReportConfigurationDataIT extends AbstractUpgra
     );
 
     assertThat(configuration.getTargetValue().getActive(), is(true));
-    assertThat(configuration.getTargetValue().getDurationChart().getValue(), is(1.0D));
+    assertThat(configuration.getTargetValue().getDurationChart().getValue(), is("1"));
     assertThat(configuration.getTargetValue().getDurationChart().getBelow(), is(true));
     assertThat(configuration.getTargetValue().getDurationChart().getUnit(), is(TargetValueUnit.SECONDS));
   }
@@ -262,8 +262,8 @@ public class UpgradeSingleProcessReportConfigurationDataIT extends AbstractUpgra
     );
 
     assertThat(configuration.getTargetValue().getActive(), is(true));
-    assertThat(configuration.getTargetValue().getCountProgress().getBaseline(), is(1.0D));
-    assertThat(configuration.getTargetValue().getCountProgress().getTarget(), is(101.0D));
+    assertThat(configuration.getTargetValue().getCountProgress().getBaseline(), is("1"));
+    assertThat(configuration.getTargetValue().getCountProgress().getTarget(), is("101"));
   }
 
   @Test
@@ -280,12 +280,12 @@ public class UpgradeSingleProcessReportConfigurationDataIT extends AbstractUpgra
     );
 
     assertThat(configuration.getTargetValue().getActive(), is(true));
-    assertThat(configuration.getTargetValue().getDurationProgress().getBaseline().getValue(), is(1.0D));
+    assertThat(configuration.getTargetValue().getDurationProgress().getBaseline().getValue(), is("1"));
     assertThat(
       configuration.getTargetValue().getDurationProgress().getBaseline().getUnit(),
       is(TargetValueUnit.SECONDS)
     );
-    assertThat(configuration.getTargetValue().getDurationProgress().getTarget().getValue(), is(5.0D));
+    assertThat(configuration.getTargetValue().getDurationProgress().getTarget().getValue(), is("5"));
     assertThat(configuration.getTargetValue().getDurationProgress().getTarget().getUnit(), is(TargetValueUnit.SECONDS));
   }
 

@@ -5,7 +5,7 @@ import org.camunda.optimize.dto.optimize.query.report.configuration.target_value
 public class HeatmapTargetValueEntryDto {
 
   private TargetValueUnit unit = TargetValueUnit.HOURS;
-  private Double value = 2.0;
+  private String value = "2";
 
   public TargetValueUnit getUnit() {
     return unit;
@@ -15,11 +15,11 @@ public class HeatmapTargetValueEntryDto {
     this.unit = unit;
   }
 
-  public Double getValue() {
+  public String getValue() {
     return value;
   }
 
-  public void setValue(Double value) {
+  public void setValue(String value) {
     this.value = value;
   }
 }

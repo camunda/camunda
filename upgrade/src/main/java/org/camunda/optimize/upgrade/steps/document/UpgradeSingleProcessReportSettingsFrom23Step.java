@@ -49,10 +49,6 @@ public class UpgradeSingleProcessReportSettingsFrom23Step extends AbstractReport
         //       store target as value and isBelow in countChart
         "        newConfig.targetValue.active = !!reportData.configuration.targetValue.active;\n" +
         "        newConfig.targetValue.countChart.value = reportData.configuration.targetValue.values?.target;\n" +
-        "        if (newConfig.targetValue.countChart.value instanceof String) {\n" +
-        "          newConfig.targetValue.countChart.value = \n" +
-        "              Double.parseDouble(newConfig.targetValue.countChart.value);\n" +
-        "        }\n" +
         "        newConfig.targetValue.countChart.isBelow = reportData.configuration.targetValue.values?.isBelow;\n" +
         "      }\n" +
         //     #2.2.2 AND view property is duration
@@ -60,10 +56,6 @@ public class UpgradeSingleProcessReportSettingsFrom23Step extends AbstractReport
         //       store target as value, dateFormat as unit and isBelow as durationChart
         "        newConfig.targetValue.active = reportData.configuration.targetValue.active;\n" +
         "        newConfig.targetValue.durationChart.value = reportData.configuration.targetValue.values.target;\n" +
-        "        if (newConfig.targetValue.durationChart.value instanceof String) {\n" +
-        "          newConfig.targetValue.durationChart.value = \n" +
-        "              Double.parseDouble(newConfig.targetValue.durationChart.value);\n" +
-        "        }\n" +
         "        if (reportData.configuration.targetValue.values.dateFormat != null\n" +
         "            && reportData.configuration.targetValue.values.dateFormat != \"\") {\n" +
         "          newConfig.targetValue.durationChart.unit = reportData.configuration.targetValue.values.dateFormat;\n" +
@@ -79,15 +71,7 @@ public class UpgradeSingleProcessReportSettingsFrom23Step extends AbstractReport
         //     store baseline and target in countProgress
         "      newConfig.targetValue.active = reportData.configuration.targetValue.active;\n" +
         "      newConfig.targetValue.countProgress.baseline = reportData.configuration.targetValue.values.baseline;\n" +
-        "      if (newConfig.targetValue.countProgress.baseline instanceof String) {\n" +
-        "        newConfig.targetValue.countProgress.baseline = \n" +
-        "            Double.parseDouble(newConfig.targetValue.countProgress.baseline);\n" +
-        "      }" +
         "      newConfig.targetValue.countProgress.target = reportData.configuration.targetValue.values.target;\n" +
-        "      if (newConfig.targetValue.countProgress.target instanceof String) {\n" +
-        "        newConfig.targetValue.countProgress.target = \n" +
-        "            Double.parseDouble(newConfig.targetValue.countProgress.target);\n" +
-        "      }\n" +
         "    }\n" +
         //   #2.4 IF report is PI duration and groupByNone
         "    else if (reportData.view?.entity == \"processInstance\"\n" +
@@ -97,15 +81,7 @@ public class UpgradeSingleProcessReportSettingsFrom23Step extends AbstractReport
         "      newConfig.targetValue.active = reportData.configuration.targetValue.active;\n" +
         "      newConfig.targetValue.durationProgress.baseline = \n" +
         "          reportData.configuration.targetValue.values.baseline;\n" +
-        "      if (newConfig.targetValue.durationProgress.baseline.value instanceof String) {\n" +
-        "        newConfig.targetValue.durationProgress.baseline.value = \n" +
-        "            Double.parseDouble(newConfig.targetValue.durationProgress.baseline.value);\n" +
-        "      }\n" +
         "      newConfig.targetValue.durationProgress.target = reportData.configuration.targetValue.values.target;\n" +
-        "      if (newConfig.targetValue.durationProgress.target.value instanceof String) {\n" +
-        "        newConfig.targetValue.durationProgress.target.value = \n" +
-        "            Double.parseDouble(newConfig.targetValue.durationProgress.target.value)\n" +
-        "      }\n" +
         "    }\n" +
         "  }\n" +
         "}\n" +

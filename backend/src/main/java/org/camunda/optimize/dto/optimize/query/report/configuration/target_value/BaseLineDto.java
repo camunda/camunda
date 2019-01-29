@@ -5,7 +5,7 @@ import java.util.Objects;
 public class BaseLineDto {
 
   private TargetValueUnit unit = TargetValueUnit.HOURS;
-  private Double value = 0.0;
+  private String value = "0";
 
   public TargetValueUnit getUnit() {
     return unit;
@@ -15,11 +15,11 @@ public class BaseLineDto {
     this.unit = unit;
   }
 
-  public Double getValue() {
+  public String getValue() {
     return value;
   }
 
-  public void setValue(Double value) {
+  public void setValue(String value) {
     this.value = value;
   }
 

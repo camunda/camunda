@@ -4,22 +4,22 @@ import java.util.Objects;
 
 public class CountProgressDto {
 
-  private Double baseline = 0.0;
-  private Double target = 100.0;
+  private String baseline = "0";
+  private String target = "100";
 
-  public Double getBaseline() {
+  public String getBaseline() {
     return baseline;
   }
 
-  public void setBaseline(Double baseline) {
+  public void setBaseline(String baseline) {
     this.baseline = baseline;
   }
 
-  public Double getTarget() {
+  public String getTarget() {
     return target;
   }
 
-  public void setTarget(Double target) {
+  public void setTarget(String target) {
     this.target = target;
   }
 

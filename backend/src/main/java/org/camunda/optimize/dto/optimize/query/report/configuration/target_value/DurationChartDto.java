@@ -8,7 +8,7 @@ public class DurationChartDto {
 
   private TargetValueUnit unit = TargetValueUnit.HOURS;
   private Boolean isBelow = false;
-  private Double value = 2.0;
+  private String value = "2";
 
   public TargetValueUnit getUnit() {
     return unit;
@@ -27,11 +27,11 @@ public class DurationChartDto {
     isBelow = below;
   }
 
-  public Double getValue() {
+  public String getValue() {
     return value;
   }
 
-  public void setValue(Double value) {
+  public void setValue(String value) {
     this.value = value;
   }
 
