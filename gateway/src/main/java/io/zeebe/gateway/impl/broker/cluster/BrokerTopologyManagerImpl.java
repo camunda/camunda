@@ -15,57 +15,53 @@
  */
 package io.zeebe.gateway.impl.broker.cluster;
 
-import io.zeebe.gateway.impl.broker.request.BrokerTopologyRequest;
-import io.zeebe.gateway.impl.broker.response.BrokerResponse;
-import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
+import static io.zeebe.gateway.impl.broker.BrokerClientImpl.LOG;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.atomix.cluster.ClusterMembershipEvent;
+import io.atomix.cluster.ClusterMembershipEvent.Type;
+import io.atomix.cluster.ClusterMembershipEventListener;
+import io.atomix.cluster.Member;
+import io.zeebe.raft.state.RaftState;
 import io.zeebe.transport.ClientOutput;
-import io.zeebe.transport.ClientResponse;
-import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.IOException;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
-public class BrokerTopologyManagerImpl extends Actor implements BrokerTopologyManager {
-  /** Interval in which the topology is refreshed even if the client is idle */
-  public static final Duration MAX_REFRESH_INTERVAL_MILLIS = Duration.ofSeconds(10);
-
-  /**
-   * Shortest possible interval in which the topology is refreshed, even if the client is constantly
-   * making new requests that require topology refresh
-   */
-  public static final Duration MIN_REFRESH_INTERVAL_MILLIS = Duration.ofMillis(300);
-
+public class BrokerTopologyManagerImpl extends Actor
+    implements BrokerTopologyManager, ClusterMembershipEventListener {
   protected final ClientOutput output;
   protected final BiConsumer<Integer, SocketAddress> registerEndpoint;
-
   protected final AtomicReference<BrokerClusterStateImpl> topology;
-  protected final List<CompletableActorFuture<BrokerClusterState>> nextTopologyFutures =
-      new ArrayList<>();
-
-  protected final BrokerTopologyRequest topologyRequest = new BrokerTopologyRequest();
-
-  protected int refreshAttempt = 0;
-  protected long lastRefreshTime = -1;
+  private final ObjectMapper objectMapper;
+  private String atomixMemberId;
 
   public BrokerTopologyManagerImpl(
-      final ClientOutput output, final BiConsumer<Integer, SocketAddress> registerEndpoint) {
+      final ClientOutput output,
+      final BiConsumer<Integer, SocketAddress> registerEndpoint,
+      String atomixMemberId) {
     this.output = output;
     this.registerEndpoint = registerEndpoint;
+    this.atomixMemberId = atomixMemberId;
 
-    this.topology = new AtomicReference<>(null);
+    this.objectMapper = new ObjectMapper();
+    this.topology = new AtomicReference<>(new BrokerClusterStateImpl());
   }
 
-  @Override
-  protected void onActorStarted() {
-    actor.run(this::refreshTopology);
+  public void addInitialCluster(Set<Member> initialCluster) {
+    actor.submit(
+        () -> {
+          LOG.debug("{}: Setting up initial state", atomixMemberId);
+
+          for (Member broker : initialCluster) {
+            onMembershipEvent(Type.MEMBER_ADDED, broker);
+          }
+        });
   }
 
   public ActorFuture<Void> close() {
@@ -79,123 +75,114 @@ public class BrokerTopologyManagerImpl extends Actor implements BrokerTopologyMa
   }
 
   @Override
-  public ActorFuture<BrokerClusterState> requestTopology() {
-    final CompletableActorFuture<BrokerClusterState> future = new CompletableActorFuture<>();
-
-    actor.run(
-        () -> {
-          final boolean isFirstStagedRequest = nextTopologyFutures.isEmpty();
-          nextTopologyFutures.add(future);
-
-          if (isFirstStagedRequest) {
-            scheduleNextRefresh();
-          }
-        });
-
-    return future;
-  }
-
-  @Override
-  public void withTopology(Consumer<BrokerClusterState> topologyConsumer) {
-    final BrokerClusterStateImpl brokerClusterState = topology.get();
-    if (brokerClusterState != null) {
-      topologyConsumer.accept(brokerClusterState);
-    } else {
-      actor.run(
-          () ->
-              actor.runOnCompletion(
-                  requestTopology(),
-                  (topology, error) -> {
-                    if (error == null) {
-                      topologyConsumer.accept(topology);
-                    } else {
-                      withTopology(topologyConsumer);
-                    }
-                  }));
-    }
-  }
-
-  private void scheduleNextRefresh() {
-    final long now = ActorClock.currentTimeMillis();
-    final long timeSinceLastRefresh = now - lastRefreshTime;
-
-    if (timeSinceLastRefresh >= MIN_REFRESH_INTERVAL_MILLIS.toMillis()) {
-      refreshTopology();
-    } else {
-      final long timeoutToNextRefresh =
-          MIN_REFRESH_INTERVAL_MILLIS.toMillis() - timeSinceLastRefresh;
-      actor.runDelayed(Duration.ofMillis(timeoutToNextRefresh), this::refreshTopology);
-    }
-  }
-
-  @Override
-  public void provideTopology(final TopologyResponseDto topology) {
+  public void event(ClusterMembershipEvent event) {
     actor.call(
         () -> {
-          // TODO: not sure we should complete the refresh futures in this case,
-          //   as the response could be older than the time when the future was submitted
-          onNewTopology(topology);
+          LOG.debug("{}: Received event: {}", atomixMemberId, event);
+          onMembershipEvent(event.type(), event.subject());
         });
   }
 
-  private void refreshTopology() {
-    final BrokerClusterStateImpl brokerClusterState = topology.get();
-    final int endpoint;
-    if (brokerClusterState != null) {
-      endpoint = brokerClusterState.getRandomBroker();
-    } else {
-      // never fetched topology before so use initial contact point node
-      endpoint = ClientTransport.UNKNOWN_NODE_ID;
+  private void onMembershipEvent(Type eventType, Member subject) {
+    final Properties properties = subject.properties();
+    final String memberId = subject.id().id();
+    final int brokerId;
+
+    try {
+      brokerId = Integer.parseInt(memberId);
+    } catch (NumberFormatException e) {
+      LOG.debug("{}: Ignoring member named '{}'", atomixMemberId, memberId);
+      return;
     }
-    final ActorFuture<ClientResponse> responseFuture =
-        output.sendRequest(endpoint, topologyRequest, Duration.ofSeconds(1));
 
-    refreshAttempt++;
-    lastRefreshTime = ActorClock.currentTimeMillis();
-    actor.runOnCompletion(responseFuture, this::handleResponse);
-    actor.runDelayed(MAX_REFRESH_INTERVAL_MILLIS, scheduleIdleRefresh());
+    final BrokerClusterStateImpl newTopology = new BrokerClusterStateImpl(topology.get());
+    switch (eventType) {
+      case MEMBER_ADDED:
+        newTopology.addBrokerIfAbsent(brokerId);
+        processProperties(properties, brokerId, newTopology);
+        break;
+
+      case METADATA_CHANGED:
+        processProperties(properties, brokerId, newTopology);
+        break;
+
+      case MEMBER_REMOVED:
+        newTopology.removeBroker(brokerId);
+        processProperties(properties, brokerId, newTopology);
+        break;
+    }
+
+    topology.set(newTopology);
   }
 
-  /** Only schedules topology refresh if there was no refresh attempt in the last ten seconds */
-  private Runnable scheduleIdleRefresh() {
-    final int currentAttempt = refreshAttempt;
+  /*
+   * Processes properties and updates the topology accordingly. Can be safely used by both
+   * MEMBER_ADDED and MEMBER_REMOVED since, if a broker is not in the topology, updates related to
+   * it will not be made.
+   */
+  private void processProperties(
+      Properties properties, int brokerId, BrokerClusterStateImpl newTopology) {
+    for (String propertyName : properties.stringPropertyNames()) {
+      final String propertyValue = properties.getProperty(propertyName);
 
-    return () -> {
-      // if no topology refresh attempt was made in the meantime
-      if (currentAttempt == refreshAttempt) {
-        actor.run(this::refreshTopology);
-      }
-    };
-  }
-
-  private void handleResponse(final ClientResponse clientResponse, final Throwable t) {
-    if (t == null) {
-      final BrokerResponse<TopologyResponseDto> response =
-          topologyRequest.getResponse(clientResponse);
-      if (response.isResponse()) {
-        onNewTopology(response.getResponse());
+      if (propertyName.startsWith("partition-")) {
+        updatePartitions(propertyName, propertyValue, brokerId, newTopology);
+      } else if (propertyName.equals("clientAddress")) {
+        updateBrokerClientAddress(propertyValue, brokerId, newTopology);
       } else {
-        failRefreshFutures(new RuntimeException("Failed to refresh topology: " + response));
+        updateClusterInfo(propertyName, propertyValue, brokerId, newTopology);
       }
-    } else {
-      failRefreshFutures(t);
     }
   }
 
-  private void onNewTopology(final TopologyResponseDto topology) {
-    final BrokerClusterStateImpl newClusterState =
-        new BrokerClusterStateImpl(topology, registerEndpoint);
-    this.topology.set(newClusterState);
-    completeRefreshFutures(newClusterState);
+  private void updatePartitions(
+      String propertyName, String propertyValue, int brokerId, BrokerClusterStateImpl newTopology) {
+    final int partitionId = Integer.parseInt(propertyName.split("-")[1]);
+    newTopology.addPartitionIfAbsent(partitionId);
+
+    if (RaftState.valueOf(propertyValue) == RaftState.LEADER) {
+      newTopology.setPartitionLeader(partitionId, brokerId);
+      LOG.debug(
+          "{}: Added broker {} as leader of partition {}", atomixMemberId, brokerId, partitionId);
+    }
   }
 
-  private void completeRefreshFutures(final BrokerClusterStateImpl newClusterState) {
-    nextTopologyFutures.forEach(f -> f.complete(newClusterState));
-    nextTopologyFutures.clear();
+  private void updateBrokerClientAddress(
+      String clientApiAddress, int brokerId, BrokerClusterStateImpl newTopology) {
+    try {
+      final String socketAddress = objectMapper.readValue(clientApiAddress, String.class);
+      registerEndpoint.accept(brokerId, SocketAddress.from(socketAddress));
+      newTopology.setBrokerAddressIfPresent(brokerId, socketAddress);
+    } catch (IOException e) {
+      LOG.error("{}: Invalid client address for broker {}:  ", atomixMemberId, brokerId, e);
+    }
   }
 
-  private void failRefreshFutures(final Throwable t) {
-    nextTopologyFutures.forEach(f -> f.completeExceptionally("Could not refresh topology", t));
-    nextTopologyFutures.clear();
+  private void updateClusterInfo(
+      String propertyName, String propertyValue, int brokerId, BrokerClusterStateImpl newTopology) {
+
+    try {
+      switch (propertyName) {
+        case "replicationFactor":
+          newTopology.setReplicationFactor(Integer.parseInt(propertyValue));
+          break;
+
+        case "clusterSize":
+          newTopology.setClusterSize(Integer.parseInt(propertyValue));
+          break;
+
+        case "partitionsCount":
+          newTopology.setPartitionsCount(Integer.parseInt(propertyValue));
+          break;
+      }
+
+    } catch (NumberFormatException e) {
+      LOG.debug(
+          "{}: broker {} has invalid property '{}' of value '{}'",
+          atomixMemberId,
+          brokerId,
+          propertyName,
+          propertyValue);
+    }
   }
 }

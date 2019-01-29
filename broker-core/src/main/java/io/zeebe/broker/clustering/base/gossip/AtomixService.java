@@ -35,7 +35,7 @@ import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
-import java.net.InetSocketAddress;
+import io.zeebe.transport.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -142,9 +142,8 @@ public class AtomixService implements Service<Atomix> {
       Properties properties,
       ObjectMapper objectMapper)
       throws JsonProcessingException {
-    final InetSocketAddress inetSocketAddress =
-        socketBindingCfg.toSocketAddress().toInetSocketAddress();
-    final String value = objectMapper.writeValueAsString(inetSocketAddress);
+    final SocketAddress inetSocketAddress = socketBindingCfg.toSocketAddress();
+    final String value = objectMapper.writeValueAsString(inetSocketAddress.toString());
     properties.setProperty(addressName, value);
   }
 }

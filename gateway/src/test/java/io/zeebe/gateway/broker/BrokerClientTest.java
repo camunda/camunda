@@ -15,33 +15,30 @@
  */
 package io.zeebe.gateway.broker;
 
-import static io.zeebe.protocol.clientapi.ControlMessageType.REQUEST_TOPOLOGY;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 import static org.hamcrest.CoreMatchers.containsString;
 
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.BrokerClientImpl;
-import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
+import io.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
 import io.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceRequest;
+import io.zeebe.gateway.impl.broker.request.BrokerDeployWorkflowRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerError;
 import io.zeebe.gateway.impl.broker.response.BrokerRejection;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.gateway.impl.data.MsgPackConverter;
-import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.broker.protocol.brokerapi.ControlMessageRequest;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandResponseBuilder;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
@@ -49,9 +46,9 @@ import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.TransportListener;
+import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -69,14 +66,11 @@ public class BrokerClientTest {
 
   private static final DirectBuffer EMPTY_PAYLOAD =
       new UnsafeBuffer(new MsgPackConverter().convertToMsgPack("{}"));
-
+  private final int clientMaxRequests = 128;
   @Rule public StubBrokerRule broker = new StubBrokerRule();
-
   @Rule public AutoCloseableRule closeables = new AutoCloseableRule();
   @Rule public ExpectedException exception = ExpectedException.none();
   @Rule public TestName testContext = new TestName();
-
-  private final int clientMaxRequests = 128;
   private BrokerClient client;
   private ControlledActorClock clock;
 
@@ -85,48 +79,24 @@ public class BrokerClientTest {
     final GatewayCfg configuration = new GatewayCfg();
     configuration
         .getCluster()
+        .setAtomixHost("0.0.0.0")
+        .setAtomixPort(SocketUtil.getNextAddress().port())
         .setContactPoint(broker.getSocketAddress().toString())
         .setRequestTimeout("3s");
     clock = new ControlledActorClock();
 
     client = new BrokerClientImpl(configuration, clock);
+
+    ((BrokerClientImpl) client).getTransport().registerEndpoint(0, broker.getSocketAddress());
+    final BrokerClusterStateImpl topology =
+        (BrokerClusterStateImpl) client.getTopologyManager().getTopology();
+    topology.addPartitionIfAbsent(0);
+    topology.setPartitionLeader(0, 0);
   }
 
   @After
   public void tearDown() {
     client.close();
-  }
-
-  @Test
-  public void shouldSendInitialTopologyRequest() {
-    // when
-    waitUntil(() -> broker.getReceivedControlMessageRequests().size() == 1);
-
-    // then
-    assertTopologyRefreshRequests(1);
-  }
-
-  @Test
-  public void shouldRefreshTopologyWhenLeaderIsNotKnown() {
-    // given
-    // initial topology has been fetched
-    waitUntil(() -> broker.getReceivedControlMessageRequests().size() == 1);
-
-    broker.jobs().registerCompleteCommand();
-
-    // extend topology
-    broker.addPartition(2);
-
-    final long key = (2L << Protocol.KEY_BITS) + 123;
-    final BrokerCompleteJobRequest request = new BrokerCompleteJobRequest(key, EMPTY_PAYLOAD);
-
-    // when
-    final BrokerResponse<JobRecord> response = client.sendRequest(request).join();
-
-    // then the client has refreshed its topology
-    assertThat(response.isResponse()).isTrue();
-
-    assertTopologyRefreshRequests(2);
   }
 
   @Test
@@ -148,8 +118,6 @@ public class BrokerClientTest {
     assertThat(error.getMessage()).isEqualTo("test");
 
     // then
-    assertAtLeastTopologyRefreshRequests(1);
-
     final List<ExecuteCommandRequest> receivedCommandRequests = broker.getReceivedCommandRequests();
     assertThat(receivedCommandRequests).hasSize(1);
 
@@ -207,25 +175,43 @@ public class BrokerClientTest {
   public void shouldEstablishNewConnectionsAfterDisconnect() {
     // given
     final ClientTransport clientTransport = ((BrokerClientImpl) client).getTransport();
-
-    // ensuring an open connection
-    client.getTopologyManager().requestTopology().join();
-
     final LoggingChannelListener channelListener = new LoggingChannelListener();
     clientTransport.registerChannelListener(channelListener).join();
 
+    // ensuring an open connection
+    broker.onExecuteCommandRequest(ValueType.DEPLOYMENT, DeploymentIntent.CREATE).doNotRespond();
+    client.sendRequest(new BrokerDeployWorkflowRequest());
+
     // when
     broker.closeTransport();
-    System.out.println("Broker transport closed");
     broker.bindTransport();
-    System.out.println("Broker transport bound");
 
     // then
     waitUntil(
         () ->
-            channelListener.connectionState.contains(
-                ConnectionState.CONNECTED)); // listener invocation is asynchronous
+            channelListener.connectionState.stream()
+                    .filter(state -> state == ConnectionState.CONNECTED)
+                    .count()
+                == 2); // listener invocation is asynchronous
+
     assertThat(channelListener.connectionState).last().isSameAs(ConnectionState.CONNECTED);
+  }
+
+  @Test
+  public void shouldRetryTopologyRequestAfterTimeout() {
+    // given
+    broker
+        .onExecuteCommandRequest(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
+        .respondWithError()
+        .errorCode(ErrorCode.PARTITION_LEADER_MISMATCH)
+        .errorData("")
+        .register();
+
+    // when
+    client.sendRequest(new BrokerDeployWorkflowRequest());
+
+    // then
+    waitUntil(() -> broker.getAllReceivedRequests().size() > 1, 100);
   }
 
   @Test
@@ -355,53 +341,6 @@ public class BrokerClientTest {
   }
 
   @Test
-  public void shouldThrottleTopologyRefreshRequestsWhenPartitionCannotBeDetermined() {
-    // when
-    final long start = System.currentTimeMillis();
-    assertThatThrownBy(() -> client.sendRequest(new BrokerCreateWorkflowInstanceRequest()).join());
-    final long requestDuration = System.currentTimeMillis() - start;
-
-    // then
-    final long actualTopologyRequests =
-        broker.getReceivedControlMessageRequests().stream()
-            .filter(r -> r.messageType() == ControlMessageType.REQUEST_TOPOLOGY)
-            .count();
-
-    // +4 (one for the extra request when client is started)
-    final long expectedMaximumTopologyRequests =
-        (requestDuration / BrokerTopologyManagerImpl.MIN_REFRESH_INTERVAL_MILLIS.toMillis()) + 4;
-
-    assertThat(actualTopologyRequests).isLessThanOrEqualTo(expectedMaximumTopologyRequests);
-  }
-
-  @Test
-  public void shouldThrottleTopologyRefreshRequestsWhenPartitionLeaderCannotBeDetermined() {
-    // given
-    final int nonExistingPartition = 999;
-    final long key = ((long) nonExistingPartition << Protocol.KEY_BITS) + 123;
-
-    // when
-    final long start = System.currentTimeMillis();
-    assertThatThrownBy(
-        () -> client.sendRequest(new BrokerCompleteJobRequest(key, EMPTY_PAYLOAD)).join());
-    final long requestDuration = System.currentTimeMillis() - start;
-
-    // then
-    final long actualTopologyRequests =
-        broker.getReceivedControlMessageRequests().stream()
-            .filter(r -> r.messageType() == ControlMessageType.REQUEST_TOPOLOGY)
-            .count();
-
-    // +4 (one for the extra request when client is started)
-    final long expectedMaximumTopologyRequests =
-        (requestDuration / BrokerTopologyManagerImpl.MIN_REFRESH_INTERVAL_MILLIS.toMillis()) + 4;
-
-    assertThat(actualTopologyRequests).isLessThanOrEqualTo(expectedMaximumTopologyRequests);
-  }
-
-  // TODO: revise the tests below
-
-  @Test
   public void shouldReturnRejectionWithCorrectTypeAndReason() {
     // given
     broker.jobs().registerCompleteCommand(b -> b.rejection(RejectionType.INVALID_ARGUMENT, "foo"));
@@ -417,47 +356,24 @@ public class BrokerClientTest {
     assertThat(rejection.getReason()).isEqualTo("foo");
   }
 
-  @Test
-  public void shouldFailRequestIfTopologyCannotBeRefreshed() {
-    // given
-    broker.onTopologyRequest().doNotRespond();
-    broker.onExecuteCommandRequest(ValueType.JOB, JobIntent.COMPLETE).doNotRespond();
-
-    // then
-    exception.expect(ExecutionException.class);
-    exception.expectMessage("Request timed out after PT1S");
-
-    // when
-    client.sendRequest(new BrokerCompleteJobRequest(0, EMPTY_PAYLOAD)).join();
-  }
-
-  @Test
-  public void shouldRetryTopologyRequestAfterTimeout() {
-    // given
-    final int topologyTimeoutSeconds = 1;
-
-    broker.onTopologyRequest().doNotRespond();
-    broker.jobs().registerCompleteCommand();
-
-    // wait for a hanging topology request
-    waitUntil(
-        () ->
-            broker.getReceivedControlMessageRequests().stream()
-                    .filter(r -> r.messageType() == ControlMessageType.REQUEST_TOPOLOGY)
-                    .count()
-                == 1);
-
-    broker.stubTopologyRequest(); // make topology available
-    clock.addTime(Duration.ofSeconds(topologyTimeoutSeconds + 1)); // let request time out
-
-    // when making a new request
-    // then the topology has been refreshed and the request succeeded
-    client.sendRequest(new BrokerCompleteJobRequest(0, EMPTY_PAYLOAD)).join();
-  }
-
   private void stubJobResponse() {
     registerCreateWfCommand();
     broker.jobs().registerCompleteCommand();
+  }
+
+  public void registerCreateWfCommand() {
+    final ExecuteCommandResponseBuilder builder =
+        broker
+            .onExecuteCommandRequest(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
+            .respondWith()
+            .event()
+            .intent(WorkflowInstanceIntent.ELEMENT_READY)
+            .key(r -> r.key())
+            .value()
+            .allOf((r) -> r.getCommand())
+            .done();
+
+    builder.register();
   }
 
   protected enum ConnectionState {
@@ -478,44 +394,5 @@ public class BrokerClientTest {
     public void onConnectionClosed(final RemoteAddress remoteAddress) {
       connectionState.add(ConnectionState.CLOSED);
     }
-  }
-
-  private void assertTopologyRefreshRequests(final int count) {
-    final List<ControlMessageRequest> receivedControlMessageRequests =
-        broker.getReceivedControlMessageRequests();
-    assertThat(receivedControlMessageRequests).hasSize(count);
-
-    receivedControlMessageRequests.forEach(
-        request -> {
-          assertThat(request.messageType()).isEqualTo(REQUEST_TOPOLOGY);
-          assertThat(request.getData()).isNull();
-        });
-  }
-
-  private void assertAtLeastTopologyRefreshRequests(final int count) {
-    final List<ControlMessageRequest> receivedControlMessageRequests =
-        broker.getReceivedControlMessageRequests();
-    assertThat(receivedControlMessageRequests.size()).isGreaterThanOrEqualTo(count);
-
-    receivedControlMessageRequests.forEach(
-        request -> {
-          assertThat(request.messageType()).isEqualTo(REQUEST_TOPOLOGY);
-          assertThat(request.getData()).isNull();
-        });
-  }
-
-  public void registerCreateWfCommand() {
-    final ExecuteCommandResponseBuilder builder =
-        broker
-            .onExecuteCommandRequest(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
-            .respondWith()
-            .event()
-            .intent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
-            .key(r -> r.key())
-            .value()
-            .allOf((r) -> r.getCommand())
-            .done();
-
-    builder.register();
   }
 }

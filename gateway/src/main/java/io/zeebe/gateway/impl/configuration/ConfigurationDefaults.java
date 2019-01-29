@@ -19,9 +19,13 @@ public class ConfigurationDefaults {
 
   public static final String DEFAULT_HOST = "0.0.0.0";
   public static final int DEFAULT_PORT = 26500;
+  public static final String DEFAULT_ATOMIX_MEMBER_ID = "gateway";
   public static final String DEFAULT_CONTACT_POINT_HOST = "127.0.0.1";
-  public static final int DEFAULT_CONTACT_POINT_PORT = 26501;
+  public static final int DEFAULT_CONTACT_POINT_PORT = 26505;
+  public static final String DEFAULT_ATOMIX_HOST = "0.0.0.0";
+  public static final int DEFAULT_ATOMIX_PORT = 26499;
   public static final String DEFAULT_TRANSPORT_BUFFER_SIZE = "2M";
   public static final int DEFAULT_MANAGEMENT_THREADS = 1;
   public static final String DEFAULT_REQUEST_TIMEOUT = "15s";
+  public static final String DEFAULT_CLUSTER_NAME = "zeebe-cluster";
 }

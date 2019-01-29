@@ -44,11 +44,9 @@ import org.slf4j.Logger;
 
 public class TopologyManagerImpl extends Actor
     implements TopologyManager, RaftStateListener, ClusterMembershipEventListener {
-  private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
-
   public static final DirectBuffer CONTACT_POINTS_EVENT_TYPE =
       BufferUtil.wrapString("contact_points");
-
+  private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
   private final Topology topology;
   private final Atomix atomix;
 
@@ -141,6 +139,17 @@ public class TopologyManagerImpl extends Actor
 
     actor.call(
         () -> {
+          final String id = clusterMembershipEvent.subject().id().id();
+          try {
+            Integer.parseInt(id);
+          } catch (NumberFormatException e) {
+            LOG.info(
+                "Broker {} received event from invalid broker '{}'. Ignoring.",
+                atomix.getMembershipService().getLocalMember().id().id(),
+                id);
+            return;
+          }
+
           switch (clusterMembershipEvent.type()) {
             case METADATA_CHANGED:
               onMemberMetadataChanged(clusterMembershipEvent);
@@ -225,8 +234,9 @@ public class TopologyManagerImpl extends Actor
     final Properties properties = node.properties();
     final NodeInfo nodeInfo = topology.getMember(Integer.parseInt(node.id().id()));
     for (String p : properties.stringPropertyNames()) {
-      if (p.startsWith("partition")) {
+      if (p.startsWith("partition-")) {
         final int partitionId = Integer.parseInt(p.split("-")[1]);
+
         final PartitionInfo partitionInfo =
             topology.updatePartition(
                 partitionId,
@@ -249,6 +259,11 @@ public class TopologyManagerImpl extends Actor
       memberProperties.setProperty(
           "partition-" + p.getPartitionId(), RaftState.FOLLOWER.toString());
     }
+    memberProperties.setProperty(
+        "replicationFactor", Integer.toString(topology.getReplicationFactor()));
+    memberProperties.setProperty("clusterSize", Integer.toString(topology.getClusterSize()));
+    memberProperties.setProperty(
+        "partitionsCount", Integer.toString(topology.getPartitionsCount()));
   }
 
   public ActorFuture<Void> close() {

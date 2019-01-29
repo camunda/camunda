@@ -25,7 +25,6 @@ import io.zeebe.gateway.impl.broker.request.BrokerGetWorkflowRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerListWorkflowsRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest;
-import io.zeebe.gateway.impl.broker.request.BrokerTopologyRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerUpdateJobRetriesRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerUpdateWorkflowInstancePayloadRequest;
 import io.zeebe.gateway.impl.data.MsgPackConverter;
@@ -39,7 +38,6 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.GetWorkflowRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ListWorkflowsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowRequestObject;
@@ -50,10 +48,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 public class RequestMapper {
 
   private static final MsgPackConverter MSG_PACK_CONVERTER = new MsgPackConverter();
-
-  public static BrokerTopologyRequest toTopologyRequest(TopologyRequest grpcRequest) {
-    return new BrokerTopologyRequest();
-  }
 
   public static BrokerDeployWorkflowRequest toDeployWorkflowRequest(
       DeployWorkflowRequest grpcRequest) {

@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.transport.controlmessage;
 
-import io.zeebe.broker.clustering.base.topology.RequestTopologyHandler;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.servicecontainer.Injector;
@@ -25,7 +24,6 @@ import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.util.sched.ActorScheduler;
 import java.util.Collections;
@@ -46,12 +44,7 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
     final ServerTransport transport = transportInjector.getValue();
     final ActorScheduler actorScheduler = context.getScheduler();
 
-    final TopologyManager topologyManager = topologyManagerInjector.getValue();
-
-    final ServerOutput output = transport.getOutput();
-
-    final List<ControlMessageHandler> controlMessageHandlers =
-        Collections.singletonList(new RequestTopologyHandler(output, topologyManager));
+    final List<ControlMessageHandler> controlMessageHandlers = Collections.emptyList();
 
     service =
         new ControlMessageHandlerManager(

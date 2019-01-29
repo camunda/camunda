@@ -50,7 +50,6 @@
 
     <enum name="ControlMessageType" encodingType="uint8"
       description="The type of the control message.">
-      <validValue name="REQUEST_TOPOLOGY">4</validValue>
       <validValue name="GET_WORKFLOW">5</validValue>
       <validValue name="LIST_WORKFLOWS">6</validValue>
     </enum>
