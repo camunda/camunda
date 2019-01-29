@@ -15,7 +15,7 @@ import org.camunda.optimize.service.es.schema.type.report.SingleProcessReportTyp
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
-import org.camunda.optimize.upgrade.steps.document.UpgradeCombinedReportSettingsFrom23Step;
+import org.camunda.optimize.upgrade.steps.document.UpgradeCombinedReportSettingsStep;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
@@ -44,12 +44,14 @@ public class UpgradeCombinedProcessReportConfigurationDataIT extends AbstractUpg
   private static final AbstractReportType COMBINED_REPORT_TYPE = new CombinedReportType();
   private static final AbstractReportType SINGLE_PROCESS_REPORT_TYPE = new SingleProcessReportType();
 
-  private static final String REPORT_221_ID_LINE_FREQUENCY_TARGETVALUE = "c959b895-b5b1-439f-b6cd-c5f1794b4ed9";
-  private static final String REPORT_221_ID_BAR_FREQUENCY_TARGETVALUE = "10894d3c-c95e-4efa-8f96-9dad97cf3224";
-  private static final String REPORT_221_ID_NUMBER_FREQUENCY_TARGETVALUE = "e5674ee4-f709-4475-b564-feacc669c975";
-  private static final String REPORT_222_ID_LINE_DURATION_TARGETVALUE = "d449a1ca-c60d-4d14-8117-ea88cb6341db";
-  private static final String REPORT_222_ID_BAR_DURATION_TARGETVALUE = "a1531a9b-f667-4338-b050-7e81df642c10";
-  private static final String REPORT_222_ID_NUMBER_DURATION_TARGETVALUE = "e762ea28-2f90-4038-8884-c4780170bd49";
+  // report_{CONFIG_VERSION}_{MIGRATION CASE ID}_{DESCRIPTION}
+  private static final String REPORT_220 = "949299d1-53a4-4eaf-a4df-a8a4f357d0b3";
+  private static final String REPORT_230_221_ID_LINE_FREQUENCY_TARGETVALUE = "c959b895-b5b1-439f-b6cd-c5f1794b4ed9";
+  private static final String REPORT_230_221_ID_BAR_FREQUENCY_TARGETVALUE = "10894d3c-c95e-4efa-8f96-9dad97cf3224";
+  private static final String REPORT_230_221_ID_NUMBER_FREQUENCY_TARGETVALUE = "e5674ee4-f709-4475-b564-feacc669c975";
+  private static final String REPORT_230_222_ID_LINE_DURATION_TARGETVALUE = "d449a1ca-c60d-4d14-8117-ea88cb6341db";
+  private static final String REPORT_230_222_ID_BAR_DURATION_TARGETVALUE = "a1531a9b-f667-4338-b050-7e81df642c10";
+  private static final String REPORT_230_222_ID_NUMBER_DURATION_TARGETVALUE = "e762ea28-2f90-4038-8884-c4780170bd49";
 
   @Before
   @Override
@@ -60,8 +62,24 @@ public class UpgradeCombinedProcessReportConfigurationDataIT extends AbstractUpg
 
     addVersionToElasticsearch(FROM_VERSION);
 
+    executeBulk("steps/configuration_upgrade/22-single-process-report-bulk");
     executeBulk("steps/configuration_upgrade/23-single-process-report-bulk");
+    executeBulk("steps/configuration_upgrade/22-combined-report-bulk");
     executeBulk("steps/configuration_upgrade/23-combined-report-bulk");
+  }
+
+  @Test
+  public void defaultConfigFor220CombinedReport() throws Exception {
+    //given
+    UpgradePlan upgradePlan = getReportConfigurationUpgradePlan();
+
+    // when
+    upgradePlan.execute();
+
+    // then
+    final ReportConfigurationDto configuration = getCombinedReportDefinitionConfigurationById(REPORT_220);
+
+    assertThat(configuration, is(new ReportConfigurationDto()));
   }
 
   @Test
@@ -74,7 +92,7 @@ public class UpgradeCombinedProcessReportConfigurationDataIT extends AbstractUpg
 
     // then
     final ReportConfigurationDto configuration = getCombinedReportDefinitionConfigurationById(
-      REPORT_221_ID_LINE_FREQUENCY_TARGETVALUE
+      REPORT_230_221_ID_LINE_FREQUENCY_TARGETVALUE
     );
 
     assertThat(configuration.getTargetValue().getActive(), is(true));
@@ -92,7 +110,7 @@ public class UpgradeCombinedProcessReportConfigurationDataIT extends AbstractUpg
 
     // then
     final ReportConfigurationDto configuration = getCombinedReportDefinitionConfigurationById(
-      REPORT_221_ID_BAR_FREQUENCY_TARGETVALUE
+      REPORT_230_221_ID_BAR_FREQUENCY_TARGETVALUE
     );
 
     assertThat(configuration.getTargetValue().getActive(), is(true));
@@ -111,7 +129,7 @@ public class UpgradeCombinedProcessReportConfigurationDataIT extends AbstractUpg
 
     // then
     final ReportConfigurationDto configuration = getCombinedReportDefinitionConfigurationById(
-      REPORT_221_ID_NUMBER_FREQUENCY_TARGETVALUE
+      REPORT_230_221_ID_NUMBER_FREQUENCY_TARGETVALUE
     );
 
     assertThat(configuration.getTargetValue().getActive(), is(true));
@@ -129,7 +147,7 @@ public class UpgradeCombinedProcessReportConfigurationDataIT extends AbstractUpg
 
     // then
     final ReportConfigurationDto configuration = getCombinedReportDefinitionConfigurationById(
-      REPORT_222_ID_LINE_DURATION_TARGETVALUE
+      REPORT_230_222_ID_LINE_DURATION_TARGETVALUE
     );
 
     assertThat(configuration.getTargetValue().getActive(), is(true));
@@ -148,7 +166,7 @@ public class UpgradeCombinedProcessReportConfigurationDataIT extends AbstractUpg
 
     // then
     final ReportConfigurationDto configuration = getCombinedReportDefinitionConfigurationById(
-      REPORT_222_ID_BAR_DURATION_TARGETVALUE
+      REPORT_230_222_ID_BAR_DURATION_TARGETVALUE
     );
 
     assertThat(configuration.getTargetValue().getActive(), is(true));
@@ -167,7 +185,7 @@ public class UpgradeCombinedProcessReportConfigurationDataIT extends AbstractUpg
 
     // then
     final ReportConfigurationDto configuration = getCombinedReportDefinitionConfigurationById(
-      REPORT_222_ID_NUMBER_DURATION_TARGETVALUE
+      REPORT_230_222_ID_NUMBER_DURATION_TARGETVALUE
     );
 
     assertThat(configuration.getTargetValue().getActive(), is(true));
@@ -197,7 +215,7 @@ public class UpgradeCombinedProcessReportConfigurationDataIT extends AbstractUpg
     UpgradePlan upgradePlan = UpgradePlanBuilder.createUpgradePlan()
       .fromVersion(FROM_VERSION)
       .toVersion(TO_VERSION)
-      .addUpgradeStep(new UpgradeCombinedReportSettingsFrom23Step(
+      .addUpgradeStep(new UpgradeCombinedReportSettingsStep(
         getDefaultReportConfigurationAsMap(),
         Stream.of(singleReportsViewAndVisualization, randomSingleReportsViewAndVisualizations)
           .flatMap(m -> m.entrySet().stream())
@@ -210,7 +228,7 @@ public class UpgradeCombinedProcessReportConfigurationDataIT extends AbstractUpg
 
     // then
     final SearchResponse search = restClient.search(new SearchRequest(getReportIndexAlias()), RequestOptions.DEFAULT);
-    assertThat(search.getHits().getTotalHits(), is(6L));
+    assertThat(search.getHits().getTotalHits(), is(7L));
   }
 
   private String getReportIndexAlias() {
@@ -221,7 +239,7 @@ public class UpgradeCombinedProcessReportConfigurationDataIT extends AbstractUpg
     return UpgradePlanBuilder.createUpgradePlan()
       .fromVersion(FROM_VERSION)
       .toVersion(TO_VERSION)
-      .addUpgradeStep(new UpgradeCombinedReportSettingsFrom23Step(
+      .addUpgradeStep(new UpgradeCombinedReportSettingsStep(
         getDefaultReportConfigurationAsMap(),
         buildSingleReportIdToVisualizationAndViewMap(new ConfigurationService())
       ))

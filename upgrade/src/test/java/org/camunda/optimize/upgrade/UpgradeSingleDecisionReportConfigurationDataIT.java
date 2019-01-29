@@ -7,7 +7,7 @@ import org.camunda.optimize.service.es.schema.type.report.AbstractReportType;
 import org.camunda.optimize.service.es.schema.type.report.SingleDecisionReportType;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
-import org.camunda.optimize.upgrade.steps.document.UpgradeSingleDecisionReportSettingsFrom23Step;
+import org.camunda.optimize.upgrade.steps.document.UpgradeSingleDecisionReportSettingsStep;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -66,7 +66,7 @@ public class UpgradeSingleDecisionReportConfigurationDataIT extends AbstractUpgr
     return UpgradePlanBuilder.createUpgradePlan()
       .fromVersion(FROM_VERSION)
       .toVersion(TO_VERSION)
-      .addUpgradeStep(new UpgradeSingleDecisionReportSettingsFrom23Step(getDefaultReportConfigurationAsMap()))
+      .addUpgradeStep(new UpgradeSingleDecisionReportSettingsStep(getDefaultReportConfigurationAsMap()))
       .build();
   }
 

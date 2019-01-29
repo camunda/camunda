@@ -1,6 +1,10 @@
 package org.camunda.optimize.upgrade.main.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
+import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
+import org.camunda.optimize.service.es.schema.type.report.SingleDecisionReportType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.camunda.optimize.upgrade.main.Upgrade;
@@ -8,9 +12,9 @@ import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
-import org.camunda.optimize.upgrade.steps.document.UpgradeCombinedReportSettingsFrom23Step;
-import org.camunda.optimize.upgrade.steps.document.UpgradeSingleDecisionReportSettingsFrom23Step;
-import org.camunda.optimize.upgrade.steps.document.UpgradeSingleProcessReportSettingsFrom23Step;
+import org.camunda.optimize.upgrade.steps.document.UpgradeCombinedReportSettingsStep;
+import org.camunda.optimize.upgrade.steps.document.UpgradeSingleDecisionReportSettingsStep;
+import org.camunda.optimize.upgrade.steps.document.UpgradeSingleProcessReportSettingsStep;
 import org.camunda.optimize.upgrade.steps.schema.DeleteIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import org.camunda.optimize.upgrade.util.SchemaUpgradeUtil;
@@ -36,6 +40,7 @@ public class UpgradeFrom23To24 implements Upgrade {
   private static final String TO_VERSION = "2.4.0";
 
   private ConfigurationService configurationService = new ConfigurationService();
+  private RestHighLevelClient client = ElasticsearchHighLevelRestClientBuilder.build(configurationService);
 
   @Override
   public String getInitialVersion() {
@@ -53,20 +58,26 @@ public class UpgradeFrom23To24 implements Upgrade {
       UpgradePlanBuilder.AddUpgradeStepBuilder upgradePlanBuilder = UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
-        .addUpgradeStep(new UpdateIndexStep(
-          DECISION_INSTANCE_TYPE,
-          DecisionInstanceType.VERSION,
-          getNewDecisionInstanceMapping()
-        ))
         .addUpgradeStep(migrateConfigurationInCombinedProcessReport())
         .addUpgradeStep(migrateConfigurationInSimpleProcessReport())
-        .addUpgradeStep(migrateConfigurationInSimpleDecisionReport())
-        .addUpgradeStep(buildMatchedRules());
+        .addUpgradeStep(migrateConfigurationInSimpleDecisionReport());
 
       if (isTargetValueIndexPresent()) {
         upgradePlanBuilder
           .addUpgradeStep(removeTargetValueIndexStep());
       }
+
+      if (isDecisionInstanceIndexPresent()) {
+        upgradePlanBuilder
+          .addUpgradeStep(new UpdateIndexStep(
+            DECISION_INSTANCE_TYPE,
+            DecisionInstanceType.VERSION,
+            getNewDecisionInstanceMapping()
+          ))
+          .addUpgradeStep(buildMatchedRules());
+      }
+
+      ensureSingleDecisionReportIndexIsInitialized();
 
       UpgradePlan upgradePlan = upgradePlanBuilder
         .build();
@@ -77,25 +88,40 @@ public class UpgradeFrom23To24 implements Upgrade {
     }
   }
 
+  private void ensureSingleDecisionReportIndexIsInitialized() {
+    ElasticSearchSchemaManager elasticSearchSchemaManager = new ElasticSearchSchemaManager(
+      configurationService,
+      Lists.newArrayList(new SingleDecisionReportType()),
+      new ObjectMapper()
+    );
+    elasticSearchSchemaManager.initializeSchema(client);
+  }
+
   private UpdateDataStep migrateConfigurationInSimpleProcessReport() {
-    return new UpgradeSingleProcessReportSettingsFrom23Step(getDefaultReportConfigurationAsMap());
+    return new UpgradeSingleProcessReportSettingsStep(getDefaultReportConfigurationAsMap());
   }
 
   private UpdateDataStep migrateConfigurationInSimpleDecisionReport() {
-    return new UpgradeSingleDecisionReportSettingsFrom23Step(getDefaultReportConfigurationAsMap());
+    return new UpgradeSingleDecisionReportSettingsStep(getDefaultReportConfigurationAsMap());
   }
 
   private UpdateDataStep migrateConfigurationInCombinedProcessReport() {
-    return new UpgradeCombinedReportSettingsFrom23Step(
+    return new UpgradeCombinedReportSettingsStep(
       getDefaultReportConfigurationAsMap(), buildSingleReportIdToVisualizationAndViewMap(configurationService)
     );
   }
 
-  private boolean isTargetValueIndexPresent() {
-    RestHighLevelClient client = ElasticsearchHighLevelRestClientBuilder.build(configurationService);
+  private boolean isDecisionInstanceIndexPresent() {
+    return checkIfIndexExists("optimize-decision-instance_v1");
+  }
 
+  private boolean isTargetValueIndexPresent() {
+    return checkIfIndexExists("optimize-duration-target-value");
+  }
+
+  private boolean checkIfIndexExists(final String indexName) {
     GetIndexRequest request = new GetIndexRequest();
-    request.indices("optimize-duration-target-value");
+    request.indices(indexName);
 
     boolean exists;
 

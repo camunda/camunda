@@ -7,9 +7,9 @@ import java.util.Map;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_TYPE;
 
-public class UpgradeSingleDecisionReportSettingsFrom23Step extends AbstractReportConfigurationUpdateStep {
+public class UpgradeSingleDecisionReportSettingsStep extends AbstractReportConfigurationUpdateStep {
 
-  public UpgradeSingleDecisionReportSettingsFrom23Step(final Map defaultReportConfiguration) {
+  public UpgradeSingleDecisionReportSettingsStep(final Map defaultReportConfiguration) {
     super(
       SINGLE_DECISION_REPORT_TYPE,
       QueryBuilders.matchAllQuery(),

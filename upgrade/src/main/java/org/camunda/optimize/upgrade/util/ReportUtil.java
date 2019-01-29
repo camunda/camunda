@@ -9,6 +9,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
 import java.util.AbstractMap.SimpleImmutableEntry;
@@ -27,10 +28,9 @@ public class ReportUtil {
   public static Map<String, Map> buildSingleReportIdToVisualizationAndViewMap(ConfigurationService configurationService) {
     RestHighLevelClient client = ElasticsearchHighLevelRestClientBuilder.build(configurationService);
     try {
-      final SearchResponse searchResponse = client.search(
-        new SearchRequest(getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE)),
-        RequestOptions.DEFAULT
-      );
+      final SearchRequest searchRequest = new SearchRequest(getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE));
+      searchRequest.source(new SearchSourceBuilder().size(10_000));
+      final SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 
       return Arrays.stream(searchResponse.getHits().getHits())
         .map(doc -> {
