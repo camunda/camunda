@@ -5,6 +5,7 @@ import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStreamWriter;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -63,6 +65,12 @@ public class ExportService {
         exportCsvLimit,
         exportCsvOffset
       ));
+    } else if (reportResultDto instanceof ProcessReportNumberResultDto) {
+      ProcessReportNumberResultDto cast = (ProcessReportNumberResultDto) reportResultDto;
+      result = Optional.of(mapNumberResultToCsvBytes(
+        cast.getResult(),
+        cast.getData().getView().createCommandKey()
+      ));
     } else if (reportResultDto instanceof RawDataDecisionReportResultDto) {
       RawDataDecisionReportResultDto cast = (RawDataDecisionReportResultDto) reportResultDto;
       result = Optional.of(mapDecisionRawDataToCsvBytes(
@@ -104,6 +112,17 @@ public class ExportService {
 
     final String normalizedCommandKey = commandKey.replace("-", "_");
     final String[] header = new String[]{groupByString, normalizedCommandKey};
+    csvStrings.add(0, header);
+
+    return mapCsvLinesToCsvBytes(csvStrings);
+  }
+
+  private byte[] mapNumberResultToCsvBytes(final Long result, final String commandKey) {
+    final List<String[]> csvStrings = new LinkedList<>();
+    csvStrings.add(new String[]{result.toString()});
+
+    final String normalizedCommandKey = commandKey.replace("-", "_");
+    final String[] header = new String[]{normalizedCommandKey};
     csvStrings.add(0, header);
 
     return mapCsvLinesToCsvBytes(csvStrings);

@@ -156,28 +156,6 @@ public class ExportRestServiceIT {
     assertThat(response.getStatus(), is(404));
   }
 
-  @Test
-  public void unsupportedReportResultHasNoCSV() {
-    //given
-    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
-
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    ProcessReportDataDto currentReport = ProcessReportDataBuilderHelper.createAvgPiDurationAsNumberGroupByNone(
-      processInstance.getProcessDefinitionKey(),processInstance.getProcessDefinitionVersion());
-    String reportId = createAndStoreDefaultProcessReportDefinition(currentReport);
-
-    // when
-    Response response = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildCsvExportRequest(reportId, "my_file.csv")
-      .execute();
-
-    // then
-    assertThat(response.getStatus(), is(404));
-  }
-
   private String createAndStoreDefaultValidRawProcessReportDefinition(String processDefinitionKey,
                                                                       String processDefinitionVersion) {
     ProcessReportDataDto reportData = ProcessReportDataBuilderHelper

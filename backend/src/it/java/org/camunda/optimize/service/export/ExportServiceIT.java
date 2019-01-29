@@ -40,8 +40,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 @RunWith(Parameterized.class)
 public class ExportServiceIT {
 
-  public static final String START = "aStart";
-  public static final String END = "anEnd";
+  private static final String START = "aStart";
+  private static final String END = "anEnd";
 
   @Parameterized.Parameters(name = "{2}")
   public static Collection<Object[]> data() {
@@ -55,22 +55,6 @@ public class ExportServiceIT {
         "Raw Data Grouped By None"
       },
       {
-        ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
-          FAKE,
-          FAKE
-        ),
-        "/csv/raw_data_grouped_by_none.csv",
-        "Raw Data Grouped By Flow Nodes"
-      },
-      {
-        ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable(
-          FAKE,
-          FAKE
-        ),
-        "/csv/raw_data_grouped_by_none.csv",
-        "Raw Data Grouped By PI Start Date"
-      },
-      {
         ProcessReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByStartDate(
           FAKE,
           FAKE,
@@ -78,6 +62,14 @@ public class ExportServiceIT {
         ),
         "/csv/count_pi_frequency_group_by_start_date.csv",
         "Count PI Grouped By PI Start Date"
+      },
+      {
+        ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone(
+          FAKE,
+          FAKE
+        ),
+        "/csv/count_pi_frequency_group_by_none.csv",
+        "Count PI Grouped By None"
       },
       {
         ProcessReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode(
@@ -95,6 +87,14 @@ public class ExportServiceIT {
         ),
         "/csv/avg_pi_duration_group_by_start_date.csv",
         "Avg PI Duration Grouped By PI Start Date"
+      },
+      {
+        ProcessReportDataBuilderHelper.createAvgPiDurationHeatMapGroupByNone(
+          FAKE,
+          FAKE
+        ),
+        "/csv/avg_pi_duration_group_by_none.csv",
+        "Count PI Grouped By None"
       },
       {
         ProcessReportDataBuilderHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
