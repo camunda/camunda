@@ -88,7 +88,7 @@ public abstract class TestUtil {
     if (incidentKey != null) {
       activityInstanceForListViewEntity.setIncidentKey(incidentKey);
     } else {
-      activityInstanceForListViewEntity.setIncidentKey(random.nextLong());
+      activityInstanceForListViewEntity.setIncidentKey((long)random.nextInt());
     }
     if (errorMsg != null) {
       activityInstanceForListViewEntity.setErrorMessage(errorMsg);

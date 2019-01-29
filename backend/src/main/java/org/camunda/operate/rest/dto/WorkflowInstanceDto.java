@@ -146,18 +146,6 @@ public class WorkflowInstanceDto {
     return workflowInstance;
   }
 
-  public static List<WorkflowInstanceDto> createFrom(List<WorkflowInstanceEntity> workflowInstanceEntities) {
-    List<WorkflowInstanceDto> result = new ArrayList<>();
-    if (workflowInstanceEntities != null) {
-      for (WorkflowInstanceEntity workflowInstanceEntity: workflowInstanceEntities) {
-        if (workflowInstanceEntity != null) {
-          result.add(createFrom(workflowInstanceEntity));
-        }
-      }
-    }
-    return result;
-  }
-
   @Override
   public boolean equals(Object o) {
     if (this == o)

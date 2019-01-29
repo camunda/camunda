@@ -252,6 +252,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
    */
   private OperateEntity[] createDataForActiveActivityIdQuery(String activityId) {
     List<OperateEntity> entities = new ArrayList<>();
+    List<OperateEntity> activityInstances = new ArrayList<>();
 
     //wi 1: active with active activity with given id
     final WorkflowInstanceForListViewEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
@@ -260,17 +261,22 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     final ActivityInstanceForListViewEntity completedWithoutIdActivityInstance = createActivityInstance(workflowInstance1.getId(), ActivityState.COMPLETED, "otherActivityId");
 
-    entities.addAll(Arrays.asList(workflowInstance1, activeWithIdActivityInstance, completedWithoutIdActivityInstance));
+    entities.add(workflowInstance1);
+    activityInstances.addAll(Arrays.asList(activeWithIdActivityInstance, completedWithoutIdActivityInstance));
 
     //wi 2: active with active activity with another id
     final WorkflowInstanceForListViewEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
 
     final ActivityInstanceForListViewEntity activeWithoutIdActivityInstance = createActivityInstance(workflowInstance2.getId(), ActivityState.ACTIVE, "otherActivityId");
 
-    final ActivityInstanceForListViewEntity completedWithIdActivityInstance = createActivityInstanceWithIncident(workflowInstance2.getId(), ActivityState.ACTIVE, "error", null);
-    completedWithIdActivityInstance.setActivityId(activityId);
+    final ActivityInstanceForListViewEntity incidentWithIdActivityInstance = createActivityInstanceWithIncident(workflowInstance2.getId(), ActivityState.ACTIVE, "error", null);
+    incidentWithIdActivityInstance.setActivityId(activityId);
 
-    entities.addAll(Arrays.asList(workflowInstance2, activeWithoutIdActivityInstance, completedWithIdActivityInstance));
+    entities.add(workflowInstance2);
+    activityInstances.addAll(Arrays.asList(activeWithoutIdActivityInstance, incidentWithIdActivityInstance));
+
+    entities.addAll(activityInstances);
+
     return entities.toArray(new OperateEntity[entities.size()]);
   }
 
@@ -345,6 +351,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     entities.add(workflowInstance3);
     activityInstances.addAll(Arrays.asList(activeWithIdActivityInstance, completedWithoutIdActivityInstance2));
 
+    entities.addAll(activityInstances);
 
     return entities.toArray(new OperateEntity[entities.size()]);
   }
@@ -425,6 +432,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
     OperateEntity[] data = createDataForActiveActivityIdQuery(activityId);
     selectedIds.add(data[0].getId());
+    selectedIds.add(data[1].getId());
     elasticsearchTestRule.persistNew(data);
 
     data = createDataForIncidentActivityIdQuery(activityId);

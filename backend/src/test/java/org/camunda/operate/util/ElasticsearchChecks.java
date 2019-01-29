@@ -151,6 +151,25 @@ public class ElasticsearchChecks {
     };
   }
 
+  @Bean(name = "incidentIsResolvedCheck")
+  public Predicate<Object[]> getIncidentIsResolvedCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(1);
+      assertThat(objects[0]).isInstanceOf(Long.class);
+      String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
+      try {
+        final WorkflowInstanceEntity instance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
+        if (instance.getIncidents().size() == 0) {
+          return false;
+        } else {
+          return instance.getIncidents().get(0).getState().equals(IncidentState.RESOLVED);
+        }
+      } catch (NotFoundException ex) {
+        return false;
+      }
+    };
+  }
+
   @Bean(name = "workflowInstanceIsCanceledCheck")
   public Predicate<Object[]> getWorkflowInstanceIsCanceledCheck() {
     return objects -> {

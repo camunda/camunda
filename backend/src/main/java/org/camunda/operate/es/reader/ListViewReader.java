@@ -33,6 +33,8 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
+import org.elasticsearch.join.aggregations.Children;
+import org.elasticsearch.join.aggregations.ChildrenAggregationBuilder;
 import org.elasticsearch.join.aggregations.Parent;
 import org.elasticsearch.join.query.HasChildQueryBuilder;
 import org.elasticsearch.search.SearchHits;
@@ -65,6 +67,7 @@ import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+import static org.elasticsearch.join.aggregations.JoinAggregationBuilders.children;
 import static org.elasticsearch.join.aggregations.JoinAggregationBuilders.parent;
 import static org.elasticsearch.join.query.JoinQueryBuilders.hasChildQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
@@ -436,13 +439,13 @@ public class ListViewReader {
     Map<String, ActivityStatisticsDto> statisticsMap = new HashMap<>();
 
     if (query.isActive()) {
-      getStatisticsForActivities(query, WorkflowInstanceState.ACTIVE, ActivityState.ACTIVE, ActivityStatisticsDto::setActive, statisticsMap);
+      getStatisticsForActiveActivities(query, WorkflowInstanceState.ACTIVE, ActivityStatisticsDto::setActive, statisticsMap);
     }
     if (query.isCanceled()) {
       getStatisticsForActivities(query, WorkflowInstanceState.CANCELED, ActivityState.TERMINATED, ActivityStatisticsDto::setCanceled, statisticsMap);
     }
     if (query.isIncidents()) {
-      getStatisticsForActivities(query, WorkflowInstanceState.ACTIVE, ActivityState.INCIDENT, ActivityStatisticsDto::setIncidents, statisticsMap);
+      getStatisticsForIncidentsActivities(query, WorkflowInstanceState.ACTIVE, ActivityStatisticsDto::setIncidents, statisticsMap);
     }
     getStatisticsForFinishedActivities(query, ActivityStatisticsDto::setCompleted, statisticsMap);
 
@@ -458,15 +461,17 @@ public class ListViewReader {
 
     final QueryBuilder q = constantScoreQuery(createQueryFragment(query));
 
+    final String activities = "activities";
     final String activeActivitiesAggName = "active_activities";
     final String uniqueActivitiesAggName = "unique_activities";
     final String activityToWorkflowAggName = "activity_to_workflow";
-    final FilterAggregationBuilder agg =
-        filter(activeActivitiesAggName, termQuery(ACTIVITY_STATE, activityState.toString()))
+    final ChildrenAggregationBuilder agg =
+      children(activities, ListViewTemplate.ACTIVITIES_JOIN_RELATION)
+        .subAggregation(filter(activeActivitiesAggName, termQuery(ACTIVITY_STATE, activityState.toString()))
           .subAggregation(terms(uniqueActivitiesAggName).field(ACTIVITY_ID)
              .size(100) //TODO
              .subAggregation(parent(activityToWorkflowAggName, ACTIVITIES_JOIN_RELATION))    //we need this to count workflow instances, not the activity instances
-            );
+            ));
 
     final SearchRequestBuilder searchRequestBuilder =
       esClient.prepareSearch(listViewTemplate.getAlias())
@@ -479,7 +484,99 @@ public class ListViewReader {
     final SearchResponse searchResponse = searchRequestBuilder.get();
 
     ((Terms)
-      ((Filter)searchResponse.getAggregations().get(activeActivitiesAggName))
+      ((Filter)
+        ((Children)(searchResponse.getAggregations().get(activities)))
+          .getAggregations().get(activeActivitiesAggName))
+      .getAggregations().get(uniqueActivitiesAggName))
+    .getBuckets().stream().forEach(b -> {
+      String activityId = b.getKeyAsString();
+      final Parent aggregation = b.getAggregations().get(activityToWorkflowAggName);
+      final long docCount = aggregation.getDocCount();  //number of workflow instances
+      addToMap(statisticsMap, activityId, docCount, entryUpdater);
+    });
+
+  }
+
+  /**
+     * Attention! This method updates the map, passed as a parameter.
+     */
+  private void getStatisticsForActiveActivities(ListViewQueryDto query, WorkflowInstanceState workflowInstanceState,
+        StatisticsMapEntryUpdater entryUpdater,
+        Map<String, ActivityStatisticsDto> statisticsMap) {
+
+    final QueryBuilder q = constantScoreQuery(createQueryFragment(query));
+
+    final String activities = "activities";
+    final String activeActivitiesAggName = "active_activities";
+    final String uniqueActivitiesAggName = "unique_activities";
+    final String activityToWorkflowAggName = "activity_to_workflow";
+    final ChildrenAggregationBuilder agg =
+      children(activities, ListViewTemplate.ACTIVITIES_JOIN_RELATION)
+        .subAggregation(filter(activeActivitiesAggName, boolQuery().mustNot(existsQuery(INCIDENT_KEY)).must(termQuery(ACTIVITY_STATE, ActivityState.ACTIVE.toString())))
+          .subAggregation(terms(uniqueActivitiesAggName).field(ACTIVITY_ID)
+             .size(100) //TODO
+             .subAggregation(parent(activityToWorkflowAggName, ACTIVITIES_JOIN_RELATION))    //we need this to count workflow instances, not the activity instances
+            ));
+
+    final SearchRequestBuilder searchRequestBuilder =
+      esClient.prepareSearch(listViewTemplate.getAlias())
+        .setSize(0)
+        .setQuery(q)
+        .addAggregation(agg);
+
+    logger.debug("Activities statistics request: \n{}\n and aggregation: \n{}", q.toString(), agg.toString());
+
+    final SearchResponse searchResponse = searchRequestBuilder.get();
+
+    ((Terms)
+      ((Filter)
+        ((Children)(searchResponse.getAggregations().get(activities)))
+          .getAggregations().get(activeActivitiesAggName))
+      .getAggregations().get(uniqueActivitiesAggName))
+    .getBuckets().stream().forEach(b -> {
+      String activityId = b.getKeyAsString();
+      final Parent aggregation = b.getAggregations().get(activityToWorkflowAggName);
+      final long docCount = aggregation.getDocCount();  //number of workflow instances
+      addToMap(statisticsMap, activityId, docCount, entryUpdater);
+    });
+
+  }
+
+  /**
+     * Attention! This method updates the map, passed as a parameter.
+     */
+  private void getStatisticsForIncidentsActivities(ListViewQueryDto query, WorkflowInstanceState workflowInstanceState,
+        StatisticsMapEntryUpdater entryUpdater,
+        Map<String, ActivityStatisticsDto> statisticsMap) {
+
+    final QueryBuilder q = constantScoreQuery(createQueryFragment(query));
+
+    final String activities = "activities";
+    final String activeActivitiesAggName = "active_activities";
+    final String uniqueActivitiesAggName = "unique_activities";
+    final String activityToWorkflowAggName = "activity_to_workflow";
+    final ChildrenAggregationBuilder agg =
+      children(activities, ListViewTemplate.ACTIVITIES_JOIN_RELATION)
+        .subAggregation(filter(activeActivitiesAggName, existsQuery(INCIDENT_KEY))
+          .subAggregation(terms(uniqueActivitiesAggName).field(ACTIVITY_ID)
+             .size(100) //TODO
+             .subAggregation(parent(activityToWorkflowAggName, ACTIVITIES_JOIN_RELATION))    //we need this to count workflow instances, not the activity instances
+            ));
+
+    final SearchRequestBuilder searchRequestBuilder =
+      esClient.prepareSearch(listViewTemplate.getAlias())
+        .setSize(0)
+        .setQuery(q)
+        .addAggregation(agg);
+
+    logger.debug("Activities statistics request: \n{}\n and aggregation: \n{}", q.toString(), agg.toString());
+
+    final SearchResponse searchResponse = searchRequestBuilder.get();
+
+    ((Terms)
+      ((Filter)
+        ((Children)(searchResponse.getAggregations().get(activities)))
+          .getAggregations().get(activeActivitiesAggName))
       .getAggregations().get(uniqueActivitiesAggName))
     .getBuckets().stream().forEach(b -> {
       String activityId = b.getKeyAsString();
@@ -497,16 +594,18 @@ public class ListViewReader {
 
     final QueryBuilder q = constantScoreQuery(createQueryFragment(query));
 
+    final String activities = "activities";
     final String activeActivitiesAggName = "active_activities";
     final String uniqueActivitiesAggName = "unique_activities";
     final String activityToWorkflowAggName = "activity_to_workflow";
     final QueryBuilder completedEndEventsQ = joinWithAnd(termQuery(ACTIVITY_TYPE, ActivityType.END_EVENT.toString()), termQuery(ACTIVITY_STATE, ActivityState.COMPLETED.toString()));
-    final FilterAggregationBuilder agg =
-        filter(activeActivitiesAggName, completedEndEventsQ)
+    final ChildrenAggregationBuilder agg =
+      children(activities, ListViewTemplate.ACTIVITIES_JOIN_RELATION)
+        .subAggregation(filter(activeActivitiesAggName, completedEndEventsQ)
           .subAggregation(terms(uniqueActivitiesAggName).field(ACTIVITY_ID)
             .size(100) //TODO
             .subAggregation(parent(activityToWorkflowAggName, ACTIVITIES_JOIN_RELATION))     //we need this to count workflow instances, not the activity instances
-          );
+          ));
 
     final SearchRequestBuilder searchRequestBuilder =
       esClient.prepareSearch(listViewTemplate.getAlias())
@@ -519,7 +618,9 @@ public class ListViewReader {
     final SearchResponse searchResponse = searchRequestBuilder.get();
 
     ((Terms)
-      ((Filter)searchResponse.getAggregations().get(activeActivitiesAggName))
+      ((Filter)
+        ((Children)(searchResponse.getAggregations().get(activities)))
+          .getAggregations().get(activeActivitiesAggName))
         .getAggregations().get(uniqueActivitiesAggName))
       .getBuckets().stream().forEach(b -> {
       String activityId = b.getKeyAsString();

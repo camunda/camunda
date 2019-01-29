@@ -80,6 +80,14 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   @Qualifier("activityIsActiveCheck")
   private Predicate<Object[]> activityIsActiveCheck;
 
+  @Autowired
+  @Qualifier("incidentIsResolvedCheck")
+  private Predicate<Object[]> incidentIsResolvedCheck;
+
+  @Autowired
+  @Qualifier("workflowInstanceIsCanceledCheck")
+  private Predicate<Object[]> workflowInstanceIsCanceledCheck;
+
   private Long initialBatchOperationMaxSize;
   private String workflowId;
 
@@ -120,11 +128,11 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     ListViewResponseDto response = getWorkflowInstances(allRunningQuery);
 
     assertThat(response.getWorkflowInstances()).hasSize(instanceCount);
-    assertThat(response.getWorkflowInstances()).flatExtracting(WorkflowInstanceTemplate.OPERATIONS).extracting(WorkflowInstanceTemplate.TYPE).containsOnly(OperationType.UPDATE_RETRIES);
-    assertThat(response.getWorkflowInstances()).flatExtracting(WorkflowInstanceTemplate.OPERATIONS).extracting(WorkflowInstanceTemplate.STATE).containsOnly(
+    assertThat(response.getWorkflowInstances()).flatExtracting("operations").extracting(WorkflowInstanceTemplate.TYPE).containsOnly(OperationType.UPDATE_RETRIES);
+    assertThat(response.getWorkflowInstances()).flatExtracting("operations").extracting(WorkflowInstanceTemplate.STATE).containsOnly(
       OperationState.SCHEDULED);
-    assertThat(response.getWorkflowInstances()).flatExtracting(WorkflowInstanceTemplate.OPERATIONS).extracting(WorkflowInstanceTemplate.START_DATE).doesNotContainNull();
-    assertThat(response.getWorkflowInstances()).flatExtracting(WorkflowInstanceTemplate.OPERATIONS).extracting(WorkflowInstanceTemplate.END_DATE).containsOnlyNulls();
+    assertThat(response.getWorkflowInstances()).flatExtracting("operations").extracting(WorkflowInstanceTemplate.START_DATE).doesNotContainNull();
+    assertThat(response.getWorkflowInstances()).flatExtracting("operations").extracting(WorkflowInstanceTemplate.END_DATE).containsOnlyNulls();
   }
 
   @Test
@@ -196,7 +204,8 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(operation.getEndDate()).isNull();
 
     //after we process messages from Zeebe, the state of the operation is changed to COMPLETED
-    elasticsearchTestRule.processAllEvents(8);
+    elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCanceledCheck, workflowInstanceKey);
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
     workflowInstances = getWorkflowInstances(workflowInstanceQuery);
     assertThat(workflowInstances.getWorkflowInstances()).hasSize(1);
     assertThat(workflowInstances.getWorkflowInstances().get(0).getOperations()).hasSize(1);
@@ -226,7 +235,8 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     //then
     //the state of one operation is COMPLETED and of the other - FAILED
-    elasticsearchTestRule.processAllEvents(3);
+    elasticsearchTestRule.processAllEventsAndWait(incidentIsResolvedCheck, workflowInstanceId);
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
     ListViewResponseDto workflowInstances = getWorkflowInstances(workflowInstanceQuery);
     assertThat(workflowInstances.getWorkflowInstances()).hasSize(1);
     final List<OperationDto> operations = workflowInstances.getWorkflowInstances().get(0).getOperations();
@@ -252,7 +262,9 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     //then
     //the state of 1st operation is COMPLETED and the 2nd - FAILED
-    elasticsearchTestRule.processAllEvents(3);
+    elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCanceledCheck, workflowInstanceKey);
+    elasticsearchTestRule.processAllEventsAndWait(incidentIsResolvedCheck, workflowInstanceKey);
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
     ListViewResponseDto workflowInstances = getWorkflowInstances(workflowInstanceQuery);
     assertThat(workflowInstances.getWorkflowInstances()).hasSize(1);
     final List<OperationDto> operations = workflowInstances.getWorkflowInstances().get(0).getOperations();

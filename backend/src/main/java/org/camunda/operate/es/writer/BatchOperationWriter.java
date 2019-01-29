@@ -144,7 +144,7 @@ public class BatchOperationWriter {
       Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(params), HashMap.class);
 
       String script =
-            "ctx._source.state = " + OperationState.COMPLETED.toString() + ";" +
+            "ctx._source.state = '" + OperationState.COMPLETED.toString() + "';" +
             "ctx._source.endDate = params.endDate;" +
             "ctx._source.lockOwner = null;" +
             "ctx._source.lockExpirationTime = null;";

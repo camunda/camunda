@@ -33,6 +33,10 @@ public class EventIT extends OperateZeebeIntegrationTest {
   private Predicate<Object[]> workflowInstanceIsCompletedCheck;
 
   @Autowired
+  @Qualifier("workflowInstanceIsCanceledCheck")
+  private Predicate<Object[]> workflowInstanceIsCanceledCheck;
+
+  @Autowired
   @Qualifier("activityIsCompletedCheck")
   private Predicate<Object[]> activityIsCompletedCheck;
 
@@ -148,6 +152,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
 
     cancelWorkflowInstance(workflowInstanceKey);
     elasticsearchTestRule.processAllEventsAndWait(activityIsTerminatedCheck, workflowInstanceKey, activityId);
+    elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCompletedCheck, workflowInstanceKey);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //when

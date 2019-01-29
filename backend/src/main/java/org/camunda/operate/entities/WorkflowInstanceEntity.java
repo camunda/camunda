@@ -25,6 +25,7 @@ public class WorkflowInstanceEntity extends OperateZeebeEntity {
 
   private List<ActivityInstanceEntity> activities = new ArrayList<>();
 
+  @JsonIgnore
   private List<OperationEntity> operations = new ArrayList<>();
 
   private List<StringVariableEntity> stringVariables = new ArrayList<>();

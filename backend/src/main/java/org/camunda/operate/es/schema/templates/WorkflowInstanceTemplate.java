@@ -18,7 +18,6 @@ public class WorkflowInstanceTemplate extends AbstractTemplateCreator {
   public static final String START_DATE = "startDate";
   public static final String END_DATE = "endDate";
   public static final String INCIDENTS = "incidents";
-  public static final String OPERATIONS = "operations";
   public static final String ACTIVITY_ID = "activityId";
   public static final String ACTIVITY_INSTANCE_ID = "activityInstanceId";
   public static final String JOB_ID = "jobId";
@@ -28,8 +27,6 @@ public class WorkflowInstanceTemplate extends AbstractTemplateCreator {
   public static final String TYPE = "type";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String ACTIVITIES = "activities";
-  public static final String LOCK_EXPIRATION_TIME = "lockExpirationTime";
-  public static final String LOCK_OWNER = "lockOwner";
   public static final String STRING_VARIABLES = "stringVariables";
   public static final String LONG_VARIABLES = "longVariables";
   public static final String DOUBLE_VARIABLES = "doubleVariables";
@@ -86,12 +83,6 @@ public class WorkflowInstanceTemplate extends AbstractTemplateCreator {
         .field("type", "nested")
         .startObject("properties");
           addNestedActivitiesField(newBuilder)
-        .endObject()
-      .endObject()
-      .startObject(OPERATIONS)
-        .field("type", "nested")
-        .startObject("properties");
-          addNestedOperationsField(newBuilder)
         .endObject()
       .endObject()
       .startObject(STRING_VARIABLES)
@@ -195,38 +186,6 @@ public class WorkflowInstanceTemplate extends AbstractTemplateCreator {
       .startObject(END_DATE)
         .field("type", "date")
         .field("format", operateProperties.getElasticsearch().getDateFormat())
-      .endObject();
-    return builder;
-  }
-
-  private XContentBuilder addNestedOperationsField(XContentBuilder builder) throws IOException {
-    builder
-      .startObject(ID)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(TYPE)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(STATE)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(START_DATE)
-        .field("type", "date")
-        .field("format", operateProperties.getElasticsearch().getDateFormat())
-      .endObject()
-      .startObject(END_DATE)
-        .field("type", "date")
-        .field("format", operateProperties.getElasticsearch().getDateFormat())
-      .endObject()
-      .startObject(LOCK_EXPIRATION_TIME)
-        .field("type", "date")
-        .field("format", operateProperties.getElasticsearch().getDateFormat())
-      .endObject()
-      .startObject(LOCK_OWNER)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(ERROR_MSG)
-        .field("type", "keyword")
       .endObject();
     return builder;
   }
