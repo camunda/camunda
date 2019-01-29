@@ -65,13 +65,6 @@ export default class Configuration extends React.Component {
     this.props.onChange({configuration: change});
   };
 
-  //TODO: remove me as soon as the backend correctly initializes the configuration field on report creation
-  componentDidMount() {
-    if (!this.props.configuration.pointMarkers) {
-      this.resetToDefaults();
-    }
-  }
-
   render() {
     const {report, type, configuration} = this.props;
     const Component = visualizations[type];

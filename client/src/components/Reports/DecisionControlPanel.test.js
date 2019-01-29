@@ -1,6 +1,8 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
+import {Dropdown} from 'components';
+
 import DecisionControlPanel from './DecisionControlPanel';
 import {reportConfig} from 'services';
 
@@ -33,14 +35,17 @@ const data = {
   configuration: {xml: 'fooXml'}
 };
 
-xit('should call the provided updateReport property function when a setting changes', () => {
+it('should call the provided updateReport property function when a setting changes', () => {
   const spy = jest.fn();
   const node = shallow(<DecisionControlPanel {...data} updateReport={spy} />);
 
-  node.instance().update('view', 'rawData');
+  node
+    .find(Dropdown.Option)
+    .at(0)
+    .simulate('click');
 
   expect(spy).toHaveBeenCalled();
-  expect(spy.mock.calls[0][0].view).toEqual('rawData');
+  expect(spy.mock.calls[0][0].view).toEqual({$set: {operation: 'rawData'}});
 });
 
 it('should disable the groupBy and visualization Selects if view is not selected', () => {
@@ -57,15 +62,16 @@ it('should not disable the groupBy and visualization Selects if view is selected
   expect(node.find('.configDropdown').at(2)).not.toBeDisabled();
 });
 
-xit('should set or reset following selects according to the getNext function', () => {
+it('should set or reset following selects according to the getNext function', () => {
   const spy = jest.fn();
   const node = shallow(<DecisionControlPanel {...data} updateReport={spy} />);
 
   reportConfig.getNext.mockReturnValueOnce('next');
-  node.instance().update('view', 'foo');
 
-  expect(spy).toHaveBeenCalledWith({
-    view: 'foo',
-    groupBy: 'next'
-  });
+  node
+    .find(Dropdown.Option)
+    .at(0)
+    .simulate('click');
+
+  expect(spy.mock.calls[0][0].groupBy).toEqual({$set: 'next'});
 });

@@ -37,17 +37,17 @@ it('should initially load all process definitions', () => {
   expect(loadDecisionDefinitions).toHaveBeenCalled();
 });
 
-xit('should update to most recent version when key is selected', async () => {
+it('should update to most recent version when key is selected', async () => {
   const spy = jest.fn();
 
   const node = await shallow(<DecisionDefinitionSelection onChange={spy} />);
 
   node.instance().changeKey({target: {value: 'foo'}});
 
-  expect(spy.mock.calls[0][0].decisionDefinitionVersion).toBe(2);
+  expect(spy.mock.calls[0][0].decisionDefinitionVersion).toEqual({$set: 2});
 });
 
-xit('should update definition if versions is changed', async () => {
+it('should update definition if versions is changed', async () => {
   const spy = jest.fn();
 
   const node = await shallow(
@@ -56,7 +56,7 @@ xit('should update definition if versions is changed', async () => {
 
   node.instance().changeVersion({target: {value: '1'}});
 
-  expect(spy.mock.calls[0][0].decisionDefinitionVersion).toBe('1');
+  expect(spy.mock.calls[0][0].decisionDefinitionVersion).toEqual({$set: '1'});
 });
 
 it('should set key and version, if process definition is already available', async () => {

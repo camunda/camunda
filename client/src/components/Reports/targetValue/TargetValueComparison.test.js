@@ -21,7 +21,7 @@ const validProps = {
     result: {}
   },
   configuration: {
-    targetValue: {
+    heatmapTargetValue: {
       active: false,
       values: {
         a: {
@@ -36,7 +36,7 @@ const validProps = {
 const validPropsWithoutTargetValues = {
   reportResult: validProps.reportResult,
   configuration: {
-    targetValue: {
+    heatmapTargetValue: {
       active: false,
       values: {}
     }
@@ -62,7 +62,7 @@ const invalidProps = {
   },
   configuration: {
     active: false,
-    values: {
+    heatmapTargetValue: {
       a: {
         value: 12,
         unit: 'days'
@@ -78,14 +78,14 @@ it('should display a double button', () => {
   expect(node.find('.TargetValueComparison__editButton')).toBePresent();
 });
 
-xit('should toggle the mode with the left button', () => {
+it('should toggle the mode with the left button', () => {
   const spy = jest.fn();
   const node = shallow(<TargetValueComparison {...validProps} onChange={spy} />);
 
   node.find('.TargetValueComparison__toggleButton').simulate('click');
 
   expect(spy).toHaveBeenCalled();
-  expect(spy.mock.calls[0][0].configuration.targetValue.active).toBe(true);
+  expect(spy.mock.calls[0][0].configuration.heatmapTargetValue.active).toEqual({$set: true});
 });
 
 it('should open the modal with the left button if there are no target values set', async () => {
@@ -104,7 +104,7 @@ it('should open the target value edit modal on with the right button', async () 
   expect(node.state('modalOpen')).toBe(true);
 });
 
-xit('it should toggle target value view mode off if no target values are defined', async () => {
+it('it should toggle target value view mode off if no target values are defined', async () => {
   const spy = jest.fn();
   const node = shallow(<TargetValueComparison {...validProps} onChange={spy} />);
 
@@ -112,9 +112,11 @@ xit('it should toggle target value view mode off if no target values are defined
 
   expect(spy).toHaveBeenCalledWith({
     configuration: {
-      targetValue: {
-        active: false,
-        values: {}
+      heatmapTargetValue: {
+        $set: {
+          active: false,
+          values: {}
+        }
       }
     }
   });

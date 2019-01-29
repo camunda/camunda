@@ -5,14 +5,26 @@ import NumberConfig from './NumberConfig';
 
 const props = {
   report: {data: {view: {operation: 'count'}}},
-  configuration: {precision: null, targetValue: {active: false, values: {baseline: 0, target: 100}}}
+  configuration: {
+    precision: null,
+    targetValue: {
+      active: false,
+      countProgress: {baseline: '0', target: '100'},
+      durationProgress: {
+        baseline: {
+          value: '0',
+          unit: 'hours'
+        },
+        target: {
+          value: '2',
+          unit: 'hours'
+        }
+      }
+    }
+  }
 };
 
-xit('should not crash when target value values is not defined', () => {
-  shallow(<NumberConfig {...{...props, configuration: {targetValue: {active: false}}}} />);
-});
-
-xit('should have a switch for the precision setting', () => {
+it('should have a switch for the precision setting', () => {
   const spy = jest.fn();
   const node = shallow(<NumberConfig {...props} onChange={spy} />);
 
@@ -24,10 +36,10 @@ xit('should have a switch for the precision setting', () => {
     .first()
     .simulate('change', {target: {checked: true}});
 
-  expect(spy).toHaveBeenCalledWith('precision', 1);
+  expect(spy).toHaveBeenCalledWith({precision: {$set: 1}});
 });
 
-xit('should change the precision', () => {
+it('should change the precision', () => {
   props.configuration.precision = 5;
 
   const spy = jest.fn();
@@ -35,57 +47,19 @@ xit('should change the precision', () => {
 
   node.find('.precision').simulate('keydown', {key: '3'});
 
-  expect(spy).toHaveBeenCalledWith('precision', 3);
+  expect(spy).toHaveBeenCalledWith({precision: {$set: 3}});
 });
 
-xit('should contain a target input for count operations', () => {
+it('should contain a target input for count operations', () => {
   const node = shallow(<NumberConfig {...props} />);
 
   expect(node.find('CountTargetInput')).toBePresent();
 });
 
-xit('should contain a target input for duration operations', () => {
+it('should contain a target input for duration operations', () => {
   props.report.data.view.operation = 'avg';
   const node = shallow(<NumberConfig {...props} />);
 
   expect(node.find('CountTargetInput')).not.toBePresent();
   expect(node.find('DurationTargetInput')).toBePresent();
-});
-
-xit('should reset to defaults when property changes', () => {
-  expect(
-    NumberConfig.onUpdate(
-      {report: {data: {view: {property: 'new'}}}},
-      {report: {data: {view: {property: 'prev'}}}}
-    )
-  ).toEqual(NumberConfig.defaults(props));
-});
-
-xit('should reset to defaults when visualization type changes', () => {
-  expect(
-    NumberConfig.onUpdate(
-      {type: 'prev', report: {data: {view: {property: 'test'}}}},
-      {type: 'new', report: {data: {view: {property: 'test'}}}}
-    )
-  ).toEqual(NumberConfig.defaults(props));
-});
-
-xit('should reset to defaults when updating combined report type', () => {
-  expect(
-    NumberConfig.onUpdate(
-      {
-        report: {
-          combined: true,
-          data: {view: {property: 'test'}}
-        }
-      },
-      {
-        report: {
-          combined: true,
-          data: {view: {property: 'test'}}
-        },
-        type: 'number'
-      }
-    )
-  ).toEqual(NumberConfig.defaults(props));
 });

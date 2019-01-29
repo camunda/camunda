@@ -1,6 +1,6 @@
 import React from 'react';
 import {shallow} from 'enzyme';
-import {Button, Input} from 'components';
+import {Button, Input, ErrorMessage} from 'components';
 
 import ChartTargetInput from './ChartTargetInput';
 
@@ -12,7 +12,7 @@ const validProps = {
       processDefinitionVersion: 1,
       view: {
         entity: 'flowNode',
-        operation: 'avg_flowNode_duration',
+        operation: 'minimum',
         property: 'duration'
       },
       visualization: 'bar'
@@ -21,36 +21,31 @@ const validProps = {
   configuration: {
     targetValue: {
       active: true,
-      values: {dateFormat: 'seconds', target: 50, isBelow: false}
+      durationChart: {
+        value: '2',
+        unit: 'hours',
+        isBelow: false
+      }
     }
-  }
+  },
+  onChange: () => {}
 };
 
 const sampleTargetValue = {
   active: true,
-  values: {
+  durationChart: {
     isBelow: true,
-    target: 15,
-    dateFormat: ''
+    value: '15',
+    dateFormat: 'months'
   }
 };
 
-xit('should render without crashing', () => {
+it('should render without crashing', () => {
   shallow(<ChartTargetInput {...validProps} />);
 });
 
-xit('should not crash when target value values are not defined', () => {
-  shallow(<ChartTargetInput {...{...validProps, configuration: {targetValue: {active: false}}}} />);
-});
-
-xit('should add is-active classname to the clicked button in the buttonGroup', () => {
-  const node = shallow(
-    <ChartTargetInput
-      report={validProps}
-      onChange={() => {}}
-      configuration={validProps.configuration}
-    />
-  );
+it('should add is-active classname to the clicked button in the buttonGroup', () => {
+  const node = shallow(<ChartTargetInput {...validProps} />);
 
   node
     .find(Button)
@@ -60,20 +55,20 @@ xit('should add is-active classname to the clicked button in the buttonGroup', (
   expect(node.find(Button).first()).toHaveClassName('is-active');
 });
 
-xit('should display the current target values target', () => {
+it('should display the current target values target', () => {
   const node = shallow(<ChartTargetInput {...validProps} />);
   node.setProps({configuration: {targetValue: sampleTargetValue}});
 
-  expect(node.find(Input).first()).toHaveValue(15);
+  expect(node.find(Input).first()).toHaveValue('15');
 });
 
-xit('should display select dateFormat dropdown when viewProberty equal duration', () => {
+it('should display select dateFormat dropdown when viewProperty equal duration', () => {
   const node = shallow(<ChartTargetInput {...validProps} />);
 
   expect(node.find('Select')).toBePresent();
 });
 
-xit('should hide select dateFormat dropdown when viewProberty is not equal duration', () => {
+it('should hide select dateFormat dropdown when viewProperty is not equal duration', () => {
   const newProps = {
     report: {
       combined: false,
@@ -82,8 +77,8 @@ xit('should hide select dateFormat dropdown when viewProberty is not equal durat
         processDefinitionVersion: 1,
         view: {
           entity: 'flowNode',
-          operation: 'something_else',
-          property: 'something_else'
+          operation: 'count',
+          property: 'frequency'
         },
         visualization: 'bar'
       }
@@ -91,7 +86,7 @@ xit('should hide select dateFormat dropdown when viewProberty is not equal durat
     configuration: {
       targetValue: {
         active: true,
-        values: {dateFormat: 'seconds', target: 50, isBelow: false}
+        countChart: {value: '50', isBelow: false}
       }
     }
   };
@@ -99,7 +94,7 @@ xit('should hide select dateFormat dropdown when viewProberty is not equal durat
   expect(node.find('Select')).not.toBePresent();
 });
 
-xit('should invoke the onChange prop on button click', async () => {
+it('should invoke the onChange prop on button click', async () => {
   const spy = jest.fn();
   const node = shallow(<ChartTargetInput {...validProps} onChange={spy} />);
 
@@ -108,13 +103,10 @@ xit('should invoke the onChange prop on button click', async () => {
     .first()
     .simulate('click');
 
-  expect(spy).toHaveBeenCalledWith('targetValue', {
-    active: true,
-    values: {dateFormat: 'seconds', isBelow: false, target: 50}
-  });
+  expect(spy).toHaveBeenCalledWith({targetValue: {durationChart: {isBelow: {$set: false}}}});
 });
 
-xit('should display select date format if combined report is duration report', async () => {
+it('should display select date format if combined report is duration report', async () => {
   const combinedProps = {
     ...validProps,
     report: {
@@ -138,13 +130,13 @@ xit('should display select date format if combined report is duration report', a
 });
 
 // snapshot
-xit('should include an error message when invalid target value is typed', () => {
+it('should include an error message when invalid target value is typed', () => {
   const node = shallow(<ChartTargetInput {...validProps} />);
   node.setProps({
     configuration: {
-      targetValue: {active: true, values: {...sampleTargetValue.values, target: 'e'}}
+      targetValue: {active: true, durationChart: {...sampleTargetValue.durationChart, value: 'e'}}
     }
   });
 
-  expect(node).toMatchSnapshot();
+  expect(node.find(ErrorMessage)).toBePresent();
 });

@@ -118,6 +118,7 @@ export default class ReportControlPanel extends React.Component {
 
     if (groupBy && groupBy.type === 'variable') {
       change.groupBy = {$set: null};
+      change.visualization = {$set: null};
     }
 
     this.props.updateReport(change, true);

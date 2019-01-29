@@ -1,7 +1,7 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
-import TargetValueModal from './DurationHeatmapModal';
+import DurationHeatmapModal from './DurationHeatmapModal';
 
 console.error = jest.fn();
 
@@ -105,7 +105,7 @@ const validProps = {
     result: {}
   },
   configuration: {
-    targetValue: {
+    heatmapTargetValue: {
       active: false,
       values: {
         a: {
@@ -118,13 +118,13 @@ const validProps = {
 };
 
 it('should display the bpmn diagram in the modal', () => {
-  const node = mount(<TargetValueModal {...validProps} />);
+  const node = mount(<DurationHeatmapModal {...validProps} />);
 
   expect(node).toIncludeText('BPMNDiagram');
 });
 
 it('should display a list of flow nodes in a table', async () => {
-  const node = mount(<TargetValueModal {...validProps} />);
+  const node = mount(<DurationHeatmapModal {...validProps} />);
 
   await node.setProps({open: true});
 
@@ -136,7 +136,7 @@ it('should display a list of flow nodes in a table', async () => {
 it('should save the changes target values', async () => {
   const spy = jest.fn();
 
-  const node = mount(<TargetValueModal {...validProps} onConfirm={spy} />);
+  const node = mount(<DurationHeatmapModal {...validProps} onConfirm={spy} />);
 
   await node.setProps({open: true});
 
@@ -155,8 +155,8 @@ it('should save the changes target values', async () => {
   });
 });
 
-xit('should apply previously defined target values to input fields', async () => {
-  const node = mount(<TargetValueModal {...validProps} />);
+it('should apply previously defined target values to input fields', async () => {
+  const node = mount(<DurationHeatmapModal {...validProps} />);
 
   await node.setProps({open: true});
 
@@ -165,7 +165,7 @@ xit('should apply previously defined target values to input fields', async () =>
 });
 
 it('should set isInvalid property for input if value is invalid', async () => {
-  const node = mount(<TargetValueModal {...validProps} />);
+  const node = mount(<DurationHeatmapModal {...validProps} />);
   await node.setProps({open: true});
 
   node.instance().setTarget('value', 'a')({target: {value: 'invalid'}});

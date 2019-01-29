@@ -106,7 +106,7 @@ it('should contain a EditFilterModal component based on the Filter selected for 
   expect(node).not.toIncludeText('DateFilter');
 });
 
-xit('should add a filter to the list of filters', () => {
+it('should add a filter to the list of filters', () => {
   const spy = jest.fn();
   const sampleFilter = {
     data: {
@@ -122,10 +122,10 @@ xit('should add a filter to the list of filters', () => {
 
   node.instance().addFilter('Filter 2');
 
-  expect(spy.mock.calls[0][0].filter).toEqual([sampleFilter, 'Filter 2']);
+  expect(spy.mock.calls[0][0].filter).toEqual({$set: [sampleFilter, 'Filter 2']});
 });
 
-xit('should edit the edited filter', () => {
+it('should edit the edited filter', () => {
   const spy = jest.fn();
   const sampleFilter = {
     data: {
@@ -145,10 +145,10 @@ xit('should edit the edited filter', () => {
 
   node.instance().editFilter('bar');
 
-  expect(spy.mock.calls[0][0].filter).toEqual(['bar', 'foo']);
+  expect(spy.mock.calls[0][0].filter).toEqual({$set: ['bar', 'foo']});
 });
 
-xit('should remove a filter from the list of filters', () => {
+it('should remove a filter from the list of filters', () => {
   const spy = jest.fn();
   const previousFilters = ['Filter 1', 'Filter 2', 'Filter 3'];
 
@@ -156,7 +156,7 @@ xit('should remove a filter from the list of filters', () => {
 
   node.instance().deleteFilter('Filter 2');
 
-  expect(spy.mock.calls[0][0].filter).toEqual(['Filter 1', 'Filter 3']);
+  expect(spy.mock.calls[0][0].filter).toEqual({$set: ['Filter 1', 'Filter 3']});
 });
 
 it('should disable variable and executed flow node filter if no process definition is available', () => {
@@ -168,7 +168,7 @@ it('should disable variable and executed flow node filter if no process definiti
   expect(buttons.find('[children="Flow Node"]').prop('disabled')).toBeTruthy();
 });
 
-xit('should remove any previous startDate filters when adding a new date filter', () => {
+it('should remove any previous startDate filters when adding a new date filter', () => {
   const spy = jest.fn();
   const previousFilters = [{type: 'startDate'}];
 
@@ -176,10 +176,10 @@ xit('should remove any previous startDate filters when adding a new date filter'
 
   node.instance().addFilter({type: 'startDate', value: 'new date'});
 
-  expect(spy.mock.calls[0][0].filter).toEqual([{type: 'startDate', value: 'new date'}]);
+  expect(spy.mock.calls[0][0].filter).toEqual({$set: [{type: 'startDate', value: 'new date'}]});
 });
 
-xit('should remove any completed instances only filters when adding a new completed instances only filter', () => {
+it('should remove any completed instances only filters when adding a new completed instances only filter', () => {
   const spy = jest.fn();
   const previousFilters = [{type: 'completedInstancesOnly'}];
 
@@ -187,10 +187,10 @@ xit('should remove any completed instances only filters when adding a new comple
 
   node.instance().addFilter({type: 'completedInstancesOnly'});
 
-  expect(spy.mock.calls[0][0].filter).toEqual([{type: 'completedInstancesOnly'}]);
+  expect(spy.mock.calls[0][0].filter).toEqual({$set: [{type: 'completedInstancesOnly'}]});
 });
 
-xit('should remove any running instances only filters when adding a new running instances only filter', () => {
+it('should remove any running instances only filters when adding a new running instances only filter', () => {
   const spy = jest.fn();
   const previousFilters = [{type: 'runningInstancesOnly'}];
 
@@ -198,7 +198,7 @@ xit('should remove any running instances only filters when adding a new running 
 
   node.instance().addFilter({type: 'runningInstancesOnly'});
 
-  expect(spy.mock.calls[0][0].filter).toEqual([{type: 'runningInstancesOnly'}]);
+  expect(spy.mock.calls[0][0].filter).toEqual({$set: [{type: 'runningInstancesOnly'}]});
 });
 
 it('should show the number of process instances in the current Filter', () => {
@@ -209,31 +209,4 @@ it('should show the number of process instances in the current Filter', () => {
   node.setProps({instanceCount: 12});
 
   expect(node).toIncludeText('12 instances in current filter');
-});
-
-xit('should remove flow node and variable filter after changing ProcDef', async () => {
-  const data = [
-    {
-      data: 'foo',
-      type: 'bar'
-    },
-    {
-      data: 'foo',
-      type: 'executedFlowNodes'
-    },
-    {
-      data: 'foo',
-      type: 'variable'
-    }
-  ];
-  const spy = jest.fn();
-  const node = mount(
-    <Filter data={data} processDefinitionKey="key" processDefinitionVersion="1" onChange={spy} />
-  );
-
-  node.setProps({
-    processDefinitionKey: 'other key'
-  });
-
-  expect(spy).toHaveBeenCalledWith({filter: [{data: 'foo', type: 'bar'}]});
 });

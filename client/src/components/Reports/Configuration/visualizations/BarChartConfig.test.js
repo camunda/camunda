@@ -21,72 +21,9 @@ const configuration = {
   targetValue: {active: false}
 };
 
-xit('it should display correct configuration for barchart', () => {
+it('it should display correct configuration for barchart', () => {
   const node = shallow(<BarChartConfig {...{report: barReport, configuration}} />);
   expect(node).toMatchSnapshot();
-});
-
-xit('should reset to defaults when the property changes', () => {
-  expect(
-    BarChartConfig.onUpdate(
-      {report: {data: {view: {property: 'prev'}}}},
-      {report: {data: {view: {property: 'new'}}}}
-    )
-  ).toEqual({
-    ...BarChartConfig.defaults(props),
-    targetValue: null
-  });
-});
-
-xit('should reset to defaults when the entity changes', () => {
-  expect(
-    BarChartConfig.onUpdate(
-      {report: {data: {view: {entity: 'prev'}}}},
-      {report: {data: {view: {entity: 'new'}}}}
-    )
-  ).toEqual({
-    ...BarChartConfig.defaults(props),
-    targetValue: null
-  });
-});
-
-xit('should reset to defaults when visualization type changes', () => {
-  expect(
-    BarChartConfig.onUpdate(
-      {type: 'prev', report: {data: {view: {entity: 'test'}}}},
-      {type: 'new', report: {data: {view: {entity: 'test'}}}}
-    )
-  ).toEqual({
-    ...BarChartConfig.defaults(props),
-    targetValue: null
-  });
-});
-
-xit('should not reset to defaults when visualization type changes from line to bar or reverse', () => {
-  expect(
-    BarChartConfig.onUpdate(
-      {type: 'bar', report: {data: {view: {entity: 'test'}}}},
-      {type: 'line', report: {data: {view: {entity: 'test'}}}}
-    )
-  ).toEqual(undefined);
-});
-
-xit('should reset to defaults when updating combined report type', () => {
-  expect(
-    BarChartConfig.onUpdate(
-      {
-        report: {
-          combined: true
-        }
-      },
-      {
-        report: {
-          combined: true
-        },
-        type: 'bar'
-      }
-    )
-  ).toEqual(BarChartConfig.defaults({report: {combined: true}}));
 });
 
 it('should not display show instance count and color picker for combined reports', () => {

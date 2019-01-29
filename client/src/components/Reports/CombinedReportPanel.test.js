@@ -178,12 +178,12 @@ describe('isCompatible', () => {
   });
 });
 
-xit('should update the color of a single report inside a combined report', async () => {
+it('should update the color of a single report inside a combined report', async () => {
   const spy = jest.fn();
   const node = await shallow(
     <CombinedReportPanel
       reportResult={reportsList[1]}
-      configuration={{color: ['red', 'yellow']}}
+      configuration={{reportColors: ['red', 'yellow']}}
       updateReport={spy}
     />
   );
@@ -192,7 +192,7 @@ xit('should update the color of a single report inside a combined report', async
 
   node.instance().updateColor(1)('blue');
 
-  expect(spy).toHaveBeenCalledWith({configuration: {color: ['red', 'blue']}});
+  expect(spy).toHaveBeenCalledWith({configuration: {reportColors: {$set: ['red', 'blue']}}});
 });
 
 it('should generate new colors or preserve existing ones when selected/deselecting or reordering reports', async () => {
@@ -230,17 +230,4 @@ it('should generate new colors or preserve existing ones when selected/deselecti
   const updatedColors = node.instance().getUpdatedColors([{id: 'report2'}, {id: 'report1'}]);
 
   expect(updatedColors).toEqual([ColorPicker.dark.blue, ColorPicker.dark.red, '#00d0a3']);
-});
-
-xit('should invok updateReport on mount when combined report has reports but these reports has no defined colors', async () => {
-  const spy = jest.fn();
-  await shallow(
-    <CombinedReportPanel
-      updateReport={spy}
-      reportResult={reportsList[1]}
-      configuration={{color: undefined}}
-    />
-  );
-
-  expect(spy).toHaveBeenCalledWith({configuration: {color: ['#1991c8']}});
 });

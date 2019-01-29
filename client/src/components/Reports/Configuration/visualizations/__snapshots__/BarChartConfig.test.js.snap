@@ -4,21 +4,6 @@ exports[`it should display correct configuration for barchart 1`] = `
 <div
   className="BarChartConfig"
 >
-  <ShowInstanceCount
-    configuration={
-      Object {
-        "color": "#1991c8",
-        "hideAbsoluteValue": false,
-        "hideRelativeValue": false,
-        "showInstanceCount": false,
-        "targetValue": Object {
-          "active": false,
-        },
-        "xLabel": "",
-        "yLabel": "",
-      }
-    }
-  />
   <fieldset
     className="ColorSection"
   >
@@ -27,30 +12,7 @@ exports[`it should display correct configuration for barchart 1`] = `
     </legend>
     <ColorPicker
       onChange={[Function]}
-      selectedColor="#"
-    />
-  </fieldset>
-  <fieldset
-    className="tooltipOptions"
-  >
-    <legend>
-      Tooltips options
-    </legend>
-    <RelativeAbsoluteSelection
-      configuration={
-        Object {
-          "color": "#1991c8",
-          "hideAbsoluteValue": false,
-          "hideRelativeValue": false,
-          "showInstanceCount": false,
-          "targetValue": Object {
-            "active": false,
-          },
-          "xLabel": "",
-          "yLabel": "",
-        }
-      }
-      relativeDisabled={false}
+      selectedColor="#1991c8"
     />
   </fieldset>
   <fieldset

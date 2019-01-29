@@ -1,6 +1,8 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
+import {Dropdown} from 'components';
+
 import ReportControlPanel from './ReportControlPanel';
 import {extractProcessDefinitionName, reportConfig, getFlowNodeNames} from 'services';
 
@@ -49,15 +51,17 @@ const data = {
 };
 
 extractProcessDefinitionName.mockReturnValue('foo');
-const spy = jest.fn();
 
-xit('should call the provided updateReport property function when a setting changes', () => {
+it('should call the provided updateReport property function when a setting changes', () => {
+  const spy = jest.fn();
   const node = shallow(<ReportControlPanel {...data} updateReport={spy} />);
 
-  node.instance().update('visualization', 'someTestVis');
+  node
+    .find(Dropdown.Option)
+    .at(0)
+    .simulate('click');
 
   expect(spy).toHaveBeenCalled();
-  expect(spy.mock.calls[0][0].visualization).toBe('someTestVis');
 });
 
 it('should disable the groupBy and visualization Selects if view is not selected', () => {
@@ -74,19 +78,22 @@ it('should not disable the groupBy and visualization Selects if view is selected
   expect(node.find('.configDropdown').at(2)).not.toBeDisabled();
 });
 
-xit('should set or reset following selects according to the getNext function', () => {
+it('should set or reset following selects according to the getNext function', () => {
+  const spy = jest.fn();
   const node = shallow(<ReportControlPanel {...data} updateReport={spy} />);
 
   reportConfig.getNext.mockReturnValueOnce('next');
-  node.instance().update('view', 'foo');
+  node
+    .find(Dropdown.Option)
+    .at(0)
+    .simulate('click');
 
-  expect(spy).toHaveBeenCalledWith({
-    view: 'foo',
-    groupBy: 'next'
-  });
+  expect(spy.mock.calls[0][0].view).toEqual({$set: 'foo'});
+  expect(spy.mock.calls[0][0].groupBy).toEqual({$set: 'next'});
 });
 
 it('should disable options, which would create wrong combination', () => {
+  const spy = jest.fn();
   reportConfig.isAllowed.mockReturnValue(false);
   const node = shallow(<ReportControlPanel {...data} onChange={spy} />);
   node.setProps({view: 'baz'});
@@ -216,22 +223,4 @@ it('should only display target value button if view is flownode duration', () =>
   node.setProps({view: {entity: 'flowNode', property: 'frequency'}});
 
   expect(node.find('TargetValueComparison')).not.toBePresent();
-});
-
-xit('should not update the target value when changing from line chart to barchart or the reverse', () => {
-  const spy = jest.fn();
-  const node = shallow(
-    <ReportControlPanel
-      {...data}
-      visualization="bar"
-      view={{entity: 'processInstance', property: 'duration'}}
-      updateReport={spy}
-    />
-  );
-
-  node.instance().update('visualization', 'line');
-  expect(spy).toHaveBeenCalledWith({
-    groupBy: null,
-    visualization: null
-  });
 });

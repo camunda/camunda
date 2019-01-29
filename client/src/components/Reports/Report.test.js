@@ -125,6 +125,7 @@ const report = {
   data: {
     processDefinitionKey: null,
     configuration: {},
+    parameters: {},
     visualization: 'table'
   },
   result: [1, 2, 3]
@@ -279,72 +280,36 @@ it('should not contain a Control Panel in non-edit mode', () => {
   expect(node).not.toIncludeText('ControlPanel');
 });
 
-xit('should update the report', async () => {
+it('should update the report', async () => {
   const node = mount(shallow(<Report {...props} />).get(0));
 
   await node.instance().componentDidMount();
-  await node.instance().updateReport({visualization: 'customTestVis'});
+  await node.instance().updateReport({visualization: {$set: 'customTestVis'}});
 
-  expect(node.state().data.visualization).toBe('customTestVis');
+  expect(node.state().report.data.visualization).toBe('customTestVis');
 });
 
-xit('should evaluate the report after updating', async () => {
+it('should evaluate the report after updating', async () => {
   const node = mount(shallow(<Report {...props} />).get(0));
 
-  node.setState({
-    data: {
-      processDefinitionKey: 'test key',
-      processDefinitionVersion: 'test version',
-      view: {
-        operation: 'foo'
-      },
-      groupBy: {
-        type: 'bar'
-      },
-      visualization: 'number'
-    }
-  });
-
+  await node.instance().componentDidMount();
   evaluateReport.mockClear();
-  await node.instance().updateReport({visualization: 'customTestVis'});
+  await node.instance().updateReport({visualization: {$set: 'customTestVis'}}, true);
 
   expect(evaluateReport).toHaveBeenCalled();
 });
 
-xit('should not evaluate the report after updating only the configuration', async () => {
-  const node = await mount(shallow(<Report {...props} />).get(0));
-
-  node.setState({
-    data: {
-      processDefinitionKey: 'test key',
-      processDefinitionVersion: 'test version',
-      view: {
-        operation: 'foo'
-      },
-      groupBy: {
-        type: 'bar'
-      },
-      visualization: 'number'
-    }
-  });
-
-  evaluateReport.mockClear();
-  await node.instance().updateReport({configuration: 'someOtherConfiguration'});
-
-  expect(evaluateReport).not.toHaveBeenCalled();
-});
-
-xit('should reset the report data to its original state after canceling', async () => {
+it('should reset the report data to its original state after canceling', async () => {
   const node = mount(shallow(<Report {...props} />).get(0));
 
   await node.instance().componentDidMount();
 
-  const dataBefore = node.state().data;
+  const dataBefore = node.state().report;
 
-  await node.instance().updateReport({visualization: 'customTestVis'});
+  await node.instance().updateReport({visualization: {$set: 'customTestVis'}});
   await node.instance().cancel();
 
-  expect(node.state().data).toEqual(dataBefore);
+  expect(node.state().report).toEqual(dataBefore);
 });
 
 it('should save a changed report', async () => {
@@ -435,76 +400,6 @@ describe('edit mode', async () => {
     });
 
     expect(node.find('Input').props()).toHaveProperty('isInvalid', true);
-  });
-
-  xit('should store xml if process definition is changed', async () => {
-    props.match.params.viewMode = 'edit';
-    const node = await mount(shallow(<Report {...props} />).get(0));
-
-    await node.instance().componentDidMount();
-    await node
-      .instance()
-      .updateReport({processDefinitionKey: 'asd', processDefinitionVersion: '123'});
-
-    expect(node.state().data.configuration.xml).toBe('some xml');
-  });
-
-  xit('should reset groupby variables and visualization if process definition is changed', async () => {
-    props.match.params.viewMode = 'edit';
-    const node = await mount(shallow(<Report {...props} />).get(0));
-
-    await node.instance().componentDidMount();
-
-    node.setState({
-      report: {
-        data: {
-          filter: [],
-          view: {
-            operation: 'foo'
-          },
-          groupBy: {
-            type: 'variable'
-          },
-          visualization: 'number'
-        }
-      }
-    });
-
-    await node
-      .instance()
-      .updateReport({processDefinitionKey: 'asd', processDefinitionVersion: '123'});
-
-    expect(node.state().data.groupBy).toBe(null);
-    expect(node.state().data.visualization).toBe(null);
-  });
-
-  xit('should not reset groupby and visualization if process definition is changed, but not grouped by variables', async () => {
-    props.match.params.viewMode = 'edit';
-    const node = await mount(shallow(<Report {...props} />).get(0));
-
-    await node.instance().componentDidMount();
-
-    node.setState({
-      report: {
-        data: {
-          filter: [],
-          view: {
-            operation: 'foo'
-          },
-          groupBy: {
-            type: 'none'
-          },
-          visualization: 'number'
-        }
-      }
-    });
-
-    await node
-      .instance()
-      .updateReport({processDefinitionKey: 'asd', processDefinitionVersion: '123'});
-
-    expect(node.state().data.groupBy).toEqual({type: 'none'});
-    expect(node.state().data.visualization).toBe('number');
   });
 
   it('should provide a link to view mode', async () => {
@@ -707,54 +602,28 @@ describe('edit mode', async () => {
     expect(node.state().conflict.items).toEqual(conflictedItems);
   });
 
-  xit('should reset the target value when reports get deselected', async () => {
-    props.match.params.viewMode = 'edit';
-
-    const combinedReport = {
-      report: {
-        ...report,
-        combined: true,
-        data: {
-          reportIds: ['test'],
-          configuration: {
-            targetValue: {
-              active: true,
-              value: 25
-            }
-          }
-        }
-      }
-    };
-
-    const node = mount(shallow(<Report {...props} />).get(0));
-    node.setState({
-      loaded: true,
-      report: combinedReport,
-      ...combinedReport
-    });
-
-    evaluateReport.mockReturnValue(combinedReport);
-
-    node.instance().updateReport({reportIds: []});
-
-    expect(node.state().data.configuration).toEqual({targetValue: null});
-  });
-
-  xit('should set the correct parameters when updating sorting', () => {
+  it('should set the correct parameters when updating sorting', () => {
     props.match.params.viewMode = 'edit';
 
     const ReportComponent = Report.WrappedComponent;
 
     const node = shallow(<ReportComponent {...props} />);
     node.setState({
-      loaded: true
+      loaded: true,
+      report
     });
+
+    evaluateReport.mockClear();
 
     node
       .find('ReportView')
       .prop('customProps')
       .table.updateSorting('columnId', 'desc');
 
-    expect(node.state().data.parameters.sorting).toEqual({by: 'columnId', order: 'desc'});
+    expect(evaluateReport).toHaveBeenCalled();
+    expect(evaluateReport.mock.calls[0][0].data.parameters.sorting).toEqual({
+      by: 'columnId',
+      order: 'desc'
+    });
   });
 });
