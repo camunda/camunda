@@ -48,6 +48,7 @@ import org.camunda.optimize.service.es.report.command.process.processinstance.du
 import org.camunda.optimize.service.es.report.command.process.processinstance.frequency.CountProcessInstanceFrequencyByStartDateCommand;
 import org.camunda.optimize.service.es.report.command.process.processinstance.frequency.CountProcessInstanceFrequencyByVariableCommand;
 import org.camunda.optimize.service.es.report.command.process.processinstance.frequency.CountProcessInstanceFrequencyGroupByNoneCommand;
+import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
 import org.camunda.optimize.service.es.report.command.util.ReportUtil;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.ValidationHelper;
@@ -102,7 +103,7 @@ import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.I
 import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.OUTPUTS;
 
 @Component
-public class ReportEvaluator {
+public class SingleReportEvaluator {
 
   private static Map<String, Command> possibleCommands = new HashMap<>();
 
@@ -126,21 +127,24 @@ public class ReportEvaluator {
     addDecisionCountFrequencyReports();
   }
 
-  private final ConfigurationService configurationService;
-  private final ObjectMapper objectMapper;
-  private final ProcessQueryFilterEnhancer processQueryFilterEnhancer;
-  private final DecisionQueryFilterEnhancer decisionQueryFilterEnhancer;
-  private final RestHighLevelClient esClient;
+  protected final ConfigurationService configurationService;
+  protected final ObjectMapper objectMapper;
+  protected final ProcessQueryFilterEnhancer processQueryFilterEnhancer;
+  protected final DecisionQueryFilterEnhancer decisionQueryFilterEnhancer;
+  protected final RestHighLevelClient esClient;
+  protected final IntervalAggregationService intervalAggregationService;
 
   @Autowired
-  public ReportEvaluator(ConfigurationService configurationService, ObjectMapper objectMapper,
-                         ProcessQueryFilterEnhancer processQueryFilterEnhancer,
-                         DecisionQueryFilterEnhancer decisionQueryFilterEnhancer, RestHighLevelClient esClient) {
+  public SingleReportEvaluator(ConfigurationService configurationService, ObjectMapper objectMapper,
+                               ProcessQueryFilterEnhancer processQueryFilterEnhancer,
+                               DecisionQueryFilterEnhancer decisionQueryFilterEnhancer, RestHighLevelClient esClient,
+                                IntervalAggregationService intervalAggregationService) {
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;
     this.processQueryFilterEnhancer = processQueryFilterEnhancer;
     this.decisionQueryFilterEnhancer = decisionQueryFilterEnhancer;
     this.esClient = esClient;
+    this.intervalAggregationService = intervalAggregationService;
   }
 
   private static void addCountProcessInstanceFrequencyReports() {
@@ -317,22 +321,27 @@ public class ReportEvaluator {
 
   public ReportResultDto evaluate(ReportDataDto reportData) throws OptimizeException {
     CommandContext commandContext = createCommandContext(reportData);
-    Command evaluationCommand = extractCommand(reportData);
+    Command evaluationCommand = extractCommandWithValidation(reportData);
     ReportResultDto result = evaluationCommand.evaluate(commandContext);
     ReportUtil.copyReportData(reportData, result);
     return result;
   }
 
-  private Command extractCommand(ReportDataDto reportData) {
+  private Command extractCommandWithValidation(ReportDataDto reportData) {
     ValidationHelper.validate(reportData);
+    return SingleReportEvaluator.this.extractCommand(reportData);
+  }
+
+  protected Command extractCommand(ReportDataDto reportData) {
     return possibleCommands.getOrDefault(reportData.createCommandKey(), new NotSupportedCommand());
   }
 
-  private CommandContext createCommandContext(ReportDataDto reportData) {
+  protected CommandContext createCommandContext(ReportDataDto reportData) {
     CommandContext commandContext = new CommandContext();
     commandContext.setConfigurationService(configurationService);
     commandContext.setEsClient(esClient);
     commandContext.setObjectMapper(objectMapper);
+    commandContext.setIntervalAggregationService(intervalAggregationService);
     if (reportData instanceof ProcessReportDataDto) {
       commandContext.setQueryFilterEnhancer(processQueryFilterEnhancer);
     } else if (reportData instanceof DecisionReportDataDto) {
@@ -341,5 +350,4 @@ public class ReportEvaluator {
     commandContext.setReportData(reportData);
     return commandContext;
   }
-
 }

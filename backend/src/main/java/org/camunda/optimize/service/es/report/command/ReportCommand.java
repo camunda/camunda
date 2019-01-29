@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.es.report.command;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.Range;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
@@ -8,6 +9,8 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.time.OffsetDateTime;
 
 public abstract class ReportCommand <T extends ReportResultDto>  implements Command {
 
@@ -17,6 +20,7 @@ public abstract class ReportCommand <T extends ReportResultDto>  implements Comm
   protected RestHighLevelClient esClient;
   protected ConfigurationService configurationService;
   protected ObjectMapper objectMapper;
+  protected Range<OffsetDateTime> dateIntervalRange;
 
 
   @Override
@@ -25,6 +29,7 @@ public abstract class ReportCommand <T extends ReportResultDto>  implements Comm
     esClient = commandContext.getEsClient();
     configurationService = commandContext.getConfigurationService();
     objectMapper = commandContext.getObjectMapper();
+    dateIntervalRange = commandContext.getDateIntervalRange();
     beforeEvaluate(commandContext);
 
     T evaluationResult = evaluate();

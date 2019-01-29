@@ -51,12 +51,7 @@ public abstract class AbstractFlowNodeDurationByFlowNodeCommand<T extends Aggreg
                  processReportData.getProcessDefinitionKey(),
                  processReportData.getProcessDefinitionVersion());
 
-    BoolQueryBuilder query = setupBaseQuery(
-      processReportData.getProcessDefinitionKey(),
-      processReportData.getProcessDefinitionVersion()
-    );
-
-    queryFilterEnhancer.addFilterToQuery(query, processReportData.getFilter());
+    BoolQueryBuilder query = setupBaseQuery(processReportData);
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)

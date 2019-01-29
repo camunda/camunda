@@ -6,6 +6,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.Proc
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.ReportCommand;
+import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -13,10 +14,12 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 public abstract class ProcessReportCommand<T extends ProcessReportResultDto> extends ReportCommand<T> {
 
-  protected ProcessQueryFilterEnhancer queryFilterEnhancer;
+  private ProcessQueryFilterEnhancer queryFilterEnhancer;
+  protected IntervalAggregationService intervalAggregationService;
 
   @Override
-  protected void beforeEvaluate(final CommandContext commandContext) {
+  public void beforeEvaluate(final CommandContext commandContext) {
+    intervalAggregationService = commandContext.getIntervalAggregationService();
     queryFilterEnhancer = (ProcessQueryFilterEnhancer) commandContext.getQueryFilterEnhancer();
   }
 
@@ -29,7 +32,9 @@ public abstract class ProcessReportCommand<T extends ProcessReportResultDto> ext
     return (ProcessReportDataDto) this.reportData;
   }
 
-  protected BoolQueryBuilder setupBaseQuery(String processDefinitionKey, String processDefinitionVersion) {
+  public BoolQueryBuilder setupBaseQuery(ProcessReportDataDto processReportData) {
+    String processDefinitionKey = processReportData.getProcessDefinitionKey();
+    String processDefinitionVersion = processReportData.getProcessDefinitionVersion();
     BoolQueryBuilder query;
     query = boolQuery()
       .must(termQuery("processDefinitionKey", processDefinitionKey));
@@ -37,6 +42,7 @@ public abstract class ProcessReportCommand<T extends ProcessReportResultDto> ext
       query = query
         .must(termQuery("processDefinitionVersion", processDefinitionVersion));
     }
+    queryFilterEnhancer.addFilterToQuery(query, processReportData.getFilter());
     return query;
   }
 

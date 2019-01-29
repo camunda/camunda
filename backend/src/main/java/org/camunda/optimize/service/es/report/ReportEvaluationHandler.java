@@ -26,24 +26,29 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
-import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Component
 public abstract class ReportEvaluationHandler {
 
-  protected Logger logger = LoggerFactory.getLogger(getClass());
+  protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-  @Autowired
   private ReportReader reportReader;
+  private SingleReportEvaluator singleReportEvaluator;
+  private CombinedReportEvaluator combinedReportEvaluator;
 
   @Autowired
-  private ReportEvaluator reportEvaluator;
+  public ReportEvaluationHandler(ReportReader reportReader, SingleReportEvaluator singleReportEvaluator,
+                                 CombinedReportEvaluator combinedReportEvaluator) {
+    this.reportReader = reportReader;
+    this.singleReportEvaluator = singleReportEvaluator;
+    this.combinedReportEvaluator = combinedReportEvaluator;
+  }
 
   public ReportResultDto evaluateSavedReport(String userId, String reportId) {
     ReportDefinitionDto reportDefinition = reportReader.getReport(reportId);
@@ -110,32 +115,13 @@ public abstract class ReportEvaluationHandler {
     return combinedReportResult;
   }
 
-  private List<ReportResultDto> evaluateListOfReportIds(String userId, List<String> singleReportIds) {
-    List<ReportResultDto> resultList = new ArrayList<>();
-    for (String reportId : singleReportIds) {
-      SingleProcessReportDefinitionDto singleReportDefinition = reportReader.getSingleProcessReport(reportId);
-      Optional<ReportResultDto> singleReportResult = evaluateReportForCombinedReport(
-        userId, singleReportDefinition
-      );
-      singleReportResult.ifPresent(resultList::add);
-    }
-    return resultList;
-  }
-
-  private Optional<ReportResultDto> evaluateReportForCombinedReport(String userId,
-                                                                    SingleProcessReportDefinitionDto reportDefinition) {
-    Optional<ReportResultDto> result = Optional.empty();
-    if (isAuthorizedToSeeReport(userId, reportDefinition)) {
-      try {
-        ReportResultDto singleResult = reportEvaluator.evaluate(reportDefinition.getData());
-        ReportUtil.copyMetaData(reportDefinition, (ReportDefinitionDto) singleResult);
-        result = Optional.of(singleResult);
-      } catch (OptimizeException | OptimizeValidationException ignored) {
-        // we just ignore reports that cannot be evaluated in
-        // a combined report
-      }
-    }
-    return result;
+  private List<ReportResultDto> evaluateListOfReportIds(final String userId, List<String> singleReportIds) {
+    List<SingleProcessReportDefinitionDto> singleReportDefinitions =
+      reportReader.getAllSingleProcessReportsForIds(singleReportIds)
+        .stream()
+        .filter(r -> isAuthorizedToSeeReport(userId, r))
+        .collect(Collectors.toList());
+    return combinedReportEvaluator.evaluate(singleReportDefinitions);
   }
 
   /**
@@ -172,7 +158,7 @@ public abstract class ReportEvaluationHandler {
   private ReportResultDto evaluateSingleReportWithErrorCheck(SingleProcessReportDefinitionDto reportDefinition) {
     ProcessReportDataDto reportData = reportDefinition.getData();
     try {
-      return reportEvaluator.evaluate(reportData);
+      return singleReportEvaluator.evaluate(reportData);
     } catch (OptimizeException | OptimizeValidationException e) {
       ProcessReportNumberResultDto definitionWrapper = new ProcessReportNumberResultDto();
       definitionWrapper.setData(reportData);
@@ -211,7 +197,7 @@ public abstract class ReportEvaluationHandler {
   private ReportResultDto evaluateSingleReportWithErrorCheck(SingleDecisionReportDefinitionDto reportDefinition) {
     DecisionReportDataDto reportData = reportDefinition.getData();
     try {
-      return reportEvaluator.evaluate(reportData);
+      return singleReportEvaluator.evaluate(reportData);
     } catch (OptimizeException | OptimizeValidationException e) {
       DecisionReportNumberResultDto definitionWrapper = new DecisionReportNumberResultDto();
       definitionWrapper.setData(reportData);

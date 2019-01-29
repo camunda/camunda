@@ -42,12 +42,7 @@ public class RawProcessDataCommand extends ProcessReportCommand<RawDataProcessRe
       processReportData.getProcessDefinitionVersion()
     );
 
-    BoolQueryBuilder query = setupBaseQuery(
-      processReportData.getProcessDefinitionKey(),
-      processReportData.getProcessDefinitionVersion()
-    );
-    queryFilterEnhancer.addFilterToQuery(query, processReportData.getFilter());
-
+    BoolQueryBuilder query = setupBaseQuery(processReportData);
 
     final Optional<SortingDto> customSorting = Optional.ofNullable(processReportData.getParameters())
       .flatMap(parameters -> Optional.ofNullable(parameters.getSorting()));

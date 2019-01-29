@@ -29,11 +29,7 @@ public class CountProcessInstanceFrequencyGroupByNoneCommand
       processReportData.getProcessDefinitionVersion()
     );
 
-    BoolQueryBuilder query = setupBaseQuery(
-      processReportData.getProcessDefinitionKey(),
-      processReportData.getProcessDefinitionVersion()
-    );
-    queryFilterEnhancer.addFilterToQuery(query, processReportData.getFilter());
+    BoolQueryBuilder query = setupBaseQuery(processReportData);
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)

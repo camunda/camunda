@@ -6,4 +6,5 @@ import org.camunda.optimize.service.exceptions.OptimizeException;
 public interface Command {
   
   ReportResultDto evaluate(CommandContext commandContext) throws OptimizeException;
+
 }

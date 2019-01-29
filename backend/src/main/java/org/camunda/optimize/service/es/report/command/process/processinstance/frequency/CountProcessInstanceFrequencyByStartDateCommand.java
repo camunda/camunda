@@ -5,7 +5,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.StartDateGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
+import org.camunda.optimize.service.es.report.command.AutomaticGroupByDateCommand;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
+import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
@@ -26,16 +28,24 @@ import org.joda.time.DateTimeZone;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.report.command.util.ReportUtil.getDateHistogramInterval;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.START_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 
-public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessReportCommand<ProcessReportMapResultDto> {
+public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessReportCommand<ProcessReportMapResultDto>
+  implements AutomaticGroupByDateCommand {
 
   private static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
+  private static final String RANGE_AGGREGATION = "rangeAggregation";
+
+  @Override
+  public IntervalAggregationService getIntervalAggregationService() {
+    return intervalAggregationService;
+  }
 
   @Override
   protected ProcessReportMapResultDto evaluate() throws OptimizeException {
@@ -48,11 +58,7 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessRepo
       processReportData.getProcessDefinitionVersion()
     );
 
-    BoolQueryBuilder query = setupBaseQuery(
-      processReportData.getProcessDefinitionKey(),
-      processReportData.getProcessDefinitionVersion()
-    );
-    queryFilterEnhancer.addFilterToQuery(query, processReportData.getFilter());
+    BoolQueryBuilder query = setupBaseQuery(processReportData);
 
     StartDateGroupByValueDto groupByStartDate = ((StartDateGroupByDto) processReportData.getGroupBy()).getValue();
 
@@ -88,7 +94,10 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessRepo
   }
 
   private AggregationBuilder createAggregation(GroupByDateUnit unit, QueryBuilder query) throws OptimizeException {
-    DateHistogramInterval interval = getDateHistogramInterval(unit, esClient, query, PROC_INSTANCE_TYPE, START_DATE);
+    if (GroupByDateUnit.AUTOMATIC.equals(unit)) {
+      return createAutomaticIntervalAggregation(query);
+    }
+    DateHistogramInterval interval = intervalAggregationService.getDateHistogramInterval(unit);
     return AggregationBuilders
       .dateHistogram(DATE_HISTOGRAM_AGGREGATION)
       .order(BucketOrder.key(false))
@@ -96,18 +105,54 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessRepo
       .dateHistogramInterval(interval);
   }
 
+  private AggregationBuilder createAutomaticIntervalAggregation(QueryBuilder query) throws OptimizeException {
+
+    Optional<AggregationBuilder> automaticIntervalAggregation =
+      intervalAggregationService.createIntervalAggregation(
+        dateIntervalRange,
+        query,
+        PROC_INSTANCE_TYPE,
+        START_DATE
+      );
+
+    if (automaticIntervalAggregation.isPresent()) {
+      return automaticIntervalAggregation.get();
+    } else {
+      return createAggregation(GroupByDateUnit.MONTH, query);
+    }
+  }
+
   private Map<String, Long> processAggregations(Aggregations aggregations) {
+    if (!aggregations.getAsMap().containsKey(DATE_HISTOGRAM_AGGREGATION)) {
+      return processAutomaticIntervalAggregations(aggregations);
+    }
     Histogram agg = aggregations.get(DATE_HISTOGRAM_AGGREGATION);
 
     Map<String, Long> result = new LinkedHashMap<>();
     // For each entry
     for (Histogram.Bucket entry : agg.getBuckets()) {
-      DateTime key = (DateTime) entry.getKey();    // Key
-      long docCount = entry.getDocCount();         // Doc count
+      DateTime key = (DateTime) entry.getKey();
+      long docCount = entry.getDocCount();
       String formattedDate = key.withZone(DateTimeZone.getDefault()).toString(OPTIMIZE_DATE_FORMAT);
       result.put(formattedDate, docCount);
     }
     return result;
   }
 
+  private Map<String, Long> processAutomaticIntervalAggregations(Aggregations aggregations) {
+    return intervalAggregationService.mapIntervalAggregationsToKeyBucketMap(
+      aggregations)
+      .entrySet()
+      .stream()
+      .collect(
+        Collectors.toMap(
+          Map.Entry::getKey,
+          e -> e.getValue().getDocCount(),
+          (u, v) -> {
+            throw new IllegalStateException(String.format("Duplicate key %s", u));
+          },
+          LinkedHashMap::new
+        )
+      );
+  }
 }

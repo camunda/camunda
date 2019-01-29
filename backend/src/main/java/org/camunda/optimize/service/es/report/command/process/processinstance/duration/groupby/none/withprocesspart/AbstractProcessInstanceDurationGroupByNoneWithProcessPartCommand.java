@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.none.withprocesspart;
 
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.parameters.ProcessPartDto;
 import org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.none.AbstractProcessInstanceDurationGroupByNoneCommand;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -16,9 +17,9 @@ public abstract class AbstractProcessInstanceDurationGroupByNoneWithProcessPartC
   protected abstract long processAggregation(Aggregations aggregations);
 
   @Override
-  protected BoolQueryBuilder setupBaseQuery(String processDefinitionKey, String processDefinitionVersion) {
-    BoolQueryBuilder boolQueryBuilder = super.setupBaseQuery(processDefinitionKey, processDefinitionVersion);
-    ProcessPartDto processPart = getProcessReportData().getParameters().getProcessPart();
+  public BoolQueryBuilder setupBaseQuery(ProcessReportDataDto processReportData) {
+    BoolQueryBuilder boolQueryBuilder = super.setupBaseQuery(processReportData);
+    ProcessPartDto processPart = processReportData.getParameters().getProcessPart();
     return addProcessPartQuery(boolQueryBuilder, processPart.getStart(), processPart.getEnd());
   }
 

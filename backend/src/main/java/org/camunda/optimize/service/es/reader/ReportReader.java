@@ -31,6 +31,7 @@ import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -218,7 +219,10 @@ public class ReportReader {
 
     SearchResponse searchResponse = performGetReportRequestForIds(reportIdsAsArray);
     List<SingleProcessReportDefinitionDto> singleReportDefinitionDtos =
-      mapResponseToReportList(searchResponse);
+      mapResponseToReportList(searchResponse).stream()
+        // make sure that the order of the reports corresponds to the one from the single report ids list
+      .sorted(Comparator.comparingInt(a -> reportIds.indexOf(a.getId())))
+      .collect(Collectors.toList());
 
     if (reportIds.size() != singleReportDefinitionDtos.size()) {
       List<String> fetchedReportIds = singleReportDefinitionDtos.stream()
@@ -230,7 +234,7 @@ public class ReportReader {
                       reportIds, fetchedReportIds
         );
       logger.error(errorMessage);
-      throw new OptimizeRuntimeException(errorMessage);
+      throw new NotFoundException(errorMessage);
     }
     return singleReportDefinitionDtos;
   }

@@ -56,11 +56,7 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
       processReportData.getProcessDefinitionVersion()
     );
 
-    BoolQueryBuilder query = setupBaseQuery(
-      processReportData.getProcessDefinitionKey(),
-      processReportData.getProcessDefinitionVersion()
-    );
-    queryFilterEnhancer.addFilterToQuery(query, processReportData.getFilter());
+    BoolQueryBuilder query = setupBaseQuery(processReportData);
 
     VariableGroupByValueDto groupByVariable = ((VariableGroupByDto) processReportData.getGroupBy()).getValue();
 

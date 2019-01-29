@@ -463,7 +463,7 @@ public class CombinedReportHandlingIT {
     Map<String, Long> flowNodeToCount = resultMap.get(singleReportId).getResult();
     assertThat(flowNodeToCount.size(), is(3));
     Map<String, Long> flowNodeToCount2 = resultMap.get(singleReportId2).getResult();
-    assertThat(flowNodeToCount.size(), is(3));
+    assertThat(flowNodeToCount2.size(), is(3));
   }
 
   @Test

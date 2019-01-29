@@ -18,7 +18,6 @@ import javax.ws.rs.core.Response;
 import java.sql.SQLException;
 import java.time.DayOfWeek;
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -204,15 +203,16 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
     engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
-    final OffsetDateTime thirdBucketEvaluationDate = beforeStart.minus(2, ChronoUnit.DAYS);
+    final OffsetDateTime thirdBucketEvaluationDate = beforeStart.minus(5, ChronoUnit.DAYS);
     engineDatabaseRule.changeDecisionInstanceEvaluationDate(beforeStart, thirdBucketEvaluationDate);
 
     // second empty bucket
-    final OffsetDateTime secondBucketEvaluationDate = beforeStart.minus(1, ChronoUnit.DAYS);
 
     // first bucket
     engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
     engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    final OffsetDateTime firstBucketEvaluationDate = beforeStart.minus(1, ChronoUnit.DAYS);
+    engineDatabaseRule.changeDecisionInstanceEvaluationDate(beforeStart, firstBucketEvaluationDate);
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -381,25 +381,27 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
 
 
   private String formatToHistogramBucketKey(final OffsetDateTime offsetDateTime, final ChronoUnit unit) {
-    OffsetDateTime result = offsetDateTime.withOffsetSameInstant(ZoneOffset.UTC);
+    OffsetDateTime result = offsetDateTime;
     switch (unit) {
-      case DAYS:
       case MILLIS:
       case HOURS:
         result = result.truncatedTo(unit);
         break;
+      case DAYS:
+        result = result.truncatedTo(unit).withHour(1);
+        break;
       case WEEKS:
-        result = result.with(DayOfWeek.MONDAY).truncatedTo(ChronoUnit.DAYS);
+        result = result.with(DayOfWeek.MONDAY).truncatedTo(ChronoUnit.DAYS).withHour(1);
         break;
       case MONTHS:
-        result = result.withDayOfMonth(1).truncatedTo(ChronoUnit.DAYS);
+        result = result.withDayOfMonth(1).truncatedTo(ChronoUnit.DAYS).withHour(1);
         break;
       default:
       case YEARS:
-        result = result.withDayOfYear(1).truncatedTo(ChronoUnit.DAYS);
+        result = result.withDayOfYear(1).truncatedTo(ChronoUnit.DAYS).withHour(1);
         break;
     }
-    return embeddedOptimizeRule.getDateTimeFormatter().withZone(ZoneOffset.UTC).format(result);
+    return embeddedOptimizeRule.getDateTimeFormatter().format(result);
 
   }
 

@@ -6,6 +6,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.Dec
 import org.camunda.optimize.service.es.filter.DecisionQueryFilterEnhancer;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.ReportCommand;
+import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -13,9 +14,11 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 public abstract class DecisionReportCommand<T extends DecisionReportResultDto> extends ReportCommand<T> {
   protected DecisionQueryFilterEnhancer queryFilterEnhancer;
+  protected IntervalAggregationService intervalAggregationService;
 
   @Override
   protected void beforeEvaluate(final CommandContext commandContext) {
+    intervalAggregationService = commandContext.getIntervalAggregationService();
     queryFilterEnhancer = (DecisionQueryFilterEnhancer) commandContext.getQueryFilterEnhancer();
   }
 

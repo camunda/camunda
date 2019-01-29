@@ -21,12 +21,14 @@ import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInter
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.report.command.util.ReportUtil.getDateHistogramInterval;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.EVALUATION_DATE_TIME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
@@ -84,15 +86,16 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
     }
 
     DecisionReportMapResultDto mapResult = new DecisionReportMapResultDto();
-    mapResult.setResult(mapAggregationsToMapResult(response.getAggregations()));
+    mapResult.setResult(processAggregations(response.getAggregations()));
     mapResult.setDecisionInstanceCount(response.getHits().getTotalHits());
     return mapResult;
   }
 
-  private AggregationBuilder createAggregation(final GroupByDateUnit unit,
-                                               final QueryBuilder query) throws OptimizeException {
-    DateHistogramInterval interval =
-      getDateHistogramInterval(unit, esClient, query, DECISION_INSTANCE_TYPE, EVALUATION_DATE_TIME);
+  private AggregationBuilder createAggregation(GroupByDateUnit unit, QueryBuilder query) throws OptimizeException {
+    if (GroupByDateUnit.AUTOMATIC.equals(unit)) {
+      return createAutomaticIntervalAggregation(query);
+    }
+    DateHistogramInterval interval = intervalAggregationService.getDateHistogramInterval(unit);
     return AggregationBuilders
       .dateHistogram(DATE_HISTOGRAM_AGGREGATION)
       .order(BucketOrder.key(false))
@@ -100,17 +103,55 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
       .dateHistogramInterval(interval);
   }
 
-  private Map<String, Long> mapAggregationsToMapResult(final Aggregations aggregations) {
+  private AggregationBuilder createAutomaticIntervalAggregation(QueryBuilder query) throws OptimizeException {
+
+    Optional<AggregationBuilder> automaticIntervalAggregation =
+      intervalAggregationService.createIntervalAggregation(
+        dateIntervalRange,
+      query,
+      DECISION_INSTANCE_TYPE,
+      EVALUATION_DATE_TIME
+    );
+
+    if (automaticIntervalAggregation.isPresent()) {
+      return automaticIntervalAggregation.get();
+    } else {
+      return createAggregation(GroupByDateUnit.MONTH, query);
+    }
+  }
+
+  private Map<String, Long> processAggregations(Aggregations aggregations) {
+    if (!aggregations.getAsMap().containsKey(DATE_HISTOGRAM_AGGREGATION)) {
+      return processAutomaticIntervalAggregations(aggregations);
+    }
     Histogram agg = aggregations.get(DATE_HISTOGRAM_AGGREGATION);
 
     Map<String, Long> result = new LinkedHashMap<>();
+    // For each entry
     for (Histogram.Bucket entry : agg.getBuckets()) {
       DateTime key = (DateTime) entry.getKey();
       long docCount = entry.getDocCount();
-      String formattedDate = key.toString(OPTIMIZE_DATE_FORMAT);
+      String formattedDate = key.withZone(DateTimeZone.getDefault()).toString(OPTIMIZE_DATE_FORMAT);
       result.put(formattedDate, docCount);
     }
     return result;
+  }
+
+  private Map<String, Long> processAutomaticIntervalAggregations(Aggregations aggregations) {
+    return intervalAggregationService.mapIntervalAggregationsToKeyBucketMap(
+      aggregations)
+      .entrySet()
+      .stream()
+      .collect(
+        Collectors.toMap(
+          Map.Entry::getKey,
+          e -> e.getValue().getDocCount(),
+          (u, v) -> {
+            throw new IllegalStateException(String.format("Duplicate key %s", u));
+          },
+          LinkedHashMap::new
+        )
+      );
   }
 
 }

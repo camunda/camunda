@@ -5,6 +5,8 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -24,13 +26,17 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.service.es.report.command.util.ReportUtil.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByStartDate;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThan;
 
 
 public class AutomaticIntervalSelectionGroupByStartDateReportEvaluationIT {
@@ -155,6 +161,139 @@ public class AutomaticIntervalSelectionGroupByStartDateReportEvaluationIT {
       OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS).withDayOfMonth(1).withHour(1);
     String nowStrippedToMonthAsString = localDateTimeToString(nowStrippedToMonth);
     assertThat(resultMap.get(nowStrippedToMonthAsString), is(1L));
+  }
+
+  @Test
+  public void combinedReportsWithDistinctRanges() throws Exception {
+    // given
+    OffsetDateTime now = OffsetDateTime.now();
+    ProcessDefinitionEngineDto procDefFirstRange = startProcessInstancesInDayRange(now.plusDays(1), now.plusDays(3));
+    ProcessDefinitionEngineDto procDefSecondRange = startProcessInstancesInDayRange(now.plusDays(4), now.plusDays(6));
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+    String singleReportId = createNewSingleReport(procDefFirstRange);
+    String singleReportId2 = createNewSingleReport(procDefSecondRange);
+
+    // when
+    CombinedProcessReportResultDto result =
+      evaluateUnsavedCombined(createCombinedReport(singleReportId, singleReportId2));
+
+    // then
+    Map<String, ProcessReportMapResultDto> resultMap = result.getResult();
+    assertResultIsInCorrectRanges(now.plusDays(1), now.plusDays(6), resultMap, 2);
+  }
+
+  @Test
+  public void combinedReportsWithOneIncludingRange() throws Exception {
+    // given
+    OffsetDateTime now = OffsetDateTime.now();
+    ProcessDefinitionEngineDto procDefFirstRange = startProcessInstancesInDayRange(now.plusDays(1), now.plusDays(6));
+    ProcessDefinitionEngineDto procDefSecondRange = startProcessInstancesInDayRange(now.plusDays(3), now.plusDays(5));
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+    String singleReportId = createNewSingleReport(procDefFirstRange);
+    String singleReportId2 = createNewSingleReport(procDefSecondRange);
+
+    // when
+    CombinedProcessReportResultDto result =
+      evaluateUnsavedCombined(createCombinedReport(singleReportId, singleReportId2));
+
+    // then
+    Map<String, ProcessReportMapResultDto> resultMap = result.getResult();
+    assertResultIsInCorrectRanges(now.plusDays(1), now.plusDays(6), resultMap, 2);
+  }
+
+  @Test
+  public void combinedReportsWithIntersectingRange() throws Exception {
+    // given
+    OffsetDateTime now = OffsetDateTime.now();
+    ProcessDefinitionEngineDto procDefFirstRange = startProcessInstancesInDayRange(now.plusDays(1), now.plusDays(4));
+    ProcessDefinitionEngineDto procDefSecondRange = startProcessInstancesInDayRange(now.plusDays(3), now.plusDays(6));
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+    String singleReportId = createNewSingleReport(procDefFirstRange);
+    String singleReportId2 = createNewSingleReport(procDefSecondRange);
+
+    // when
+    CombinedProcessReportResultDto result =
+      evaluateUnsavedCombined(createCombinedReport(singleReportId, singleReportId2));
+
+    // then
+    Map<String, ProcessReportMapResultDto> resultMap = result.getResult();
+    assertResultIsInCorrectRanges(now.plusDays(1), now.plusDays(6), resultMap, 2);
+  }
+
+  private void assertResultIsInCorrectRanges(OffsetDateTime startRange,
+                                             OffsetDateTime endRange,
+                                             Map<String,ProcessReportMapResultDto> resultMap,
+                                             int resultSize) {
+    assertThat(resultMap.size(), is(resultSize));
+    for (ProcessReportMapResultDto result : resultMap.values()) {
+      Map<String, Long> singleProcessResult = result.getResult();
+      assertThat(singleProcessResult.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
+      LinkedList<String> strings = new LinkedList<>(singleProcessResult.keySet());
+      assertThat(strings.getLast(), is(localDateTimeToString(startRange)));
+      assertIsInRangeOfLastInterval(strings.getFirst(), startRange, endRange);
+    }
+  }
+
+  private void assertIsInRangeOfLastInterval(String lastIntervalAsString,
+                                             OffsetDateTime startTotal,
+                                             OffsetDateTime endTotal) {
+    long totalDuration = endTotal.toInstant().toEpochMilli() - startTotal.toInstant().toEpochMilli();
+    long interval = totalDuration / NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+    assertThat(
+      lastIntervalAsString,
+      greaterThanOrEqualTo(localDateTimeToString(endTotal.minus(interval, ChronoUnit.MILLIS)))
+    );
+    assertThat(lastIntervalAsString, lessThan(localDateTimeToString(endTotal)));
+  }
+
+  private String createNewSingleReport(ProcessDefinitionEngineDto engineDto) {
+    String singleReportId = createNewSingleReport();
+    ProcessReportDataDto reportDataDto =
+      createCountProcessInstanceFrequencyGroupByStartDate(
+        engineDto.getKey(),
+        engineDto.getVersionAsString(),
+        GroupByDateUnit.AUTOMATIC
+      );
+    SingleProcessReportDefinitionDto definitionDto = new SingleProcessReportDefinitionDto();
+    definitionDto.setData(reportDataDto);
+    updateReport(singleReportId, definitionDto);
+    return singleReportId;
+  }
+
+  private String createNewSingleReport() {
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCreateSingleProcessReportRequest()
+            .execute(IdDto.class, 200)
+            .getId();
+  }
+
+  private CombinedProcessReportResultDto evaluateUnsavedCombined(CombinedReportDataDto reportDataDto) {
+    Response response = evaluateUnsavedCombinedReportAndReturnResponse(reportDataDto);
+
+    // then the status code is okay
+    assertThat(response.getStatus(), is(200));
+    return response.readEntity(CombinedProcessReportResultDto.class);
+  }
+
+  private Response evaluateUnsavedCombinedReportAndReturnResponse(CombinedReportDataDto reportDataDto) {
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildEvaluateCombinedUnsavedReportRequest(reportDataDto)
+            .execute();
+  }
+
+  private ProcessDefinitionEngineDto startProcessInstancesInDayRange(OffsetDateTime min,
+                                                                     OffsetDateTime max) throws SQLException {
+    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
+    ProcessInstanceEngineDto procInstMin = engineRule.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto procInstMax = engineRule.startProcessInstance(processDefinition.getId());
+    engineDatabaseRule.changeProcessInstanceStartDate(procInstMin.getId(), min);
+    engineDatabaseRule.changeProcessInstanceStartDate(procInstMax.getId(), max);
+    return processDefinition;
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess() {
