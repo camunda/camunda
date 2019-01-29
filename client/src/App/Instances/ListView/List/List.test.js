@@ -39,7 +39,8 @@ const mockProps = {
     ids: [0, 10]
   },
   expandState: EXPAND_STATE.DEFAULT,
-  sorting: {sortBy: 'foo', sortOrder: SORT_ORDER.ASC}
+  sorting: {sortBy: 'foo', sortOrder: SORT_ORDER.ASC},
+  onActionButtonClick: jest.fn()
 };
 
 const emptyList = {
@@ -282,6 +283,23 @@ describe('List', () => {
         // then
         expect(node.state().rowsToDisplay).toBe(expectedRows);
         expect(mockProps.onEntriesPerPageChange).toBeCalledWith(expectedRows);
+      });
+    });
+
+    describe('Action button handler', () => {
+      it('should pass the onActionButtonClick prop to Actions', () => {
+        const node = shallow(<List.WrappedComponent {...mockProps} />);
+        const ActionsNode = node.find(Actions).at(0); // first row
+        const onButtonClick = ActionsNode.prop('onButtonClick');
+
+        // when an action button is clicked on first instance in list
+        onButtonClick();
+
+        // then expect handler to be called with the first instance
+        expect(mockProps.onActionButtonClick).toHaveBeenCalledTimes(1);
+        expect(mockProps.onActionButtonClick.mock.calls[0][0]).toEqual(
+          mockProps.data[0]
+        );
       });
     });
   });

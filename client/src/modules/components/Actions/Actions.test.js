@@ -4,7 +4,8 @@ import {shallow} from 'enzyme';
 import {
   mockResolvedAsyncFn,
   createInstance,
-  createOperation
+  createOperation,
+  flushPromises
 } from 'modules/testUtils';
 
 import {
@@ -33,7 +34,7 @@ service.wrapIdinQuery = jest.fn();
 
 describe('Actions', () => {
   let node;
-  let mockOperation, mockInstance;
+  let mockOperation, mockInstance, onButtonClick;
 
   it('should match snapshots', () => {
     // when
@@ -86,7 +87,10 @@ describe('Actions', () => {
         mockInstance = createInstance({state: INSTANCE_STATE.INCIDENT});
         isWithIncident = true;
         isRunning = false;
-        node = shallow(<Actions instance={mockInstance} />);
+        onButtonClick = jest.fn();
+        node = shallow(
+          <Actions instance={mockInstance} onButtonClick={onButtonClick} />
+        );
       });
 
       it('should render retry action item', async () => {
@@ -110,6 +114,20 @@ describe('Actions', () => {
           OPERATION_TYPE.UPDATE_RETRIES,
           service.wrapIdinQuery()
         );
+      });
+
+      it('should call onButtonClick callback', async () => {
+        //given
+        const actionItem = node.find(ActionItems.Item);
+
+        // when
+        actionItem.simulate('click');
+
+        // when
+        await flushPromises();
+        node.update();
+
+        expect(onButtonClick).toHaveBeenCalled();
       });
     });
     describe('cancel', () => {

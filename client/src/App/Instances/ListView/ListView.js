@@ -47,6 +47,7 @@ export default class ListView extends React.Component {
     const hasEntriesPerPageChanged =
       this.props.instancesLoaded &&
       this.state.entriesPerPage !== prevState.entriesPerPage;
+    const isListExpanded = this.state.entriesPerPage > prevState.entriesPerPage;
 
     if (hasListChanged) {
       this.resetInstancesWithActiveOperations();
@@ -55,6 +56,12 @@ export default class ListView extends React.Component {
 
     // this.props.instances does not change, so hasListChanged = false
     if (hasEntriesPerPageChanged) {
+      // fetch the list again when expanding the list panel
+      // https://app.camunda.com/jira/browse/OPE-395
+      if (isListExpanded) {
+        this.props.onWorkflowInstancesRefresh();
+      }
+
       const activeIds = this.state.instancesWithActiveOperations.map(
         item => item.id
       );
@@ -101,7 +108,6 @@ export default class ListView extends React.Component {
     const instancesWithActiveOperations = getInstancesWithActiveOperations(
       instancesInView
     );
-
     if (instancesWithActiveOperations.length > 0) {
       this.setState({
         instancesWithActiveOperations
@@ -111,7 +117,6 @@ export default class ListView extends React.Component {
 
   initializePolling = () => {
     const shouldStart = this.state.instancesWithActiveOperations.length !== 0;
-
     if (shouldStart) {
       this.pollingTimer = setTimeout(
         this.detectInstancesChangesPoll,
