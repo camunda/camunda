@@ -15,17 +15,7 @@
  */
 package io.zeebe.gateway.impl.broker.cluster;
 
-import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
-import io.zeebe.util.sched.future.ActorFuture;
-import java.util.function.Consumer;
-
 public interface BrokerTopologyManager {
 
   BrokerClusterState getTopology();
-
-  ActorFuture<BrokerClusterState> requestTopology();
-
-  void withTopology(Consumer<BrokerClusterState> topologyConsumer);
-
-  void provideTopology(TopologyResponseDto topology);
 }

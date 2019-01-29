@@ -37,16 +37,13 @@ import org.junit.rules.ExternalResource;
 
 public class StubBrokerRule extends ExternalResource {
   public static final int TEST_PARTITION_ID = DEPLOYMENT_PARTITION;
-
-  private final ControlledActorClock clock = new ControlledActorClock();
-  protected ActorScheduler scheduler;
-
   protected final int nodeId;
   protected final SocketAddress socketAddress;
+  private final ControlledActorClock clock = new ControlledActorClock();
   private final int clusterSize;
   private final int partitionCount;
   private final int replicationFactor;
-
+  protected ActorScheduler scheduler;
   protected ServerTransport transport;
 
   protected StubResponseChannelHandler channelHandler;
@@ -97,7 +94,6 @@ public class StubBrokerRule extends ExternalResource {
     }
 
     currentTopology.set(topology);
-    stubTopologyRequest();
     bindTransport();
   }
 
@@ -193,31 +189,11 @@ public class StubBrokerRule extends ExternalResource {
     return channelHandler.getAllReceivedRequests();
   }
 
-  public void stubTopologyRequest() {
-    onTopologyRequest()
-        .respondWith()
-        .data()
-        .put("brokers", r -> currentTopology.get().getBrokers())
-        .put("clusterSize", clusterSize)
-        .put("partitionsCount", partitionCount)
-        .put("replicationFactor", replicationFactor)
-        .done()
-        .register();
-  }
-
-  public ControlMessageResponseTypeBuilder onTopologyRequest() {
-    return onControlMessageRequest(r -> r.messageType() == ControlMessageType.REQUEST_TOPOLOGY);
-  }
-
   public void addPartition(final int partition) {
     final Topology newTopology = new Topology(currentTopology.get());
 
     newTopology.addLeader(nodeId, socketAddress, partition);
     currentTopology.set(newTopology);
-  }
-
-  public void setCurrentTopology(final Topology currentTopology) {
-    this.currentTopology.set(currentTopology);
   }
 
   public void clearTopology() {

@@ -29,6 +29,8 @@ public interface BrokerClusterState {
 
   int getPartitionsCount();
 
+  int getReplicationFactor();
+
   int getLeaderForPartition(int partition);
 
   /**
@@ -39,5 +41,9 @@ public interface BrokerClusterState {
 
   List<Integer> getPartitions();
 
-  int getPartition(int offset);
+  List<Integer> getBrokers();
+
+  String getBrokerAddress(int brokerId);
+
+  int getPartition(int index);
 }

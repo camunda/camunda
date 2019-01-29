@@ -66,7 +66,7 @@ public class CreateDeploymentTest {
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
+  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomixAddress);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 

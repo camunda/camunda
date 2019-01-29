@@ -15,10 +15,18 @@
  */
 package io.zeebe.gateway.impl.configuration;
 
+import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_ATOMIX_HOST;
+import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_ATOMIX_MEMBER_ID;
+import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_ATOMIX_PORT;
+import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CLUSTER_NAME;
 import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_HOST;
 import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_PORT;
 import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_REQUEST_TIMEOUT;
 import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_TRANSPORT_BUFFER_SIZE;
+import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_ATOMIX_HOST;
+import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_ATOMIX_MEMBER_ID;
+import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_ATOMIX_PORT;
+import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CLUSTER_NAME;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CONTACT_POINT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_REQUEST_TIMEOUT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_TRANSPORT_BUFFER;
@@ -30,10 +38,13 @@ import java.time.Duration;
 import java.util.Objects;
 
 public class ClusterCfg {
-
   private String contactPoint = DEFAULT_CONTACT_POINT_HOST + ":" + DEFAULT_CONTACT_POINT_PORT;
+  private String atomixHost = DEFAULT_ATOMIX_HOST;
+  private int atomixPort = DEFAULT_ATOMIX_PORT;
   private String transportBuffer = DEFAULT_TRANSPORT_BUFFER_SIZE;
   private String requestTimeout = DEFAULT_REQUEST_TIMEOUT;
+  private String clusterName = DEFAULT_CLUSTER_NAME;
+  private String atomixMemberId = DEFAULT_ATOMIX_MEMBER_ID;
 
   public void init(Environment environment) {
     environment
@@ -42,6 +53,37 @@ public class ClusterCfg {
         .ifPresent(this::setContactPoint);
     environment.get(ENV_GATEWAY_TRANSPORT_BUFFER).ifPresent(this::setTransportBuffer);
     environment.get(ENV_GATEWAY_REQUEST_TIMEOUT).ifPresent(this::setRequestTimeout);
+    environment.get(ENV_GATEWAY_CLUSTER_NAME).ifPresent(this::setClusterName);
+    environment.get(ENV_GATEWAY_ATOMIX_MEMBER_ID).ifPresent(this::setAtomixMemberId);
+    environment.get(ENV_GATEWAY_ATOMIX_HOST).ifPresent(this::setAtomixHost);
+    environment.getInt(ENV_GATEWAY_ATOMIX_PORT).ifPresent(this::setAtomixPort);
+  }
+
+  public String getAtomixMemberId() {
+    return atomixMemberId;
+  }
+
+  public ClusterCfg setAtomixMemberId(String atomixMemberId) {
+    this.atomixMemberId = atomixMemberId;
+    return this;
+  }
+
+  public String getAtomixHost() {
+    return atomixHost;
+  }
+
+  public ClusterCfg setAtomixHost(String atomixHost) {
+    this.atomixHost = atomixHost;
+    return this;
+  }
+
+  public int getAtomixPort() {
+    return atomixPort;
+  }
+
+  public ClusterCfg setAtomixPort(int atomixPort) {
+    this.atomixPort = atomixPort;
+    return this;
   }
 
   public String getContactPoint() {
@@ -71,6 +113,15 @@ public class ClusterCfg {
     return this;
   }
 
+  public String getClusterName() {
+    return clusterName;
+  }
+
+  public ClusterCfg setClusterName(String name) {
+    this.clusterName = name;
+    return this;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -82,12 +133,13 @@ public class ClusterCfg {
     final ClusterCfg that = (ClusterCfg) o;
     return Objects.equals(contactPoint, that.contactPoint)
         && Objects.equals(transportBuffer, that.transportBuffer)
-        && Objects.equals(requestTimeout, that.requestTimeout);
+        && Objects.equals(requestTimeout, that.requestTimeout)
+        && Objects.equals(clusterName, that.clusterName);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(contactPoint, transportBuffer, requestTimeout);
+    return Objects.hash(contactPoint, transportBuffer, requestTimeout, clusterName);
   }
 
   @Override
@@ -101,6 +153,9 @@ public class ClusterCfg {
         + '\''
         + ", requestTimeout='"
         + requestTimeout
+        + '\''
+        + ", clusterName='"
+        + clusterName
         + '\''
         + '}';
   }

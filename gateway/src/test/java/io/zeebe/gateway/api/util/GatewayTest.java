@@ -15,6 +15,7 @@
  */
 package io.zeebe.gateway.api.util;
 
+import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
 import java.io.IOException;
 import org.junit.Before;
@@ -26,10 +27,12 @@ public class GatewayTest {
 
   protected StubbedGateway gateway;
   protected GatewayBlockingStub client;
+  protected BrokerClient brokerClient;
 
   @Before
   public void setUp() throws IOException {
     gateway = gatewayRule.getGateway();
     client = gatewayRule.getClient();
+    brokerClient = gateway.buildBrokerClient();
   }
 }
