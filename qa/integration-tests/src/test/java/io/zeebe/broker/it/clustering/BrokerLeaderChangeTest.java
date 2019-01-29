@@ -21,12 +21,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.client.api.commands.BrokerInfo;
-import io.zeebe.client.api.commands.PartitionBrokerRole;
 import io.zeebe.client.api.commands.PartitionInfo;
 import io.zeebe.client.api.subscription.JobWorker;
-import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -59,14 +58,13 @@ public class BrokerLeaderChangeTest {
     clusteringRule.restartBroker(oldLeader);
 
     // then
-    final Optional<PartitionInfo> partitionInfo =
-        clusteringRule.getTopologyFromBroker(oldLeader).stream()
-            .filter(b -> b.getNodeId() == oldLeader)
-            .flatMap(b -> b.getPartitions().stream().filter(p -> p.getPartitionId() == partition))
-            .findFirst();
 
-    assertThat(partitionInfo)
-        .hasValueSatisfying(p -> assertThat(p.getRole()).isEqualTo(PartitionBrokerRole.FOLLOWER));
+    final Stream<PartitionInfo> partitionInfo =
+        clusteringRule.getTopologyFromClient().getBrokers().stream()
+            .filter(b -> b.getNodeId() == oldLeader)
+            .flatMap(b -> b.getPartitions().stream().filter(p -> p.getPartitionId() == partition));
+
+    assertThat(partitionInfo.allMatch(p -> !p.isLeader())).isTrue();
   }
 
   @Test

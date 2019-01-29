@@ -41,7 +41,7 @@ public class EmbeddedGatewayCfg extends GatewayCfg implements ConfigurationEntry
     init(environment, networkCfg.getHost());
 
     // ensure embedded gateway can access local broker
-    getCluster().setContactPoint(networkCfg.getClient().toSocketAddress().toString());
+    getCluster().setContactPoint(networkCfg.getAtomix().toSocketAddress().toString());
 
     // configure embedded gateway based on broker config
     getNetwork().setPort(getNetwork().getPort() + (networkCfg.getPortOffset() * 10));

@@ -28,13 +28,12 @@ import org.slf4j.Logger;
 
 public class Gateway {
 
+  public static final String VERSION;
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
   private static final Function<GatewayCfg, ServerBuilder> DEFAULT_SERVER_BUILDER_FACTORY =
       cfg ->
           NettyServerBuilder.forAddress(
               new InetSocketAddress(cfg.getNetwork().getHost(), cfg.getNetwork().getPort()));
-
-  public static final String VERSION;
 
   static {
     final String version = Gateway.class.getPackage().getImplementationVersion();
@@ -46,6 +45,7 @@ public class Gateway {
 
   private Server server;
   private BrokerClient brokerClient;
+  private EndpointManager endpointManager;
 
   public Gateway(GatewayCfg gatewayCfg) {
     this(gatewayCfg, DEFAULT_SERVER_BUILDER_FACTORY);
@@ -54,6 +54,10 @@ public class Gateway {
   public Gateway(GatewayCfg gatewayCfg, Function<GatewayCfg, ServerBuilder> serverBuilderFactory) {
     this.gatewayCfg = gatewayCfg;
     this.serverBuilderFactory = serverBuilderFactory;
+  }
+
+  public EndpointManager getEndpointManager() {
+    return endpointManager;
   }
 
   public GatewayCfg getGatewayCfg() {
@@ -70,11 +74,8 @@ public class Gateway {
 
     brokerClient = buildBrokerClient();
 
-    server =
-        serverBuilderFactory
-            .apply(gatewayCfg)
-            .addService(new EndpointManager(brokerClient))
-            .build();
+    endpointManager = new EndpointManager(brokerClient);
+    server = serverBuilderFactory.apply(gatewayCfg).addService(endpointManager).build();
 
     server.start();
   }

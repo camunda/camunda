@@ -125,7 +125,7 @@ public class MessageMappingTest {
 
   public static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-  public static ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
+  public static ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomixAddress);
 
   @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 

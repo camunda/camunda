@@ -52,7 +52,19 @@
 [gateway.cluster]
 # Sets the broker the gateway should initial contact.
 # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CONTACT_POINT.
-# contactPoint = "127.0.0.1:26501"
+# contactPoint = "127.0.0.1:26505"
+
+# Sets the host the gateway Atomix node binds to
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_HOST.
+# atomixHost = "0.0.0.0"
+#
+# Sets the port the gateway Atomix node binds to
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_PORT.
+# atomixPort = 26499
+
+# Sets the Atomix member id of the gateway
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_ATOMIX_MEMBER_ID.
+# atomixMemberId = "gateway"
 
 # Sets size of the transport buffer to send and received messages between gateway and broker cluster.
 # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_TRANSPORT_BUFFER.

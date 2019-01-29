@@ -19,12 +19,15 @@ import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
+import io.atomix.utils.net.Address;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.DeploymentRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.SubscriptionUtil;
@@ -42,15 +45,19 @@ import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transports;
+import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -60,13 +67,12 @@ import org.junit.rules.ExternalResource;
 
 public class ClientApiRule extends ExternalResource {
 
-  private static final String DEFAULT_WORKER = "defaultWorker";
   public static final long DEFAULT_LOCK_DURATION = 10000L;
-
-  protected ClientTransport transport;
+  private static final String DEFAULT_WORKER = "defaultWorker";
+  private static final String DEFAULT_CLUSTER_NAME = "zeebe-cluster";
 
   protected final int nodeId;
-  protected final Supplier<SocketAddress> brokerAddressSupplier;
+  protected final Supplier<SocketAddress> atomixAddressSupplier;
   protected final int partitionCount;
   protected int nextPartitionId = 0;
 
@@ -75,27 +81,42 @@ public class ClientApiRule extends ExternalResource {
   private final Int2ObjectHashMap<PartitionTestClient> testPartitionClients =
       new Int2ObjectHashMap<>();
   private final ControlledActorClock controlledActorClock = new ControlledActorClock();
-  private ActorScheduler scheduler;
-
+  protected Supplier<SocketAddress> clientAddressSupplier;
+  protected ClientTransport transport;
   protected int defaultPartitionId = -1;
+  private AtomixCluster atomix;
+  private ActorScheduler scheduler;
+  private ObjectMapper objectMapper;
 
-  public ClientApiRule(final Supplier<SocketAddress> brokerAddressSupplier) {
-    this(0, brokerAddressSupplier);
+  public ClientApiRule(final Supplier<SocketAddress> atomixAddressSupplier) {
+    this(0, 1, atomixAddressSupplier);
   }
 
-  public ClientApiRule(final int nodeId, final Supplier<SocketAddress> brokerAddressSupplier) {
-    this(nodeId, 1, brokerAddressSupplier);
-  }
-
-  public ClientApiRule(
-      int nodeId, int partitionCount, Supplier<SocketAddress> brokerAddressSupplier) {
+  public ClientApiRule(final int nodeId, final int partitionCount, final Supplier<SocketAddress> atomixAddressSupplier) {
     this.nodeId = nodeId;
     this.partitionCount = partitionCount;
-    this.brokerAddressSupplier = brokerAddressSupplier;
+    this.atomixAddressSupplier = atomixAddressSupplier;
+    objectMapper = new ObjectMapper();
   }
 
   @Override
   protected void before() throws Throwable {
+    this.atomix =
+        AtomixCluster.builder()
+            .withMemberId("clientApiRule")
+            .withClusterId(DEFAULT_CLUSTER_NAME)
+            .withAddress(
+                Address.from(
+                    atomixAddressSupplier.get().host(), SocketUtil.getNextAddress().port()))
+            .withMembershipProvider(
+                BootstrapDiscoveryProvider.builder()
+                    .withNodes(
+                        Address.from(
+                            atomixAddressSupplier.get().host(), atomixAddressSupplier.get().port()))
+                    .build())
+            .build();
+    atomix.start().join();
+
     scheduler =
         ActorScheduler.newActorScheduler()
             .setCpuBoundActorThreadCount(1)
@@ -104,16 +125,44 @@ public class ClientApiRule extends ExternalResource {
     scheduler.start();
 
     transport = Transports.newClientTransport("gateway").scheduler(scheduler).build();
-
     msgPackHelper = new MsgPackHelper();
-    transport.registerEndpoint(nodeId, brokerAddressSupplier.get());
+
+    waitForTopology();
+    atomix.getMembershipService().getMembers().stream()
+        .forEach(
+            m -> {
+              final String addressProperty = m.properties().getProperty("clientAddress");
+              if (addressProperty != null) {
+                try {
+                  final InetSocketAddress socketAddress =
+                      objectMapper.readValue(addressProperty, InetSocketAddress.class);
+                  clientAddressSupplier =
+                      () ->
+                          SocketAddress.from(
+                              socketAddress.getHostString() + ":" + socketAddress.getPort());
+
+                } catch (IOException e) {
+                  e.printStackTrace();
+                }
+              }
+            });
+    transport.registerEndpoint(nodeId, clientAddressSupplier.get());
 
     final List<Integer> partitionIds = doRepeatedly(this::getPartitionIds).until(p -> !p.isEmpty());
     defaultPartitionId = partitionIds.get(0);
   }
 
+  private void waitForTopology() {
+    waitUntil(
+        () ->
+            atomix.getMembershipService().getMembers().stream()
+                .anyMatch(member -> member.properties().getProperty("clientAddress") != null));
+  }
+
   @Override
   protected void after() {
+    atomix.stop().join();
+
     if (transport != null) {
       transport.close();
     }
@@ -186,24 +235,24 @@ public class ClientApiRule extends ExternalResource {
   @SuppressWarnings("unchecked")
   public List<Integer> getPartitionIds() {
     try {
-      final ControlMessageResponse response = requestTopology();
+      final AtomicInteger partitionsCount = new AtomicInteger(0);
 
-      final Map<String, Object> data = response.getData();
-      final int partitionsCount = ((Long) data.get("partitionsCount")).intValue();
+      atomix.getMembershipService().getMembers().stream()
+          .forEach(
+              m -> {
+                final String countProperty = m.properties().getProperty("partitionsCount");
+                if (countProperty != null) {
+                  final int count = Integer.parseInt(countProperty);
+                  if (count > 0) {
+                    partitionsCount.set(count);
+                  }
+                }
+              });
 
-      return IntStream.range(0, partitionsCount).boxed().collect(Collectors.toList());
+      return IntStream.range(0, partitionsCount.get()).boxed().collect(Collectors.toList());
     } catch (final Exception e) {
       return Collections.EMPTY_LIST;
     }
-  }
-
-  public ControlMessageResponse requestTopology() {
-    return createControlMessageRequest()
-        .partitionId(Protocol.DEPLOYMENT_PARTITION)
-        .messageType(ControlMessageType.REQUEST_TOPOLOGY)
-        .data()
-        .done()
-        .sendAndAwait();
   }
 
   public int getDefaultPartitionId() {
