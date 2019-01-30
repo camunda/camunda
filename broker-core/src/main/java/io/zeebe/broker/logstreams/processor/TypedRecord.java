@@ -19,7 +19,6 @@ package io.zeebe.broker.logstreams.processor;
 
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 public interface TypedRecord<T extends UnpackedObject> {
 
@@ -30,6 +29,6 @@ public interface TypedRecord<T extends UnpackedObject> {
   T getValue();
 
   default int getMaxValueLength() {
-    throw new NotImplementedException();
+    throw new UnsupportedOperationException();
   }
 }
