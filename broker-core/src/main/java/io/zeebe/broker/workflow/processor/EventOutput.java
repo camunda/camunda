@@ -87,8 +87,19 @@ public class EventOutput {
     streamWriter.appendFollowUpEvent(incidentKey, IncidentIntent.RESOLVED, incidentRecord);
   }
 
-  public void deferEvent(final TypedRecord<WorkflowInstanceRecord> event) {
-    materializedState.deferRecord(event);
+  public long deferEvent(final TypedRecord<WorkflowInstanceRecord> event) {
+    final WorkflowInstanceRecord value = event.getValue();
+    final WorkflowInstanceIntent intent = (WorkflowInstanceIntent) event.getMetadata().getIntent();
+
+    return deferRecord(value.getScopeInstanceKey(), value, intent);
+  }
+
+  public long deferRecord(
+      long scopeKey, WorkflowInstanceRecord value, WorkflowInstanceIntent intent) {
+    final long elementInstanceKey = getStreamWriter().getKeyGenerator().nextKey();
+    materializedState.deferRecord(elementInstanceKey, scopeKey, value, intent);
+
+    return elementInstanceKey;
   }
 
   public void storeFailedRecord(final TypedRecord<WorkflowInstanceRecord> event) {

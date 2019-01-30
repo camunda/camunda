@@ -27,10 +27,12 @@ import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionState;
-import io.zeebe.broker.workflow.processor.CatchEventBehavior;
+import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.WorkflowInstanceSubscription;
+import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
@@ -40,22 +42,22 @@ import java.util.function.Consumer;
 public final class CorrelateWorkflowInstanceSubscription
     implements TypedRecordProcessor<WorkflowInstanceSubscriptionRecord> {
 
-  public static final Duration SUBSCRIPTION_TIMEOUT = Duration.ofSeconds(10);
-  public static final Duration SUBSCRIPTION_CHECK_INTERVAL = Duration.ofSeconds(30);
-  public static final String NO_EVENT_OCCURRED_MESSAGE =
+  private static final Duration SUBSCRIPTION_TIMEOUT = Duration.ofSeconds(10);
+  private static final Duration SUBSCRIPTION_CHECK_INTERVAL = Duration.ofSeconds(30);
+  private static final String NO_EVENT_OCCURRED_MESSAGE =
       "Expected to correlate a workflow instance subscription with element key '%d' and message name '%s', "
           + "but the subscription is not active anymore";
-  public static final String NO_SUBSCRIPTION_FOUND_MESSAGE =
+  private static final String NO_SUBSCRIPTION_FOUND_MESSAGE =
       "Expected to correlate workflow instance subscription with element key '%d' and message name '%s', "
           + "but no such subscription was found";
-  public static final String ALREADY_CLOSING_MESSAGE =
+  private static final String ALREADY_CLOSING_MESSAGE =
       "Expected to correlate workflow instance subscription with element key '%d' and message name '%s', "
           + "but it is already closing";
 
-  private final CatchEventBehavior catchEventBehavior;
   private final TopologyManager topologyManager;
   private final WorkflowInstanceSubscriptionState subscriptionState;
   private final SubscriptionCommandSender subscriptionCommandSender;
+  private final WorkflowState workflowState;
 
   private WorkflowInstanceSubscriptionRecord subscriptionRecord;
 
@@ -63,11 +65,11 @@ public final class CorrelateWorkflowInstanceSubscription
       final TopologyManager topologyManager,
       final WorkflowInstanceSubscriptionState subscriptionState,
       final SubscriptionCommandSender subscriptionCommandSender,
-      final CatchEventBehavior catchEventBehavior) {
+      final WorkflowState workflowState) {
     this.topologyManager = topologyManager;
     this.subscriptionState = subscriptionState;
     this.subscriptionCommandSender = subscriptionCommandSender;
-    this.catchEventBehavior = catchEventBehavior;
+    this.workflowState = workflowState;
   }
 
   @Override
@@ -86,6 +88,7 @@ public final class CorrelateWorkflowInstanceSubscription
   @Override
   public void onClose() {}
 
+  // todo: refactor this big ass method
   @Override
   public void processRecord(
       final TypedRecord<WorkflowInstanceSubscriptionRecord> record,
@@ -123,16 +126,25 @@ public final class CorrelateWorkflowInstanceSubscription
       subscriptionState.remove(subscription);
     }
 
+    final ElementInstance elementInstance =
+        workflowState.getElementInstanceState().getInstance(subscription.getElementInstanceKey());
+    final long eventKey = streamWriter.getKeyGenerator().nextKey();
     final boolean isOccurred =
-        catchEventBehavior.occurEventForElement(
-            elementInstanceKey,
-            subscription.getHandlerNodeId(),
-            record.getValue().getPayload(),
-            streamWriter);
+        workflowState
+            .getEventScopeInstanceState()
+            .triggerEvent(
+                subscriptionRecord.getElementInstanceKey(),
+                eventKey,
+                subscription.getHandlerNodeId(),
+                record.getValue().getPayload());
 
     if (isOccurred) {
       streamWriter.appendFollowUpEvent(
           record.getKey(), WorkflowInstanceSubscriptionIntent.CORRELATED, subscriptionRecord);
+      streamWriter.appendFollowUpEvent(
+          subscriptionRecord.getElementInstanceKey(),
+          WorkflowInstanceIntent.EVENT_OCCURRED,
+          elementInstance.getValue());
     } else {
       streamWriter.appendRejection(
           record,

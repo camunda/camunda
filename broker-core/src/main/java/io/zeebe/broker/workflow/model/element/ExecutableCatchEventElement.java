@@ -18,8 +18,10 @@
 package io.zeebe.broker.workflow.model.element;
 
 import io.zeebe.model.bpmn.util.time.Timer;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import org.agrona.DirectBuffer;
 
 public class ExecutableCatchEventElement extends ExecutableFlowNode
     implements ExecutableCatchEvent, ExecutableCatchEventSupplier {
@@ -64,5 +66,10 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
   @Override
   public List<ExecutableCatchEvent> getEvents() {
     return events;
+  }
+
+  @Override
+  public Collection<DirectBuffer> getInterruptingElementIds() {
+    return Collections.singleton(getId());
   }
 }

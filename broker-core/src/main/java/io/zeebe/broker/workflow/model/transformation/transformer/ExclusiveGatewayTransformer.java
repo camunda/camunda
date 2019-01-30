@@ -42,27 +42,21 @@ public class ExclusiveGatewayTransformer implements ModelElementTransformer<Excl
         workflow.getElementById(element.getId(), ExecutableExclusiveGateway.class);
 
     transformDefaultFlow(element, workflow, gateway);
-
-    bindLifecycle(element, gateway, context);
+    bindLifecycle(gateway);
   }
 
-  private void bindLifecycle(
-      ExclusiveGateway element,
-      final ExecutableExclusiveGateway gateway,
-      TransformContext context) {
-    final Collection<SequenceFlow> outgoingFlows = element.getOutgoing();
-
+  private void bindLifecycle(final ExecutableExclusiveGateway gateway) {
+    final Collection<ExecutableSequenceFlow> outgoingFlows = gateway.getOutgoing();
     final boolean hasNoOutgoingFlows = outgoingFlows.size() == 0;
     final boolean hasSingleNonConditionalOutgoingFlow =
-        outgoingFlows.size() == 1
-            && outgoingFlows.iterator().next().getConditionExpression() == null;
+        outgoingFlows.size() == 1 && outgoingFlows.iterator().next().getCondition() == null;
 
     if (hasNoOutgoingFlows || hasSingleNonConditionalOutgoingFlow) {
       gateway.bindLifecycleState(
-          WorkflowInstanceIntent.GATEWAY_ACTIVATED, context.getCurrentFlowNodeOutgoingStep());
+          WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnStep.FLOWOUT_ELEMENT_COMPLETED);
     } else {
       gateway.bindLifecycleState(
-          WorkflowInstanceIntent.GATEWAY_ACTIVATED, BpmnStep.EXCLUSIVE_SPLIT);
+          WorkflowInstanceIntent.ELEMENT_READY, BpmnStep.EXCLUSIVE_GATEWAY_ELEMENT_READY);
     }
   }
 

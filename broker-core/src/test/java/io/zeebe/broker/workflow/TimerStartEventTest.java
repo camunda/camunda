@@ -18,7 +18,6 @@
 package io.zeebe.broker.workflow;
 
 import static io.zeebe.broker.workflow.state.TimerInstance.NO_ELEMENT_INSTANCE;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.EVENT_ACTIVATED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
@@ -30,6 +29,7 @@ import io.zeebe.exporter.record.value.deployment.DeployedWorkflow;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ProcessBuilder;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.intent.TimerIntent;
@@ -131,7 +131,8 @@ public class TimerStartEventTest {
     brokerRule.getClock().addTime(Duration.ofSeconds(2));
 
     Assertions.assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERING)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_READY)
+                .withElementType(BpmnElementType.START_EVENT)
                 .getFirst()
                 .getValue())
         .hasElementId("start_1")
@@ -149,11 +150,11 @@ public class TimerStartEventTest {
                 .map(r -> r.getMetadata().getIntent()))
         .containsExactly(
             TimerIntent.TRIGGER,
-            WorkflowInstanceIntent.EVENT_OCCURRED, // causes the instance creation
             TimerIntent.TRIGGERED,
+            WorkflowInstanceIntent.EVENT_OCCURRED, // causes the instance creation
             WorkflowInstanceIntent.ELEMENT_READY, // causes the flow node activation
             WorkflowInstanceIntent.ELEMENT_ACTIVATED, // input mappings applied
-            WorkflowInstanceIntent.EVENT_TRIGGERING); // triggers the start event
+            WorkflowInstanceIntent.ELEMENT_READY); // triggers the start event
   }
 
   @Test
@@ -215,7 +216,7 @@ public class TimerStartEventTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(EVENT_ACTIVATED)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
                 .withElementId("end_1")
                 .withBpmnProcessId("process")
                 .withVersion(1)
@@ -228,7 +229,7 @@ public class TimerStartEventTest {
     brokerRule.getClock().addTime(Duration.ofSeconds(2));
 
     assertThat(
-            RecordingExporter.workflowInstanceRecords(EVENT_ACTIVATED)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
                 .withElementId("end_2")
                 .withBpmnProcessId("process")
                 .withVersion(2)
@@ -263,7 +264,7 @@ public class TimerStartEventTest {
     final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
     final WorkflowInstanceRecordValue lastRecord =
-        RecordingExporter.workflowInstanceRecords(EVENT_ACTIVATED)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
             .withElementId("end_4")
             .getFirst()
             .getValue();
@@ -362,24 +363,24 @@ public class TimerStartEventTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERED)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
                 .withElementId("start_4")
                 .exists())
         .isTrue();
     assertThat(
-            RecordingExporter.workflowInstanceRecords(EVENT_ACTIVATED)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
                 .withElementId("end_4")
                 .exists())
         .isTrue();
 
     brokerRule.getClock().addTime(Duration.ofSeconds(1));
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERED)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
                 .withElementId("start_5")
                 .exists())
         .isTrue();
     assertThat(
-            RecordingExporter.workflowInstanceRecords(EVENT_ACTIVATED)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
                 .withElementId("end_5")
                 .exists())
         .isTrue();
@@ -411,7 +412,7 @@ public class TimerStartEventTest {
         .hasElementInstanceKey(NO_ELEMENT_INSTANCE);
 
     assertThat(
-            RecordingExporter.workflowInstanceRecords(EVENT_ACTIVATED)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
                 .withElementId("end_2")
                 .exists())
         .isTrue();
@@ -457,26 +458,26 @@ public class TimerStartEventTest {
 
     // then
     final long timerInstanceKey =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERING)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETING)
             .withElementId("timer_start")
             .getFirst()
             .getValue()
             .getWorkflowInstanceKey();
     assertThat(
-            RecordingExporter.workflowInstanceRecords(EVENT_ACTIVATED)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
                 .withElementId("timer_end")
                 .withWorkflowInstanceKey(timerInstanceKey)
                 .exists())
         .isTrue();
 
     final long messageInstanceKey =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERING)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETING)
             .withElementId("msg_start")
             .getFirst()
             .getValue()
             .getWorkflowInstanceKey();
     assertThat(
-            RecordingExporter.workflowInstanceRecords(EVENT_ACTIVATED)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
                 .withElementId("msg_end")
                 .withWorkflowInstanceKey(messageInstanceKey)
                 .exists())

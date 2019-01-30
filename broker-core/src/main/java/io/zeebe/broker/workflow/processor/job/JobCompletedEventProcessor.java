@@ -59,6 +59,7 @@ public final class JobCompletedEventProcessor implements TypedRecordProcessor<Jo
       elementInstance.setJobKey(-1);
       elementInstance.setValue(value);
 
+      workflowState.getEventScopeInstanceState().shutdownInstance(elementInstanceKey);
       workflowState
           .getElementInstanceState()
           .getVariablesState()

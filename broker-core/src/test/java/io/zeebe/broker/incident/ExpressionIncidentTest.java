@@ -29,6 +29,7 @@ import io.zeebe.exporter.record.RecordMetadata;
 import io.zeebe.exporter.record.value.IncidentRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.impl.record.value.incident.ErrorType;
 import io.zeebe.protocol.intent.IncidentIntent;
@@ -95,7 +96,8 @@ public class ExpressionIncidentTest {
 
     // then incident is created
     final Record<WorkflowInstanceRecordValue> failingEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.GATEWAY_ACTIVATED);
+        testClient.receiveFirstWorkflowInstanceEvent(
+            WorkflowInstanceIntent.ELEMENT_READY, BpmnElementType.EXCLUSIVE_GATEWAY);
 
     final Record<IncidentRecordValue> incidentCommand =
         testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
@@ -105,7 +107,7 @@ public class ExpressionIncidentTest {
     assertThat(incidentCommand.getSourceRecordPosition()).isEqualTo(failingEvent.getPosition());
     assertIncidentRecordValue(
         ErrorType.CONDITION_ERROR.name(),
-        "All conditions evaluated to false and no default flow is set.",
+        "Expected at least one condition to evaluate to true, or to have a default flow",
         "xor",
         incidentEvent);
   }
@@ -141,7 +143,7 @@ public class ExpressionIncidentTest {
         testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     final Record<WorkflowInstanceRecordValue> failureEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.GATEWAY_ACTIVATED);
+        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_READY);
 
     // when correct payload is used
     testClient.updatePayload(failureEvent.getKey(), asMsgPack("foo", 7).byteArray());
@@ -173,11 +175,14 @@ public class ExpressionIncidentTest {
         .extracting(Record::getMetadata)
         .extracting(RecordMetadata::getIntent)
         .containsSubsequence(
-            WorkflowInstanceIntent.GATEWAY_ACTIVATED,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+            WorkflowInstanceIntent.ELEMENT_COMPLETING,
+            WorkflowInstanceIntent.ELEMENT_COMPLETED,
             WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
-            WorkflowInstanceIntent.EVENT_ACTIVATING,
-            WorkflowInstanceIntent.EVENT_ACTIVATED,
-            ELEMENT_COMPLETED);
+            WorkflowInstanceIntent.ELEMENT_READY,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+            WorkflowInstanceIntent.ELEMENT_COMPLETING,
+            WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
 
   @Test
@@ -188,7 +193,8 @@ public class ExpressionIncidentTest {
     final long incidentKey = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED).getKey();
     final long failedEventKey =
         testClient
-            .receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.GATEWAY_ACTIVATED)
+            .receiveFirstWorkflowInstanceEvent(
+                WorkflowInstanceIntent.ELEMENT_READY, BpmnElementType.EXCLUSIVE_GATEWAY)
             .getKey();
     testClient.updatePayload(failedEventKey, asMsgPack("foo", 10).byteArray());
     testClient.resolveIncident(incidentKey);
@@ -216,11 +222,11 @@ public class ExpressionIncidentTest {
     final List<Record<WorkflowInstanceRecordValue>> workflowInstanceRecords =
         testClient
             .receiveWorkflowInstances()
-            .skipUntil(r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.GATEWAY_ACTIVATED)
-            .limit(
+            .skipUntil(
                 r ->
                     r.getMetadata().getIntent() == ELEMENT_COMPLETED
-                        && r.getValue().getWorkflowInstanceKey() == r.getKey())
+                        && r.getValue().getBpmnElementType() == BpmnElementType.EXCLUSIVE_GATEWAY)
+            .limitToWorkflowInstanceCompleted()
             .collect(Collectors.toList());
 
     // RESOLVE triggers RESOLVED
@@ -237,9 +243,10 @@ public class ExpressionIncidentTest {
         .extracting(RecordMetadata::getIntent)
         .containsSubsequence(
             WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
-            WorkflowInstanceIntent.EVENT_ACTIVATING,
-            WorkflowInstanceIntent.EVENT_ACTIVATED,
-            ELEMENT_COMPLETED);
+            WorkflowInstanceIntent.ELEMENT_READY,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+            WorkflowInstanceIntent.ELEMENT_COMPLETING,
+            WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
 
   @Test
@@ -254,7 +261,8 @@ public class ExpressionIncidentTest {
         testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     final Record<WorkflowInstanceRecordValue> failureEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.GATEWAY_ACTIVATED);
+        testClient.receiveFirstWorkflowInstanceEvent(
+            WorkflowInstanceIntent.ELEMENT_READY, BpmnElementType.EXCLUSIVE_GATEWAY);
 
     // when
     testClient.updatePayload(failureEvent.getKey(), asMsgPack("foo", 7).byteArray());

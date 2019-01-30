@@ -117,8 +117,8 @@ public class MessageCatchElementTest {
       {
         "intermediate message catch event",
         CATCH_EVENT_WORKFLOW,
-        WorkflowInstanceIntent.EVENT_ACTIVATED,
-        WorkflowInstanceIntent.EVENT_TRIGGERED,
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+        WorkflowInstanceIntent.ELEMENT_COMPLETED,
         "receive-message"
       },
       {
@@ -139,7 +139,7 @@ public class MessageCatchElementTest {
         "non int boundary event",
         NON_INT_BOUNDARY_EVENT_WORKFLOW,
         WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-        WorkflowInstanceIntent.EVENT_TRIGGERED,
+        WorkflowInstanceIntent.ELEMENT_COMPLETED,
         "event"
       }
     };

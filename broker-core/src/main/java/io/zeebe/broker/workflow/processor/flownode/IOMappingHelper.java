@@ -40,10 +40,8 @@ public class IOMappingHelper {
 
     final DirectBuffer payload = variablesState.getPayload(elementInstanceKey);
     if (payload != null) {
-
       if (hasOutputMappings) {
         variablesState.setVariablesLocalFromDocument(elementInstanceKey, payload);
-
       } else {
         variablesState.setVariablesFromDocument(scopeInstanceKey, payload);
       }
@@ -62,8 +60,12 @@ public class IOMappingHelper {
       variablesState.setVariablesFromDocument(scopeInstanceKey, mergedPayload);
     }
 
-    // TODO (saig0) #1852: temporary way to calculate the right payload
-    record.setPayload(variablesState.getVariablesAsDocument(scopeInstanceKey));
+    // todo: when refactoring handler hierarchy this should go away as default behaviour shouldn't
+    // be to apply output mappings
+    if (scopeInstanceKey >= 0) {
+      // TODO (saig0) #1852: temporary way to calculate the right payload
+      record.setPayload(variablesState.getVariablesAsDocument(scopeInstanceKey));
+    }
   }
 
   public <T extends ExecutableFlowNode> void applyInputMappings(BpmnStepContext<T> context) {

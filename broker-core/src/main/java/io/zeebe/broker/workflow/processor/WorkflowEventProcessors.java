@@ -77,7 +77,7 @@ public class WorkflowEventProcessors {
         subscriptionState,
         topologyManager,
         subscriptionCommandSender,
-        catchEventOutput);
+        workflowState);
     addTimerStreamProcessors(typedProcessorBuilder, timerChecker, workflowState, catchEventOutput);
     return bpmnStepProcessor;
   }
@@ -109,7 +109,7 @@ public class WorkflowEventProcessors {
       WorkflowInstanceSubscriptionState subscriptionState,
       TopologyManager topologyManager,
       SubscriptionCommandSender subscriptionCommandSender,
-      CatchEventBehavior catchEventOutput) {
+      WorkflowState workflowState) {
     streamProcessorBuilder
         .onCommand(
             ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
@@ -119,7 +119,7 @@ public class WorkflowEventProcessors {
             ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
             WorkflowInstanceSubscriptionIntent.CORRELATE,
             new CorrelateWorkflowInstanceSubscription(
-                topologyManager, subscriptionState, subscriptionCommandSender, catchEventOutput))
+                topologyManager, subscriptionState, subscriptionCommandSender, workflowState))
         .onCommand(
             ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
             WorkflowInstanceSubscriptionIntent.CLOSE,

@@ -97,7 +97,7 @@ public class MessageCorrelationTest {
     assertWorkflowInstanceCompleted(PROCESS_ID);
 
     final Record<WorkflowInstanceRecordValue> workflowInstanceEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERED)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
             .withElementId("catch-event")
             .getFirst();
 
@@ -139,7 +139,7 @@ public class MessageCorrelationTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERED)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
                 .withElementId("catch-event")
                 .exists())
         .isTrue();
@@ -180,7 +180,7 @@ public class MessageCorrelationTest {
 
     // then
     final Record<WorkflowInstanceRecordValue> record =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERED)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
             .withElementId("catch-event")
             .getFirst();
 

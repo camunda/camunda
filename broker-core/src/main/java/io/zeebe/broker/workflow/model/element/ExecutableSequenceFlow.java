@@ -21,6 +21,7 @@ import io.zeebe.msgpack.el.CompiledJsonCondition;
 
 public class ExecutableSequenceFlow extends AbstractFlowElement {
 
+  private ExecutableFlowNode source;
   private ExecutableFlowNode target;
   private CompiledJsonCondition condition;
 
@@ -34,6 +35,14 @@ public class ExecutableSequenceFlow extends AbstractFlowElement {
 
   public ExecutableFlowNode getTarget() {
     return target;
+  }
+
+  public ExecutableFlowNode getSource() {
+    return source;
+  }
+
+  public void setSource(ExecutableFlowNode source) {
+    this.source = source;
   }
 
   public void setCondition(CompiledJsonCondition condition) {

@@ -17,11 +17,24 @@
  */
 package io.zeebe.broker.workflow.processor;
 
+import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
+import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
+import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETING;
+import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_READY;
+import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
+import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_TERMINATING;
+
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
- * We have two types of elements:
+ * TODO: rewrite this
+ *
+ * <p>We have two types of elements:
  *
  * <ul>
  *   <li>Those that simply <i>happen</i>, i.e. that are represented by a single event (e.g. sequence
@@ -33,29 +46,41 @@ public class WorkflowInstanceLifecycle {
 
   public static final EnumSet<WorkflowInstanceIntent> ELEMENT_INSTANCE_STATES =
       EnumSet.of(
-          WorkflowInstanceIntent.ELEMENT_READY,
-          WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-          WorkflowInstanceIntent.ELEMENT_COMPLETING,
-          WorkflowInstanceIntent.ELEMENT_COMPLETED,
+          ELEMENT_READY,
+          ELEMENT_ACTIVATED,
+          ELEMENT_COMPLETING,
+          ELEMENT_COMPLETED,
           WorkflowInstanceIntent.ELEMENT_TERMINATING,
           WorkflowInstanceIntent.ELEMENT_TERMINATED);
 
   public static final EnumSet<WorkflowInstanceIntent> FINAL_ELEMENT_INSTANCE_STATES =
-      EnumSet.of(
-          WorkflowInstanceIntent.ELEMENT_COMPLETED, WorkflowInstanceIntent.ELEMENT_TERMINATED);
+      EnumSet.of(ELEMENT_COMPLETED, WorkflowInstanceIntent.ELEMENT_TERMINATED);
 
   public static final EnumSet<WorkflowInstanceIntent> TERMINATABLE_STATES =
-      EnumSet.of(
-          WorkflowInstanceIntent.ELEMENT_READY,
-          WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-          WorkflowInstanceIntent.ELEMENT_COMPLETING);
+      EnumSet.of(ELEMENT_READY, ELEMENT_ACTIVATED, ELEMENT_COMPLETING);
+
+  public static final Map<WorkflowInstanceIntent, Set<WorkflowInstanceIntent>> TRANSITION_RULES =
+      new EnumMap<>(WorkflowInstanceIntent.class);
+
+  static {
+    TRANSITION_RULES.put(ELEMENT_READY, EnumSet.of(ELEMENT_ACTIVATED, ELEMENT_TERMINATING));
+    TRANSITION_RULES.put(ELEMENT_ACTIVATED, EnumSet.of(ELEMENT_COMPLETING, ELEMENT_TERMINATING));
+    TRANSITION_RULES.put(ELEMENT_COMPLETING, EnumSet.of(ELEMENT_COMPLETED, ELEMENT_TERMINATING));
+    TRANSITION_RULES.put(ELEMENT_TERMINATING, EnumSet.of(ELEMENT_TERMINATED));
+    TRANSITION_RULES.put(ELEMENT_COMPLETED, Collections.emptySet());
+    TRANSITION_RULES.put(ELEMENT_TERMINATED, Collections.emptySet());
+  }
+
+  public static boolean canTransition(WorkflowInstanceIntent from, WorkflowInstanceIntent to) {
+    return TRANSITION_RULES.get(from).contains(to);
+  }
 
   public static boolean isFinalState(WorkflowInstanceIntent state) {
     return FINAL_ELEMENT_INSTANCE_STATES.contains(state);
   }
 
   public static boolean isInitialState(WorkflowInstanceIntent state) {
-    return state == WorkflowInstanceIntent.ELEMENT_READY;
+    return state == ELEMENT_READY;
   }
 
   public static boolean isElementInstanceState(WorkflowInstanceIntent state) {
@@ -68,5 +93,13 @@ public class WorkflowInstanceLifecycle {
 
   public static boolean canTerminate(WorkflowInstanceIntent currentState) {
     return TERMINATABLE_STATES.contains(currentState);
+  }
+
+  public static boolean isActive(WorkflowInstanceIntent currentState) {
+    return currentState == ELEMENT_ACTIVATED;
+  }
+
+  public static boolean isTerminating(WorkflowInstanceIntent currentState) {
+    return currentState == ELEMENT_TERMINATING;
   }
 }

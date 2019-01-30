@@ -30,6 +30,7 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceReco
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.metrics.MetricsManager;
 
+// todo: rewrite this
 /*
  * Workflow Execution Concept:
  *
@@ -108,9 +109,9 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
     }
   }
 
-  public void deferRecord(TypedRecord<WorkflowInstanceRecord> event) {
-    final long scopeKey = event.getValue().getScopeInstanceKey();
-    elementInstanceState.storeRecord(scopeKey, event, Purpose.DEFERRED);
+  public void deferRecord(
+      long key, long scopeKey, WorkflowInstanceRecord value, WorkflowInstanceIntent state) {
+    elementInstanceState.storeRecord(key, scopeKey, value, state, Purpose.DEFERRED);
   }
 
   public void storeFailedRecord(TypedRecord<WorkflowInstanceRecord> event) {
@@ -128,8 +129,6 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
     // only instances that have a multi-state lifecycle are represented in the index
     if (WorkflowInstanceLifecycle.isInitialState(state)) {
       createNewElementInstance(key, state, value);
-    } else if (WorkflowInstanceLifecycle.isFinalState(state)) {
-      removeElementInstance(key, value);
     } else {
       updateElementInstance(key, state, value);
     }

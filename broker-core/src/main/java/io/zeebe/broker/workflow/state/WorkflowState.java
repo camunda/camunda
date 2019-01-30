@@ -29,12 +29,14 @@ public class WorkflowState {
   private final WorkflowPersistenceCache workflowPersistenceCache;
   private final TimerInstanceState timerInstanceState;
   private final ElementInstanceState elementInstanceState;
+  private final EventScopeInstanceState eventScopeInstanceState;
 
   public WorkflowState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
     versionManager = new NextValueManager(zeebeDb, ZbColumnFamilies.WORKFLOW_VERSION);
     workflowPersistenceCache = new WorkflowPersistenceCache(zeebeDb);
     timerInstanceState = new TimerInstanceState(zeebeDb);
     elementInstanceState = new ElementInstanceState(zeebeDb);
+    eventScopeInstanceState = new EventScopeInstanceState(zeebeDb);
   }
 
   public int getNextWorkflowVersion(String bpmnProcessId) {
@@ -72,5 +74,9 @@ public class WorkflowState {
 
   public ElementInstanceState getElementInstanceState() {
     return elementInstanceState;
+  }
+
+  public EventScopeInstanceState getEventScopeInstanceState() {
+    return eventScopeInstanceState;
   }
 }

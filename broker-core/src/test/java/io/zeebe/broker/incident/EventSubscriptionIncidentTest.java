@@ -162,14 +162,14 @@ public class EventSubscriptionIncidentTest {
         "event-based gateway (first event)",
         WF_EVENT_BASED_GATEWAY,
         "gateway",
-        WorkflowInstanceIntent.GATEWAY_ACTIVATED,
+        WorkflowInstanceIntent.ELEMENT_READY,
         null
       },
       {
         "event-based gateway (second event)",
         WF_EVENT_BASED_GATEWAY_2,
         "gateway",
-        WorkflowInstanceIntent.GATEWAY_ACTIVATED,
+        WorkflowInstanceIntent.ELEMENT_READY,
         null
       }
     };

@@ -17,13 +17,11 @@
  */
 package io.zeebe.broker.workflow.model.transformation.transformer;
 
-import io.zeebe.broker.workflow.model.BpmnStep;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.EndEvent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class EndEventTransformer implements ModelElementTransformer<EndEvent> {
 
@@ -37,13 +35,5 @@ public class EndEventTransformer implements ModelElementTransformer<EndEvent> {
     final ExecutableWorkflow currentWorkflow = context.getCurrentWorkflow();
     final ExecutableFlowNode endEvent =
         currentWorkflow.getElementById(element.getId(), ExecutableFlowNode.class);
-
-    bindLifecycle(context, endEvent);
-  }
-
-  private void bindLifecycle(TransformContext context, ExecutableFlowNode endEvent) {
-    endEvent.bindLifecycleState(WorkflowInstanceIntent.EVENT_ACTIVATING, BpmnStep.ACTIVATE_EVENT);
-    endEvent.bindLifecycleState(
-        WorkflowInstanceIntent.EVENT_ACTIVATED, context.getCurrentFlowNodeOutgoingStep());
   }
 }

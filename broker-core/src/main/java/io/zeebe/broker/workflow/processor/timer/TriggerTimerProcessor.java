@@ -18,7 +18,6 @@
 package io.zeebe.broker.workflow.processor.timer;
 
 import static io.zeebe.broker.workflow.state.TimerInstance.NO_ELEMENT_INSTANCE;
-import static io.zeebe.msgpack.value.DocumentValue.EMPTY_DOCUMENT;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.zeebe.broker.logstreams.processor.TypedRecord;
@@ -44,14 +43,14 @@ import java.util.List;
 import org.agrona.DirectBuffer;
 
 public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> {
-  public static final String NO_TIMER_FOUND_MESSAGE =
+  private static final String NO_TIMER_FOUND_MESSAGE =
       "Expected to trigger timer with key '%d', but no such timer was found";
-  public static final String NO_EVENT_OCCURRED_MESSAGE =
+  private static final String NO_EVENT_OCCURRED_MESSAGE =
       "Expected to trigger a timer with key '%d', but the timer is not active anymore";
 
   private final CatchEventBehavior catchEventBehavior;
   private final WorkflowState workflowState;
-  private final WorkflowInstanceRecord startEventRecord =
+  private final WorkflowInstanceRecord eventOccurredRecord =
       new WorkflowInstanceRecord().setBpmnElementType(BpmnElementType.START_EVENT);
 
   public TriggerTimerProcessor(
@@ -60,6 +59,7 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
     this.catchEventBehavior = catchEventBehavior;
   }
 
+  // todo: refactor this big ass method
   @Override
   public void processRecord(
       TypedRecord<TimerRecord> record,
@@ -75,27 +75,36 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
           record, RejectionType.NOT_FOUND, String.format(NO_TIMER_FOUND_MESSAGE, record.getKey()));
       return;
     }
-
     workflowState.getTimerState().remove(timerInstance);
 
     boolean isOccurred = true;
 
+    eventOccurredRecord.reset();
     if (elementInstanceKey == NO_ELEMENT_INSTANCE) {
       // timer start event
-      startEventRecord
+      eventOccurredRecord
+          .setBpmnElementType(BpmnElementType.START_EVENT)
           .setWorkflowKey(timer.getWorkflowKey())
           .setElementId(timer.getHandlerNodeId())
           .setPayload(WorkflowInstanceRecord.EMPTY_PAYLOAD);
-      streamWriter.appendNewEvent(WorkflowInstanceIntent.EVENT_OCCURRED, startEventRecord);
-
     } else {
+      final long eventKey = streamWriter.getKeyGenerator().nextKey();
       isOccurred =
-          catchEventBehavior.occurEventForElement(
-              elementInstanceKey, timer.getHandlerNodeId(), EMPTY_DOCUMENT, streamWriter);
+          workflowState
+              .getEventScopeInstanceState()
+              .triggerEvent(
+                  timer.getElementInstanceKey(),
+                  eventKey,
+                  timer.getHandlerNodeId(),
+                  WorkflowInstanceRecord.EMPTY_PAYLOAD);
+      eventOccurredRecord.wrap(
+          workflowState.getElementInstanceState().getInstance(elementInstanceKey).getValue());
     }
 
     if (isOccurred) {
       streamWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
+      streamWriter.appendFollowUpEvent(
+          elementInstanceKey, WorkflowInstanceIntent.EVENT_OCCURRED, eventOccurredRecord);
 
       if (shouldReschedule(timer)) {
         final ExecutableCatchEventElement timerEvent = getTimerEvent(elementInstanceKey, timer);

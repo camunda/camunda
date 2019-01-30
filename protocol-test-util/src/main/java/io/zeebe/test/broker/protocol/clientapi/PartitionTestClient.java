@@ -30,6 +30,7 @@ import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -432,6 +433,11 @@ public class PartitionTestClient {
   }
 
   public Record<WorkflowInstanceRecordValue> receiveFirstWorkflowInstanceEvent(
+      final WorkflowInstanceIntent intent, final BpmnElementType elementType) {
+    return receiveWorkflowInstances().withIntent(intent).withElementType(elementType).getFirst();
+  }
+
+  public Record<WorkflowInstanceRecordValue> receiveFirstWorkflowInstanceEvent(
       final long wfInstanceKey, final String elementId, final Intent intent) {
     return receiveWorkflowInstances()
         .withIntent(intent)
@@ -445,6 +451,15 @@ public class PartitionTestClient {
     return receiveWorkflowInstances()
         .withIntent(intent)
         .withWorkflowInstanceKey(wfInstanceKey)
+        .getFirst();
+  }
+
+  public Record<WorkflowInstanceRecordValue> receiveFirstWorkflowInstanceEvent(
+      final long wfInstanceKey, final Intent intent, BpmnElementType elementType) {
+    return receiveWorkflowInstances()
+        .withIntent(intent)
+        .withWorkflowInstanceKey(wfInstanceKey)
+        .withElementType(elementType)
         .getFirst();
   }
 
@@ -462,6 +477,15 @@ public class PartitionTestClient {
       Intent intent, int expectedNumber) {
     return receiveWorkflowInstances()
         .withIntent(intent)
+        .limit(expectedNumber)
+        .collect(Collectors.toList());
+  }
+
+  public List<Record<WorkflowInstanceRecordValue>> receiveElementInstancesInState(
+      Intent intent, BpmnElementType elementType, int expectedNumber) {
+    return receiveWorkflowInstances()
+        .withIntent(intent)
+        .withElementType(elementType)
         .limit(expectedNumber)
         .collect(Collectors.toList());
   }

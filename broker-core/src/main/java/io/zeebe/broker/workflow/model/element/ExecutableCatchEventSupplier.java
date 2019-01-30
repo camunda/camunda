@@ -17,9 +17,12 @@
  */
 package io.zeebe.broker.workflow.model.element;
 
+import java.util.Collection;
 import java.util.List;
+import org.agrona.DirectBuffer;
 
 public interface ExecutableCatchEventSupplier extends ExecutableFlowElement {
+  List<ExecutableCatchEvent> getEvents();
 
-  List<? extends ExecutableCatchEvent> getEvents();
+  Collection<DirectBuffer> getInterruptingElementIds();
 }

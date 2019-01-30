@@ -17,23 +17,37 @@
  */
 package io.zeebe.broker.workflow.model.element;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import org.agrona.DirectBuffer;
 
 public class ExecutableEventBasedGateway extends ExecutableFlowNode
     implements ExecutableCatchEventSupplier {
 
-  private List<ExecutableCatchEventElement> events;
+  private List<ExecutableCatchEvent> events;
+  private List<DirectBuffer> eventIds;
 
   public ExecutableEventBasedGateway(String id) {
     super(id);
   }
 
   @Override
-  public List<ExecutableCatchEventElement> getEvents() {
+  public List<ExecutableCatchEvent> getEvents() {
     return events;
   }
 
-  public void setEvents(List<ExecutableCatchEventElement> events) {
+  public void setEvents(List<ExecutableCatchEvent> events) {
     this.events = events;
+    this.eventIds = new ArrayList<>(events.size());
+
+    for (final ExecutableCatchEvent event : events) {
+      eventIds.add(event.getId());
+    }
+  }
+
+  @Override
+  public Collection<DirectBuffer> getInterruptingElementIds() {
+    return eventIds;
   }
 }
