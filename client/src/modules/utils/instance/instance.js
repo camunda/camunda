@@ -30,7 +30,8 @@ export function getInstanceState({state, incidents}) {
   }
 
   // on Single instance view, instance.state is ACTIVE for active instance & instance with incident
-  // so we look at instance.incidents t
+  // so we look at instance.incidents
+  // https://app.camunda.com/jira/browse/OPE-400
   const hasActiveIncident = Boolean(getActiveIncident(incidents));
   return hasActiveIncident ? INSTANCE_STATE.INCIDENT : INSTANCE_STATE.ACTIVE;
 }
