@@ -25,8 +25,6 @@ import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_SER
 import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_CLIENT_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_MESSAGE_HANDLER;
 import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_SERVER_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.SUBSCRIPTION_API_CLIENT_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.SUBSCRIPTION_API_SERVER_NAME;
 
 import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
 import io.zeebe.broker.clustering.base.raft.RaftApiMessageHandlerService;
@@ -69,7 +67,6 @@ public class TransportComponent implements Component {
     final NetworkCfg networkCfg = brokerCfg.getNetwork();
     final int nodeId = brokerCfg.getCluster().getNodeId();
     final SocketAddress managementEndpoint = networkCfg.getManagement().toSocketAddress();
-    final SocketAddress subscriptionEndpoint = networkCfg.getSubscription().toSocketAddress();
 
     final ActorFuture<ClientTransport> managementClientFuture =
         createClientTransport(
@@ -88,15 +85,6 @@ public class TransportComponent implements Component {
             null);
 
     context.addRequiredStartAction(replicationClientFuture);
-
-    final ActorFuture<ClientTransport> subscriptionClientFuture =
-        createClientTransport(
-            serviceContainer,
-            SUBSCRIPTION_API_CLIENT_NAME,
-            new ByteValue(networkCfg.getDefaultSendBufferSize()),
-            Collections.singletonList(new IntTuple<>(nodeId, subscriptionEndpoint)));
-
-    context.addRequiredStartAction(subscriptionClientFuture);
   }
 
   private void createSocketBindings(final SystemContext context) {
@@ -123,16 +111,6 @@ public class TransportComponent implements Component {
             new ByteValue(networkCfg.getManagement().getReceiveBufferSize()));
 
     context.addRequiredStartAction(managementApiFuture);
-
-    final ActorFuture<BufferingServerTransport> subscriptionApiFuture =
-        bindBufferingProtocolEndpoint(
-            context,
-            serviceContainer,
-            SUBSCRIPTION_API_SERVER_NAME,
-            networkCfg.getSubscription(),
-            new ByteValue(networkCfg.getSubscription().getReceiveBufferSize()));
-
-    context.addRequiredStartAction(subscriptionApiFuture);
 
     final ActorFuture<ServerTransport> clientApiFuture =
         bindNonBufferingProtocolEndpoint(
