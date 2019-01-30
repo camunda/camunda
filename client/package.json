@@ -30,15 +30,17 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "test:ci":
-      "CI=true react-scripts test --maxWorkers=$LIMITS_CPU --ci --testResultsProcessor='jest-junit'",
+    "test:ci": "CI=true react-scripts test --maxWorkers=$LIMITS_CPU --ci --testResultsProcessor='jest-junit'",
     "eject": "react-scripts eject",
     "postinstall": "node scripts/wireModules",
     "start-backend": "node scripts/start-backend",
     "dependencies": "node scripts/dependencies.js"
   },
   "lint-staged": {
-    "src/**/*.{js,scss}": ["prettier --write", "git add"]
+    "src/**/*.{js,scss}": [
+      "prettier --write",
+      "git add"
+    ]
   },
   "jest-junit": {
     "suiteName": "client",
@@ -73,5 +75,10 @@
     "tarball-extract": "^0.0.6",
     "ws": "^6.1.0"
   },
-  "browserslist": [">0.2%", "not dead", "not ie <= 11", "not op_mini all"]
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not ie <= 11",
+    "not op_mini all"
+  ]
 }
