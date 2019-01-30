@@ -7,6 +7,7 @@ import ReportControlPanel from './ReportControlPanel';
 import {extractProcessDefinitionName, reportConfig, getFlowNodeNames} from 'services';
 
 import * as service from './service';
+import {ProcessDefinitionSelection} from 'components';
 
 const flushPromises = () => new Promise(resolve => setImmediate(resolve));
 
@@ -38,6 +39,7 @@ jest.mock('services', () => {
 });
 
 service.loadVariables = jest.fn().mockReturnValue([]);
+service.loadProcessDefinitionXml = jest.fn().mockReturnValue('I am a process definition xml');
 
 const data = {
   processDefinitionKey: 'aKey',
@@ -45,7 +47,7 @@ const data = {
   view: {operation: 'count', entity: 'processInstance'},
   groupBy: {type: 'none', unit: null},
   visualization: 'number',
-  filter: null,
+  filter: [],
   configuration: {xml: 'fooXml'},
   parameters: {}
 };
@@ -223,4 +225,42 @@ it('should only display target value button if view is flownode duration', () =>
   node.setProps({view: {entity: 'flowNode', property: 'frequency'}});
 
   expect(node.find('TargetValueComparison')).not.toBePresent();
+});
+
+it('should load the process definition xml when a new definition is selected', async () => {
+  const spy = jest.fn();
+  const node = shallow(<ReportControlPanel {...data} updateReport={spy} />);
+
+  service.loadProcessDefinitionXml.mockClear();
+
+  await node.find(ProcessDefinitionSelection).prop('onChange')('newDefinition', 1);
+
+  expect(service.loadProcessDefinitionXml).toHaveBeenCalledWith('newDefinition', 1);
+});
+
+it('should reset remove incompatible filters when changing the process definition', async () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <ReportControlPanel
+      {...data}
+      updateReport={spy}
+      filter={[{type: 'startDate'}, {type: 'executedFlowNodes'}, {type: 'variable'}]}
+    />
+  );
+
+  await node.find(ProcessDefinitionSelection).prop('onChange')('newDefinition', 1);
+
+  expect(spy.mock.calls[0][0].filter.$set).toEqual([{type: 'startDate'}]);
+});
+
+it('should reset the groupby and visualization when changing process definition and group is variable', async () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <ReportControlPanel {...data} updateReport={spy} groupBy={{type: 'variable'}} />
+  );
+
+  await node.find(ProcessDefinitionSelection).prop('onChange')('newDefinition', 1);
+
+  expect(spy.mock.calls[0][0].groupBy).toEqual({$set: null});
+  expect(spy.mock.calls[0][0].visualization).toEqual({$set: null});
 });
