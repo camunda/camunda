@@ -140,7 +140,7 @@ public class ExportRestServiceIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(404));
   }
 
 

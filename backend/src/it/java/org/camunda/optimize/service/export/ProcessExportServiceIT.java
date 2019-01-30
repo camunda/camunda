@@ -51,7 +51,7 @@ public class ProcessExportServiceIT {
           FAKE,
           FAKE
         ),
-        "/csv/process/raw_process_data_grouped_by_none.csv",
+        "/csv/process/single/raw_process_data_grouped_by_none.csv",
         "Raw Data Grouped By None"
       },
       {
@@ -60,7 +60,7 @@ public class ProcessExportServiceIT {
           FAKE,
           GroupByDateUnit.DAY
         ),
-        "/csv/process/count_pi_frequency_group_by_start_date.csv",
+        "/csv/process/single/count_pi_frequency_group_by_start_date.csv",
         "Count PI Grouped By PI Start Date"
       },
       {
@@ -68,7 +68,7 @@ public class ProcessExportServiceIT {
           FAKE,
           FAKE
         ),
-        "/csv/process/count_pi_frequency_group_by_none.csv",
+        "/csv/process/single/count_pi_frequency_group_by_none.csv",
         "Count PI Grouped By None"
       },
       {
@@ -76,7 +76,7 @@ public class ProcessExportServiceIT {
           FAKE,
           FAKE
         ),
-        "/csv/process/count_flownode_frequency_group_by_flownodes.csv",
+        "/csv/process/single/count_flownode_frequency_group_by_flownodes.csv",
         "Count Flow Nodes Grouped By Flow Node"
       },
       {
@@ -85,7 +85,7 @@ public class ProcessExportServiceIT {
           FAKE,
           GroupByDateUnit.DAY
         ),
-        "/csv/process/avg_pi_duration_group_by_start_date.csv",
+        "/csv/process/single/avg_pi_duration_group_by_start_date.csv",
         "Avg PI Duration Grouped By PI Start Date"
       },
       {
@@ -93,7 +93,7 @@ public class ProcessExportServiceIT {
           FAKE,
           FAKE
         ),
-        "/csv/process/avg_pi_duration_group_by_none.csv",
+        "/csv/process/single/avg_pi_duration_group_by_none.csv",
         "Count PI Grouped By None"
       },
       {
@@ -101,7 +101,7 @@ public class ProcessExportServiceIT {
           FAKE,
           FAKE
         ),
-        "/csv/process/avg_flownode_duration_group_by_flownodes.csv",
+        "/csv/process/single/avg_flownode_duration_group_by_flownodes.csv",
         "Avg Flow Node Duration Grouped By Flow Node"
       }
     });

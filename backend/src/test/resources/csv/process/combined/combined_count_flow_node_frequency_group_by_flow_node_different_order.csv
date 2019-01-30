@@ -1,0 +1,7 @@
+"FooName","","","FooName","",""
+"flowNodes","count_flowNode_frequency","","flowNodes","count_flowNode_frequency",""
+"anEnd","1","","ServiceTask2","1"
+"aStart","1","","ServiceTask3","1"
+"","","","anEnd","1"
+"","","","ServiceTask1","1"
+"","","","aStart","1"

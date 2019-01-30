@@ -53,7 +53,7 @@ public class ExportServiceTest {
 
     assertThat(csvContent.isPresent(), is(true));
 
-    byte[] expectedContent = readFileFromClasspath("/csv/process/raw_process_data.csv");
+    byte[] expectedContent = readFileFromClasspath("/csv/process/single/raw_process_data.csv");
     assertThat(csvContent.get(), is(expectedContent));
   }
 
