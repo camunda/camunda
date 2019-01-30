@@ -6,11 +6,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 import org.camunda.operate.entities.OperateEntity;
+import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.es.ElasticsearchSchemaManager;
 import org.camunda.operate.es.schema.indices.IndexCreator;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
+import org.camunda.operate.es.schema.templates.OperationTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateElasticsearchProperties;
 import org.camunda.operate.property.OperateProperties;
@@ -45,6 +47,9 @@ public class ElasticsearchTestRule extends ExternalResource {
 
   @Autowired
   private ListViewTemplate listViewTemplate;
+
+  @Autowired
+  private OperationTemplate operationTemplate;
 
   @Autowired
   private OperateProperties operateProperties;
@@ -280,6 +285,7 @@ public class ElasticsearchTestRule extends ExternalResource {
       entityToESAliasMap = new HashMap<>();
       entityToESAliasMap.put(WorkflowInstanceForListViewEntity.class, listViewTemplate.getAlias());
       entityToESAliasMap.put(ActivityInstanceForListViewEntity.class, listViewTemplate.getAlias());
+      entityToESAliasMap.put(OperationEntity.class, operationTemplate.getAlias());
     }
     return entityToESAliasMap;
   }

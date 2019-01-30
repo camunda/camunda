@@ -20,11 +20,13 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
+import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
 import org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
@@ -83,23 +85,22 @@ public class OperationExecutorIT extends OperateIntegrationTest {
     //given
     final int batchSize = operateProperties.getOperationExecutor().getBatchSize();
     given(handlers.get(any())).willReturn(null);
-    int instancesCount = (int)(batchSize * 1.5);
+    int instancesCount = (int)(batchSize * .75);
     createData(instancesCount);
 
     //when execute 1st batch
     Map<String, List<OperationEntity>> lockedOperations = operationExecutor.executeOneBatch();
     //then
-    assertOperationsLocked(lockedOperations, batchSize, batchSize*2, "lockFirstBatch");
+    assertOperationsLocked(lockedOperations, batchSize, "lockFirstBatch");
 
     //when execute 2nd batch
     lockedOperations = operationExecutor.executeOneBatch();
     //then
-    final int expectedLockedInstances = instancesCount - batchSize;
-    assertOperationsLocked(lockedOperations, expectedLockedInstances, expectedLockedInstances*2, "lockSecondBatch");
+    final int expectedLockedOperations = instancesCount*2 - batchSize;
+    assertOperationsLocked(lockedOperations, expectedLockedOperations, "lockSecondBatch");
   }
 
-  private void assertOperationsLocked(Map<String, List<OperationEntity>> lockedOperations, int workflowInstanceCount, int operationCount, String assertionLabel) {
-    assertThat(lockedOperations).as(assertionLabel + ".workflowInstances.size").hasSize(workflowInstanceCount);
+  private void assertOperationsLocked(Map<String, List<OperationEntity>> lockedOperations, int operationCount, String assertionLabel) {
     final List<OperationEntity> allOperations = lockedOperations.values().stream().flatMap(entry -> entry.stream()).collect(Collectors.toList());
     assertThat(allOperations).as(assertionLabel + ".operations.size").hasSize(operationCount);
     assertThat(allOperations).extracting(WorkflowInstanceTemplate.STATE).as(assertionLabel + "operation.state").containsOnly(OperationState.LOCKED);
@@ -108,28 +109,30 @@ public class OperationExecutorIT extends OperateIntegrationTest {
   }
 
   private void createData(int processInstanceCount) {
-    List<WorkflowInstanceEntity> instances = new ArrayList<>();
+    List<OperateEntity> instances = new ArrayList<>();
     for (int i = 0; i<processInstanceCount; i++) {
-      instances.add(createWorkflowInstance());
+      instances.addAll(createWorkflowInstanceAndOperations());
     }
     //persist instances
-    elasticsearchTestRule.persist(instances.toArray(new WorkflowInstanceEntity[instances.size()]));
+    elasticsearchTestRule.persistNew(instances.toArray(new OperateEntity[instances.size()]));
   }
 
-  private WorkflowInstanceEntity createWorkflowInstance() {
-    WorkflowInstanceEntity workflowInstance = new WorkflowInstanceEntity();
+  private List<OperateEntity> createWorkflowInstanceAndOperations() {
+    List<OperateEntity> entities = new ArrayList<>();
+    WorkflowInstanceForListViewEntity workflowInstance = new WorkflowInstanceForListViewEntity();
     workflowInstance.setId(UUID.randomUUID().toString());
     workflowInstance.setBpmnProcessId("testProcess" + random.nextInt(10));
     workflowInstance.setStartDate(DateUtil.getRandomStartDate());
     workflowInstance.setState(WorkflowInstanceState.ACTIVE);
-    workflowInstance.getOperations().add(createOperation(OperationState.SCHEDULED));
-    workflowInstance.getOperations().add(createOperation(OperationState.LOCKED, true));
-    workflowInstance.getOperations().add(createOperation(OperationState.LOCKED, false));
-    return workflowInstance;
+    entities.add(workflowInstance);
+    entities.add(createOperation(workflowInstance.getId(), OperationState.SCHEDULED));
+    entities.add(createOperation(workflowInstance.getId(), OperationState.LOCKED, true));
+    entities.add(createOperation(workflowInstance.getId(), OperationState.LOCKED, false));
+    return entities;
   }
 
-  private OperationEntity createOperation(OperationState state, boolean lockExpired) {
-    final OperationEntity operation = createOperation(state);
+  private OperationEntity createOperation(String workflowInstanceId, OperationState state, boolean lockExpired) {
+    final OperationEntity operation = createOperation(workflowInstanceId, state);
     if (lockExpired) {
       operation.setLockExpirationTime(OffsetDateTime.now().minus(1, ChronoUnit.MILLIS));
       operation.setLockOwner("otherWorkerId");
@@ -137,8 +140,9 @@ public class OperationExecutorIT extends OperateIntegrationTest {
     return operation;
   }
 
-  private OperationEntity createOperation(OperationState state) {
+  private OperationEntity createOperation(String workflowInstanceId, OperationState state) {
     OperationEntity operation = new OperationEntity();
+    operation.setWorkflowInstanceId(workflowInstanceId);
     operation.generateId();
     operation.setState(state);
     operation.setStartDate(OffsetDateTime.now());

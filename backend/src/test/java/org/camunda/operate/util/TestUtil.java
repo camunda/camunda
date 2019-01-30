@@ -48,17 +48,25 @@ public abstract class TestUtil {
   public static WorkflowInstanceForListViewEntity createWorkflowInstance(WorkflowInstanceState state, String workflowId) {
     WorkflowInstanceForListViewEntity workflowInstance = new WorkflowInstanceForListViewEntity();
     workflowInstance.setId(UUID.randomUUID().toString());
-    final int i = random.nextInt(10);
-    workflowInstance.setBpmnProcessId("testProcess" + i);
-    workflowInstance.setWorkflowName("Test process" + i);
-    workflowInstance.setWorkflowVersion(i);
+
     workflowInstance.setStartDate(DateUtil.getRandomStartDate());
     if (state.equals(WorkflowInstanceState.COMPLETED) || state.equals(WorkflowInstanceState.CANCELED)) {
       final OffsetDateTime endDate = DateUtil.getRandomEndDate();
       workflowInstance.setEndDate(endDate);
     }
     workflowInstance.setState(state);
-    workflowInstance.setWorkflowId(workflowId);
+    if (workflowId != null) {
+      workflowInstance.setWorkflowId(workflowId);
+      workflowInstance.setBpmnProcessId("testProcess" + workflowId);
+      workflowInstance.setWorkflowName("Test process" + workflowId);
+      workflowInstance.setWorkflowVersion(random.nextInt(10));
+    } else {
+      final int i = random.nextInt(10);
+      workflowInstance.setWorkflowId(String.valueOf(i));
+      workflowInstance.setBpmnProcessId("testProcess" + i);
+      workflowInstance.setWorkflowName("Test process" + i);
+      workflowInstance.setWorkflowVersion(i);
+    }
     return workflowInstance;
   }
 

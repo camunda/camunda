@@ -147,8 +147,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
 
     String processId = "demoProcess";
     final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
-    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(super.getClient(), processId, "{\"a\": \"b\"}");
-    completeTask(workflowInstanceKey, activityId, "{\"a\": \"b\"}");
+    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(super.getClient(), processId, null);
 
     cancelWorkflowInstance(workflowInstanceKey);
     elasticsearchTestRule.processAllEventsAndWait(activityIsTerminatedCheck, workflowInstanceKey, activityId);

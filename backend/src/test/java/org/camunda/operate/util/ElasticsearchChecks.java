@@ -228,4 +228,21 @@ public class ElasticsearchChecks {
     };
   }
 
+  @Bean(name = "workflowInstancesAreStarted")
+  public Predicate<Object[]> getWorkflowInstancesAreStartedCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(1);
+      assertThat(objects[0]).isInstanceOf(List.class);
+      List<String> ids = (List<String>)objects[0];
+      final ListViewRequestDto getActiveQuery =
+        TestUtil.createWorkflowInstanceQuery(q -> {
+          q.setIds(ids);
+          q.setRunning(true);
+          q.setActive(true);
+        });
+      final ListViewResponseDto responseDto = listViewReader.queryWorkflowInstances(getActiveQuery, 0, ids.size());
+      return responseDto.getTotalCount() == ids.size();
+    };
+  }
+
 }

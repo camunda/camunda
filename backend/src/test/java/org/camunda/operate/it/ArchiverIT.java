@@ -18,18 +18,26 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Predicate;
 import org.camunda.operate.entities.EventEntity;
+import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.es.archiver.Archiver;
 import org.camunda.operate.es.archiver.ArchiverHelper;
 import org.camunda.operate.es.reader.ListViewReader;
 import org.camunda.operate.es.schema.templates.EventTemplate;
+import org.camunda.operate.es.schema.templates.ListViewTemplate;
+import org.camunda.operate.es.schema.templates.OperationTemplate;
 import org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate;
+import org.camunda.operate.es.writer.BatchOperationWriter;
+import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.exceptions.ReindexException;
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.rest.dto.WorkflowInstanceBatchOperationDto;
+import org.camunda.operate.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.util.IdTestUtil;
@@ -82,10 +90,23 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   private Predicate<Object[]> workflowInstancesAreFinishedCheck;
 
   @Autowired
+  @Qualifier("workflowInstancesAreStarted")
+  private Predicate<Object[]> workflowInstancesAreStartedCheck;
+
+  @Autowired
   private WorkflowInstanceTemplate workflowInstanceTemplate;
 
   @Autowired
-  private EventTemplate eventsTemplate;
+  private EventTemplate eventTemplate;
+
+  @Autowired
+  private ListViewTemplate listViewTemplate;
+
+  @Autowired
+  private OperationTemplate operationTemplate;
+
+  @Autowired
+  private BatchOperationWriter batchOperationWriter;
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -104,7 +125,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  public void testArchiving() throws ReindexException {
+  public void testArchiving() throws ReindexException, PersistenceException {
     brokerRule.getClock().pinCurrentTime();
     final Instant currentTime = brokerRule.getClock().getCurrentTime();
 
@@ -118,16 +139,20 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     //start instances 3 days ago
     int count1 = random.nextInt(6) + 5;
     final List<String> ids1 = startInstances(processId, count1, currentTime.minus(3, ChronoUnit.DAYS));
+    createOperations(ids1);
     //finish instances 2 days ago
     final Instant endDate1 = currentTime.minus(2, ChronoUnit.DAYS);
     finishInstances(count1, endDate1, activityId);
+    elasticsearchTestRule.processAllEventsAndWait(workflowInstancesAreFinishedCheck, ids1);
 
     //start instances 2 days ago
     int count2 = random.nextInt(6) + 5;
     final List<String> ids2 = startInstances(processId, count2, endDate1);
+    createOperations(ids2);
     //finish instances 1 day ago
     final Instant endDate2 = currentTime.minus(1, ChronoUnit.DAYS);
     finishInstances(count2, endDate2, activityId);
+    elasticsearchTestRule.processAllEventsAndWait(workflowInstancesAreFinishedCheck, ids2);
 
     //start instances 1 day ago
     int count3 = random.nextInt(6) + 5;
@@ -150,6 +175,14 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     assertAllInstancesInAlias(count1 + count2 + count3);
   }
 
+  protected void createOperations(List<String> ids1) throws PersistenceException {
+    final List<ListViewQueryDto> queries = TestUtil.createGetAllWorkflowInstancesQuery().getQueries();
+    queries.get(0).setIds(ids1);
+    WorkflowInstanceBatchOperationDto batchOperationRequest = new WorkflowInstanceBatchOperationDto(queries);
+    batchOperationRequest.setOperationType(OperationType.UPDATE_RETRIES); //the type does not matter
+    batchOperationWriter.scheduleBatchOperation(batchOperationRequest);
+  }
+
   private void assertAllInstancesInAlias(int count) {
     final ListViewResponseDto responseDto = listViewReader
       .queryWorkflowInstances(TestUtil.createGetAllWorkflowInstancesQuery(), 0, count + 100);
@@ -157,7 +190,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  public void testArchivingOnlyOneHourOldData() throws ReindexException {
+  public void testArchivingOnlyOneHourOldData() throws ReindexException, PersistenceException {
     brokerRule.getClock().pinCurrentTime();
     final Instant currentTime = brokerRule.getClock().getCurrentTime();
 
@@ -171,16 +204,19 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     //start instances 2 hours ago
     int count1 = random.nextInt(6) + 5;
     final List<String> ids1 = startInstances(processId, count1, currentTime.minus(2, ChronoUnit.HOURS));
+    createOperations(ids1);
     //finish instances 1 hour ago
     final Instant endDate1 = currentTime.minus(1, ChronoUnit.HOURS);
     finishInstances(count1, endDate1, activityId);
+    elasticsearchTestRule.processAllEventsAndWait(workflowInstancesAreFinishedCheck, ids1);
 
     //start instances 1 hour ago
     int count2 = random.nextInt(6) + 5;
     final List<String> ids2 = startInstances(processId, count2, currentTime.minus(1, ChronoUnit.HOURS));
     //finish instances 59 minutes ago
-    final Instant endDate2 = currentTime.minus(59, ChronoUnit.MINUTES);
+    final Instant endDate2 = currentTime.minus(50, ChronoUnit.MINUTES);
     finishInstances(count2, endDate2, activityId);
+    elasticsearchTestRule.processAllEventsAndWait(workflowInstancesAreFinishedCheck, ids2);
 
     brokerRule.getClock().setCurrentTime(currentTime);
 
@@ -207,7 +243,9 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
 
   private void assertInstancesInCorrectIndex(int instancesCount, List<String> ids, Instant endDate) {
     assertWorkflowInstanceIndex(instancesCount, ids, endDate);
-    assertDependentIndex(eventsTemplate.getMainIndexName(), EventTemplate.WORKFLOW_INSTANCE_ID, ids, endDate);
+    assertDependentIndex(eventTemplate.getMainIndexName(), EventTemplate.WORKFLOW_INSTANCE_ID, ids, endDate);
+    assertDependentIndex(listViewTemplate.getMainIndexName(), ListViewTemplate.WORKFLOW_INSTANCE_ID, ids, endDate);
+    assertDependentIndex(operationTemplate.getMainIndexName(), OperationTemplate.WORKFLOW_INSTANCE_ID, ids, endDate);
   }
 
   private void assertWorkflowInstanceIndex(int instancesCount, List<String> ids, Instant endDate) {
@@ -260,7 +298,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     for (int i = 0; i < count; i++) {
       ids.add(IdTestUtil.getId(ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, null)));
     }
-    elasticsearchTestRule.processAllEventsAndWait(workflowInstancesAreFinishedCheck, ids);
+    elasticsearchTestRule.processAllEventsAndWait(workflowInstancesAreStartedCheck, ids);
     return ids;
   }
 
