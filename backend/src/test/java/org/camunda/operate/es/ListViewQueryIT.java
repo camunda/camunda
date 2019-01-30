@@ -44,7 +44,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Tests Elasticsearch queries for workflow instances.
  */
-public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
+public class ListViewQueryIT extends OperateIntegrationTest {
 
   private static final String QUERY_INSTANCES_URL = WORKFLOW_INSTANCE_URL;
   private static final String GET_INSTANCE_URL = WORKFLOW_INSTANCE_URL + "/%s";
@@ -938,7 +938,13 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   }
   @Test
   public void testSortingByWorkflowNameAsc() throws Exception {
-    final Comparator<ListViewWorkflowInstanceDto> comparator = Comparator.comparing(ListViewWorkflowInstanceDto::getWorkflowName);
+    final Comparator<ListViewWorkflowInstanceDto> comparator = (o1, o2) -> {
+      int x = o1.getWorkflowName().compareTo(o2.getWorkflowName());
+      if (x == 0) {
+        x = o1.getId().compareTo(o2.getId());
+      }
+      return x;
+    };
     final SortingDto sorting = new SortingDto();
     sorting.setSortBy("workflowName");
     sorting.setSortOrder("asc");
@@ -948,7 +954,13 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testSortingByWorkflowNameDesc() throws Exception {
-    final Comparator<ListViewWorkflowInstanceDto> comparator = (o1, o2) -> o2.getWorkflowName().compareTo(o1.getWorkflowName());
+    final Comparator<ListViewWorkflowInstanceDto> comparator = (o1, o2) -> {
+      int x = o2.getWorkflowName().compareTo(o1.getWorkflowName());
+      if (x == 0) {
+        x = o1.getId().compareTo(o2.getId());
+      }
+      return x;
+    };
     final SortingDto sorting = new SortingDto();
     sorting.setSortBy("workflowName");
     sorting.setSortOrder("desc");
@@ -1232,11 +1244,12 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   private void createData() {
     //running instance with one activity and without incidents
-    final WorkflowInstanceForListViewEntity runningInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
+    final String workflowId = "someWorkflowId";
+    final WorkflowInstanceForListViewEntity runningInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
     final ActivityInstanceForListViewEntity activityInstance1 = createActivityInstance(runningInstance.getId(), ActivityState.ACTIVE);
 
     //completed instance with one activity and without incidents
-    final WorkflowInstanceForListViewEntity completedInstance = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
+    final WorkflowInstanceForListViewEntity completedInstance = createWorkflowInstance(WorkflowInstanceState.COMPLETED, workflowId);
     final ActivityInstanceForListViewEntity activityInstance2 = createActivityInstance(completedInstance.getId(), ActivityState.COMPLETED);
 
     //canceled instance with two activities and without incidents

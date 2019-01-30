@@ -39,7 +39,6 @@ import org.elasticsearch.join.aggregations.Parent;
 import org.elasticsearch.join.query.HasChildQueryBuilder;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
-import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
@@ -143,7 +142,9 @@ public class ListViewReader {
       //apply default sorting
       searchRequestBuilder.addSort(ListViewTemplate.ID, SortOrder.ASC);
     } else {
-      searchRequestBuilder.addSort(sorting.getSortBy(), SortOrder.fromString(sorting.getSortOrder()));
+      searchRequestBuilder
+        .addSort(sorting.getSortBy(), SortOrder.fromString(sorting.getSortOrder()))
+        .addSort(ListViewTemplate.ID, SortOrder.ASC);     //we always sort by id, to make the order always determined
     }
   }
 
