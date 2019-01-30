@@ -24,7 +24,22 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-gateway</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
       <artifactId>zb-elasticsearch-exporter</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-util</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
     </dependency>
 
     <dependency>
@@ -126,6 +141,17 @@
             </configuration>
           </execution>
         </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <!-- dependencies only packaged but not explicitly used -->
+          <usedDependencies>
+            <dependency>io.zeebe:zb-elasticsearch-exporter</dependency>
+          </usedDependencies>
+        </configuration>
       </plugin>
     </plugins>
   </build>

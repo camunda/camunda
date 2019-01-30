@@ -22,8 +22,8 @@
   <dependencies>
 
     <dependency>
-      <groupId>uk.co.real-logic</groupId>
-      <artifactId>sbe-tool</artifactId>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
     </dependency>
 
     <dependency>
@@ -90,10 +90,8 @@
           </execution>
         </executions>
         <configuration>
-          <executableDependency>
-            <groupId>uk.co.real-logic</groupId>
-            <artifactId>sbe</artifactId>
-          </executableDependency>
+          <includeProjectDependencies>false</includeProjectDependencies>
+          <includePluginDependencies>true</includePluginDependencies>
           <mainClass>uk.co.real_logic.sbe.SbeTool</mainClass>
           <arguments>
             <argument>${project.build.outputDirectory}/protocol.xml</argument>
@@ -117,7 +115,7 @@
         <dependencies>
           <dependency>
             <groupId>uk.co.real-logic</groupId>
-            <artifactId>sbe-all</artifactId>
+            <artifactId>sbe-tool</artifactId>
             <version>${version.sbe}</version>
           </dependency>
         </dependencies>

@@ -16,12 +16,7 @@
   <dependencies>
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-msgpack-value</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zb-protocol</artifactId>
+      <artifactId>zb-dispatcher</artifactId>
     </dependency>
 
     <dependency>
@@ -35,13 +30,13 @@
     </dependency>
 
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>uk.co.real-logic</groupId>
-      <artifactId>sbe-tool</artifactId>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
     </dependency>
 
     <dependency>
@@ -109,10 +104,8 @@
           </execution>
         </executions>
         <configuration>
-          <executableDependency>
-            <groupId>uk.co.real-logic</groupId>
-            <artifactId>sbe</artifactId>
-          </executableDependency>
+          <includePluginDependencies>true</includePluginDependencies>
+          <includeProjectDependencies>false</includeProjectDependencies>
           <mainClass>uk.co.real_logic.sbe.SbeTool</mainClass>
           <systemProperties>
             <systemProperty>
@@ -132,7 +125,7 @@
         <dependencies>
           <dependency>
             <groupId>uk.co.real-logic</groupId>
-            <artifactId>sbe-all</artifactId>
+            <artifactId>sbe-tool</artifactId>
             <version>${version.sbe}</version>
           </dependency>
         </dependencies>

@@ -25,14 +25,13 @@
     </dependency>
 
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>provided</scope>
+      <groupId>com.moandjiezana.toml</groupId>
+      <artifactId>toml4j</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>com.moandjiezana.toml</groupId>
-      <artifactId>toml4j</artifactId>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
       <scope>provided</scope>
     </dependency>
 
@@ -66,21 +65,22 @@
       <scope>test</scope>
     </dependency>
 
-    <dependency>
-      <groupId>org.openjdk.jmh</groupId>
-      <artifactId>jmh-generator-annprocess</artifactId>
-      <scope>test</scope>
-    </dependency>
-
   </dependencies>
 
   <profiles>
     <profile>
       <id>jmh</id>
 
+      <dependencies>
+        <dependency>
+          <groupId>org.openjdk.jmh</groupId>
+          <artifactId>jmh-generator-annprocess</artifactId>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+
       <build>
         <plugins>
-
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-assembly-plugin</artifactId>

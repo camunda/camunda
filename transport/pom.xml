@@ -77,17 +77,19 @@
       <scope>test</scope>
     </dependency>
 
-    <dependency>
-      <groupId>org.openjdk.jmh</groupId>
-      <artifactId>jmh-generator-annprocess</artifactId>
-      <scope>test</scope>
-    </dependency>
-
   </dependencies>
 
   <profiles>
     <profile>
       <id>jmh</id>
+
+      <dependencies>
+        <dependency>
+          <groupId>org.openjdk.jmh</groupId>
+          <artifactId>jmh-generator-annprocess</artifactId>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
 
       <build>
         <plugins>

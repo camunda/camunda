@@ -36,12 +36,32 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
+      <artifactId>zb-dispatcher</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-service-container</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-msgpack-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
       <artifactId>zb-transport</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zb-util</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
     </dependency>
 
     <dependency>
@@ -79,11 +99,6 @@
       <scope>test</scope>
     </dependency>
 
-    <dependency>
-      <groupId>uk.co.real-logic</groupId>
-      <artifactId>sbe-tool</artifactId>
-    </dependency>
-
   </dependencies>
 
   <build>
@@ -118,10 +133,8 @@
           </execution>
         </executions>
         <configuration>
-          <executableDependency>
-            <groupId>uk.co.real-logic</groupId>
-            <artifactId>sbe</artifactId>
-          </executableDependency>
+          <includePluginDependencies>true</includePluginDependencies>
+          <includeProjectDependencies>false</includeProjectDependencies>
           <mainClass>uk.co.real_logic.sbe.SbeTool</mainClass>
           <systemProperties>
             <systemProperty>
@@ -141,7 +154,7 @@
         <dependencies>
           <dependency>
             <groupId>uk.co.real-logic</groupId>
-            <artifactId>sbe-all</artifactId>
+            <artifactId>sbe-tool</artifactId>
             <version>${version.sbe}</version>
           </dependency>
         </dependencies>
