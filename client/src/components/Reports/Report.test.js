@@ -328,7 +328,7 @@ it('should render a sharing popover', () => {
   expect(node.find('.Report__share-button').first()).toIncludeText('Share');
 });
 
-it('should show a download csv button with the correct link when report is a table', () => {
+it('should show a download csv button with the correct link', () => {
   const node = mount(shallow(<Report {...props} />).get(0));
   node.setState({loaded: true, report});
 
@@ -361,29 +361,6 @@ it('should reflect excluded columns in the csv download link', () => {
     .getAttribute('href');
 
   expect(href).toContain('?excludedColumns=prop1,variable:VariableName');
-});
-
-it('should not show a csv download button when report is not a table', () => {
-  const node = mount(shallow(<Report {...props} />).get(0));
-  node.setState({
-    loaded: true,
-    report: {
-      ...report,
-      data: {
-        visualization: 'someOtherVis'
-      },
-      result: [1, 2, 3]
-    }
-  });
-
-  expect(node.find('.Report__csv-download-button')).not.toBePresent();
-});
-
-it('should not show a csv download button when report is for decision', () => {
-  const node = mount(shallow(<Report {...props} />).get(0));
-  node.setState({loaded: true, report: {...report, reportType: 'decision'}});
-
-  expect(node.find('.Report__csv-download-button')).not.toBePresent();
 });
 
 describe('edit mode', async () => {
@@ -489,7 +466,8 @@ describe('edit mode', async () => {
       originalData: {
         ...report,
         data: {
-          processDefinitionKey: '123'
+          processDefinitionKey: '123',
+          configuration: {}
         }
       }
     });

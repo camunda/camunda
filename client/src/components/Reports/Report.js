@@ -196,14 +196,8 @@ export default withErrorHandling(
     };
 
     shouldShowCSVDownload = () => {
-      const {report: {data, result, reportType}} = this.state;
-
-      return (
-        data.visualization === 'table' &&
-        reportType === 'process' &&
-        result &&
-        Object.keys(result).length > 0
-      );
+      const {report: {result}} = this.state;
+      return result;
     };
 
     maxRawDataEntriesExceeded = () => {
