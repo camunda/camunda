@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.workflow.deployment.distribute.processor;
 
+import io.atomix.core.Atomix;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.clustering.base.topology.TopologyPartitionListenerImpl;
 import io.zeebe.broker.logstreams.processor.SideEffectProducer;
@@ -33,7 +34,6 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.intent.DeploymentIntent;
-import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.util.function.Consumer;
@@ -44,9 +44,9 @@ public class DeploymentDistributeProcessor implements TypedRecordProcessor<Deplo
 
   private final TopologyManager topologyManager;
   private final LogStreamWriterImpl logStreamWriter;
-  private final ClientTransport managementApi;
   private final DeploymentsState deploymentsState;
   private final ClusterCfg clusterCfg;
+  private final Atomix atomix;
 
   private ActorControl actor;
   private TopologyPartitionListenerImpl partitionListener;
@@ -57,13 +57,13 @@ public class DeploymentDistributeProcessor implements TypedRecordProcessor<Deplo
       final ClusterCfg clusterCfg,
       final TopologyManager topologyManager,
       final DeploymentsState deploymentsState,
-      final ClientTransport managementClient,
+      final Atomix atomix,
       final LogStreamWriterImpl logStreamWriter) {
     this.clusterCfg = clusterCfg;
     this.deploymentsState = deploymentsState;
     this.topologyManager = topologyManager;
-    managementApi = managementClient;
     this.logStreamWriter = logStreamWriter;
+    this.atomix = atomix;
   }
 
   @Override
@@ -75,8 +75,7 @@ public class DeploymentDistributeProcessor implements TypedRecordProcessor<Deplo
     topologyManager.addTopologyPartitionListener(partitionListener);
 
     deploymentDistributor =
-        new DeploymentDistributor(
-            clusterCfg, managementApi, partitionListener, deploymentsState, actor);
+        new DeploymentDistributor(clusterCfg, atomix, partitionListener, deploymentsState, actor);
 
     actor.submit(this::reprocessPendingDeployments);
   }

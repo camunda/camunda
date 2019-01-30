@@ -159,11 +159,7 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
 
     final DeploymentDistributeProcessor deploymentDistributeProcessor =
         new DeploymentDistributeProcessor(
-            clusterCfg,
-            topologyManager,
-            zeebeState.getDeploymentState(),
-            managementApi,
-            logStreamWriter);
+            clusterCfg, topologyManager, zeebeState.getDeploymentState(), atomix, logStreamWriter);
 
     typedEventStreamProcessorBuilder.onCommand(
         ValueType.DEPLOYMENT, DeploymentIntent.DISTRIBUTE, deploymentDistributeProcessor);
