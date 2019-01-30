@@ -38,7 +38,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 
 @RunWith(Parameterized.class)
-public class ExportServiceIT {
+public class ProcessExportServiceIT {
 
   private static final String START = "aStart";
   private static final String END = "anEnd";
@@ -51,7 +51,7 @@ public class ExportServiceIT {
           FAKE,
           FAKE
         ),
-        "/csv/raw_data_grouped_by_none.csv",
+        "/csv/process/raw_process_data_grouped_by_none.csv",
         "Raw Data Grouped By None"
       },
       {
@@ -60,7 +60,7 @@ public class ExportServiceIT {
           FAKE,
           GroupByDateUnit.DAY
         ),
-        "/csv/count_pi_frequency_group_by_start_date.csv",
+        "/csv/process/count_pi_frequency_group_by_start_date.csv",
         "Count PI Grouped By PI Start Date"
       },
       {
@@ -68,7 +68,7 @@ public class ExportServiceIT {
           FAKE,
           FAKE
         ),
-        "/csv/count_pi_frequency_group_by_none.csv",
+        "/csv/process/count_pi_frequency_group_by_none.csv",
         "Count PI Grouped By None"
       },
       {
@@ -76,7 +76,7 @@ public class ExportServiceIT {
           FAKE,
           FAKE
         ),
-        "/csv/count_flownode_frequency_group_by_flownodes.csv",
+        "/csv/process/count_flownode_frequency_group_by_flownodes.csv",
         "Count Flow Nodes Grouped By Flow Node"
       },
       {
@@ -85,7 +85,7 @@ public class ExportServiceIT {
           FAKE,
           GroupByDateUnit.DAY
         ),
-        "/csv/avg_pi_duration_group_by_start_date.csv",
+        "/csv/process/avg_pi_duration_group_by_start_date.csv",
         "Avg PI Duration Grouped By PI Start Date"
       },
       {
@@ -93,7 +93,7 @@ public class ExportServiceIT {
           FAKE,
           FAKE
         ),
-        "/csv/avg_pi_duration_group_by_none.csv",
+        "/csv/process/avg_pi_duration_group_by_none.csv",
         "Count PI Grouped By None"
       },
       {
@@ -101,7 +101,7 @@ public class ExportServiceIT {
           FAKE,
           FAKE
         ),
-        "/csv/avg_flownode_duration_group_by_flownodes.csv",
+        "/csv/process/avg_flownode_duration_group_by_flownodes.csv",
         "Avg Flow Node Duration Grouped By Flow Node"
       }
     });
@@ -125,7 +125,7 @@ public class ExportServiceIT {
       .around(embeddedOptimizeRule)
       .around(engineDatabaseRule);
 
-  public ExportServiceIT(ProcessReportDataDto currentReport, String expectedCSV, String testName) {
+  public ProcessExportServiceIT(ProcessReportDataDto currentReport, String expectedCSV, String testName) {
     this.currentReport = currentReport;
     this.expectedCSV = expectedCSV;
   }

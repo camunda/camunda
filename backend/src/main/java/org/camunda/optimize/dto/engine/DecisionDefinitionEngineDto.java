@@ -1,5 +1,7 @@
 package org.camunda.optimize.dto.engine;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.io.Serializable;
 
 public class DecisionDefinitionEngineDto implements Serializable,EngineDto {
@@ -35,6 +37,11 @@ public class DecisionDefinitionEngineDto implements Serializable,EngineDto {
 
   public int getVersion() {
     return version;
+  }
+
+  @JsonIgnore
+  public String getVersionAsString() {
+    return String.valueOf(version);
   }
 
   public String getResource() {
