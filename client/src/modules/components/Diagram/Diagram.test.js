@@ -358,7 +358,6 @@ describe('Diagram', () => {
       });
       const overlayNode = node.find('Overlay');
       const moreButton = overlayNode.find('button[data-test="more-metadata"]');
-      const codeQuotedText = text => `&quot;${text}&quot;`;
 
       // when
       moreButton.simulate('click');
@@ -373,7 +372,5 @@ describe('Diagram', () => {
         expect(modalNodeText.includes(value)).toBe(true);
       });
     });
-
-    it('should render a close button in the modal', () => {});
   });
 });

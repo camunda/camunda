@@ -191,7 +191,7 @@ export default class Instance extends Component {
       : this.initializePolling();
   };
 
-  getMetadataFromaActivitiesDetails = activitiesDetails => {
+  getMetadataFromActivitiesDetails = activitiesDetails => {
     const {
       selection: {flowNodeId},
       events
@@ -251,7 +251,7 @@ export default class Instance extends Component {
 
     const metadata = !selection.flowNodeId
       ? null
-      : this.getMetadataFromaActivitiesDetails(activitiesDetails);
+      : this.getMetadataFromActivitiesDetails(activitiesDetails);
 
     return (
       <Fragment>

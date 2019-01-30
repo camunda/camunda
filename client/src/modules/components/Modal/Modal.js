@@ -33,7 +33,7 @@ Modal.Header = function ModalHeader({children, ...props}) {
           <Styled.CrossButton
             data-test="cross-button"
             onClick={modalContext.onModalClose}
-            title="close the modal"
+            title="Close the modal"
           >
             <Styled.CrossIcon />
           </Styled.CrossButton>
