@@ -17,16 +17,19 @@
  */
 package io.zeebe.broker.subscription.command;
 
+import io.atomix.cluster.MemberId;
+import io.atomix.core.Atomix;
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.clustering.base.topology.TopologyPartitionListenerImpl;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.ActorControl;
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Send commands via the subscription endpoint. The commands are send as single messages (instead of request-response).
@@ -70,13 +73,13 @@ public class SubscriptionCommandSender {
   private final CloseWorkflowInstanceSubscriptionCommand closeWorkflowInstanceSubscriptionCommand =
       new CloseWorkflowInstanceSubscriptionCommand();
 
-  private final ClientTransport subscriptionClient;
+  private final Atomix atomix;
 
   private int partitionId;
   private TopologyPartitionListenerImpl partitionListener;
 
-  public SubscriptionCommandSender(final ClientTransport subscriptionClient) {
-    this.subscriptionClient = subscriptionClient;
+  public SubscriptionCommandSender(Atomix atomix) {
+    this.atomix = atomix;
   }
 
   public void init(
@@ -194,6 +197,13 @@ public class SubscriptionCommandSender {
       return true;
     }
 
-    return subscriptionClient.getOutput().sendMessage(partitionLeader.getNodeId(), command);
+    final byte bytes[] = new byte[command.getLength()];
+    final MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
+    command.write(buffer, 0);
+
+    atomix
+        .getCommunicationService()
+        .send("subscription", bytes, MemberId.from("" + partitionLeader.getNodeId()));
+    return true;
   }
 }
