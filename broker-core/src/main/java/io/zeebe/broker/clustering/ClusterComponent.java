@@ -17,8 +17,17 @@
  */
 package io.zeebe.broker.clustering;
 
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.*;
-import static io.zeebe.broker.transport.TransportServiceNames.*;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.CLUSTERING_BASE_LAYER;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.GOSSIP_JOIN_SERVICE;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.GOSSIP_SERVICE;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.RAFT_BOOTSTRAP_SERVICE;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.RAFT_CONFIGURATION_MANAGER;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.RAFT_SERVICE_GROUP;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.REMOTE_ADDRESS_MANAGER_SERVICE;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.TOPOLOGY_MANAGER_SERVICE;
+import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_CLIENT_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_CLIENT_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.clientTransport;
 
 import io.zeebe.broker.clustering.base.connections.RemoteAddressManager;
 import io.zeebe.broker.clustering.base.gossip.GossipJoinService;
@@ -79,9 +88,6 @@ public class ClusterComponent implements Component {
         .dependency(
             clientTransport(REPLICATION_API_CLIENT_NAME),
             remoteAddressManager.getReplicationClientTransportInjector())
-        .dependency(
-            clientTransport(SUBSCRIPTION_API_CLIENT_NAME),
-            remoteAddressManager.getSubscriptionClientTransportInjector())
         .install();
 
     initGossip(baseLayerInstall, context, localMember);

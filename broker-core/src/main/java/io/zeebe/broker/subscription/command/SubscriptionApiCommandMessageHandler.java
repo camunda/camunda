@@ -37,13 +37,15 @@ import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.ServerMessageHandler;
-import io.zeebe.transport.ServerOutput;
+import io.zeebe.util.sched.ActorControl;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.concurrent.UnsafeBuffer;
 
-public class SubscriptionApiCommandMessageHandler implements ServerMessageHandler {
+public class SubscriptionApiCommandMessageHandler
+    implements Function<byte[], CompletableFuture<Void>> {
 
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
 
@@ -76,48 +78,52 @@ public class SubscriptionApiCommandMessageHandler implements ServerMessageHandle
       new WorkflowInstanceSubscriptionRecord();
 
   private final Int2ObjectHashMap<Partition> leaderPartitions;
+  private final ActorControl actor;
 
-  public SubscriptionApiCommandMessageHandler(Int2ObjectHashMap<Partition> leaderPartitions) {
+  public SubscriptionApiCommandMessageHandler(
+      ActorControl actor, Int2ObjectHashMap<Partition> leaderPartitions) {
     this.leaderPartitions = leaderPartitions;
+    this.actor = actor;
   }
 
   @Override
-  public boolean onMessage(
-      ServerOutput output,
-      RemoteAddress remoteAddress,
-      DirectBuffer buffer,
-      int offset,
-      int length) {
+  public CompletableFuture<Void> apply(byte[] bytes) {
+    final CompletableFuture<Void> future = new CompletableFuture<>();
+    actor.call(
+        () -> {
+          final DirectBuffer buffer = new UnsafeBuffer(bytes);
+          final int offset = 0;
+          final int length = buffer.capacity();
+          messageHeaderDecoder.wrap(buffer, offset);
 
-    messageHeaderDecoder.wrap(buffer, offset);
+          if (messageHeaderDecoder.schemaId() == OpenMessageSubscriptionDecoder.SCHEMA_ID) {
 
-    if (messageHeaderDecoder.schemaId() == OpenMessageSubscriptionDecoder.SCHEMA_ID) {
-
-      switch (messageHeaderDecoder.templateId()) {
-        case OpenMessageSubscriptionDecoder.TEMPLATE_ID:
-          return onOpenMessageSubscription(buffer, offset, length);
-
-        case OpenWorkflowInstanceSubscriptionDecoder.TEMPLATE_ID:
-          return onOpenWorkflowInstanceSubscription(buffer, offset, length);
-
-        case CorrelateWorkflowInstanceSubscriptionDecoder.TEMPLATE_ID:
-          return onCorrelateWorkflowInstanceSubscription(buffer, offset, length);
-
-        case CorrelateMessageSubscriptionDecoder.TEMPLATE_ID:
-          return onCorrelateMessageSubscription(buffer, offset, length);
-
-        case CloseMessageSubscriptionDecoder.TEMPLATE_ID:
-          return onCloseMessageSubscription(buffer, offset, length);
-
-        case CloseWorkflowInstanceSubscriptionDecoder.TEMPLATE_ID:
-          return onCloseWorkflowInstanceSubscription(buffer, offset, length);
-
-        default:
-          break;
-      }
-    }
-
-    return true;
+            switch (messageHeaderDecoder.templateId()) {
+              case OpenMessageSubscriptionDecoder.TEMPLATE_ID:
+                onOpenMessageSubscription(buffer, offset, length);
+                break;
+              case OpenWorkflowInstanceSubscriptionDecoder.TEMPLATE_ID:
+                onOpenWorkflowInstanceSubscription(buffer, offset, length);
+                break;
+              case CorrelateWorkflowInstanceSubscriptionDecoder.TEMPLATE_ID:
+                onCorrelateWorkflowInstanceSubscription(buffer, offset, length);
+                break;
+              case CorrelateMessageSubscriptionDecoder.TEMPLATE_ID:
+                onCorrelateMessageSubscription(buffer, offset, length);
+                break;
+              case CloseMessageSubscriptionDecoder.TEMPLATE_ID:
+                onCloseMessageSubscription(buffer, offset, length);
+                break;
+              case CloseWorkflowInstanceSubscriptionDecoder.TEMPLATE_ID:
+                onCloseWorkflowInstanceSubscription(buffer, offset, length);
+                break;
+              default:
+                break;
+            }
+          }
+          future.complete(null);
+        });
+    return future;
   }
 
   private boolean onOpenMessageSubscription(DirectBuffer buffer, int offset, int length) {
