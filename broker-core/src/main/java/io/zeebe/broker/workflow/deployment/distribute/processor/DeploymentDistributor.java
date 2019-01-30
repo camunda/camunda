@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.workflow.deployment.distribute.processor;
 
+import io.atomix.cluster.MemberId;
+import io.atomix.core.Atomix;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.TopologyPartitionListenerImpl;
@@ -25,17 +27,17 @@ import io.zeebe.broker.system.management.deployment.PushDeploymentRequest;
 import io.zeebe.broker.system.management.deployment.PushDeploymentResponse;
 import io.zeebe.broker.workflow.deployment.distribute.processor.state.DeploymentsState;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.transport.ClientResponse;
-import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
 import java.util.Iterator;
+import java.util.concurrent.CompletableFuture;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.IntArrayList;
 import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
 public class DeploymentDistributor {
@@ -47,7 +49,6 @@ public class DeploymentDistributor {
   private final PushDeploymentRequest pushDeploymentRequest = new PushDeploymentRequest();
   private final PushDeploymentResponse pushDeploymentResponse = new PushDeploymentResponse();
 
-  private final ClientTransport managementApi;
   private final TopologyPartitionListenerImpl partitionListener;
   private final ActorControl actor;
 
@@ -56,14 +57,15 @@ public class DeploymentDistributor {
   private final DeploymentsState deploymentsState;
 
   private final IntArrayList partitionsToDistributeTo;
+  private final Atomix atomix;
 
   public DeploymentDistributor(
       final ClusterCfg clusterCfg,
-      final ClientTransport managementApi,
+      final Atomix atomix,
       final TopologyPartitionListenerImpl partitionListener,
       final DeploymentsState deploymentsState,
       final ActorControl actor) {
-    this.managementApi = managementApi;
+    this.atomix = atomix;
     this.partitionListener = partitionListener;
     this.actor = actor;
     this.deploymentsState = deploymentsState;
@@ -158,41 +160,39 @@ public class DeploymentDistributor {
 
   private void pushDeploymentToPartition(final int partitionLeaderId, final int partition) {
     pushDeploymentRequest.partitionId(partition);
-    final ActorFuture<ClientResponse> pushResponseFuture =
-        managementApi
-            .getOutput()
-            .sendRequestWithRetry(
-                () -> partitionLeaderId,
-                (response) -> !pushDeploymentResponse.tryWrap(response),
-                pushDeploymentRequest,
-                PUSH_REQUEST_TIMEOUT);
+    final byte[] bytes = pushDeploymentRequest.toBytes();
 
-    LOG.debug("Deployment pushed to partition {} (node id: {}).", partition, partitionLeaderId);
-    actor.runOnCompletion(
-        pushResponseFuture,
-        (response, throwable) -> {
-          if (throwable == null) {
-            handlePushResponse(response);
-          } else {
-            LOG.error(
-                "Error on pushing deployment to partition {}. Retry request. ",
-                partition,
-                throwable);
+    final MemberId memberId = new MemberId(Integer.toString(partitionLeaderId));
+    final CompletableFuture<byte[]> pushDeploymentFuture =
+        atomix.getCommunicationService().send("deployment", bytes, memberId, PUSH_REQUEST_TIMEOUT);
 
-            final Int2ObjectHashMap<NodeInfo> partitionLeaders =
-                partitionListener.getPartitionLeaders();
-            final NodeInfo currentLeader = partitionLeaders.get(partition);
-            if (currentLeader != null) {
-              pushDeploymentToPartition(currentLeader.getNodeId(), partition);
-            } else {
-              pushDeploymentToPartition(partitionLeaderId, partition);
-            }
-          }
-        });
+    pushDeploymentFuture.whenComplete(
+        (response, throwable) ->
+            actor.call(
+                () -> {
+                  if (throwable == null) {
+                    final DirectBuffer responseBuffer = new UnsafeBuffer(response);
+                    pushDeploymentResponse.wrap(responseBuffer);
+                    handlePushResponse();
+                  } else {
+                    handleErrorResponse(partitionLeaderId, partition, throwable);
+                  }
+                }));
   }
 
-  private void handlePushResponse(final ClientResponse response) {
-    pushDeploymentResponse.wrap(response.getResponseBuffer());
+  private void handleErrorResponse(int partitionLeaderId, int partition, Throwable throwable) {
+    LOG.error("Error on pushing deployment to partition {}. Retry request. ", partition, throwable);
+
+    final Int2ObjectHashMap<NodeInfo> partitionLeaders = partitionListener.getPartitionLeaders();
+    final NodeInfo currentLeader = partitionLeaders.get(partition);
+    if (currentLeader != null) {
+      pushDeploymentToPartition(currentLeader.getNodeId(), partition);
+    } else {
+      pushDeploymentToPartition(partitionLeaderId, partition);
+    }
+  }
+
+  private void handlePushResponse() {
     final long deploymentKey = pushDeploymentResponse.deploymentKey();
     final PendingDeploymentDistribution pendingDeploymentDistribution =
         deploymentsState.getPendingDeployment(deploymentKey);

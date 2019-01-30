@@ -17,11 +17,10 @@
  */
 package io.zeebe.broker.system;
 
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_SERVICE;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
 import static io.zeebe.broker.system.SystemServiceNames.LEADER_MANAGEMENT_REQUEST_HANDLER;
 import static io.zeebe.broker.system.SystemServiceNames.METRICS_FILE_WRITER;
-import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_SERVER_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.bufferingServerTransport;
 
 import io.zeebe.broker.system.management.LeaderManagementRequestHandler;
 import io.zeebe.broker.system.metrics.MetricsFileWriterService;
@@ -41,9 +40,7 @@ public class SystemComponent implements Component {
         new LeaderManagementRequestHandler();
     serviceContainer
         .createService(LEADER_MANAGEMENT_REQUEST_HANDLER, requestHandlerService)
-        .dependency(
-            bufferingServerTransport(MANAGEMENT_API_SERVER_NAME),
-            requestHandlerService.getManagementApiServerTransportInjector())
+        .dependency(ATOMIX_SERVICE, requestHandlerService.getAtomixInjector())
         .groupReference(
             LEADER_PARTITION_GROUP_NAME, requestHandlerService.getLeaderPartitionsGroupReference())
         .install();
