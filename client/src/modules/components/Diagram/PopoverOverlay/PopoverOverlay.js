@@ -9,7 +9,7 @@ import Overlay from '../Overlay';
 import * as Styled from './styled';
 
 const position = {
-  bottom: -12,
+  bottom: -16,
   left: -20
 };
 
@@ -33,8 +33,8 @@ export default class PopoverOverlay extends React.Component {
     const summaryKeys = [
       'Flow Node Instance Id',
       'Job Id',
-      'Started',
-      'Completed'
+      'Start Time',
+      'End Time'
     ];
     const summary = compactObject(pickFromObject(metadata, summaryKeys));
 
@@ -54,7 +54,11 @@ export default class PopoverOverlay extends React.Component {
                 return (
                   <Styled.MetadataRow key={key}>
                     <td>{key}:</td>
-                    <td>{JSON.stringify(value)}</td>
+                    <td>
+                      {typeof value === 'string'
+                        ? value
+                        : JSON.stringify(value)}
+                    </td>
                   </Styled.MetadataRow>
                 );
               })}

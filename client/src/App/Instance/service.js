@@ -87,9 +87,9 @@ export function beautifyMetadataKey(key) {
     case 'jobId':
       return 'Job Id';
     case 'startDate':
-      return 'Started';
+      return 'Start Time';
     case 'endDate':
-      return 'Completed';
+      return 'End Time';
     default:
       return key;
   }

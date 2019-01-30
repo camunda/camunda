@@ -316,8 +316,8 @@ describe('Instance', () => {
       expect(node.find('Diagram').prop('metadata')).toEqual({
         'Flow Node Instance Id': 'id_0',
         'Job Id': '66',
-        Started: '12 Dec 2018 00:00:00',
-        Completed: '12 Dec 2018 00:00:00',
+        'Start Time': '12 Dec 2018 00:00:00',
+        'End Time': '12 Dec 2018 00:00:00',
         jobCustomHeaders: {},
         jobRetries: 3,
         jobType: 'shipArticles',

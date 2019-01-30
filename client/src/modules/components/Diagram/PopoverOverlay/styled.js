@@ -18,8 +18,8 @@ export const Popover = styled.div`
   &:before {
     border-width: 9px;
     border-bottom-color: ${themeStyle({
-      dark: 'rgba(0, 0, 0, 0.6)',
-      light: 'rgba(0, 0, 0, 0.2)'
+      dark: Colors.uiDark06,
+      light: Colors.uiLight05
     })};
     left: 20px;
   }
@@ -44,6 +44,12 @@ export const Popover = styled.div`
   })};
 
   font-size: 12px;
+  border: 1px solid
+    ${themeStyle({
+      dark: Colors.uiDark06,
+      light: Colors.uiLight05
+    })};
+
   border-radius: 3px;
 
   box-shadow: 0 0 2px 0

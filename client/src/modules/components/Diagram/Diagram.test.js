@@ -329,8 +329,8 @@ describe('Diagram', () => {
     const summary = {
       'Job Id': mockBeautifiedMetadata['Job Id'],
       'Flow Node Instance Id': mockBeautifiedMetadata['Flow Node Instance Id'],
-      Started: mockBeautifiedMetadata['Started'],
-      Completed: mockBeautifiedMetadata['Completed']
+      'Start Time': mockBeautifiedMetadata['Start Time'],
+      'End Time': mockBeautifiedMetadata['End Time']
     };
 
     it('should render a popover containing the summary of the metadata', () => {
