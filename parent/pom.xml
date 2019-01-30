@@ -643,6 +643,30 @@
           </executions>
         </plugin>
 
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>${plugin.version.dependency}</version>
+          <executions>
+            <execution>
+              <id>analyze-dependencies</id>
+              <goals>
+                <goal>analyze-only</goal>
+              </goals>
+              <configuration>
+                <failOnWarning>true</failOnWarning>
+                <outputXML>true</outputXML>
+                <!-- dependencies not directly used in all projects during tests -->
+                <ignoredUnusedDeclaredDependencies>
+                  <dep>org.apache.logging.log4j:log4j-slf4j-impl</dep>
+                  <dep>org.apache.logging.log4j:log4j-core</dep>
+                  <dep>io.zeebe:zb-build-tools</dep>
+                </ignoredUnusedDeclaredDependencies>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+
       </plugins>
 
     </pluginManagement>
