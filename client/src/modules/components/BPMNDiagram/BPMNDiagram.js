@@ -136,7 +136,7 @@ function getDiagramColors(theme) {
   } else {
     return {
       defaultFillColor: '#fdfdfe',
-      defaultStrokeColor: '#62626e'
+      defaultStrokeColor: '#333'
     };
   }
 }
