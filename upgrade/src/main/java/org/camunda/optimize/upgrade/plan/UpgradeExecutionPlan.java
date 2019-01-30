@@ -1,6 +1,12 @@
 package org.camunda.optimize.upgrade.plan;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.jetty.util.LoggingConfigurationReader;
+import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.es.schema.StrictTypeMappingCreator;
+import org.camunda.optimize.service.es.schema.TypeMappingCreator;
+import org.camunda.optimize.service.es.schema.type.MetadataType;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
@@ -10,9 +16,15 @@ import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.core.type.filter.AssignableTypeFilter;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_TYPE_SCHEMA_VERSION;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -21,12 +33,15 @@ public class UpgradeExecutionPlan implements UpgradePlan {
 
   private Logger logger = LoggerFactory.getLogger(getClass());
 
-  private RestHighLevelClient client;
-  private ConfigurationService configurationService;
-  private List<UpgradeStep> upgradeSteps = new ArrayList<>();
-  private String fromVersion;
-  private String toVersion;
+  private final RestHighLevelClient client;
+  private final ConfigurationService configurationService;
+  private final List<UpgradeStep> upgradeSteps = new ArrayList<>();
+
   private ValidationService validationService;
+  private ElasticSearchSchemaManager schemaManager;
+  private String toVersion;
+  private String fromVersion;
+  private ESIndexAdjuster esIndexAdjuster;
 
   public UpgradeExecutionPlan() {
     new LoggingConfigurationReader().defineLogbackLoggingConfiguration();
@@ -36,12 +51,15 @@ public class UpgradeExecutionPlan implements UpgradePlan {
     validationService.validateConfiguration();
 
     client = ElasticsearchHighLevelRestClientBuilder.build(configurationService);
+
+    schemaManager = new ElasticSearchSchemaManager(configurationService, getMappings(), new ObjectMapper());
+    esIndexAdjuster = new ESIndexAdjuster(client, configurationService);
   }
 
   @Override
   public void execute() {
     validationService.validateVersions(client, fromVersion, toVersion);
-    ESIndexAdjuster esIndexAdjuster = new ESIndexAdjuster(client, configurationService);
+
     int currentStepCount = 1;
     for (UpgradeStep step : upgradeSteps) {
       logger.info(
@@ -59,7 +77,44 @@ public class UpgradeExecutionPlan implements UpgradePlan {
       );
       currentStepCount++;
     }
+
     updateOptimizeVersion(esIndexAdjuster);
+
+    schemaManager.initializeSchema(client);
+  }
+
+  public List<TypeMappingCreator> getMappings() {
+    final ClassPathScanningCandidateComponentProvider provider = new ClassPathScanningCandidateComponentProvider(false);
+    provider.addIncludeFilter(new AssignableTypeFilter(StrictTypeMappingCreator.class));
+    final Set<BeanDefinition> typeMapping = provider.findCandidateComponents(MetadataType.class.getPackage().getName());
+
+    final List<TypeMappingCreator> mappingTypes = typeMapping.stream()
+      .map(beanDefinition -> {
+        try {
+          return (TypeMappingCreator) Class.forName(beanDefinition.getBeanClassName()).getConstructor().newInstance();
+        } catch (IllegalAccessException | InstantiationException | InvocationTargetException | ClassNotFoundException | NoSuchMethodException e) {
+          throw new OptimizeRuntimeException("Failed initializing: " + beanDefinition.getBeanClassName(), e);
+        }
+      })
+      .collect(Collectors.toList());
+
+    return mappingTypes;
+  }
+
+  public void addUpgradeStep(UpgradeStep upgradeStep) {
+    this.upgradeSteps.add(upgradeStep);
+  }
+
+  public void setEsIndexAdjuster(final ESIndexAdjuster esIndexAdjuster) {
+    this.esIndexAdjuster = esIndexAdjuster;
+  }
+
+  public void setSchemaManager(final ElasticSearchSchemaManager schemaManager) {
+    this.schemaManager = schemaManager;
+  }
+
+  public void setValidationService(final ValidationService validationService) {
+    this.validationService = validationService;
   }
 
   private void updateOptimizeVersion(ESIndexAdjuster ESIndexAdjuster) {
@@ -70,10 +125,6 @@ public class UpgradeExecutionPlan implements UpgradePlan {
       String.format("ctx._source.schemaVersion = \"%s\"", toVersion),
       null
     );
-  }
-
-  public void addUpgradeStep(UpgradeStep upgradeStep) {
-    this.upgradeSteps.add(upgradeStep);
   }
 
   public void setFromVersion(String fromVersion) {

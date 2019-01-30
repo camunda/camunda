@@ -17,7 +17,6 @@ import org.camunda.optimize.upgrade.steps.document.UpgradeSingleDecisionReportSe
 import org.camunda.optimize.upgrade.steps.document.UpgradeSingleProcessReportSettingsStep;
 import org.camunda.optimize.upgrade.steps.schema.DeleteIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
-import org.camunda.optimize.upgrade.util.SchemaUpgradeUtil;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -29,6 +28,7 @@ import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
 import static org.camunda.optimize.upgrade.util.ReportUtil.buildSingleReportIdToVisualizationAndViewMap;
+import static org.camunda.optimize.upgrade.util.SchemaUpgradeUtil.createMappingAndSettingsJsonStringFromMapping;
 import static org.camunda.optimize.upgrade.util.SchemaUpgradeUtil.getDefaultReportConfigurationAsMap;
 
 
@@ -72,7 +72,7 @@ public class UpgradeFrom23To24 implements Upgrade {
           .addUpgradeStep(new UpdateIndexStep(
             DECISION_INSTANCE_TYPE,
             DecisionInstanceType.VERSION,
-            getNewDecisionInstanceMapping()
+            createMappingAndSettingsJsonStringFromMapping(new DecisionInstanceType())
           ))
           .addUpgradeStep(buildMatchedRules());
       }
@@ -88,13 +88,15 @@ public class UpgradeFrom23To24 implements Upgrade {
     }
   }
 
+
+
   private void ensureSingleDecisionReportIndexIsInitialized() {
     ElasticSearchSchemaManager elasticSearchSchemaManager = new ElasticSearchSchemaManager(
       configurationService,
       Lists.newArrayList(new SingleDecisionReportType()),
       new ObjectMapper()
     );
-    elasticSearchSchemaManager.initializeSchema(client);
+    elasticSearchSchemaManager.createOptimizeIndices(client);
   }
 
   private UpdateDataStep migrateConfigurationInSimpleProcessReport() {
@@ -136,11 +138,6 @@ public class UpgradeFrom23To24 implements Upgrade {
 
   private DeleteIndexStep removeTargetValueIndexStep() {
     return new DeleteIndexStep(null, "duration-target-value");
-  }
-
-  private String getNewDecisionInstanceMapping() {
-    String pathToMapping = "upgrade/main/UpgradeFrom23To24/decision-instance-mapping.json";
-    return SchemaUpgradeUtil.readClasspathFileAsString(pathToMapping);
   }
 
   private UpgradeStep buildMatchedRules() {

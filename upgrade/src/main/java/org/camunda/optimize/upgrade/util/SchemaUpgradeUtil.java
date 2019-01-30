@@ -1,7 +1,9 @@
 package org.camunda.optimize.upgrade.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.camunda.optimize.service.es.schema.TypeMappingCreator;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
+import org.elasticsearch.common.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,6 +18,10 @@ import java.util.Map;
  */
 public class SchemaUpgradeUtil {
   protected static Logger logger = LoggerFactory.getLogger(SchemaUpgradeUtil.class);
+
+  public static String createMappingAndSettingsJsonStringFromMapping(final TypeMappingCreator type) {
+    return "{ \"mappings\": {\"" + type.getType() + "\": " + Strings.toString(type.getSource()) + "} }";
+  }
 
   public static Map getDefaultReportConfigurationAsMap() {
     String pathToMapping = "upgrade/main/UpgradeFrom23To24/default-report-configuration.json";
