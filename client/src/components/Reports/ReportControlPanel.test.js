@@ -238,7 +238,7 @@ it('should load the process definition xml when a new definition is selected', a
   expect(service.loadProcessDefinitionXml).toHaveBeenCalledWith('newDefinition', 1);
 });
 
-it('should reset remove incompatible filters when changing the process definition', async () => {
+it('should remove incompatible filters when changing the process definition', async () => {
   const spy = jest.fn();
   const node = shallow(
     <ReportControlPanel
@@ -253,7 +253,7 @@ it('should reset remove incompatible filters when changing the process definitio
   expect(spy.mock.calls[0][0].filter.$set).toEqual([{type: 'startDate'}]);
 });
 
-it('should reset the groupby and visualization when changing process definition and group is variable', async () => {
+it('should reset the groupby and visualization when changing process definition and groupby is variable', async () => {
   const spy = jest.fn();
   const node = shallow(
     <ReportControlPanel {...data} updateReport={spy} groupBy={{type: 'variable'}} />
