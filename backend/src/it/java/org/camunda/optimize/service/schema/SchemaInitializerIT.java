@@ -3,11 +3,13 @@ package org.camunda.optimize.service.schema;
 import com.jayway.jsonpath.JsonPath;
 import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
+import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
 import org.camunda.optimize.service.schema.type.MyUpdatedEventType;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.ElasticsearchStatusException;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.mapping.get.GetFieldMappingsRequest;
 import org.elasticsearch.action.admin.indices.mapping.get.GetFieldMappingsResponse;
 import org.elasticsearch.action.admin.indices.mapping.get.GetFieldMappingsResponse.FieldMappingMetaData;
@@ -39,7 +41,7 @@ public class SchemaInitializerIT {
   public static ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public static EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
-  private  RestHighLevelClient esClient;
+  private RestHighLevelClient esClient;
 
   @ClassRule
   public static RuleChain chain = RuleChain
@@ -66,6 +68,23 @@ public class SchemaInitializerIT {
   public void optimizeIndexExistsAfterSchemaInitialization() {
 
     // when
+    initializeSchema();
+
+    // then
+    assertThat(embeddedOptimizeRule.getElasticSearchSchemaManager().schemaAlreadyExists(esClient), is(true));
+  }
+
+  @Test
+  public void dontFailIfSomeIndexesAlreadyExist() throws IOException {
+
+    // given
+    initializeSchema();
+    embeddedOptimizeRule.getElasticsearchClient().indices().delete(
+      new DeleteIndexRequest(getVersionedOptimizeIndexNameForTypeMapping(new DecisionInstanceType())),
+      RequestOptions.DEFAULT
+    );
+
+    //when
     initializeSchema();
 
     // then

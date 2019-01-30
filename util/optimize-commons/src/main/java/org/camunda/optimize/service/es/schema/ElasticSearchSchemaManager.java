@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.cluster.settings.ClusterUpdateSettingsRequest;
 import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
@@ -21,6 +22,7 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.rest.RestStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -107,27 +109,36 @@ public class ElasticSearchSchemaManager {
       } catch (IOException e) {
         logger.error("Could not create settings!", e);
       }
+      final String optimizeAliasForType = getOptimizeIndexAliasForType(mapping.getType());
+      final String indexName = getVersionedOptimizeIndexNameForTypeMapping(mapping);
       try {
-        final String optimizeAliasForType = getOptimizeIndexAliasForType(mapping.getType());
-
-        CreateIndexRequest request = new CreateIndexRequest(getVersionedOptimizeIndexNameForTypeMapping(mapping));
-        request.alias(new Alias(optimizeAliasForType));
-        request.settings(indexSettings);
-        request.mapping(mapping.getType(), mapping.getSource());
-        esClient.indices().create(request, RequestOptions.DEFAULT);
+        try {
+          CreateIndexRequest request = new CreateIndexRequest(indexName);
+          request.alias(new Alias(optimizeAliasForType));
+          request.settings(indexSettings);
+          request.mapping(mapping.getType(), mapping.getSource());
+          esClient.indices().create(request, RequestOptions.DEFAULT);
+        } catch (ElasticsearchStatusException e) {
+          if (e.status() == RestStatus.BAD_REQUEST && e.getMessage().contains("resource_already_exists_exception")) {
+            logger.debug("index {} already exists.", indexName);
+          } else {
+            throw e;
+          }
+        }
       } catch (Exception e) {
-        String message = String.format("Could not create Index [%s]", mapping.getType());
+        String message = String.format("Could not create Index [%s]", indexName);
         logger.warn(message, e);
         throw new OptimizeRuntimeException(message, e);
       }
-
-      RefreshRequest refreshAllIndexesRequest = new RefreshRequest();
-      try {
-        esClient.indices().refresh(refreshAllIndexesRequest, RequestOptions.DEFAULT);
-      } catch (IOException e) {
-        throw new OptimizeRuntimeException("Could not refresh Optimize indices!", e);
-      }
     }
+
+    RefreshRequest refreshAllIndexesRequest = new RefreshRequest();
+    try {
+      esClient.indices().refresh(refreshAllIndexesRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException("Could not refresh Optimize indices!", e);
+    }
+
     disableAutomaticIndexCreation(esClient);
   }
 
