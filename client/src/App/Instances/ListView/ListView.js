@@ -85,9 +85,6 @@ export default class ListView extends React.Component {
       if (this.state.instancesWithActiveOperations.length > 0) {
         // first call of initializePolling
         this.pollingTimer === null && this.initializePolling();
-      } else {
-        // stop polling, no active operations
-        this.clearPolling();
       }
     }
   }
@@ -97,6 +94,7 @@ export default class ListView extends React.Component {
   }
 
   resetInstancesWithActiveOperations = () => {
+    this.clearPolling();
     this.setState({instancesWithActiveOperations: []});
   };
 
