@@ -162,7 +162,9 @@ public class BatchOperationWriter {
           .source(operationTemplate.getMainIndexName())
           .filter(query)
           .size(1)
-          .script(updateScript).get();
+          .script(updateScript)
+          .refresh(true)
+          .get();
       for (BulkItemResponse.Failure failure: response.getBulkFailures()) {
         logger.error(String.format("Complete operation failed for operation id [%s]: %s", failure.getId(),
           failure.getMessage()), failure.getCause());
