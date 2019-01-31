@@ -9,11 +9,17 @@ import {formatters} from 'services';
 
 import './Heatmap.scss';
 
-const Heatmap = props => {
-  const {xml} = props;
-  const {data, errorMessage, targetValue} = props;
-
-  if (!data || typeof data !== 'object') {
+const Heatmap = ({
+  result,
+  formatter,
+  data: {
+    configuration: {alwaysShowAbsolute, alwaysShowRelative, heatmapTargetValue: targetValue, xml},
+    view
+  },
+  processInstanceCount,
+  errorMessage
+}) => {
+  if (!result || typeof result !== 'object') {
     return <p>{errorMessage}</p>;
   }
 
@@ -23,13 +29,13 @@ const Heatmap = props => {
 
   let heatmapComponent;
   if (targetValue && targetValue.active && !targetValue.values.target) {
-    const heat = calculateTargetValueHeat(data, targetValue.values);
+    const heat = calculateTargetValueHeat(result, targetValue.values);
     heatmapComponent = [
       <HeatmapOverlay
         key="heatmap"
         data={heat}
-        alwaysShowAbsolute={props.alwaysShowAbsolute}
-        alwaysShowRelative={props.alwaysShowRelative}
+        alwaysShowAbsolute={alwaysShowAbsolute}
+        alwaysShowRelative={alwaysShowRelative}
         formatter={(_, id) => {
           const node = document.createElement('div');
 
@@ -37,7 +43,7 @@ const Heatmap = props => {
             targetValue.values[id].value,
             targetValue.values[id].unit
           );
-          const real = data[id];
+          const real = result[id];
 
           node.innerHTML = `target duration: ${formatters.duration(target)}<br/>`;
 
@@ -62,25 +68,25 @@ const Heatmap = props => {
   } else {
     heatmapComponent = (
       <HeatmapOverlay
-        data={data}
-        alwaysShowAbsolute={props.alwaysShowAbsolute}
-        alwaysShowRelative={props.alwaysShowRelative}
+        data={result}
+        alwaysShowAbsolute={alwaysShowAbsolute}
+        alwaysShowRelative={alwaysShowRelative}
         formatter={data => {
-          const absolute = props.formatter(data);
-          const relative = getRelativeValue(data, props.processInstanceCount);
+          const absolute = formatter(data);
+          const relative = getRelativeValue(data, processInstanceCount);
 
-          if (props.property === 'duration') {
+          if (view.property === 'duration') {
             return absolute;
           }
 
-          if (props.alwaysShowAbsolute && props.alwaysShowRelative) {
+          if (alwaysShowAbsolute && alwaysShowRelative) {
             return absolute + `\u00A0(${relative})`;
           }
 
-          if (props.alwaysShowAbsolute) {
+          if (alwaysShowAbsolute) {
             return absolute;
           }
-          if (props.alwaysShowRelative) {
+          if (alwaysShowRelative) {
             return relative;
           }
 

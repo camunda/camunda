@@ -8,13 +8,13 @@ it('should render without crashing', () => {
 });
 
 it('should render a message provided as a prop', () => {
-  const node = mount(<ReportBlankSlate message="foo" />);
+  const node = mount(<ReportBlankSlate errorMessage="foo" />);
 
   expect(node.find('.ReportBlankSlate__message')).toIncludeText('foo');
 });
 
 it('should should not render inner illustrations if report type is combined', () => {
-  const node = mount(<ReportBlankSlate message="foo" isCombined />);
+  const node = mount(<ReportBlankSlate errorMessage="foo" isCombined />);
 
   expect(node.find('.ReportBlankSlate__illustrationDropdown')).toBeEmpty();
   expect(node.find('.ReportBlankSlate__diagramIllustrations')).toBeEmpty();

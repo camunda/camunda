@@ -1,7 +1,7 @@
 import {getColorFor} from './colorsUtils';
 import {formatters} from 'services';
 
-const {convertToMilliseconds} = formatters;
+const {convertToMilliseconds, formatReportResult} = formatters;
 
 export function formatTooltip(
   {index, datasetIndex},
@@ -144,4 +144,29 @@ export function createDurationFormattingOptions(data, targetLine, isCombined) {
 export function getFormattedTargetValue({unit, value}) {
   if (!unit) return value;
   return convertToMilliseconds(value, unit);
+}
+
+export function getCombinedChartProps(result, data) {
+  if (data.visualization === 'number')
+    return {
+      result: getCombinedNumberData(result),
+      reportsNames: Object.values(result).map(report => report.name)
+    };
+  const resultData = data.reportIds.reduce(
+    (prev, reportId) => {
+      return {
+        result: [...prev.result, formatReportResult(data, result[reportId].result)],
+        reportsNames: [...prev.reportsNames, result[reportId].name],
+        processInstanceCount: [...prev.processInstanceCount, result[reportId].processInstanceCount]
+      };
+    },
+    {result: [], reportsNames: [], processInstanceCount: []}
+  );
+  return resultData;
+}
+
+function getCombinedNumberData(result) {
+  return Object.values(result).map(report => ({
+    [report.name]: report.result
+  }));
 }

@@ -39,7 +39,8 @@ export default class CombinedReportPanel extends React.Component {
     }
 
     const change = {
-      reportIds: {$set: newSelected.map(report => report.id)}
+      reportIds: {$set: newSelected.map(report => report.id)},
+      visualization: {$set: selectedReport.data.visualization}
     };
 
     if (selectedReport.data.visualization !== 'table') {

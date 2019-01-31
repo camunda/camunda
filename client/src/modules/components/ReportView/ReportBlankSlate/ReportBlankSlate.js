@@ -5,7 +5,7 @@ import './ReportBlankSlate.scss';
 export default function ReportBlankSlate(props) {
   return (
     <div className="ReportBlankSlate">
-      <p className="ReportBlankSlate__message">{props.message}</p>
+      <p className="ReportBlankSlate__message">{props.errorMessage}</p>
       {!props.isCombined && (
         <React.Fragment>
           <div className="ReportBlankSlate__illustrationDropdown" />

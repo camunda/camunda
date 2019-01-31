@@ -8,31 +8,30 @@ import {
 } from './service';
 
 export default function createChartOptions({
-  type,
-  data,
+  data: {visualization, view, configuration},
+  result,
   targetValue,
   processInstanceCount,
-  property,
-  formatter,
   combined,
-  configuration,
-  stacked,
-  theme
+  theme,
+  formatter
 }) {
   const isDark = theme === 'dark';
+  const stacked = visualization === 'number';
 
   let options;
-  switch (type) {
+  switch (visualization) {
     case 'pie':
       options = createPieOptions(isDark);
       break;
     case 'line':
     case 'bar':
+    case 'number':
       options = createBarOptions(
-        data,
+        result,
         targetValue,
         configuration,
-        property,
+        view.property,
         stacked,
         combined,
         isDark
@@ -50,7 +49,7 @@ export default function createChartOptions({
     tooltips: {
       callbacks: {
         // if pie chart then manually append labels to tooltips
-        ...(type === 'pie' ? {beforeLabel: ({index}, {labels}) => labels[index]} : {}),
+        ...(visualization === 'pie' ? {beforeLabel: ({index}, {labels}) => labels[index]} : {}),
         label: (tooltipItem, data) => {
           return formatTooltip(
             tooltipItem,
@@ -59,11 +58,11 @@ export default function createChartOptions({
             configuration,
             formatter,
             combined ? processInstanceCount : [processInstanceCount],
-            property,
-            type
+            view.property,
+            visualization
           );
         },
-        labelColor: (tooltipItem, chart) => getTooltipLabelColor(tooltipItem, chart, type)
+        labelColor: (tooltipItem, chart) => getTooltipLabelColor(tooltipItem, chart, visualization)
       }
     }
   };
@@ -147,6 +146,7 @@ export function createDatasetOptions(type, data, targetValue, datasetColor, isCo
         legendColor: datasetColor
       };
     case 'bar':
+    case 'number':
       const barColor = targetValue
         ? determineBarColor(targetValue, data, datasetColor, isCombined, isDark)
         : datasetColor;

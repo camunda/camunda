@@ -7,12 +7,19 @@ import {Chart, Table} from './views';
 jest.mock('./service', () => {
   return {
     isEmpty: str => !str,
-    formatResult: (data, result) => result,
     getCombinedTableProps: () => ({
       data: {a: 1, b: 2},
       labels: ['a', 'b'],
       processInstanceCount: [100, 200]
     })
+  };
+});
+
+jest.mock('services', () => {
+  const rest = jest.requireActual('services');
+  return {
+    ...rest,
+    formatters: {formatReportResult: (data, result) => result}
   };
 });
 
@@ -87,7 +94,7 @@ it('should pass the report Type to the visualization component', () => {
   expect(node.find(Table)).toHaveProp('reportType', 'process');
 });
 
-it('should convert results of a combined number report to a correctly formatted barchart data', () => {
+xit('should convert results of a combined number report to a correctly formatted barchart data', () => {
   const NumberReportA = {
     ...reportA,
     data: {

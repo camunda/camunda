@@ -1,7 +1,7 @@
 import React from 'react';
 import ReportBlankSlate from './ReportBlankSlate';
 
-import {formatResult, isEmpty} from './service';
+import {isEmpty} from './service';
 import {Table} from './views';
 
 const checkReport = props => {
@@ -20,42 +20,29 @@ const checkReport = props => {
 };
 
 const getConfig = props => {
-  const {report, disableReportScrolling, customProps} = props;
-  let {result, processInstanceCount, data} = report;
+  const {report, disableReportScrolling, customProps, defaultErrorMessage} = props;
+  let {data: {visualization}} = report;
   let config;
 
-  switch (data.visualization) {
+  switch (visualization) {
     case 'table':
       config = {
         Component: Table,
         props: {
-          data: formatResult(data, result),
-          processInstanceCount,
-          combined: false,
-          configuration: data.configuration,
-          sorting: data.parameters && data.parameters.sorting,
-          disableReportScrolling: disableReportScrolling,
-          property: data.view.property
+          disableReportScrolling
         }
       };
       break;
     default:
-      config = {
-        Component: ReportBlankSlate,
-        props: {
-          message: props.defaultErrorMessage
-        }
-      };
+      config.Component = ReportBlankSlate;
       break;
   }
 
-  config.props.reportType = report.reportType;
-  config.props.errorMessage = props.defaultErrorMessage;
-  config.props.report = data;
-
   config.props = {
+    errorMessage: defaultErrorMessage,
     ...config.props,
-    ...(customProps ? customProps[data.visualization] || {} : {})
+    ...(customProps ? customProps[visualization] || {} : {}),
+    ...report
   };
 
   return config;

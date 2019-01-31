@@ -19,7 +19,7 @@ jest.mock('services', () => {
 jest.mock('./service', () => {
   return {
     isEmpty: str => !str,
-    formatResult: (data, result) => result
+    formatReportResult: (data, result) => result
   };
 });
 
@@ -48,7 +48,7 @@ it('should display a number if visualization is number', () => {
   });
 
   expect(node.find(Number)).toBePresent();
-  expect(node.find(Number).prop('data')).toBe(1234);
+  expect(node.find(Number).prop('result')).toBe(1234);
 });
 
 it('should provide an errorMessage property to the component', () => {
@@ -255,19 +255,6 @@ it('should call the applyAddons function if provided', () => {
   });
 
   expect(spy).toHaveBeenCalled();
-});
-
-it('should return flownode Id if name is null when calling applyFlowNodeNames', async () => {
-  const node = shallow(<ProcessReportView report={exampleDurationReport} />);
-  node.setState({
-    loaded: true
-  });
-  await node.instance().loadFlowNodeNames('aKey', 1);
-  expect(node.instance().applyFlowNodeNames({a: 25, b: 35, c: 25})).toEqual({
-    foo: 25,
-    bar: 35,
-    c: 25
-  });
 });
 
 it('should include the instance count if indicated in the config', () => {

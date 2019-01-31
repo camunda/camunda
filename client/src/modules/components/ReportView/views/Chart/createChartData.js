@@ -1,5 +1,8 @@
 import {createDatasetOptions, getTargetLineOptions} from './createChartOptions';
 import {uniteResults} from '../service';
+import {formatters} from 'services';
+
+const {formatReportResult} = formatters;
 
 export default function createChartData({combined, ...props}) {
   if (combined) {
@@ -9,38 +12,40 @@ export default function createChartData({combined, ...props}) {
   }
 }
 
-function createCombinedChartData({
-  data,
-  reportsNames,
-  type,
-  targetValue,
-  configuration: {reportColors},
-  theme,
-  isDate
-}) {
+function createCombinedChartData({result, data, theme, targetValue, reportsNames}) {
+  const {configuration: {reportColors}} = data;
+
   const isDark = theme === 'dark';
 
-  const labels = Object.keys(Object.assign({}, ...data));
-  if (isDate)
+  const labels = Object.keys(Object.assign({}, ...result));
+
+  if (isDate(data.groupBy))
     labels.sort((a, b) => {
       return new Date(a) - new Date(b);
     });
 
   let datasets;
-  if (type === 'line' && targetValue) {
+  if (data.visualization === 'line' && targetValue) {
     datasets = createCombinedTargetLineDatasets(
-      data,
+      result,
       reportsNames,
       targetValue,
       reportColors,
       isDark
     );
   } else {
-    datasets = uniteResults(data, labels).map((report, index) => {
+    datasets = uniteResults(result, labels).map((report, index) => {
       return {
         label: reportsNames && reportsNames[index],
         data: Object.values(report),
-        ...createDatasetOptions(type, report, targetValue, reportColors[index], true, isDark)
+        ...createDatasetOptions(
+          data.visualization,
+          report,
+          targetValue,
+          reportColors[index],
+          true,
+          isDark
+        )
       };
     });
   }
@@ -48,23 +53,30 @@ function createCombinedChartData({
   return {labels, datasets};
 }
 
-function createSingleChartData({data, type, targetValue, configuration: {color}, theme, isDate}) {
+function createSingleChartData({result, data, theme, targetValue, flowNodeNames}) {
   const isDark = theme === 'dark';
+  const {groupBy, visualization, configuration: {color}} = data;
+  const formattedResult = formatReportResult(data, result);
 
-  const labels = Object.keys(data);
-  if (isDate)
+  let labels = Object.keys(formattedResult);
+
+  if (isDate(groupBy))
     labels.sort((a, b) => {
       return new Date(a) - new Date(b);
     });
 
+  if (data.groupBy.type === 'flowNodes') {
+    labels = labels.map(key => flowNodeNames[key] || key);
+  }
+
   let datasets;
-  if (type === 'line' && targetValue) {
-    datasets = createSingleTargetLineDataset(targetValue, data, color, false, isDark);
+  if (visualization === 'line' && targetValue) {
+    datasets = createSingleTargetLineDataset(targetValue, formattedResult, color, false, isDark);
   } else {
     datasets = [
       {
-        data: Object.values(data),
-        ...createDatasetOptions(type, data, targetValue, color, false, isDark)
+        data: Object.values(formattedResult),
+        ...createDatasetOptions(visualization, formattedResult, targetValue, color, false, isDark)
       }
     ];
   }
@@ -110,4 +122,10 @@ function createSingleTargetLineDataset(targetValue, data, color, reportName, isC
   ];
 
   return datasets;
+}
+
+function isDate(groupBy) {
+  return (
+    groupBy.type === 'startDate' || (groupBy.type === 'variable' && groupBy.value.type === 'Date')
+  );
 }

@@ -2,7 +2,7 @@ import React from 'react';
 import ChartRenderer from 'chart.js';
 import ReportBlankSlate from '../../ReportBlankSlate';
 
-import {drawHorizentalLine} from './service';
+import {drawHorizentalLine, getCombinedChartProps} from './service';
 
 import {themed} from 'theme';
 
@@ -19,10 +19,10 @@ export default themed(
     };
 
     render() {
-      const {data, errorMessage} = this.props;
+      const {result, errorMessage} = this.props;
 
       let errorMessageFragment = null;
-      if (!data || typeof data !== 'object') {
+      if (!result || typeof result !== 'object') {
         this.destroyChart();
         errorMessageFragment = <ReportBlankSlate message={errorMessage} />;
       }
@@ -42,23 +42,42 @@ export default themed(
     };
 
     createNewChart = () => {
-      const {data, type, report} = this.props;
+      const {result, combined} = this.props;
+      let {data} = this.props;
 
-      if (!data || typeof data !== 'object') {
+      if (!result || typeof result !== 'object') {
         return;
       }
 
+      let combinedProps = {};
+      if (combined) {
+        data = {...Object.values(result)[0].data, ...data};
+        combinedProps = getCombinedChartProps(result, data);
+        combinedProps.data = data;
+      }
+
+      const {visualization, configuration, view} = data;
+
       this.destroyChart();
 
-      const chartType = report.view.operation === 'count' ? 'countChart' : 'durationChart';
-      const targetValue = this.props.targetValue.active && this.props.targetValue[chartType];
+      const chartType = view.operation === 'count' ? 'countChart' : 'durationChart';
+      const targetValue = configuration.targetValue.active && configuration.targetValue[chartType];
 
-      const isTargetLine = targetValue && type === 'line';
+      const isTargetLine = targetValue && visualization === 'line';
+      const chartVisualization = visualization === 'number' ? 'bar' : visualization;
 
       this.chart = new ChartRenderer(this.container, {
-        type: isTargetLine ? 'targetLine' : type,
-        data: createChartData({...this.props, targetValue}),
-        options: createChartOptions({...this.props, targetValue}),
+        type: isTargetLine ? 'targetLine' : chartVisualization,
+        data: createChartData({
+          ...this.props,
+          targetValue,
+          ...combinedProps
+        }),
+        options: createChartOptions({
+          ...this.props,
+          targetValue,
+          ...combinedProps
+        }),
         plugins: [
           {
             afterDatasetsDraw: drawHorizentalLine

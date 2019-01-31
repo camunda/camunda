@@ -1,77 +1,31 @@
 import React from 'react';
 import {formatters} from 'services';
 import ReportBlankSlate from './ReportBlankSlate';
-
-import {getCombinedTableProps, getCombinedChartProps} from './service';
-
 import {Table, Chart} from './views';
 
-const getCombinedNumberData = result => {
-  return Object.values(result).map(report => ({
-    [report.name]: report.result
-  }));
-};
-
-const getConfig = (props, data) => {
-  const {report, disableReportScrolling, customProps} = props;
-  const {result} = report;
-  let config;
+const getConfig = ({report, disableReportScrolling, customProps, defaultErrorMessage}, data) => {
+  let config = {props: {}};
 
   switch (data.visualization) {
     case 'number':
-      config = {
-        Component: Chart,
-        props: {
-          reportsNames: Object.values(result).map(report => report.name),
-          data: getCombinedNumberData(result),
-          combined: true,
-          configuration: data.configuration,
-          isDate: false,
-          type: 'bar',
-          property: data.view.property,
-          stacked: true,
-          targetValue: data.configuration.targetValue
-        }
-      };
+      config.Component = Chart;
       break;
     case 'table':
       config = {
         Component: Table,
         props: {
-          ...getCombinedTableProps(result, report),
-          combined: true,
-          configuration: data.configuration,
-          sorting: data.parameters && data.parameters.sorting,
-          disableReportScrolling: disableReportScrolling,
-          property: data.view.property
+          disableReportScrolling
         }
       };
       break;
     case 'bar':
     case 'line':
-      config = {
-        Component: Chart,
-        props: {
-          ...getCombinedChartProps(result, data, report),
-          configuration: data.configuration,
-          combined: true,
-          type: data.visualization,
-          property: data.view.property,
-          targetValue: data.configuration.targetValue
-        }
-      };
+      config.Component = Chart;
       break;
     default:
-      config = {
-        Component: ReportBlankSlate,
-        props: {
-          message: props.defaultErrorMessage
-        }
-      };
+      config.Component = ReportBlankSlate;
       break;
   }
-
-  config.props.reportType = report.reportType;
 
   switch (data.view.property) {
     case 'frequency':
@@ -84,12 +38,11 @@ const getConfig = (props, data) => {
       config.props.formatter = v => v;
   }
 
-  config.props.errorMessage = props.defaultErrorMessage;
-  config.props.report = data;
-
   config.props = {
     ...config.props,
-    ...(customProps ? customProps[data.visualization] || {} : {})
+    ...(customProps ? customProps[data.visualization] || {} : {}),
+    ...report,
+    errorMessage: defaultErrorMessage
   };
 
   return config;

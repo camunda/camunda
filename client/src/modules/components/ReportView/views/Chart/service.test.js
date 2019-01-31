@@ -4,7 +4,8 @@ import {
   getFormattedTargetValue,
   generateLegendLabels,
   calculateLinePosition,
-  getTooltipLabelColor
+  getTooltipLabelColor,
+  getCombinedChartProps
 } from './service';
 
 import {formatters} from 'services';
@@ -13,7 +14,7 @@ const {convertToMilliseconds} = formatters;
 
 jest.mock('services', () => {
   return {
-    formatters: {convertToMilliseconds: jest.fn()}
+    formatters: {convertToMilliseconds: jest.fn(), formatReportResult: (data, result) => result}
   };
 });
 
@@ -109,4 +110,49 @@ it('should calculate the correct position for the target value line', () => {
       }
     })
   ).toBe(80); // inverted y axis: height - lineAt = 100 - 20 = 80
+});
+
+it('should return correct cominbed chart repot data properties for single report', () => {
+  const report = {
+    name: 'report A',
+    combined: false,
+    processInstanceCount: 100,
+    data: {
+      view: {
+        operation: 'foo'
+      },
+      groupBy: {
+        type: 'startDate',
+        value: {
+          unit: 'day'
+        }
+      },
+      visualization: 'line'
+    },
+    result: {
+      '2015-03-25T12:00:00Z': 2,
+      '2015-03-26T12:00:00Z': 3
+    }
+  };
+
+  const result = {
+    'report A': report,
+    'report B': report
+  };
+
+  const data = {
+    ...report.data,
+    reportIds: ['report A', 'report B']
+  };
+
+  const chartProps = getCombinedChartProps(result, data);
+
+  expect(chartProps).toEqual({
+    result: [
+      {'2015-03-25T12:00:00Z': 2, '2015-03-26T12:00:00Z': 3},
+      {'2015-03-25T12:00:00Z': 2, '2015-03-26T12:00:00Z': 3}
+    ],
+    reportsNames: ['report A', 'report A'],
+    processInstanceCount: [100, 100]
+  });
 });

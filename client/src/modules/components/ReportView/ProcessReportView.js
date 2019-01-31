@@ -1,14 +1,12 @@
 import React from 'react';
 
 import {LoadingIndicator} from 'components';
-import {getFlowNodeNames, formatters, reportConfig} from 'services';
+import {getFlowNodeNames, formatters} from 'services';
 import ReportBlankSlate from './ReportBlankSlate';
 
-import {formatResult, isEmpty} from './service';
+import {isEmpty} from './service';
 
 import {Number, Table, Heatmap, Chart} from './views';
-
-const {view, groupBy, getLabelFor} = reportConfig;
 
 export default class ProcessReportView extends React.Component {
   state = {
@@ -49,18 +47,6 @@ export default class ProcessReportView extends React.Component {
     });
   };
 
-  applyFlowNodeNames = data => {
-    if (this.state.flowNodeNames) {
-      const chartData = {};
-      Object.keys(data).forEach(key => {
-        chartData[this.state.flowNodeNames[key] || key] = data[key];
-      });
-
-      return chartData;
-    }
-    return data;
-  };
-
   render() {
     const somethingMissing = this.checkReport();
     if (somethingMissing) {
@@ -72,18 +58,12 @@ export default class ProcessReportView extends React.Component {
     }
 
     const {report: {data, processInstanceCount}} = this.props;
-    let {report: {result}} = this.props;
-
-    const visualizations = ['pie', 'line', 'bar', 'table'];
-    if (data.view.entity === 'flowNode' && visualizations.includes(data.visualization) && result) {
-      result = this.applyFlowNodeNames(result);
-    }
 
     if (!this.state.loaded) {
       return <LoadingIndicator />;
     }
 
-    const {Component, props} = this.getConfig(result);
+    const {Component, props} = this.getConfig();
     return (
       <>
         <div className="component">
@@ -119,80 +99,38 @@ export default class ProcessReportView extends React.Component {
     }
   };
 
-  getConfig = result => {
-    const {report, disableReportScrolling, customProps} = this.props;
-    const {data, processInstanceCount} = report;
-    let config;
+  getConfig = () => {
+    const {report, disableReportScrolling, customProps, defaultErrorMessage} = this.props;
+    const {visualization, view} = report.data;
+    const {flowNodeNames} = this.state;
+    let config = {props: {}};
 
-    switch (data.visualization) {
+    switch (visualization) {
       case 'number':
-        config = {
-          Component: Number,
-          props: {
-            data: result,
-            targetValue: data.configuration.targetValue,
-            precision: data.configuration.precision
-          }
-        };
+        config.Component = Number;
         break;
       case 'table':
         config = {
           Component: Table,
           props: {
-            data: formatResult(data, result),
-            labels: [getLabelFor(groupBy, data.groupBy), getLabelFor(view, data.view)],
-            processInstanceCount,
-            combined: false,
-            configuration: data.configuration,
-            sorting: data.parameters && data.parameters.sorting,
-            disableReportScrolling: disableReportScrolling,
-            property: data.view.property
+            disableReportScrolling
           }
         };
         break;
       case 'heat':
-        config = {
-          Component: Heatmap,
-          props: {
-            data: result,
-            xml: data.configuration.xml,
-            alwaysShowRelative: data.configuration.alwaysShowRelative,
-            alwaysShowAbsolute: data.configuration.alwaysShowAbsolute,
-            targetValue: data.configuration.heatmapTargetValue,
-            property: data.view.property,
-            processInstanceCount
-          }
-        };
+        config.Component = Heatmap;
         break;
       case 'bar':
       case 'line':
       case 'pie':
-        config = {
-          Component: Chart,
-          props: {
-            data: formatResult(data, result),
-            processInstanceCount,
-            configuration: data.configuration,
-            combined: false,
-            type: data.visualization,
-            property: data.view.property,
-            targetValue: data.configuration.targetValue
-          }
-        };
+        config.Component = Chart;
         break;
       default:
-        config = {
-          Component: ReportBlankSlate,
-          props: {
-            message: this.props.defaultErrorMessage
-          }
-        };
+        config.Component = ReportBlankSlate;
         break;
     }
 
-    config.props.reportType = report.reportType;
-
-    switch (data.view.property) {
+    switch (view.property) {
       case 'frequency':
         config.props.formatter = formatters.frequency;
         break;
@@ -203,12 +141,15 @@ export default class ProcessReportView extends React.Component {
         config.props.formatter = v => v;
     }
 
-    config.props.errorMessage = this.props.defaultErrorMessage;
-    config.props.report = data;
+    if (visualization !== 'number') {
+      config.props.flowNodeNames = flowNodeNames;
+    }
 
     config.props = {
+      errorMessage: defaultErrorMessage,
       ...config.props,
-      ...(customProps ? customProps[data.visualization] || {} : {})
+      ...(customProps ? customProps[visualization] || {} : {}),
+      ...report
     };
 
     return config;

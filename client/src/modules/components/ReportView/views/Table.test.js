@@ -16,7 +16,9 @@ jest.mock('services', () => {
 });
 
 jest.mock('./service', () => {
+  const rest = jest.requireActual('./service');
   return {
+    ...rest,
     getCamundaEndpoints: jest.fn().mockReturnValue('camundaEndpoint'),
     getRelativeValue: jest.fn(),
     uniteResults: jest.fn().mockReturnValue([
@@ -47,16 +49,37 @@ jest.mock('./service', () => {
   };
 });
 
+const report = {
+  reportType: 'process',
+  combined: false,
+  data: {
+    groupBy: {
+      value: {},
+      type: ''
+    },
+    view: {property: 'duration'},
+    configuration: {
+      excludedColumns: []
+    },
+    visualization: 'table'
+  },
+  processInstanceCount: 5
+};
+
 const Table = WrappedTable.WrappedComponent;
 
 const props = {
   mightFail: jest.fn().mockImplementation((a, b) => b(a)),
-  error: ''
+  error: '',
+  flowNodeNames: {
+    a: 'a'
+  },
+  ...report
 };
 
 it('should get the camunda endpoints for raw data', () => {
   getCamundaEndpoints.mockClear();
-  shallow(<Table {...props} configuration={{}} data={[{}]} />);
+  shallow(<Table {...props} result={[1, 2, 3]} />);
 
   expect(getCamundaEndpoints).toHaveBeenCalled();
 });
@@ -69,18 +92,7 @@ it('should not get the camunda endpoints for non-raw-data tables', () => {
 });
 
 it('should display data for key-value pairs', async () => {
-  const node = await shallow(
-    <Table
-      {...props}
-      data={{
-        a: 1,
-        b: 2,
-        c: 3
-      }}
-      formatter={v => v}
-      configuration={{}}
-    />
-  );
+  const node = await shallow(<Table {...props} result={{a: 1, b: 2, c: 3}} formatter={v => v} />);
 
   expect(node.find('Table').prop('body')).toEqual([['a', 1], ['b', 2], ['c', 3]]);
 });
@@ -89,20 +101,18 @@ it('should display the relative percentage for frequency views', () => {
   getRelativeValue.mockClear();
   getRelativeValue.mockReturnValue('12.3%');
 
+  const data = {
+    groupBy: {
+      value: {},
+      type: ''
+    },
+    view: {property: 'frequency'},
+    configuration: {},
+    visualization: 'table'
+  };
+
   const node = shallow(
-    <Table
-      {...props}
-      data={{
-        a: 1,
-        b: 2,
-        c: 3
-      }}
-      formatter={v => v}
-      configuration={{}}
-      labels={['key', 'value', 'relative']}
-      property="frequency"
-      processInstanceCount={5}
-    />
+    <Table {...props} data={data} result={{a: 1, b: 2, c: 3}} formatter={v => v} />
   );
 
   expect(getRelativeValue).toHaveBeenCalledWith(1, 5);
@@ -116,7 +126,7 @@ it('should process raw data', async () => {
   await shallow(
     <Table
       {...props}
-      data={[
+      result={[
         {prop1: 'foo', prop2: 'bar', variables: {innerProp: 'bla'}},
         {prop1: 'asdf', prop2: 'ghjk', variables: {innerProp: 'ruvnvr'}}
       ]}
@@ -159,13 +169,12 @@ it('should not display an error message if data is valid', async () => {
   const node = await shallow(
     <Table
       {...props}
-      data={[
+      result={[
         {prop1: 'foo', prop2: 'bar', variables: {innerProp: 'bla'}},
         {prop1: 'asdf', prop2: 'ghjk', variables: {innerProp: 'ruvnvr'}}
       ]}
       errorMessage="Error"
       formatter={v => v}
-      configuration={{}}
     />
   );
 
@@ -174,47 +183,49 @@ it('should not display an error message if data is valid', async () => {
 
 it('should format data according to the provided formatter', async () => {
   const node = await shallow(
-    <Table
-      {...props}
-      data={{
-        a: 1,
-        b: 2,
-        c: 3
-      }}
-      formatter={v => 2 * v}
-      configuration={{}}
-    />
+    <Table {...props} result={{a: 1, b: 2, c: 3}} formatter={v => 2 * v} configuration={{}} />
   );
 
   expect(node.find('Table').prop('body')).toEqual([['a', 2], ['b', 4], ['c', 6]]);
 });
 
-it('should return correct labels and body when combining to table report', async () => {
-  const dataProps = {
-    data: [
-      {
-        a: 1,
-        b: 2,
-        c: 3
-      },
-      {
-        a: 1,
-        b: 2,
-        c: 3
-      }
-    ],
-    labels: [['key', 'value'], ['key', 'value']],
-    combined: true,
-    property: 'frequency',
-    processInstanceCount: [100, 100],
-    reportsNames: ['Report A', 'Report B'],
-    configuration: {}
+it('should return correct labels and body when combining two table report', async () => {
+  const singleReport = {
+    ...report,
+    data: {
+      ...report.data,
+      view: {property: 'frequency'}
+    },
+    result: {
+      a: 1,
+      b: 2,
+      c: 3
+    },
+    processInstanceCount: 100
   };
 
-  const node = await shallow(<Table {...props} {...dataProps} />);
+  const combinedReport = {
+    combined: true,
+    data: {
+      reportIds: ['reportA', 'reportB'],
+      configuration: {}
+    },
+    result: {
+      reportA: {
+        name: 'Report A',
+        ...singleReport
+      },
+      reportB: {
+        name: 'Report B',
+        ...singleReport
+      }
+    }
+  };
+
+  const node = await shallow(<Table {...{...props, ...combinedReport}} />);
   expect(node.instance().processCombinedData()).toEqual({
     head: [
-      'key',
+      undefined,
       {label: 'Report A', columns: ['value', 'Relative Frequency']},
       {label: 'Report B', columns: ['value', 'Relative Frequency']}
     ],
@@ -234,12 +245,11 @@ it('should not include a column if it is hidden in the configuration', () => {
     <Table
       {...props}
       data={{
-        a: 1,
-        b: 2,
-        c: 3
+        ...report.data,
+        view: {property: 'frequency'},
+        configuration: {hideAbsoluteValue: true}
       }}
-      configuration={{hideAbsoluteValue: true}}
-      property="frequency"
+      result={{a: 1, b: 2, c: 3}}
     />
   );
 
@@ -247,25 +257,36 @@ it('should not include a column if it is hidden in the configuration', () => {
 });
 
 it('should not include a column in a combined report if it is hidden in the configuration', async () => {
-  const dataProps = {
-    data: [
-      {
-        a: 1,
-        b: 2,
-        c: 3
-      },
-      {
-        a: 1,
-        b: 2,
-        c: 3
-      }
-    ],
-    labels: [['key', 'value'], ['key', 'value']],
+  const singleReport = {
+    ...report,
+    data: {
+      ...report.data,
+      view: {property: 'frequency'}
+    },
+    result: {
+      a: 1,
+      b: 2,
+      c: 3
+    },
+    processInstanceCount: 100
+  };
+
+  const combinedReport = {
     combined: true,
-    property: 'frequency',
-    configuration: {hideRelativeValue: true},
-    processInstanceCount: [100, 100],
-    reportsNames: ['Report A', 'Report B']
+    data: {
+      reportIds: ['reportA', 'reportB'],
+      configuration: {}
+    },
+    result: {
+      reportA: {
+        name: 'Report A',
+        ...singleReport
+      },
+      reportB: {
+        name: 'Report B',
+        ...singleReport
+      }
+    }
   };
 
   getFormattedLabels.mockReturnValue([
@@ -274,9 +295,13 @@ it('should not include a column in a combined report if it is hidden in the conf
   ]);
   getBodyRows.mockReturnValue([['a', 1, 1], ['b', 2, 2], ['c', 3, 3]]);
 
-  const node = await shallow(<Table {...props} {...dataProps} />);
+  const node = await shallow(<Table {...{...props, ...combinedReport}} />);
   expect(node.instance().processCombinedData()).toEqual({
-    head: ['key', {label: 'Report A', columns: ['value']}, {label: 'Report B', columns: ['value']}],
+    head: [
+      undefined,
+      {label: 'Report A', columns: ['value']},
+      {label: 'Report B', columns: ['value']}
+    ],
     body: [['a', 1, 1], ['b', 2, 2], ['c', 3, 3]]
   });
 });

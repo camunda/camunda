@@ -2,7 +2,7 @@ import React from 'react';
 import ReportBlankSlate from '../ReportBlankSlate';
 
 import {Table as TableRenderer, LoadingIndicator} from 'components';
-import {processRawData} from 'services';
+import {processRawData, reportConfig, formatters} from 'services';
 import {withErrorHandling} from 'HOC';
 
 import {
@@ -10,8 +10,13 @@ import {
   getRelativeValue,
   uniteResults,
   getFormattedLabels,
-  getBodyRows
+  getBodyRows,
+  getCombinedTableProps
 } from './service';
+
+const {formatReportResult} = formatters;
+
+const {groupBy, view, getLabelFor} = reportConfig;
 
 export default withErrorHandling(
   class Table extends React.Component {
@@ -20,8 +25,8 @@ export default withErrorHandling(
       needEndpoint: false
     };
 
-    static getDerivedStateFromProps({data, combined}) {
-      if (data && !combined && isRaw(data)) {
+    static getDerivedStateFromProps({result, combined}) {
+      if (result && !combined && isRaw(result)) {
         return {needEndpoint: true};
       }
       return null;
@@ -35,12 +40,10 @@ export default withErrorHandling(
       }
     }
 
-    processSingleData(labels, data, processInstanceCount) {
-      const {
-        formatter = v => v,
-        property,
-        configuration: {hideAbsoluteValue, hideRelativeValue}
-      } = this.props;
+    processSingleData(labels, result, processInstanceCount) {
+      const {formatter = v => v, data} = this.props;
+
+      const {configuration: {hideAbsoluteValue, hideRelativeValue}, view: {property}} = data;
 
       const displayRelativeValue = property === 'frequency' && !hideRelativeValue;
       const displayAbsoluteValue = property === 'duration' || !hideAbsoluteValue;
@@ -52,26 +55,24 @@ export default withErrorHandling(
       // normal two-dimensional data
       return {
         head: [...labels, ...(displayRelativeValue ? ['Relative Frequency'] : [])],
-        body: Object.keys(data).map(key => [
-          key,
-          ...(displayAbsoluteValue ? [formatter(data[key])] : []),
-          ...(displayRelativeValue ? [getRelativeValue(data[key], processInstanceCount)] : [])
+        body: Object.keys(result).map(key => [
+          this.props.flowNodeNames[key] || key,
+          ...(displayAbsoluteValue ? [formatter(result[key])] : []),
+          ...(displayRelativeValue ? [getRelativeValue(result[key], processInstanceCount)] : [])
         ])
       };
     }
 
     processCombinedData() {
-      const {
-        data,
-        labels,
-        reportsNames,
-        processInstanceCount,
-        formatter = v => v,
-        property,
-        configuration: {hideAbsoluteValue, hideRelativeValue}
-      } = this.props;
+      const {result, data, formatter} = this.props;
+      const {labels, reportsNames, combinedResult, processInstanceCount} = getCombinedTableProps(
+        result,
+        data.reportIds
+      );
+      const {configuration: {hideAbsoluteValue, hideRelativeValue}} = data;
+      const {view} = Object.values(result)[0].data;
 
-      const displayRelativeValue = property === 'frequency' && !hideRelativeValue;
+      const displayRelativeValue = view.property === 'frequency' && !hideRelativeValue;
       const displayAbsoluteValue = !hideAbsoluteValue;
 
       const keysLabel = labels[0][0];
@@ -84,10 +85,10 @@ export default withErrorHandling(
       );
 
       // get all unique keys of results of multiple reports
-      let allKeys = Object.keys(Object.assign({}, ...data));
+      let allKeys = Object.keys(Object.assign({}, ...combinedResult));
 
       // make all hash tables look exactly the same by filling empty keys with empty string
-      const unitedResults = uniteResults(data, allKeys);
+      const unitedResults = uniteResults(combinedResult, allKeys);
 
       // convert hashtables into a table rows array
       const rows = getBodyRows(
@@ -106,9 +107,9 @@ export default withErrorHandling(
     }
 
     render() {
-      const {data, errorMessage, disableReportScrolling} = this.props;
+      const {result, errorMessage, disableReportScrolling} = this.props;
 
-      if (!data || typeof data !== 'object') {
+      if (!result || typeof result !== 'object') {
         return <ReportBlankSlate message={errorMessage} />;
       }
 
@@ -122,34 +123,32 @@ export default withErrorHandling(
     }
 
     formatData = () => {
-      const {
-        configuration: {excludedColumns, columnOrder},
-        labels = [],
-        data,
-        sorting,
-        combined = false,
-        reportType,
-        processInstanceCount,
-        updateSorting
-      } = this.props;
+      const {reportType, combined, data, processInstanceCount, updateSorting, result} = this.props;
 
       // Combined Report
       if (combined) return this.processCombinedData();
+
+      const formattedResult = formatReportResult(data, result);
+
       // raw data
-      if (isRaw(data))
+      if (isRaw(result)) {
+        const {parameters, configuration: {excludedColumns, columnOrder}} = data;
         return {
           ...processRawData({
-            data,
+            data: formattedResult,
             excludedColumns,
             columnOrder,
             endpoints: this.state.camundaEndpoints,
             reportType
           }),
           updateSorting,
-          sorting
+          sorting: parameters && parameters.sorting
         };
+      }
+
       // Normal single Report
-      return this.processSingleData(labels, data, processInstanceCount);
+      const labels = [getLabelFor(groupBy, data.groupBy), getLabelFor(view, data.view)];
+      return this.processSingleData(labels, formattedResult, processInstanceCount);
     };
   }
 );

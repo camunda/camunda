@@ -17,18 +17,22 @@ jest.mock('./colorsUtils', () => {
 });
 
 it('should create two datasets for line chart with target values', () => {
-  const data = [{foo: 123, bar: 5, dar: 5}];
+  const result = {foo: 123, bar: 5, dar: 5};
   const targetValue = {target: 10};
 
   const chartData = createChartData({
-    data,
-    reportsNames: ['test'],
-    configuration: {color: ['blue']},
-    type: 'line',
-    targetValue,
+    result,
+    data: {
+      configuration: {color: ['blue']},
+      visualization: 'line',
+      groupBy: {
+        type: '',
+        value: ''
+      }
+    },
     combined: false,
     theme: 'light',
-    isDate: false
+    targetValue
   });
   expect(chartData.datasets).toHaveLength(2);
 });
@@ -36,18 +40,24 @@ it('should create two datasets for line chart with target values', () => {
 it('should create two datasets for each report in combined line charts with target values', () => {
   uniteResults.mockClear();
 
-  const data = {foo: 123, bar: 5, dar: 5};
-  uniteResults.mockReturnValue([data, data]);
+  const result = {foo: 123, bar: 5, dar: 5};
+  uniteResults.mockReturnValue([result, result]);
   const targetValue = {target: 10};
   const chartData = createChartData({
-    data: [data, data],
+    result: [result, result],
     reportsNames: ['test1', 'test2'],
-    configuration: {reportColors: ['blue', 'yellow']},
-    type: 'line',
+    data: {
+      reportIds: ['reportA', 'reportB'],
+      configuration: {reportColors: ['blue', 'yellow']},
+      visualization: 'line',
+      groupBy: {
+        type: '',
+        value: ''
+      }
+    },
     targetValue,
     combined: true,
-    theme: 'light',
-    isDate: false
+    theme: 'light'
   });
 
   expect(chartData.datasets).toHaveLength(4);
@@ -55,21 +65,25 @@ it('should create two datasets for each report in combined line charts with targ
 
 it('should return correct chart data object for a single report', () => {
   uniteResults.mockClear();
-  const data = {foo: 123, bar: 5};
-  uniteResults.mockReturnValue([data]);
+  const result = {foo: 123, bar: 5};
+  uniteResults.mockReturnValue([result]);
 
-  const result = createChartData({
-    data,
-    reportsNames: ['test'],
-    configuration: {color: 'testColor'},
-    type: 'line',
+  const chartData = createChartData({
+    result,
+    data: {
+      configuration: {color: 'testColor'},
+      visualization: 'line',
+      groupBy: {
+        type: '',
+        value: ''
+      }
+    },
     targetValue: false,
     combined: false,
-    theme: 'light',
-    isDate: false
+    theme: 'light'
   });
 
-  expect(result).toEqual({
+  expect(chartData).toEqual({
     labels: ['foo', 'bar'],
     datasets: [
       {
@@ -84,23 +98,29 @@ it('should return correct chart data object for a single report', () => {
 });
 
 it('should return correct chart data object for a combined report', () => {
-  const data = [{foo: 123, bar: 5}, {foo: 1, dar: 3}];
+  const result = [{foo: 123, bar: 5}, {foo: 1, dar: 3}];
 
   uniteResults.mockClear();
-  uniteResults.mockReturnValue(data);
+  uniteResults.mockReturnValue(result);
 
-  const result = createChartData({
-    data,
+  const chartData = createChartData({
     reportsNames: ['Report A', 'Report B'],
-    configuration: {reportColors: ['blue', 'yellow']},
-    type: 'line',
+    result,
+    data: {
+      groupBy: {
+        type: '',
+        value: ''
+      },
+      reportIds: ['reportA', 'reportB'],
+      configuration: {reportColors: ['blue', 'yellow']},
+      visualization: 'line'
+    },
     targetValue: false,
     combined: true,
-    theme: 'light',
-    isDate: false
+    theme: 'light'
   });
 
-  expect(result).toEqual({
+  expect(chartData).toEqual({
     datasets: [
       {
         backgroundColor: 'transparent',

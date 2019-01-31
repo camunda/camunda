@@ -1,5 +1,11 @@
 import {get} from 'request';
 
+import {reportConfig, formatters} from 'services';
+
+const {view, groupBy, getLabelFor} = reportConfig;
+
+const {formatReportResult} = formatters;
+
 export async function getCamundaEndpoints() {
   const response = await get('api/camunda');
   return await response.json();
@@ -65,4 +71,42 @@ export function getBodyRows(
     return row;
   });
   return rows;
+}
+
+export function getCombinedTableProps(reportResult, reportIds) {
+  const initialData = {
+    labels: [],
+    reportsNames: [],
+    combinedResult: [],
+    processInstanceCount: []
+  };
+
+  const combinedProps = reportIds.reduce((prevReport, reportId) => {
+    const report = reportResult[reportId];
+    const {data, result, processInstanceCount, name} = report;
+
+    // build 2d array of all labels
+    const viewLabel = getLabelFor(view, data.view);
+    const groupByLabel = getLabelFor(groupBy, data.groupBy);
+    const labels = [...prevReport.labels, [groupByLabel, viewLabel]];
+
+    // 2d array of all names
+    const reportsNames = [...prevReport.reportsNames, name];
+
+    // 2d array of all results
+    const formattedResult = formatReportResult(data, result);
+    const reportsResult = [...prevReport.combinedResult, formattedResult];
+
+    // 2d array of all process instances count
+    const reportsProcessInstanceCount = [...prevReport.processInstanceCount, processInstanceCount];
+
+    return {
+      labels,
+      reportsNames,
+      combinedResult: reportsResult,
+      processInstanceCount: reportsProcessInstanceCount
+    };
+  }, initialData);
+
+  return combinedProps;
 }

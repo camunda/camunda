@@ -1,4 +1,5 @@
 import React from 'react';
+import moment from 'moment';
 
 const timeUnits = {
   millis: {value: 1, abbreviation: 'ms', label: 'millisecond'},
@@ -120,4 +121,90 @@ export function getHighlightedText(text, highlight) {
 
 export function camelCaseToLabel(type) {
   return type.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+}
+
+export function formatReportResult(data, result) {
+  const groupBy = data.groupBy;
+  let unit;
+  if (groupBy.value && groupBy.type === 'startDate') {
+    unit = determineUnit(groupBy.value.unit, result);
+  } else if (groupBy.value && groupBy.type === 'variable' && groupBy.value.type === 'Date') {
+    unit = 'second';
+  }
+
+  if (!unit || !result || data.view.operation === 'rawData') {
+    // the result data is no time series
+    return result;
+  }
+  const dateFormat = getDateFormat(unit);
+  const formattedResult = {};
+  Object.keys(result)
+    .sort((a, b) => {
+      // sort descending for tables and ascending for all other visualizations
+      if (data.visualization === 'table') {
+        return a < b ? 1 : -1;
+      } else {
+        return a < b ? -1 : 1;
+      }
+    })
+    .forEach(key => {
+      const formattedDate = moment(key).format(dateFormat);
+      formattedResult[formattedDate] = result[key];
+    });
+  return formattedResult;
+}
+
+function determineUnit(unit, resultData) {
+  if (unit === 'automatic') {
+    return determineUnitForAutomaticIntervalSelection(resultData);
+  } else {
+    // in this case the unit was already defined by the user
+    // and can just directly be used.
+    return unit;
+  }
+}
+
+function determineUnitForAutomaticIntervalSelection(resultData) {
+  const dates = Object.keys(resultData).sort((a, b) => {
+    return a < b ? 1 : -1;
+  });
+  if (dates.length > 1) {
+    const firstEntry = moment(dates[0]);
+    const secondEntry = moment(dates[1]);
+    const intervalInMs = firstEntry.diff(secondEntry);
+    const intervals = [
+      {value: 1000 * 60 * 60 * 24 * 30 * 12, unit: 'year'},
+      {value: 1000 * 60 * 60 * 24 * 30, unit: 'month'},
+      {value: 1000 * 60 * 60 * 24, unit: 'day'},
+      {value: 1000 * 60 * 60, unit: 'hour'},
+      {value: 0, unit: 'second'},
+      {value: -Infinity, unit: 'day'}
+    ];
+    return intervals.find(({value}) => intervalInMs >= value).unit;
+  } else {
+    return 'day';
+  }
+}
+
+function getDateFormat(unit) {
+  let dateFormat;
+  switch (unit) {
+    case 'hour':
+      dateFormat = 'YYYY-MM-DD HH:00:00';
+      break;
+    case 'day':
+    case 'week':
+      dateFormat = 'YYYY-MM-DD';
+      break;
+    case 'month':
+      dateFormat = 'MMM YYYY';
+      break;
+    case 'year':
+      dateFormat = 'YYYY';
+      break;
+    case 'second':
+    default:
+      dateFormat = 'YYYY-MM-DD HH:mm:ss';
+  }
+  return dateFormat;
 }
