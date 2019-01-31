@@ -20,7 +20,6 @@
   </properties>
 
   <dependencies>
-
     <dependency>
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>

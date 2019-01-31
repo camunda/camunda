@@ -66,18 +66,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j-impl</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.openjdk.jmh</groupId>
       <artifactId>jmh-core</artifactId>
       <scope>test</scope>
@@ -87,12 +75,11 @@
       <groupId>io.zeebe</groupId>
       <artifactId>zb-protocol</artifactId>
     </dependency>
+
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zb-db</artifactId>
-      <scope>compile</scope>
     </dependency>
-
   </dependencies>
 
 
