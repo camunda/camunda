@@ -25,7 +25,7 @@
     <checkstyle.config.location>.checkstyle.xml</checkstyle.config.location>
 
     <!-- EXTERNAL LIBS -->
-    <version.agrona>0.9.30</version.agrona>
+    <version.agrona>0.9.31</version.agrona>
     <version.animal-sniffer>1.17</version.animal-sniffer>
     <version.assertj>3.11.1</version.assertj>
     <version.atomix>3.1.5</version.atomix>
