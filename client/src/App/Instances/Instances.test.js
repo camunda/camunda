@@ -257,7 +257,7 @@ describe('Instances', () => {
       expect(DiagramNode.prop('flowNodesStatistics')).toEqual(
         mockProps.statistics
       );
-      expect(DiagramNode.prop('selectedFlowNode')).toEqual(
+      expect(DiagramNode.prop('selectedFlowNodeId')).toEqual(
         mockProps.filter.activityId
       );
       expect(DiagramNode.prop('selectableFlowNodes')).toEqual(['taskD']);

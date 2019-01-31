@@ -127,7 +127,7 @@ To see a diagram, select a Workflow in the Filters panel.`}
                       <Diagram
                         flowNodesStatistics={this.props.statistics}
                         onFlowNodeSelected={this.handleFlowNodeSelection}
-                        selectedFlowNode={this.props.filter.activityId}
+                        selectedFlowNodeId={this.props.filter.activityId}
                         selectableFlowNodes={activityIds.map(
                           item => item.value
                         )}
