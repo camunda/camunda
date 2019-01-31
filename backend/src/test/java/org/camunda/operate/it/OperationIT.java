@@ -215,7 +215,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(operation.getStartDate()).isNotNull();
     assertThat(operation.getEndDate()).isNotNull();
     //assert that process is canceled
-    assertThat(workflowInstances.getWorkflowInstances().get(0).getState()).isEqualTo(WorkflowInstanceState.CANCELED);
+    assertThat(workflowInstances.getWorkflowInstances().get(0).getState()).isEqualTo(WorkflowInstanceStateDto.CANCELED);
   }
 
   @Test
