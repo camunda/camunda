@@ -33,7 +33,8 @@ public class UpgradeCombinedReportSettingsStep extends AbstractReportConfigurati
         //     #1.1 AND view property is frequency
         "      if (singleReportData.view?.property == \"frequency\") {\n" +
         //       store target as value and isBelow in countChart
-        "        newConfig.targetValue.active = !!reportData.configuration.targetValue.active;\n" +
+        "        if (reportData.configuration.targetValue.active != null) \n" +
+        "          newConfig.targetValue.active = reportData.configuration.targetValue.active;\n" +
         "        if (reportData.configuration.targetValue.values != null) {\n" +
         "          newConfig.targetValue.countChart.value = reportData.configuration.targetValue.values.target;\n" +
         "          if (!(newConfig.targetValue.countChart.value instanceof String)) {\n" +
@@ -46,7 +47,8 @@ public class UpgradeCombinedReportSettingsStep extends AbstractReportConfigurati
         //     #1.2 AND view property is duration
         "      else if (singleReportData.view?.property == \"duration\") {\n" +
         //       store target as value, dateFormat as unit and isBelow as durationChart
-        "        newConfig.targetValue.active = !!reportData.configuration.targetValue.active;\n" +
+        "        if (reportData.configuration.targetValue.active != null) \n" +
+        "          newConfig.targetValue.active = reportData.configuration.targetValue.active;\n" +
         "        if (reportData.configuration.targetValue.values != null) {\n" +
         "          newConfig.targetValue.durationChart.value = reportData.configuration.targetValue.values.target;\n" +
         "          if (!(newConfig.targetValue.durationChart.value instanceof String)) {\n" +

@@ -16,6 +16,7 @@ public class UpgradeSingleProcessReportSettingsStep extends AbstractReportConfig
         "def reportData = ctx._source.data;\n" +
         "def newConfig = deepCopyMap(params.defaultConfiguration);\n" +
         getMigrateCompatibleFieldsScript() +
+        getMigrate21IncompatibleFieldScript() +
         getMigrate22IncompatibleFieldsScript() +
         getMigrate23IncompatibleFieldsScript() +
         "reportData.configuration = newConfig;\n",
@@ -23,11 +24,32 @@ public class UpgradeSingleProcessReportSettingsStep extends AbstractReportConfig
     );
   }
 
+  private static String getMigrate21IncompatibleFieldScript() {
+    // @formatter:off
+    return
+      "if (reportData.configuration != null) {\n" +
+      // #4 IF view.operation is rawData AND columnOrder is set
+      "  if (reportData.view?.operation == \"rawData\"\n" +
+      "      && reportData.configuration.columnOrder != null) {\n" +
+      "      newConfig.columnOrder = reportData.configuration.columnOrder;\n" +
+      //     2.1 Incompatibility
+      //     #4.1 AND IF columnOrder.processInstanceProps is set
+      "      if (newConfig.columnOrder.processInstanceProps != null) {\n" +
+      //       save processInstanceProps as instanceProps and clear processInstanceProps
+      //       we modify the reportData here as columnOrder
+      "        newConfig.columnOrder.instanceProps = newConfig.columnOrder.processInstanceProps;\n" +
+      "        newConfig.columnOrder.processInstanceProps = null;\n" +
+      "      }\n" +
+      "  }\n" +
+      "}\n";
+    // @formatter:on
+  }
+
   private static String getMigrate22IncompatibleFieldsScript() {
     // @formatter:off
     return
       "if (reportData.configuration != null) {\n" +
-      // #3 IF visualization is heatmap
+      // #3 IF visualization is heatmap AND alwaysShowTooltips is present
       "  if (reportData.visualization == \"heat\"\n" +
       "      && reportData.configuration.alwaysShowTooltips != null) {\n" +
       //     store alwaysShowTooltips value as alwaysShowRelative
@@ -67,7 +89,8 @@ public class UpgradeSingleProcessReportSettingsStep extends AbstractReportConfig
       "        && reportData.view?.property == \"duration\" ) {\n" +
       //     store targetValue.values as heatmapTargetValue.values
       //     use targetValue.active as heatmapTargetValue.active
-      "      newConfig.heatmapTargetValue.active = !!reportData.configuration.targetValue.active;\n" +
+      "      if (reportData.configuration.targetValue.active != null) \n" +
+      "        newConfig.heatmapTargetValue.active = reportData.configuration.targetValue.active;\n" +
       "      if (reportData.configuration.targetValue.values != null) {\n" +
       "        newConfig.heatmapTargetValue.values = reportData.configuration.targetValue.values;\n" +
       "        if(newConfig.heatmapTargetValue.values instanceof Map) { \n" +
@@ -85,7 +108,8 @@ public class UpgradeSingleProcessReportSettingsStep extends AbstractReportConfig
       //     #2.2.1 AND view property is frequency
       "      if (reportData.view?.property == \"frequency\") {\n" +
       //       store target as value and isBelow in countChart
-      "        newConfig.targetValue.active = !!reportData.configuration.targetValue.active;\n" +
+      "        if (reportData.configuration.targetValue.active != null) \n" +
+      "          newConfig.targetValue.active = reportData.configuration.targetValue.active;\n" +
       "        if (reportData.configuration.targetValue.values != null) {\n" +
       "          newConfig.targetValue.countChart.value = reportData.configuration.targetValue.values.target;\n" +
       "          if (!(newConfig.targetValue.countChart.value instanceof String)) {\n" +
@@ -98,7 +122,8 @@ public class UpgradeSingleProcessReportSettingsStep extends AbstractReportConfig
       //     #2.2.2 AND view property is duration
       "      else if (reportData.view?.property == \"duration\") {\n" +
       //       store target as value, dateFormat as unit and isBelow as durationChart
-      "        newConfig.targetValue.active = !!reportData.configuration.targetValue.active;\n" +
+      "        if (reportData.configuration.targetValue.active != null) \n" +
+      "          newConfig.targetValue.active = reportData.configuration.targetValue.active;\n" +
       "        if (reportData.configuration.targetValue.values != null) {\n" +
       "          newConfig.targetValue.durationChart.value = reportData.configuration.targetValue.values.target;\n" +
       "          if (!(newConfig.targetValue.durationChart.value instanceof String)) {\n" +
@@ -119,7 +144,8 @@ public class UpgradeSingleProcessReportSettingsStep extends AbstractReportConfig
       "          && reportData.view?.property == \"frequency\"\n" +
       "          && reportData.groupBy?.type == \"none\") {\n" +
       //     store baseline and target in countProgress
-      "      newConfig.targetValue.active = !!reportData.configuration.targetValue.active;\n" +
+      "      if (reportData.configuration.targetValue.active != null) \n" +
+      "        newConfig.targetValue.active = reportData.configuration.targetValue.active;\n" +
       "      if (reportData.configuration.targetValue.values != null) {\n" +
       "        newConfig.targetValue.countProgress.baseline = reportData.configuration.targetValue.values.baseline;\n" +
       "        if (!(newConfig.targetValue.countProgress.baseline instanceof String)) {\n" +
@@ -138,7 +164,8 @@ public class UpgradeSingleProcessReportSettingsStep extends AbstractReportConfig
       "          && reportData.view?.property == \"duration\"\n" +
       "          && reportData.groupBy?.type == \"none\") {\n" +
       //     store baseline and target in durationProgress
-      "      newConfig.targetValue.active = !!reportData.configuration.targetValue.active;\n" +
+      "      if (reportData.configuration.targetValue.active != null) \n" +
+      "        newConfig.targetValue.active = reportData.configuration.targetValue.active;\n" +
       "      if (reportData.configuration.targetValue.values != null) {\n" +
       "        newConfig.targetValue.durationProgress.baseline = \n" +
       "            reportData.configuration.targetValue.values.baseline;\n" +
