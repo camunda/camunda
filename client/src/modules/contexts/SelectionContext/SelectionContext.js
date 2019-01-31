@@ -273,6 +273,7 @@ class BasicSelectionProvider extends React.Component {
     const IdsOfInstancesInSelections = getInstancesIdsFromSelections(
       this.state.selections
     );
+
     const {workflowInstances} = await fetchWorkflowInstancesByIds(
       IdsOfInstancesInSelections
     );
@@ -316,7 +317,8 @@ class BasicSelectionProvider extends React.Component {
       onAddToSelectionById: this.handleAddToSelectionById,
       onAddToOpenSelection: this.handleAddToOpenSelection,
       onToggleSelection: this.handleToggleSelection,
-      onDeleteSelection: this.handleDeleteSelectionById
+      onDeleteSelection: this.handleDeleteSelectionById,
+      refetchInstancesInSelections: this.refetchInstancesInSelections
     };
 
     return (

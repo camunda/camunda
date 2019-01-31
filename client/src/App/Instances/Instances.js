@@ -6,7 +6,12 @@ import {isEmpty, sortBy} from 'lodash';
 import SplitPane from 'modules/components/SplitPane';
 import Diagram from 'modules/components/Diagram';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
-import {SelectionProvider} from 'modules/contexts/SelectionContext';
+import {
+  SelectionProvider,
+  SelectionConsumer
+} from 'modules/contexts/SelectionContext';
+import {getInstancesIdsFromSelections} from 'modules/contexts/SelectionContext/service';
+import {InstancesPollProvider} from 'modules/contexts/InstancesPollContext';
 
 import Header from '../Header';
 import ListView from './ListView';
@@ -76,84 +81,99 @@ export default class Instances extends Component {
         groupedWorkflows={this.props.groupedWorkflows}
         filter={this.props.filter}
       >
-        <Header
-          active="instances"
-          filter={this.props.filter}
-          filterCount={this.props.filterCount}
-        />
-        <Styled.Instances>
-          <VisuallyHiddenH1>Camunda Operate Instances</VisuallyHiddenH1>
-          <Styled.Content>
-            <Styled.Filters>
-              <Filters
-                activityIds={sortBy(activityIds, item =>
-                  item.label.toLowerCase()
-                )}
-                groupedWorkflows={this.props.groupedWorkflows}
+        <SelectionConsumer>
+          {selections => (
+            <InstancesPollProvider
+              onWorkflowInstancesRefresh={this.props.onWorkflowInstancesRefresh}
+              onSelectionsRefresh={selections.refetchInstancesInSelections}
+              visibleIdsInListView={this.props.workflowInstances.map(x => x.id)}
+              visibleIdsInSelections={getInstancesIdsFromSelections(
+                selections.selections
+              )}
+            >
+              <Header
+                active="instances"
                 filter={this.props.filter}
                 filterCount={this.props.filterCount}
-                onFilterReset={this.props.onFilterReset}
-                onFilterChange={this.props.onFilterChange}
               />
-            </Styled.Filters>
+              <Styled.Instances>
+                <VisuallyHiddenH1>Camunda Operate Instances</VisuallyHiddenH1>
+                <Styled.Content>
+                  <Styled.Filters>
+                    <Filters
+                      activityIds={sortBy(activityIds, item =>
+                        item.label.toLowerCase()
+                      )}
+                      groupedWorkflows={this.props.groupedWorkflows}
+                      filter={this.props.filter}
+                      filterCount={this.props.filterCount}
+                      onFilterReset={this.props.onFilterReset}
+                      onFilterChange={this.props.onFilterChange}
+                    />
+                  </Styled.Filters>
 
-            <Styled.Center titles={{top: 'Workflow', bottom: 'Instances'}}>
-              <Styled.Pane>
-                <Styled.PaneHeader>
-                  <span data-test="instances-diagram-title">
-                    {workflowName}
-                  </span>
-                </Styled.PaneHeader>
-                <SplitPane.Pane.Body>
-                  {!this.props.filter.workflow && (
-                    <Styled.EmptyMessageWrapper>
-                      <Styled.DiagramEmptyMessage
-                        message={`There is no Workflow selected.\n
+                  <Styled.Center
+                    titles={{top: 'Workflow', bottom: 'Instances'}}
+                  >
+                    <Styled.Pane>
+                      <Styled.PaneHeader>
+                        <span data-test="instances-diagram-title">
+                          {workflowName}
+                        </span>
+                      </Styled.PaneHeader>
+                      <SplitPane.Pane.Body>
+                        {!this.props.filter.workflow && (
+                          <Styled.EmptyMessageWrapper>
+                            <Styled.DiagramEmptyMessage
+                              message={`There is no Workflow selected.\n
 To see a diagram, select a Workflow in the Filters panel.`}
-                        data-test="data-test-noWorkflowMessage"
-                      />
-                    </Styled.EmptyMessageWrapper>
-                  )}
-                  {this.props.filter.version === 'all' && (
-                    <Styled.EmptyMessageWrapper>
-                      <Styled.DiagramEmptyMessage
-                        message={getEmptyDiagramMessage(workflowName)}
-                        data-test="data-test-allVersionsMessage"
-                      />
-                    </Styled.EmptyMessageWrapper>
-                  )}
-                  {!isEmpty(currentWorkflowByVersion) &&
-                    this.props.diagramModel.definitions && (
-                      <Diagram
-                        flowNodesStatistics={this.props.statistics}
-                        onFlowNodeSelection={this.handleFlowNodeSelection}
-                        selectedFlowNodeId={this.props.filter.activityId}
-                        selectableFlowNodes={activityIds.map(
-                          item => item.value
+                              data-test="data-test-noWorkflowMessage"
+                            />
+                          </Styled.EmptyMessageWrapper>
                         )}
-                        definitions={this.props.diagramModel.definitions}
-                      />
-                    )}
-                </SplitPane.Pane.Body>
-              </Styled.Pane>
+                        {this.props.filter.version === 'all' && (
+                          <Styled.EmptyMessageWrapper>
+                            <Styled.DiagramEmptyMessage
+                              message={getEmptyDiagramMessage(workflowName)}
+                              data-test="data-test-allVersionsMessage"
+                            />
+                          </Styled.EmptyMessageWrapper>
+                        )}
+                        {!isEmpty(currentWorkflowByVersion) &&
+                          this.props.diagramModel.definitions && (
+                            <Diagram
+                              flowNodesStatistics={this.props.statistics}
+                              onFlowNodeSelection={this.handleFlowNodeSelection}
+                              selectedFlowNodeId={this.props.filter.activityId}
+                              selectableFlowNodes={activityIds.map(
+                                item => item.value
+                              )}
+                              definitions={this.props.diagramModel.definitions}
+                            />
+                          )}
+                      </SplitPane.Pane.Body>
+                    </Styled.Pane>
 
-              <ListView
-                instances={this.props.workflowInstances}
-                instancesLoaded={this.props.workflowInstancesLoaded}
-                filter={this.props.filter}
-                filterCount={this.props.filterCount}
-                onSort={this.props.onSort}
-                sorting={this.props.sorting}
-                firstElement={this.props.firstElement}
-                onFirstElementChange={this.props.onFirstElementChange}
-                onWorkflowInstancesRefresh={
-                  this.props.onWorkflowInstancesRefresh
-                }
-              />
-            </Styled.Center>
-          </Styled.Content>
-          <Selections />
-        </Styled.Instances>
+                    <ListView
+                      instances={this.props.workflowInstances}
+                      instancesLoaded={this.props.workflowInstancesLoaded}
+                      filter={this.props.filter}
+                      filterCount={this.props.filterCount}
+                      onSort={this.props.onSort}
+                      sorting={this.props.sorting}
+                      firstElement={this.props.firstElement}
+                      onFirstElementChange={this.props.onFirstElementChange}
+                      onWorkflowInstancesRefresh={
+                        this.props.onWorkflowInstancesRefresh
+                      }
+                    />
+                  </Styled.Center>
+                </Styled.Content>
+                <Selections />
+              </Styled.Instances>
+            </InstancesPollProvider>
+          )}
+        </SelectionConsumer>
       </SelectionProvider>
     );
   }

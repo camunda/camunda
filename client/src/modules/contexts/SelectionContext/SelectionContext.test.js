@@ -92,6 +92,7 @@ describe('SelectionContext', () => {
     expect(fooNode.prop('selectionCount')).toBe(
       localStorageData.selectionCount
     );
+    expect(fooNode.prop('refetchInstancesInSelections')).toBeDefined();
     const selections = fooNode.prop('selections');
     expect(selections[0].instancesMap.get('key1').value).toBe('newValue1');
     expect(selections[0].instancesMap.get('key2').value).toBe('newValue2');
@@ -472,6 +473,53 @@ describe('SelectionContext', () => {
       expect(storeStateCall.selections).toEqual(serializeInstancesMaps([]));
       expect(storeStateCall.instancesInSelectionsCount).toBe(0);
       expect(storeStateCall.selectionCount).toBe(0);
+    });
+  });
+
+  describe('refetchInstancesInSelections', () => {
+    it('fetch the instances in selections', async () => {
+      const mockLocalStorage = {
+        instancesInSelectionsCount: 2,
+        rollingSelectionIndex: 2,
+        selectionCount: 1,
+        selections: serializeInstancesMaps([
+          {
+            totalCount: 2,
+            selectionId: 2,
+            instancesMap: new Map([
+              ['key1', {id: 'key1', value: 'value1'}],
+              ['key2', {id: 'key2', value: 'value2'}]
+            ]),
+            queries: [{ids: ['key1', 'key2']}]
+          }
+        ])
+      };
+      const mockResponse = {
+        workflowInstances: [
+          {id: 'key1', value: 'value1'},
+          {id: 'key2', value: 'value2'}
+        ],
+        totalCount: 2
+      };
+      instancesApi.fetchWorkflowInstancesByIds = mockResolvedAsyncFn(
+        mockResponse
+      );
+
+      const wrapper = mountNode({
+        getStateLocally: () => mockLocalStorage
+      });
+      const node = wrapper.find('BasicSelectionProvider');
+      await flushPromises();
+
+      // when
+      node.instance().refetchInstancesInSelections();
+      wrapper.update();
+
+      // then
+      expect(instancesApi.fetchWorkflowInstancesByIds).toHaveBeenCalledTimes(2);
+      expect(instancesApi.fetchWorkflowInstancesByIds.mock.calls[1][0]).toEqual(
+        mockResponse.workflowInstances.map(x => x.id)
+      );
     });
   });
 });

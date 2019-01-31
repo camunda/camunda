@@ -1,4 +1,6 @@
 import {post, get} from 'modules/request';
+import {parseFilterForRequest} from 'modules/utils/filter';
+import {FILTER_SELECTION} from 'modules/constants';
 
 const URL = '/api/workflow-instances';
 
@@ -37,15 +39,11 @@ export async function fetchWorkflowInstancesCount(payload) {
 export async function fetchWorkflowInstancesByIds(ids) {
   const payload = {
     queries: [
-      {
-        ids,
-        running: true,
-        active: true,
-        canceled: true,
-        completed: true,
-        finished: true,
-        incidents: true
-      }
+      parseFilterForRequest({
+        ...FILTER_SELECTION.running,
+        ...FILTER_SELECTION.finished,
+        ids: ids.join(',')
+      })
     ]
   };
 

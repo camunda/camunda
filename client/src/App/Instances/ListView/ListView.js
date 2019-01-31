@@ -2,20 +2,17 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import SplitPane from 'modules/components/SplitPane';
-import {EXPAND_STATE, FILTER_SELECTION} from 'modules/constants';
+import {EXPAND_STATE} from 'modules/constants';
 
 import List from './List';
 import ListFooter from './ListFooter';
 
-import {fetchWorkflowInstances} from 'modules/api/instances';
-import {parseFilterForRequest} from 'modules/utils/filter';
+import {withPoll} from 'modules/contexts/InstancesPollContext';
 
-import {getInstancesWithActiveOperations} from './service';
+import {getInstancesWithActiveOperations} from 'modules/utils/instance';
 import * as Styled from './styled';
 
-const POLLING_WINDOW = 5000;
-
-export default class ListView extends React.Component {
+class ListView extends React.Component {
   static propTypes = {
     expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
     filter: PropTypes.object.isRequired,
@@ -33,11 +30,8 @@ export default class ListView extends React.Component {
     super(props);
 
     this.state = {
-      entriesPerPage: 0,
-      instancesWithActiveOperations: []
+      entriesPerPage: 0
     };
-
-    this.pollingTimer = null;
   }
 
   componentDidUpdate(prevProps, prevState) {
@@ -50,7 +44,18 @@ export default class ListView extends React.Component {
     const isListExpanded = this.state.entriesPerPage > prevState.entriesPerPage;
 
     if (hasListChanged) {
-      this.resetInstancesWithActiveOperations();
+      if (prevProps.instances.length) {
+        const prevActiveInstances = prevProps.instances
+          .slice(0, prevState.entriesPerPage)
+          .filter(item => this.props.polling.ids.includes(item.id));
+
+        // remove instances with active ops.  from previous page from polling
+        Boolean(prevActiveInstances.length) &&
+          this.props.polling.removeIds(
+            prevActiveInstances.map(instance => instance.id)
+          );
+      }
+
       this.checkForInstancesWithActiveOperations();
     }
 
@@ -60,43 +65,21 @@ export default class ListView extends React.Component {
       // https://app.camunda.com/jira/browse/OPE-395
       if (isListExpanded) {
         this.props.onWorkflowInstancesRefresh();
-      }
+      } else {
+        // list is collapsed
+        const activeIds = this.props.polling.ids;
 
-      const activeIds = this.state.instancesWithActiveOperations.map(
-        item => item.id
-      );
-      const idsInView = this.props.instances
-        .slice(0, this.state.entriesPerPage)
-        .map(item => item.id);
+        const activeInstancesNotInView = this.props.instances
+          .slice(this.state.entriesPerPage) // get hidden ids from collapse
+          .filter(item => activeIds.includes(item.id)) // get only active ids
+          .map(item => item.id);
 
-      const activeIdsInView = activeIds.filter(item =>
-        idsInView.includes(item)
-      );
-
-      if (!activeIdsInView.length) {
-        this.resetInstancesWithActiveOperations();
-      }
-    }
-
-    if (
-      prevState.instancesWithActiveOperations.length !==
-      this.state.instancesWithActiveOperations.length
-    ) {
-      if (this.state.instancesWithActiveOperations.length > 0) {
-        // first call of initializePolling
-        this.pollingTimer === null && this.initializePolling();
+        if (Boolean(activeInstancesNotInView.length)) {
+          this.props.polling.removeIds(activeInstancesNotInView);
+        }
       }
     }
   }
-
-  componentWillUnmount() {
-    this.clearPolling();
-  }
-
-  resetInstancesWithActiveOperations = () => {
-    this.clearPolling();
-    this.setState({instancesWithActiveOperations: []});
-  };
 
   checkForInstancesWithActiveOperations = () => {
     const instancesInView = this.props.instances.slice(
@@ -107,71 +90,14 @@ export default class ListView extends React.Component {
       instancesInView
     );
     if (instancesWithActiveOperations.length > 0) {
-      this.setState({
-        instancesWithActiveOperations
-      });
-    }
-  };
-
-  initializePolling = () => {
-    const shouldStart = this.state.instancesWithActiveOperations.length !== 0;
-    if (shouldStart) {
-      this.pollingTimer = setTimeout(
-        this.detectInstancesChangesPoll,
-        POLLING_WINDOW
+      this.props.polling.addIds(
+        instancesWithActiveOperations.map(instance => instance.id)
       );
     }
   };
 
-  clearPolling = () => {
-    this.pollingTimer && clearTimeout(this.pollingTimer);
-    this.pollingTimer = null;
-  };
-
-  detectInstancesChangesPoll = async () => {
-    const ids = this.state.instancesWithActiveOperations.map(
-      instance => instance.id
-    );
-    const instancesByIds = await this.fetchWorkflowInstancesByIds(ids);
-    const instancesWithActiveOperations = getInstancesWithActiveOperations(
-      instancesByIds
-    );
-
-    if (
-      instancesWithActiveOperations.length !==
-      this.state.instancesWithActiveOperations.length
-    ) {
-      this.props.onWorkflowInstancesRefresh();
-    } else {
-      this.initializePolling();
-    }
-  };
-
-  fetchWorkflowInstancesByIds = async ids => {
-    const instances = await fetchWorkflowInstances({
-      queries: [
-        parseFilterForRequest({
-          ...FILTER_SELECTION.running,
-          ...FILTER_SELECTION.finished,
-          ids: ids.join(',')
-        })
-      ],
-      firstResult: 0,
-      maxResults: this.state.instancesWithActiveOperations.length
-    });
-
-    return instances.workflowInstances;
-  };
-
   handleActionButtonClick = instance => {
-    this.setState(prevState => {
-      return {
-        instancesWithActiveOperations: [
-          ...prevState.instancesWithActiveOperations,
-          instance
-        ]
-      };
-    });
+    this.props.polling.addIds([instance.id]);
   };
 
   render() {
@@ -217,3 +143,5 @@ export default class ListView extends React.Component {
     );
   }
 }
+
+export default withPoll(ListView);

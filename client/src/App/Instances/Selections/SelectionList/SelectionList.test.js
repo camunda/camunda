@@ -4,10 +4,12 @@ import {mount} from 'enzyme';
 import {
   createSelection,
   mockResolvedAsyncFn,
-  groupedWorkflowsMock
+  groupedWorkflowsMock,
+  flushPromises
 } from 'modules/testUtils';
 import {ThemeProvider} from 'modules/theme';
 import {SelectionProvider} from 'modules/contexts/SelectionContext';
+import {InstancesPollProvider} from 'modules/contexts/InstancesPollContext';
 import * as instancesApi from 'modules/api/instances/instances';
 import {formatGroupedWorkflows} from 'modules/utils/instance';
 import {
@@ -31,7 +33,14 @@ describe('SelectionList', () => {
           groupedWorkflows={formatGroupedWorkflows(groupedWorkflowsMock)}
           filter={FILTER_SELECTION.incidents}
         >
-          <SelectionList />
+          <InstancesPollProvider
+            onWorkflowInstancesRefresh={jest.fn()}
+            onSelectionsRefresh={jest.fn()}
+            visibleIdsInListView={[1, 2, 3]}
+            visibleIdsInSelections={[1, 2]}
+          >
+            <SelectionList />
+          </InstancesPollProvider>
         </SelectionProvider>
       </ThemeProvider>
     );
@@ -158,5 +167,45 @@ describe('SelectionList', () => {
       OPERATION_TYPE.CANCEL,
       selections[0].queries
     );
+  });
+
+  it('should send ids for polling after retry operation is started', async () => {
+    const selections = [
+      createSelection({
+        selectionId: 1
+      })
+    ];
+    const openSelection = 2;
+    node.find('BasicSelectionProvider').setState({selections, openSelection});
+
+    // when
+    await node.find('Selection').prop('onRetry')();
+    await flushPromises();
+    node.update();
+
+    // then
+    expect(node.find('InstancesPollProvider').state().ids).toEqual([
+      ...selections[0].instancesMap.keys()
+    ]);
+  });
+
+  it('should send ids for polling after cancel operation is started', async () => {
+    const selections = [
+      createSelection({
+        selectionId: 1
+      })
+    ];
+    const openSelection = 2;
+    node.find('BasicSelectionProvider').setState({selections, openSelection});
+
+    // when
+    await node.find('Selection').prop('onCancel')();
+    await flushPromises();
+    node.update();
+
+    // then
+    expect(node.find('InstancesPollProvider').state().ids).toEqual([
+      ...selections[0].instancesMap.keys()
+    ]);
   });
 });

@@ -126,6 +126,7 @@ export default class Selection extends React.Component {
   renderBody = () => {
     const instances = [...this.props.instances];
     const timeout = 800;
+
     return (
       <Styled.TransitionGroup component={'ul'}>
         {instances.map(([_, instanceDetails], index) => {
@@ -146,9 +147,13 @@ export default class Selection extends React.Component {
                 </Styled.NameCell>
                 <Styled.IdCell>{instanceDetails.id}</Styled.IdCell>
                 <Styled.ActionStatusCell>
+                  {/*
+                    change logic of showing spinner, it only reads from state once the user clicked
+                    https://app.camunda.com/jira/browse/OPE-409
+                  */}
                   <Styled.InstanceActionStatus
                     instance={instanceDetails}
-                    operationState={this.state.operationState || state}
+                    operationState={state}
                     operationType={type}
                   />
                 </Styled.ActionStatusCell>

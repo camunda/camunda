@@ -51,3 +51,11 @@ export function formatGroupedWorkflows(workflows = []) {
     return obj;
   }, {});
 }
+
+/**
+ * @returns the instances with active operations from a given instances list
+ * @param {Array} instances array of instance objects
+ */
+export function getInstancesWithActiveOperations(instances = []) {
+  return instances.filter(instance => instance.hasActiveOperation);
+}

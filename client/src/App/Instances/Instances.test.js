@@ -7,6 +7,7 @@ import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import {SelectionProvider} from 'modules/contexts/SelectionContext';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
+import {InstancesPollProvider} from 'modules/contexts/InstancesPollContext';
 import {
   groupedWorkflowsMock,
   flushPromises,
@@ -83,7 +84,8 @@ const mockProps = {
   onFilterChange: jest.fn(),
   onFilterReset: jest.fn(),
   diagramModel: parsedDiagram,
-  statistics: []
+  statistics: [],
+  onWorkflowInstancesRefresh: jest.fn()
 };
 
 const defaultFilterMockProps = {
@@ -95,7 +97,6 @@ const defaultFilterMockProps = {
   }
 };
 
-// api mocks
 describe('Instances', () => {
   afterEach(() => {
     jest.clearAllMocks();
@@ -473,6 +474,33 @@ describe('Instances', () => {
       // then
       const ListViewNode = node.find(ListView);
       expect(ListViewNode.find(SplitPane.Pane)).toExist();
+    });
+  });
+
+  describe('InstancesPollProvider', () => {
+    it('should contain an InstancesPollProvider', () => {
+      // given
+      const node = mount(
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <Instances {...mockProps} />
+          </CollapsablePanelProvider>
+        </ThemeProvider>
+      );
+      const InstancesPollProviderNode = node.find(InstancesPollProvider);
+      expect(InstancesPollProviderNode).toExist();
+      expect(
+        InstancesPollProviderNode.props().onSelectionsRefresh
+      ).toBeDefined();
+      expect(
+        InstancesPollProviderNode.props().onWorkflowInstancesRefresh
+      ).toEqual(mockProps.onWorkflowInstancesRefresh);
+      expect(InstancesPollProviderNode.props().visibleIdsInListView).toEqual(
+        mockProps.workflowInstances.map(x => x.id)
+      );
+      expect(InstancesPollProviderNode.props().visibleIdsInSelections).toEqual(
+        []
+      );
     });
   });
 });

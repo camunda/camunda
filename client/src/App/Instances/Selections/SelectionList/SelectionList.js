@@ -4,9 +4,10 @@ import {CSSTransition} from 'react-transition-group';
 
 import Selection from 'modules/components/Selection';
 import {withSelection} from 'modules/contexts/SelectionContext';
+import {getInstancesIdsFromSelections} from 'modules/contexts/SelectionContext/service';
+import {withPoll} from 'modules/contexts/InstancesPollContext';
 import {getSelectionById} from 'modules/utils/selection';
 import {applyOperation} from 'modules/api/instances';
-
 import {NO_SELECTIONS_MESSAGE} from './constants';
 import {MESSAGES_TYPE, OPERATION_TYPE} from 'modules/constants';
 
@@ -17,18 +18,26 @@ class SelectionList extends React.Component {
     selections: PropTypes.array.isRequired,
     openSelection: PropTypes.number,
     onToggleSelection: PropTypes.func.isRequired,
-    onDeleteSelection: PropTypes.func.isRequired
+    onDeleteSelection: PropTypes.func.isRequired,
+    polling: PropTypes.object
   };
 
   executeBatchOperation = async (openSelectionId, operation) => {
     const {selections} = this.props;
-    const {queries} = getSelectionById(selections, openSelectionId);
-
+    const selectionById = getSelectionById(selections, openSelectionId);
     try {
-      await applyOperation(operation, queries);
+      await applyOperation(operation, selectionById.queries);
+      this.sendIdsForPolling(selectionById);
     } catch (e) {
       console.log(e);
     }
+  };
+
+  sendIdsForPolling = selection => {
+    let ids = [];
+
+    ids = getInstancesIdsFromSelections([selection]);
+    this.props.polling.addIds(ids);
   };
 
   handleRetrySelection = openSelectionId => {
@@ -100,4 +109,4 @@ class SelectionList extends React.Component {
   }
 }
 
-export default withSelection(SelectionList);
+export default withPoll(withSelection(SelectionList));
