@@ -10,7 +10,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
 import org.apache.http.util.EntityUtils;
-import org.camunda.optimize.service.es.schema.DynamicSettingsBuilder;
+import org.camunda.optimize.service.es.schema.DynamicMappingsBuilder;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
@@ -271,12 +271,12 @@ public class ESIndexAdjuster {
     try {
       HashMap mapping = objectMapper.readValue(mappingAndSettings, HashMap.class);
       HashMap settings = objectMapper.readValue(
-        IndexSettingsBuilder.buildAsString(configurationService),
+        IndexSettingsBuilder.buildAllSettingsAsString(configurationService),
         HashMap.class
       );
 
       HashMap dynamics = objectMapper.readValue(
-        buildDynamicSettings(),
+        buildDynamicMappings(),
         HashMap.class
       );
 
@@ -299,10 +299,10 @@ public class ESIndexAdjuster {
     return result;
   }
 
-  private String buildDynamicSettings() {
+  private String buildDynamicMappings() {
     String dynamicSettings = "";
     try {
-      String dynamicSettingsWithPropertyField = DynamicSettingsBuilder.createDynamicSettingsAsString();
+      String dynamicSettingsWithPropertyField = DynamicMappingsBuilder.createDynamicSettingsAsString();
       // we need to remove the properties here since they added later with
       // whole schmema information.
       dynamicSettings =

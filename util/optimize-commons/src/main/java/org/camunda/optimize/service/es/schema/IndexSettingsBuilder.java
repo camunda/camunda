@@ -13,21 +13,51 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 public class IndexSettingsBuilder {
 
   public static final int MAX_GRAM = 10;
+  public static final String DYNAMIC_SETTING_MAX_NGRAM_DIFF = "max_ngram_diff";
 
-  public static Settings build(ConfigurationService configurationService) throws IOException {
+  public static Settings buildDynamicSettings(ConfigurationService configurationService) throws IOException {
     XContentBuilder builder = jsonBuilder();
     // @formatter:off
     builder
-      .startObject()
-        .field("refresh_interval", configurationService.getEsRefreshInterval())
-        .field("number_of_replicas", configurationService.getEsNumberOfReplicas())
-        .field("number_of_shards", configurationService.getEsNumberOfShards())
-        .field("max_ngram_diff", MAX_GRAM - 1);
+      .startObject();
+        addDynamicSettings(configurationService, builder)
+      .endObject();
+    // @formatter:on
+    return toSettings(builder);
+  }
+
+  public static Settings buildAllSettings(ConfigurationService configurationService) throws IOException {
+    XContentBuilder builder = jsonBuilder();
+    // @formatter:off
+    builder
+      .startObject();
+        addDynamicSettings(configurationService, builder);
+        addStaticSettings(configurationService, builder);
         addAnalysis(builder)
       .endObject();
     // @formatter:on
-    return Settings.builder()
-      .loadFromSource(Strings.toString(builder), XContentType.JSON).build();
+    return toSettings(builder);
+  }
+
+  public static String buildAllSettingsAsString(ConfigurationService configurationService) throws IOException {
+
+    final Settings settings = buildAllSettings(configurationService);
+    // we need to wrap the settings to satisfy the Elasticsearch structure
+    return String.format("{ \"settings\": { \"index\": %s } }", settings.toString());
+  }
+
+  private static XContentBuilder addStaticSettings(final ConfigurationService configurationService,
+                                                   final XContentBuilder builder) throws IOException {
+    return builder
+      .field("number_of_shards", configurationService.getEsNumberOfShards());
+  }
+
+  private static XContentBuilder addDynamicSettings(final ConfigurationService configurationService,
+                                                    final XContentBuilder builder) throws IOException {
+    return builder
+      .field(DYNAMIC_SETTING_MAX_NGRAM_DIFF, MAX_GRAM - 1)
+      .field("refresh_interval", configurationService.getEsRefreshInterval())
+      .field("number_of_replicas", configurationService.getEsNumberOfReplicas());
   }
 
   private static XContentBuilder addAnalysis(XContentBuilder builder) throws IOException {
@@ -58,19 +88,7 @@ public class IndexSettingsBuilder {
     // @formatter:on
   }
 
-  public static String buildAsString(ConfigurationService configurationService) throws IOException {
-    Settings settings = build(configurationService);
-    String settingsAsJson = settings.toString();
-
-    // we need to wrap the settings to be confirm
-    // with the Elasticsearch structure.
-    settingsAsJson = String.format(
-      "{ \"settings\": " +
-        "             {" +
-        "                   \"index\":  " +
-        "                       %s " +
-        "               }" +
-        "}", settingsAsJson);
-    return settingsAsJson;
+  public static Settings toSettings(final XContentBuilder builder) {
+    return Settings.builder().loadFromSource(Strings.toString(builder), XContentType.JSON).build();
   }
 }

@@ -1,8 +1,12 @@
 package org.camunda.optimize.service.schema;
 
 import com.jayway.jsonpath.JsonPath;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
+import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
+import org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper;
+import org.camunda.optimize.service.es.schema.TypeMappingCreator;
 import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
 import org.camunda.optimize.service.schema.type.MyUpdatedEventType;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -13,11 +17,17 @@ import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.mapping.get.GetFieldMappingsRequest;
 import org.elasticsearch.action.admin.indices.mapping.get.GetFieldMappingsResponse;
 import org.elasticsearch.action.admin.indices.mapping.get.GetFieldMappingsResponse.FieldMappingMetaData;
+import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
+import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.xcontent.DeprecationHandler;
+import org.elasticsearch.common.xcontent.NamedXContentRegistry;
+import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -26,8 +36,11 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.DYNAMIC_SETTING_MAX_NGRAM_DIFF;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getVersionedOptimizeIndexNameForTypeMapping;
 import static org.hamcrest.CoreMatchers.is;
@@ -92,42 +105,21 @@ public class SchemaInitializerIT {
   }
 
   @Test
-  public void typesExistsAfterSchemaInitialization() throws IOException {
+  public void allTypesExistsAfterSchemaInitialization() throws IOException {
 
     // when
     initializeSchema();
 
     // then
-    assertTypeExists(ElasticsearchConstants.METADATA_TYPE);
-    assertTypeExists(ElasticsearchConstants.PROC_INSTANCE_TYPE);
-    assertTypeExists(ElasticsearchConstants.IMPORT_INDEX_TYPE);
-    assertTypeExists(ElasticsearchConstants.PROC_DEF_TYPE);
-  }
-
-  private void assertTypeExists(String type) throws IOException {
-    final String optimizeIndexAliasForType = getOptimizeIndexAliasForType(type);
-
-    RestClient esClient = elasticSearchRule.getEsClient().getLowLevelClient();
-    Request request = new Request("GET", "/" + optimizeIndexAliasForType + "/_mapping");
-    Response response = esClient.performRequest(request);
-
-    String responseBody = EntityUtils.toString(response.getEntity());
-    Map<String, Map<String, Map<String, Object>>> mappings = JsonPath.read(responseBody, "$");
-
-    assertThat(mappings.size(), is(1));
-
-    boolean containsType = mappings
-      .values()
-      .iterator()
-      .next()
-      .get("mappings")
-      .keySet()
-      .contains(type);
-    assertThat(containsType, is(true));
+    final List<TypeMappingCreator> mappings = embeddedOptimizeRule.getElasticSearchSchemaManager().getMappings();
+    assertThat(mappings.size(), is(16));
+    for (TypeMappingCreator mapping : mappings) {
+      assertTypeExists(mapping.getType());
+    }
   }
 
   @Test
-  public void oldMappingsAreUpdated() throws IOException {
+  public void mappingsAreUpdated() throws IOException {
 
     // given schema is created
     initializeSchema();
@@ -141,26 +133,48 @@ public class SchemaInitializerIT {
     assertThatNewFieldExists();
   }
 
-  private void assertThatNewFieldExists() throws IOException {
-    final String metaDataType = ElasticsearchConstants.METADATA_TYPE;
-    final String optimizeIndexAliasForType = getOptimizeIndexAliasForType(metaDataType);
+  @Test
+  public void dynamicSettingsAreUpdated() throws IOException {
 
-    GetFieldMappingsRequest request = new GetFieldMappingsRequest().indices(optimizeIndexAliasForType)
-      .indices(optimizeIndexAliasForType)
-      .types(metaDataType)
-      .fields(MyUpdatedEventType.MY_NEW_FIELD);
-    GetFieldMappingsResponse response =
-      esClient.indices().getFieldMapping(request, RequestOptions.DEFAULT);
+    // given schema exists
+    initializeSchema();
 
-    final MyUpdatedEventType updatedEventType = new MyUpdatedEventType(embeddedOptimizeRule.getConfigurationService());
-    final FieldMappingMetaData fieldEntry =
-      response.fieldMappings(
-        getVersionedOptimizeIndexNameForTypeMapping(updatedEventType),
-        metaDataType,
-        MyUpdatedEventType.MY_NEW_FIELD
-      );
+    // with a different dynamic setting than default
+    final List<TypeMappingCreator> mappings = embeddedOptimizeRule.getElasticSearchSchemaManager().getMappings();
+    modifyDynamicIndexSetting(mappings);
 
-    assertThat(fieldEntry.isNull(), is(false));
+    // when
+    initializeSchema();
+
+    // then the settings contain the updated value
+    final GetSettingsResponse getSettingsResponse = getIndexSettingsFor(mappings);
+
+    assertDynamicSettingsComplyWithDefault(mappings, getSettingsResponse);
+  }
+
+  @Test
+  public void dynamicSettingsAreUpdatedForExistingIndexesWhenNewIndexesAreCreated() throws IOException {
+
+    // given schema exists
+    initializeSchema();
+
+    // with a different dynamic setting than default
+    final List<TypeMappingCreator> mappings = embeddedOptimizeRule.getElasticSearchSchemaManager().getMappings();
+    modifyDynamicIndexSetting(mappings);
+
+    // one index is missing so recreating of indexes is triggered
+    embeddedOptimizeRule.getElasticsearchClient().indices().delete(
+      new DeleteIndexRequest(getVersionedOptimizeIndexNameForTypeMapping(new DecisionInstanceType())),
+      RequestOptions.DEFAULT
+    );
+
+    // when
+    initializeSchema();
+
+    // then the settings contain the updated value
+    final GetSettingsResponse getSettingsResponse = getIndexSettingsFor(mappings);
+
+    assertDynamicSettingsComplyWithDefault(mappings, getSettingsResponse);
   }
 
   @Test
@@ -191,6 +205,90 @@ public class SchemaInitializerIT {
       "12312412",
       extendedEventDto
     );
+  }
+
+  private void assertDynamicSettingsComplyWithDefault(final List<TypeMappingCreator> mappings,
+                                                      final GetSettingsResponse getSettingsResponse) throws IOException {
+    final Settings settings = IndexSettingsBuilder.buildDynamicSettings(embeddedOptimizeRule.getConfigurationService());
+
+    for (TypeMappingCreator mapping : mappings) {
+      settings.names().forEach(settingName -> {
+        final String ngramMaxValue = getSettingsResponse.getSetting(
+          getVersionedOptimizeIndexNameForTypeMapping(mapping),
+          "index." + settingName
+        );
+        assertThat(ngramMaxValue, is(settings.get(settingName)));
+      });
+    }
+  }
+
+  private void modifyDynamicIndexSetting(final List<TypeMappingCreator> mappings) throws IOException {
+    for (TypeMappingCreator mapping : mappings) {
+      final String indexName = getVersionedOptimizeIndexNameForTypeMapping(mapping);
+      final UpdateSettingsRequest updateSettingsRequest = new UpdateSettingsRequest(indexName);
+      updateSettingsRequest.settings(Settings.builder().put(DYNAMIC_SETTING_MAX_NGRAM_DIFF, "1").build());
+      embeddedOptimizeRule.getElasticsearchClient()
+        .indices().putSettings(updateSettingsRequest, RequestOptions.DEFAULT);
+    }
+  }
+
+  private GetSettingsResponse getIndexSettingsFor(final List<TypeMappingCreator> mappings) throws IOException {
+    final String indices = mappings.stream()
+      .map(OptimizeIndexNameHelper::getVersionedOptimizeIndexNameForTypeMapping)
+      .collect(Collectors.joining(","));
+
+    Response response = embeddedOptimizeRule.getElasticsearchClient().getLowLevelClient().performRequest(
+      new Request(HttpGet.METHOD_NAME, indices + "/_settings")
+    );
+    return GetSettingsResponse.fromXContent(JsonXContent.jsonXContent.createParser(
+      NamedXContentRegistry.EMPTY,
+      DeprecationHandler.THROW_UNSUPPORTED_OPERATION,
+      response.getEntity().getContent())
+    );
+  }
+
+  private void assertTypeExists(String type) throws IOException {
+    final String optimizeIndexAliasForType = getOptimizeIndexAliasForType(type);
+
+    RestClient esClient = elasticSearchRule.getEsClient().getLowLevelClient();
+    Request request = new Request("GET", "/" + optimizeIndexAliasForType + "/_mapping");
+    Response response = esClient.performRequest(request);
+
+    String responseBody = EntityUtils.toString(response.getEntity());
+    Map<String, Map<String, Map<String, Object>>> mappings = JsonPath.read(responseBody, "$");
+
+    assertThat(mappings.size(), is(1));
+
+    boolean containsType = mappings
+      .values()
+      .iterator()
+      .next()
+      .get("mappings")
+      .keySet()
+      .contains(type);
+    assertThat(containsType, is(true));
+  }
+
+  private void assertThatNewFieldExists() throws IOException {
+    final String metaDataType = ElasticsearchConstants.METADATA_TYPE;
+    final String optimizeIndexAliasForType = getOptimizeIndexAliasForType(metaDataType);
+
+    GetFieldMappingsRequest request = new GetFieldMappingsRequest().indices(optimizeIndexAliasForType)
+      .indices(optimizeIndexAliasForType)
+      .types(metaDataType)
+      .fields(MyUpdatedEventType.MY_NEW_FIELD);
+    GetFieldMappingsResponse response =
+      esClient.indices().getFieldMapping(request, RequestOptions.DEFAULT);
+
+    final MyUpdatedEventType updatedEventType = new MyUpdatedEventType(embeddedOptimizeRule.getConfigurationService());
+    final FieldMappingMetaData fieldEntry =
+      response.fieldMappings(
+        getVersionedOptimizeIndexNameForTypeMapping(updatedEventType),
+        metaDataType,
+        MyUpdatedEventType.MY_NEW_FIELD
+      );
+
+    assertThat(fieldEntry.isNull(), is(false));
   }
 
   private void initializeSchema() {

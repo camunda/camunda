@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.service.es.schema.DynamicSettingsBuilder.createDynamicSettings;
+import static org.camunda.optimize.service.es.schema.DynamicMappingsBuilder.createDynamicSettings;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 
 public abstract class StrictTypeMappingCreator implements TypeMappingCreator, PropertiesAppender {

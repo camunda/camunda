@@ -7,7 +7,7 @@ import org.elasticsearch.common.xcontent.XContentFactory;
 import java.io.IOException;
 
 
-public class DynamicSettingsBuilder {
+public class DynamicMappingsBuilder {
 
   public static XContentBuilder createDynamicSettings(PropertiesAppender appender) throws IOException {
     // @formatter:off

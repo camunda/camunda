@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.buildDynamicSettings;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.OPTIMIZE_INDEX_PREFIX;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getVersionedOptimizeIndexNameForTypeMapping;
@@ -65,12 +66,16 @@ public class ElasticSearchSchemaManager {
       createOptimizeIndices(esClient);
       logger.info("Optimize schema initialized successfully.");
     } else {
-      updateMappings(esClient);
+      updateAllMappingsAndDynamicSettings(esClient);
     }
   }
 
   public void addMapping(TypeMappingCreator mapping) {
     mappings.add(mapping);
+  }
+
+  public List<TypeMappingCreator> getMappings() {
+    return mappings;
   }
 
   public boolean schemaAlreadyExists(RestHighLevelClient esClient) {
@@ -102,25 +107,21 @@ public class ElasticSearchSchemaManager {
    * https://www.elastic.co/guide/en/elasticsearch/reference/6.0/indices-aliases.html
    */
   public void createOptimizeIndices(RestHighLevelClient esClient) {
-    Settings indexSettings = null;
     for (TypeMappingCreator mapping : mappings) {
-      try {
-        indexSettings = IndexSettingsBuilder.build(configurationService);
-      } catch (IOException e) {
-        logger.error("Could not create settings!", e);
-      }
-      final String optimizeAliasForType = getOptimizeIndexAliasForType(mapping.getType());
+      final String aliasName = getOptimizeIndexAliasForType(mapping.getType());
       final String indexName = getVersionedOptimizeIndexNameForTypeMapping(mapping);
+      final Settings indexSettings = createIndexSettings();
       try {
         try {
           CreateIndexRequest request = new CreateIndexRequest(indexName);
-          request.alias(new Alias(optimizeAliasForType));
+          request.alias(new Alias(aliasName));
           request.settings(indexSettings);
           request.mapping(mapping.getType(), mapping.getSource());
           esClient.indices().create(request, RequestOptions.DEFAULT);
         } catch (ElasticsearchStatusException e) {
           if (e.status() == RestStatus.BAD_REQUEST && e.getMessage().contains("resource_already_exists_exception")) {
-            logger.debug("index {} already exists.", indexName);
+            logger.debug("index {} already exists, updating mapping and dynamic settings.", indexName);
+            updateIndexDynamicSettingsAndMappings(esClient, mapping);
           } else {
             throw e;
           }
@@ -142,10 +143,10 @@ public class ElasticSearchSchemaManager {
     disableAutomaticIndexCreation(esClient);
   }
 
-  public void updateMappings(RestHighLevelClient esClient) {
+  private void updateAllMappingsAndDynamicSettings(RestHighLevelClient esClient) {
     logger.info("Updating Optimize schema...");
     for (TypeMappingCreator mapping : mappings) {
-      createSingleSchema(esClient, mapping.getType(), mapping.getSource());
+      updateIndexDynamicSettingsAndMappings(esClient, mapping);
     }
     logger.info("Finished updating Optimize schema.");
   }
@@ -208,15 +209,35 @@ public class ElasticSearchSchemaManager {
     }
   }
 
-  private void createSingleSchema(RestHighLevelClient esClient, String type, XContentBuilder content) {
-    PutMappingRequest request = new PutMappingRequest(getOptimizeIndexAliasForType(type));
-    request.type(type).source(content);
+  private void updateIndexDynamicSettingsAndMappings(RestHighLevelClient esClient, TypeMappingCreator typeMapping) {
+    final String indexName = getVersionedOptimizeIndexNameForTypeMapping(typeMapping);
+    try {
+      final Settings indexSettings = buildDynamicSettings(configurationService);
+      final UpdateSettingsRequest updateSettingsRequest = new UpdateSettingsRequest();
+      updateSettingsRequest.indices(indexName);
+      updateSettingsRequest.settings(indexSettings);
+      esClient.indices().putSettings(updateSettingsRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String message = String.format("Could not update index settings for type [%s].", typeMapping.getType());
+      throw new OptimizeRuntimeException(message, e);
+    }
 
     try {
-      esClient.indices().putMapping(request, RequestOptions.DEFAULT);
+      final PutMappingRequest putMappingRequest = new PutMappingRequest(indexName);
+      putMappingRequest.type(typeMapping.getType()).source(typeMapping.getSource());
+      esClient.indices().putMapping(putMappingRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
-      String message = String.format("Could not create schema for type [%s].", type);
+      String message = String.format("Could not update index mappings for type [%s].", typeMapping.getType());
       throw new OptimizeRuntimeException(message, e);
+    }
+  }
+
+  private Settings createIndexSettings() {
+    try {
+      return IndexSettingsBuilder.buildAllSettings(configurationService);
+    } catch (IOException e) {
+      logger.error("Could not create settings!", e);
+      throw new OptimizeRuntimeException("Could not create index settings");
     }
   }
 
