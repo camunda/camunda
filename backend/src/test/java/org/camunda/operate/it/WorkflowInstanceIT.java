@@ -524,6 +524,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
 
 
   @Test
+  @Ignore("OPE-360")
   public void testWorkflowInstanceCanceledOnMessageEvent() {
     // having
     final OffsetDateTime testStartTime = OffsetDateTime.now();

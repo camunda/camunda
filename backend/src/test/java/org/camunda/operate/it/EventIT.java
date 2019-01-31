@@ -15,6 +15,7 @@ import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -53,6 +54,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
+  @Ignore("OPE-402")
   public void testEventsForFinishedWorkflow() {
     // having
     final String processId = "processWithGateway";

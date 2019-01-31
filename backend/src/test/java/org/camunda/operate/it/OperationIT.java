@@ -236,6 +236,8 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     //then
     //the state of one operation is COMPLETED and of the other - FAILED
     elasticsearchTestRule.processAllEventsAndWait(incidentIsResolvedCheck, workflowInstanceId);
+    Thread.sleep(1000L);  //sometimes the JOB RETRIES_UPDATED event is not there yet -> wait a little
+    elasticsearchTestRule.processAllEvents(2);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
     ListViewResponseDto workflowInstances = getWorkflowInstances(workflowInstanceQuery);
     assertThat(workflowInstances.getWorkflowInstances()).hasSize(1);
