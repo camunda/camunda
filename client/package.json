@@ -67,7 +67,7 @@
     "mock-socket": "^7.1.0",
     "node-sass": "^4.9.4",
     "opn": "^5.4.0",
-    "prettier": "1.11.1",
+    "prettier": "1.16.3",
     "react-router": "^4.2.0",
     "react-scripts": "2.0.5",
     "request": "^2.83.0",

@@ -1,7 +1,5 @@
 import {get, del, put, post} from 'request';
-import {reportConfig, getDataKeys} from 'services';
-
-const {isAllowed, getNext} = reportConfig;
+import {getDataKeys} from 'services';
 
 export async function loadSingleReport(id) {
   const response = await get('api/report/' + id);
@@ -112,67 +110,4 @@ export function isChecked(data, current) {
         JSON.stringify(current[prop]) === JSON.stringify(data[prop]) || Array.isArray(data[prop])
     )
   );
-}
-
-export function update(type, data, props) {
-  switch (type) {
-    case 'view':
-      return updateView(data, props);
-    case 'groupBy':
-      return updateGroupBy(data, props);
-    case 'visualization':
-      return updateVisualization(data, props);
-    default:
-      throw new Error('Tried to update unknown property');
-  }
-}
-
-function updateView(newView, props) {
-  const changes = {view: {$set: newView}};
-
-  if (newView.property !== 'duration' || newView.entity !== 'processInstance') {
-    changes.parameters = {processPart: {$set: null}};
-  }
-
-  const newGroup = getNext(newView) || props.groupBy;
-  // we need to compare the string representation for changes, because groupBy is an object, not a string
-  if (newGroup && JSON.stringify(newGroup) !== JSON.stringify(props.groupBy)) {
-    changes.groupBy = {$set: newGroup};
-  }
-
-  const newVisualization = getNext(newView, newGroup) || props.visualization;
-  if (newVisualization && newVisualization !== props.visualization) {
-    changes.visualization = {$set: newVisualization};
-  }
-
-  if (!isAllowed(newView, newGroup)) {
-    changes.groupBy = {$set: null};
-    changes.visualization = {$set: null};
-  }
-
-  if (!isAllowed(newView, newGroup, newVisualization)) {
-    changes.visualization = {$set: null};
-  }
-
-  return props.updateReport(changes, true);
-}
-
-function updateGroupBy(newGroupBy, props) {
-  const changes = {groupBy: {$set: newGroupBy}};
-
-  const newVisualization = getNext(props.view, newGroupBy);
-
-  if (newVisualization) {
-    // if we have a predetermined next visualization, we set it
-    changes.visualization = {$set: newVisualization};
-  } else if (!isAllowed(props.view, newGroupBy, props.visualization)) {
-    // if the current visualization is not valid anymore for the new group, we reset it
-    changes.visualization = {$set: null};
-  }
-
-  return props.updateReport(changes, true);
-}
-
-function updateVisualization(newVisualization, props) {
-  return props.updateReport({visualization: {$set: newVisualization}});
 }

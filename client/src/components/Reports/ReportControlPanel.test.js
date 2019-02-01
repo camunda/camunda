@@ -4,7 +4,7 @@ import {shallow} from 'enzyme';
 import {Dropdown} from 'components';
 
 import ReportControlPanel from './ReportControlPanel';
-import {extractProcessDefinitionName, reportConfig, getFlowNodeNames} from 'services';
+import {extractProcessDefinitionName, processConfig, getFlowNodeNames} from 'services';
 
 import * as service from './service';
 import {ProcessDefinitionSelection} from 'components';
@@ -16,16 +16,19 @@ jest.mock('services', () => {
 
   return {
     ...rest,
-    reportConfig: {
+    processConfig: {
       getLabelFor: () => 'foo',
-      view: {foo: {data: 'foo', label: 'viewfoo'}},
-      groupBy: {
-        foo: {data: 'foo', label: 'groupbyfoo'},
-        variable: {data: {value: []}, label: 'Variables'}
+      options: {
+        view: {foo: {data: 'foo', label: 'viewfoo'}},
+        groupBy: {
+          foo: {data: 'foo', label: 'groupbyfoo'},
+          variable: {data: {value: []}, label: 'Variables'}
+        },
+        visualization: {foo: {data: 'foo', label: 'visualizationfoo'}}
       },
-      visualization: {foo: {data: 'foo', label: 'visualizationfoo'}},
       isAllowed: jest.fn().mockReturnValue(true),
-      getNext: jest.fn()
+      getNext: jest.fn(),
+      update: jest.fn()
     },
     extractProcessDefinitionName: jest.fn(),
     formatters: {
@@ -80,23 +83,9 @@ it('should not disable the groupBy and visualization Selects if view is selected
   expect(node.find('.configDropdown').at(2)).not.toBeDisabled();
 });
 
-it('should set or reset following selects according to the getNext function', () => {
-  const spy = jest.fn();
-  const node = shallow(<ReportControlPanel {...data} updateReport={spy} />);
-
-  reportConfig.getNext.mockReturnValueOnce('next');
-  node
-    .find(Dropdown.Option)
-    .at(0)
-    .simulate('click');
-
-  expect(spy.mock.calls[0][0].view).toEqual({$set: 'foo'});
-  expect(spy.mock.calls[0][0].groupBy).toEqual({$set: 'next'});
-});
-
 it('should disable options, which would create wrong combination', () => {
   const spy = jest.fn();
-  reportConfig.isAllowed.mockReturnValue(false);
+  processConfig.isAllowed.mockReturnValue(false);
   const node = shallow(<ReportControlPanel {...data} onChange={spy} />);
   node.setProps({view: 'baz'});
 

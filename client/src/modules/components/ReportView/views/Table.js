@@ -2,7 +2,7 @@ import React from 'react';
 import ReportBlankSlate from '../ReportBlankSlate';
 
 import {Table as TableRenderer, LoadingIndicator} from 'components';
-import {processRawData, reportConfig, formatters} from 'services';
+import {processRawData, processConfig, decisionConfig, formatters} from 'services';
 import {withErrorHandling} from 'HOC';
 
 import {
@@ -15,8 +15,6 @@ import {
 } from './service';
 
 const {formatReportResult} = formatters;
-
-const {groupBy, view, getLabelFor} = reportConfig;
 
 export default withErrorHandling(
   class Table extends React.Component {
@@ -43,7 +41,10 @@ export default withErrorHandling(
     processSingleData(labels, result, processInstanceCount) {
       const {formatter = v => v, data} = this.props;
 
-      const {configuration: {hideAbsoluteValue, hideRelativeValue}, view: {property}} = data;
+      const {
+        configuration: {hideAbsoluteValue, hideRelativeValue},
+        view: {property}
+      } = data;
 
       const displayRelativeValue = property === 'frequency' && !hideRelativeValue;
       const displayAbsoluteValue = property === 'duration' || !hideAbsoluteValue;
@@ -69,7 +70,9 @@ export default withErrorHandling(
         result,
         data.reportIds
       );
-      const {configuration: {hideAbsoluteValue, hideRelativeValue}} = data;
+      const {
+        configuration: {hideAbsoluteValue, hideRelativeValue}
+      } = data;
       const {view} = Object.values(result)[0].data;
 
       const displayRelativeValue = view.property === 'frequency' && !hideRelativeValue;
@@ -132,7 +135,10 @@ export default withErrorHandling(
 
       // raw data
       if (isRaw(result)) {
-        const {parameters, configuration: {excludedColumns, columnOrder}} = data;
+        const {
+          parameters,
+          configuration: {excludedColumns, columnOrder}
+        } = data;
         return {
           ...processRawData({
             data: formattedResult,
@@ -147,7 +153,18 @@ export default withErrorHandling(
       }
 
       // Normal single Report
-      const labels = [getLabelFor(groupBy, data.groupBy), getLabelFor(view, data.view)];
+      let labels;
+      if (reportType === 'process') {
+        labels = [
+          processConfig.getLabelFor(processConfig.options.groupBy, data.groupBy),
+          processConfig.getLabelFor(processConfig.options.view, data.view)
+        ];
+      } else if (reportType === 'decision') {
+        labels = [
+          decisionConfig.getLabelFor(decisionConfig.options.groupBy, data.groupBy),
+          decisionConfig.getLabelFor(decisionConfig.options.view, data.view)
+        ];
+      }
       return this.processSingleData(labels, formattedResult, processInstanceCount);
     };
   }

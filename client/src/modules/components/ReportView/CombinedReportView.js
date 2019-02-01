@@ -49,7 +49,9 @@ const getConfig = ({report, disableReportScrolling, customProps, defaultErrorMes
 };
 
 export default function CombinedReportView(props) {
-  const {report: {result, data}} = props;
+  const {
+    report: {result, data}
+  } = props;
   if (result && typeof result === 'object' && Object.keys(result).length) {
     const singleReportData = Object.values(result)[0].data;
     const combinedReportData = {...singleReportData, configuration: data.configuration};

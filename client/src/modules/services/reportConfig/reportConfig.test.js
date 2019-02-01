@@ -1,4 +1,13 @@
-import {view, groupBy, visualization, getLabelFor, isAllowed, getNext} from './reportConfig';
+import reportConfig from './reportConfig';
+import * as process from './process';
+
+const {
+  options: {view, groupBy, visualization},
+  getLabelFor,
+  isAllowed,
+  getNext,
+  update
+} = reportConfig(process);
 
 it('should get a label for a simple visualization', () => {
   expect(getLabelFor(visualization, 'heat')).toBe('Heatmap');
@@ -76,4 +85,74 @@ it('should allow only visualization options that make sense for the selected vie
       'pie'
     )
   ).toBe(false);
+});
+
+describe('update', () => {
+  const countProcessInstances = {
+    entity: 'processInstance',
+    operation: 'count',
+    property: 'frequency'
+  };
+
+  const startDate = {
+    type: 'startDate',
+    value: {unit: 'month'}
+  };
+
+  it('should just update visualization', () => {
+    expect(update('visualization', 'bar')).toEqual({visualization: {$set: 'bar'}});
+  });
+
+  it('should update groupby', () => {
+    expect(
+      update('groupBy', startDate, {
+        view: countProcessInstances,
+        visualization: 'bar'
+      })
+    ).toEqual({groupBy: {$set: startDate}});
+  });
+
+  it("should reset visualization when it's incompatible with the new group", () => {
+    expect(
+      update('groupBy', startDate, {
+        view: countProcessInstances,
+        visualization: 'number'
+      })
+    ).toEqual({groupBy: {$set: startDate}, visualization: {$set: null}});
+  });
+
+  it('should automatically select an unambiguous visualization when updating group', () => {
+    expect(
+      update(
+        'groupBy',
+        {type: 'none'},
+        {
+          view: countProcessInstances,
+          visualization: 'heat'
+        }
+      )
+    ).toEqual({groupBy: {$set: {type: 'none'}}, visualization: {$set: 'number'}});
+  });
+
+  it('should update view', () => {
+    expect(
+      update('view', countProcessInstances, {
+        groupBy: startDate,
+        visualization: 'bar'
+      })
+    ).toEqual({view: {$set: countProcessInstances}});
+  });
+
+  it('should adjust groupby and visualization when changing view', () => {
+    expect(
+      update('view', countProcessInstances, {
+        groupBy: {type: 'flowNodes'},
+        visualization: 'heat'
+      })
+    ).toEqual({
+      view: {$set: countProcessInstances},
+      groupBy: {$set: null},
+      visualization: {$set: null}
+    });
+  });
 });

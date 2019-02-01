@@ -1,6 +1,6 @@
 export const visualization = {
-  // number: {data: 'number', label: 'Number'},
-  table: {data: 'table', label: 'Table'}
+  table: {data: 'table', label: 'Table'},
+  number: {data: 'number', label: 'Number'}
   // bar: {data: 'bar', label: 'Bar Chart'},
   // line: {data: 'line', label: 'Line Chart'},
   // pie: {data: 'pie', label: 'Pie Chart'}
@@ -43,24 +43,24 @@ const combinations = {
   frequency: [
     {
       entity: groupBy.none,
-      then: [visualization.table]
-    },
-    {
-      entity: groupBy.rules,
-      then: [visualization.table]
-    },
-    {
-      entity: groupBy.evaluationDate,
-      then: [visualization.table, visualization.pie, visualization.line, visualization.bar]
-    },
-    {
-      entity: groupBy.inputVariable,
-      then: [visualization.table, visualization.pie, visualization.line, visualization.bar]
-    },
-    {
-      entity: groupBy.outputVariable,
-      then: [visualization.table, visualization.pie, visualization.line, visualization.bar]
+      then: [visualization.number]
     }
+    // {
+    //   entity: groupBy.rules,
+    //   then: [visualization.table]
+    // },
+    // {
+    //   entity: groupBy.evaluationDate,
+    //   then: [visualization.table, visualization.pie, visualization.line, visualization.bar]
+    // },
+    // {
+    //   entity: groupBy.inputVariable,
+    //   then: [visualization.table, visualization.pie, visualization.line, visualization.bar]
+    // },
+    // {
+    //   entity: groupBy.outputVariable,
+    //   then: [visualization.table, visualization.pie, visualization.line, visualization.bar]
+    // }
   ]
 };
 
@@ -69,10 +69,10 @@ export const view = {
     data: {operation: 'rawData'},
     label: 'Raw Data',
     next: combinations.rawData
+  },
+  frequency: {
+    data: {operation: 'count', property: 'frequency'},
+    label: 'Evaluation Count',
+    next: combinations.frequency
   }
-  // frequency: {
-  //   data: {operation: 'count', property: 'frequency', entity: 'evaluation'},
-  //   label: 'Evaluation Count',
-  //   next: combinations.frequency
-  // }
 };

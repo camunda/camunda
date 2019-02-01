@@ -1,8 +1,11 @@
 import {get} from 'request';
 
-import {reportConfig, formatters} from 'services';
+import {processConfig, formatters} from 'services';
 
-const {view, groupBy, getLabelFor} = reportConfig;
+const {
+  options: {view, groupBy},
+  getLabelFor
+} = processConfig;
 
 const {formatReportResult} = formatters;
 
@@ -13,7 +16,7 @@ export async function getCamundaEndpoints() {
 
 export function getRelativeValue(data, total) {
   if (data === null) return '';
-  return Math.round(data / total * 1000) / 10 + '%';
+  return Math.round((data / total) * 1000) / 10 + '%';
 }
 
 export function getFormattedLabels(

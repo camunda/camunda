@@ -5,7 +5,7 @@ import {Filter} from './filter';
 import {
   extractProcessDefinitionName,
   getFlowNodeNames,
-  reportConfig,
+  processConfig,
   formatters,
   getDataKeys
 } from 'services';
@@ -13,13 +13,18 @@ import {
 import {TargetValueComparison} from './targetValue';
 import {ProcessPart} from './ProcessPart';
 
-import {loadVariables, loadProcessDefinitionXml, isChecked, update} from './service';
+import {loadVariables, loadProcessDefinitionXml, isChecked} from './service';
 
 import {Configuration} from './Configuration';
 
 import './ReportControlPanel.scss';
 
-const {view, groupBy, visualization, getLabelFor, isAllowed} = reportConfig;
+const {
+  options: {view, groupBy, visualization},
+  getLabelFor,
+  isAllowed,
+  update
+} = processConfig;
 const groupByVariablePageSize = 5;
 
 export default class ReportControlPanel extends React.Component {
@@ -266,7 +271,12 @@ export default class ReportControlPanel extends React.Component {
                 <Dropdown.Option
                   key={idx}
                   checked={checked}
-                  onClick={() => update(type, subData, this.props)}
+                  onClick={() =>
+                    this.props.updateReport(
+                      update(type, subData, this.props),
+                      type !== 'visualization'
+                    )
+                  }
                 >
                   {entry.label}
                 </Dropdown.Option>
@@ -288,7 +298,9 @@ export default class ReportControlPanel extends React.Component {
       <Dropdown.Option
         key={key}
         checked={checked}
-        onClick={() => update(type, data, this.props)}
+        onClick={() =>
+          this.props.updateReport(update(type, data, this.props), type !== 'visualization')
+        }
         disabled={disabled}
       >
         {label}
@@ -357,7 +369,9 @@ export default class ReportControlPanel extends React.Component {
                 title={variable.name}
                 onClick={evt => {
                   evt.nativeEvent.isCloseEvent = true;
-                  update('groupBy', {type: 'variable', value: variable}, this.props);
+                  this.props.updateReport(
+                    update('groupBy', {type: 'variable', value: variable}, this.props)
+                  );
                 }}
               >
                 {formatters.getHighlightedText(variable.name, this.state.variableTypeaheadValue)}

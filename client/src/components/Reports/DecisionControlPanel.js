@@ -3,12 +3,8 @@ import {Popover, Dropdown, Labeled} from 'components';
 
 import DecisionDefinitionSelection from './DecisionDefinitionSelection';
 
-import {isChecked, update} from './service';
-import {getDataKeys, reportConfig} from 'services';
-
-import {view, groupBy, visualization} from './decisionReportConfig';
-
-const {getLabelFor, isAllowed} = reportConfig;
+import {isChecked} from './service';
+import {getDataKeys, decisionConfig} from 'services';
 
 export default class DecisionControlPanel extends React.Component {
   createTitle = () => {
@@ -36,14 +32,18 @@ export default class DecisionControlPanel extends React.Component {
             </Labeled>
           </li>
           <li className="select">
-            <Labeled label="View">{this.renderDropdown('view', view)}</Labeled>
+            <Labeled label="View">
+              {this.renderDropdown('view', decisionConfig.options.view)}
+            </Labeled>
           </li>
           <li className="select">
-            <Labeled label="Group by">{this.renderDropdown('groupBy', groupBy)}</Labeled>
+            <Labeled label="Group by">
+              {this.renderDropdown('groupBy', decisionConfig.options.groupBy)}
+            </Labeled>
           </li>
           <li className="select">
             <Labeled label="Visualize as">
-              {this.renderDropdown('visualization', visualization)}
+              {this.renderDropdown('visualization', decisionConfig.options.visualization)}
             </Labeled>
           </li>
         </ul>
@@ -65,7 +65,7 @@ export default class DecisionControlPanel extends React.Component {
     }
     return (
       <Dropdown
-        label={getLabelFor(config, this.props[type]) || 'Please Select...'}
+        label={decisionConfig.getLabelFor(config, this.props[type]) || 'Please Select...'}
         className="configDropdown"
         disabled={disabled}
       >
@@ -84,7 +84,7 @@ export default class DecisionControlPanel extends React.Component {
   };
 
   renderSubmenu = (submenu, type, data, label, key) => {
-    const disabled = type === 'groupBy' && !isAllowed(this.props.view, data);
+    const disabled = type === 'groupBy' && !decisionConfig.isAllowed(this.props.view, data);
     const checked = isChecked(data, this.props[type]);
     return (
       <Dropdown.Submenu label={label} key={key} disabled={disabled} checked={checked}>
@@ -95,7 +95,12 @@ export default class DecisionControlPanel extends React.Component {
             <Dropdown.Option
               key={idx}
               checked={checked}
-              onClick={() => update(type, subData, this.props)}
+              onClick={() =>
+                this.props.updateReport(
+                  decisionConfig.update(type, subData, this.props),
+                  type !== 'visualization'
+                )
+              }
             >
               {entry.label}
             </Dropdown.Option>
@@ -108,16 +113,21 @@ export default class DecisionControlPanel extends React.Component {
   renderNormalOption = (type, data, label, key) => {
     let disabled = false;
     if (type === 'groupBy') {
-      disabled = !isAllowed(this.props.view, data);
+      disabled = !decisionConfig.isAllowed(this.props.view, data);
     } else if (type === 'visualization') {
-      disabled = !isAllowed(this.props.view, this.props.groupBy, data);
+      disabled = !decisionConfig.isAllowed(this.props.view, this.props.groupBy, data);
     }
     const checked = isChecked(data, this.props[type]);
     return (
       <Dropdown.Option
         key={key}
         checked={checked}
-        onClick={() => update(type, data, this.props)}
+        onClick={() =>
+          this.props.updateReport(
+            decisionConfig.update(type, data, this.props),
+            type !== 'visualization'
+          )
+        }
         disabled={disabled}
       >
         {label}
