@@ -91,15 +91,6 @@ export const UNNAMED_ACTIVITY = 'Unnamed Activity';
 export const FLOW_NODE_STATE_OVERLAY_ID = 'flow-node-state';
 export const STATISTICS_OVERLAY_ID = 'flow-nodes-statistics';
 
-export const FLOW_NODE_TYPE = {
-  TASK: 'TASK',
-  START_EVENT: 'START_EVENT',
-  EVENT: 'EVENT',
-  END_EVENT: 'END_EVENT',
-  EXCLUSIVE_GATEWAY: 'EXCLUSIVE_GATEWAY',
-  PARALLEL_GATEWAY: 'PARALLEL_GATEWAY'
-};
-
 export const ACTIVITY_STATE = {
   ACTIVE: 'ACTIVE',
   COMPLETED: 'COMPLETED',

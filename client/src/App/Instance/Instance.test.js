@@ -261,9 +261,7 @@ describe('Instance', () => {
         const activityDetails = activitiesDetails[id];
         expect(activityDetails).toBeTruthy();
         expect(activityDetails).toMatchObject(activity);
-        expect(activityDetails.type).toBe(
-          diagramNodes[activityId].expectedType
-        );
+        expect(activityDetails.type).toBe(diagramNodes[activityId].$type);
         expect(activityDetails.name).toBe(diagramNodes[activityId].name);
       });
     });

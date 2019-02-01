@@ -257,17 +257,9 @@ class Diagram extends React.Component {
       return fallbackName;
     }
 
-    const elementRegistry = this.Viewer.get('elementRegistry');
+    const element = this.Viewer.get('elementRegistry').get(flownodeId);
 
-    if (!elementRegistry) {
-      return fallbackName;
-    }
-
-    return (
-      this.Viewer.get('elementRegistry').get(flownodeId) || {
-        businessObject: {name: fallbackName}
-      }
-    ).businessObject.name;
+    return element.businessObject.name || element.businessObject.id;
   };
 
   render() {
@@ -286,7 +278,7 @@ class Diagram extends React.Component {
           handleZoomOut={this.handleZoomOut}
           handleZoomReset={this.handleZoomReset}
         />
-        {this.props.metadata && (
+        {this.props.selectedFlowNodeId && this.props.metadata && (
           <PopoverOverlay
             key={this.props.selectedFlowNodeId}
             selectedFlowNode={{

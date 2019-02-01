@@ -1,59 +1,67 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import {ACTIVITY_STATE, FLOW_NODE_TYPE} from 'modules/constants';
+import {ACTIVITY_STATE} from 'modules/constants';
 import {themed} from 'modules/theme';
 
 import * as Styled from './styled';
 
-const flowNodeTypeIconsMap = {
-  [FLOW_NODE_TYPE.TASK]: Styled.TaskDefault,
-  [FLOW_NODE_TYPE.START_EVENT]: Styled.StartEvent,
-  [FLOW_NODE_TYPE.EVENT]: Styled.StartEvent,
-  [FLOW_NODE_TYPE.END_EVENT]: Styled.EndEvent,
-  [FLOW_NODE_TYPE.EXCLUSIVE_GATEWAY]: Styled.ExclusiveGateway,
-  [FLOW_NODE_TYPE.PARALLEL_GATEWAY]: Styled.ParallelGateway
-};
-
-const stateIconsMap = {
-  [ACTIVITY_STATE.COMPLETED]: {
-    dark: Styled.CompletedDark,
-    light: Styled.CompletedLight
-  },
-  [ACTIVITY_STATE.ACTIVE]: {
-    dark: Styled.OkDark,
-    light: Styled.OkLight
-  },
-  [ACTIVITY_STATE.TERMINATED]: {
-    dark: Styled.CanceledDark,
-    light: Styled.CanceledLight
-  },
-  [ACTIVITY_STATE.INCIDENT]: {
-    dark: Styled.IncidentDark,
-    light: Styled.IncidentLight
+function getFlowNodeTypeIcon(type) {
+  switch (type) {
+    // events
+    case 'bpmn:StartEvent':
+      return Styled.StartEvent;
+    case 'bpmn:EndEvent':
+      return Styled.EndEvent;
+    case 'bpmn:IntermediateCatchEvent':
+      return Styled.StartEvent;
+    case 'bpmn:BoundaryEvent':
+      return Styled.StartEvent;
+    // gateways
+    case 'bpmn:ExclusiveGateway':
+      return Styled.ExclusiveGateway;
+    case 'bpmn:ParallelGateway':
+      return Styled.ParallelGateway;
+    // fallback the rest to Task
+    default:
+      return Styled.TaskDefault;
   }
-};
+}
 
-function FlowNodeIcon({state, type, isSelected, ...props}) {
-  // target flow node icon
-  const TargetFlowNodeTypeIcon = flowNodeTypeIconsMap[type];
+function getStateIconByStateAndTheme({state, theme}) {
+  switch (state) {
+    case ACTIVITY_STATE.ACTIVE:
+      return theme === 'dark' ? Styled.OkDark : Styled.OkLight;
+    case ACTIVITY_STATE.INCIDENT:
+      return theme === 'dark' ? Styled.IncidentDark : Styled.IncidentLight;
+    case ACTIVITY_STATE.TERMINATED:
+      return theme === 'dark' ? Styled.CanceledDark : Styled.CanceledLight;
+    default:
+      return theme === 'dark' ? Styled.CompletedDark : Styled.CompletedLight;
+  }
+}
 
-  // target state icon
-  let TargetStateIcon = stateIconsMap[state][props.theme];
-
-  // terminated and completed states have a special icon if the flownode is selected
+function getStateIcon({state, theme, isSelected}) {
   if (isSelected) {
     switch (state) {
       case ACTIVITY_STATE.TERMINATED:
-        TargetStateIcon = Styled.CanceledSelected;
-        break;
+        return Styled.CanceledSelected;
       case ACTIVITY_STATE.COMPLETED:
-        TargetStateIcon = Styled.CompletedSelected;
-        break;
+        return Styled.CompletedSelected;
       default:
-        TargetStateIcon = stateIconsMap[state].light;
+        return getStateIconByStateAndTheme({state, theme: 'light'});
     }
   }
+
+  return getStateIconByStateAndTheme({state, theme});
+}
+
+function FlowNodeIcon({state, type, isSelected, ...props}) {
+  // target flow node icon
+  const TargetFlowNodeTypeIcon = getFlowNodeTypeIcon(type);
+
+  // target state icon
+  let TargetStateIcon = getStateIcon({state, theme: props.theme, isSelected});
 
   return (
     <Styled.IconContainer {...props}>
@@ -65,7 +73,7 @@ function FlowNodeIcon({state, type, isSelected, ...props}) {
 
 FlowNodeIcon.propTypes = {
   state: PropTypes.oneOf(Object.values(ACTIVITY_STATE)).isRequired,
-  type: PropTypes.oneOf(Object.values(FLOW_NODE_TYPE)).isRequired,
+  type: PropTypes.string.isRequired,
   theme: PropTypes.string.isRequired,
   isSelected: PropTypes.bool
 };

@@ -1,37 +1,4 @@
-import {
-  ACTIVITY_STATE,
-  FLOW_NODE_TYPE,
-  UNNAMED_ACTIVITY
-} from 'modules/constants';
-
-export function getElementType(element) {
-  if (element.$type === 'label') {
-    return null;
-  }
-  if (element.$instanceOf('bpmn:Task')) {
-    return FLOW_NODE_TYPE.TASK;
-  }
-
-  if (element.$instanceOf('bpmn:StartEvent')) {
-    return FLOW_NODE_TYPE.START_EVENT;
-  }
-
-  if (element.$instanceOf('bpmn:EndEvent')) {
-    return FLOW_NODE_TYPE.END_EVENT;
-  }
-
-  if (element.$instanceOf('bpmn:Event')) {
-    return FLOW_NODE_TYPE.EVENT;
-  }
-
-  if (element.$instanceOf('bpmn:ExclusiveGateway')) {
-    return FLOW_NODE_TYPE.EXCLUSIVE_GATEWAY;
-  }
-
-  if (element.$instanceOf('bpmn:ParallelGateway')) {
-    return FLOW_NODE_TYPE.PARALLEL_GATEWAY;
-  }
-}
+import {ACTIVITY_STATE, UNNAMED_ACTIVITY} from 'modules/constants';
 
 /**
  * @returns { flowNodeId : { name , type }}
@@ -41,13 +8,10 @@ export function getFlowNodesDetails(elements) {
   const flowNodeDetails = {};
 
   Object.entries(elements).forEach(([id, element]) => {
-    const type = getElementType(element);
-    if (!!type) {
-      flowNodeDetails[id] = {
-        name: element.name || UNNAMED_ACTIVITY,
-        type
-      };
-    }
+    flowNodeDetails[id] = {
+      name: element.name || UNNAMED_ACTIVITY,
+      type: element.$type
+    };
   });
 
   return flowNodeDetails;
@@ -64,9 +28,7 @@ export function getFlowNodeStateOverlays(activitiesDetails = {}) {
     // If the activity is completed, only push an overlay
     // if the activity is an end event.
     const shouldPushOverlay =
-      state !== ACTIVITY_STATE.COMPLETED
-        ? true
-        : type === FLOW_NODE_TYPE.END_EVENT;
+      state !== ACTIVITY_STATE.COMPLETED ? true : type === 'bpmn:Event';
 
     if (shouldPushOverlay) {
       flowNodeStateOverlays.push({id, state});

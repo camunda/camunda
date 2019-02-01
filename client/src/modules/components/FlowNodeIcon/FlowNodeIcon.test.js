@@ -1,7 +1,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {ACTIVITY_STATE, FLOW_NODE_TYPE} from 'modules/constants';
+import {ACTIVITY_STATE} from 'modules/constants';
 
 import ThemedFlowNodeIcon from './FlowNodeIcon';
 import * as Styled from './styled';
@@ -14,7 +14,7 @@ describe('FlowNodeIcon', () => {
       // given
       const node = shallow(
         <FlowNodeIcon
-          type={FLOW_NODE_TYPE.TASK}
+          type="bpmn:Task"
           state={ACTIVITY_STATE.ACTIVE}
           theme="dark"
         />
@@ -28,7 +28,7 @@ describe('FlowNodeIcon', () => {
       // given
       const node = shallow(
         <FlowNodeIcon
-          type={FLOW_NODE_TYPE.START_EVENT}
+          type="bpmn:StartEvent"
           state={ACTIVITY_STATE.ACTIVE}
           theme="dark"
         />
@@ -38,11 +38,25 @@ describe('FlowNodeIcon', () => {
       expect(node.find(Styled.StartEvent)).toHaveLength(1);
     });
 
-    it('should render event icon', () => {
+    it('should render intermediate catch event event icon', () => {
       // given
       const node = shallow(
         <FlowNodeIcon
-          type={FLOW_NODE_TYPE.EVENT}
+          type="bpmn:IntermediateCatchEvent"
+          state={ACTIVITY_STATE.ACTIVE}
+          theme="dark"
+        />
+      );
+
+      // then
+      expect(node.find(Styled.StartEvent)).toHaveLength(1);
+    });
+
+    it('should render boundary event event icon', () => {
+      // given
+      const node = shallow(
+        <FlowNodeIcon
+          type="bpmn:BoundaryEvent"
           state={ACTIVITY_STATE.ACTIVE}
           theme="dark"
         />
@@ -56,7 +70,7 @@ describe('FlowNodeIcon', () => {
       // given
       const node = shallow(
         <FlowNodeIcon
-          type={FLOW_NODE_TYPE.END_EVENT}
+          type="bpmn:EndEvent"
           state={ACTIVITY_STATE.ACTIVE}
           theme="dark"
         />
@@ -70,7 +84,7 @@ describe('FlowNodeIcon', () => {
       // given
       const node = shallow(
         <FlowNodeIcon
-          type={FLOW_NODE_TYPE.EXCLUSIVE_GATEWAY}
+          type="bpmn:ExclusiveGateway"
           state={ACTIVITY_STATE.ACTIVE}
           theme="dark"
         />
@@ -84,7 +98,7 @@ describe('FlowNodeIcon', () => {
       // given
       const node = shallow(
         <FlowNodeIcon
-          type={FLOW_NODE_TYPE.PARALLEL_GATEWAY}
+          type="bpmn:ParallelGateway"
           state={ACTIVITY_STATE.ACTIVE}
           theme="dark"
         />
@@ -100,7 +114,7 @@ describe('FlowNodeIcon', () => {
       // given
       const node = shallow(
         <FlowNodeIcon
-          type={FLOW_NODE_TYPE.TASK}
+          type="bpmn:Task"
           state={ACTIVITY_STATE.COMPLETED}
           theme="dark"
         />
@@ -114,7 +128,7 @@ describe('FlowNodeIcon', () => {
       // given
       const node = shallow(
         <FlowNodeIcon
-          type={FLOW_NODE_TYPE.TASK}
+          type="bpmn:Task"
           state={ACTIVITY_STATE.COMPLETED}
           theme="light"
         />
@@ -128,7 +142,7 @@ describe('FlowNodeIcon', () => {
       // given
       const node = shallow(
         <FlowNodeIcon
-          type={FLOW_NODE_TYPE.TASK}
+          type="bpmn:Task"
           state={ACTIVITY_STATE.COMPLETED}
           theme="dark"
           isSelected={true}
@@ -143,7 +157,7 @@ describe('FlowNodeIcon', () => {
       // given
       const node = shallow(
         <FlowNodeIcon
-          type={FLOW_NODE_TYPE.TASK}
+          type="bpmn:Task"
           state={ACTIVITY_STATE.TERMINATED}
           theme="dark"
         />
@@ -157,7 +171,7 @@ describe('FlowNodeIcon', () => {
       // given
       const node = shallow(
         <FlowNodeIcon
-          type={FLOW_NODE_TYPE.TASK}
+          type="bpmn:Task"
           state={ACTIVITY_STATE.TERMINATED}
           theme="light"
         />
@@ -171,7 +185,7 @@ describe('FlowNodeIcon', () => {
       // given
       const node = shallow(
         <FlowNodeIcon
-          type={FLOW_NODE_TYPE.TASK}
+          type="bpmn:Task"
           state={ACTIVITY_STATE.TERMINATED}
           theme="dark"
           isSelected={true}
@@ -186,7 +200,7 @@ describe('FlowNodeIcon', () => {
       // given
       const node = shallow(
         <FlowNodeIcon
-          type={FLOW_NODE_TYPE.TASK}
+          type="bpmn:Task"
           state={ACTIVITY_STATE.ACTIVE}
           theme="dark"
         />
@@ -200,7 +214,7 @@ describe('FlowNodeIcon', () => {
       // given
       const node = shallow(
         <FlowNodeIcon
-          type={FLOW_NODE_TYPE.TASK}
+          type="bpmn:Task"
           state={ACTIVITY_STATE.ACTIVE}
           theme="light"
         />
@@ -214,7 +228,7 @@ describe('FlowNodeIcon', () => {
       // given
       const node = shallow(
         <FlowNodeIcon
-          type={FLOW_NODE_TYPE.TASK}
+          type="bpmn:Task"
           state={ACTIVITY_STATE.ACTIVE}
           theme="dark"
           isSelected={true}
@@ -229,7 +243,7 @@ describe('FlowNodeIcon', () => {
       // given
       const node = shallow(
         <FlowNodeIcon
-          type={FLOW_NODE_TYPE.TASK}
+          type="bpmn:Task"
           state={ACTIVITY_STATE.INCIDENT}
           theme="dark"
         />
@@ -243,7 +257,7 @@ describe('FlowNodeIcon', () => {
       // given
       const node = shallow(
         <FlowNodeIcon
-          type={FLOW_NODE_TYPE.TASK}
+          type="bpmn:Task"
           state={ACTIVITY_STATE.INCIDENT}
           theme="light"
         />
@@ -257,7 +271,7 @@ describe('FlowNodeIcon', () => {
       // given
       const node = shallow(
         <FlowNodeIcon
-          type={FLOW_NODE_TYPE.TASK}
+          type="bpmn:Task"
           state={ACTIVITY_STATE.INCIDENT}
           theme="dark"
           isSelected={true}
