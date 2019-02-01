@@ -12,3 +12,6 @@ port = 3
 
 [network.subscription]
 port = 4
+
+[network.atomix]
+port = 5
