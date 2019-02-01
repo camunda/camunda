@@ -11,7 +11,6 @@
     <Logger name="io.zeebe" level="info"/>
     <Logger name="io.atomix" level="info"/>
     <!--<Logger name="io.zeebe.raft" level="debug"/>-->
-    <!--     <Logger name="io.zeebe.gossip" level="trace"/> -->
 
     <Root level="info">
       <AppenderRef ref="Console"/>
