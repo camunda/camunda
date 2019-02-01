@@ -88,10 +88,10 @@ it('should pass on custom props if indicated by the visualization', () => {
   expect(node.find(Table)).toHaveProp('someInfo', 'very important');
 });
 
-it('should pass the report Type to the visualization component', () => {
+it('should pass the report to the visualization component', () => {
   const node = shallow(<CombinedReportView report={CombinedReport} />);
 
-  expect(node.find(Table)).toHaveProp('reportType', 'process');
+  expect(node.find(Table)).toHaveProp('report', CombinedReport);
 });
 
 xit('should convert results of a combined number report to a correctly formatted barchart data', () => {

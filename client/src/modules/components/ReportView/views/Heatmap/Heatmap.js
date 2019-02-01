@@ -9,16 +9,16 @@ import {formatters} from 'services';
 
 import './Heatmap.scss';
 
-const Heatmap = ({
-  result,
-  formatter,
-  data: {
-    configuration: {alwaysShowAbsolute, alwaysShowRelative, heatmapTargetValue: targetValue, xml},
-    view
-  },
-  processInstanceCount,
-  errorMessage
-}) => {
+const Heatmap = ({report, formatter, errorMessage}) => {
+  const {
+    result,
+    data: {
+      configuration: {alwaysShowAbsolute, alwaysShowRelative, heatmapTargetValue: targetValue, xml},
+      view
+    },
+    processInstanceCount
+  } = report;
+
   if (!result || typeof result !== 'object') {
     return <p>{errorMessage}</p>;
   }

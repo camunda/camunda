@@ -7,17 +7,20 @@ import {
   getTooltipLabelColor
 } from './service';
 
-export default function createChartOptions({
-  data: {visualization, view, configuration},
-  result,
-  targetValue,
-  processInstanceCount,
-  combined,
-  theme,
-  formatter
-}) {
+export default function createChartOptions({report, targetValue, theme, formatter}) {
+  const {
+    data: {visualization, view, configuration},
+    result,
+    processInstanceCount,
+    combined
+  } = report;
+
   const isDark = theme === 'dark';
   const stacked = visualization === 'number';
+  const property = combined ? Object.values(result)[0].data.view.property : view.property;
+  const processInstanceCountArr = combined
+    ? Object.values(result).map(report => report.processInstanceCount)
+    : [processInstanceCount];
 
   let options;
   switch (visualization) {
@@ -31,7 +34,7 @@ export default function createChartOptions({
         result,
         targetValue,
         configuration,
-        view.property,
+        property,
         stacked,
         combined,
         isDark
@@ -57,8 +60,8 @@ export default function createChartOptions({
             targetValue,
             configuration,
             formatter,
-            combined ? processInstanceCount : [processInstanceCount],
-            view.property,
+            processInstanceCountArr,
+            property,
             visualization
           );
         },
@@ -68,7 +71,15 @@ export default function createChartOptions({
   };
 }
 
-function createBarOptions(data, targetValue, configuration, property, stacked, isCombined, isDark) {
+function createBarOptions(
+  result,
+  targetValue,
+  configuration,
+  property,
+  stacked,
+  isCombined,
+  isDark
+) {
   const targetLine = targetValue && getFormattedTargetValue(targetValue);
   return {
     ...(configuration.pointMarkers === false ? {elements: {point: {radius: 0}}} : {}),
@@ -92,7 +103,7 @@ function createBarOptions(data, targetValue, configuration, property, stacked, i
           },
           ticks: {
             ...(property === 'duration'
-              ? createDurationFormattingOptions(data, targetLine, isCombined)
+              ? createDurationFormattingOptions(result, targetLine, isCombined)
               : {}),
             beginAtZero: true,
             fontColor: getColorFor('label', isDark),

@@ -7,9 +7,7 @@ import {Table, Number} from './views';
 import {formatters} from 'services';
 
 const checkReport = props => {
-  const {
-    report: {data}
-  } = props;
+  const {report: {data}} = props;
   if (isEmpty(data.decisionDefinitionKey) || isEmpty(data.decisionDefinitionVersion)) {
     return 'a Decision Definition';
   } else if (!data.view) {
@@ -25,9 +23,7 @@ const checkReport = props => {
 
 const getConfig = props => {
   const {report, disableReportScrolling, customProps, defaultErrorMessage} = props;
-  let {
-    data: {visualization}
-  } = report;
+  let {data: {visualization}} = report;
   let config;
 
   switch (visualization) {
@@ -56,7 +52,7 @@ const getConfig = props => {
     errorMessage: defaultErrorMessage,
     ...config.props,
     ...(customProps ? customProps[visualization] || {} : {}),
-    ...report
+    report
   };
 
   return config;

@@ -74,25 +74,27 @@ const props = {
   flowNodeNames: {
     a: 'a'
   },
-  ...report
+  report
 };
 
 it('should get the camunda endpoints for raw data', () => {
   getCamundaEndpoints.mockClear();
-  shallow(<Table {...props} result={[1, 2, 3]} />);
+  shallow(<Table {...props} report={{...report, result: [1, 2, 3]}} />);
 
   expect(getCamundaEndpoints).toHaveBeenCalled();
 });
 
 it('should not get the camunda endpoints for non-raw-data tables', () => {
   getCamundaEndpoints.mockClear();
-  shallow(<Table {...props} configuration={{}} data={{}} />);
+  shallow(<Table {...props} report={{...report, result: {}}} />);
 
   expect(getCamundaEndpoints).not.toHaveBeenCalled();
 });
 
 it('should display data for key-value pairs', async () => {
-  const node = await shallow(<Table {...props} result={{a: 1, b: 2, c: 3}} formatter={v => v} />);
+  const node = await shallow(
+    <Table {...props} report={{...report, result: {a: 1, b: 2, c: 3}}} formatter={v => v} />
+  );
 
   expect(node.find('Table').prop('body')).toEqual([['a', 1], ['b', 2], ['c', 3]]);
 });
@@ -112,7 +114,7 @@ it('should display the relative percentage for frequency views', () => {
   };
 
   const node = shallow(
-    <Table {...props} data={data} result={{a: 1, b: 2, c: 3}} formatter={v => v} />
+    <Table {...props} report={{...report, data, result: {a: 1, b: 2, c: 3}}} formatter={v => v} />
   );
 
   expect(getRelativeValue).toHaveBeenCalledWith(1, 5);
@@ -126,12 +128,14 @@ it('should process raw data', async () => {
   await shallow(
     <Table
       {...props}
-      result={[
-        {prop1: 'foo', prop2: 'bar', variables: {innerProp: 'bla'}},
-        {prop1: 'asdf', prop2: 'ghjk', variables: {innerProp: 'ruvnvr'}}
-      ]}
+      report={{
+        ...report,
+        result: [
+          {prop1: 'foo', prop2: 'bar', variables: {innerProp: 'bla'}},
+          {prop1: 'asdf', prop2: 'ghjk', variables: {innerProp: 'ruvnvr'}}
+        ]
+      }}
       formatter={v => v}
-      configuration={{}}
     />
   );
 
@@ -140,7 +144,15 @@ it('should process raw data', async () => {
 
 it('should display an error message for a non-object result (single number)', async () => {
   const node = await shallow(
-    <Table {...props} data={7} errorMessage="Error" formatter={v => v} configuration={{}} />
+    <Table
+      {...props}
+      report={{
+        ...report,
+        result: 7
+      }}
+      errorMessage="Error"
+      formatter={v => v}
+    />
   );
 
   expect(node.find('ReportBlankSlate')).toBePresent();
@@ -149,7 +161,7 @@ it('should display an error message for a non-object result (single number)', as
 
 it('should display an error message if no data is provided', async () => {
   const node = await shallow(
-    <Table {...props} errorMessage="Error" formatter={v => v} configuration={{}} />
+    <Table {...props} report={{...report, result: null}} errorMessage="Error" formatter={v => v} />
   );
 
   expect(node.find('ReportBlankSlate')).toBePresent();
@@ -158,7 +170,7 @@ it('should display an error message if no data is provided', async () => {
 
 it('should display an error message if data is null', async () => {
   const node = await shallow(
-    <Table {...props} data={null} errorMessage="Error" formatter={v => v} configuration={{}} />
+    <Table {...props} report={{...report, data: null}} errorMessage="Error" formatter={v => v} />
   );
 
   expect(node.find('ReportBlankSlate')).toBePresent();
@@ -169,10 +181,13 @@ it('should not display an error message if data is valid', async () => {
   const node = await shallow(
     <Table
       {...props}
-      result={[
-        {prop1: 'foo', prop2: 'bar', variables: {innerProp: 'bla'}},
-        {prop1: 'asdf', prop2: 'ghjk', variables: {innerProp: 'ruvnvr'}}
-      ]}
+      report={{
+        ...report,
+        result: [
+          {prop1: 'foo', prop2: 'bar', variables: {innerProp: 'bla'}},
+          {prop1: 'asdf', prop2: 'ghjk', variables: {innerProp: 'ruvnvr'}}
+        ]
+      }}
       errorMessage="Error"
       formatter={v => v}
     />
@@ -183,7 +198,12 @@ it('should not display an error message if data is valid', async () => {
 
 it('should format data according to the provided formatter', async () => {
   const node = await shallow(
-    <Table {...props} result={{a: 1, b: 2, c: 3}} formatter={v => 2 * v} configuration={{}} />
+    <Table
+      {...props}
+      report={{...report, result: {a: 1, b: 2, c: 3}}}
+      formatter={v => 2 * v}
+      configuration={{}}
+    />
   );
 
   expect(node.find('Table').prop('body')).toEqual([['a', 2], ['b', 4], ['c', 6]]);
@@ -222,7 +242,7 @@ it('should return correct labels and body when combining two table report', asyn
     }
   };
 
-  const node = await shallow(<Table {...{...props, ...combinedReport}} />);
+  const node = await shallow(<Table {...props} report={combinedReport} />);
   expect(node.instance().processCombinedData()).toEqual({
     head: [
       undefined,
@@ -244,12 +264,15 @@ it('should not include a column if it is hidden in the configuration', () => {
   const node = shallow(
     <Table
       {...props}
-      data={{
-        ...report.data,
-        view: {property: 'frequency'},
-        configuration: {hideAbsoluteValue: true}
+      report={{
+        ...report,
+        data: {
+          ...report.data,
+          view: {property: 'frequency'},
+          configuration: {hideAbsoluteValue: true}
+        },
+        result: {a: 1, b: 2, c: 3}
       }}
-      result={{a: 1, b: 2, c: 3}}
     />
   );
 
@@ -295,7 +318,7 @@ it('should not include a column in a combined report if it is hidden in the conf
   ]);
   getBodyRows.mockReturnValue([['a', 1, 1], ['b', 2, 2], ['c', 3, 3]]);
 
-  const node = await shallow(<Table {...{...props, ...combinedReport}} />);
+  const node = await shallow(<Table {...props} report={combinedReport} />);
   expect(node.instance().processCombinedData()).toEqual({
     head: [
       undefined,

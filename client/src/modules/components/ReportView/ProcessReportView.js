@@ -57,9 +57,7 @@ export default class ProcessReportView extends React.Component {
       );
     }
 
-    const {
-      report: {data, processInstanceCount}
-    } = this.props;
+    const {report: {data, processInstanceCount}} = this.props;
 
     if (!this.state.loaded) {
       return <LoadingIndicator />;
@@ -88,9 +86,7 @@ export default class ProcessReportView extends React.Component {
   }
 
   checkReport = () => {
-    const {
-      report: {data}
-    } = this.props;
+    const {report: {data}} = this.props;
 
     if (isEmpty(data.processDefinitionKey) || isEmpty(data.processDefinitionVersion)) {
       return 'a Process Definition';
@@ -155,7 +151,7 @@ export default class ProcessReportView extends React.Component {
       errorMessage: defaultErrorMessage,
       ...config.props,
       ...(customProps ? customProps[visualization] || {} : {}),
-      ...report
+      report
     };
 
     return config;

@@ -1,23 +1,30 @@
 import {createDatasetOptions, getTargetLineOptions} from './createChartOptions';
 import {uniteResults} from '../service';
+import {getCombinedChartProps} from './service';
 import {formatters} from 'services';
 
 const {formatReportResult} = formatters;
 
-export default function createChartData({combined, ...props}) {
-  if (combined) {
+export default function createChartData(props) {
+  if (props.report.combined) {
     return createCombinedChartData(props);
   } else {
     return createSingleChartData(props);
   }
 }
 
-function createCombinedChartData({result, data, theme, targetValue, reportsNames}) {
+function createCombinedChartData({report, theme, targetValue}) {
+  const {result, data: combinedReportData} = report;
+
+  const data = {...Object.values(result)[0].data, ...combinedReportData};
+
+  const {reportsNames, resultArr} = getCombinedChartProps(result, data);
+
   const {configuration: {reportColors}} = data;
 
   const isDark = theme === 'dark';
 
-  const labels = Object.keys(Object.assign({}, ...result));
+  const labels = Object.keys(Object.assign({}, ...resultArr));
 
   if (isDate(data.groupBy))
     labels.sort((a, b) => {
@@ -27,14 +34,14 @@ function createCombinedChartData({result, data, theme, targetValue, reportsNames
   let datasets;
   if (data.visualization === 'line' && targetValue) {
     datasets = createCombinedTargetLineDatasets(
-      result,
+      resultArr,
       reportsNames,
       targetValue,
       reportColors,
       isDark
     );
   } else {
-    datasets = uniteResults(result, labels).map((report, index) => {
+    datasets = uniteResults(resultArr, labels).map((report, index) => {
       return {
         label: reportsNames && reportsNames[index],
         data: Object.values(report),
@@ -53,7 +60,8 @@ function createCombinedChartData({result, data, theme, targetValue, reportsNames
   return {labels, datasets};
 }
 
-function createSingleChartData({result, data, theme, targetValue, flowNodeNames}) {
+function createSingleChartData({report, theme, targetValue, flowNodeNames}) {
+  const {result, data} = report;
   const isDark = theme === 'dark';
   const {groupBy, visualization, configuration: {color}} = data;
   const formattedResult = formatReportResult(data, result);
@@ -84,8 +92,14 @@ function createSingleChartData({result, data, theme, targetValue, flowNodeNames}
   return {labels, datasets};
 }
 
-function createCombinedTargetLineDatasets(data, reportsNames, targetValue, datasetsColors, isDark) {
-  return data.reduce((prevDataset, report, i) => {
+function createCombinedTargetLineDatasets(
+  resultArr,
+  reportsNames,
+  targetValue,
+  datasetsColors,
+  isDark
+) {
+  return resultArr.reduce((prevDataset, report, i) => {
     return [
       ...prevDataset,
       ...createSingleTargetLineDataset(

@@ -23,7 +23,7 @@ export default withErrorHandling(
       needEndpoint: false
     };
 
-    static getDerivedStateFromProps({result, combined}) {
+    static getDerivedStateFromProps({report: {result, combined}}) {
       if (result && !combined && isRaw(result)) {
         return {needEndpoint: true};
       }
@@ -39,12 +39,9 @@ export default withErrorHandling(
     }
 
     processSingleData(labels, result, processInstanceCount) {
-      const {formatter = v => v, data} = this.props;
+      const {formatter = v => v, report} = this.props;
 
-      const {
-        configuration: {hideAbsoluteValue, hideRelativeValue},
-        view: {property}
-      } = data;
+      const {configuration: {hideAbsoluteValue, hideRelativeValue}, view: {property}} = report.data;
 
       const displayRelativeValue = property === 'frequency' && !hideRelativeValue;
       const displayAbsoluteValue = property === 'duration' || !hideAbsoluteValue;
@@ -65,15 +62,13 @@ export default withErrorHandling(
     }
 
     processCombinedData() {
-      const {result, data, formatter} = this.props;
+      const {formatter, report} = this.props;
       const {labels, reportsNames, combinedResult, processInstanceCount} = getCombinedTableProps(
-        result,
-        data.reportIds
+        report.result,
+        report.data.reportIds
       );
-      const {
-        configuration: {hideAbsoluteValue, hideRelativeValue}
-      } = data;
-      const {view} = Object.values(result)[0].data;
+      const {configuration: {hideAbsoluteValue, hideRelativeValue}} = report.data;
+      const {view} = Object.values(report.result)[0].data;
 
       const displayRelativeValue = view.property === 'frequency' && !hideRelativeValue;
       const displayAbsoluteValue = !hideAbsoluteValue;
@@ -110,7 +105,7 @@ export default withErrorHandling(
     }
 
     render() {
-      const {result, errorMessage, disableReportScrolling} = this.props;
+      const {report: {result}, errorMessage, disableReportScrolling} = this.props;
 
       if (!result || typeof result !== 'object') {
         return <ReportBlankSlate message={errorMessage} />;
@@ -126,7 +121,8 @@ export default withErrorHandling(
     }
 
     formatData = () => {
-      const {reportType, combined, data, processInstanceCount, updateSorting, result} = this.props;
+      const {report, updateSorting} = this.props;
+      const {reportType, combined, data, processInstanceCount, result} = report;
 
       // Combined Report
       if (combined) return this.processCombinedData();
@@ -135,10 +131,7 @@ export default withErrorHandling(
 
       // raw data
       if (isRaw(result)) {
-        const {
-          parameters,
-          configuration: {excludedColumns, columnOrder}
-        } = data;
+        const {parameters, configuration: {excludedColumns, columnOrder}} = data;
         return {
           ...processRawData({
             data: formattedResult,

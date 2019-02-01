@@ -62,39 +62,39 @@ const report = {
 };
 
 it('should load the process definition xml', () => {
-  const node = mount(<Heatmap {...report} />);
+  const node = mount(<Heatmap report={report} />);
 
   expect(node).toIncludeText('some diagram XML');
 });
 
 it('should load an updated process definition xml', () => {
-  const node = mount(<Heatmap {...report} />);
+  const node = mount(<Heatmap report={report} />);
 
-  node.setProps({data: {configuration: {xml: 'another xml'}}});
+  node.setProps({report: {...report, data: {configuration: {xml: 'another xml'}}}});
 
   expect(node).toIncludeText('another xml');
 });
 
 it('should display a loading indication while loading', () => {
-  const node = mount(<Heatmap {...{...report, data: {configuration: {xml: null}}}} />);
+  const node = mount(<Heatmap report={{...report, data: {configuration: {xml: null}}}} />);
 
   expect(node.find('.sk-circle')).toBePresent();
 });
 
 it('should display an error message if visualization is incompatible with data', () => {
-  const node = mount(<Heatmap {...{...report, result: 1234}} errorMessage="Error" />);
+  const node = mount(<Heatmap report={{...report, result: 1234}} errorMessage="Error" />);
 
   expect(node).toIncludeText('Error');
 });
 
 it('should display a diagram', () => {
-  const node = mount(<Heatmap {...report} />);
+  const node = mount(<Heatmap report={report} />);
 
   expect(node).toIncludeText('Diagram');
 });
 
 it('should display a heatmap overlay', () => {
-  const node = mount(<Heatmap {...report} />);
+  const node = mount(<Heatmap report={report} />);
 
   expect(node).toIncludeText('HeatmapOverlay');
 });
@@ -105,7 +105,7 @@ it('should convert the data to target value heat when target value mode is activ
     values: 'some values'
   };
 
-  mount(<Heatmap {...{...report, data: {configuration: {xml: 'test', heatmapTargetValue}}}} />);
+  mount(<Heatmap report={{...report, data: {configuration: {xml: 'test', heatmapTargetValue}}}} />);
 
   expect(calculateTargetValueHeat).toHaveBeenCalledWith(report.result, heatmapTargetValue.values);
 });
@@ -123,7 +123,7 @@ it('should show a tooltip with information about actual and target value', () =>
   convertToMilliseconds.mockReturnValue(1);
 
   const node = mount(
-    <Heatmap {...{...report, data: {configuration: {xml: 'test', heatmapTargetValue}}}} />
+    <Heatmap report={{...report, data: {configuration: {xml: 'test', heatmapTargetValue}}}} />
   );
 
   const tooltip = node
@@ -149,7 +149,7 @@ it('should inform if the actual value is less than 1% of the target value', () =
   convertToMilliseconds.mockReturnValue(10000);
 
   const node = mount(
-    <Heatmap {...{...report, data: {configuration: {xml: 'test', heatmapTargetValue}}}} />
+    <Heatmap report={{...report, data: {configuration: {xml: 'test', heatmapTargetValue}}}} />
   );
 
   const tooltip = node
@@ -176,7 +176,7 @@ it('should show a tooltip with information if no actual value is available', () 
 
   const node = mount(
     <Heatmap
-      {...{...report, result: {}, data: {configuration: {xml: 'test', heatmapTargetValue}}}}
+      report={{...report, result: {}, data: {configuration: {xml: 'test', heatmapTargetValue}}}}
     />
   );
 
@@ -196,7 +196,7 @@ it('should show the relative frequency in a tooltip', () => {
   getRelativeValue.mockClear();
   getRelativeValue.mockReturnValue('12.3%');
 
-  const node = mount(<Heatmap {...report} formatter={v => v} />);
+  const node = mount(<Heatmap report={report} formatter={v => v} />);
 
   const tooltip = node
     .find(HeatmapOverlay)
@@ -208,7 +208,7 @@ it('should show the relative frequency in a tooltip', () => {
 });
 
 it('should not display an error message if data is valid', () => {
-  const node = mount(<Heatmap {...report} errorMessage="Error" />);
+  const node = mount(<Heatmap report={report} errorMessage="Error" />);
 
   expect(node).not.toIncludeText('Error');
 });

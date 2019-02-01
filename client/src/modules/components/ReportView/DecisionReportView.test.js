@@ -38,5 +38,5 @@ it('should pass on custom props if indicated by the visualization', () => {
 it('should pass the report Type to the visualization component', () => {
   const node = shallow(<DecisionReportView report={report} />);
 
-  expect(node.find(Table)).toHaveProp('reportType', 'decision');
+  expect(node.find(Table)).toHaveProp('report', report);
 });

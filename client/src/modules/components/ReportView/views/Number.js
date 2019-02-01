@@ -6,7 +6,8 @@ import {formatters, isDurationValue} from 'services';
 
 import './Number.scss';
 
-export default function Number({data, formatter, errorMessage, result}) {
+export default function Number({report, formatter, errorMessage}) {
+  const {data, result} = report;
   const {targetValue, precision} = data.configuration;
 
   if (isDurationValue(result)) {

@@ -99,16 +99,16 @@ export function generateLegendLabels(chart) {
     : [];
 }
 
-export function createDurationFormattingOptions(data, targetLine, isCombined) {
+export function createDurationFormattingOptions(result, targetLine, isCombined) {
   // since the duration is given in milliseconds, chart.js cannot create nice y axis
   // ticks. So we define our own set of possible stepSizes and find one that the maximum
   // value of the dataset fits into or the maximum target line value if it is defined.
   let dataMinStep;
   if (isCombined) {
-    dataMinStep =
-      Math.max(...data.map(reportResult => Math.max(...Object.values(reportResult)))) / 10;
+    const resultMaxValues = Object.values(result).map(report => getResultMaxValue(report.result));
+    dataMinStep = Math.max(...resultMaxValues) / 10;
   } else {
-    dataMinStep = Math.max(...Object.values(data)) / 10;
+    dataMinStep = getResultMaxValue(result) / 10;
   }
   const targetLineMinStep = targetLine ? targetLine / 10 : 0;
   const minimumStepSize = Math.max(targetLineMinStep, dataMinStep);
@@ -141,6 +141,10 @@ export function createDurationFormattingOptions(data, targetLine, isCombined) {
   };
 }
 
+function getResultMaxValue(result) {
+  return Math.max(...Object.values(result));
+}
+
 export function getFormattedTargetValue({unit, value}) {
   if (!unit) return value;
   return convertToMilliseconds(value, unit);
@@ -149,18 +153,17 @@ export function getFormattedTargetValue({unit, value}) {
 export function getCombinedChartProps(result, data) {
   if (data.visualization === 'number')
     return {
-      result: getCombinedNumberData(result),
+      resultArr: getCombinedNumberData(result),
       reportsNames: Object.values(result).map(report => report.name)
     };
   const resultData = data.reportIds.reduce(
     (prev, reportId) => {
       return {
-        result: [...prev.result, formatReportResult(data, result[reportId].result)],
-        reportsNames: [...prev.reportsNames, result[reportId].name],
-        processInstanceCount: [...prev.processInstanceCount, result[reportId].processInstanceCount]
+        resultArr: [...prev.resultArr, formatReportResult(data, result[reportId].result)],
+        reportsNames: [...prev.reportsNames, result[reportId].name]
       };
     },
-    {result: [], reportsNames: [], processInstanceCount: []}
+    {resultArr: [], reportsNames: []}
   );
   return resultData;
 }

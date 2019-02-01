@@ -48,7 +48,7 @@ it('should display a number if visualization is number', () => {
   });
 
   expect(node.find(Number)).toBePresent();
-  expect(node.find(Number).prop('result')).toBe(1234);
+  expect(node.find(Number).prop('report')).toBe(report);
 });
 
 it('should provide an errorMessage property to the component', () => {
@@ -300,11 +300,11 @@ it('should pass on custom props if indicated by the visualization', () => {
   expect(node.find(Table)).toHaveProp('someInfo', 'very important');
 });
 
-it('should pass the report Type to the visualization component', () => {
+it('should pass the report to the visualization component', () => {
   const node = shallow(<ProcessReportView report={exampleDurationReport} type="process" />);
   node.setState({
     loaded: true
   });
 
-  expect(node.find(Table)).toHaveProp('reportType', 'process');
+  expect(node.find(Table)).toHaveProp('report', exampleDurationReport);
 });

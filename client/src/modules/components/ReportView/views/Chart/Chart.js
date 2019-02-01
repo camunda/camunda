@@ -2,7 +2,7 @@ import React from 'react';
 import ChartRenderer from 'chart.js';
 import ReportBlankSlate from '../../ReportBlankSlate';
 
-import {drawHorizentalLine, getCombinedChartProps} from './service';
+import {drawHorizentalLine} from './service';
 
 import {themed} from 'theme';
 
@@ -19,7 +19,7 @@ export default themed(
     };
 
     render() {
-      const {result, errorMessage} = this.props;
+      const {report: {result}, errorMessage} = this.props;
 
       let errorMessageFragment = null;
       if (!result || typeof result !== 'object') {
@@ -42,21 +42,15 @@ export default themed(
     };
 
     createNewChart = () => {
-      const {result, combined} = this.props;
-      let {data} = this.props;
+      const {report: {result}} = this.props;
+      let {report: {data}} = this.props;
 
       if (!result || typeof result !== 'object') {
         return;
       }
 
-      let combinedProps = {};
-      if (combined) {
-        data = {...Object.values(result)[0].data, ...data};
-        combinedProps = getCombinedChartProps(result, data);
-        combinedProps.data = data;
-      }
-
-      const {visualization, configuration, view} = data;
+      const {visualization, configuration} = data;
+      const view = data.view || Object.values(result)[0].data.view;
 
       this.destroyChart();
 
@@ -70,13 +64,11 @@ export default themed(
         type: isTargetLine ? 'targetLine' : chartVisualization,
         data: createChartData({
           ...this.props,
-          targetValue,
-          ...combinedProps
+          targetValue
         }),
         options: createChartOptions({
           ...this.props,
-          targetValue,
-          ...combinedProps
+          targetValue
         }),
         plugins: [
           {

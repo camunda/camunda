@@ -148,11 +148,10 @@ it('should return correct cominbed chart repot data properties for single report
   const chartProps = getCombinedChartProps(result, data);
 
   expect(chartProps).toEqual({
-    result: [
+    resultArr: [
       {'2015-03-25T12:00:00Z': 2, '2015-03-26T12:00:00Z': 3},
       {'2015-03-25T12:00:00Z': 2, '2015-03-26T12:00:00Z': 3}
     ],
-    reportsNames: ['report A', 'report A'],
-    processInstanceCount: [100, 100]
+    reportsNames: ['report A', 'report A']
   });
 });

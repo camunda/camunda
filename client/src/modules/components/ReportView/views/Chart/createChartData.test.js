@@ -21,16 +21,18 @@ it('should create two datasets for line chart with target values', () => {
   const targetValue = {target: 10};
 
   const chartData = createChartData({
-    result,
-    data: {
-      configuration: {color: ['blue']},
-      visualization: 'line',
-      groupBy: {
-        type: '',
-        value: ''
-      }
+    report: {
+      result,
+      data: {
+        configuration: {color: ['blue']},
+        visualization: 'line',
+        groupBy: {
+          type: '',
+          value: ''
+        }
+      },
+      combined: false
     },
-    combined: false,
     theme: 'light',
     targetValue
   });
@@ -41,22 +43,24 @@ it('should create two datasets for each report in combined line charts with targ
   uniteResults.mockClear();
 
   const result = {foo: 123, bar: 5, dar: 5};
+  const name = 'test1';
   uniteResults.mockReturnValue([result, result]);
   const targetValue = {target: 10};
   const chartData = createChartData({
-    result: [result, result],
-    reportsNames: ['test1', 'test2'],
-    data: {
-      reportIds: ['reportA', 'reportB'],
-      configuration: {reportColors: ['blue', 'yellow']},
-      visualization: 'line',
-      groupBy: {
-        type: '',
-        value: ''
-      }
+    report: {
+      result: {reportA: {name, result}, reportB: {name, result}},
+      data: {
+        reportIds: ['reportA', 'reportB'],
+        configuration: {reportColors: ['blue', 'yellow']},
+        visualization: 'line',
+        groupBy: {
+          type: '',
+          value: ''
+        }
+      },
+      combined: true
     },
     targetValue,
-    combined: true,
     theme: 'light'
   });
 
@@ -69,17 +73,19 @@ it('should return correct chart data object for a single report', () => {
   uniteResults.mockReturnValue([result]);
 
   const chartData = createChartData({
-    result,
-    data: {
-      configuration: {color: 'testColor'},
-      visualization: 'line',
-      groupBy: {
-        type: '',
-        value: ''
-      }
+    report: {
+      result,
+      data: {
+        configuration: {color: 'testColor'},
+        visualization: 'line',
+        groupBy: {
+          type: '',
+          value: ''
+        }
+      },
+      targetValue: false,
+      combined: false
     },
-    targetValue: false,
-    combined: false,
     theme: 'light'
   });
 
@@ -98,25 +104,29 @@ it('should return correct chart data object for a single report', () => {
 });
 
 it('should return correct chart data object for a combined report', () => {
-  const result = [{foo: 123, bar: 5}, {foo: 1, dar: 3}];
+  const result = {
+    reportA: {name: 'Report A', result: {foo: 123, bar: 5}},
+    reportB: {name: 'Report B', result: {foo: 1, dar: 3}}
+  };
 
   uniteResults.mockClear();
-  uniteResults.mockReturnValue(result);
+  uniteResults.mockReturnValue([result.reportA.result, result.reportB.result]);
 
   const chartData = createChartData({
-    reportsNames: ['Report A', 'Report B'],
-    result,
-    data: {
-      groupBy: {
-        type: '',
-        value: ''
+    report: {
+      result,
+      data: {
+        groupBy: {
+          type: '',
+          value: ''
+        },
+        reportIds: ['reportA', 'reportB'],
+        configuration: {reportColors: ['blue', 'yellow']},
+        visualization: 'line'
       },
-      reportIds: ['reportA', 'reportB'],
-      configuration: {reportColors: ['blue', 'yellow']},
-      visualization: 'line'
+      combined: true
     },
     targetValue: false,
-    combined: true,
     theme: 'light'
   });
 
