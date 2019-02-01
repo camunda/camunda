@@ -12,7 +12,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -426,6 +426,8 @@ public class EngineDatabaseRule extends TestWatcher {
     // when using timestamps with the data base we have to limit the precision to millis
     // otherwise date equals queries like finishedAt queries won't work as expected with modified timestamps
     // due to the added precision that is not available on the engines REST-API
-    return Timestamp.valueOf(offsetDateTime.toLocalDateTime().truncatedTo(ChronoUnit.MILLIS));
+    return Timestamp.valueOf(
+      offsetDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd kk:mm:ss.SSS"))
+    );
   }
 }
