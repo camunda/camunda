@@ -40,7 +40,7 @@ public class TimeDateTimerTest {
   public void shouldConvertTimezoneCorrectly() {
     // given
     final ZonedDateTime localTime = ZonedDateTime.now();
-    final ZonedDateTime utcTime = ZonedDateTime.now(ZoneId.of("UTC"));
+    final ZonedDateTime utcTime = localTime.withZoneSameInstant(ZoneId.of("UTC"));
 
     // when
     final Timer localTimeDate = parse(localTime.toString());
