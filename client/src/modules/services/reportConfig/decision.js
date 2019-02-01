@@ -1,27 +1,28 @@
 export const visualization = {
+  number: {data: 'number', label: 'Number'},
   table: {data: 'table', label: 'Table'},
-  number: {data: 'number', label: 'Number'}
-  // bar: {data: 'bar', label: 'Bar Chart'},
-  // line: {data: 'line', label: 'Line Chart'},
-  // pie: {data: 'pie', label: 'Pie Chart'}
+  bar: {data: 'bar', label: 'Bar Chart'},
+  line: {data: 'line', label: 'Line Chart'},
+  pie: {data: 'pie', label: 'Pie Chart'}
 };
 
 export const groupBy = {
-  none: {data: {type: 'none'}, label: 'None'}
+  none: {data: {type: 'none'}, label: 'None'},
   // rules: {data: {type: 'rules'}, label: 'Rules'},
-  // evaluationDate: {
-  //   data: {
-  //     type: 'evaluationDate',
-  //     value: [
-  //       {data: {unit: 'year'}, label: 'Year'},
-  //       {data: {unit: 'month'}, label: 'Month'},
-  //       {data: {unit: 'week'}, label: 'Week'},
-  //       {data: {unit: 'day'}, label: 'Day'},
-  //       {data: {unit: 'hour'}, label: 'Hour'}
-  //     ]
-  //   },
-  //   label: 'Evaluation Date'
-  // },
+  evaluationDate: {
+    data: {
+      type: 'evaluationDateTime',
+      value: [
+        {data: {unit: 'automatic'}, label: 'Automatic'},
+        {data: {unit: 'year'}, label: 'Year'},
+        {data: {unit: 'month'}, label: 'Month'},
+        {data: {unit: 'week'}, label: 'Week'},
+        {data: {unit: 'day'}, label: 'Day'},
+        {data: {unit: 'hour'}, label: 'Hour'}
+      ]
+    },
+    label: 'Evaluation Date'
+  }
   // inputVariable: {
   //   data: {
   //     type: 'inputVariable',
@@ -44,15 +45,15 @@ const combinations = {
     {
       entity: groupBy.none,
       then: [visualization.number]
-    }
+    },
     // {
     //   entity: groupBy.rules,
     //   then: [visualization.table]
     // },
-    // {
-    //   entity: groupBy.evaluationDate,
-    //   then: [visualization.table, visualization.pie, visualization.line, visualization.bar]
-    // },
+    {
+      entity: groupBy.evaluationDate,
+      then: [visualization.table, visualization.pie, visualization.line, visualization.bar]
+    }
     // {
     //   entity: groupBy.inputVariable,
     //   then: [visualization.table, visualization.pie, visualization.line, visualization.bar]

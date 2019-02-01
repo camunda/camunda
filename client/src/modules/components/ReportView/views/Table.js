@@ -38,10 +38,12 @@ export default withErrorHandling(
       }
     }
 
-    processSingleData(labels, result, processInstanceCount) {
-      const {formatter = v => v, report} = this.props;
-
-      const {configuration: {hideAbsoluteValue, hideRelativeValue}, view: {property}} = report.data;
+    processSingleData(labels, result, instanceCount) {
+      const {formatter = v => v, report, flowNodeNames = {}} = this.props;
+      const {
+        configuration: {hideAbsoluteValue, hideRelativeValue},
+        view: {property}
+      } = report.data;
 
       const displayRelativeValue = property === 'frequency' && !hideRelativeValue;
       const displayAbsoluteValue = property === 'duration' || !hideAbsoluteValue;
@@ -54,9 +56,9 @@ export default withErrorHandling(
       return {
         head: [...labels, ...(displayRelativeValue ? ['Relative Frequency'] : [])],
         body: Object.keys(result).map(key => [
-          this.props.flowNodeNames[key] || key,
+          flowNodeNames[key] || key,
           ...(displayAbsoluteValue ? [formatter(result[key])] : []),
-          ...(displayRelativeValue ? [getRelativeValue(result[key], processInstanceCount)] : [])
+          ...(displayRelativeValue ? [getRelativeValue(result[key], instanceCount)] : [])
         ])
       };
     }
@@ -67,7 +69,9 @@ export default withErrorHandling(
         report.result,
         report.data.reportIds
       );
-      const {configuration: {hideAbsoluteValue, hideRelativeValue}} = report.data;
+      const {
+        configuration: {hideAbsoluteValue, hideRelativeValue}
+      } = report.data;
       const {view} = Object.values(report.result)[0].data;
 
       const displayRelativeValue = view.property === 'frequency' && !hideRelativeValue;
@@ -105,7 +109,11 @@ export default withErrorHandling(
     }
 
     render() {
-      const {report: {result}, errorMessage, disableReportScrolling} = this.props;
+      const {
+        report: {result},
+        errorMessage,
+        disableReportScrolling
+      } = this.props;
 
       if (!result || typeof result !== 'object') {
         return <ReportBlankSlate message={errorMessage} />;
@@ -122,7 +130,14 @@ export default withErrorHandling(
 
     formatData = () => {
       const {report, updateSorting} = this.props;
-      const {reportType, combined, data, processInstanceCount, result} = report;
+      const {
+        reportType,
+        combined,
+        data,
+        processInstanceCount,
+        decisionInstanceCount,
+        result
+      } = report;
 
       // Combined Report
       if (combined) return this.processCombinedData();
@@ -131,7 +146,10 @@ export default withErrorHandling(
 
       // raw data
       if (isRaw(result)) {
-        const {parameters, configuration: {excludedColumns, columnOrder}} = data;
+        const {
+          parameters,
+          configuration: {excludedColumns, columnOrder}
+        } = data;
         return {
           ...processRawData({
             data: formattedResult,
@@ -158,7 +176,11 @@ export default withErrorHandling(
           decisionConfig.getLabelFor(decisionConfig.options.view, data.view)
         ];
       }
-      return this.processSingleData(labels, formattedResult, processInstanceCount);
+      return this.processSingleData(
+        labels,
+        formattedResult,
+        processInstanceCount || decisionInstanceCount || 0
+      );
     };
   }
 );

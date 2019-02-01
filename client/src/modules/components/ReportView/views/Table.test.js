@@ -124,6 +124,41 @@ it('should display the relative percentage for frequency views', () => {
   expect(node.find('Table').prop('body')[0][2]).toBe('12.3%');
 });
 
+it('should display the relative percentage for frequency views for DMN', () => {
+  getRelativeValue.mockClear();
+  getRelativeValue.mockReturnValue('12.3%');
+
+  const data = {
+    groupBy: {
+      value: {},
+      type: ''
+    },
+    view: {property: 'frequency'},
+    configuration: {},
+    visualization: 'table'
+  };
+
+  const node = shallow(
+    <Table
+      {...props}
+      report={{
+        ...report,
+        data,
+        result: {a: 1, b: 2, c: 3},
+        processInstanceCount: undefined,
+        decisionInstanceCount: 18
+      }}
+      formatter={v => v}
+    />
+  );
+
+  expect(getRelativeValue).toHaveBeenCalledWith(1, 18);
+  expect(getRelativeValue).toHaveBeenCalledWith(2, 18);
+  expect(getRelativeValue).toHaveBeenCalledWith(3, 18);
+
+  expect(node.find('Table').prop('body')[0][2]).toBe('12.3%');
+});
+
 it('should process raw data', async () => {
   await shallow(
     <Table

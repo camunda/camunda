@@ -2,12 +2,14 @@ import React from 'react';
 import ReportBlankSlate from './ReportBlankSlate';
 
 import {isEmpty} from './service';
-import {Table, Number} from './views';
+import {Table, Number, Chart} from './views';
 
 import {formatters} from 'services';
 
 const checkReport = props => {
-  const {report: {data}} = props;
+  const {
+    report: {data}
+  } = props;
   if (isEmpty(data.decisionDefinitionKey) || isEmpty(data.decisionDefinitionVersion)) {
     return 'a Decision Definition';
   } else if (!data.view) {
@@ -23,8 +25,10 @@ const checkReport = props => {
 
 const getConfig = props => {
   const {report, disableReportScrolling, customProps, defaultErrorMessage} = props;
-  let {data: {visualization}} = report;
-  let config;
+  let {
+    data: {visualization}
+  } = report;
+  let config = {};
 
   switch (visualization) {
     case 'table':
@@ -38,6 +42,16 @@ const getConfig = props => {
     case 'number':
       config = {
         Component: Number,
+        props: {
+          formatter: formatters.frequency
+        }
+      };
+      break;
+    case 'bar':
+    case 'line':
+    case 'pie':
+      config = {
+        Component: Chart,
         props: {
           formatter: formatters.frequency
         }

@@ -12,15 +12,16 @@ export default function createChartOptions({report, targetValue, theme, formatte
     data: {visualization, view, configuration},
     result,
     processInstanceCount,
+    decisionInstanceCount,
     combined
   } = report;
 
   const isDark = theme === 'dark';
   const stacked = visualization === 'number';
   const property = combined ? Object.values(result)[0].data.view.property : view.property;
-  const processInstanceCountArr = combined
+  const instanceCountArr = combined
     ? Object.values(result).map(report => report.processInstanceCount)
-    : [processInstanceCount];
+    : [processInstanceCount || decisionInstanceCount || 0];
 
   let options;
   switch (visualization) {
@@ -60,7 +61,7 @@ export default function createChartOptions({report, targetValue, theme, formatte
             targetValue,
             configuration,
             formatter,
-            processInstanceCountArr,
+            instanceCountArr,
             property,
             visualization
           );

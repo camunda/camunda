@@ -19,7 +19,7 @@ export function frequency(number, precision) {
     const digitsFactor = 10 ** ('' + number).length;
     const precisionFactor = 10 ** precision;
     const roundedToPrecision =
-      Math.round(number / digitsFactor * precisionFactor) / precisionFactor * digitsFactor;
+      (Math.round((number / digitsFactor) * precisionFactor) / precisionFactor) * digitsFactor;
 
     if (roundedToPrecision >= 10 ** 6) {
       return intl.format(roundedToPrecision / 10 ** 6) + ' Million';
@@ -126,7 +126,7 @@ export function camelCaseToLabel(type) {
 export function formatReportResult(data, result) {
   const groupBy = data.groupBy;
   let unit;
-  if (groupBy.value && groupBy.type === 'startDate') {
+  if (groupBy.value && groupBy.type.includes('Date')) {
     unit = determineUnit(groupBy.value.unit, result);
   } else if (groupBy.value && groupBy.type === 'variable' && groupBy.value.type === 'Date') {
     unit = 'second';
