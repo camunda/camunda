@@ -41,6 +41,7 @@ import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.configuration.EmbeddedGatewayCfg;
 import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
+import io.zeebe.broker.system.configuration.SocketBindingAtomixCfg;
 import io.zeebe.broker.system.configuration.SocketBindingClientApiCfg;
 import io.zeebe.broker.system.configuration.SocketBindingManagementCfg;
 import io.zeebe.broker.system.configuration.SocketBindingReplicationCfg;
@@ -71,6 +72,7 @@ public class ConfigurationTest {
   public static final int MANAGEMENT_PORT = SocketBindingManagementCfg.DEFAULT_PORT;
   public static final int REPLICATION_PORT = SocketBindingReplicationCfg.DEFAULT_PORT;
   public static final int SUBSCRIPTION_PORT = SocketBindingSubscriptionCfg.DEFAULT_PORT;
+  public static final int ATOMIX_PORT = SocketBindingAtomixCfg.DEFAULT_PORT;
 
   @Test
   public void shouldUseSpecifiedNodeId() {
@@ -97,12 +99,13 @@ public class ConfigurationTest {
 
   @Test
   public void shouldUseDefaultPorts() {
-    assertPorts("default", CLIENT_PORT, MANAGEMENT_PORT, REPLICATION_PORT, SUBSCRIPTION_PORT);
+    assertPorts(
+        "default", CLIENT_PORT, MANAGEMENT_PORT, REPLICATION_PORT, SUBSCRIPTION_PORT, ATOMIX_PORT);
   }
 
   @Test
   public void shouldUseSpecifiedPorts() {
-    assertPorts("specific-ports", 1, 2, 3, 4);
+    assertPorts("specific-ports", 1, 2, 3, 4, 5);
   }
 
   @Test
@@ -113,13 +116,15 @@ public class ConfigurationTest {
         CLIENT_PORT + offset,
         MANAGEMENT_PORT + offset,
         REPLICATION_PORT + offset,
-        SUBSCRIPTION_PORT + offset);
+        SUBSCRIPTION_PORT + offset,
+        ATOMIX_PORT + offset);
   }
 
   @Test
   public void shouldUsePortOffsetWithSpecifiedPorts() {
     final int offset = 30;
-    assertPorts("specific-ports-offset", 1 + offset, 2 + offset, 3 + offset, 4 + offset);
+    assertPorts(
+        "specific-ports-offset", 1 + offset, 2 + offset, 3 + offset, 4 + offset, 5 + offset);
   }
 
   @Test
@@ -131,20 +136,22 @@ public class ConfigurationTest {
         CLIENT_PORT + offset,
         MANAGEMENT_PORT + offset,
         REPLICATION_PORT + offset,
-        SUBSCRIPTION_PORT + offset);
+        SUBSCRIPTION_PORT + offset,
+        ATOMIX_PORT + offset);
   }
 
   @Test
   public void shouldUsePortOffsetFromEnvironmentWithSpecifiedPorts() {
     environment.put(ENV_PORT_OFFSET, "3");
     final int offset = 30;
-    assertPorts("specific-ports", 1 + offset, 2 + offset, 3 + offset, 4 + offset);
+    assertPorts("specific-ports", 1 + offset, 2 + offset, 3 + offset, 4 + offset, 5 + offset);
   }
 
   @Test
   public void shouldIgnoreInvalidPortOffsetFromEnvironment() {
     environment.put(ENV_PORT_OFFSET, "a");
-    assertPorts("default", CLIENT_PORT, MANAGEMENT_PORT, REPLICATION_PORT, SUBSCRIPTION_PORT);
+    assertPorts(
+        "default", CLIENT_PORT, MANAGEMENT_PORT, REPLICATION_PORT, SUBSCRIPTION_PORT, ATOMIX_PORT);
   }
 
   @Test
@@ -156,7 +163,8 @@ public class ConfigurationTest {
         CLIENT_PORT + offset,
         MANAGEMENT_PORT + offset,
         REPLICATION_PORT + offset,
-        SUBSCRIPTION_PORT + offset);
+        SUBSCRIPTION_PORT + offset,
+        ATOMIX_PORT + offset);
   }
 
   @Test
@@ -460,12 +468,14 @@ public class ConfigurationTest {
       final int client,
       final int management,
       final int replication,
-      final int subscription) {
+      final int subscription,
+      final int atomix) {
     final NetworkCfg network = readConfig(configFileName).getNetwork();
     assertThat(network.getClient().getPort()).isEqualTo(client);
     assertThat(network.getManagement().getPort()).isEqualTo(management);
     assertThat(network.getReplication().getPort()).isEqualTo(replication);
     assertThat(network.getSubscription().getPort()).isEqualTo(subscription);
+    assertThat(network.getAtomix().getPort()).isEqualTo(atomix);
   }
 
   private void assertHost(final String configFileName, final String host) {
