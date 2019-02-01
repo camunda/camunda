@@ -8,7 +8,7 @@ import {getDataKeys, decisionConfig} from 'services';
 
 export default class DecisionControlPanel extends React.Component {
   createTitle = () => {
-    const {decisionDefinitionKey, decisionDefinitionVersion} = this.props;
+    const {decisionDefinitionKey, decisionDefinitionVersion} = this.props.report.data;
     if (decisionDefinitionKey && decisionDefinitionVersion) {
       return `${decisionDefinitionKey} : ${decisionDefinitionVersion}`;
     } else {
@@ -17,6 +17,7 @@ export default class DecisionControlPanel extends React.Component {
   };
 
   render() {
+    const {data: {decisionDefinitionKey, decisionDefinitionVersion}} = this.props.report;
     return (
       <div className="DecisionControlPanel ReportControlPanel">
         <ul>
@@ -24,8 +25,8 @@ export default class DecisionControlPanel extends React.Component {
             <Labeled label="Decision definition">
               <Popover className="processDefinitionPopover" title={this.createTitle()}>
                 <DecisionDefinitionSelection
-                  decisionDefinitionKey={this.props.decisionDefinitionKey}
-                  decisionDefinitionVersion={this.props.decisionDefinitionVersion}
+                  decisionDefinitionKey={decisionDefinitionKey}
+                  decisionDefinitionVersion={decisionDefinitionVersion}
                   onChange={this.props.updateReport}
                 />
               </Popover>
@@ -52,20 +53,22 @@ export default class DecisionControlPanel extends React.Component {
   }
 
   renderDropdown = (type, config) => {
+    const {data} = this.props.report;
+    const {decisionDefinitionKey, decisionDefinitionVersion, view, groupBy} = data;
     let disabled = false;
 
-    if (!this.props.decisionDefinitionKey || !this.props.decisionDefinitionVersion) {
+    if (!decisionDefinitionKey || !decisionDefinitionVersion) {
       disabled = true;
     }
-    if (type === 'groupBy' && !this.props.view) {
+    if (type === 'groupBy' && !view) {
       disabled = true;
     }
-    if (type === 'visualization' && (!this.props.view || !this.props.groupBy)) {
+    if (type === 'visualization' && (!view || !groupBy)) {
       disabled = true;
     }
     return (
       <Dropdown
-        label={decisionConfig.getLabelFor(config, this.props[type]) || 'Please Select...'}
+        label={decisionConfig.getLabelFor(config, data[type]) || 'Please Select...'}
         className="configDropdown"
         disabled={disabled}
       >
@@ -83,14 +86,15 @@ export default class DecisionControlPanel extends React.Component {
     );
   };
 
-  renderSubmenu = (submenu, type, data, label, key) => {
-    const disabled = type === 'groupBy' && !decisionConfig.isAllowed(this.props.view, data);
-    const checked = isChecked(data, this.props[type]);
+  renderSubmenu = (submenu, type, configData, label, key) => {
+    const {data} = this.props.report;
+    const disabled = type === 'groupBy' && !decisionConfig.isAllowed(data.view, configData);
+    const checked = isChecked(configData, data[type]);
     return (
       <Dropdown.Submenu label={label} key={key} disabled={disabled} checked={checked}>
-        {data[submenu].map((entry, idx) => {
-          const subData = {...data, [submenu]: entry.data};
-          const checked = isChecked(subData, this.props[type]);
+        {configData[submenu].map((entry, idx) => {
+          const subData = {...configData, [submenu]: entry.data};
+          const checked = isChecked(subData, data[type]);
           return (
             <Dropdown.Option
               key={idx}
@@ -110,21 +114,22 @@ export default class DecisionControlPanel extends React.Component {
     );
   };
 
-  renderNormalOption = (type, data, label, key) => {
+  renderNormalOption = (type, configData, label, key) => {
+    const {data} = this.props.report;
     let disabled = false;
     if (type === 'groupBy') {
-      disabled = !decisionConfig.isAllowed(this.props.view, data);
+      disabled = !decisionConfig.isAllowed(data.view, configData);
     } else if (type === 'visualization') {
-      disabled = !decisionConfig.isAllowed(this.props.view, this.props.groupBy, data);
+      disabled = !decisionConfig.isAllowed(data.view, data.groupBy, configData);
     }
-    const checked = isChecked(data, this.props[type]);
+    const checked = isChecked(configData, data[type]);
     return (
       <Dropdown.Option
         key={key}
         checked={checked}
         onClick={() =>
           this.props.updateReport(
-            decisionConfig.update(type, data, this.props),
+            decisionConfig.update(type, configData, this.props),
             type !== 'visualization'
           )
         }

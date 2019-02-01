@@ -88,7 +88,7 @@ jest.mock('services', () => {
 });
 
 const validProps = {
-  reportResult: {
+  report: {
     data: {
       processDefinitionKey: 'a',
       processDefinitionVersion: 1,
@@ -100,20 +100,20 @@ const validProps = {
       groupBy: {
         type: 'flowNodes'
       },
-      visualization: 'heat'
-    },
-    result: {}
-  },
-  configuration: {
-    heatmapTargetValue: {
-      active: false,
-      values: {
-        a: {
-          value: 12,
-          unit: 'days'
+      visualization: 'heat',
+      configuration: {
+        heatmapTargetValue: {
+          active: false,
+          values: {
+            a: {
+              value: 12,
+              unit: 'days'
+            }
+          }
         }
       }
-    }
+    },
+    result: {}
   }
 };
 

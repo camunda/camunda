@@ -19,12 +19,7 @@ import {Configuration} from './Configuration';
 
 import './ReportControlPanel.scss';
 
-const {
-  options: {view, groupBy, visualization},
-  getLabelFor,
-  isAllowed,
-  update
-} = processConfig;
+const {options: {view, groupBy, visualization}, getLabelFor, isAllowed, update} = processConfig;
 const groupByVariablePageSize = 5;
 
 export default class ReportControlPanel extends React.Component {
@@ -32,7 +27,7 @@ export default class ReportControlPanel extends React.Component {
     super(props);
 
     this.state = {
-      processDefinitionName: this.props.processDefinitionKey,
+      processDefinitionName: this.props.report.data.processDefinitionKey,
       variables: [],
       variableTypeaheadValue: '',
       variableStartIdx: 0,
@@ -47,16 +42,14 @@ export default class ReportControlPanel extends React.Component {
   }
 
   loadFlowNodeNames = async () => {
+    const {data: {processDefinitionKey, processDefinitionVersion}} = this.props.report;
     this.setState({
-      flowNodeNames: await getFlowNodeNames(
-        this.props.processDefinitionKey,
-        this.props.processDefinitionVersion
-      )
+      flowNodeNames: await getFlowNodeNames(processDefinitionKey, processDefinitionVersion)
     });
   };
 
   loadProcessDefinitionName = async () => {
-    const {xml} = this.props.configuration;
+    const {configuration: {xml}} = this.props.report.data;
     if (xml) {
       const processDefinitionName = await extractProcessDefinitionName(xml);
       this.setState({
@@ -66,7 +59,7 @@ export default class ReportControlPanel extends React.Component {
   };
 
   loadVariables = async () => {
-    const {processDefinitionKey, processDefinitionVersion} = this.props;
+    const {processDefinitionKey, processDefinitionVersion} = this.props.report.data;
     if (processDefinitionKey && processDefinitionVersion) {
       this.setState({
         variables: await loadVariables(processDefinitionKey, processDefinitionVersion)
@@ -75,20 +68,23 @@ export default class ReportControlPanel extends React.Component {
   };
 
   definitionConfig = () => {
+    const {data: {processDefinitionKey, processDefinitionVersion}} = this.props.report;
     return {
-      processDefinitionKey: this.props.processDefinitionKey,
-      processDefinitionVersion: this.props.processDefinitionVersion
+      processDefinitionKey,
+      processDefinitionVersion
     };
   };
 
   componentDidUpdate(prevProps) {
-    if (this.props.processDefinitionKey !== prevProps.processDefinitionKey) {
+    const {data} = this.props.report;
+    const {data: prevData} = prevProps.report;
+    if (data.processDefinitionKey !== prevData.processDefinitionKey) {
       this.loadProcessDefinitionName();
     }
 
     if (
-      this.props.processDefinitionKey !== prevProps.processDefinitionKey ||
-      this.props.processDefinitionVersion !== prevProps.processDefinitionVersion
+      data.processDefinitionKey !== prevData.processDefinitionKey ||
+      data.processDefinitionVersion !== prevData.processDefinitionVersion
     ) {
       this.loadVariables();
       this.loadFlowNodeNames();
@@ -96,7 +92,7 @@ export default class ReportControlPanel extends React.Component {
   }
 
   createTitle = () => {
-    const {processDefinitionKey, processDefinitionVersion} = this.props;
+    const {processDefinitionKey, processDefinitionVersion} = this.props.report.data;
     const processDefintionName = this.state.processDefinitionName
       ? this.state.processDefinitionName
       : processDefinitionKey;
@@ -108,7 +104,7 @@ export default class ReportControlPanel extends React.Component {
   };
 
   changeDefinition = async (key, version) => {
-    const {groupBy, filter} = this.props;
+    const {groupBy, filter} = this.props.report.data;
 
     const change = {
       processDefinitionKey: {$set: key},
@@ -130,6 +126,7 @@ export default class ReportControlPanel extends React.Component {
   };
 
   render() {
+    const {data} = this.props.report;
     return (
       <div className="ReportControlPanel">
         <ul>
@@ -138,7 +135,7 @@ export default class ReportControlPanel extends React.Component {
               <Popover className="processDefinitionPopover" title={this.createTitle()}>
                 <ProcessDefinitionSelection
                   {...this.definitionConfig()}
-                  xml={this.props.configuration.xml}
+                  xml={data.configuration.xml}
                   onChange={this.changeDefinition}
                   renderDiagram={true}
                   enableAllVersionSelection={true}
@@ -160,36 +157,32 @@ export default class ReportControlPanel extends React.Component {
           <li className="filter">
             <Filter
               flowNodeNames={this.state.flowNodeNames}
-              data={this.props.filter}
+              data={data.filter}
               onChange={this.props.updateReport}
               {...this.definitionConfig()}
-              xml={this.props.configuration.xml}
-              instanceCount={
-                this.props.reportResult && this.props.reportResult.processInstanceCount
-              }
+              xml={data.configuration.xml}
+              instanceCount={this.props.report && this.props.report.processInstanceCount}
             />
           </li>
           {this.shouldDisplayTargetValue() && (
             <li>
               <TargetValueComparison
-                reportResult={this.props.reportResult}
-                configuration={this.props.configuration}
+                report={this.props.report}
                 onChange={this.props.updateReport}
               />
             </li>
           )}
           <Configuration
-            type={this.props.visualization}
-            configuration={this.props.configuration}
+            type={data.visualization}
             onChange={this.props.updateReport}
-            report={this.props.reportResult}
+            report={this.props.report}
           />
           {this.shouldDisplayProcessPart() && (
             <li>
               <ProcessPart
                 flowNodeNames={this.state.flowNodeNames}
-                xml={this.props.configuration.xml}
-                processPart={this.props.parameters.processPart}
+                xml={data.configuration.xml}
+                processPart={data.parameters.processPart}
                 update={newPart =>
                   this.props.updateReport({parameters: {processPart: {$set: newPart}}}, true)
                 }
@@ -207,7 +200,12 @@ export default class ReportControlPanel extends React.Component {
   };
 
   shouldDisplayTargetValue = () => {
-    const {view, visualization, processDefinitionKey, processDefinitionVersion} = this.props;
+    const {
+      view,
+      visualization,
+      processDefinitionKey,
+      processDefinitionVersion
+    } = this.props.report.data;
 
     return (
       view &&
@@ -220,20 +218,22 @@ export default class ReportControlPanel extends React.Component {
   };
 
   renderDropdown = (type, config) => {
+    const {data} = this.props.report;
+    const {processDefinitionKey, processDefinitionVersion, view, groupBy} = data;
     let disabled = false;
 
-    if (!this.props.processDefinitionKey || !this.props.processDefinitionVersion) {
+    if (!processDefinitionKey || !processDefinitionVersion) {
       disabled = true;
     }
-    if (type === 'groupBy' && !this.props.view) {
+    if (type === 'groupBy' && !view) {
       disabled = true;
     }
-    if (type === 'visualization' && (!this.props.view || !this.props.groupBy)) {
+    if (type === 'visualization' && (!view || !groupBy)) {
       disabled = true;
     }
     return (
       <Dropdown
-        label={getLabelFor(config, this.props[type]) || 'Please Select...'}
+        label={getLabelFor(config, data[type]) || 'Please Select...'}
         className="configDropdown"
         disabled={disabled}
       >
@@ -251,9 +251,10 @@ export default class ReportControlPanel extends React.Component {
     );
   };
 
-  renderSubmenu = (submenu, type, data, label, key) => {
-    const disabled = type === 'groupBy' && !isAllowed(this.props.view, data);
-    const checked = isChecked(data, this.props[type]);
+  renderSubmenu = (submenu, type, configData, label, key) => {
+    const {data} = this.props.report;
+    const disabled = type === 'groupBy' && !isAllowed(data.view, configData);
+    const checked = isChecked(configData, data[type]);
     return (
       <Dropdown.Submenu
         label={label}
@@ -264,9 +265,9 @@ export default class ReportControlPanel extends React.Component {
       >
         {type === 'groupBy' && key === 'variable'
           ? this.renderVariables()
-          : data[submenu].map((entry, idx) => {
-              const subData = {...data, [submenu]: entry.data};
-              const checked = isChecked(subData, this.props[type]);
+          : configData[submenu].map((entry, idx) => {
+              const subData = {...configData, [submenu]: entry.data};
+              const checked = isChecked(subData, data[type]);
               return (
                 <Dropdown.Option
                   key={idx}
@@ -286,20 +287,21 @@ export default class ReportControlPanel extends React.Component {
     );
   };
 
-  renderNormalOption = (type, data, label, key) => {
+  renderNormalOption = (type, configData, label, key) => {
+    const {data} = this.props.report;
     let disabled = false;
     if (type === 'groupBy') {
-      disabled = !isAllowed(this.props.view, data);
+      disabled = !isAllowed(data.view, configData);
     } else if (type === 'visualization') {
-      disabled = !isAllowed(this.props.view, this.props.groupBy, data);
+      disabled = !isAllowed(data.view, data.groupBy, configData);
     }
-    const checked = isChecked(data, this.props[type]);
+    const checked = isChecked(configData, data[type]);
     return (
       <Dropdown.Option
         key={key}
         checked={checked}
         onClick={() =>
-          this.props.updateReport(update(type, data, this.props), type !== 'visualization')
+          this.props.updateReport(update(type, configData, this.props), type !== 'visualization')
         }
         disabled={disabled}
       >
@@ -309,8 +311,9 @@ export default class ReportControlPanel extends React.Component {
   };
 
   renderVariables = () => {
+    const {data} = this.props.report;
     const currentlySelected =
-      this.props.groupBy && this.props.groupBy.type === 'variable' && this.props.groupBy.value;
+      data.groupBy && data.groupBy.type === 'variable' && data.groupBy.value;
     const filteredVars = this.state.variables.filter(
       ({name, type}) =>
         name.toLowerCase().includes(this.state.variableTypeaheadValue.toLowerCase()) &&

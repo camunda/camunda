@@ -4,7 +4,7 @@ import {shallow} from 'enzyme';
 import TargetValueComparison from './TargetValueComparison';
 
 const validProps = {
-  reportResult: {
+  report: {
     data: {
       processDefinitionKey: 'a',
       processDefinitionVersion: 1,
@@ -16,35 +16,40 @@ const validProps = {
       groupBy: {
         type: 'flowNodes'
       },
-      visualization: 'heat'
+      visualization: 'heat',
+      configuration: {
+        heatmapTargetValue: {
+          active: false,
+          values: {
+            a: {
+              value: 12,
+              unit: 'days'
+            }
+          }
+        }
+      }
     },
     result: {}
-  },
-  configuration: {
-    heatmapTargetValue: {
-      active: false,
-      values: {
-        a: {
-          value: 12,
-          unit: 'days'
+  }
+};
+
+const validPropsWithoutTargetValues = {
+  report: {
+    ...validProps.report,
+    data: {
+      ...validProps.data,
+      configuration: {
+        heatmapTargetValue: {
+          active: false,
+          values: {}
         }
       }
     }
   }
 };
 
-const validPropsWithoutTargetValues = {
-  reportResult: validProps.reportResult,
-  configuration: {
-    heatmapTargetValue: {
-      active: false,
-      values: {}
-    }
-  }
-};
-
 const invalidProps = {
-  reportResult: {
+  report: {
     data: {
       processDefinitionKey: 'a',
       processDefinitionVersion: 1,
@@ -56,18 +61,18 @@ const invalidProps = {
       groupBy: {
         type: 'None'
       },
-      visualization: 'heat'
+      visualization: 'heat',
+      configuration: {
+        active: false,
+        heatmapTargetValue: {
+          a: {
+            value: 12,
+            unit: 'days'
+          }
+        }
+      }
     },
     result: {}
-  },
-  configuration: {
-    active: false,
-    heatmapTargetValue: {
-      a: {
-        value: 12,
-        unit: 'days'
-      }
-    }
   }
 };
 

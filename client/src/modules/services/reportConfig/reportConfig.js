@@ -123,23 +123,24 @@ export default function reportConfig({view, groupBy, visualization}) {
       case 'groupBy':
         return updateGroupBy(data, props);
       case 'visualization':
-        return updateVisualization(data, props);
+        return updateVisualization(data);
       default:
         throw new Error('Tried to update unknown property');
     }
   }
 
   function updateView(newView, props) {
+    const {groupBy, visualization} = props.report.data;
     const changes = {view: {$set: newView}};
 
-    const newGroup = getNext(newView) || props.groupBy;
+    const newGroup = getNext(newView) || groupBy;
     // we need to compare the string representation for changes, because groupBy is an object, not a string
-    if (newGroup && JSON.stringify(newGroup) !== JSON.stringify(props.groupBy)) {
+    if (newGroup && JSON.stringify(newGroup) !== JSON.stringify(groupBy)) {
       changes.groupBy = {$set: newGroup};
     }
 
-    const newVisualization = getNext(newView, newGroup) || props.visualization;
-    if (newVisualization && newVisualization !== props.visualization) {
+    const newVisualization = getNext(newView, newGroup) || visualization;
+    if (newVisualization && newVisualization !== visualization) {
       changes.visualization = {$set: newVisualization};
     }
 
@@ -156,14 +157,16 @@ export default function reportConfig({view, groupBy, visualization}) {
   }
 
   function updateGroupBy(newGroupBy, props) {
+    const {view, visualization} = props.report.data;
+
     const changes = {groupBy: {$set: newGroupBy}};
 
-    const newVisualization = getNext(props.view, newGroupBy);
+    const newVisualization = getNext(view, newGroupBy);
 
     if (newVisualization) {
       // if we have a predetermined next visualization, we set it
       changes.visualization = {$set: newVisualization};
-    } else if (!isAllowed(props.view, newGroupBy, props.visualization)) {
+    } else if (!isAllowed(view, newGroupBy, visualization)) {
       // if the current visualization is not valid anymore for the new group, we reset it
       changes.visualization = {$set: null};
     }

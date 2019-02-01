@@ -27,19 +27,21 @@ jest.mock('services', () => {
   };
 });
 
-const data = {
-  decisionDefinitionKey: 'aKey',
-  decisionDefinitionVersion: 'aVersion',
-  view: {operation: 'rawData'},
-  groupBy: {type: 'none', unit: null},
-  visualization: 'table',
-  filter: null,
-  configuration: {xml: 'fooXml'}
+const report = {
+  data: {
+    decisionDefinitionKey: 'aKey',
+    decisionDefinitionVersion: 'aVersion',
+    view: {operation: 'rawData'},
+    groupBy: {type: 'none', unit: null},
+    visualization: 'table',
+    filter: null,
+    configuration: {xml: 'fooXml'}
+  }
 };
 
 it('should call the provided updateReport property function when a setting changes', () => {
   const spy = jest.fn();
-  const node = shallow(<DecisionControlPanel {...data} updateReport={spy} />);
+  const node = shallow(<DecisionControlPanel report={report} updateReport={spy} />);
 
   node
     .find(Dropdown.Option)
@@ -50,14 +52,16 @@ it('should call the provided updateReport property function when a setting chang
 });
 
 it('should disable the groupBy and visualization Selects if view is not selected', () => {
-  const node = shallow(<DecisionControlPanel {...data} view="" />);
+  const node = shallow(
+    <DecisionControlPanel report={{...report, data: {...report.data, view: ''}}} />
+  );
 
   expect(node.find('.configDropdown').at(1)).toBeDisabled();
   expect(node.find('.configDropdown').at(2)).toBeDisabled();
 });
 
 it('should not disable the groupBy and visualization Selects if view is selected', () => {
-  const node = shallow(<DecisionControlPanel {...data} />);
+  const node = shallow(<DecisionControlPanel report={report} />);
 
   expect(node.find('.configDropdown').at(1)).not.toBeDisabled();
   expect(node.find('.configDropdown').at(2)).not.toBeDisabled();

@@ -25,7 +25,7 @@ jest.mock('./visualizations', () => {
 });
 
 it('should be disabled if no type is set', () => {
-  const node = shallow(<Configuration report={{}} />);
+  const node = shallow(<Configuration report={{data: {configuration: {}}}} />);
 
   expect(node.find('Popover')).toBeDisabled();
 });
@@ -45,7 +45,9 @@ it('should be disabled if the report is combined with a duration view', () => {
 });
 
 it('should contain the Component from the visualizations based on the type', () => {
-  const node = shallow(<Configuration report={{}} type="typeA" onChange={() => {}} />);
+  const node = shallow(
+    <Configuration report={{data: {configuration: {}}}} type="typeA" onChange={() => {}} />
+  );
 
   expect(node.find(typeA)).toBePresent();
 
@@ -58,7 +60,12 @@ it('should contain the Component from the visualizations based on the type', () 
 it('should reset to defaults', () => {
   const spy = jest.fn();
   const node = shallow(
-    <Configuration report={{}} type="typeA" onChange={spy} configuration={{}} />
+    <Configuration
+      report={{data: {configuration: {}}}}
+      type="typeA"
+      onChange={spy}
+      configuration={{}}
+    />
   );
 
   node.find(Button).simulate('click');

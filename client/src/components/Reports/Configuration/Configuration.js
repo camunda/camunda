@@ -66,7 +66,7 @@ export default class Configuration extends React.Component {
   };
 
   render() {
-    const {report, type, configuration} = this.props;
+    const {report, type} = this.props;
     const Component = visualizations[type];
 
     const disabledComponent = Component && Component.isDisabled && Component.isDisabled(report);
@@ -81,13 +81,13 @@ export default class Configuration extends React.Component {
           <div className="content">
             {!report.combined && (
               <ShowInstanceCount
-                configuration={configuration}
+                configuration={report.data.configuration}
                 onChange={this.updateConfiguration}
               />
             )}
             {Component && (
               <Component
-                configuration={configuration}
+                configuration={report.data.configuration}
                 report={report}
                 onChange={this.updateConfiguration}
               />

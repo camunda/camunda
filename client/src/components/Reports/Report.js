@@ -302,20 +302,12 @@ export default withErrorHandling(
 
           {!combined &&
             reportType === 'process' && (
-              <ReportControlPanel
-                {...data}
-                reportResult={report}
-                updateReport={this.updateReport}
-              />
+              <ReportControlPanel report={report} updateReport={this.updateReport} />
             )}
 
           {!combined &&
             reportType === 'decision' && (
-              <DecisionControlPanel
-                {...data}
-                reportResult={report}
-                updateReport={this.updateReport}
-              />
+              <DecisionControlPanel report={report} updateReport={this.updateReport} />
             )}
 
           {this.maxRawDataEntriesExceeded() && (
@@ -349,13 +341,7 @@ export default withErrorHandling(
                 />
               )}
             </div>
-            {combined && (
-              <CombinedReportPanel
-                reportResult={report}
-                configuration={data.configuration}
-                updateReport={this.updateReport}
-              />
-            )}
+            {combined && <CombinedReportPanel report={report} updateReport={this.updateReport} />}
           </div>
         </div>
       );

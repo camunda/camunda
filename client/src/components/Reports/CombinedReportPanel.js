@@ -53,19 +53,20 @@ export default class CombinedReportPanel extends React.Component {
   };
 
   getReportResult = () => {
-    if (!this.props.reportResult.result) {
+    if (!this.props.report.result) {
       return [];
     }
 
-    return this.props.reportResult.data.reportIds.map(id => this.props.reportResult.result[id]);
+    return this.props.report.data.reportIds.map(id => this.props.report.result[id]);
   };
 
   getUpdatedColors = (prevOrderReports, newSelected) => {
+    const {configuration} = this.props.report.data;
     const selectedReports = newSelected || this.getReportResult();
     let colorsHash = {};
-    if (this.props.configuration.reportColors)
+    if (configuration.reportColors)
       colorsHash = prevOrderReports.reduce((colors, report, i) => {
-        return {...colors, [report.id]: this.props.configuration.reportColors[i]};
+        return {...colors, [report.id]: configuration.reportColors[i]};
       }, {});
 
     const colors = ColorPicker.getColors(selectedReports.length).filter(
@@ -112,8 +113,8 @@ export default class CombinedReportPanel extends React.Component {
   };
 
   updateColor = idx => color => {
-    const {configuration, updateReport} = this.props;
-    const newColorConfiguration = [...configuration.reportColors];
+    const {report: {data}, updateReport} = this.props;
+    const newColorConfiguration = [...data.configuration.reportColors];
     newColorConfiguration[idx] = color;
     updateReport({
       configuration: {
@@ -127,8 +128,8 @@ export default class CombinedReportPanel extends React.Component {
 
   render() {
     const {reports, searchQuery} = this.state;
-    const {reportResult, configuration, updateReport} = this.props;
-    const reportIds = reportResult.data.reportIds;
+    const {report: combinedReport, updateReport} = this.props;
+    const reportIds = combinedReport.data.reportIds;
     let selectedReports = [];
 
     const combinableReportList = reports.filter(
@@ -139,21 +140,16 @@ export default class CombinedReportPanel extends React.Component {
     );
 
     let configurationType;
-    if (reportIds && reportIds.length) {
+    if (reportIds.length) {
       selectedReports = this.getReportResult();
-      configurationType = selectedReports[0].data.visualization;
+      configurationType = combinedReport.data.visualization;
       // combined number reports have bar chart visualization
       if (configurationType === 'number') configurationType = 'bar';
     }
 
     return (
       <div className="CombinedReportPanel">
-        <Configuration
-          type={configurationType}
-          report={reportResult}
-          configuration={configuration}
-          onChange={updateReport}
-        />
+        <Configuration type={configurationType} report={combinedReport} onChange={updateReport} />
         <TypeaheadMultipleSelection
           availableValues={combinableReportList}
           selectedValues={selectedReports}
@@ -165,7 +161,7 @@ export default class CombinedReportPanel extends React.Component {
           format={v => v.name}
           customItemSettings={(val, idx) => {
             if (!configurationType || configurationType === 'table') return;
-            const selectedColor = configuration.reportColors[idx];
+            const selectedColor = combinedReport.data.configuration.reportColors[idx];
             if (!selectedColor) return;
             return (
               <Popover

@@ -34,9 +34,7 @@ export default class DurationHeatmapModal extends React.Component {
     };
   }
 
-  getConfig = () => {
-    return this.props.configuration.heatmapTargetValue || {};
-  };
+  getConfig = () => this.props.report.data.configuration.heatmapTargetValue;
 
   confirmModal = () => {
     this.props.onConfirm(this.cleanUpValues());
@@ -60,9 +58,10 @@ export default class DurationHeatmapModal extends React.Component {
   };
 
   constructValues = () => {
+    const {data} = this.props.report;
     return new Promise(resolve => {
       const viewer = new Viewer();
-      viewer.importXML(this.props.configuration.xml, () => {
+      viewer.importXML(data.configuration.xml, () => {
         const predefinedValues = this.getConfig().values || {};
         const values = {};
         const nodeNames = {};
@@ -132,7 +131,7 @@ export default class DurationHeatmapModal extends React.Component {
       const settings = this.state.values[id] || {value: '', unit: 'hours'};
       return [
         this.state.nodeNames[id],
-        formatters.duration(this.props.reportResult.result[id] || 0),
+        formatters.duration(this.props.report.result[id] || 0),
         <React.Fragment>
           <div className="DurationHeatmapModal__selection">
             <Input
@@ -226,20 +225,16 @@ export default class DurationHeatmapModal extends React.Component {
   }
 
   render() {
+    const {open, onClose, report} = this.props;
     let errorMessage = !this.hasSomethingChanged() ? 'Please change at least one value' : '';
     if (!this.areAllFieldsNumbers()) errorMessage += 'All fields should have a numeric value';
     return (
-      <Modal
-        size="max"
-        open={this.props.open}
-        onClose={this.props.onClose}
-        className="DurationHeatmapModal__Modal"
-      >
+      <Modal size="max" open={open} onClose={onClose} className="DurationHeatmapModal__Modal">
         <Modal.Header>Target Value Comparison </Modal.Header>
         <Modal.Content className="DurationHeatmapModal__modal-content-container">
           {this.state.loading && <LoadingIndicator />}
           <div className="DurationHeatmapModal__DiagramContainer">
-            <BPMNDiagram xml={this.props.configuration.xml}>
+            <BPMNDiagram xml={report.data.configuration.xml}>
               <TargetValueDiagramBehavior onClick={this.updateFocus} focus={this.state.focus} />
               <TargetValueBadge values={this.state.values} />
             </BPMNDiagram>
@@ -253,13 +248,12 @@ export default class DurationHeatmapModal extends React.Component {
               disablePagination
             />
           )}
-          {!this.validChanges() &&
-            !this.state.loading && (
-              <ErrorMessage className="DurationHeatmapModal__warning">{errorMessage}</ErrorMessage>
-            )}
+          {!this.validChanges() && !this.state.loading && (
+            <ErrorMessage className="DurationHeatmapModal__warning">{errorMessage}</ErrorMessage>
+          )}
         </Modal.Content>
         <Modal.Actions>
-          <Button onClick={this.props.onClose}>Cancel</Button>
+          <Button onClick={onClose}>Cancel</Button>
           <Button
             type="primary"
             color="blue"

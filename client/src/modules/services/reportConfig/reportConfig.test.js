@@ -106,8 +106,12 @@ describe('update', () => {
   it('should update groupby', () => {
     expect(
       update('groupBy', startDate, {
-        view: countProcessInstances,
-        visualization: 'bar'
+        report: {
+          data: {
+            view: countProcessInstances,
+            visualization: 'bar'
+          }
+        }
       })
     ).toEqual({groupBy: {$set: startDate}});
   });
@@ -115,8 +119,12 @@ describe('update', () => {
   it("should reset visualization when it's incompatible with the new group", () => {
     expect(
       update('groupBy', startDate, {
-        view: countProcessInstances,
-        visualization: 'number'
+        report: {
+          data: {
+            view: countProcessInstances,
+            visualization: 'number'
+          }
+        }
       })
     ).toEqual({groupBy: {$set: startDate}, visualization: {$set: null}});
   });
@@ -127,8 +135,12 @@ describe('update', () => {
         'groupBy',
         {type: 'none'},
         {
-          view: countProcessInstances,
-          visualization: 'heat'
+          report: {
+            data: {
+              view: countProcessInstances,
+              visualization: 'heat'
+            }
+          }
         }
       )
     ).toEqual({groupBy: {$set: {type: 'none'}}, visualization: {$set: 'number'}});
@@ -137,8 +149,12 @@ describe('update', () => {
   it('should update view', () => {
     expect(
       update('view', countProcessInstances, {
-        groupBy: startDate,
-        visualization: 'bar'
+        report: {
+          data: {
+            groupBy: startDate,
+            visualization: 'bar'
+          }
+        }
       })
     ).toEqual({view: {$set: countProcessInstances}});
   });
@@ -146,8 +162,12 @@ describe('update', () => {
   it('should adjust groupby and visualization when changing view', () => {
     expect(
       update('view', countProcessInstances, {
-        groupBy: {type: 'flowNodes'},
-        visualization: 'heat'
+        report: {
+          data: {
+            groupBy: {type: 'flowNodes'},
+            visualization: 'heat'
+          }
+        }
       })
     ).toEqual({
       view: {$set: countProcessInstances},

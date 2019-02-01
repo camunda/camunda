@@ -15,9 +15,7 @@ export default class TargetValueComparison extends React.Component {
     };
   }
 
-  getConfig = () => {
-    return this.props.configuration.heatmapTargetValue || {};
-  };
+  getConfig = () => this.props.report.data.configuration.heatmapTargetValue;
 
   toggleMode = () => {
     const {active, values} = this.getConfig();
@@ -83,9 +81,8 @@ export default class TargetValueComparison extends React.Component {
         <DurationHeatmapModal
           open={this.state.modalOpen}
           onClose={this.closeModal}
-          configuration={this.props.configuration}
           onConfirm={this.confirmModal}
-          reportResult={this.props.reportResult}
+          report={this.props.report}
         />
       </ButtonGroup>
     );

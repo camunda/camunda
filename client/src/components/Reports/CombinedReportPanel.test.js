@@ -44,7 +44,8 @@ const reportsList = [
     combined: true,
     data: {
       configuration: {},
-      reportIds: ['singleReport']
+      reportIds: ['singleReport'],
+      visualization: 'bar'
     },
     result: {
       singleReport: {
@@ -78,7 +79,7 @@ loadEntity.mockReturnValue(reportsList);
 
 it('should invoke loadEntity to load all reports when it is mounted', async () => {
   const node = await shallow(
-    <CombinedReportPanel updateReport={() => {}} configuration={{}} reportResult={reportsList[1]} />
+    <CombinedReportPanel updateReport={() => {}} configuration={{}} report={reportsList[1]} />
   );
   await node.update();
 
@@ -87,7 +88,7 @@ it('should invoke loadEntity to load all reports when it is mounted', async () =
 
 it('should not include heatmap report', async () => {
   const node = await shallow(
-    <CombinedReportPanel updateReport={() => {}} configuration={{}} reportResult={reportsList[1]} />
+    <CombinedReportPanel updateReport={() => {}} configuration={{}} report={reportsList[1]} />
   );
   await node.update();
 
@@ -96,7 +97,7 @@ it('should not include heatmap report', async () => {
 
 it('should have input checkbox for only single report items in the list', async () => {
   const node = await shallow(
-    <CombinedReportPanel updateReport={() => {}} configuration={{}} reportResult={reportsList[1]} />
+    <CombinedReportPanel updateReport={() => {}} report={reportsList[1]} />
   );
   await node.update();
   expect(JSON.stringify(node.find('TypeaheadMultipleSelection').props())).toMatch('singleReport');
@@ -109,11 +110,7 @@ describe('isCompatible', () => {
   let node = {};
   beforeEach(async () => {
     node = await shallow(
-      <CombinedReportPanel
-        updateReport={() => {}}
-        configuration={{}}
-        reportResult={reportsList[1]}
-      />
+      <CombinedReportPanel updateReport={() => {}} configuration={{}} report={reportsList[1]} />
     );
     await node.update();
   });
@@ -182,8 +179,13 @@ it('should update the color of a single report inside a combined report', async 
   const spy = jest.fn();
   const node = await shallow(
     <CombinedReportPanel
-      reportResult={reportsList[1]}
-      configuration={{reportColors: ['red', 'yellow']}}
+      report={{
+        ...reportsList[1],
+        data: {
+          ...reportsList[1].data,
+          configuration: {reportColors: ['red', 'yellow']}
+        }
+      }}
       updateReport={spy}
     />
   );
@@ -197,7 +199,7 @@ it('should update the color of a single report inside a combined report', async 
 
 it('should generate new colors or preserve existing ones when selected/deselecting or reordering reports', async () => {
   const reportData = {data: {visualization: ''}};
-  const reportResult = {
+  const report = {
     id: 'combinedReport',
     name: 'Combined Report',
     combined: true,
@@ -223,8 +225,14 @@ it('should generate new colors or preserve existing ones when selected/deselecti
 
   const node = await shallow(
     <CombinedReportPanel
-      reportResult={{...reportResult, result}}
-      configuration={{reportColors: [ColorPicker.dark.red, ColorPicker.dark.blue]}}
+      report={{
+        ...report,
+        result,
+        data: {
+          ...report.data,
+          configuration: {reportColors: [ColorPicker.dark.red, ColorPicker.dark.blue]}
+        }
+      }}
     />
   );
   const updatedColors = node.instance().getUpdatedColors([{id: 'report2'}, {id: 'report1'}]);
