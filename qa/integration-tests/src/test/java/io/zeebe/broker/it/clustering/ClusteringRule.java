@@ -71,6 +71,7 @@ import org.junit.runners.model.Statement;
 
 public class ClusteringRule extends ExternalResource {
 
+  private static final AtomicLong CLUSTER_COUNT = new AtomicLong(0);
   private static final boolean ENABLE_DEBUG_EXPORTER = false;
 
   protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -94,6 +95,7 @@ public class ClusteringRule extends ExternalResource {
 
   // internal
   private ClientTransport internalTransport;
+  private final String clusterName;
 
   public ClusteringRule() {
     this(3);
@@ -122,6 +124,8 @@ public class ClusteringRule extends ExternalResource {
     brokerCfgs = new HashMap<>();
     brokerBases = new HashMap<>();
     this.partitionIds = IntStream.range(0, partitionCount).boxed().collect(Collectors.toList());
+
+    clusterName = "zeebe-cluster-" + CLUSTER_COUNT.getAndIncrement();
   }
 
   public int getPartitionCount() {
@@ -199,10 +203,11 @@ public class ClusteringRule extends ExternalResource {
     DISABLE_EMBEDDED_GATEWAY.accept(brokerCfg);
 
     // configure cluster
-    setCluster(nodeId, partitionCount, replicationFactor, clusterSize).accept(brokerCfg);
+    setCluster(nodeId, partitionCount, replicationFactor, clusterSize, clusterName)
+        .accept(brokerCfg);
     if (nodeId > 0) {
       setInitialContactPoints(
-              getBrokerCfg(nodeId - 1).getNetwork().getManagement().toSocketAddress().toString())
+              getBrokerCfg(nodeId - 1).getNetwork().getAtomix().toSocketAddress().toString())
           .accept(brokerCfg);
     }
 

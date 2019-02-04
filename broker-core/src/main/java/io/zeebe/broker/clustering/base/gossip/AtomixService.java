@@ -24,7 +24,9 @@ import io.atomix.cluster.discovery.BootstrapDiscoveryBuilder;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.discovery.NodeDiscoveryProvider;
 import io.atomix.core.Atomix;
-import io.atomix.core.profile.Profile;
+import io.atomix.core.AtomixBuilder;
+import io.atomix.primitive.partition.MemberGroupStrategy;
+import io.atomix.protocols.backup.partition.PrimaryBackupPartitionGroup;
 import io.atomix.utils.net.Address;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.system.configuration.BrokerCfg;
@@ -33,14 +35,10 @@ import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 
 public class AtomixService implements Service<Atomix> {
@@ -58,41 +56,42 @@ public class AtomixService implements Service<Atomix> {
   public void start(ServiceStartContext startContext) {
     final ClusterCfg clusterCfg = configuration.getCluster();
 
-    final int stepSize = 15;
     final int nodeId = clusterCfg.getNodeId();
     final String localMemberId = Integer.toString(nodeId);
 
     final NetworkCfg networkCfg = configuration.getNetwork();
-    final String host = networkCfg.getManagement().getHost();
-    final int port = networkCfg.getManagement().getPort() + stepSize;
+    final String host = networkCfg.getAtomix().getHost();
+    final int port = networkCfg.getAtomix().getPort();
 
     final NodeDiscoveryProvider discoveryProvider =
-        createDiscoveryProvider(clusterCfg, stepSize, localMemberId);
+        createDiscoveryProvider(clusterCfg, localMemberId);
     final Properties properties = createNodeProperties(networkCfg);
 
-    atomix =
+    LOG.info("Setup atomix node in cluster {}", clusterCfg.getClusterName());
+
+    final AtomixBuilder atomixBuilder =
         Atomix.builder()
-            .withClusterId("zeebe-cluster")
+            .withClusterId(clusterCfg.getClusterName())
             .withMemberId(localMemberId)
             .withProperties(properties)
             .withAddress(Address.from(host, port))
-            .withMembershipProvider(discoveryProvider)
-            .withProfiles(Profile.dataGrid(1))
+            .withMembershipProvider(discoveryProvider);
+    // if (nodeId == 0) { //Configuring only on one node causes lot of delay when starting node
+    final PrimaryBackupPartitionGroup partitionGroup =
+        PrimaryBackupPartitionGroup.builder("group")
+            .withMemberGroupStrategy(MemberGroupStrategy.NODE_AWARE)
+            .withNumPartitions(1)
+            .build();
+    final PrimaryBackupPartitionGroup systemGroup =
+        PrimaryBackupPartitionGroup.builder("system")
+            .withMemberGroupStrategy(MemberGroupStrategy.NODE_AWARE)
+            .withNumPartitions(1)
             .build();
 
-    // only logging purpose for now
-    atomix
-        .getMembershipService()
-        .addListener(mEvent -> LOG.info("Member {} receives {}", localMemberId, mEvent.toString()));
+    atomixBuilder.withManagementGroup(systemGroup).withPartitionGroups(partitionGroup);
+    // }
 
-    final CompletableFuture<Void> startFuture = atomix.start();
-    startContext.async(mapCompletableFuture(startFuture));
-  }
-
-  @Override
-  public void stop(ServiceStopContext stopContext) {
-    final CompletableFuture<Void> stopFuture = atomix.stop();
-    stopContext.async(mapCompletableFuture(stopFuture));
+    atomix = atomixBuilder.build();
   }
 
   @Override
@@ -101,7 +100,7 @@ public class AtomixService implements Service<Atomix> {
   }
 
   private NodeDiscoveryProvider createDiscoveryProvider(
-      ClusterCfg clusterCfg, int stepSize, String localMemberId) {
+      ClusterCfg clusterCfg, String localMemberId) {
     final BootstrapDiscoveryBuilder builder = BootstrapDiscoveryProvider.builder();
     final List<String> initialContactPoints = clusterCfg.getInitialContactPoints();
 
@@ -109,7 +108,7 @@ public class AtomixService implements Service<Atomix> {
     initialContactPoints.forEach(
         contactAddress -> {
           final String[] address = contactAddress.split(":");
-          final int memberPort = Integer.parseInt(address[1]) + stepSize;
+          final int memberPort = Integer.parseInt(address[1]);
 
           final Node node =
               Node.builder().withAddress(Address.from(address[0], memberPort)).build();
@@ -147,18 +146,5 @@ public class AtomixService implements Service<Atomix> {
         socketBindingCfg.toSocketAddress().toInetSocketAddress();
     final String value = objectMapper.writeValueAsString(inetSocketAddress);
     properties.setProperty(addressName, value);
-  }
-
-  private ActorFuture<Void> mapCompletableFuture(CompletableFuture<Void> atomixFuture) {
-    final ActorFuture<Void> mappedActorFuture = new CompletableActorFuture<>();
-
-    atomixFuture
-        .thenAccept(mappedActorFuture::complete)
-        .exceptionally(
-            t -> {
-              mappedActorFuture.completeExceptionally(t);
-              return null;
-            });
-    return mappedActorFuture;
   }
 }

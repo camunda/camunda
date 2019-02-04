@@ -15,57 +15,52 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.clustering.base.topology;
+package io.zeebe.broker.clustering.base.gossip;
 
 import io.atomix.core.Atomix;
-import io.zeebe.broker.system.configuration.ClusterCfg;
-import io.zeebe.raft.Raft;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceGroupReference;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import java.util.concurrent.CompletableFuture;
 
-public class TopologyManagerService implements Service<TopologyManager> {
-  private TopologyManagerImpl topologyManager;
+public class AtomixJoinService implements Service<Void> {
 
-  private final ServiceGroupReference<Raft> raftReference =
-      ServiceGroupReference.<Raft>create()
-          .onAdd((name, raft) -> topologyManager.onRaftStarted(raft))
-          .onRemove((name, raft) -> topologyManager.onRaftRemoved(raft))
-          .build();
-
-  private final NodeInfo localMember;
-  private final ClusterCfg clusterCfg;
+  private Atomix atomix;
   private final Injector<Atomix> atomixInjector = new Injector<>();
-
-  public TopologyManagerService(NodeInfo localMember, ClusterCfg clusterCfg) {
-    this.localMember = localMember;
-    this.clusterCfg = clusterCfg;
-  }
 
   @Override
   public void start(ServiceStartContext startContext) {
-    final Atomix atomix = atomixInjector.getValue();
+    atomix = atomixInjector.getValue();
 
-    topologyManager = new TopologyManagerImpl(atomix, localMember, clusterCfg);
-    atomix.getMembershipService().addListener(topologyManager);
-
-    startContext.async(startContext.getScheduler().submitActor(topologyManager));
+    final CompletableFuture<Void> startFuture = atomix.start();
+    startContext.async(mapCompletableFuture(startFuture));
   }
 
   @Override
   public void stop(ServiceStopContext stopContext) {
-    stopContext.async(topologyManager.close());
+    final CompletableFuture<Void> stopFuture = atomix.stop();
+    stopContext.async(mapCompletableFuture(stopFuture));
   }
 
   @Override
-  public TopologyManager get() {
-    return topologyManager;
+  public Void get() {
+    return null;
   }
 
-  public ServiceGroupReference<Raft> getRaftReference() {
-    return raftReference;
+  private ActorFuture<Void> mapCompletableFuture(CompletableFuture<Void> atomixFuture) {
+    final ActorFuture<Void> mappedActorFuture = new CompletableActorFuture<>();
+
+    atomixFuture
+        .thenAccept(mappedActorFuture::complete)
+        .exceptionally(
+            t -> {
+              mappedActorFuture.completeExceptionally(t);
+              return null;
+            });
+    return mappedActorFuture;
   }
 
   public Injector<Atomix> getAtomixInjector() {
