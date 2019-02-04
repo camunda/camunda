@@ -27,7 +27,6 @@ import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.REMOT
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.TOPOLOGY_MANAGER_SERVICE;
 import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_CLIENT_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_CLIENT_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.SUBSCRIPTION_API_CLIENT_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.clientTransport;
 
 import io.zeebe.broker.clustering.base.connections.RemoteAddressManager;
@@ -88,9 +87,6 @@ public class ClusterComponent implements Component {
         .dependency(
             clientTransport(REPLICATION_API_CLIENT_NAME),
             remoteAddressManager.getReplicationClientTransportInjector())
-        .dependency(
-            clientTransport(SUBSCRIPTION_API_CLIENT_NAME),
-            remoteAddressManager.getSubscriptionClientTransportInjector())
         .install();
 
     initGossip(baseLayerInstall, context, localMember);

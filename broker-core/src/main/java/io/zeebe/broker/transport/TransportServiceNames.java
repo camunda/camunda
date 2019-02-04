@@ -40,10 +40,8 @@ public class TransportServiceNames {
   public static final String CLIENT_API_SERVER_NAME = "clientApi.server";
   public static final String MANAGEMENT_API_SERVER_NAME = "managementApi.server";
   public static final String REPLICATION_API_SERVER_NAME = "replicationApi.server";
-  public static final String SUBSCRIPTION_API_SERVER_NAME = "subscriptionApi.server";
   public static final String MANAGEMENT_API_CLIENT_NAME = "managementApi.client";
   public static final String REPLICATION_API_CLIENT_NAME = "replicationApi.client";
-  public static final String SUBSCRIPTION_API_CLIENT_NAME = "subscriptionApi.client";
 
   public static ServiceName<Dispatcher> receiveBufferName(String identifier) {
     return ServiceName.newServiceName(

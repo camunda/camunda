@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.subscription.command;
 
+import io.atomix.core.Atomix;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
@@ -24,16 +25,13 @@ import io.zeebe.servicecontainer.ServiceGroupReference;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
-import io.zeebe.transport.BufferingServerTransport;
-import io.zeebe.transport.ServerInputSubscription;
 import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.collections.Int2ObjectHashMap;
 
 public class SubscriptionApiCommandMessageHandlerService extends Actor
     implements Service<SubscriptionApiCommandMessageHandler> {
 
-  private final Injector<BufferingServerTransport> serverTransportInjector = new Injector<>();
+  private final Injector<Atomix> atomixInjector = new Injector<>();
 
   private final ServiceGroupReference<Partition> leaderPartitionsGroupReference =
       ServiceGroupReference.<Partition>create()
@@ -43,8 +41,8 @@ public class SubscriptionApiCommandMessageHandlerService extends Actor
 
   private final Int2ObjectHashMap<Partition> leaderPartitions = new Int2ObjectHashMap<>();
 
-  private BufferingServerTransport serverTransport;
   private SubscriptionApiCommandMessageHandler messageHandler;
+  private Atomix atomix;
 
   @Override
   public String getName() {
@@ -53,10 +51,7 @@ public class SubscriptionApiCommandMessageHandlerService extends Actor
 
   @Override
   public void start(ServiceStartContext context) {
-    serverTransport = serverTransportInjector.getValue();
-
-    messageHandler = new SubscriptionApiCommandMessageHandler(leaderPartitions);
-
+    atomix = atomixInjector.getValue();
     context.async(context.getScheduler().submitActor(this, true));
   }
 
@@ -67,25 +62,8 @@ public class SubscriptionApiCommandMessageHandlerService extends Actor
 
   @Override
   protected void onActorStarting() {
-
-    final ActorFuture<ServerInputSubscription> openFuture =
-        serverTransport.openSubscription("subscriptionRequestHandler", messageHandler, null);
-
-    actor.runOnCompletion(
-        openFuture,
-        (subscription, throwable) -> {
-          if (throwable != null) {
-            throw new RuntimeException(throwable);
-          } else {
-            actor.consume(
-                subscription,
-                () -> {
-                  if (subscription.poll() == 0) {
-                    actor.yield();
-                  }
-                });
-          }
-        });
+    messageHandler = new SubscriptionApiCommandMessageHandler(actor, leaderPartitions);
+    atomix.getCommunicationService().subscribe("subscription", messageHandler);
   }
 
   private void addPartition(final ServiceName<Partition> sericeName, final Partition partition) {
@@ -101,11 +79,11 @@ public class SubscriptionApiCommandMessageHandlerService extends Actor
     return messageHandler;
   }
 
-  public Injector<BufferingServerTransport> getServerTransportInjector() {
-    return serverTransportInjector;
-  }
-
   public ServiceGroupReference<Partition> getLeaderParitionsGroupReference() {
     return leaderPartitionsGroupReference;
+  }
+
+  public Injector<Atomix> getAtomixInjector() {
+    return atomixInjector;
   }
 }
