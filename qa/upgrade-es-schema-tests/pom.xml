@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -17,45 +18,56 @@
     <upgrade.expected.activityInstance.count>21</upgrade.expected.activityInstance.count>
     <!-- default 30 minutes -->
     <upgrade.timeout.seconds>1800</upgrade.timeout.seconds>
+    <upgrade.versions>${project.previousVersion},${project.version}</upgrade.versions>
   </properties>
 
   <build>
     <plugins>
-      <!-- 1. Unpack previous & current Optimize version -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>unpackCurrent</id>
-            <phase>pre-integration-test</phase>
-            <goals>
-              <goal>unpack</goal>
-            </goals>
-            <configuration>
-              <skip>${skip.tests}</skip>
-              <artifact>org.camunda.optimize:camunda-optimize:${project.version}:tar.gz:production</artifact>
-              <outputDirectory>${project.build.directory}/currVersion/</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>unpackPrevious</id>
-            <phase>pre-integration-test</phase>
-            <goals>
-              <goal>unpack</goal>
-            </goals>
-            <configuration>
-              <skip>${skip.tests}</skip>
-              <artifact>org.camunda.optimize:camunda-optimize:${project.previousVersion}:tar.gz:production</artifact>
-              <outputDirectory>${project.build.directory}/prevVersion/</outputDirectory>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
+          <!-- 1. unpack Optimize versions -->
+          <execution>
+            <id>unpack</id>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <phase>pre-integration-test</phase>
+            <configuration>
+              <skip>${skip.tests}</skip>
+              <target name="unpack optimize distributions">
+                <!-- if executed in Jenkins, use settings.xml in Optimize root dir -->
+                <property environment="env"/>
+                <condition property="maven-settings" value="--settings=settings.xml" else="">
+                  <isset property="env.JENKINS_URL"/>
+                </condition>
+                <ac:for list="${upgrade.versions}" param="currentVersion" xmlns:ac="antlib:net.sf.antcontrib">
+                  <sequential>
+                    <echo message="Downloading &amp; unpacking Optimize @{currentVersion}..."/>
+                    <ac:if>
+                      <matches string="@{currentVersion}" pattern="2\.[0-2]\.0"/>
+                      <ac:then>
+                        <ac:var name="optimize.classifier" value="standalone"/>
+                      </ac:then>
+                      <ac:else>
+                        <ac:var name="optimize.classifier" value="production"/>
+                      </ac:else>
+                    </ac:if>
+                    <exec dir="${project.build.directory}/../../../" executable="/bin/bash" failonerror="true">
+                      <arg value="-c"/>
+                      <arg value="mvn dependency:unpack ${maven-settings}
+                            -pl qa/upgrade-es-schema-tests
+                            -Dartifact=org.camunda.optimize:camunda-optimize:@{currentVersion}:tar.gz:${optimize.classifier}
+                            -DoutputDirectory=./target/@{currentVersion}
+                            -DoverWriteReleases=true
+                            -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn"/>
+                    </exec>
+                  </sequential>
+                </ac:for>
+              </target>
+            </configuration>
+          </execution>
           <!-- 3. Make sure CamBPM and ES are up and running -->
           <execution>
             <id>check-cambpm-is-up</id>
@@ -66,19 +78,19 @@
             <configuration>
               <skip>${skip.docker}</skip>
               <target name="check-cambpm-is-running" description="Check whether CamBPM is running">
-                <echo message="Check ES is running..." />
+                <echo message="Check ES is running..."/>
                 <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                  <socket server="localhost" port="9200" />
+                  <socket server="localhost" port="9200"/>
                 </waitfor>
                 <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                  <http url="http://localhost:9200/_cluster/state" />
+                  <http url="http://localhost:9200/_cluster/state"/>
                 </waitfor>
-                <echo message="ES is running." />
-                <echo message="Check CamBPM is running..." />
+                <echo message="ES is running."/>
+                <echo message="Check CamBPM is running..."/>
                 <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                  <socket server="localhost" port="8080" />
+                  <socket server="localhost" port="8080"/>
                 </waitfor>
-                <echo message="CamBPM is running." />
+                <echo message="CamBPM is running."/>
               </target>
             </configuration>
           </execution>
@@ -91,32 +103,119 @@
             <phase>integration-test</phase>
             <configuration>
               <skip>${skip.tests}</skip>
-              <target>
-                <echo message="Starting Optimize ${project.previousVersion}..." />
-                <exec dir="${project.build.directory}/prevVersion/" executable="${project.build.directory}/prevVersion/optimize-startup.sh" spawn="true" />
+              <target xmlns:ac="antlib:net.sf.antcontrib">
+                <ac:for list="${upgrade.versions}" param="currentVersion">
+                  <sequential>
+                    <ac:if>
+                      <!-- only if not the first version in the list -->
+                      <not>
+                        <matches string="${upgrade.versions}" pattern="^@{currentVersion},.*"/>
+                      </not>
+                      <ac:then>
+                        <echo message="Running migration to @{currentVersion}..."/>
+                        <ac:if>
+                          <matches string="@{currentVersion}" pattern="2\.[0-3]\.0"/>
+                          <ac:then>
+                            <ac:var name="optimize.upgrade.command" value="java -cp environment:upgrade/* org.camunda.optimize.upgrade.main.UpgradeMain"/>
+                          </ac:then>
+                          <ac:else>
+                            <ac:var name="optimize.upgrade.command" value="./upgrade/upgrade.sh "/>
+                          </ac:else>
+                        </ac:if>
+                        <exec dir="${project.build.directory}/@{currentVersion}" executable="/bin/bash">
+                          <arg value="-c"/>
+                          <arg value="set -o pipefail; ${optimize.upgrade.command} --skip-warning | sed 's/^/[OPTIMIZE MIGRATION SCRIPT @{currentVersion}]: /'"/>
+                        </exec>
+                      </ac:then>
+                    </ac:if>
+                    <echo message="Starting Optimize @{currentVersion}..."/>
+                    <exec dir="${project.build.directory}/@{currentVersion}/"
+                          executable="${project.build.directory}/@{currentVersion}/optimize-startup.sh"
+                          spawn="true"
+                    />
 
-                <echo message="Waiting for Optimize to populate ES..." />
-                <exec executable="/bin/bash" failonerror="true">
-                  <arg value="-c" />
-                  <arg value="until test $(/bin/bash -c ./getActivityInstanceCount.sh) -ge ${upgrade.expected.activityInstance.count}; do sleep 2; done" />
-                </exec>
+                    <echo message="Waiting for Optimize to start..."/>
+                    <exec executable="/bin/bash" failonerror="true">
+                      <arg value="-c"/>
+                      <arg value="until $(nc -zv localhost 8090); do sleep 2; done"/>
+                    </exec>
 
-                <echo message="Killing Optimize ${project.previousVersion}..." />
-                <exec executable="/bin/bash">
-                  <arg value="-c" />
-                  <arg value="pkill -f org.camunda.optimize.Main" />
-                </exec>
+                    <echo message="Waiting for Optimize to populate ES..."/>
+                    <exec executable="/bin/bash" failonerror="true">
+                      <arg value="-c"/>
+                      <arg
+                          value="until test $(/bin/bash -c ./getActivityInstanceCount.sh) -ge ${upgrade.expected.activityInstance.count}; do sleep 2; done"/>
+                    </exec>
 
-                <echo message="Running migration from ${project.previousVersion} to ${project.version}..." />
-                <exec dir="${project.build.directory}/currVersion" executable="/bin/bash">
-                  <arg value="-c" />
-                  <arg value="set -o pipefail; ./upgrade/upgrade.sh --skip-warning | sed 's/^/[OPTIMIZE MIGRATION SCRIPT]: /'" />
-                </exec>
+                    <ac:if>
+                      <available file="${project.build.directory}/../src/test/resources/@{currentVersion}" type="dir"/>
+                      <ac:then>
+                        <echo message="Inserting prepared reports for @{currentVersion}..."/>
+                        <ac:for param="bulkFile">
+                          <fileset dir="${project.build.directory}/../src/test/resources/@{currentVersion}" casesensitive="yes">
+                          </fileset>
+                          <sequential>
+                            <echo message="Inserting report bulk @{bulkFile}"/>
+                            <property name="curl.data.prefix" value="@@"/>
+                            <exec dir="${project.build.directory}/../src/test/resources/@{currentVersion}"
+                                  executable="/bin/bash" failonerror="true">
+                              <arg value="-c"/>
+                              <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f
+                                -H 'Content-Type: application/json'
+                                -XPOST localhost:9200/_bulk
+                                --data-binary '${curl.data.prefix}@{bulkFile}'"/>
+                            </exec>
+                          </sequential>
+                        </ac:for>
+                      </ac:then>
+                    </ac:if>
 
+                    <echo message="Authenticating on optimize api..."/>
+                    <!-- Note: writing authResponse and using it in the auth header is for backwardscompatibility < 2.3.0 -->
+                    <exec dir="${project.build.directory}/@{currentVersion}" executable="/bin/bash" failonerror="true">
+                      <arg value="-c"/>
+                      <arg value="curl -s -w &quot;%{http_code}&quot; -f -H 'Content-Type: application/json'
+                        -XPOST localhost:8090/api/authentication
+                        --data-binary '{&quot;username&quot;:&quot;demo&quot;, &quot;password&quot;:&quot;demo&quot;}'
+                        -c authCookie
+                        -o authResponse"/>
+                    </exec>
+                    <loadfile property="optimize.authToken.@{currentVersion}" srcFile="${project.build.directory}/@{currentVersion}/authResponse"/>
+
+                    <echo message="Reading all reports from optimize api... ${optimize.authToken.@{currentVersion}}"/>
+                    <exec dir="${project.build.directory}/@{currentVersion}" executable="/bin/bash" failonerror="true">
+                      <arg value="-c"/>
+                      <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f
+                        http://localhost:8090/api/report?orderBy=lastModified
+                        -b authCookie
+                        -H 'X-Optimize-Authorization: Bearer ${optimize.authToken.@{currentVersion}}'"/>
+                    </exec>
+
+                    <echo message="Killing Optimize @{currentVersion}..."/>
+                    <exec executable="/bin/bash" failonerror="true">
+                      <arg value="-c"/>
+                      <arg value="pkill -f org.camunda.optimize.Main"/>
+                    </exec>
+
+                  </sequential>
+                </ac:for>
               </target>
             </configuration>
           </execution>
         </executions>
+        <dependencies>
+          <dependency>
+            <groupId>ant-contrib</groupId>
+            <artifactId>ant-contrib</artifactId>
+            <version>1.0b3</version>
+            <exclusions>
+              <exclusion>
+                <groupId>ant</groupId>
+                <artifactId>ant</artifactId>
+              </exclusion>
+            </exclusions>
+          </dependency>
+        </dependencies>
       </plugin>
     </plugins>
   </build>
@@ -192,17 +291,18 @@
                 <phase>integration-test</phase>
                 <configuration>
                   <target>
-                    <echo message="Running integration tests ..." />
+                    <echo message="Running integration tests ..."/>
 
                     <!-- if executed in Jenkins, use settings.xml in Optimize root dir -->
-                    <property environment="env" />
+                    <property environment="env"/>
                     <condition property="maven-settings" value="--settings=settings.xml" else="">
-                      <isset property="env.JENKINS_URL" />
+                      <isset property="env.JENKINS_URL"/>
                     </condition>
                     <!-- execute Optimize backend integration testsuite -->
                     <exec dir="${project.build.directory}/../../../" executable="/bin/bash" failonerror="true">
-                      <arg value="-c" />
-                      <arg value="mvn verify -pl backend -Dskip.docker -Pproduction,it,engine-latest ${maven-settings}" />
+                      <arg value="-c"/>
+                      <arg value="mvn verify -pl backend -Dskip.docker -Pproduction,it,engine-latest ${maven-settings}
+                        -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn"/>
                     </exec>
                   </target>
                 </configuration>

@@ -8,7 +8,7 @@ It has two profile for it's execution, static and base data.
 
 # General Requirements
 
-* the machine the test is run on needs to have `jq` installed
+* the machine the test is run on needs to have `jq` and `nc` (netcat) installed
 
 # Camunda Optimize Upgrade Performance - static data
 
@@ -35,3 +35,11 @@ mvn -Pupgrade-es-schema-tests clean verify
 ```
 
 After the upgrade a full integration test run is executed to ensure the schema is fully functional.
+
+# Maven Execution Parameters
+
+There are two parameters applicable when running the upgrade tests:
+
+* `-Dupgrade.versions=2.3.0,2.4.0-SNAPSHOT` this is a list of versions to upgrade and start in sequence. It defaults to the previous and current minor release but can be overridden to start from even older releases, e.g. `2.1.0,2.2.0`.
+* `-Dupgrade.expected.activityInstance.count=21` this parameter determines the amount of imported activity instances for which the test considers the import from the engine to be finished.
+It defaults to 21 which is the number of activity instances in a deployment of the engine with the default sample data.

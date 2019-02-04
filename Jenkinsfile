@@ -515,7 +515,7 @@ void securityTestSteps() {
 
 void migrationTestSteps() {
   container('maven') {
-    sh ("""apt-get update && apt-get install -y jq""")
+    sh ("""apt-get update && apt-get install -y jq netcat""")
     runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend -am -Pproduction,engine-latest")
     runMaven("verify -Dskip.docker -Dskip.fe.build -pl upgrade")
     runMaven("verify -Dskip.docker -Dskip.fe.build -pl qa/upgrade-es-schema-tests -Pupgrade-es-schema-tests")
