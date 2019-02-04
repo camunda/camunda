@@ -18,7 +18,6 @@
 package io.zeebe.broker.transport;
 
 import io.zeebe.broker.transport.clientapi.ClientApiMessageHandler;
-import io.zeebe.broker.transport.controlmessage.ControlMessageHandlerManager;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.raft.RaftApiMessageHandler;
 import io.zeebe.servicecontainer.ServiceName;
@@ -30,9 +29,6 @@ public class TransportServiceNames {
   public static final ServiceName<ClientApiMessageHandler> CLIENT_API_MESSAGE_HANDLER =
       ServiceName.newServiceName(
           "transport.clientApi.messageHandler", ClientApiMessageHandler.class);
-  public static final ServiceName<ControlMessageHandlerManager> CONTROL_MESSAGE_HANDLER_MANAGER =
-      ServiceName.newServiceName(
-          "transport.clientApi.controlMessage", ControlMessageHandlerManager.class);
   public static final ServiceName<RaftApiMessageHandler> REPLICATION_API_MESSAGE_HANDLER =
       ServiceName.newServiceName(
           "transport.replicationApi.messageHandler", RaftApiMessageHandler.class);

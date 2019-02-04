@@ -32,7 +32,6 @@ import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.processor.MessageEventProcessors;
 import io.zeebe.broker.system.configuration.ClusterCfg;
-import io.zeebe.broker.transport.controlmessage.ControlMessageHandlerManager;
 import io.zeebe.broker.workflow.deployment.distribute.processor.DeploymentDistributeProcessor;
 import io.zeebe.broker.workflow.processor.BpmnStepProcessor;
 import io.zeebe.broker.workflow.processor.CatchEventBehavior;
@@ -40,7 +39,6 @@ import io.zeebe.broker.workflow.processor.WorkflowEventProcessors;
 import io.zeebe.broker.workflow.processor.deployment.DeploymentCreatedProcessor;
 import io.zeebe.broker.workflow.processor.deployment.DeploymentEventProcessors;
 import io.zeebe.broker.workflow.processor.timer.DueDateTimerChecker;
-import io.zeebe.broker.workflow.repository.WorkflowRepository;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
@@ -64,39 +62,31 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
   private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
   private final Injector<ClientTransport> managementApiClientInjector = new Injector<>();
   private final Injector<TopologyManager> topologyManagerInjector = new Injector<>();
-  private final Injector<ControlMessageHandlerManager> controlMessageHandlerManagerServiceInjector =
-      new Injector<>();
   private final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector =
       new Injector<>();
   private final Injector<Atomix> atomixInjector = new Injector<>();
 
+  private final ClusterCfg clusterCfg;
+  private StreamProcessorServiceFactory streamProcessorServiceFactory;
+  private ServerTransport clientApiTransport;
+  private TopologyManager topologyManager;
+  private ClientTransport managementApi;
+  private Atomix atomix;
   private final ServiceGroupReference<Partition> partitionsGroupReference =
       ServiceGroupReference.<Partition>create()
           .onAdd((partitionName, partition) -> startStreamProcessors(partitionName, partition))
           .build();
 
-  private final ClusterCfg clusterCfg;
-  private ControlMessageHandlerManager controlMessageHandlerManager;
-  private Atomix atomix;
-
   public ZbStreamProcessorService(final ClusterCfg clusterCfg) {
     this.clusterCfg = clusterCfg;
   }
 
-  private StreamProcessorServiceFactory streamProcessorServiceFactory;
-  private ServerTransport clientApiTransport;
-  private TopologyManager topologyManager;
-  private ServiceStartContext startContext;
-  private ClientTransport managementApi;
-
   @Override
   public void start(final ServiceStartContext serviceContext) {
-    this.startContext = serviceContext;
     this.managementApi = managementApiClientInjector.getValue();
     this.clientApiTransport = clientApiTransportInjector.getValue();
     this.streamProcessorServiceFactory = streamProcessorServiceFactoryInjector.getValue();
     this.topologyManager = topologyManagerInjector.getValue();
-    controlMessageHandlerManager = controlMessageHandlerManagerServiceInjector.getValue();
     this.atomix = atomixInjector.getValue();
   }
 
@@ -124,25 +114,20 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
                   new TypedStreamEnvironment(
                       partition.getLogStream(), clientApiTransport.getOutput());
 
-              return createTypedStreamProcessor(
-                  partitionServiceName, partitionId, streamEnvironment, zeebeState);
+              return createTypedStreamProcessor(partitionId, streamEnvironment, zeebeState);
             })
         .build();
   }
 
   public TypedStreamProcessor createTypedStreamProcessor(
-      ServiceName<Partition> partitionServiceName,
-      int partitionId,
-      TypedStreamEnvironment streamEnvironment,
-      ZeebeState zeebeState) {
+      int partitionId, TypedStreamEnvironment streamEnvironment, ZeebeState zeebeState) {
     final TypedEventStreamProcessorBuilder typedProcessorBuilder =
         streamEnvironment.newStreamProcessor().keyGenerator(zeebeState.getKeyGenerator());
 
     addDistributeDeploymentProcessors(zeebeState, streamEnvironment, typedProcessorBuilder);
     final BpmnStepProcessor stepProcessor =
         addWorkflowProcessors(zeebeState, typedProcessorBuilder);
-    addDeploymentRelatedProcessorAndServices(
-        partitionServiceName, partitionId, zeebeState, typedProcessorBuilder);
+    addDeploymentRelatedProcessorAndServices(partitionId, zeebeState, typedProcessorBuilder);
     addIncidentProcessors(zeebeState, stepProcessor, typedProcessorBuilder);
     addJobProcessors(zeebeState, typedProcessorBuilder);
     addMessageProcessors(zeebeState, typedProcessorBuilder);
@@ -179,19 +164,11 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
   }
 
   public void addDeploymentRelatedProcessorAndServices(
-      ServiceName<Partition> partitionServiceName,
       int partitionId,
       ZeebeState zeebeState,
       TypedEventStreamProcessorBuilder typedProcessorBuilder) {
     final WorkflowState workflowState = zeebeState.getWorkflowState();
     if (partitionId == Protocol.DEPLOYMENT_PARTITION) {
-      typedProcessorBuilder.withListener(
-          new WorkflowRepository(
-              clientApiTransport,
-              controlMessageHandlerManager,
-              startContext,
-              workflowState,
-              partitionServiceName));
       DeploymentEventProcessors.addTransformingDeploymentProcessor(
           typedProcessorBuilder,
           zeebeState,
@@ -249,10 +226,6 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
 
   public Injector<ClientTransport> getManagementApiClientInjector() {
     return managementApiClientInjector;
-  }
-
-  public Injector<ControlMessageHandlerManager> getControlMessageHandlerManagerServiceInjector() {
-    return controlMessageHandlerManagerServiceInjector;
   }
 
   public Injector<Atomix> getAtomixInjector() {

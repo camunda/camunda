@@ -32,8 +32,6 @@ import io.zeebe.client.api.commands.ResolveIncidentCommandStep1;
 import io.zeebe.client.api.commands.TopologyRequestStep1;
 import io.zeebe.client.api.commands.UpdatePayloadWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.commands.UpdateRetriesJobCommandStep1;
-import io.zeebe.client.api.commands.WorkflowRequestStep1;
-import io.zeebe.client.api.commands.WorkflowResourceRequestStep1;
 import io.zeebe.client.api.subscription.JobWorkerBuilderStep1;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.impl.job.ActivateJobsCommandImpl;
@@ -42,8 +40,6 @@ import io.zeebe.client.impl.subscription.JobWorkerBuilderImpl;
 import io.zeebe.client.impl.workflow.CancelWorkflowInstanceCommandImpl;
 import io.zeebe.client.impl.workflow.CreateWorkflowInstanceCommandImpl;
 import io.zeebe.client.impl.workflow.DeployWorkflowCommandImpl;
-import io.zeebe.client.impl.workflow.GetWorkflowCommandImpl;
-import io.zeebe.client.impl.workflow.ListWorkflowsCommandImpl;
 import io.zeebe.client.impl.workflow.PublishMessageCommandImpl;
 import io.zeebe.client.impl.workflow.ResolveIncidentCommandImpl;
 import io.zeebe.client.impl.workflow.UpdateWorkflowInstancePayloadCommandImpl;
@@ -173,16 +169,6 @@ public class ZeebeClientImpl implements ZeebeClient {
   @Override
   public PublishMessageCommandStep1 newPublishMessageCommand() {
     return new PublishMessageCommandImpl(asyncStub, config, objectMapper);
-  }
-
-  @Override
-  public WorkflowResourceRequestStep1 newResourceRequest() {
-    return new GetWorkflowCommandImpl(asyncStub);
-  }
-
-  @Override
-  public WorkflowRequestStep1 newWorkflowRequest() {
-    return new ListWorkflowsCommandImpl(asyncStub);
   }
 
   @Override

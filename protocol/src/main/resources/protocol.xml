@@ -48,12 +48,6 @@
       <validValue name="VARIABLE">17</validValue>
     </enum>
 
-    <enum name="ControlMessageType" encodingType="uint8"
-      description="The type of the control message.">
-      <validValue name="GET_WORKFLOW">5</validValue>
-      <validValue name="LIST_WORKFLOWS">6</validValue>
-    </enum>
-
     <enum name="RecordType" encodingType="uint8">
       <validValue name="EVENT">0</validValue>
       <validValue name="COMMAND">1</validValue>
@@ -73,17 +67,6 @@
   <sbe:message name="ErrorResponse" id="0" description="Standard error response">
     <field name="errorCode" id="1" type="errorCode"/>
     <data name="errorData" id="2" type="varDataEncoding"/>
-  </sbe:message>
-
-  <sbe:message name="ControlMessageRequest" id="10">
-    <field name="messageType" id="1" type="ControlMessageType"/>
-    <!-- Optional: Needs only be set if request addresses a specific partition -->
-    <field name="partitionId" id="2" type="uint16" presence="optional"/>
-    <data name="data" id="3" type="varDataEncoding"/>
-  </sbe:message>
-
-  <sbe:message name="ControlMessageResponse" id="11">
-    <data name="data" id="1" type="varDataEncoding"/>
   </sbe:message>
 
   <sbe:message name="ExecuteCommandRequest" id="20">

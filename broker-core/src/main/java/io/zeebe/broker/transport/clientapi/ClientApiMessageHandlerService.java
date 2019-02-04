@@ -18,15 +18,12 @@
 package io.zeebe.broker.transport.clientapi;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceGroupReference;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 
 public class ClientApiMessageHandlerService implements Service<ClientApiMessageHandler> {
-  private final Injector<Dispatcher> controlMessageBufferInjector = new Injector<>();
   protected ClientApiMessageHandler service;
 
   protected final ServiceGroupReference<Partition> leaderPartitionsGroupReference =
@@ -37,8 +34,7 @@ public class ClientApiMessageHandlerService implements Service<ClientApiMessageH
 
   @Override
   public void start(ServiceStartContext startContext) {
-    final Dispatcher controlMessageBuffer = controlMessageBufferInjector.getValue();
-    service = new ClientApiMessageHandler(controlMessageBuffer);
+    service = new ClientApiMessageHandler();
   }
 
   @Override
@@ -49,10 +45,6 @@ public class ClientApiMessageHandlerService implements Service<ClientApiMessageH
   @Override
   public ClientApiMessageHandler get() {
     return service;
-  }
-
-  public Injector<Dispatcher> getControlMessageBufferInjector() {
-    return controlMessageBufferInjector;
   }
 
   public ServiceGroupReference<Partition> getLeaderParitionsGroupReference() {

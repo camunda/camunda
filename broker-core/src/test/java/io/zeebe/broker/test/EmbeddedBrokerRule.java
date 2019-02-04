@@ -28,7 +28,6 @@ import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setGatewayClusterP
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setManagementApiPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setReplicationApiPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setSubscriptionApiPort;
-import static io.zeebe.broker.workflow.WorkflowServiceNames.WORKFLOW_REPOSITORY_SERVICE;
 
 import io.atomix.core.Atomix;
 import io.zeebe.broker.Broker;
@@ -246,7 +245,6 @@ public class EmbeddedBrokerRule extends ExternalResource {
       serviceContainer
           .createService(TestService.NAME, new TestService())
           .dependency(ClusterBaseLayerServiceNames.leaderPartitionServiceName(partitionName))
-          .dependency(WORKFLOW_REPOSITORY_SERVICE)
           .dependency(
               TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME))
           .install()

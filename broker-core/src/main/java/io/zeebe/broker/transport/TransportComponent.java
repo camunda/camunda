@@ -35,7 +35,6 @@ import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.zeebe.broker.transport.clientapi.ClientApiMessageHandlerService;
-import io.zeebe.broker.transport.controlmessage.ControlMessageHandlerManagerService;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.DispatcherBuilder;
 import io.zeebe.dispatcher.Dispatchers;
@@ -123,18 +122,10 @@ public class TransportComponent implements Component {
 
     context.addRequiredStartAction(clientApiFuture);
 
-    final ServiceName<Dispatcher> controlMessageBufferService =
-        createReceiveBuffer(
-            serviceContainer,
-            CLIENT_API_SERVER_NAME,
-            new ByteValue(networkCfg.getClient().getControlMessageBufferSize()));
-
     final ClientApiMessageHandlerService messageHandlerService =
         new ClientApiMessageHandlerService();
     serviceContainer
         .createService(CLIENT_API_MESSAGE_HANDLER, messageHandlerService)
-        .dependency(
-            controlMessageBufferService, messageHandlerService.getControlMessageBufferInjector())
         .groupReference(
             LEADER_PARTITION_GROUP_NAME, messageHandlerService.getLeaderParitionsGroupReference())
         .install();
@@ -146,26 +137,6 @@ public class TransportComponent implements Component {
         .groupReference(
             ClusterBaseLayerServiceNames.RAFT_SERVICE_GROUP,
             raftApiMessageHandlerService.getRaftGroupReference())
-        .install();
-
-    final ControlMessageHandlerManagerService controlMessageHandlerManagerService =
-        new ControlMessageHandlerManagerService();
-    serviceContainer
-        .createService(
-            TransportServiceNames.CONTROL_MESSAGE_HANDLER_MANAGER,
-            controlMessageHandlerManagerService)
-        .dependency(
-            controlMessageBufferService,
-            controlMessageHandlerManagerService.getControlMessageBufferInjector())
-        .dependency(
-            TransportServiceNames.serverTransport(CLIENT_API_SERVER_NAME),
-            controlMessageHandlerManagerService.getTransportInjector())
-        .dependency(
-            ClusterBaseLayerServiceNames.TOPOLOGY_MANAGER_SERVICE,
-            controlMessageHandlerManagerService.getTopologyManagerInjector())
-        .dependency(
-            TransportServiceNames.clientTransport(MANAGEMENT_API_CLIENT_NAME),
-            controlMessageHandlerManagerService.getManagementClientTransportInjector())
         .install();
   }
 

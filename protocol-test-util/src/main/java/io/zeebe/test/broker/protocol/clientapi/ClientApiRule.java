@@ -128,10 +128,6 @@ public class ClientApiRule extends ExternalResource {
         .partitionId(partition);
   }
 
-  public ControlMessageRequestBuilder createControlMessageRequest() {
-    return new ControlMessageRequestBuilder(transport.getOutput(), nodeId, msgPackHelper);
-  }
-
   public PartitionTestClient partitionClient() {
     return partitionClient(defaultPartitionId);
   }

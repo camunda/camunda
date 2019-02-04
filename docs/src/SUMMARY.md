@@ -66,7 +66,6 @@
     * [Deploy a Workflow](java-client-examples/workflow-deploy.md)
     * [Create a Workflow Instance](java-client-examples/workflow-instance-create.md)
     * [Create Workflow Instances Non-Blocking](java-client-examples/workflow-instance-create-nonblocking.md)
-    * [Request all Workflows](java-client-examples/workflow-deployment-request.md)
     * [Open a Job Worker](java-client-examples/job-worker-open.md)
     * [Handle the payload as POJO](java-client-examples/data-pojo.md)
     * [Request Cluster Topology](java-client-examples/cluster-topology-request.md)
