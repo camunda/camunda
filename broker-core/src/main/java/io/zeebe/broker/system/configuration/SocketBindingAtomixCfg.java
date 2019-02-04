@@ -41,7 +41,7 @@ public class SocketBindingAtomixCfg extends SocketBindingCfg {
 
   @Override
   public String toString() {
-    return "SocketBindingSubscriptionCfg{"
+    return "SocketBindingAtomixCfg{"
         + "receiveBufferSize='"
         + receiveBufferSize
         + '\''
