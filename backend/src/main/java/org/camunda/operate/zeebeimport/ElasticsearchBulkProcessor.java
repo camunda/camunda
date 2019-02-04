@@ -33,6 +33,9 @@ public class ElasticsearchBulkProcessor extends Thread {
   @Autowired
   private ListViewZeebeRecordProcessor listViewZeebeRecordProcessor;
 
+  @Autowired
+  private DetailViewZeebeRecordProcessor detailViewZeebeRecordProcessor;
+
   public void persistZeebeRecords(List<? extends RecordImpl> zeebeRecords) throws PersistenceException {
 
       logger.debug("Writing [{}] Zeebe records to Elasticsearch", zeebeRecords.size());
@@ -50,8 +53,10 @@ public class ElasticsearchBulkProcessor extends Thread {
         //TODO new processing
         if (record.getMetadata().getValueType().equals(ValueType.WORKFLOW_INSTANCE)) {
           listViewZeebeRecordProcessor.processWorkflowInstanceRecord(record, bulkRequest);
+          detailViewZeebeRecordProcessor.processWorkflowInstanceRecord(record, bulkRequest);
         } else if (record.getMetadata().getValueType().equals(ValueType.INCIDENT)) {
           listViewZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
+          detailViewZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
         }
       }
       ElasticsearchUtil.processBulkRequest(bulkRequest, true);

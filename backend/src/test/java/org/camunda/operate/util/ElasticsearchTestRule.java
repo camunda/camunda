@@ -71,6 +71,7 @@ public class ElasticsearchTestRule extends ExternalResource {
   private String workflowIndexName;
   private String workflowInstanceIndexName;
   private String operationIndexName;
+  private String activityInstanceIndexName;
   private String listViewIndexName;
   private String eventIndexName;
   private String importPositionIndexName;
@@ -83,12 +84,14 @@ public class ElasticsearchTestRule extends ExternalResource {
     workflowIndexName = OperateElasticsearchProperties.WORKFLOW_INDEX_PATTERN + indexSuffix + "_";
     workflowInstanceIndexName = OperateElasticsearchProperties.WORKFLOW_INSTANCE_INDEX_PATTERN + indexSuffix + "_";
     listViewIndexName = OperateElasticsearchProperties.LIST_VIEW_INDEX_PATTERN + indexSuffix + "_";
+    activityInstanceIndexName = OperateElasticsearchProperties.ACTIVITY_INSTANCE_INDEX_PATTERN + indexSuffix + "_";
     operationIndexName = OperateElasticsearchProperties.OPERATION_INDEX_PATTERN + indexSuffix + "_";
     eventIndexName = OperateElasticsearchProperties.EVENT_INDEX_PATTERN + indexSuffix + "_";
     importPositionIndexName = OperateElasticsearchProperties.IMPORT_POSITION_INDEX_PATTERN + indexSuffix + "_";
     operateProperties.getElasticsearch().setWorkflowIndexName(workflowIndexName);
     operateProperties.getElasticsearch().setWorkflowInstanceIndexName(workflowInstanceIndexName);
     operateProperties.getElasticsearch().setListViewIndexName(listViewIndexName);
+    operateProperties.getElasticsearch().setActivityInstanceIndexName(activityInstanceIndexName);
     operateProperties.getElasticsearch().setOperationIndexName(operationIndexName);
     operateProperties.getElasticsearch().setEventIndexName(eventIndexName);
     operateProperties.getElasticsearch().setImportPositionIndexName(importPositionIndexName);
@@ -109,6 +112,7 @@ public class ElasticsearchTestRule extends ExternalResource {
     operateProperties.getElasticsearch().setWorkflowInstanceIndexName(OperateElasticsearchProperties.WORKFLOW_INSTANCE_INDEX_PATTERN + "_");
     operateProperties.getElasticsearch().setEventIndexName(OperateElasticsearchProperties.EVENT_INDEX_PATTERN + "_");
     operateProperties.getElasticsearch().setListViewIndexName(OperateElasticsearchProperties.LIST_VIEW_INDEX_PATTERN + "_");
+    operateProperties.getElasticsearch().setActivityInstanceIndexName(OperateElasticsearchProperties.ACTIVITY_INSTANCE_INDEX_PATTERN + "_");
     operateProperties.getElasticsearch().setOperationIndexName(OperateElasticsearchProperties.OPERATION_INDEX_PATTERN + "_");
 
     operateProperties.getElasticsearch().setWorkflowAlias(OperateElasticsearchProperties.WORKFLOW_INDEX_PATTERN + "_alias");

@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.camunda.operate.data.usertest.UserTestDataGenerator;
-import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -162,6 +161,8 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
     ZeebeTestUtil.deployWorkflow(client, "develop/eventBasedGatewayProcess_v_1.bpmn");
 
+    ZeebeTestUtil.deployWorkflow(client, "develop/subProcess.bpmn");
+
   }
 
   @Override
@@ -176,6 +177,9 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
         instanceKey = ZeebeTestUtil.startWorkflowInstance(client, "eventBasedGatewayProcess",
           "{\"clientId\": \"" + random.nextInt(10) + "\"\n}");
         workflowInstanceKeys.add(instanceKey);
+
+        instanceKey = ZeebeTestUtil.startWorkflowInstance(client, "prWithSubprocess", null);
+        workflowInstanceKeys.add(instanceKey);
       }
 
       instanceKey = ZeebeTestUtil.startWorkflowInstance(client, "complexProcess",
@@ -187,7 +191,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   @Override
   protected void deployVersion2() {
     super.deployVersion2();
-    //deploy workflows v.2
+//    deploy workflows v.2
     ZeebeTestUtil.deployWorkflow(client, "develop/demoProcess_v_2.bpmn");
 
     ZeebeTestUtil.deployWorkflow(client, "develop/complexProcess_v_2.bpmn");

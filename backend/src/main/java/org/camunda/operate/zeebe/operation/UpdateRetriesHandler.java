@@ -43,6 +43,7 @@ public class UpdateRetriesHandler extends AbstractOperationHandler implements Op
 
   @Override
   public void handle(String workflowInstanceId) throws PersistenceException {
+    //TODO may be we should read instance from list view here?
     final WorkflowInstanceEntity workflowInstance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
 
     List<IncidentEntity> incidentsToResolve =
