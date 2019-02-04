@@ -3,6 +3,8 @@ package org.camunda.optimize.service.export;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
+import org.camunda.optimize.service.es.report.result.decision.SingleDecisionRawDataReportResult;
+import org.camunda.optimize.service.es.report.result.process.SingleProcessRawDataReportResult;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,7 +48,9 @@ public class ExportServiceTest {
     // given
     final RawDataProcessReportResultDto rawDataProcessReportResultDto = new RawDataProcessReportResultDto();
     rawDataProcessReportResultDto.setResult(RawDataHelper.getRawDataProcessInstanceDtos());
-    when(reportService.evaluateSavedReport(any(), any())).thenReturn(rawDataProcessReportResultDto);
+    SingleProcessRawDataReportResult rawDataReportResult =
+      new SingleProcessRawDataReportResult(rawDataProcessReportResultDto);
+    when(reportService.evaluateSavedReport(any(), any())).thenReturn(rawDataReportResult);
 
     // when
     Optional<byte[]> csvContent = exportService.getCsvBytesForEvaluatedReportResult("", "", Collections.emptySet());
@@ -62,7 +66,9 @@ public class ExportServiceTest {
     // given
     final RawDataDecisionReportResultDto rawDataDecisionReportResultDto = new RawDataDecisionReportResultDto();
     rawDataDecisionReportResultDto.setResult(RawDataHelper.getRawDataDecisionInstanceDtos());
-    when(reportService.evaluateSavedReport(any(), any())).thenReturn(rawDataDecisionReportResultDto);
+    SingleDecisionRawDataReportResult rawDataReportResult =
+      new SingleDecisionRawDataReportResult(rawDataDecisionReportResultDto);
+    when(reportService.evaluateSavedReport(any(), any())).thenReturn(rawDataReportResult);
 
     // when
     Optional<byte[]> csvContent = exportService.getCsvBytesForEvaluatedReportResult("", "", Collections.emptySet());

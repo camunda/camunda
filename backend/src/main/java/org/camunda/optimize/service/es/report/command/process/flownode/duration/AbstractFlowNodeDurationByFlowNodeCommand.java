@@ -3,6 +3,7 @@ package org.camunda.optimize.service.es.report.command.process.flownode.duration
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
 import org.camunda.optimize.service.es.report.command.process.FlowNodeGroupingCommand;
+import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.action.search.SearchRequest;
@@ -43,7 +44,7 @@ public abstract class AbstractFlowNodeDurationByFlowNodeCommand<T extends Aggreg
   private static final String DURATION_AGGREGATION = "aggregatedDuration";
 
   @Override
-  protected ProcessReportMapResultDto evaluate() {
+  protected SingleProcessMapReportResult evaluate() {
 
     final ProcessReportDataDto processReportData = getProcessReportData();
     logger.debug("Evaluating flow node duration grouped by flow node report " +
@@ -83,7 +84,7 @@ public abstract class AbstractFlowNodeDurationByFlowNodeCommand<T extends Aggreg
       new ProcessReportMapResultDto();
     resultDto.setResult(resultMap);
     resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
-    return resultDto;
+    return new SingleProcessMapReportResult(resultDto);
   }
 
   private AggregationBuilder createAggregation() {

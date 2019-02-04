@@ -3,7 +3,7 @@ package org.camunda.optimize.service.es.report.command;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.Range;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
+import org.camunda.optimize.service.es.report.result.ReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.OffsetDateTime;
 
-public abstract class ReportCommand <T extends ReportResultDto>  implements Command {
+public abstract class ReportCommand <T extends ReportResult>  implements Command {
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -33,6 +33,7 @@ public abstract class ReportCommand <T extends ReportResultDto>  implements Comm
     beforeEvaluate(commandContext);
 
     T evaluationResult = evaluate();
+    evaluationResult.copyReportData(reportData);
     return filterResultData(evaluationResult);
   }
 

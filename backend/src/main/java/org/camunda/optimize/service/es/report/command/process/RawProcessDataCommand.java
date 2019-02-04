@@ -4,6 +4,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.service.es.report.command.process.mapping.RawProcessDataResultDtoMapper;
+import org.camunda.optimize.service.es.report.result.process.SingleProcessRawDataReportResult;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.ProcessVariableHelper;
@@ -26,7 +27,7 @@ import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VA
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-public class RawProcessDataCommand extends ProcessReportCommand<RawDataProcessReportResultDto> {
+public class RawProcessDataCommand extends ProcessReportCommand<SingleProcessRawDataReportResult> {
   private static final String VARIABLE_PREFIX = "variable:";
 
   private static final Long RAW_DATA_LIMIT = 1_000L;
@@ -34,7 +35,7 @@ public class RawProcessDataCommand extends ProcessReportCommand<RawDataProcessRe
   private final RawProcessDataResultDtoMapper rawDataSingleReportResultDtoMapper =
     new RawProcessDataResultDtoMapper(RAW_DATA_LIMIT);
 
-  public RawDataProcessReportResultDto evaluate() {
+  public SingleProcessRawDataReportResult evaluate() {
     final ProcessReportDataDto processReportData = getProcessReportData();
     logger.debug(
       "Evaluating raw data report for process definition key [{}] and version [{}]",
@@ -77,7 +78,9 @@ public class RawProcessDataCommand extends ProcessReportCommand<RawDataProcessRe
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    return rawDataSingleReportResultDtoMapper.mapFrom(response, objectMapper);
+    RawDataProcessReportResultDto rawDataProcessReportResultDto =
+      rawDataSingleReportResultDtoMapper.mapFrom(response, objectMapper);
+    return new SingleProcessRawDataReportResult(rawDataProcessReportResultDto);
   }
 
   private void addSorting(String sortByField, SortOrder sortOrder, SearchSourceBuilder searchSourceBuilder) {

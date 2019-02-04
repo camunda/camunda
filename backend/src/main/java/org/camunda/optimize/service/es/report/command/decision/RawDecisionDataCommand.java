@@ -5,6 +5,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 import org.camunda.optimize.service.es.report.command.decision.mapping.RawDecisionDataResultDtoMapper;
+import org.camunda.optimize.service.es.report.result.decision.SingleDecisionRawDataReportResult;
 import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
@@ -29,7 +30,7 @@ import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariab
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-public class RawDecisionDataCommand extends DecisionReportCommand<RawDataDecisionReportResultDto> {
+public class RawDecisionDataCommand extends DecisionReportCommand<SingleDecisionRawDataReportResult> {
   public static final String INPUT_VARIABLE_PREFIX = "inputVariable:";
   public static final String OUTPUT_VARIABLE_PREFIX = "outputVariable:";
 
@@ -38,7 +39,7 @@ public class RawDecisionDataCommand extends DecisionReportCommand<RawDataDecisio
   private final RawDecisionDataResultDtoMapper rawDataSingleReportResultDtoMapper =
     new RawDecisionDataResultDtoMapper(RAW_DATA_LIMIT);
 
-  public RawDataDecisionReportResultDto evaluate() {
+  public SingleDecisionRawDataReportResult evaluate() {
     logger.debug(
       "Evaluating raw data report for decision definition key [{}] and version [{}]",
       getDecisionReportData().getDecisionDefinitionKey(),
@@ -76,7 +77,9 @@ public class RawDecisionDataCommand extends DecisionReportCommand<RawDataDecisio
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    return rawDataSingleReportResultDtoMapper.mapFrom(response, objectMapper);
+    RawDataDecisionReportResultDto rawDataDecisionReportResultDto =
+      rawDataSingleReportResultDtoMapper.mapFrom(response, objectMapper);
+    return new SingleDecisionRawDataReportResult(rawDataDecisionReportResultDto);
   }
 
   private void addSortingToQuery(final DecisionReportDataDto decisionReportData,

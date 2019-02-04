@@ -2,7 +2,7 @@ package org.camunda.optimize.service.es.report.command.process;
 
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
+import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
@@ -22,21 +22,22 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 
-public abstract class FlowNodeGroupingCommand extends ProcessReportCommand<ProcessReportMapResultDto> {
+public abstract class FlowNodeGroupingCommand extends ProcessReportCommand<SingleProcessMapReportResult> {
 
   @Override
-  protected ProcessReportMapResultDto filterResultData(ProcessReportMapResultDto evaluationResult) {
+  protected SingleProcessMapReportResult filterResultData(SingleProcessMapReportResult evaluationResult) {
+
     if (ReportConstants.ALL_VERSIONS.equalsIgnoreCase(getProcessReportData().getProcessDefinitionVersion())) {
       ProcessDefinitionOptimizeDto latestXml = fetchLatestDefinitionXml();
       Map<String, Long> filteredNodes = new HashMap<>();
 
-      for (Map.Entry<String, Long> node : evaluationResult.getResult().entrySet()) {
+      for (Map.Entry<String, Long> node : evaluationResult.getResultAsDto().getResult().entrySet()) {
         if (latestXml.getFlowNodeNames().containsKey(node.getKey())) {
           filteredNodes.put(node.getKey(), node.getValue());
         }
       }
 
-      evaluationResult.setResult(filteredNodes);
+      evaluationResult.getResultAsDto().setResult(filteredNodes);
     }
     return evaluationResult;
   }

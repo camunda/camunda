@@ -2,13 +2,11 @@ package org.camunda.optimize.service.es.report;
 
 import org.apache.commons.lang3.Range;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.es.report.command.AutomaticGroupByDateCommand;
 import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
-import org.camunda.optimize.service.es.report.command.util.ReportUtil;
+import org.camunda.optimize.service.es.report.result.ReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.elasticsearch.search.aggregations.metrics.stats.Stats;
@@ -37,11 +35,11 @@ public class CombinedReportEvaluator {
     this.dateTimeFormatter = dateTimeFormatter;
   }
 
-  public List<ReportResultDto> evaluate(List<SingleProcessReportDefinitionDto> singleReportDefinitions) {
+  public List<ReportResult> evaluate(List<SingleProcessReportDefinitionDto> singleReportDefinitions) {
     addIntervalToReportEvaluator(singleReportDefinitions);
-    List<ReportResultDto> resultList = new ArrayList<>();
+    List<ReportResult> resultList = new ArrayList<>();
     for (SingleProcessReportDefinitionDto report : singleReportDefinitions) {
-      Optional<ReportResultDto> singleReportResult = evaluateWithoutThrowingError(report);
+      Optional<ReportResult> singleReportResult = evaluateWithoutThrowingError(report);
       singleReportResult.ifPresent(resultList::add);
     }
     return resultList;
@@ -68,11 +66,11 @@ public class CombinedReportEvaluator {
     );
   }
 
-  private Optional<ReportResultDto> evaluateWithoutThrowingError(SingleProcessReportDefinitionDto reportDefinition) {
-    Optional<ReportResultDto> result = Optional.empty();
+  private Optional<ReportResult> evaluateWithoutThrowingError(SingleProcessReportDefinitionDto reportDefinition) {
+    Optional<ReportResult> result = Optional.empty();
       try {
-        ReportResultDto singleResult = singleReportEvaluator.evaluate(reportDefinition.getData());
-        ReportUtil.copyMetaData(reportDefinition, (ReportDefinitionDto) singleResult);
+        ReportResult singleResult = singleReportEvaluator.evaluate(reportDefinition.getData());
+        singleResult.copyMetaData(reportDefinition);
         result = Optional.of(singleResult);
       } catch (OptimizeException | OptimizeValidationException onlyForLogging) {
         // we just ignore reports that cannot be evaluated in a combined report

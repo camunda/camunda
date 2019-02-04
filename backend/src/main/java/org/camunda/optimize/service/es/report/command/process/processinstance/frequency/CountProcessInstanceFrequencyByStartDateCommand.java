@@ -8,6 +8,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.Proc
 import org.camunda.optimize.service.es.report.command.AutomaticGroupByDateCommand;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
+import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
@@ -36,7 +37,7 @@ import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ST
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 
-public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessReportCommand<ProcessReportMapResultDto>
+public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessReportCommand<SingleProcessMapReportResult>
   implements AutomaticGroupByDateCommand {
 
   private static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
@@ -48,7 +49,7 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessRepo
   }
 
   @Override
-  protected ProcessReportMapResultDto evaluate() throws OptimizeException {
+  protected SingleProcessMapReportResult evaluate() throws OptimizeException {
 
     final ProcessReportDataDto processReportData = getProcessReportData();
     logger.debug(
@@ -87,10 +88,10 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessRepo
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    ProcessReportMapResultDto mapResult = new ProcessReportMapResultDto();
-    mapResult.setResult(processAggregations(response.getAggregations()));
-    mapResult.setProcessInstanceCount(response.getHits().getTotalHits());
-    return mapResult;
+    ProcessReportMapResultDto mapResultDto = new ProcessReportMapResultDto();
+    mapResultDto.setResult(processAggregations(response.getAggregations()));
+    mapResultDto.setProcessInstanceCount(response.getHits().getTotalHits());
+    return new SingleProcessMapReportResult(mapResultDto);
   }
 
   private AggregationBuilder createAggregation(GroupByDateUnit unit, QueryBuilder query) throws OptimizeException {

@@ -159,7 +159,7 @@ public class ReportRestService {
   public ReportResultDto evaluateReportById(@Context ContainerRequestContext requestContext,
                                         @PathParam("id") String reportId) {
     String userId = getRequestUser(requestContext);
-    return reportService.evaluateSavedReport(userId, reportId);
+    return reportService.evaluateSavedReport(userId, reportId).getResultAsDto();
   }
 
   /**
@@ -175,7 +175,7 @@ public class ReportRestService {
                                                 @NotNull ReportDefinitionDto reportDefinitionDto) {
 
     String userId = getRequestUser(requestContext);
-    return reportService.evaluateReport(userId, reportDefinitionDto);
+    return reportService.evaluateReport(userId, reportDefinitionDto).getResultAsDto();
   }
 
 }

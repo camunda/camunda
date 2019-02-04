@@ -3,6 +3,7 @@ package org.camunda.optimize.service.es.report.command.process.processinstance.f
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
+import org.camunda.optimize.service.es.report.result.process.SingleProcessNumberReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -16,10 +17,10 @@ import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.get
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 
 public class CountProcessInstanceFrequencyGroupByNoneCommand
-  extends ProcessReportCommand<ProcessReportNumberResultDto> {
+  extends ProcessReportCommand<SingleProcessNumberReportResult> {
 
   @Override
-  protected ProcessReportNumberResultDto evaluate() {
+  protected SingleProcessNumberReportResult evaluate() {
 
     final ProcessReportDataDto processReportData = getProcessReportData();
     logger.debug(
@@ -55,10 +56,10 @@ public class CountProcessInstanceFrequencyGroupByNoneCommand
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    ProcessReportNumberResultDto numberResult = new ProcessReportNumberResultDto();
-    numberResult.setResult(response.getHits().getTotalHits());
-    numberResult.setProcessInstanceCount(response.getHits().getTotalHits());
-    return numberResult;
+    ProcessReportNumberResultDto numberResultDto = new ProcessReportNumberResultDto();
+    numberResultDto.setResult(response.getHits().getTotalHits());
+    numberResultDto.setProcessInstanceCount(response.getHits().getTotalHits());
+    return new SingleProcessNumberReportResult(numberResultDto);
   }
 
 }

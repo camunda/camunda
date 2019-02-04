@@ -2,7 +2,6 @@ package org.camunda.optimize.service.es.report;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.es.filter.DecisionQueryFilterEnhancer;
@@ -49,7 +48,7 @@ import org.camunda.optimize.service.es.report.command.process.processinstance.fr
 import org.camunda.optimize.service.es.report.command.process.processinstance.frequency.CountProcessInstanceFrequencyByVariableCommand;
 import org.camunda.optimize.service.es.report.command.process.processinstance.frequency.CountProcessInstanceFrequencyGroupByNoneCommand;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
-import org.camunda.optimize.service.es.report.command.util.ReportUtil;
+import org.camunda.optimize.service.es.report.result.ReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -319,12 +318,10 @@ public class SingleReportEvaluator {
     );
   }
 
-  public ReportResultDto evaluate(ReportDataDto reportData) throws OptimizeException {
+  public ReportResult evaluate(ReportDataDto reportData) throws OptimizeException {
     CommandContext commandContext = createCommandContext(reportData);
     Command evaluationCommand = extractCommandWithValidation(reportData);
-    ReportResultDto result = evaluationCommand.evaluate(commandContext);
-    ReportUtil.copyReportData(reportData, result);
-    return result;
+    return evaluationCommand.evaluate(commandContext);
   }
 
   private Command extractCommandWithValidation(ReportDataDto reportData) {

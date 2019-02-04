@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchResultDto;
 import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.es.reader.SharingReader;
 import org.camunda.optimize.service.es.report.PlainReportEvaluationHandler;
+import org.camunda.optimize.service.es.report.result.ReportResult;
 import org.camunda.optimize.service.es.writer.SharingWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
@@ -176,7 +177,8 @@ public class SharingService {
 
   public ReportResultDto evaluateReport(String reportId) {
     try {
-      return reportEvaluationHandler.evaluateSavedReport(reportId);
+      ReportResult<?, ?> reportResult = reportEvaluationHandler.evaluateSavedReport(reportId);
+      return reportResult.getResultAsDto();
     } catch (ReportEvaluationException e) {
       throw e;
     } catch (Exception e) {

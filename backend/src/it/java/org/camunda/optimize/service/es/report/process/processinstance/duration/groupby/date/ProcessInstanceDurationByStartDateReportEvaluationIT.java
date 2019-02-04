@@ -35,7 +35,6 @@ import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 
 import javax.ws.rs.core.Response;
-import java.io.IOException;
 import java.sql.SQLException;
 import java.time.DayOfWeek;
 import java.time.OffsetDateTime;
@@ -50,8 +49,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.camunda.optimize.service.es.report.command.util.ReportUtil.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.test.util.ProcessVariableFilterUtilHelper.createBooleanVariableFilter;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -763,11 +762,11 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     assertThat(response.getStatus(), is(500));
   }
 
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess() throws IOException {
+  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess() {
     return deployAndStartSimpleProcesses(1).get(0);
   }
 
-  private List<ProcessInstanceEngineDto> deployAndStartSimpleProcesses(int number) throws IOException {
+  private List<ProcessInstanceEngineDto> deployAndStartSimpleProcesses(int number) {
     ProcessDefinitionEngineDto processDefinition= deploySimpleServiceTaskProcess();
     return IntStream.range(0, number)
       .mapToObj(i -> {

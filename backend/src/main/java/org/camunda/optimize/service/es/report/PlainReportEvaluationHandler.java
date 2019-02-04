@@ -1,8 +1,8 @@
 package org.camunda.optimize.service.es.report;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
 import org.camunda.optimize.service.es.reader.ReportReader;
+import org.camunda.optimize.service.es.report.result.ReportResult;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -14,11 +14,11 @@ public class PlainReportEvaluationHandler extends ReportEvaluationHandler {
     super(reportReader, singleReportEvaluator, combinedReportEvaluator);
   }
 
-  public ReportResultDto evaluateSavedReport(String reportId) {
+  public ReportResult evaluateSavedReport(String reportId) {
     return this.evaluateSavedReport(null, reportId);
   }
 
-  public ReportResultDto evaluateReport(ReportDefinitionDto reportDefinition) {
+  public ReportResult evaluateReport(ReportDefinitionDto reportDefinition) {
     return this.evaluateReport(null, reportDefinition);
   }
 

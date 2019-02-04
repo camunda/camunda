@@ -6,6 +6,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.Proc
 import org.camunda.optimize.service.es.reader.AlertReader;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.PlainReportEvaluationHandler;
+import org.camunda.optimize.service.es.report.result.process.SingleProcessNumberReportResult;
 import org.camunda.optimize.service.es.writer.AlertWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.quartz.Job;
@@ -50,17 +51,18 @@ public class AlertJob implements Job {
 
     try {
       ReportDefinitionDto reportDefinition = reportReader.getReport(alert.getReportId());
-      ProcessReportNumberResultDto result =
-        (ProcessReportNumberResultDto) reportEvaluator.evaluateReport(reportDefinition);
+      SingleProcessNumberReportResult result =
+        (SingleProcessNumberReportResult) reportEvaluator.evaluateReport(reportDefinition);
+      ProcessReportNumberResultDto resultDto = result.getResultAsDto();
 
       AlertJobResult alertJobResult = null;
-      if (thresholdExceeded(alert, result)) {
+      if (thresholdExceeded(alert, resultDto)) {
         alertJobResult = notifyIfNeeded(
             jobExecutionContext.getJobDetail().getKey(),
             alertId,
             alert,
             reportDefinition,
-            result
+            resultDto
         );
       } else if (alert.isTriggered()) {
         alert.setTriggered(false);
@@ -72,7 +74,7 @@ public class AlertJob implements Job {
 
         if (alert.isFixNotification()) {
           notificationService.notifyRecipient(
-            composeFixText(alert, reportDefinition, result),
+            composeFixText(alert, reportDefinition, resultDto),
             alert.getEmail()
           );
         }

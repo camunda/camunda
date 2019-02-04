@@ -1,12 +1,12 @@
 package org.camunda.optimize.service.es.report;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.es.reader.ReportReader;
+import org.camunda.optimize.service.es.report.result.ReportResult;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -21,11 +21,11 @@ public class AuthorizationCheckReportEvaluationHandler extends ReportEvaluationH
     super(reportReader, singleReportEvaluator, combinedReportEvaluator);
   }
 
-  public ReportResultDto evaluateSavedReport(String userId, String reportId) {
+  public ReportResult evaluateSavedReport(String userId, String reportId) {
     return super.evaluateSavedReport(userId, reportId);
   }
 
-  public ReportResultDto evaluateReport(String userId, ReportDefinitionDto reportDefinition) {
+  public ReportResult evaluateReport(String userId, ReportDefinitionDto reportDefinition) {
     return super.evaluateReport(userId, reportDefinition);
   }
 

@@ -3,6 +3,7 @@ package org.camunda.optimize.service.es.report.command.decision.frequency;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportNumberResultDto;
 import org.camunda.optimize.service.es.report.command.decision.DecisionReportCommand;
+import org.camunda.optimize.service.es.report.result.decision.SingleDecisionNumberReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -15,10 +16,10 @@ import java.io.IOException;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
 
-public class CountDecisionFrequencyGroupByNoneCommand extends DecisionReportCommand<DecisionReportNumberResultDto> {
+public class CountDecisionFrequencyGroupByNoneCommand extends DecisionReportCommand<SingleDecisionNumberReportResult> {
 
   @Override
-  protected DecisionReportNumberResultDto evaluate() {
+  protected SingleDecisionNumberReportResult evaluate() {
 
     final DecisionReportDataDto reportData = getDecisionReportData();
     logger.debug(
@@ -58,10 +59,10 @@ public class CountDecisionFrequencyGroupByNoneCommand extends DecisionReportComm
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    DecisionReportNumberResultDto numberResult = new DecisionReportNumberResultDto();
-    numberResult.setResult(response.getHits().getTotalHits());
-    numberResult.setDecisionInstanceCount(response.getHits().getTotalHits());
-    return numberResult;
+    DecisionReportNumberResultDto numberResultDto = new DecisionReportNumberResultDto();
+    numberResultDto.setResult(response.getHits().getTotalHits());
+    numberResultDto.setDecisionInstanceCount(response.getHits().getTotalHits());
+    return new SingleDecisionNumberReportResult(numberResultDto);
   }
 
 }

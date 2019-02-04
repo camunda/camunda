@@ -5,6 +5,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.group.Deci
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
 import org.camunda.optimize.service.es.report.command.decision.DecisionReportCommand;
+import org.camunda.optimize.service.es.report.result.decision.SingleDecisionMapReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -30,7 +31,7 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 public class CountDecisionFrequencyGroupByVariableCommand
-  extends DecisionReportCommand<DecisionReportMapResultDto> {
+  extends DecisionReportCommand<SingleDecisionMapReportResult> {
 
   private static final String NESTED_AGGREGATION = "nested";
   private static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
@@ -43,7 +44,7 @@ public class CountDecisionFrequencyGroupByVariableCommand
   }
 
   @Override
-  protected DecisionReportMapResultDto evaluate() {
+  protected SingleDecisionMapReportResult evaluate() {
 
     final DecisionReportDataDto reportData = getDecisionReportData();
     logger.debug(
@@ -88,10 +89,10 @@ public class CountDecisionFrequencyGroupByVariableCommand
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    DecisionReportMapResultDto mapResult = new DecisionReportMapResultDto();
-    mapResult.setResult(mapAggregationsToMapResult(response.getAggregations()));
-    mapResult.setDecisionInstanceCount(response.getHits().getTotalHits());
-    return mapResult;
+    DecisionReportMapResultDto mapResultDto = new DecisionReportMapResultDto();
+    mapResultDto.setResult(mapAggregationsToMapResult(response.getAggregations()));
+    mapResultDto.setDecisionInstanceCount(response.getHits().getTotalHits());
+    return new SingleDecisionMapReportResult(mapResultDto);
   }
 
   private AggregationBuilder createAggregation(final String variableId) {

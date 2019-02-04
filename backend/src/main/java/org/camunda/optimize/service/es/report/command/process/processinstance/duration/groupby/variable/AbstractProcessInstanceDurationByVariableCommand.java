@@ -6,6 +6,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Varia
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
+import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -37,7 +38,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
 public abstract class AbstractProcessInstanceDurationByVariableCommand
-  extends ProcessReportCommand<ProcessReportMapResultDto> {
+  extends ProcessReportCommand<SingleProcessMapReportResult> {
 
   private static final String NESTED_AGGREGATION = "nested";
   private static final String VARIABLES_AGGREGATION = "variables";
@@ -46,7 +47,7 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
   private static final String REVERSE_NESTED_AGGREGATION = "reverseNested";
 
   @Override
-  protected ProcessReportMapResultDto evaluate() {
+  protected SingleProcessMapReportResult evaluate() {
 
     final ProcessReportDataDto processReportData = getProcessReportData();
     logger.debug(
@@ -85,10 +86,10 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    ProcessReportMapResultDto mapResult = new ProcessReportMapResultDto();
-    mapResult.setResult(processAggregations(response.getAggregations()));
-    mapResult.setProcessInstanceCount(response.getHits().getTotalHits());
-    return mapResult;
+    ProcessReportMapResultDto mapResultDto = new ProcessReportMapResultDto();
+    mapResultDto.setResult(processAggregations(response.getAggregations()));
+    mapResultDto.setProcessInstanceCount(response.getHits().getTotalHits());
+    return new SingleProcessMapReportResult(mapResultDto);
   }
 
   private AggregationBuilder createAggregation(String variableName, VariableType variableType) {

@@ -3,6 +3,7 @@ package org.camunda.optimize.service.es.report.command.decision.frequency;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
 import org.camunda.optimize.service.es.report.command.decision.DecisionReportCommand;
+import org.camunda.optimize.service.es.report.result.decision.SingleDecisionMapReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -23,12 +24,12 @@ import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.M
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
 
 public class CountDecisionFrequencyGroupByMatchedRuleCommand
-  extends DecisionReportCommand<DecisionReportMapResultDto> {
+  extends DecisionReportCommand<SingleDecisionMapReportResult> {
 
-  public static final String MATCHED_RULES_AGGREGATION = "matchedRules";
+  private static final String MATCHED_RULES_AGGREGATION = "matchedRules";
 
   @Override
-  protected DecisionReportMapResultDto evaluate() {
+  protected SingleDecisionMapReportResult evaluate() {
 
     final DecisionReportDataDto reportData = getDecisionReportData();
     logger.debug(
@@ -70,10 +71,10 @@ public class CountDecisionFrequencyGroupByMatchedRuleCommand
     }
 
 
-    DecisionReportMapResultDto mapResult = new DecisionReportMapResultDto();
-    mapResult.setResult(mapAggregationsToMapResult(response.getAggregations()));
-    mapResult.setDecisionInstanceCount(response.getHits().getTotalHits());
-    return mapResult;
+    DecisionReportMapResultDto mapResultDto = new DecisionReportMapResultDto();
+    mapResultDto.setResult(mapAggregationsToMapResult(response.getAggregations()));
+    mapResultDto.setDecisionInstanceCount(response.getHits().getTotalHits());
+    return new SingleDecisionMapReportResult(mapResultDto);
   }
 
   private AggregationBuilder createAggregation() {

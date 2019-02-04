@@ -6,6 +6,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.group.valu
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.service.es.report.command.decision.DecisionReportCommand;
+import org.camunda.optimize.service.es.report.result.decision.SingleDecisionMapReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
@@ -35,12 +36,12 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_IN
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
 public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
-  extends DecisionReportCommand<DecisionReportMapResultDto> {
+  extends DecisionReportCommand<SingleDecisionMapReportResult> {
 
   private static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
 
   @Override
-  protected DecisionReportMapResultDto evaluate() throws OptimizeException {
+  protected SingleDecisionMapReportResult evaluate() throws OptimizeException {
 
     final DecisionReportDataDto reportData = getDecisionReportData();
     logger.debug(
@@ -85,10 +86,10 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    DecisionReportMapResultDto mapResult = new DecisionReportMapResultDto();
-    mapResult.setResult(processAggregations(response.getAggregations()));
-    mapResult.setDecisionInstanceCount(response.getHits().getTotalHits());
-    return mapResult;
+    DecisionReportMapResultDto mapResultDto = new DecisionReportMapResultDto();
+    mapResultDto.setResult(processAggregations(response.getAggregations()));
+    mapResultDto.setDecisionInstanceCount(response.getHits().getTotalHits());
+    return new SingleDecisionMapReportResult(mapResultDto);
   }
 
   private AggregationBuilder createAggregation(GroupByDateUnit unit, QueryBuilder query) throws OptimizeException {

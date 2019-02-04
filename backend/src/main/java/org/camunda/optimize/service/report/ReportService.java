@@ -5,7 +5,6 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
@@ -26,7 +25,7 @@ import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
-import org.camunda.optimize.service.es.report.command.util.ReportUtil;
+import org.camunda.optimize.service.es.report.result.ReportResult;
 import org.camunda.optimize.service.es.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConflictException;
 import org.camunda.optimize.service.exceptions.OptimizeException;
@@ -45,6 +44,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static org.camunda.optimize.service.es.report.command.util.ReportUtil.copyDefinitionMetaDataToUpdate;
 
 @Component
 public class ReportService {
@@ -269,21 +270,21 @@ public class ReportService {
 
   private SingleProcessReportDefinitionUpdateDto convertToSingleProcessReportUpdate(SingleProcessReportDefinitionDto updatedReport) {
     SingleProcessReportDefinitionUpdateDto reportUpdate = new SingleProcessReportDefinitionUpdateDto();
-    ReportUtil.copyDefinitionMetaDataToUpdate(updatedReport, reportUpdate);
+    copyDefinitionMetaDataToUpdate(updatedReport, reportUpdate);
     reportUpdate.setData(updatedReport.getData());
     return reportUpdate;
   }
 
   private SingleDecisionReportDefinitionUpdateDto convertToSingleDecisionReportUpdate(SingleDecisionReportDefinitionDto updatedReport) {
     SingleDecisionReportDefinitionUpdateDto reportUpdate = new SingleDecisionReportDefinitionUpdateDto();
-    ReportUtil.copyDefinitionMetaDataToUpdate(updatedReport, reportUpdate);
+    copyDefinitionMetaDataToUpdate(updatedReport, reportUpdate);
     reportUpdate.setData(updatedReport.getData());
     return reportUpdate;
   }
 
   private CombinedProcessReportDefinitionUpdateDto convertToCombinedProcessReportUpdate(CombinedReportDefinitionDto updatedReport) {
     CombinedProcessReportDefinitionUpdateDto reportUpdate = new CombinedProcessReportDefinitionUpdateDto();
-    ReportUtil.copyDefinitionMetaDataToUpdate(updatedReport, reportUpdate);
+    copyDefinitionMetaDataToUpdate(updatedReport, reportUpdate);
     reportUpdate.setData(updatedReport.getData());
     return reportUpdate;
   }
@@ -373,12 +374,12 @@ public class ReportService {
     return true;
   }
 
-  public ReportResultDto evaluateSavedReport(String userId, String reportId) {
+  public ReportResult<?, ?> evaluateSavedReport(String userId, String reportId) {
     return reportEvaluator.evaluateSavedReport(userId, reportId);
   }
 
-  public ReportResultDto evaluateReport(String userId,
-                                        ReportDefinitionDto reportDefinition) {
+  public ReportResult<?, ?> evaluateReport(String userId,
+                                           ReportDefinitionDto reportDefinition) {
     return reportEvaluator.evaluateReport(userId, reportDefinition);
   }
 

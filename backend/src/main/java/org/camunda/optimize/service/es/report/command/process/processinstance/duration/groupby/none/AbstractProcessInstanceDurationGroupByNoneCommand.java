@@ -3,6 +3,7 @@ package org.camunda.optimize.service.es.report.command.process.processinstance.d
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
+import org.camunda.optimize.service.es.report.result.process.SingleProcessNumberReportResult;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
@@ -19,13 +20,13 @@ import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.get
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 
 public abstract class AbstractProcessInstanceDurationGroupByNoneCommand
-  extends ProcessReportCommand<ProcessReportNumberResultDto> {
+  extends ProcessReportCommand<SingleProcessNumberReportResult> {
 
 
   public static final String DURATION_AGGREGATION = "durationAggregation";
 
   @Override
-  protected ProcessReportNumberResultDto evaluate() {
+  protected SingleProcessNumberReportResult evaluate() {
 
     final ProcessReportDataDto processReportData = getProcessReportData();
     logger.debug(
@@ -64,10 +65,10 @@ public abstract class AbstractProcessInstanceDurationGroupByNoneCommand
 
     Aggregations aggregations = response.getAggregations();
 
-    ProcessReportNumberResultDto numberResult = new ProcessReportNumberResultDto();
-    numberResult.setResult(processAggregation(aggregations));
-    numberResult.setProcessInstanceCount(response.getHits().getTotalHits());
-    return numberResult;
+    ProcessReportNumberResultDto numberResultDto = new ProcessReportNumberResultDto();
+    numberResultDto.setResult(processAggregation(aggregations));
+    numberResultDto.setProcessInstanceCount(response.getHits().getTotalHits());
+    return new SingleProcessNumberReportResult(numberResultDto);
   }
 
   protected abstract long processAggregation(Aggregations aggregations);
