@@ -8,8 +8,6 @@
   * [CreateWorkflowInstance RPC](#createworkflowinstance-rpc)
   * [DeployWorkflow RPC](#deployworkflow-rpc)
   * [FailJob RPC](#failjob-rpc)
-  * [GetWorkflow RPC](#getworkflow-rpc)
-  * [ListWorkflows RPC](#listworkflows-rpc)
   * [PublishMessage RPC](#publishmessage-rpc)
   * [ResolveIncident RPC](#resolveincident-rpc)
   * [Topology RPC](#topology-rpc)
@@ -383,99 +381,6 @@ Returned if:
 
   - the job was not activated
   - the job is already in a failed state, i.e. ran out of retries
-
-
-### GetWorkflow RPC
-
-Fetches the workflow definition either by workflow key, or BPMN process ID and version.
-At least one of `workflowKey` or `bpmnProcessId` must be specified.
-
-#### Input: Request
-
-```protobuf
-message GetWorkflowRequest {
-  // the unique key identifying the workflow definition (e.g. returned from a workflow in
-  // the DeployWorkflowResponse message)
-  int64 workflowKey = 1;
-  // the version of the process; set to -1 to use the latest version
-  int32 version = 2;
-  // the BPMN process ID of the workflow definition
-  string bpmnProcessId = 3;
-}
-```
-
-#### Output: Response
-
-```protobuf
-message GetWorkflowResponse {
-  // the unique key identifying the workflow definition (e.g. returned from a workflow in
-  // the DeployWorkflowResponse message)
-  int64 workflowKey = 1;
-  // the version of the process
-  int32 version = 2;
-  // the BPMN process ID of the workflow definition
-  string bpmnProcessId = 3;
-  // the name of the resource used to deployed the workflow
-  string resourceName = 4;
-  // a BPMN XML representation of the workflow
-  string bpmnXml = 5;
-}
-```
-
-#### Errors
-
-##### GRPC_STATUS_NOT_FOUND
-
-Returned if:
-
-  - no workflow with the given key exists (if workflowKey was given)
-  - no workflow with the given process ID exists (if bpmnProcessId was given but version was -1)
-  - no workflow with the given process ID and version exists (if both bpmnProcessId and version were given)
-
-### ListWorkflows RPC
-
-Lists all workflows matching the request criteria currently deployed in the cluster.
-
-#### Input: Request
-
-```protobuf
-message ListWorkflowsRequest {
-  // optional filter: if specified, only the workflows with this given process ID will be
-  // returned
-  string bpmnProcessId = 1;
-}
-```
-
-#### Output: Response
-
-```protobuf
-message ListWorkflowsResponse {
-  // a list of deployed workflows matching the request criteria (if any)
-  repeated WorkflowMetadata workflows = 1;
-}
-
-message WorkflowMetadata {
-  // the bpmn process ID, as parsed during deployment; together with the version forms a
-  // unique identifier for a specific workflow definition
-  string bpmnProcessId = 1;
-  // the assigned process version
-  int32 version = 2;
-  // the assigned key, which acts as a unique identifier for this workflow
-  int64 workflowKey = 3;
-  // the resource name (see: WorkflowRequestObject.name) from which this workflow was
-  //parsed
-  string resourceName = 4;
-}
-```
-
-#### Errors
-
-##### GRPC_STATUS_NOT_FOUND
-
-Returned if:
-
-  - no workflows have been deployed yet (if no bpmnProcessId was given)
-  - no workflow with the given process ID exists (if bpmnProcessId was given)
 
 ### PublishMessage RPC
 

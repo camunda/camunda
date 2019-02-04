@@ -25,14 +25,32 @@ import io.zeebe.client.api.commands.ResolveIncidentCommandStep1;
 import io.zeebe.client.api.commands.TopologyRequestStep1;
 import io.zeebe.client.api.commands.UpdatePayloadWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.commands.UpdateRetriesJobCommandStep1;
-import io.zeebe.client.api.commands.WorkflowRequestStep1;
-import io.zeebe.client.api.commands.WorkflowResourceRequestStep1;
 import io.zeebe.client.api.subscription.JobWorkerBuilderStep1;
 import io.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
 
 /** The client to communicate with a Zeebe broker/cluster. */
 public interface ZeebeClient extends AutoCloseable, JobClient {
+
+  /**
+   * @return a new Zeebe client with default configuration values. In order to customize
+   *     configuration, use the methods {@link #newClientBuilder()} or {@link
+   *     #newClient(ZeebeClientConfiguration)}. See {@link ZeebeClientBuilder} for the configuration
+   *     options and default values.
+   */
+  static ZeebeClient newClient() {
+    return newClientBuilder().build();
+  }
+
+  /** @return a new {@link ZeebeClient} using the provided configuration. */
+  static ZeebeClient newClient(final ZeebeClientConfiguration configuration) {
+    return new ZeebeClientImpl(configuration);
+  }
+
+  /** @return a builder to configure and create a new {@link ZeebeClient}. */
+  static ZeebeClientBuilder newClientBuilder() {
+    return new ZeebeClientBuilderImpl();
+  }
 
   /**
    * Request the current cluster topology. Can be used to inspect which brokers are available at
@@ -56,26 +74,6 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
 
   /** @return the client's configuration */
   ZeebeClientConfiguration getConfiguration();
-
-  /**
-   * @return a new Zeebe client with default configuration values. In order to customize
-   *     configuration, use the methods {@link #newClientBuilder()} or {@link
-   *     #newClient(ZeebeClientConfiguration)}. See {@link ZeebeClientBuilder} for the configuration
-   *     options and default values.
-   */
-  static ZeebeClient newClient() {
-    return newClientBuilder().build();
-  }
-
-  /** @return a new {@link ZeebeClient} using the provided configuration. */
-  static ZeebeClient newClient(final ZeebeClientConfiguration configuration) {
-    return new ZeebeClientImpl(configuration);
-  }
-
-  /** @return a builder to configure and create a new {@link ZeebeClient}. */
-  static ZeebeClientBuilder newClientBuilder() {
-    return new ZeebeClientBuilderImpl();
-  }
 
   @Override
   void close();
@@ -155,45 +153,6 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   PublishMessageCommandStep1 newPublishMessageCommand();
-
-  /**
-   * Request to get the resource of a workflow (i.e. the XML representation).
-   *
-   * <pre>
-   * WorkflowResource resource = zeebeClient
-   *  .newResourceRequest()
-   *  .bpmnProcessId("my-process")
-   *  .lastestVersion()
-   *  .send()
-   *  .join();
-   *
-   * String bpmnXml = resoure.getBpmnXml();
-   * </pre>
-   *
-   * @return a builder of the request
-   */
-  WorkflowResourceRequestStep1 newResourceRequest();
-
-  /**
-   * Request to get all deployed workflows.
-   *
-   * <pre>
-   * List&#60;Workflow&#62; workflows = zeebeClient
-   *  .newWorkflowRequest()
-   *  .send()
-   *  .join()
-   *  .getWorkflows();
-   *
-   * String bpmnProcessId = workflow.getBpmnProcessId();
-   * </pre>
-   *
-   * The response does not contain the resources of the workflows. Use {@link #newResourceRequest()}
-   * to get the resource of a workflow.
-   *
-   * @see #newResourceRequest()
-   * @return a builder of the request
-   */
-  WorkflowRequestStep1 newWorkflowRequest();
 
   /**
    * Command to resolve an existing incident.

@@ -34,10 +34,6 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.GetWorkflowRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.GetWorkflowResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ListWorkflowsRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ListWorkflowsResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
@@ -85,11 +81,44 @@ public class RecordingGatewayService extends GatewayImplBase {
         UpdateJobRetriesRequest.class, r -> UpdateJobRetriesResponse.getDefaultInstance());
     addRequestHandler(FailJobRequest.class, r -> FailJobResponse.getDefaultInstance());
     addRequestHandler(CompleteJobRequest.class, r -> CompleteJobResponse.getDefaultInstance());
-    addRequestHandler(ListWorkflowsRequest.class, r -> ListWorkflowsResponse.getDefaultInstance());
-    addRequestHandler(GetWorkflowRequest.class, r -> GetWorkflowResponse.getDefaultInstance());
     addRequestHandler(ActivateJobsRequest.class, r -> ActivateJobsResponse.getDefaultInstance());
     addRequestHandler(
         ResolveIncidentRequest.class, r -> ResolveIncidentResponse.getDefaultInstance());
+  }
+
+  public static Partition partition(int partitionId, PartitionBrokerRole role) {
+    return Partition.newBuilder().setPartitionId(partitionId).setRole(role).build();
+  }
+
+  public static BrokerInfo broker(int nodeId, String host, int port, Partition... partitions) {
+    return BrokerInfo.newBuilder()
+        .setNodeId(nodeId)
+        .setHost(host)
+        .setPort(port)
+        .addAllPartitions(Arrays.asList(partitions))
+        .build();
+  }
+
+  public static WorkflowMetadata deployedWorkflow(
+      String bpmnProcessId, int version, long workflowKey, String resourceName) {
+    return WorkflowMetadata.newBuilder()
+        .setBpmnProcessId(bpmnProcessId)
+        .setVersion(version)
+        .setWorkflowKey(workflowKey)
+        .setResourceName(resourceName)
+        .build();
+  }
+
+  private static StatusRuntimeException convertThrowable(final Throwable cause) {
+    final String description;
+
+    if (cause instanceof ExecutionException) {
+      description = cause.getCause().getMessage();
+    } else {
+      description = cause.getMessage();
+    }
+
+    return Status.INTERNAL.augmentDescription(description).withCause(cause).asRuntimeException();
   }
 
   @Override
@@ -148,18 +177,6 @@ public class RecordingGatewayService extends GatewayImplBase {
   }
 
   @Override
-  public void listWorkflows(
-      ListWorkflowsRequest request, StreamObserver<ListWorkflowsResponse> responseObserver) {
-    handle(request, responseObserver);
-  }
-
-  @Override
-  public void getWorkflow(
-      GetWorkflowRequest request, StreamObserver<GetWorkflowResponse> responseObserver) {
-    handle(request, responseObserver);
-  }
-
-  @Override
   public void activateJobs(
       ActivateJobsRequest request, StreamObserver<ActivateJobsResponse> responseObserver) {
     handle(request, responseObserver);
@@ -169,19 +186,6 @@ public class RecordingGatewayService extends GatewayImplBase {
   public void resolveIncident(
       ResolveIncidentRequest request, StreamObserver<ResolveIncidentResponse> responseObserver) {
     handle(request, responseObserver);
-  }
-
-  public static Partition partition(int partitionId, PartitionBrokerRole role) {
-    return Partition.newBuilder().setPartitionId(partitionId).setRole(role).build();
-  }
-
-  public static BrokerInfo broker(int nodeId, String host, int port, Partition... partitions) {
-    return BrokerInfo.newBuilder()
-        .setNodeId(nodeId)
-        .setHost(host)
-        .setPort(port)
-        .addAllPartitions(Arrays.asList(partitions))
-        .build();
   }
 
   public void onTopologyRequest(
@@ -195,16 +199,6 @@ public class RecordingGatewayService extends GatewayImplBase {
                 .setReplicationFactor(replicationFactor)
                 .addAllBrokers(Arrays.asList(brokers))
                 .build());
-  }
-
-  public static WorkflowMetadata deployedWorkflow(
-      String bpmnProcessId, int version, long workflowKey, String resourceName) {
-    return WorkflowMetadata.newBuilder()
-        .setBpmnProcessId(bpmnProcessId)
-        .setVersion(version)
-        .setWorkflowKey(workflowKey)
-        .setResourceName(resourceName)
-        .build();
   }
 
   public void onDeployWorkflowRequest(long key, WorkflowMetadata... deployedWorkflows) {
@@ -227,26 +221,6 @@ public class RecordingGatewayService extends GatewayImplBase {
                 .setBpmnProcessId(bpmnProcessId)
                 .setVersion(version)
                 .setWorkflowInstanceKey(workflowInstanceKey)
-                .build());
-  }
-
-  public void onListWorkflowsRequest(WorkflowMetadata... workflows) {
-    addRequestHandler(
-        ListWorkflowsRequest.class,
-        r -> ListWorkflowsResponse.newBuilder().addAllWorkflows(Arrays.asList(workflows)).build());
-  }
-
-  public void onGetWorkflowRequest(
-      long workflowKey, String bpmnProcessId, int version, String resourceName, String bpmnXml) {
-    addRequestHandler(
-        GetWorkflowRequest.class,
-        r ->
-            GetWorkflowResponse.newBuilder()
-                .setWorkflowKey(workflowKey)
-                .setBpmnProcessId(bpmnProcessId)
-                .setVersion(version)
-                .setResourceName(resourceName)
-                .setBpmnXml(bpmnXml)
                 .build());
   }
 
@@ -305,18 +279,6 @@ public class RecordingGatewayService extends GatewayImplBase {
     }
 
     return requestHandler;
-  }
-
-  private static StatusRuntimeException convertThrowable(final Throwable cause) {
-    final String description;
-
-    if (cause instanceof ExecutionException) {
-      description = cause.getCause().getMessage();
-    } else {
-      description = cause.getMessage();
-    }
-
-    return Status.INTERNAL.augmentDescription(description).withCause(cause).asRuntimeException();
   }
 
   @FunctionalInterface

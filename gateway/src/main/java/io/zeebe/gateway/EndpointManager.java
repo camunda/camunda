@@ -46,10 +46,6 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.GetWorkflowRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.GetWorkflowResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ListWorkflowsRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ListWorkflowsResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
@@ -219,32 +215,12 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
   }
 
   @Override
-  public void listWorkflows(
-      ListWorkflowsRequest request, StreamObserver<ListWorkflowsResponse> responseObserver) {
-    sendRequest(
-        request,
-        RequestMapper::toListWorkflowsRequest,
-        ResponseMapper::toListWorkflowsResponse,
-        responseObserver);
-  }
-
-  @Override
   public void completeJob(
       CompleteJobRequest request, StreamObserver<CompleteJobResponse> responseObserver) {
     sendRequest(
         request,
         RequestMapper::toCompleteJobRequest,
         ResponseMapper::toCompleteJobResponse,
-        responseObserver);
-  }
-
-  @Override
-  public void getWorkflow(
-      GetWorkflowRequest request, StreamObserver<GetWorkflowResponse> responseObserver) {
-    sendRequest(
-        request,
-        RequestMapper::toGetWorkflowRequest,
-        ResponseMapper::toGetWorkflowResponse,
         responseObserver);
   }
 

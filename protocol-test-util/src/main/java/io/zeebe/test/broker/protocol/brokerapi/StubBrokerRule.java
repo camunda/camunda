@@ -18,7 +18,6 @@ package io.zeebe.test.broker.protocol.brokerapi;
 import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
@@ -32,7 +31,6 @@ import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.junit.rules.ExternalResource;
 
 public class StubBrokerRule extends ExternalResource {
@@ -40,9 +38,7 @@ public class StubBrokerRule extends ExternalResource {
   protected final int nodeId;
   protected final SocketAddress socketAddress;
   private final ControlledActorClock clock = new ControlledActorClock();
-  private final int clusterSize;
   private final int partitionCount;
-  private final int replicationFactor;
   protected ActorScheduler scheduler;
   protected ServerTransport transport;
 
@@ -56,19 +52,13 @@ public class StubBrokerRule extends ExternalResource {
   }
 
   public StubBrokerRule(final int nodeId) {
-    this(nodeId, 1, 1, 1);
+    this(nodeId, 1);
   }
 
-  private StubBrokerRule(
-      final int nodeId,
-      final int clusterSize,
-      final int partitionCount,
-      final int replicationFactor) {
+  private StubBrokerRule(final int nodeId, final int partitionCount) {
     this.nodeId = nodeId;
     this.socketAddress = SocketUtil.getNextAddress();
-    this.clusterSize = clusterSize;
     this.partitionCount = partitionCount;
-    this.replicationFactor = replicationFactor;
   }
 
   @Override
@@ -158,27 +148,6 @@ public class StubBrokerRule extends ExternalResource {
             ecr.partitionId() == partitionId
                 && ecr.valueType() == valueType
                 && ecr.intent() == intent);
-  }
-
-  public ControlMessageResponseTypeBuilder onControlMessageRequest() {
-    return onControlMessageRequest((r) -> true);
-  }
-
-  public ControlMessageResponseTypeBuilder onControlMessageRequest(
-      final Predicate<ControlMessageRequest> activationFunction) {
-    return new ControlMessageResponseTypeBuilder(
-        channelHandler::addControlMessageRequestStub, activationFunction, msgPackHelper);
-  }
-
-  public List<ControlMessageRequest> getReceivedControlMessageRequests() {
-    return channelHandler.getReceivedControlMessageRequests();
-  }
-
-  public List<ControlMessageRequest> getReceivedControlMessageRequestsByType(
-      final ControlMessageType type) {
-    return channelHandler.getReceivedControlMessageRequests().stream()
-        .filter((r) -> type == r.messageType())
-        .collect(Collectors.toList());
   }
 
   public List<ExecuteCommandRequest> getReceivedCommandRequests() {

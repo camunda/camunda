@@ -26,15 +26,12 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.GetWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.JobHeaders;
-import io.zeebe.gateway.protocol.GatewayOuterClass.ListWorkflowsResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadResponse;
 import io.zeebe.msgpack.value.LongValue;
-import io.zeebe.protocol.impl.data.repository.WorkflowMetadataAndResource;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
@@ -101,35 +98,6 @@ public class ResponseMapper {
   public static UpdateWorkflowInstancePayloadResponse toUpdateWorkflowInstancePayloadResponse(
       long key, WorkflowInstanceRecord brokerResponse) {
     return UpdateWorkflowInstancePayloadResponse.getDefaultInstance();
-  }
-
-  public static ListWorkflowsResponse toListWorkflowsResponse(
-      long key, io.zeebe.protocol.impl.data.repository.ListWorkflowsResponse brokerResponse) {
-    final ListWorkflowsResponse.Builder builder = ListWorkflowsResponse.newBuilder();
-    brokerResponse
-        .getWorkflows()
-        .forEach(
-            workflowMetadata ->
-                builder
-                    .addWorkflowsBuilder()
-                    .setBpmnProcessId(bufferAsString(workflowMetadata.getBpmnProcessId()))
-                    .setVersion(workflowMetadata.getVersion())
-                    .setWorkflowKey(workflowMetadata.getWorkflowKey())
-                    .setResourceName(bufferAsString(workflowMetadata.getResourceName()))
-                    .build());
-
-    return builder.build();
-  }
-
-  public static GetWorkflowResponse toGetWorkflowResponse(
-      long key, WorkflowMetadataAndResource brokerResponse) {
-    return GetWorkflowResponse.newBuilder()
-        .setBpmnProcessId(bufferAsString(brokerResponse.getBpmnProcessId()))
-        .setVersion(brokerResponse.getVersion())
-        .setWorkflowKey(brokerResponse.getWorkflowKey())
-        .setResourceName(bufferAsString(brokerResponse.getResourceName()))
-        .setBpmnXml(bufferAsString(brokerResponse.getBpmnXml()))
-        .build();
   }
 
   public static ActivateJobsResponse toActivateJobsResponse(

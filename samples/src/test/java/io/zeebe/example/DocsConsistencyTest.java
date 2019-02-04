@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.example.cluster.TopologyViewer;
 import io.zeebe.example.data.HandlePayloadAsPojo;
 import io.zeebe.example.job.JobWorkerCreator;
-import io.zeebe.example.workflow.DeploymentViewer;
 import io.zeebe.example.workflow.NonBlockingWorkflowInstanceCreator;
 import io.zeebe.example.workflow.WorkflowDeployer;
 import io.zeebe.example.workflow.WorkflowInstanceCreator;
@@ -40,7 +39,6 @@ public class DocsConsistencyTest {
         new Object[][] {
           {TopologyViewer.class, "io.zeebe.example.cluster.TopologyViewer"},
           {JobWorkerCreator.class, "io.zeebe.example.job.JobWorkerCreator"},
-          {DeploymentViewer.class, "io.zeebe.example.workflow.DeploymentViewer"},
           {
             NonBlockingWorkflowInstanceCreator.class,
             "io.zeebe.example.workflow.NonBlockingWorkflowInstanceCreator"

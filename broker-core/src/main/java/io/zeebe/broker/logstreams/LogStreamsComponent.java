@@ -31,7 +31,6 @@ import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.util.DurationUtil;
 import java.time.Duration;
@@ -58,9 +57,6 @@ public class LogStreamsComponent implements Component {
         .dependency(
             serverTransport(CLIENT_API_SERVER_NAME),
             streamProcessorService.getClientApiTransportInjector())
-        .dependency(
-            TransportServiceNames.CONTROL_MESSAGE_HANDLER_MANAGER,
-            streamProcessorService.getControlMessageHandlerManagerServiceInjector())
         .dependency(TOPOLOGY_MANAGER_SERVICE, streamProcessorService.getTopologyManagerInjector())
         .dependency(
             clientTransport(MANAGEMENT_API_CLIENT_NAME),

@@ -17,27 +17,16 @@
  */
 package io.zeebe.broker.transport.clientapi;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedFramedLength;
-import static io.zeebe.util.VarDataUtil.readBytes;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
-import io.zeebe.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
-import io.zeebe.dispatcher.ClaimedFragment;
-import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.ControlMessageRequestDecoder;
-import io.zeebe.protocol.clientapi.ControlMessageRequestEncoder;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
@@ -64,19 +53,15 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
-import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.stubbing.Answer;
 
 public class ClientApiMessageHandlerTest {
-  private static final int REQUEST_ID = 5;
-  private static final int RAFT_TERM = 10;
   protected static final RemoteAddress DEFAULT_ADDRESS =
       new RemoteAddressImpl(21, new SocketAddress("foo", 4242));
-
   protected static final int LOG_STREAM_PARTITION_ID = 1;
-
   protected static final byte[] JOB_EVENT;
+  private static final int REQUEST_ID = 5;
+  private static final int RAFT_TERM = 10;
 
   static {
     final JobRecord jobEvent = new JobRecord().setType(wrapString("test"));
@@ -88,29 +73,11 @@ public class ClientApiMessageHandlerTest {
   }
 
   protected final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024 * 1024]);
-  protected final UnsafeBuffer sendBuffer = new UnsafeBuffer(new byte[1024 * 1024]);
-
   protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   protected final ExecuteCommandRequestEncoder commandRequestEncoder =
       new ExecuteCommandRequestEncoder();
-  protected final ControlMessageRequestEncoder controlRequestEncoder =
-      new ControlMessageRequestEncoder();
-  protected final ControlMessageRequestDecoder controlRequestDecoder =
-      new ControlMessageRequestDecoder();
-  protected final ControlMessageRequestHeaderDescriptor controlMessageRequestHeaderDescriptor =
-      new ControlMessageRequestHeaderDescriptor();
-
-  int fragmentOffset = 0;
-
-  private LogStream logStream;
-  private ClientApiMessageHandler messageHandler;
-
-  @Mock private Dispatcher mockControlMessageDispatcher;
-
   public TemporaryFolder tempFolder = new TemporaryFolder();
-
   public ActorSchedulerRule agentRunnerService = new ActorSchedulerRule();
-
   public ServiceContainerRule serviceContainerRule = new ServiceContainerRule(agentRunnerService);
 
   @Rule
@@ -118,6 +85,8 @@ public class ClientApiMessageHandlerTest {
       RuleChain.outerRule(tempFolder).around(agentRunnerService).around(serviceContainerRule);
 
   protected BufferingServerOutput serverOutput;
+  private LogStream logStream;
+  private ClientApiMessageHandler messageHandler;
 
   @Before
   public void setup() {
@@ -135,7 +104,7 @@ public class ClientApiMessageHandlerTest {
 
     logStream.openAppender().join();
 
-    messageHandler = new ClientApiMessageHandler(mockControlMessageDispatcher);
+    messageHandler = new ClientApiMessageHandler();
 
     final Partition partition =
         new Partition(new PartitionInfo(LOG_STREAM_PARTITION_ID, 1), RaftState.LEADER) {
@@ -152,41 +121,6 @@ public class ClientApiMessageHandlerTest {
   @After
   public void cleanUp() {
     logStream.close();
-  }
-
-  @Test
-  public void shouldHandleCommandRequest() {
-    // given
-    final int writtenLength =
-        writeCommandRequestToBuffer(
-            buffer, LOG_STREAM_PARTITION_ID, null, ValueType.JOB, JobIntent.CREATE);
-
-    // when
-    final boolean isHandled =
-        messageHandler.onRequest(
-            serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
-
-    // then
-    assertThat(isHandled).isTrue();
-
-    final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream, true);
-    waitForAvailableEvent(logStreamReader);
-
-    final LoggedEvent loggedEvent = logStreamReader.next();
-
-    final byte[] valueBuffer = new byte[JOB_EVENT.length];
-    loggedEvent
-        .getValueBuffer()
-        .getBytes(loggedEvent.getValueOffset(), valueBuffer, 0, loggedEvent.getValueLength());
-
-    assertThat(loggedEvent.getValueLength()).isEqualTo(JOB_EVENT.length);
-    assertThat(valueBuffer).isEqualTo(JOB_EVENT);
-
-    final RecordMetadata eventMetadata = new RecordMetadata();
-    loggedEvent.readMetadata(eventMetadata);
-
-    assertThat(eventMetadata.getRequestId()).isEqualTo(REQUEST_ID);
-    assertThat(eventMetadata.getRequestStreamId()).isEqualTo(DEFAULT_ADDRESS.getStreamId());
   }
 
   @Test
@@ -216,75 +150,6 @@ public class ClientApiMessageHandlerTest {
     loggedEvent.readMetadata(eventMetadata);
 
     assertThat(eventMetadata.getProtocolVersion()).isEqualTo(clientProtocolVersion);
-  }
-
-  @Test
-  public void shouldWriteCommandRequestEventType() {
-    // given
-    final int writtenLength =
-        writeCommandRequestToBuffer(
-            buffer, LOG_STREAM_PARTITION_ID, null, ValueType.JOB, JobIntent.CREATE);
-
-    // when
-    final boolean isHandled =
-        messageHandler.onRequest(serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, 123);
-
-    // then
-    assertThat(isHandled).isTrue();
-
-    final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream, true);
-    waitForAvailableEvent(logStreamReader);
-
-    final LoggedEvent loggedEvent = logStreamReader.next();
-    final RecordMetadata eventMetadata = new RecordMetadata();
-    loggedEvent.readMetadata(eventMetadata);
-
-    assertThat(eventMetadata.getValueType()).isEqualTo(ValueType.JOB);
-    assertThat(eventMetadata.getIntent()).isEqualTo(JobIntent.CREATE);
-  }
-
-  @Test
-  public void shouldHandleControlRequest() {
-    // given
-    final int writtenLength = writeControlRequestToBuffer(buffer);
-
-    when(mockControlMessageDispatcher.claim(any(ClaimedFragment.class), anyInt()))
-        .thenAnswer(claimFragment(0));
-
-    // when
-    final boolean isHandled =
-        messageHandler.onRequest(
-            serverOutput, DEFAULT_ADDRESS, buffer, 0, writtenLength, REQUEST_ID);
-
-    // then
-    assertThat(isHandled).isTrue();
-
-    verify(mockControlMessageDispatcher).claim(any(ClaimedFragment.class), anyInt());
-
-    int offset = fragmentOffset;
-
-    controlMessageRequestHeaderDescriptor.wrap(sendBuffer, offset);
-
-    assertThat(controlMessageRequestHeaderDescriptor.streamId())
-        .isEqualTo(DEFAULT_ADDRESS.getStreamId());
-    assertThat(controlMessageRequestHeaderDescriptor.requestId()).isEqualTo(REQUEST_ID);
-
-    offset += ControlMessageRequestHeaderDescriptor.headerLength();
-
-    headerEncoder.wrap(sendBuffer, offset);
-
-    offset += headerEncoder.encodedLength();
-
-    controlRequestDecoder.wrap(
-        sendBuffer,
-        offset,
-        controlRequestDecoder.sbeBlockLength(),
-        controlRequestDecoder.sbeSchemaVersion());
-
-    final byte[] requestData =
-        readBytes(controlRequestDecoder::getData, controlRequestDecoder::dataLength);
-
-    assertThat(requestData).isEqualTo(JOB_EVENT);
   }
 
   @Test
@@ -433,39 +298,6 @@ public class ClientApiMessageHandlerTest {
         .putValue(JOB_EVENT, 0, JOB_EVENT.length);
 
     return headerEncoder.encodedLength() + commandRequestEncoder.encodedLength();
-  }
-
-  private int writeControlRequestToBuffer(final UnsafeBuffer buffer) {
-    int offset = 0;
-
-    headerEncoder
-        .wrap(buffer, offset)
-        .blockLength(controlRequestEncoder.sbeBlockLength())
-        .schemaId(controlRequestEncoder.sbeSchemaId())
-        .templateId(controlRequestEncoder.sbeTemplateId())
-        .version(controlRequestEncoder.sbeSchemaVersion());
-
-    offset += headerEncoder.encodedLength();
-
-    controlRequestEncoder.wrap(buffer, offset);
-
-    controlRequestEncoder.putData(JOB_EVENT, 0, JOB_EVENT.length);
-
-    return headerEncoder.encodedLength() + controlRequestEncoder.encodedLength();
-  }
-
-  protected Answer<?> claimFragment(final long offset) {
-    return invocation -> {
-      final ClaimedFragment claimedFragment = (ClaimedFragment) invocation.getArguments()[0];
-      final int length = (int) invocation.getArguments()[1];
-
-      fragmentOffset = claimedFragment.getOffset();
-
-      claimedFragment.wrap(sendBuffer, 0, alignedFramedLength(length), () -> {});
-
-      final long claimedPosition = offset + alignedFramedLength(length);
-      return claimedPosition;
-    };
   }
 
   protected void waitForAvailableEvent(final BufferedLogStreamReader logStreamReader) {

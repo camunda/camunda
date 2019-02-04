@@ -171,41 +171,6 @@ message FailJobRequest {
 message FailJobResponse {
 }
 
-message GetWorkflowRequest {
-  // the unique key identifying the workflow definition (e.g. returned from a workflow in
-  // the DeployWorkflowResponse message)
-  int64 workflowKey = 1;
-  // the version of the process; set to -1 to use the latest version
-  int32 version = 2;
-  // the BPMN process ID of the workflow definition
-  string bpmnProcessId = 3;
-}
-
-message GetWorkflowResponse {
-  // the unique key identifying the workflow definition (e.g. returned from a workflow in
-  // the DeployWorkflowResponse message)
-  int64 workflowKey = 1;
-  // the version of the process
-  int32 version = 2;
-  // the BPMN process ID of the workflow definition
-  string bpmnProcessId = 3;
-  // the name of the resource used to deployed the workflow
-  string resourceName = 4;
-  // a BPMN XML representation of the workflow
-  string bpmnXml = 5;
-}
-
-message ListWorkflowsRequest {
-  // optional filter: if specified, only the workflows with this given process ID will be
-  // returned
-  string bpmnProcessId = 1;
-}
-
-message ListWorkflowsResponse {
-  // a list of deployed workflows matching the request criteria (if any)
-  repeated WorkflowMetadata workflows = 1;
-}
-
 message PublishMessageRequest {
   // the name of the message
   string name = 1;
@@ -386,30 +351,6 @@ service Gateway {
         - the job is already in a failed state, i.e. ran out of retries
    */
   rpc FailJob (FailJobRequest) returns (FailJobResponse) {
-  }
-
-  /*
-    Fetches the workflow definition either by workflow key, or BPMN process ID and version.
-    At least one of workflowKey or bpmnProcessId must be specified.
-
-    Errors:
-      NOT_FOUND:
-        - no workflow with the given key exists (if workflowKey was given)
-        - no workflow with the given process ID exists (if bpmnProcessId was given but version was -1)
-        - no workflow with the given process ID and version exists (if both bpmnProcessId and version were given)
-   */
-  rpc GetWorkflow (GetWorkflowRequest) returns (GetWorkflowResponse) {
-  }
-
-  /*
-    Lists all workflows matching the request criteria currently deployed in the cluster.
-
-    Errors:
-      NOT_FOUND:
-        - no workflows have been deployed yet (if no bpmnProcessId was given)
-        - no workflow with the given process ID exists (if bpmnProcessId was given)
-   */
-  rpc ListWorkflows (ListWorkflowsRequest) returns (ListWorkflowsResponse) {
   }
 
   /*

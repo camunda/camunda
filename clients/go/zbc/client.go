@@ -76,14 +76,6 @@ func (client *ZBClientImpl) NewActivateJobsCommand() commands.ActivateJobsComman
 	return commands.NewActivateJobsCommand(client.gateway, client.requestTimeout)
 }
 
-func (client *ZBClientImpl) NewListWorkflowsCommand() commands.ListWorkflowsStep1 {
-	return commands.NewListWorkflowsCommand(client.gateway, client.requestTimeout)
-}
-
-func (client *ZBClientImpl) NewGetWorkflowCommand() commands.GetWorkflowStep1 {
-	return commands.NewGetWorkflowCommand(client.gateway, client.requestTimeout)
-}
-
 func (client *ZBClientImpl) NewJobWorker() worker.JobWorkerBuilderStep1 {
 	return worker.NewJobWorkerBuilder(client.gateway, client, client.requestTimeout)
 }
