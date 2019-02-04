@@ -1,6 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Parent</name>
@@ -197,24 +195,6 @@
         <groupId>org.rocksdb</groupId>
         <artifactId>rocksdbjni</artifactId>
         <version>${version.rocksdbjni}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.atomix</groupId>
-        <artifactId>atomix</artifactId>
-        <version>${version.atomix}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.atomix</groupId>
-        <artifactId>atomix-primary-backup</artifactId>
-        <version>${version.atomix}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.atomix</groupId>
-        <artifactId>atomix-gossip</artifactId>
-        <version>${version.atomix}</version>
       </dependency>
 
       <dependency>
@@ -534,7 +514,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore/>
+                    <ignore />
                   </action>
                 </pluginExecution>
               </pluginExecutions>
@@ -634,7 +614,7 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
           <version>${plugin.version.enforcer}</version>
-          <executions>
+         <executions>
             <execution>
               <id>enforce-jdk-8</id>
               <goals>
