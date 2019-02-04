@@ -2,12 +2,15 @@ import React from 'react';
 import {ColorPicker, Switch, LabeledInput} from 'components';
 import ChartTargetInput from './subComponents/ChartTargetInput';
 
-export default function BarChartConfig({configuration, onChange, report}) {
-  const isSingleReport = !report.combined;
+export default function BarChartConfig({onChange, report}) {
+  const {
+    combined,
+    data: {configuration}
+  } = report;
 
   return (
     <div className="BarChartConfig">
-      {isSingleReport && (
+      {!combined && (
         <fieldset className="ColorSection">
           <legend>Select visualization color</legend>
           <ColorPicker
@@ -39,7 +42,7 @@ export default function BarChartConfig({configuration, onChange, report}) {
           />
           Goal
         </legend>
-        <ChartTargetInput {...{configuration, onChange, report}} />
+        <ChartTargetInput {...{onChange, report}} />
       </fieldset>
     </div>
   );

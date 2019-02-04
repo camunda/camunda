@@ -2,11 +2,6 @@ import React from 'react';
 import {shallow} from 'enzyme';
 import LineChartConfig from './LineChartConfig';
 
-const lineReport = {
-  combined: false,
-  data: {visualization: 'line', view: {property: 'frequency'}}
-};
-
 const configuration = {
   showInstanceCount: false,
   color: '#1991c8',
@@ -18,7 +13,12 @@ const configuration = {
   targetValue: {active: false}
 };
 
+const lineReport = {
+  combined: false,
+  data: {visualization: 'line', view: {property: 'frequency'}, configuration}
+};
+
 it('it should display correct configuration for linechart', () => {
-  const node = shallow(<LineChartConfig {...{report: lineReport, configuration}} />);
+  const node = shallow(<LineChartConfig report={lineReport} />);
   expect(node).toMatchSnapshot();
 });

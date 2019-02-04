@@ -15,16 +15,16 @@ const validProps = {
         operation: 'minimum',
         property: 'duration'
       },
-      visualization: 'bar'
-    }
-  },
-  configuration: {
-    targetValue: {
-      active: true,
-      durationChart: {
-        value: '2',
-        unit: 'hours',
-        isBelow: false
+      visualization: 'bar',
+      configuration: {
+        targetValue: {
+          active: true,
+          durationChart: {
+            value: '2',
+            unit: 'hours',
+            isBelow: false
+          }
+        }
       }
     }
   },
@@ -57,7 +57,12 @@ it('should add is-active classname to the clicked button in the buttonGroup', ()
 
 it('should display the current target values target', () => {
   const node = shallow(<ChartTargetInput {...validProps} />);
-  node.setProps({configuration: {targetValue: sampleTargetValue}});
+  node.setProps({
+    report: {
+      ...validProps.report,
+      data: {...validProps.report.data, configuration: {targetValue: sampleTargetValue}}
+    }
+  });
 
   expect(node.find(Input).first()).toHaveValue('15');
 });
@@ -80,13 +85,13 @@ it('should hide select dateFormat dropdown when viewProperty is not equal durati
           operation: 'count',
           property: 'frequency'
         },
-        visualization: 'bar'
-      }
-    },
-    configuration: {
-      targetValue: {
-        active: true,
-        countChart: {value: '50', isBelow: false}
+        visualization: 'bar',
+        configuration: {
+          targetValue: {
+            active: true,
+            countChart: {value: '50', isBelow: false}
+          }
+        }
       }
     }
   };
@@ -110,7 +115,7 @@ it('should display select date format if combined report is duration report', as
   const combinedProps = {
     ...validProps,
     report: {
-      ...validProps.reportResult,
+      ...validProps.report,
       combined: true,
       result: {
         test: {
@@ -129,12 +134,20 @@ it('should display select date format if combined report is duration report', as
   expect(node.find('Select')).toBePresent();
 });
 
-// snapshot
 it('should include an error message when invalid target value is typed', () => {
   const node = shallow(<ChartTargetInput {...validProps} />);
   node.setProps({
-    configuration: {
-      targetValue: {active: true, durationChart: {...sampleTargetValue.durationChart, value: 'e'}}
+    report: {
+      ...validProps.report,
+      data: {
+        ...validProps.report.data,
+        configuration: {
+          targetValue: {
+            active: true,
+            durationChart: {...sampleTargetValue.durationChart, value: 'e'}
+          }
+        }
+      }
     }
   });
 

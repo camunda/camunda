@@ -4,20 +4,24 @@ import {shallow} from 'enzyme';
 import NumberConfig from './NumberConfig';
 
 const props = {
-  report: {data: {view: {operation: 'count'}}},
-  configuration: {
-    precision: null,
-    targetValue: {
-      active: false,
-      countProgress: {baseline: '0', target: '100'},
-      durationProgress: {
-        baseline: {
-          value: '0',
-          unit: 'hours'
-        },
-        target: {
-          value: '2',
-          unit: 'hours'
+  report: {
+    data: {
+      view: {operation: 'count'},
+      configuration: {
+        precision: null,
+        targetValue: {
+          active: false,
+          countProgress: {baseline: '0', target: '100'},
+          durationProgress: {
+            baseline: {
+              value: '0',
+              unit: 'hours'
+            },
+            target: {
+              value: '2',
+              unit: 'hours'
+            }
+          }
         }
       }
     }
@@ -40,7 +44,7 @@ it('should have a switch for the precision setting', () => {
 });
 
 it('should change the precision', () => {
-  props.configuration.precision = 5;
+  props.report.data.configuration.precision = 5;
 
   const spy = jest.fn();
   const node = shallow(<NumberConfig {...props} onChange={spy} />);

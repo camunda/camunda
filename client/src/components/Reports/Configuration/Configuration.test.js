@@ -2,7 +2,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import Configuration from './Configuration';
-import {typeA, typeB, typeC} from './visualizations';
+import {typeA, typeB} from './visualizations';
 import {Button} from 'components';
 
 jest.mock('./visualizations', () => {

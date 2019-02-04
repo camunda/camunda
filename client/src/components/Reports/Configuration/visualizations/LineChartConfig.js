@@ -2,11 +2,11 @@ import React from 'react';
 import BarChartConfig from './BarChartConfig';
 import PointMarkersConfig from './subComponents/PointMarkersConfig';
 
-export default function LineChartConfig({configuration, onChange, report}) {
+export default function LineChartConfig({onChange, report}) {
   return (
     <>
-      <PointMarkersConfig {...{configuration, onChange}} />
-      <BarChartConfig {...{configuration, onChange, report}} />
+      <PointMarkersConfig {...{onChange, configuration: report.data.configuration}} />
+      <BarChartConfig {...{onChange, report}} />
     </>
   );
 }

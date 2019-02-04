@@ -6,8 +6,7 @@ import TableConfig from './TableConfig';
 it('should render ColumnSelection for raw data views', () => {
   const node = shallow(
     <TableConfig
-      report={{combined: false, data: {view: {operation: 'rawData'}}}}
-      configuration={{}}
+      report={{combined: false, data: {view: {operation: 'rawData'}, configuration: {}}}}
     />
   );
 
@@ -17,8 +16,7 @@ it('should render ColumnSelection for raw data views', () => {
 it('should render relative abolute selection for count views', () => {
   const node = shallow(
     <TableConfig
-      report={{combined: false, data: {view: {operation: 'count'}}}}
-      configuration={{}}
+      report={{combined: false, data: {view: {operation: 'count'}, configuration: {}}}}
     />
   );
 

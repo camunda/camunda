@@ -7,7 +7,8 @@ import DurationTargetInput from './subComponents/DurationTargetInput';
 
 import './NumberConfig.scss';
 
-export default function NumberConfig({report, configuration, onChange}) {
+export default function NumberConfig({report, onChange}) {
+  const {configuration} = report.data;
   const targetValue = configuration.targetValue;
 
   const precisionSet = typeof configuration.precision === 'number';
@@ -44,7 +45,8 @@ export default function NumberConfig({report, configuration, onChange}) {
           <Switch
             checked={goalSet}
             onChange={evt => onChange({targetValue: {active: {$set: evt.target.checked}}})}
-          />Goal
+          />
+          Goal
         </legend>
         {countOperation ? (
           <CountTargetInput

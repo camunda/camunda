@@ -5,7 +5,10 @@ import classnames from 'classnames';
 import './ChartTargetInput.scss';
 import {numberParser} from 'services';
 
-export default function ChartTargetInput({configuration: {targetValue}, onChange, report}) {
+export default function ChartTargetInput({onChange, report}) {
+  const {
+    configuration: {targetValue}
+  } = report.data;
   const referenceReport = report.combined ? Object.values(report.result)[0] : report;
   const type = referenceReport.data.view.operation === 'count' ? 'countChart' : 'durationChart';
 

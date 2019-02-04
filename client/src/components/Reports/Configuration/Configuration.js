@@ -85,13 +85,7 @@ export default class Configuration extends React.Component {
                 onChange={this.updateConfiguration}
               />
             )}
-            {Component && (
-              <Component
-                configuration={report.data.configuration}
-                report={report}
-                onChange={this.updateConfiguration}
-              />
-            )}
+            {Component && <Component report={report} onChange={this.updateConfiguration} />}
             <Button className="resetButton" onClick={this.resetToDefaults}>
               Reset to Defaults
             </Button>

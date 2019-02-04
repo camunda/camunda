@@ -2,7 +2,7 @@ import React from 'react';
 import ColumnSelection from './subComponents/ColumnSelection';
 import RelativeAbsoluteSelection from './subComponents/RelativeAbsoluteSelection';
 
-export default function TableConfig({report, configuration, onChange}) {
+export default function TableConfig({report, onChange}) {
   let typeSpecificComponent = null;
   const viewType = !report.combined
     ? report.data.view.operation
@@ -15,8 +15,8 @@ export default function TableConfig({report, configuration, onChange}) {
     case 'count':
       typeSpecificComponent = (
         <RelativeAbsoluteSelection
-          absolute={!configuration.hideAbsoluteValue}
-          relative={!configuration.hideRelativeValue}
+          absolute={!report.data.configuration.hideAbsoluteValue}
+          relative={!report.data.configuration.hideRelativeValue}
           onChange={(type, value) => {
             if (type === 'absolute') {
               onChange({hideAbsoluteValue: {$set: !value}});

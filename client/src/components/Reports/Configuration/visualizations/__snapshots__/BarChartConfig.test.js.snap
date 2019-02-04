@@ -45,23 +45,21 @@ exports[`it should display correct configuration for barchart 1`] = `
       Goal
     </legend>
     <ChartTargetInput
-      configuration={
-        Object {
-          "color": "#1991c8",
-          "hideAbsoluteValue": false,
-          "hideRelativeValue": false,
-          "showInstanceCount": false,
-          "targetValue": Object {
-            "active": false,
-          },
-          "xLabel": "",
-          "yLabel": "",
-        }
-      }
       report={
         Object {
           "combined": false,
           "data": Object {
+            "configuration": Object {
+              "color": "#1991c8",
+              "hideAbsoluteValue": false,
+              "hideRelativeValue": false,
+              "showInstanceCount": false,
+              "targetValue": Object {
+                "active": false,
+              },
+              "xLabel": "",
+              "yLabel": "",
+            },
             "view": Object {
               "property": "frequency",
             },

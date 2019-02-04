@@ -6,8 +6,7 @@ import HeatmapConfig from './HeatmapConfig';
 it('it should hide the relative switch when the view property is frequency', () => {
   const node = shallow(
     <HeatmapConfig
-      report={{data: {view: {property: 'frequency'}}}}
-      configuration={{}}
+      report={{data: {view: {property: 'frequency'}, configuration: {}}}}
       onchange={() => {}}
     />
   );
@@ -18,8 +17,12 @@ it('it should hide the relative switch when the view property is frequency', () 
 it('should pass relevant configuration to RelativeAbsoluteSelection', () => {
   const node = shallow(
     <HeatmapConfig
-      report={{data: {view: {property: 'frequency'}}}}
-      configuration={{alwaysShowAbsolute: true, alwaysShowRelative: false, unrelated: true}}
+      report={{
+        data: {
+          view: {property: 'frequency'},
+          configuration: {alwaysShowAbsolute: true, alwaysShowRelative: false, unrelated: true}
+        }
+      }}
       onchange={() => {}}
     />
   );
