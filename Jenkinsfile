@@ -3,7 +3,7 @@
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
 boolean slaveDisconnected() {
-    return currentBuild.rawBuild.getLog(200) ==~ /.*ChannelClosedException|KubernetesClientException.*/
+    return currentBuild.rawBuild.getLog(500) ==~ /.*ChannelClosedException|KubernetesClientException.*/
 }
 
 String storeNumOfBuilds() {
@@ -459,7 +459,7 @@ pipeline {
         }
       }
     }
-    failure {
+    always {
       // Retrigger the build if the slave disconnected
       script {
         if (slaveDisconnected()) {
