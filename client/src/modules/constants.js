@@ -152,3 +152,7 @@ export const PAGE_TITLE = {
   INSTANCE: (instanceId, workflowName) =>
     `Camunda Operate: Instance ${instanceId} of Workflow ${workflowName}`
 };
+
+export const PILL_TYPE = {
+  TIMESTAMP: 'TIMESTAMP'
+};

@@ -1,41 +1,34 @@
 import {ACTIVITY_STATE, UNNAMED_ACTIVITY} from 'modules/constants';
 
 /**
- * @returns { flowNodeId : { name , type }}
+ * @returns activityId -> name map
  * @param {*} elementRegistry (bpmn elementRegistry)
  */
-export function getFlowNodesDetails(elements) {
-  const flowNodeDetails = {};
-
-  Object.entries(elements).forEach(([id, element]) => {
-    flowNodeDetails[id] = {
-      name: element.name || UNNAMED_ACTIVITY,
-      type: element.$type
-    };
-  });
-
-  return flowNodeDetails;
+export function getActivityIdToNameMap(elements) {
+  return Object.entries(elements).reduce((map, [id, element]) => {
+    map.set(id, element.name || UNNAMED_ACTIVITY);
+    return map;
+  }, new Map());
 }
 
-export function getFlowNodeStateOverlays(activitiesDetails = {}) {
-  // {Array} of flow node state overlays to be added the diagram.
-  let flowNodeStateOverlays = [];
+/**
+ * @returns {Array} of flow node state overlays to be added the diagram.
+ * @param {*} activitiesMap
+ */
+export function getFlowNodeStateOverlays(activitiesMap) {
+  return [...activitiesMap.entries()].reduce(
+    (overlays, [id, activityInstances]) => {
+      const {state, type} = activityInstances[0];
 
-  // Go through activitiesDetails values to determine overlays to add.
-  Object.values(activitiesDetails).forEach(activity => {
-    const {state, type, activityId: id} = activity;
+      // If the activity is completed, only push an overlay
+      // if the activity is an end event.
+      const shouldPushOverlay =
+        state !== ACTIVITY_STATE.COMPLETED ? true : type === 'END_EVENT';
 
-    // If the activity is completed, only push an overlay
-    // if the activity is an end event.
-    const shouldPushOverlay =
-      state !== ACTIVITY_STATE.COMPLETED ? true : type === 'bpmn:Event';
-
-    if (shouldPushOverlay) {
-      flowNodeStateOverlays.push({id, state});
-    }
-  });
-
-  return flowNodeStateOverlays;
+      return !shouldPushOverlay ? overlays : [...overlays, {id, state}];
+    },
+    []
+  );
 }
 
 export function isRunningInstance(state) {
@@ -55,4 +48,40 @@ export function beautifyMetadataKey(key) {
     default:
       return key;
   }
+}
+
+/**
+ * transforms the activities instrances tree to
+ * @return activityIdToActivityInstanceMap: (activityId -> activityInstance) map
+ * @param {*} activitiesInstancesTree
+ * @param {*} [activityIdToActivityInstanceMap] optional
+ */
+export function getActivityIdToActivityInstanceMap(
+  activitiesInstancesTree,
+  activityIdToActivityInstanceMap = new Map()
+) {
+  const {children} = activitiesInstancesTree;
+
+  return children.reduce(
+    (activityIdToActivityInstanceMap, activityInstance) => {
+      const {activityId} = activityInstance;
+
+      // update activityIdToActivityInstanceMap
+      const siblingActivityInstances =
+        activityIdToActivityInstanceMap.get(activityId) || [];
+
+      activityIdToActivityInstanceMap.set(activityId, [
+        ...siblingActivityInstances,
+        activityInstance
+      ]);
+
+      return !activityInstance.children
+        ? activityIdToActivityInstanceMap
+        : getActivityIdToActivityInstanceMap(
+            activityInstance,
+            activityIdToActivityInstanceMap
+          );
+    },
+    activityIdToActivityInstanceMap
+  );
 }

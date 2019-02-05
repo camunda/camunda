@@ -3,11 +3,7 @@
 exports[`InstanceDetail should render state icon and instance id 1`] = `
 <Fragment>
   <Themed(StateIcon)
-    instance={
-      Object {
-        "id": "foo",
-      }
-    }
+    state="ACTIVE"
   />
    Instance 
   foo

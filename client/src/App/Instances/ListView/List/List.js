@@ -10,7 +10,7 @@ import EmptyMessage from './../../EmptyMessage';
 
 import {EXPAND_STATE} from 'modules/constants';
 
-import {getWorkflowName} from 'modules/utils/instance';
+import {getWorkflowName, getInstanceState} from 'modules/utils/instance';
 import {formatDate} from 'modules/utils/date';
 import {withSelection} from 'modules/contexts/SelectionContext';
 
@@ -245,7 +245,7 @@ class List extends React.Component {
                     title={`Select instance ${instance.id}`}
                   />
 
-                  <StateIcon instance={instance} />
+                  <StateIcon state={getInstanceState(instance)} />
                   <Styled.WorkflowName>
                     {getWorkflowName(instance)}
                   </Styled.WorkflowName>

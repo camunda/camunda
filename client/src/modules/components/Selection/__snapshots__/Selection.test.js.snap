@@ -576,137 +576,14 @@ exports[`Selection should contain Instances 1`] = `
                       className="sc-csuQGl kUXJyG"
                     >
                       <Themed(StateIcon)
-                        instance={
-                          Object {
-                            "activities": Array [
-                              Object {
-                                "activityId": "activityId_0",
-                                "endDate": "2018-10-10T09:20:38.658Z",
-                                "id": "id_0",
-                                "startDate": "2018-10-10T09:20:38.658Z",
-                                "state": "ACTIVE",
-                              },
-                            ],
-                            "bpmnProcessId": "someKey",
-                            "endDate": null,
-                            "id": "id_1",
-                            "incidents": Array [
-                              Object {
-                                "activityId": Object {},
-                                "activityInstanceId": Object {},
-                                "errorMessage": "",
-                                "errorType": "",
-                                "id": "id_2",
-                                "jobId": "jobId_0",
-                                "state": "ACTIVE",
-                              },
-                            ],
-                            "operations": Array [
-                              Object {
-                                "endDate": "2018-10-10T09:20:38.661Z",
-                                "errorMessage": "string",
-                                "startDate": "2018-10-10T09:20:38.661Z",
-                                "state": "SCHEDULED",
-                                "type": "UPDATE_RETRIES",
-                              },
-                            ],
-                            "sequenceFlows": Array [],
-                            "startDate": "2018-06-21",
-                            "state": "ACTIVE",
-                            "workflowId": "2",
-                            "workflowName": "someWorkflowName",
-                            "workflowVersion": 1,
-                          }
-                        }
+                        state="INCIDENT"
                       >
                         <Themed
                           forwardedRef={null}
-                          instance={
-                            Object {
-                              "activities": Array [
-                                Object {
-                                  "activityId": "activityId_0",
-                                  "endDate": "2018-10-10T09:20:38.658Z",
-                                  "id": "id_0",
-                                  "startDate": "2018-10-10T09:20:38.658Z",
-                                  "state": "ACTIVE",
-                                },
-                              ],
-                              "bpmnProcessId": "someKey",
-                              "endDate": null,
-                              "id": "id_1",
-                              "incidents": Array [
-                                Object {
-                                  "activityId": Object {},
-                                  "activityInstanceId": Object {},
-                                  "errorMessage": "",
-                                  "errorType": "",
-                                  "id": "id_2",
-                                  "jobId": "jobId_0",
-                                  "state": "ACTIVE",
-                                },
-                              ],
-                              "operations": Array [
-                                Object {
-                                  "endDate": "2018-10-10T09:20:38.661Z",
-                                  "errorMessage": "string",
-                                  "startDate": "2018-10-10T09:20:38.661Z",
-                                  "state": "SCHEDULED",
-                                  "type": "UPDATE_RETRIES",
-                                },
-                              ],
-                              "sequenceFlows": Array [],
-                              "startDate": "2018-06-21",
-                              "state": "ACTIVE",
-                              "workflowId": "2",
-                              "workflowName": "someWorkflowName",
-                              "workflowVersion": 1,
-                            }
-                          }
+                          state="INCIDENT"
                         >
                           <StateIcon
-                            instance={
-                              Object {
-                                "activities": Array [
-                                  Object {
-                                    "activityId": "activityId_0",
-                                    "endDate": "2018-10-10T09:20:38.658Z",
-                                    "id": "id_0",
-                                    "startDate": "2018-10-10T09:20:38.658Z",
-                                    "state": "ACTIVE",
-                                  },
-                                ],
-                                "bpmnProcessId": "someKey",
-                                "endDate": null,
-                                "id": "id_1",
-                                "incidents": Array [
-                                  Object {
-                                    "activityId": Object {},
-                                    "activityInstanceId": Object {},
-                                    "errorMessage": "",
-                                    "errorType": "",
-                                    "id": "id_2",
-                                    "jobId": "jobId_0",
-                                    "state": "ACTIVE",
-                                  },
-                                ],
-                                "operations": Array [
-                                  Object {
-                                    "endDate": "2018-10-10T09:20:38.661Z",
-                                    "errorMessage": "string",
-                                    "startDate": "2018-10-10T09:20:38.661Z",
-                                    "state": "SCHEDULED",
-                                    "type": "UPDATE_RETRIES",
-                                  },
-                                ],
-                                "sequenceFlows": Array [],
-                                "startDate": "2018-06-21",
-                                "state": "ACTIVE",
-                                "workflowId": "2",
-                                "workflowName": "someWorkflowName",
-                                "workflowVersion": 1,
-                              }
-                            }
+                            state="INCIDENT"
                             theme="dark"
                           >
                             <Styled(ReactComponent)

@@ -1,96 +1,63 @@
 import styled, {css} from 'styled-components';
+
+import {Colors, themed, themeStyle} from 'modules/theme';
+
 import {ReactComponent as FlowNodeEndEvent} from 'modules/components/Icon/flow-node-end-event.svg';
 import {ReactComponent as FlowNodeExclusiveGateway} from 'modules/components/Icon/flow-node-exclusive-gateway.svg';
 import {ReactComponent as FlowNodeParallelGateway} from 'modules/components/Icon/flow-node-parallel-gateway.svg';
 import {ReactComponent as FlowNodeStartEvent} from 'modules/components/Icon/flow-node-start-event.svg';
-import {ReactComponent as FlowNodeStateCanceledDark} from 'modules/components/Icon/flow-node-state-canceled-dark.svg';
-import {ReactComponent as FlowNodeStateCanceledLight} from 'modules/components/Icon/flow-node-state-canceled-light.svg';
-import {ReactComponent as FlowNodeStateCanceledSelected} from 'modules/components/Icon/flow-node-state-canceled-selected.svg';
-import {ReactComponent as FlowNodeStateCompletedDark} from 'modules/components/Icon/flow-node-state-completed-dark.svg';
-import {ReactComponent as FlowNodeStateCompletedLight} from 'modules/components/Icon/flow-node-state-completed-light.svg';
-import {ReactComponent as FlowNodeStateCompletedSelected} from 'modules/components/Icon/flow-node-state-completed-selected.svg';
-import {ReactComponent as FlowNodeStateIncidentDark} from 'modules/components/Icon/flow-node-state-incident-dark.svg';
-import {ReactComponent as FlowNodeStateIncidentLight} from 'modules/components/Icon/flow-node-state-incident-light.svg';
-import {ReactComponent as FlowNodeStateOkDark} from 'modules/components/Icon/flow-node-state-ok-dark.svg';
-import {ReactComponent as FlowNodeStateOkLight} from 'modules/components/Icon/flow-node-state-ok-light.svg';
 import {ReactComponent as FlowNodeTaskDefault} from 'modules/components/Icon/flow-node-task-default.svg';
 import {ReactComponent as FlowNodeTaskService} from 'modules/components/Icon/flow-node-task-service.svg';
 import {ReactComponent as FlowNodeTaskUser} from 'modules/components/Icon/flow-node-task-user.svg';
+import {ReactComponent as FlowNodeWorkFlow} from 'modules/components/Icon/document.svg';
 
-export const IconContainer = styled.span`
-  width: 26px;
-  height: 26px;
+const iconStyle = css`
   position: relative;
-  display: inline-block;
+  top: 3px;
+  color: ${themeStyle({
+    dark: '#ffffff',
+    light: Colors.uiLight06
+  })};
 `;
 
 // --------------
 // Flow node type icons
 // --------------
 
-const flowNodeTypeIconStyle = css`
-  position: absolute;
-`;
+export const EndEvent = themed(styled(FlowNodeEndEvent)`
+  ${iconStyle};
+`);
 
-export const EndEvent = styled(FlowNodeEndEvent)`
-  ${flowNodeTypeIconStyle};
-`;
-export const ExclusiveGateway = styled(FlowNodeExclusiveGateway)`
-  ${flowNodeTypeIconStyle};
-`;
-export const ParallelGateway = styled(FlowNodeParallelGateway)`
-  ${flowNodeTypeIconStyle};
-`;
-export const StartEvent = styled(FlowNodeStartEvent)`
-  ${flowNodeTypeIconStyle};
-`;
-export const TaskDefault = styled(FlowNodeTaskDefault)`
-  ${flowNodeTypeIconStyle};
-`;
-export const TaskService = styled(FlowNodeTaskService)`
-  ${flowNodeTypeIconStyle};
-`;
-export const TaskUser = styled(FlowNodeTaskUser)`
-  ${flowNodeTypeIconStyle};
-`;
+export const ExclusiveGateway = themed(styled(FlowNodeExclusiveGateway)`
+  ${iconStyle};
+`);
 
-// -----------
-// State icons
-// ------------
+export const ParallelGateway = themed(styled(FlowNodeParallelGateway)`
+  ${iconStyle};
+`);
 
-const stateIconStyle = css`
-  position: absolute;
-  bottom: 0;
-  left: 0;
-`;
+export const StartEvent = themed(styled(FlowNodeStartEvent)`
+  ${iconStyle};
+`);
 
-export const CanceledDark = styled(FlowNodeStateCanceledDark)`
-  ${stateIconStyle};
-`;
-export const CanceledLight = styled(FlowNodeStateCanceledLight)`
-  ${stateIconStyle};
-`;
-export const CanceledSelected = styled(FlowNodeStateCanceledSelected)`
-  ${stateIconStyle};
-`;
-export const CompletedDark = styled(FlowNodeStateCompletedDark)`
-  ${stateIconStyle};
-`;
-export const CompletedLight = styled(FlowNodeStateCompletedLight)`
-  ${stateIconStyle};
-`;
-export const CompletedSelected = styled(FlowNodeStateCompletedSelected)`
-  ${stateIconStyle};
-`;
-export const IncidentDark = styled(FlowNodeStateIncidentDark)`
-  ${stateIconStyle};
-`;
-export const IncidentLight = styled(FlowNodeStateIncidentLight)`
-  ${stateIconStyle};
-`;
-export const OkDark = styled(FlowNodeStateOkDark)`
-  ${stateIconStyle};
-`;
-export const OkLight = styled(FlowNodeStateOkLight)`
-  ${stateIconStyle};
-`;
+export const TaskDefault = themed(styled(FlowNodeTaskDefault)`
+  ${iconStyle};
+`);
+
+export const TaskService = themed(styled(FlowNodeTaskService)`
+  ${iconStyle};
+`);
+export const TaskUser = themed(styled(FlowNodeTaskUser)`
+  ${iconStyle};
+`);
+
+export const SubProcess = themed(styled(FlowNodeTaskDefault)`
+  ${iconStyle};
+`);
+
+export const Workflow = themed(styled(FlowNodeWorkFlow)`
+  ${iconStyle};
+  top: 0px;
+  left: 3px;
+  margin: 0 5px;
+`);

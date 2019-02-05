@@ -4,6 +4,7 @@ import BPMNViewer from 'bpmn-js/lib/NavigatedViewer';
 import {flatMap} from 'lodash';
 
 import {themed} from 'modules/theme';
+
 import {ACTIVITY_STATE} from 'modules/constants';
 
 import * as Styled from './styled';
@@ -13,7 +14,7 @@ import StatisticOverlay from './StatisticOverlay';
 import PopoverOverlay from './PopoverOverlay';
 import {getDiagramColors} from './service';
 
-class Diagram extends React.Component {
+class Diagram extends React.PureComponent {
   static propTypes = {
     theme: PropTypes.string.isRequired,
     definitions: PropTypes.object.isRequired,
@@ -21,7 +22,7 @@ class Diagram extends React.Component {
     clickableFlowNodes: PropTypes.arrayOf(PropTypes.string),
     selectableFlowNodes: PropTypes.arrayOf(PropTypes.string),
     selectedFlowNodeId: PropTypes.string,
-    onFlowNodeSelected: PropTypes.func,
+    onFlowNodeSelection: PropTypes.func,
     flowNodeStateOverlays: PropTypes.arrayOf(
       PropTypes.shape({
         id: PropTypes.string.isRequired,
@@ -57,9 +58,7 @@ class Diagram extends React.Component {
   componentDidUpdate({
     theme: prevTheme,
     definitions: prevDefinitions,
-    selectedFlowNodeId,
-    flowNodeStateOverlays: prevFlowNodeStateOverlays,
-    flowNodesStatistics: prevflowNodesStatistics
+    selectedFlowNodeId
   }) {
     const hasNewDefinitions = this.props.definitions !== prevDefinitions;
     const hasNewTheme = this.props.theme !== prevTheme;
@@ -102,7 +101,7 @@ class Diagram extends React.Component {
     }
 
     if (this.props.selectableFlowNodes) {
-      this.props.onFlowNodeSelected && this.addElementClickListeners();
+      this.props.onFlowNodeSelection && this.addElementClickListeners();
       this.handleSelectableFlowNodes(this.props.selectableFlowNodes);
     }
 
@@ -200,9 +199,9 @@ class Diagram extends React.Component {
 
     // Only select the flownode if it's selectable and if it's not already selected.
     if (isSelectableElement && element.id !== selectedFlowNodeId) {
-      return this.props.onFlowNodeSelected(element.id);
+      return this.props.onFlowNodeSelection(element.id);
     } else if (selectedFlowNodeId) {
-      this.props.onFlowNodeSelected(null);
+      this.props.onFlowNodeSelection(null);
     }
   };
 

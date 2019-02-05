@@ -1,128 +1,50 @@
 import React from 'react';
-import {shallow} from 'enzyme';
+import {mount} from 'enzyme';
 
-import SplitPane from 'modules/components/SplitPane';
+import {HashRouter as Router} from 'react-router-dom';
+import {ThemeProvider} from 'modules/contexts/ThemeContext';
+
 import Copyright from 'modules/components/Copyright';
 
 import InstanceHistory from './InstanceHistory';
-import InstanceLog from './InstanceLog';
-import InstanceEvents from './InstanceEvents';
+import TimeStampPill from './TimeStampPill';
+
 import * as Styled from './styled';
-import {getEventLabel} from './service';
-import {formatDate} from 'modules/utils/date';
-
-const fooActivityEvents = [
-  {
-    eventType: 'fooCreated',
-    eventSourceType: 'JOB',
-    activityInstanceId: 'foo',
-    dateTime: '2018-10-11T06:00:00.000+0000',
-    metadata: {
-      a: 'b'
-    }
-  },
-  {
-    eventSourceType: 'JOB',
-    eventType: 'fooActiviated',
-    activityInstanceId: 'foo',
-    dateTime: '2018-10-11T06:15:00.000+0000'
-  }
-];
-
-const barActivityEvents = [
-  {
-    eventType: 'barCreated',
-    eventSourceType: 'INCIDENT',
-    activityInstanceId: 'bar',
-    dateTime: '2018-10-11T06:00:00.000+0000'
-  },
-  {
-    eventSourceType: 'JOB',
-    eventType: 'BAR_ACTIVATED',
-    activityInstanceId: 'bar',
-    dateTime: '2018-10-11T06:15:00.000+0000'
-  }
-];
-
-const instanceEvents = [
-  {
-    eventSourceType: 'WORKFLOW_INSTANCE',
-    eventType: 'baz',
-    dateTime: '2018-10-11T05:00:00.000+0000',
-    metadata: {
-      c: {
-        d: 'e',
-        e: null
-      },
-      f: null
-    }
-  }
-];
-
-const mockEvents = [
-  ...fooActivityEvents,
-  ...barActivityEvents,
-  ...instanceEvents
-];
-
-const mockActivitiesDetails = {
-  foo: {id: 'foo', name: 'foo name', activityId: 'fooAID'},
-  bar: {id: 'bar', name: 'bar name', activityId: 'barAID'}
-};
 
 describe('InstanceHistory', () => {
-  it('should render a panel with InstanceLog section and Copyright', () => {
-    // given
-    const mockProps = {
-      events: mockEvents,
-      instance: {id: 'someInstanceId'},
-      selectedActivityInstanceId: 'foo',
-      onActivityInstanceSelected: jest.fn()
-    };
+  let node;
+  let ChildNode;
+  beforeEach(() => {
+    ChildNode = props => <div {...props} data-test="ChildNode" />;
+    node = mount(
+      <Router>
+        <ThemeProvider>
+          <InstanceHistory>
+            <ChildNode />
+          </InstanceHistory>
+        </ThemeProvider>
+      </Router>
+    );
+  });
 
-    const node = shallow(<InstanceHistory {...mockProps} />);
+  it('should render a header', () => {
+    //Pane Header
+    const PaneHeaderNode = node.find(Styled.PaneHeader);
+    const Headline = node.find(Styled.Headline);
 
-    node.setProps({activitiesDetails: mockActivitiesDetails});
-    node.update();
-
-    // then
-    // Pane
-    expect(node.find(SplitPane.Pane)).toHaveLength(1);
-    // Pane Header
-    const PaneHeaderNode = node.find(SplitPane.Pane.Header);
     expect(PaneHeaderNode).toHaveLength(1);
-    expect(PaneHeaderNode.children().text()).toContain('Instance History');
-    // Pane Body
+    expect(Headline).toHaveLength(1);
+    expect(Headline.text()).toEqual('Instance History');
+    expect(node.find(TimeStampPill)).toHaveLength(1);
+  });
+
+  it('should render children', () => {
     const PaneBodyNode = node.find(Styled.PaneBody);
-    expect(PaneBodyNode).toHaveLength(1);
+    const child = PaneBodyNode.find(ChildNode);
+    expect(child).toExist();
+  });
 
-    // Instance Log
-    const InstanceLogNode = PaneBodyNode.find(InstanceLog);
-    expect(InstanceLogNode).toHaveLength(1);
-    expect(InstanceLogNode.prop('instance')).toEqual(mockProps.instance);
-    expect(InstanceLogNode.prop('activitiesDetails')).toEqual(
-      mockActivitiesDetails
-    );
-    expect(InstanceLogNode.prop('selectedActivityInstanceId')).toEqual(
-      mockProps.selectedActivityInstanceId
-    );
-    expect(InstanceLogNode.prop('onActivityInstanceSelected')).toEqual(
-      mockProps.onActivityInstanceSelected
-    );
-
-    // Instance Events
-    const InstanceEventsNode = PaneBodyNode.find(InstanceEvents);
-    expect(InstanceEventsNode).toHaveLength(1);
-    const expectedEvents = fooActivityEvents.map(event => ({
-      ...event,
-      label: getEventLabel(event),
-      metadata: {
-        ...event.metadata,
-        timestamp: formatDate(event.dateTime)
-      }
-    }));
-    expect(InstanceEventsNode.prop('groupedEvents')).toEqual(expectedEvents);
-
+  it('should render a footer', () => {
     // Pane Footer
     const PaneFooterNode = node.find(Styled.PaneFooter);
     expect(PaneFooterNode).toHaveLength(1);
@@ -130,80 +52,5 @@ describe('InstanceHistory', () => {
     // Copyright
     const CopyrightNode = PaneFooterNode.find(Copyright);
     expect(CopyrightNode).toHaveLength(1);
-  });
-
-  describe('handleEventRowChange', () => {
-    it('should set the payload and key of the selected event row', () => {
-      // given
-      const mockProps = {
-        instance: {},
-        events: []
-      };
-      const node = shallow(<InstanceHistory {...mockProps} />);
-      const expectedPayload = {a: 'b'};
-      const selectedEventRow = {
-        key: 'foo',
-        payload: JSON.stringify(expectedPayload)
-      };
-
-      // when
-      node.instance().handleEventRowChange(selectedEventRow);
-      node.update();
-
-      // then
-      expect(node.state('selectedEventRow')).toEqual({
-        key: 'foo',
-        payload: expectedPayload
-      });
-    });
-
-    it('should set the payload to null if the selected row payload is not parsable', () => {
-      // given
-      const mockProps = {
-        instance: {},
-        events: []
-      };
-      const node = shallow(<InstanceHistory {...mockProps} />);
-      const selectedEventRow = {
-        key: 'foo',
-        payload: '{some unparsable jstring'
-      };
-
-      // when
-      node.instance().handleEventRowChange(selectedEventRow);
-      node.update();
-
-      // then
-      expect(node.state('selectedEventRow')).toEqual({
-        key: 'foo',
-        payload: null
-      });
-    });
-
-    it("should reset the selected event row if it's selected again", () => {
-      // given
-      const mockProps = {
-        instance: {},
-        events: []
-      };
-      const node = shallow(<InstanceHistory {...mockProps} />);
-      const expectedPayload = {a: 'b'};
-      const selectedEventRow = {
-        key: 'foo',
-        payload: JSON.stringify(expectedPayload)
-      };
-      node.setState({selectedEventRow: {key: 'foo', payload: expectedPayload}});
-      node.update();
-
-      // when
-      node.instance().handleEventRowChange(selectedEventRow);
-      node.update();
-
-      // then
-      expect(node.state('selectedEventRow')).toEqual({
-        key: null,
-        payload: null
-      });
-    });
   });
 });

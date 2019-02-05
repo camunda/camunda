@@ -13,8 +13,8 @@ export const Pane = styled(
     'onAddNewSelection',
     'onAddToSelectionById',
     'onSelectedInstancesUpdate',
-    'onActivityInstanceSelected',
-    'onFlowNodeSelected'
+    'onTreeRowSelection',
+    'onFlowNodeSelection'
   ])(Panel)
 )`
   ${({expandState}) => (isCollapsed(expandState) ? '' : `flex-grow: 1;`)};

@@ -10,21 +10,19 @@ import * as Styled from './styled';
 const {WrappedComponent: StateIcon} = ThemedStateIcon;
 
 describe('StateIcon', () => {
-  const mockInstance = {
-    state: 'foo',
-    incidents: [{key: 'bar'}]
-  };
-
   it('should render Incident Icon', () => {
     // given
     const someProp = 'some prop';
     instanceUtils.getInstanceState = jest.fn(() => INSTANCE_STATE.INCIDENT);
     const node = shallow(
-      <StateIcon instance={mockInstance} theme={'dark'} someProp={someProp} />
+      <StateIcon
+        state={INSTANCE_STATE.INCIDENT}
+        theme={'dark'}
+        someProp={someProp}
+      />
     );
 
     // then
-    expect(instanceUtils.getInstanceState.mock.calls[0][0]).toBe(mockInstance);
     const IncidentIconNode = node.find(Styled.IncidentIcon);
     expect(IncidentIconNode).toHaveLength(1);
     expect(IncidentIconNode.prop('theme')).toBe('dark');
@@ -37,11 +35,14 @@ describe('StateIcon', () => {
     const someProp = 'some prop';
     instanceUtils.getInstanceState = jest.fn(() => INSTANCE_STATE.ACTIVE);
     const node = shallow(
-      <StateIcon instance={mockInstance} theme={'dark'} someProp={someProp} />
+      <StateIcon
+        state={INSTANCE_STATE.ACTIVE}
+        theme={'dark'}
+        someProp={someProp}
+      />
     );
 
     // then
-    expect(instanceUtils.getInstanceState.mock.calls[0][0]).toBe(mockInstance);
     const IncidentIconNode = node.find(Styled.ActiveIcon);
     expect(IncidentIconNode).toHaveLength(1);
     expect(IncidentIconNode.prop('theme')).toBe('dark');
@@ -54,11 +55,14 @@ describe('StateIcon', () => {
     const someProp = 'some prop';
     instanceUtils.getInstanceState = jest.fn(() => INSTANCE_STATE.COMPLETED);
     const node = shallow(
-      <StateIcon instance={mockInstance} theme={'dark'} someProp={someProp} />
+      <StateIcon
+        state={INSTANCE_STATE.COMPLETED}
+        theme={'dark'}
+        someProp={someProp}
+      />
     );
 
     // then
-    expect(instanceUtils.getInstanceState.mock.calls[0][0]).toBe(mockInstance);
     const IncidentIconNode = node.find(Styled.CompletedIcon);
     expect(IncidentIconNode).toHaveLength(1);
     expect(IncidentIconNode.prop('theme')).toBe('dark');
@@ -71,11 +75,14 @@ describe('StateIcon', () => {
     const someProp = 'some prop';
     instanceUtils.getInstanceState = jest.fn(() => INSTANCE_STATE.CANCELED);
     const node = shallow(
-      <StateIcon instance={mockInstance} theme={'dark'} someProp={someProp} />
+      <StateIcon
+        state={INSTANCE_STATE.CANCELED}
+        theme={'dark'}
+        someProp={someProp}
+      />
     );
 
     // then
-    expect(instanceUtils.getInstanceState.mock.calls[0][0]).toBe(mockInstance);
     const IncidentIconNode = node.find(Styled.CanceledIcon);
     expect(IncidentIconNode).toHaveLength(1);
     expect(IncidentIconNode.prop('theme')).toBe('dark');

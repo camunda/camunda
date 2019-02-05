@@ -1,20 +1,54 @@
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 
 import {Colors, themed, themeStyle} from 'modules/theme';
 
 import SplitPane from 'modules/components/SplitPane';
 
+const BorderColors = css`
+  ${themeStyle({
+    dark: Colors.uiDark04,
+    light: Colors.uiLight05
+  })};
+`;
+
 export const PaneBody = styled(SplitPane.Pane.Body)`
   flex-direction: row;
+
+  /* defines the space children take */
+  > * {
+    width: 50%;
+  }
+`;
+
+export const Headline = themed(styled.span`
+  padding-right: 15px;
+  position: relative;
+
+  &:after {
+    content: '';
+    position: absolute;
+    top: -5px;
+    right: 0px;
+    height: 30px;
+    width: 1px;
+    background: ${BorderColors};
+  }
+`);
+
+export const Pills = styled.div`
+  display: flex;
+  align-items: center;
+  margin-left: 15px;
+`;
+
+export const PaneHeader = styled(SplitPane.Pane.Header)`
+  display: flex;
+  align-items: center;
 `;
 
 export const Section = themed(styled.div`
   flex: 1;
-  border: solid 1px
-    ${themeStyle({
-      dark: Colors.uiDark04,
-      light: Colors.uiLight05
-    })};
+  border: solid 1px ${BorderColors};
   border-top: none;
   border-bottom: none;
 `);

@@ -5,7 +5,6 @@ import {createInstance} from 'modules/testUtils';
 import {ThemeProvider} from 'modules/theme';
 
 import StateIcon from 'modules/components/StateIcon';
-
 import Dropdown from 'modules/components/Dropdown';
 import Selection from './Selection';
 import * as Styled from './styled';

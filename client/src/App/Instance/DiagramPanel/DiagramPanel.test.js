@@ -5,7 +5,7 @@ import SplitPane from 'modules/components/SplitPane';
 import Pane from 'modules/components/SplitPane/Pane';
 import StateIcon from 'modules/components/StateIcon';
 import {formatDate} from 'modules/utils/date';
-import {getWorkflowName} from 'modules/utils/instance';
+import {getWorkflowName, getInstanceState} from 'modules/utils/instance';
 import {ThemeProvider} from 'modules/theme';
 import {createInstance} from 'modules/testUtils';
 
@@ -25,6 +25,7 @@ describe('DiagramPanel', () => {
   it('should render pane header and body', () => {
     // given
     const workflowName = getWorkflowName(mockInstance);
+    const instanceState = getInstanceState(mockInstance);
     const formattedStartDate = formatDate(mockInstance.startDate);
     const formattedEndDate = formatDate(mockInstance.endDate);
     const node = mount(
@@ -46,7 +47,7 @@ describe('DiagramPanel', () => {
     const TableNode = PaneHeaderNode.find('table');
     const StateIconNode = TableNode.find(StateIcon);
     expect(StateIconNode).toHaveLength(1);
-    expect(StateIconNode.prop('instance')).toBe(mockInstance);
+    expect(StateIconNode.prop('state')).toBe(instanceState);
     expect(TableNode.text()).toContain(workflowName);
     expect(node.find(Pane.Body)).toHaveLength(1);
     expect(TableNode.text()).toContain(mockInstance.id);

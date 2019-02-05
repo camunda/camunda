@@ -10,6 +10,7 @@ import {
   fetchWorkflowInstancesBySelection,
   fetchWorkflowInstancesByIds
 } from 'modules/api/instances';
+import {immutableArraySet} from 'modules/utils';
 import {getSelectionById} from 'modules/utils/selection';
 import {
   parseFilterForRequest,
@@ -190,16 +191,16 @@ class BasicSelectionProvider extends React.Component {
     } = getSelectionById(this.state.selections, selectionId);
 
     // update the target selection
-    const selections = [
-      ...this.state.selections.slice(0, selectionIndex),
+    const selections = immutableArraySet(
+      this.state.selections,
+      selectionIndex,
       {
         ...this.state.selections[selectionIndex],
         instancesMap: updateMapOfInstances(workflowInstances, oldInstanceMap),
         queries,
         totalCount
-      },
-      ...this.state.selections.slice(selectionIndex + 1)
-    ];
+      }
+    );
 
     const instancesInSelectionsCount =
       this.state.instancesInSelectionsCount - oldTotalCount + totalCount;

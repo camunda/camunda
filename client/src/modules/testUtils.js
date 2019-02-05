@@ -1,3 +1,5 @@
+import {ACTIVITY_STATE} from 'modules/constants';
+
 /**
  * flushes promises in queue
  */
@@ -44,6 +46,8 @@ const randomIdIterator = createRandomId('id');
 const randomActivityIdIterator = createRandomId('activityId');
 const randomJobIdIterator = createRandomId('jobId');
 const eventIdIterator = createRandomId('eventId');
+const randomFlowNodeInstanceIdIterator = createRandomId('flowNodeId');
+const randomActivityInstanceIdIterator = createRandomId('activityInstanceId');
 
 /**
  * @returns a mocked selection Object
@@ -365,11 +369,11 @@ export const createDefinitions = () => {
   };
 };
 
-export const createEvents = activities =>
-  activities.map(node => ({
-    activityId: node.activityId,
-    activityInstanceId: node.id,
-    bpmnProcessId: node.activityId,
+export const createEvent = (options = {}) => {
+  return {
+    activityId: 'Task_1b1r7ow',
+    activityInstanceId: '1215',
+    bpmnProcessId: 'orderProcess',
     dateTime: '2019-01-21T08:34:07.121+0000',
     eventSourceTyppe: 'JOB',
     eventType: 'CREATED',
@@ -386,8 +390,21 @@ export const createEvents = activities =>
       payload: '',
       workflowId: '1',
       workflowInstanceId: '53'
-    }
-  }));
+    },
+    workflowId: '1',
+    workflowInstanceId: '1197',
+    ...options
+  };
+};
+
+export const createEvents = activities =>
+  activities.map(node =>
+    createEvent({
+      activityId: node.activityId,
+      activityInstanceId: node.id,
+      bpmnProcessId: node.activityId
+    })
+  );
 
 export const createBeautifiedMetadata = activityId => ({
   'End Time': '--',
@@ -397,3 +414,137 @@ export const createBeautifiedMetadata = activityId => ({
   incidentErrorMessage: 'Cannot connect to server delivery05',
   incidentErrorType: 'JOB_NO_RETRIES'
 });
+
+export const createFlowNodeInstance = (options = {}) => {
+  return {
+    activityId: 'startEvent',
+    children: [],
+    endDate: '2019-02-07T09:02:34.779+0000',
+    id: randomFlowNodeInstanceIdIterator.next().value,
+    parentId: '1684',
+    startDate: '2019-02-07T09:02:34.760+0000',
+    state: ACTIVITY_STATE.ACTIVE,
+    type: 'bpmn:StartEvent',
+    ...options
+  };
+};
+
+export const createRawTreeNode = (options = {}) => {
+  return {
+    activityId: 'Unspecified_1234',
+    children: [],
+    endDate: '2019-02-07T13:03:36.218Z',
+    id: randomActivityInstanceIdIterator.next().value,
+    parentId: 'string',
+    startDate: '2019-02-07T13:03:36.218Z',
+    state: 'ACTIVE',
+    type: 'UNSPECIFIED',
+    ...options
+  };
+};
+
+export const createRawTree = depth => {
+  return {
+    children: [
+      createRawTreeNode({
+        activityId: 'StartEvent1234',
+        type: 'START_EVENT',
+        state: ACTIVITY_STATE.COMPLETED
+      }),
+      createRawTreeNode({
+        activityId: 'Service5678',
+        type: 'SERVICE_TASK',
+        state: ACTIVITY_STATE.COMPLETED
+      }),
+      createRawTreeNode({
+        activityId: 'SubProcess5678',
+        type: 'SUB_PROCESS',
+        state: ACTIVITY_STATE.INCIDENT,
+        children: [
+          createRawTreeNode({
+            activityId: 'Service5678',
+            type: 'SERVICE_TASK'
+          })
+        ]
+      }),
+      createRawTreeNode({
+        activityId: 'SubProcess1234',
+        type: 'SUB_PROCESS',
+        children: depth ? createRawTree(depth - 1).children : []
+      }),
+      createRawTreeNode({
+        activityId: 'EndEvent1234',
+        type: 'End_Event'
+      })
+    ]
+  };
+};
+
+export const createMinimalProcess = () => {
+  return {
+    diagramNodes: {
+      StartEvent1234: createDiagramNode({
+        $type: 'bpmn:StartEvent',
+        name: 'Start the Process'
+      }),
+      Service5678: createDiagramNode({
+        $type: 'bpmn:ServiceTask',
+        name: 'Do something'
+      }),
+      EndEvent1234: createDiagramNode({
+        $type: 'bpmn:EndEvent',
+        name: 'End the Process'
+      })
+    },
+    rawTree: {
+      children: [
+        createRawTreeNode({
+          activityId: 'StartEvent1234',
+          type: 'START_EVENT',
+          state: ACTIVITY_STATE.COMPLETED
+        }),
+        createRawTreeNode({
+          activityId: 'Service5678',
+          type: 'SERVICE_TASK',
+          state: ACTIVITY_STATE.COMPLETED
+        }),
+        createRawTreeNode({
+          activityId: 'EndEvent1234',
+          type: 'End_Event',
+          state: ACTIVITY_STATE.COMPLETED
+        })
+      ]
+    }
+  };
+};
+
+export const createDeepNestedTree = depth => {
+  return [
+    createFlowNodeInstance({
+      type: 'bpmn:StartEvent',
+      id: '2251799813686526'
+    }),
+
+    createFlowNodeInstance({
+      type: 'bpmn:Task',
+      state: ACTIVITY_STATE.COMPLETED
+    }),
+    createFlowNodeInstance({type: 'bpmn:Task'}),
+    createFlowNodeInstance({
+      type: 'bpmn:SubProcess',
+      state: ACTIVITY_STATE.INCIDENT,
+      children: [
+        createFlowNodeInstance({
+          type: 'bpmn:Task'
+        })
+      ]
+    }),
+    createFlowNodeInstance({
+      type: 'bpmn:SubProcess',
+      children: depth ? createDeepNestedTree(depth - 1) : []
+    }),
+    createFlowNodeInstance({
+      type: 'bpmn:EndEvent'
+    })
+  ];
+};

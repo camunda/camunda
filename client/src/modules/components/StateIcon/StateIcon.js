@@ -1,30 +1,26 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
+import {INSTANCE_STATE} from 'modules/constants';
 import {themed} from 'modules/theme';
-import {getInstanceState} from 'modules/utils/instance';
 
 import * as Styled from './styled';
 
 const stateIconsMap = {
-  INCIDENT: Styled.IncidentIcon,
-  ACTIVE: Styled.ActiveIcon,
-  COMPLETED: Styled.CompletedIcon,
-  CANCELED: Styled.CanceledIcon
+  [INSTANCE_STATE.INCIDENT]: Styled.IncidentIcon,
+  [INSTANCE_STATE.ACTIVE]: Styled.ActiveIcon,
+  [INSTANCE_STATE.COMPLETED]: Styled.CompletedIcon,
+  [INSTANCE_STATE.CANCELED]: Styled.CanceledIcon
 };
 
-function StateIcon({instance, ...props}) {
-  const computedState = getInstanceState(instance);
-  const TargetComponent = stateIconsMap[computedState];
+function StateIcon({state, ...props}) {
+  const TargetComponent = stateIconsMap[state];
   return <TargetComponent {...props} />;
 }
 
 export default themed(StateIcon);
 
 StateIcon.propTypes = {
-  instance: PropTypes.shape({
-    incidents: PropTypes.arrayOf(PropTypes.object),
-    state: PropTypes.string.isRequired.isRequired
-  }).isRequired,
+  state: PropTypes.oneOf(Object.values(INSTANCE_STATE)).isRequired,
   theme: PropTypes.string.isRequired
 };

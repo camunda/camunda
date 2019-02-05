@@ -4,13 +4,14 @@ import PropTypes from 'prop-types';
 import SplitPane from 'modules/components/SplitPane';
 import StateIcon from 'modules/components/StateIcon';
 import {formatDate} from 'modules/utils/date';
-import {getWorkflowName} from 'modules/utils/instance';
+import {getWorkflowName, getInstanceState} from 'modules/utils/instance';
+
 import Actions from 'modules/components/Actions';
 
 import DiagramBar from './DiagramBar';
 import * as Styled from './styled';
 
-export default class DiagramPanel extends React.Component {
+export default class DiagramPanel extends React.PureComponent {
   static propTypes = {
     instance: PropTypes.shape({
       id: PropTypes.string.isRequired,
@@ -25,6 +26,7 @@ export default class DiagramPanel extends React.Component {
 
   render() {
     const {instance, ...props} = this.props;
+
     return (
       <SplitPane.Pane {...props}>
         <Styled.SplitPaneHeader>
@@ -32,7 +34,7 @@ export default class DiagramPanel extends React.Component {
             <tbody>
               <Styled.Tr>
                 <Styled.Td>
-                  <StateIcon instance={instance} />
+                  <StateIcon state={getInstanceState(instance)} />
                   {getWorkflowName(instance)}
                 </Styled.Td>
                 <Styled.Td>{instance.id}</Styled.Td>

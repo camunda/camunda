@@ -53,6 +53,7 @@ describe('Diagram', () => {
   it('should reinitiate the Viewer when theme changes', async () => {
     // given
     const node = shallowRenderNode({theme: 'dark'});
+
     const oldViewer = node.instance().Viewer;
 
     // when
@@ -157,66 +158,66 @@ describe('Diagram', () => {
   describe('flownode selection interaction', () => {
     it('should select a selectable flownode that is not selected', () => {
       // given
-      const onFlowNodeSelected = jest.fn();
+      const onFlowNodeSelection = jest.fn();
       const node = shallowRenderNode({
         selectableFlowNodes: ['nodeA', 'nodeB'],
         selectedFlowNodeId: null,
-        onFlowNodeSelected
+        onFlowNodeSelection
       });
 
       // when
       node.instance().handleElementClick({element: {id: 'nodeA'}});
 
       // then
-      expect(onFlowNodeSelected).toHaveBeenCalledWith('nodeA');
+      expect(onFlowNodeSelection).toHaveBeenCalledWith('nodeA');
     });
 
     it('should deselect a selectable flownode that is already selected', () => {
       // given
-      const onFlowNodeSelected = jest.fn();
+      const onFlowNodeSelection = jest.fn();
       const node = shallowRenderNode({
         selectableFlowNodes: ['nodeA', 'nodeB'],
         selectedFlowNodeId: 'nodeA',
-        onFlowNodeSelected
+        onFlowNodeSelection
       });
 
       // when
       node.instance().handleElementClick({element: {id: 'nodeA'}});
 
       // then
-      expect(onFlowNodeSelected).toHaveBeenCalledWith(null);
+      expect(onFlowNodeSelection).toHaveBeenCalledWith(null);
     });
 
     it('should deselect current selected flownode if a non-selectable flownode is selected', () => {
       // given
-      const onFlowNodeSelected = jest.fn();
+      const onFlowNodeSelection = jest.fn();
       const node = shallowRenderNode({
         selectableFlowNodes: ['nodeA', 'nodeB'],
         selectedFlowNodeId: 'nodeA',
-        onFlowNodeSelected
+        onFlowNodeSelection
       });
 
       // when
       node.instance().handleElementClick({element: {id: 'nodeC'}});
 
       // then
-      expect(onFlowNodeSelected).toHaveBeenCalledWith(null);
+      expect(onFlowNodeSelection).toHaveBeenCalledWith(null);
     });
 
     it('should not select a flownode if it is not selectable', () => {
       // given
-      const onFlowNodeSelected = jest.fn();
+      const onFlowNodeSelection = jest.fn();
       const node = shallowRenderNode({
         selectableFlowNodes: ['nodeA', 'nodeB'],
         selectedFlowNodeId: null,
-        onFlowNodeSelected
+        onFlowNodeSelection
       });
 
       // when
       node.instance().handleElementClick({element: {id: 'nodeC'}});
 
       // then
-      expect(onFlowNodeSelected).not.toHaveBeenCalled();
+      expect(onFlowNodeSelection).not.toHaveBeenCalled();
     });
   });
 

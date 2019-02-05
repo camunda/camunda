@@ -62,10 +62,19 @@ const Colors = {
   darkButton02: '#7f8289',
   darkButton03: '#34353a',
   darkButton05: '#646670',
+  darkButton06: '#2C2D31',
 
+  lightButton01: '#cdd4df',
   lightButton02: '#9ea9b7',
   lightButton03: '#88889a',
-  lightButton04: '#f1f2f5'
+  lightButton04: '#f1f2f5',
+
+  // Scope Labels
+  darkScopeLabel: '#4A4C51',
+  lightScopeLabel: '#EDEFF3',
+
+  // Pill
+  darkPillHover: '#767a80'
 };
 
 export default Colors;

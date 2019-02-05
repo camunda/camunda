@@ -1,6 +1,6 @@
 import React from 'react';
 import {MemoryRouter} from 'react-router-dom';
-import {shallow, mount} from 'enzyme';
+import {mount, shallow} from 'enzyme';
 
 import {
   mockResolvedAsyncFn,
@@ -9,18 +9,27 @@ import {
   createIncident,
   createActivities,
   createDiagramNodes,
-  createEvents
+  createRawTree,
+  createRawTreeNode,
+  createEvent,
+  createEvents,
+  createMinimalProcess
 } from 'modules/testUtils';
 
 import {INSTANCE_STATE, PAGE_TITLE} from 'modules/constants';
 import * as instancesApi from 'modules/api/instances/instances';
 import * as diagramApi from 'modules/api/diagram/diagram';
 import * as eventsApi from 'modules/api/events/events';
+import * as activityInstanceApi from 'modules/api/activityInstances/activityInstances';
+
 import StateIconIncident from 'modules/components/Icon/state-icon-incident.svg';
 import {getWorkflowName} from 'modules/utils/instance';
-import {parseDiagramXML, parsedDiagram} from 'modules/utils/bpmn';
+import * as diagramUtils from 'modules/utils/bpmn';
 import {ThemeProvider} from 'modules/theme';
 
+import FlowNodeInstancesTree from './FlowNodeInstancesTree';
+import InstanceHistory from './InstanceHistory';
+import Diagram from 'modules/components/Diagram';
 import Instance from './Instance';
 
 // mock data
@@ -28,8 +37,6 @@ import Instance from './Instance';
 const xmlMock = '<foo />';
 
 const diagramNodes = createDiagramNodes();
-
-const activities = createActivities(diagramNodes);
 
 const INCIDENT = createIncident({
   id: '4295763008',
@@ -40,42 +47,10 @@ const INCIDENT = createIncident({
 const INSTANCE = createInstance({
   id: '4294980768',
   state: INSTANCE_STATE.ACTIVE,
-  incidents: [INCIDENT],
-  activities: activities
-});
-const COMPLETED_INSTANCE = createInstance({
-  id: '4294980768',
-  state: INSTANCE_STATE.COMPLETED,
-  activities: [
-    ...activities,
-    {
-      id: '88',
-      state: 'COMPLETED',
-      activityId: 'EndEvent_042s0oc',
-      startDate: '2019-01-15T12:48:49.747+0000',
-      endDate: '2019-01-15T12:48:49.747+0000'
-    }
-  ]
-});
-const CANCELED_INSTANCE = createInstance({
-  id: '4294980768',
-  state: INSTANCE_STATE.CANCELED,
-  activities: [
-    ...activities,
-    {
-      id: '88',
-      state: 'CANCELED',
-      activityId: 'EndEvent_042s0oc',
-      startDate: '2019-01-15T12:48:49.747+0000',
-      endDate: '2019-01-15T12:48:49.747+0000'
-    }
-  ]
+  incidents: [INCIDENT]
 });
 
-const mockEvents = createEvents(activities);
-
-// api mocks
-eventsApi.fetchEvents = mockResolvedAsyncFn(mockEvents);
+const mockTree = createRawTree(2);
 
 // mock modules
 
@@ -94,18 +69,38 @@ jest.mock('modules/components/Diagram', () => {
   };
 });
 
-jest.mock('./InstanceHistory', () => {
-  return function InstanceHistory() {
+jest.mock('./FlowNodeInstancesTree', () => {
+  return function FlowNodeInstancesTree() {
     return <div />;
   };
 });
 
-// helper render function
+const mountRenderComponent = (customProps = {}) =>
+  mount(
+    <ThemeProvider>
+      <MemoryRouter>
+        <Instance
+          match={{
+            params: {id: INSTANCE.id},
+            isExact: true,
+            path: '',
+            url: ''
+          }}
+          {...customProps}
+        />
+      </MemoryRouter>
+    </ThemeProvider>
+  );
 
 const shallowRenderComponent = (customProps = {}) =>
   shallow(
     <Instance
-      match={{params: {id: INSTANCE.id}, isExact: true, path: '', url: ''}}
+      match={{
+        params: {id: INSTANCE.id},
+        isExact: true,
+        path: '',
+        url: ''
+      }}
       {...customProps}
     />
   );
@@ -114,28 +109,25 @@ describe('Instance', () => {
   beforeEach(() => {
     instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(INSTANCE);
     diagramApi.fetchWorkflowXML = mockResolvedAsyncFn(xmlMock);
+    activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
+      mockTree
+    );
+    eventsApi.fetchEvents = mockResolvedAsyncFn([createEvent()]);
   });
 
   it('should render properly', async () => {
     // given
-    const node = mount(
-      <ThemeProvider>
-        <MemoryRouter>
-          <Instance
-            match={{
-              params: {id: INSTANCE.id},
-              isExact: true,
-              path: '',
-              url: ''
-            }}
-          />
-        </MemoryRouter>
-      </ThemeProvider>
-    );
+    const node = mountRenderComponent();
+
     await flushPromises();
     node.update();
 
     // then
+
+    // update document title
+    expect(document.title).toBe(
+      PAGE_TITLE.INSTANCE(INSTANCE.id, getWorkflowName(INSTANCE))
+    );
 
     // Header
     expect(node.find('Header').text()).toEqual(
@@ -152,181 +144,78 @@ describe('Instance', () => {
     expect(node.find('DiagramPanel')).toHaveLength(1);
     expect(node.find('Diagram')).toHaveLength(1);
 
-    // InstanceHistory
-    expect(node.find('InstanceHistory')).toHaveLength(1);
+    // InstanceHistory;
+    expect(node.find(InstanceHistory)).toHaveLength(1);
+
+    // FlowNodeInstancesTree;
+    expect(node.find(FlowNodeInstancesTree)).toHaveLength(1);
   });
 
-  describe('handleActivityInstanceSelection', () => {
-    it('should update the state.selection according to the value', async () => {
-      // given
-      const node = shallowRenderComponent();
-      await flushPromises();
-      node.update();
-      const randomIndex = 1;
-      const activityInstanceId = activities[randomIndex].id;
-      const expectedFlowNodeId = Object.keys(diagramNodes)[randomIndex];
+  it('should fetch data from APIs', async () => {
+    // given
+    const node = mountRenderComponent();
+    await flushPromises();
+    node.update();
+    // then
 
-      // when
-      node.find('InstanceHistory').prop('onActivityInstanceSelected')(
-        activityInstanceId
-      );
-      node.update();
+    // fetching the instance
+    expect(instancesApi.fetchWorkflowInstance).toBeCalled();
+    expect(instancesApi.fetchWorkflowInstance.mock.calls[0][0]).toEqual(
+      INSTANCE.id
+    );
 
-      // then
-      expect(node.state('selection')).toEqual({
-        activityInstanceId: activityInstanceId,
-        flowNodeId: expectedFlowNodeId
-      });
-    });
-  });
+    // fetch the Activity Instances Tree
+    expect(activityInstanceApi.fetchActivityInstancesTree).toBeCalled();
+    expect(
+      activityInstanceApi.fetchActivityInstancesTree.mock.calls[0][0]
+    ).toBe(INSTANCE.id);
 
-  describe('handleFlowNodeSelection', () => {
-    it('should update the state.selection according to the value', async () => {
-      // given
-      const node = shallowRenderComponent();
-      await flushPromises();
-      node.update();
-      const randomIndex = 2;
-      const flowNodeId = Object.keys(diagramNodes)[randomIndex];
-      const expectedActivityInstanceId = activities[randomIndex].id;
+    // fetching the xml
+    expect(diagramApi.fetchWorkflowXML).toBeCalled();
+    expect(diagramApi.fetchWorkflowXML.mock.calls[0][0]).toBe(
+      INSTANCE.workflowId
+    );
 
-      // when
-      node.find('Diagram').prop('onFlowNodeSelected')(flowNodeId);
-      node.update();
-
-      // then
-      expect(node.state('selection')).toEqual({
-        activityInstanceId: expectedActivityInstanceId,
-        flowNodeId
-      });
-    });
-  });
-
-  describe('data fetching', () => {
-    it('should fetch instance & diagram information', async () => {
-      // given
-      const node = shallowRenderComponent();
-      await flushPromises();
-      node.update();
-
-      // then
-
-      // fetching the instance
-      expect(instancesApi.fetchWorkflowInstance).toBeCalled();
-      expect(instancesApi.fetchWorkflowInstance.mock.calls[0][0]).toEqual(
-        INSTANCE.id
-      );
-
-      // fetching the xml
-      expect(diagramApi.fetchWorkflowXML).toBeCalled();
-      expect(diagramApi.fetchWorkflowXML.mock.calls[0][0]).toBe(
-        INSTANCE.workflowId
-      );
-
-      // parsing the xml
-      expect(parseDiagramXML).toBeCalled();
-      expect(parseDiagramXML.mock.calls[0][0]).toBe(xmlMock);
-
-      // update document title
-      expect(document.title).toBe(
-        PAGE_TITLE.INSTANCE(INSTANCE.id, getWorkflowName(INSTANCE))
-      );
-
-      // update state
-      expect(node.find('DiagramPanel').prop('instance')).toEqual(INSTANCE);
-      expect(node.find('InstanceHistory').prop('instance')).toEqual(INSTANCE);
-      expect(node.find('Diagram').prop('definitions')).toEqual(
-        parsedDiagram.definitions
-      );
-    });
-
-    it('should provide activities details map from bpmn elements', async () => {
-      // given
-      // only take the 2 first activities
-      const mockActivities = activities.slice(0, 2);
-      instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn({
-        ...INSTANCE,
-        activities: activities.slice(0, 2)
-      });
-      const node = shallowRenderComponent();
-      await flushPromises();
-      node.update();
-
-      // then
-      const activitiesDetails = node
-        .find('InstanceHistory')
-        .prop('activitiesDetails');
-      mockActivities.forEach(activity => {
-        const {id, activityId} = activity;
-        const activityDetails = activitiesDetails[id];
-        expect(activityDetails).toBeTruthy();
-        expect(activityDetails).toMatchObject(activity);
-        expect(activityDetails.type).toBe(diagramNodes[activityId].$type);
-        expect(activityDetails.name).toBe(diagramNodes[activityId].name);
-      });
-    });
-
-    it('should provide the selectable flow nodes to the diagram', async () => {
-      // given
-      // only take the 2 first activities
-      const mockActivities = activities.slice(0, 2);
-      instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn({
-        ...INSTANCE,
-        activities: activities.slice(0, 2)
-      });
-      const node = shallowRenderComponent();
-      await flushPromises();
-      node.update();
-
-      // then
-      const selectableFlowNodes = node
-        .find('Diagram')
-        .prop('selectableFlowNodes');
-      mockActivities.forEach(({activityId}) => {
-        expect(selectableFlowNodes.includes(activityId)).toBe(true);
-      });
-    });
-
-    it('should fetch and provide events', async () => {
-      // given
-      const node = shallowRenderComponent();
-
-      // when
-      await flushPromises();
-      node.update();
-
-      // then
-      expect(eventsApi.fetchEvents).toBeCalledWith(INSTANCE.id);
-      expect(node.find('InstanceHistory').prop('events')).toEqual(mockEvents);
-    });
-
-    it('should provide metadata for the selected flow node', async () => {
-      // given
-      const node = shallowRenderComponent();
-      await flushPromises();
-      node.update();
-
-      // when
-      node.find('Diagram').prop('onFlowNodeSelected')('taskD');
-      node.update();
-
-      // then
-      expect(node.find('Diagram').prop('metadata')).toEqual({
-        'Flow Node Instance Id': 'id_0',
-        'Job Id': '66',
-        'Start Time': '12 Dec 2018 00:00:00',
-        'End Time': '12 Dec 2018 00:00:00',
-        jobCustomHeaders: {},
-        jobRetries: 3,
-        jobType: 'shipArticles',
-        workflowId: '1',
-        workflowInstanceId: '53'
-      });
-    });
+    // fetch events
+    expect(eventsApi.fetchEvents).toBeCalled();
+    expect(eventsApi.fetchEvents.mock.calls[0][0]).toBe(INSTANCE.id);
   });
 
   describe('check for updates poll', () => {
+    const activities = createActivities(diagramNodes);
+    const mockEvents = createEvents(activities);
+
+    const COMPLETED_INSTANCE = createInstance({
+      id: '4294980768',
+      state: INSTANCE_STATE.COMPLETED,
+      activities: [
+        ...activities,
+        {
+          id: '88',
+          state: 'COMPLETED',
+          activityId: 'EndEvent_042s0oc',
+          startDate: '2019-01-15T12:48:49.747+0000',
+          endDate: '2019-01-15T12:48:49.747+0000'
+        }
+      ]
+    });
+    const CANCELED_INSTANCE = createInstance({
+      id: '4294980768',
+      state: INSTANCE_STATE.CANCELED,
+      activities: [
+        ...activities,
+        {
+          id: '88',
+          state: 'CANCELED',
+          activityId: 'EndEvent_042s0oc',
+          startDate: '2019-01-15T12:48:49.747+0000',
+          endDate: '2019-01-15T12:48:49.747+0000'
+        }
+      ]
+    });
+
     beforeEach(() => {
+      eventsApi.fetchEvents = mockResolvedAsyncFn(mockEvents);
       jest.useFakeTimers();
     });
     afterEach(() => {
@@ -335,7 +224,7 @@ describe('Instance', () => {
 
     it('should set, for running instances, a 5s timeout after initial render', async () => {
       // given
-      const node = shallowRenderComponent();
+      const node = mountRenderComponent();
       await flushPromises();
       node.update();
 
@@ -348,7 +237,7 @@ describe('Instance', () => {
       instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
         COMPLETED_INSTANCE
       );
-      const node = shallowRenderComponent();
+      const node = mountRenderComponent();
       await flushPromises();
       node.update();
 
@@ -360,7 +249,7 @@ describe('Instance', () => {
       instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
         CANCELED_INSTANCE
       );
-      const node = shallowRenderComponent();
+      const node = mountRenderComponent();
       await flushPromises();
       node.update();
 
@@ -370,7 +259,7 @@ describe('Instance', () => {
 
     it('should start a polling for changes', async () => {
       // given
-      const node = shallowRenderComponent();
+      const node = mountRenderComponent();
       await flushPromises();
       node.update();
 
@@ -407,7 +296,7 @@ describe('Instance', () => {
         .mockResolvedValueOnce(INSTANCE) // 1st call
         .mockResolvedValueOnce(COMPLETED_INSTANCE); // 2nd call
 
-      const node = shallowRenderComponent();
+      const node = mountRenderComponent();
       await flushPromises();
       node.update();
 
@@ -421,6 +310,287 @@ describe('Instance', () => {
       // expect setTimeout's executed function to fetch the instance
       // 1st time on render, 2nd on first setTimeout
       expect(instancesApi.fetchWorkflowInstance).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('Diagram', () => {
+    let node;
+    let mockTree;
+    let mockEvents;
+    let treeRowId;
+    let activityId;
+    let treeNode;
+
+    beforeEach(async () => {
+      activityId = 'Task123';
+      treeRowId = 'activityInstanceOfTask123';
+
+      mockEvents = [createEvent({activityId, id: treeRowId})];
+      treeNode = createRawTreeNode({
+        id: treeRowId,
+        activityId
+      });
+      mockTree = {
+        children: [treeNode]
+      };
+
+      // given api response
+      eventsApi.fetchEvents = mockResolvedAsyncFn(mockEvents);
+      activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
+        mockTree
+      );
+      node = mountRenderComponent();
+      await flushPromises();
+      node.update();
+    });
+
+    it('should receive selectableFlowNodes', () => {
+      expect(node.find(Diagram).prop('selectableFlowNodes')).toEqual([
+        activityId
+      ]);
+    });
+
+    it('should receive overlays', () => {
+      expect(node.find(Diagram).prop('flowNodeStateOverlays')).toEqual([
+        {id: activityId, state: 'ACTIVE'}
+      ]);
+    });
+
+    it('should receive definitions', async () => {
+      const mockDefinition = {id: 'Definition1'};
+
+      diagramUtils.parseDiagramXML = mockResolvedAsyncFn({
+        bpmnElements: diagramNodes,
+        definitions: mockDefinition
+      });
+
+      node = mountRenderComponent();
+      await flushPromises();
+      node.update();
+
+      expect(node.find(Diagram).prop('definitions')).toEqual(mockDefinition);
+    });
+
+    it('should receive a flow node id, when a related activity instance is selected', async () => {
+      // when
+      node
+        .find(Instance)
+        .instance()
+        .handleTreeRowSelection(treeNode);
+
+      node.update();
+
+      // then
+      expect(
+        node
+          .find(Instance)
+          .find(Diagram)
+          .prop('selectedFlowNodeId')
+      ).toEqual(activityId);
+    });
+
+    describe('Metadata', () => {
+      it('should pass metadata to Diagram for a selected flow node with single related instance', async () => {
+        // given
+        const node = mountRenderComponent();
+        await flushPromises();
+        node.update();
+
+        // when
+        node.find('Diagram').prop('onFlowNodeSelection')(activityId);
+        node.update();
+
+        // then
+        expect(node.find('Diagram').prop('metadata')).toEqual({
+          'End Time': '12 Dec 2018 00:00:00',
+          'Flow Node Instance Id': '1215',
+          'Job Id': '66',
+          'Start Time': '12 Dec 2018 00:00:00',
+          jobCustomHeaders: {},
+          jobRetries: 3,
+          jobType: 'shipArticles',
+          workflowId: '1',
+          workflowInstanceId: '53'
+        });
+      });
+
+      it('should not pass metadata for a flow node with multiple related instances', async () => {
+        // Demo Data
+        activityId = 'Task123';
+        const matchingTreeRowIds = [
+          'firstActivityInstanceOfTask123',
+          'secondActivityInstanceOfTask123'
+        ];
+        const emptyMetaData = {};
+
+        mockEvents = [
+          createEvent({activityId, id: matchingTreeRowIds[0]}),
+          createEvent({activityId, id: matchingTreeRowIds[1]})
+        ];
+
+        mockTree = {
+          children: [
+            createRawTreeNode({
+              id: matchingTreeRowIds[0],
+              activityId
+            }),
+            createRawTreeNode({
+              id: matchingTreeRowIds[1],
+              activityId
+            })
+          ]
+        };
+
+        // given api response
+        eventsApi.fetchEvents = mockResolvedAsyncFn(mockEvents);
+        activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
+          mockTree
+        );
+
+        // given
+        const node = mountRenderComponent();
+        await flushPromises();
+        node.update();
+
+        // when
+        node.find('Diagram').prop('onFlowNodeSelection')(activityId);
+        node.update();
+
+        // then
+        expect(node.find('Diagram').prop('metadata')).toEqual(emptyMetaData);
+      });
+    });
+  });
+
+  describe('Instances Tree', () => {
+    it('should receive tree node data', async () => {
+      // given
+      const rawTree = createMinimalProcess().rawTree;
+      const diagramNodes = createMinimalProcess().diagramNodes;
+
+      activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
+        rawTree
+      );
+
+      diagramUtils.parseDiagramXML = mockResolvedAsyncFn({
+        bpmnElements: diagramNodes,
+        definitions: {id: 'Definition1'}
+      });
+
+      const node = mountRenderComponent();
+      await flushPromises();
+      node.update();
+
+      expect(node.find(FlowNodeInstancesTree).prop('node')).toEqual({
+        children: rawTree.children,
+        id: INSTANCE.id,
+        type: 'WORKFLOW',
+        state: INSTANCE.state
+      });
+    });
+
+    it('should receive id(s) of selected activity instances', async () => {
+      // given
+      const activityId = 'Task123';
+      const treeRowIds = [
+        'firstActivityInstanceOfTask123',
+        'secondActivityInstanceOfTask123'
+      ];
+
+      const rawTreeData = {
+        children: [
+          createRawTreeNode({
+            id: treeRowIds[0],
+            activityId
+          }),
+          createRawTreeNode({
+            id: treeRowIds[1],
+            activityId
+          })
+        ]
+      };
+
+      activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
+        rawTreeData
+      );
+      const node = mountRenderComponent();
+      await flushPromises();
+      node.update();
+
+      // when
+      node
+        .find(Instance)
+        .instance()
+        .handleFlowNodeSelection(activityId);
+      node.update();
+
+      // then
+      expect(
+        node
+          .find(Instance)
+          .find(FlowNodeInstancesTree)
+          .prop('selectedTreeRowIds')
+      ).toEqual(treeRowIds);
+    });
+
+    it('should receive its initial treeDepth', async () => {
+      // given
+      const node = mountRenderComponent();
+      await flushPromises();
+      node.update();
+
+      expect(node.find(FlowNodeInstancesTree).prop('treeDepth')).toBe(1);
+    });
+
+    describe('getNodeWithName', () => {
+      it('should give the name of the instance', async () => {
+        // given
+        const rawTree = createMinimalProcess().rawTree;
+        const diagramNodes = createMinimalProcess().diagramNodes;
+
+        activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
+          rawTree
+        );
+
+        diagramUtils.parseDiagramXML = mockResolvedAsyncFn({
+          bpmnElements: diagramNodes,
+          definitions: {id: 'Definition1'}
+        });
+
+        const node = shallowRenderComponent();
+        await flushPromises();
+        const nodeWithName = node
+          .instance()
+          .getNodeWithName(node.state('activityInstancesTree'));
+
+        // then
+        expect(nodeWithName.name).toBe(getWorkflowName(INSTANCE));
+      });
+
+      it('should give the name of an activity', async () => {
+        // given
+        const rawTree = createMinimalProcess().rawTree;
+        const diagramNodes = createMinimalProcess().diagramNodes;
+
+        activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
+          rawTree
+        );
+
+        diagramUtils.parseDiagramXML = mockResolvedAsyncFn({
+          bpmnElements: diagramNodes,
+          definitions: {id: 'Definition1'}
+        });
+
+        const node = shallowRenderComponent();
+        await flushPromises();
+        const nodeWithName = node
+          .instance()
+          .getNodeWithName(rawTree.children[0]);
+        const expectedName = Object.values(diagramNodes)[0].name;
+
+        // then
+        expect(nodeWithName.name).toBe(expectedName);
+      });
     });
   });
 });

@@ -1,6 +1,5 @@
 import React, {Component, Fragment} from 'react';
 import PropTypes from 'prop-types';
-import {isEqual} from 'lodash';
 
 import SplitPane from 'modules/components/SplitPane';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
@@ -10,8 +9,11 @@ import {getWorkflowName} from 'modules/utils/instance';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {formatDate} from 'modules/utils/date';
 import * as api from 'modules/api/instances';
+import {fetchActivityInstancesTree} from 'modules/api/activityInstances';
 import {fetchWorkflowXML} from 'modules/api/diagram';
 import {fetchEvents} from 'modules/api/events';
+
+import FlowNodeInstancesTree from './FlowNodeInstancesTree';
 
 import InstanceDetail from './InstanceDetail';
 import Header from '../Header';
@@ -19,9 +21,10 @@ import DiagramPanel from './DiagramPanel';
 import InstanceHistory from './InstanceHistory';
 import {
   getFlowNodeStateOverlays,
-  getFlowNodesDetails,
+  getActivityIdToNameMap,
   isRunningInstance,
-  beautifyMetadataKey
+  beautifyMetadataKey,
+  getActivityIdToActivityInstanceMap
 } from './service';
 import * as Styled from './styled';
 
@@ -41,11 +44,14 @@ export default class Instance extends Component {
     this.state = {
       instance: null,
       selection: {
-        activityInstanceId: null,
+        treeRowIds: [],
         flowNodeId: null
       },
-      diagramModel: {},
+      activityIdToNameMap: null,
+      diagramDefinitions: null,
       loaded: false,
+      activityInstancesTree: {},
+      activityIdToActivityInstanceMap: null,
       events: []
     };
 
@@ -55,23 +61,44 @@ export default class Instance extends Component {
   async componentDidMount() {
     const id = this.props.match.params.id;
     const instance = await api.fetchWorkflowInstance(id);
+
     document.title = PAGE_TITLE.INSTANCE(
       instance.id,
       getWorkflowName(instance)
     );
 
-    const [diagramXml, events] = await Promise.all([
+    const [activitiesInstancesTree, diagramXml, events] = await Promise.all([
+      fetchActivityInstancesTree(id),
       fetchWorkflowXML(instance.workflowId),
       fetchEvents(instance.id)
     ]);
-    const diagramModel = await parseDiagramXML(diagramXml);
+
+    const {bpmnElements, definitions} = await parseDiagramXML(diagramXml);
+
+    const activityIdToNameMap = getActivityIdToNameMap(bpmnElements);
+
+    const activityIdToActivityInstanceMap = getActivityIdToActivityInstanceMap(
+      activitiesInstancesTree
+    );
 
     this.setState(
       {
         loaded: true,
         instance,
-        diagramModel,
-        events
+        activityIdToNameMap,
+        diagramDefinitions: definitions,
+        events,
+        activityInstancesTree: {
+          ...activitiesInstancesTree,
+          id: instance.id,
+          type: 'WORKFLOW',
+          state: instance.state
+        },
+        activityIdToActivityInstanceMap,
+        selection: {
+          flowNodeId: null,
+          treeRowIds: [instance.id]
+        }
       },
       () => {
         this.initializePolling();
@@ -84,48 +111,17 @@ export default class Instance extends Component {
   }
 
   /**
-   * Converts a bpmn elements object to a map of activities details,
-   * in the following shape: activityId -> details.
-   * @param {object} elements: bpmn elements
+   * Handles selecting a node row in the tree
+   * @param {object} node: selected row node
    */
-
-  elementsToActivitiesDetails = elements => {
-    const {instance} = this.state;
-    const flowNodesDetails = getFlowNodesDetails(elements);
-
-    return instance.activities.reduce((map, {id, ...activity}) => {
-      // ignore activities that don't have mathincg flow node details
-      // e.g. sub process
-      if (!flowNodesDetails[activity.activityId]) {
-        return map;
-      }
-
-      return {
-        ...map,
-        [id]: {
-          ...activity,
-          ...flowNodesDetails[activity.activityId],
-          id
-        }
-      };
-    }, {});
-  };
-
-  /**
-   * Handles selecting an activity instance in the instance log
-   * @param {string} activityInstanceId: id of the selected activiy instance
-   */
-  handleActivityInstanceSelection = activityInstanceId => {
+  handleTreeRowSelection = node => {
     // get the first flow node id (i.e. activity id) corresponding to the flowNodeId
-    const flowNodeId = !activityInstanceId
-      ? null
-      : this.state.instance.activities.find(
-          activity => activity.id === activityInstanceId
-        ).activityId;
+    const flowNodeId =
+      node.id === this.state.instance.id ? null : node.activityId;
 
     this.setState({
       selection: {
-        activityInstanceId,
+        treeRowIds: [node.id],
         flowNodeId
       }
     });
@@ -136,16 +132,16 @@ export default class Instance extends Component {
    * @param {string} flowNodeId: id of the selected flow node
    */
   handleFlowNodeSelection = flowNodeId => {
+    const {instance, activityIdToActivityInstanceMap} = this.state;
+
     // get the first activity instance corresponding to the flowNodeId
-    const activityInstanceId = !flowNodeId
-      ? null
-      : this.state.instance.activities.find(
-          activity => activity.activityId === flowNodeId
-        ).id;
+    const treeRowIds = !flowNodeId
+      ? [instance.id]
+      : activityIdToActivityInstanceMap.get(flowNodeId).map(({id}) => id);
 
     this.setState({
       selection: {
-        activityInstanceId,
+        treeRowIds,
         flowNodeId
       }
     });
@@ -165,37 +161,45 @@ export default class Instance extends Component {
   };
 
   detectChangesPoll = async () => {
-    const {id, state, activities, operations} = this.state.instance;
-    const newInstance = await api.fetchWorkflowInstance(id);
+    const {id} = this.state.instance;
+    const [instance, activitiesInstancesTree, events] = await Promise.all([
+      api.fetchWorkflowInstance(id),
+      fetchActivityInstancesTree(id),
+      fetchEvents(id)
+    ]);
 
-    // hasNewState: for example, instance goes from ACTIVE to COMPLETED
-    const hasNewState = newInstance.state !== state;
+    const activityIdToActivityInstanceMap = getActivityIdToActivityInstanceMap(
+      activitiesInstancesTree
+    );
 
-    // hasNewActivities: for example: Start Retry on instance with incident and state=ACTIVE,
-    // and Retry is successful; state is still ACTIVE, but instance.activities changed
-    const hasNewActivities = !isEqual(newInstance.activities, activities);
-
-    // hasNewOperations: for example: Start Retry on instance with incident and state=ACTIVE,
-    // and retry failed; state is still ACTIVE, activities didn't chage (node is still with incident),
-    // only instance.operations has info about change
-    // check all operations as order is not guarenteed when user clicks multiple buttons
-    const hasNewOperations = !isEqual(newInstance.operations, operations);
-
-    const hasInstanceChanged =
-      hasNewState || hasNewActivities || hasNewOperations;
-
-    hasInstanceChanged
-      ? this.setState({instance: newInstance}, () => {
-          this.initializePolling();
-        })
-      : this.initializePolling();
+    this.setState(
+      {
+        instance,
+        events,
+        activityInstancesTree: {
+          ...activitiesInstancesTree,
+          id: instance.id,
+          type: 'WORKFLOW',
+          state: instance.state
+        },
+        activityIdToActivityInstanceMap
+      },
+      () => {
+        this.initializePolling();
+      }
+    );
   };
 
-  getMetadataFromActivitiesDetails = activitiesDetails => {
+  getCurrentMetadata = () => {
     const {
-      selection: {flowNodeId},
-      events
+      selection: {flowNodeId, treeRowIds},
+      events,
+      activityIdToActivityInstanceMap
     } = this.state;
+
+    if (treeRowIds.length > 1) {
+      return {};
+    }
 
     // get the last event corresponding to the given flowNodeId (= activityId)
     const {activityInstanceId, metadata} = events.reduce(
@@ -207,7 +211,9 @@ export default class Instance extends Component {
     );
 
     // get corresponding start and end dates
-    const {startDate, endDate} = activitiesDetails[activityInstanceId];
+    const {startDate, endDate} = activityIdToActivityInstanceMap.get(
+      flowNodeId
+    )[0];
 
     // return a cleaned-up and beautified metadata object
     return Object.entries({
@@ -231,27 +237,41 @@ export default class Instance extends Component {
     }, {});
   };
 
+  getNodeWithName = node => {
+    const {instance} = this.state;
+
+    const name =
+      node.id === instance.id
+        ? getWorkflowName(instance)
+        : this.state.activityIdToNameMap.get(node.activityId);
+
+    return {
+      ...node,
+      name
+    };
+  };
+
   render() {
-    const {loaded, diagramModel, instance, selection, events} = this.state;
+    const {
+      loaded,
+      diagramDefinitions,
+      instance,
+      selection,
+      activityIdToActivityInstanceMap
+    } = this.state;
 
     if (!loaded) {
       return 'Loading';
     }
 
-    const activitiesDetails = this.elementsToActivitiesDetails(
-      diagramModel.bpmnElements
-    );
-
     // Get extra information for the diagram
-    const selectableFlowNodes = Object.values(activitiesDetails).map(
-      activity => activity.activityId
+    const selectableFlowNodes = [...activityIdToActivityInstanceMap.keys()];
+
+    const flowNodeStateOverlays = getFlowNodeStateOverlays(
+      activityIdToActivityInstanceMap
     );
 
-    const flowNodeStateOverlays = getFlowNodeStateOverlays(activitiesDetails);
-
-    const metadata = !selection.flowNodeId
-      ? null
-      : this.getMetadataFromActivitiesDetails(activitiesDetails);
+    const metadata = !selection.flowNodeId ? null : this.getCurrentMetadata();
 
     return (
       <Fragment>
@@ -262,24 +282,31 @@ export default class Instance extends Component {
           </VisuallyHiddenH1>
           <SplitPane titles={{top: 'Workflow', bottom: 'Instance Details'}}>
             <DiagramPanel instance={instance}>
-              {diagramModel && (
+              {diagramDefinitions && (
                 <Diagram
-                  onFlowNodeSelected={this.handleFlowNodeSelection}
+                  onFlowNodeSelection={this.handleFlowNodeSelection}
                   selectableFlowNodes={selectableFlowNodes}
                   selectedFlowNodeId={selection.flowNodeId}
                   flowNodeStateOverlays={flowNodeStateOverlays}
-                  definitions={diagramModel.definitions}
+                  definitions={diagramDefinitions}
                   metadata={metadata}
                 />
               )}
             </DiagramPanel>
-            <InstanceHistory
-              instance={instance}
-              activitiesDetails={activitiesDetails}
-              selectedActivityInstanceId={selection.activityInstanceId}
-              onActivityInstanceSelected={this.handleActivityInstanceSelection}
-              events={events}
-            />
+            <InstanceHistory>
+              <Styled.FlowNodeInstanceLog>
+                <Styled.NodeContainer>
+                  <FlowNodeInstancesTree
+                    node={this.state.activityInstancesTree}
+                    getNodeWithName={this.getNodeWithName}
+                    treeDepth={1}
+                    selectedTreeRowIds={this.state.selection.treeRowIds}
+                    onTreeRowSelection={this.handleTreeRowSelection}
+                  />
+                </Styled.NodeContainer>
+              </Styled.FlowNodeInstanceLog>
+              <div style={{color: 'white'}}>Payload</div>
+            </InstanceHistory>
           </SplitPane>
         </Styled.Instance>
       </Fragment>

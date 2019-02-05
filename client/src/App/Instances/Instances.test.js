@@ -279,10 +279,10 @@ describe('Instances', () => {
       node.update();
 
       const DiagramNode = node.find(Diagram);
-      const onFlowNodeSelected = DiagramNode.prop('onFlowNodeSelected');
+      const onFlowNodeSelection = DiagramNode.prop('onFlowNodeSelection');
 
       // when the user selects a node in the diagram
-      onFlowNodeSelected('taskB');
+      onFlowNodeSelection('taskB');
       node.update();
 
       // then

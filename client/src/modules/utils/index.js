@@ -28,3 +28,14 @@ export function pickFromObject(object, keys) {
     return !keys.includes(key) ? result : {...result, [key]: value};
   }, {});
 }
+
+/**
+ * immutable version of array[index] = updatedValue
+ * @returns the original array with the provided updatedValue at the provided index
+ * @param {any[]} array
+ * @param {number} index
+ * @param {any} updatedValue
+ */
+export function immutableArraySet(array, index, updatedValue) {
+  return [...array.slice(0, index), updatedValue, ...array.slice(index + 1)];
+}
