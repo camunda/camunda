@@ -115,7 +115,7 @@ public class DetailViewIT extends OperateZeebeIntegrationTest {
     assertThat(ai.getStartDate()).isNotNull();
     if (state.equals(ActivityState.COMPLETED) || state.equals(ActivityState.TERMINATED)) {
       assertThat(ai.getEndDate()).isNotNull();
-      assertThat(ai.getStartDate()).isBefore(ai.getEndDate());
+      assertThat(ai.getStartDate()).isBeforeOrEqualTo(ai.getEndDate());
     } else {
       assertThat(ai.getEndDate()).isNull();
     }
