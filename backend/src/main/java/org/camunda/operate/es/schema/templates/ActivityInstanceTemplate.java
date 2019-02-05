@@ -7,12 +7,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ActivityInstanceTemplate extends AbstractTemplateCreator {
+public class ActivityInstanceTemplate extends AbstractTemplateCreator implements WorkflowInstanceDependant {
 
   public static final String ID = "id";
   public static final String KEY = "key";
   public static final String POSITION = "position";
-  public static final String WORKFLOW_INSTANCE_ID = "workflowInstanceId";
   public static final String START_DATE = "startDate";
   public static final String END_DATE = "endDate";
   public static final String ACTIVITY_ID = "activityId";

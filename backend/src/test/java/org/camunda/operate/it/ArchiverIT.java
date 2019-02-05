@@ -31,6 +31,7 @@ import org.camunda.operate.es.schema.templates.ActivityInstanceTemplate;
 import org.camunda.operate.es.schema.templates.EventTemplate;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
+import org.camunda.operate.es.schema.templates.WorkflowInstanceDependant;
 import org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate;
 import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
@@ -113,6 +114,9 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private ObjectMapper objectMapper;
+
+  @Autowired
+  private List<WorkflowInstanceDependant> workflowInstanceDependantTemplates;
 
   private Random random = new Random();
 
@@ -246,10 +250,9 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
 
   private void assertInstancesInCorrectIndex(int instancesCount, List<String> ids, Instant endDate) {
     assertWorkflowInstanceIndex(instancesCount, ids, endDate);
-    assertDependentIndex(eventTemplate.getMainIndexName(), EventTemplate.WORKFLOW_INSTANCE_ID, ids, endDate);
-    assertDependentIndex(listViewTemplate.getMainIndexName(), ListViewTemplate.WORKFLOW_INSTANCE_ID, ids, endDate);
-    assertDependentIndex(operationTemplate.getMainIndexName(), OperationTemplate.WORKFLOW_INSTANCE_ID, ids, endDate);
-    assertDependentIndex(activityInstanceTemplate.getMainIndexName(), OperationTemplate.WORKFLOW_INSTANCE_ID, ids, endDate);
+    for (WorkflowInstanceDependant template : workflowInstanceDependantTemplates) {
+      assertDependentIndex(template.getMainIndexName(), WorkflowInstanceDependant.WORKFLOW_INSTANCE_ID, ids, endDate);
+    }
   }
 
   private void assertWorkflowInstanceIndex(int instancesCount, List<String> ids, Instant endDate) {

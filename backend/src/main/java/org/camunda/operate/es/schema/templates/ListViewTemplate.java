@@ -7,11 +7,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ListViewTemplate extends AbstractTemplateCreator {
+public class ListViewTemplate extends AbstractTemplateCreator implements WorkflowInstanceDependant{
 
   public static final String ID = "id";
   public static final String KEY = "key";
-  public static final String WORKFLOW_INSTANCE_ID = "workflowInstanceId";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String WORKFLOW_VERSION = "workflowVersion";
   public static final String WORKFLOW_ID = "workflowId";

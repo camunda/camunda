@@ -20,6 +20,7 @@ import org.camunda.operate.es.schema.templates.ActivityInstanceTemplate;
 import org.camunda.operate.es.schema.templates.EventTemplate;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
+import org.camunda.operate.es.schema.templates.WorkflowInstanceDependant;
 import org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate;
 import org.camunda.operate.exceptions.ReindexException;
 import org.camunda.operate.property.OperateProperties;
@@ -76,6 +77,9 @@ public class Archiver extends Thread {
   @Autowired
   private ActivityInstanceTemplate activityInstanceTemplate;
 
+  @Autowired
+  private List<WorkflowInstanceDependant> workflowInstanceDependantTemplates;
+
   public void startArchiving() {
     if (operateProperties.getElasticsearch().isRolloverEnabled()) {
       start();
@@ -122,14 +126,10 @@ public class Archiver extends Thread {
       logger.debug("Following workflow instances are found for archiving: {}", finishedAtDateIds);
       try {
         //1st remove dependent data
-        reindexHelper.moveDocuments(eventTemplate.getMainIndexName(), EventTemplate.WORKFLOW_INSTANCE_ID, finishedAtDateIds.getFinishDate(),
-          finishedAtDateIds.getWorkflowInstanceIds());
-        reindexHelper.moveDocuments(listViewTemplate.getMainIndexName(), ListViewTemplate.WORKFLOW_INSTANCE_ID, finishedAtDateIds.getFinishDate(),
-          finishedAtDateIds.getWorkflowInstanceIds());
-        reindexHelper.moveDocuments(operationTemplate.getMainIndexName(), OperationTemplate.WORKFLOW_INSTANCE_ID, finishedAtDateIds.getFinishDate(),
-          finishedAtDateIds.getWorkflowInstanceIds());
-        reindexHelper.moveDocuments(activityInstanceTemplate.getMainIndexName(), OperationTemplate.WORKFLOW_INSTANCE_ID, finishedAtDateIds.getFinishDate(),
-          finishedAtDateIds.getWorkflowInstanceIds());
+        for (WorkflowInstanceDependant template: workflowInstanceDependantTemplates) {
+          reindexHelper.moveDocuments(template.getMainIndexName(), WorkflowInstanceDependant.WORKFLOW_INSTANCE_ID, finishedAtDateIds.getFinishDate(),
+            finishedAtDateIds.getWorkflowInstanceIds());
+        }
 
         //then remove workflow instances themselves
         reindexHelper.moveDocuments(workflowInstanceTemplate.getMainIndexName(), WorkflowInstanceTemplate.ID, finishedAtDateIds.getFinishDate(),
