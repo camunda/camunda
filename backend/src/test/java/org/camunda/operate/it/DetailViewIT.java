@@ -12,22 +12,17 @@
  */
 package org.camunda.operate.it;
 
-import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Predicate;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.rest.dto.detailview.ActivityInstanceTreeDto;
 import org.camunda.operate.rest.dto.detailview.ActivityInstanceTreeRequestDto;
 import org.camunda.operate.rest.dto.detailview.DetailViewActivityInstanceDto;
-import org.camunda.operate.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.util.IdTestUtil;
-import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
-import org.camunda.operate.zeebeimport.ZeebeESImporter;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -39,7 +34,6 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.zeebe.client.ZeebeClient;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 import static org.camunda.operate.rest.ActivityInstanceRestService.ACTIVITY_INSTANCE_URL;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;

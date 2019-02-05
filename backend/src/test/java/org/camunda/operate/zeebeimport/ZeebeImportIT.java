@@ -1,7 +1,9 @@
 package org.camunda.operate.zeebeimport;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.IncidentEntity;
@@ -10,21 +12,37 @@ import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate;
+import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
+import org.camunda.operate.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.util.IdTestUtil;
+import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
+import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.zeebeimport.cache.WorkflowCache;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.IncidentRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.intent.IncidentIntent;
+import io.zeebe.test.util.record.RecordingExporter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
@@ -41,11 +59,17 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
   private OffsetDateTime testStartTime;
 
+  @Rule
+  public MockMvcTestRule mockMvcTestRule = new MockMvcTestRule();
+
+  private MockMvc mockMvc;
+
   @Before
   public void init() {
     super.before();
     testStartTime = OffsetDateTime.now();
     zeebeClient = super.getClient();
+    mockMvc = mockMvcTestRule.getMockMvc();
     try {
       FieldSetter.setField(workflowCache, WorkflowCache.class.getDeclaredField("zeebeClient"), super.getClient());
     } catch (NoSuchFieldException e) {
@@ -125,7 +149,45 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  @Ignore("OPE-343")
+  public void testOnlyIncidentIsLoaded() throws Exception {
+    // having
+    String activityId = "taskA";
+    String processId = "demoProcess";
+    final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
+    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    //create an incident
+    ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
+
+    //when
+    //1st load incident and then workflow instance events
+    processAllEvents(1, ZeebeESImporter.ImportValueType.INCIDENT);
+
+    assertListViewResponse();
+    //if nothing is returned in list view - there is no way to access the workflow instance, no need to check other queries
+
+  }
+
+  protected void assertListViewResponse() throws Exception {
+    ListViewRequestDto listViewRequest = TestUtil.createGetAllWorkflowInstancesQuery();
+    MockHttpServletRequestBuilder request = post(query(0, 100))
+      .content(mockMvcTestRule.json(listViewRequest))
+      .contentType(mockMvcTestRule.getContentType());
+
+    MvcResult mvcResult = mockMvc
+      .perform(request)
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
+      .andReturn();
+
+    //check that nothing is returned
+    final ListViewResponseDto listViewResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {
+    });
+    assertThat(listViewResponse.getTotalCount()).isEqualTo(0);
+    assertThat(listViewResponse.getWorkflowInstances()).hasSize(0);
+  }
+
+  @Test
   public void testIncidentDeletedAfterActivityCompleted() {
     // having
     String activityId = "taskA";
@@ -143,9 +205,10 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     //create an incident
     final Long jobKey = ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
+    final long incidentKey = getOnlyIncidentKey();
 
     //when update retries
-    //TODO ZeebeTestUtil.resolveIncident(zeebeClient, jobKey);
+    ZeebeTestUtil.resolveIncident(zeebeClient, jobKey, incidentKey);
 
     setJobWorker(ZeebeTestUtil.completeTask(getClient(), activityId, getWorkerName(), "{}"));
 
@@ -163,8 +226,14 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
   }
 
+  protected long getOnlyIncidentKey() {
+    final List<Record<IncidentRecordValue>> incidents = RecordingExporter.incidentRecords().filter(ir -> ir.getMetadata().getIntent().equals(IncidentIntent.CREATED))
+      .collect(Collectors.toList());
+    assertThat(incidents).hasSize(1);
+    return incidents.get(0).getKey();
+  }
+
   @Test
-  @Ignore("OPE-343")
   public void testIncidentDeletedAfterActivityTerminated() {
     // having
     String activityId = "taskA";
@@ -183,8 +252,10 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     //create an incident
     final Long jobKey = ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
 
+    final long incidentKey = getOnlyIncidentKey();
+
     //when update retries
-    //TODO ZeebeTestUtil.resolveIncident(zeebeClient, jobKey);
+    ZeebeTestUtil.resolveIncident(zeebeClient, jobKey, incidentKey);
 
     ZeebeTestUtil.cancelWorkflowInstance(getClient(), workflowInstanceKey);
 
@@ -224,6 +295,10 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     assertThat(activity.getState()).isEqualTo(ActivityState.INCIDENT);
     assertThat(activity.getStartDate()).isAfterOrEqualTo(testStartTime);
     assertThat(activity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
+  }
+
+  private String query(int firstResult, int maxResults) {
+    return String.format("%s?firstResult=%d&maxResults=%d", WORKFLOW_INSTANCE_URL, firstResult, maxResults);
   }
 
 }
