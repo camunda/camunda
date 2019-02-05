@@ -15,6 +15,7 @@ package org.camunda.operate.es.reader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.detailview.ActivityInstanceForDetailViewEntity;
 import org.camunda.operate.es.schema.templates.ActivityInstanceTemplate;
 import org.camunda.operate.rest.dto.detailview.ActivityInstanceTreeDto;
@@ -66,10 +67,23 @@ public class DetailViewReader {
         } else {
           nodes.get(node.getParentId()).getChildren().add(node);
         }
+        if (node.getState().equals(ActivityState.INCIDENT)) {
+          propagateState(node, nodes);
+        }
       }
     }
 
     return tree;
+  }
+
+  private void propagateState(DetailViewActivityInstanceDto currentNode, Map<String, DetailViewActivityInstanceDto> allNodes) {
+    if (currentNode.getParentId() != null) {
+      final DetailViewActivityInstanceDto parent = allNodes.get(currentNode.getParentId());
+      if (parent != null) {
+        parent.setState(ActivityState.INCIDENT);
+        propagateState(parent, allNodes);
+      }
+    }
   }
 
   private List<ActivityInstanceForDetailViewEntity> getAllActivityInstances(String workflowInstanceId) {

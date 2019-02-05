@@ -100,7 +100,11 @@ public class DetailViewActivityInstanceDto {
     activity.setActivityId(activityInstanceEntity.getActivityId());
     activity.setStartDate(activityInstanceEntity.getStartDate());
     activity.setEndDate(activityInstanceEntity.getEndDate());
-    activity.setState(activityInstanceEntity.getState());
+    if (activityInstanceEntity.getIncidentKey() != null) {
+      activity.setState(ActivityState.INCIDENT);
+    } else {
+      activity.setState(activityInstanceEntity.getState());
+    }
     activity.setType(activityInstanceEntity.getType());
     activity.setParentId(activityInstanceEntity.getScopeId());
     return activity;

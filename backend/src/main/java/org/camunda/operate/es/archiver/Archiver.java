@@ -16,6 +16,7 @@ import javax.annotation.PreDestroy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.camunda.operate.es.schema.templates.ActivityInstanceTemplate;
 import org.camunda.operate.es.schema.templates.EventTemplate;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
@@ -72,6 +73,9 @@ public class Archiver extends Thread {
   @Autowired
   private OperationTemplate operationTemplate;
 
+  @Autowired
+  private ActivityInstanceTemplate activityInstanceTemplate;
+
   public void startArchiving() {
     if (operateProperties.getElasticsearch().isRolloverEnabled()) {
       start();
@@ -123,6 +127,8 @@ public class Archiver extends Thread {
         reindexHelper.moveDocuments(listViewTemplate.getMainIndexName(), ListViewTemplate.WORKFLOW_INSTANCE_ID, finishedAtDateIds.getFinishDate(),
           finishedAtDateIds.getWorkflowInstanceIds());
         reindexHelper.moveDocuments(operationTemplate.getMainIndexName(), OperationTemplate.WORKFLOW_INSTANCE_ID, finishedAtDateIds.getFinishDate(),
+          finishedAtDateIds.getWorkflowInstanceIds());
+        reindexHelper.moveDocuments(activityInstanceTemplate.getMainIndexName(), OperationTemplate.WORKFLOW_INSTANCE_ID, finishedAtDateIds.getFinishDate(),
           finishedAtDateIds.getWorkflowInstanceIds());
 
         //then remove workflow instances themselves

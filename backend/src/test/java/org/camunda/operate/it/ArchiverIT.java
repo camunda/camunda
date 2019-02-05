@@ -18,7 +18,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Predicate;
@@ -28,6 +27,7 @@ import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.es.archiver.Archiver;
 import org.camunda.operate.es.archiver.ArchiverHelper;
 import org.camunda.operate.es.reader.ListViewReader;
+import org.camunda.operate.es.schema.templates.ActivityInstanceTemplate;
 import org.camunda.operate.es.schema.templates.EventTemplate;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
@@ -104,6 +104,9 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private OperationTemplate operationTemplate;
+
+  @Autowired
+  private ActivityInstanceTemplate activityInstanceTemplate;
 
   @Autowired
   private BatchOperationWriter batchOperationWriter;
@@ -246,6 +249,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     assertDependentIndex(eventTemplate.getMainIndexName(), EventTemplate.WORKFLOW_INSTANCE_ID, ids, endDate);
     assertDependentIndex(listViewTemplate.getMainIndexName(), ListViewTemplate.WORKFLOW_INSTANCE_ID, ids, endDate);
     assertDependentIndex(operationTemplate.getMainIndexName(), OperationTemplate.WORKFLOW_INSTANCE_ID, ids, endDate);
+    assertDependentIndex(activityInstanceTemplate.getMainIndexName(), OperationTemplate.WORKFLOW_INSTANCE_ID, ids, endDate);
   }
 
   private void assertWorkflowInstanceIndex(int instancesCount, List<String> ids, Instant endDate) {
