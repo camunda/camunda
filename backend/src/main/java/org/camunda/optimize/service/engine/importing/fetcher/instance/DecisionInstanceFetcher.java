@@ -33,7 +33,7 @@ public class DecisionInstanceFetcher extends RetryBackoffEngineEntityFetcher<His
   public List<HistoricDecisionInstanceDto> fetchHistoricDecisionInstances(final TimestampBasedImportPage page) {
     return fetchHistoricDecisionInstances(
       page.getTimestampOfLastEntity(),
-      configurationService.getEngineImportProcessInstanceMaxPageSize()
+      configurationService.getEngineImportDecisionInstanceMaxPageSize()
     );
   }
 
@@ -51,6 +51,14 @@ public class DecisionInstanceFetcher extends RetryBackoffEngineEntityFetcher<His
       requestEnd - requestStart
     );
     return secondEntries;
+  }
+
+  public DateTimeFormatter getDateTimeFormatter() {
+    return dateTimeFormatter;
+  }
+
+  public void setDateTimeFormatter(final DateTimeFormatter dateTimeFormatter) {
+    this.dateTimeFormatter = dateTimeFormatter;
   }
 
   private List<HistoricDecisionInstanceDto> fetchHistoricDecisionInstances(final OffsetDateTime timeStamp,

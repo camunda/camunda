@@ -31,4 +31,7 @@ public abstract class EngineEntityFetcher {
     return engineContext.getEngineAlias();
   }
 
+  public void setConfigurationService(final ConfigurationService configurationService) {
+    this.configurationService = configurationService;
+  }
 }

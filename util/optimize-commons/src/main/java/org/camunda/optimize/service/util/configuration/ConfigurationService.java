@@ -38,8 +38,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants
-  .ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.cutTrailingSlash;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.resolvePathAsAbsoluteUrl;
@@ -968,6 +967,10 @@ public class ConfigurationService {
 
   public void setEngineImportProcessInstanceMaxPageSize(Integer engineImportProcessInstanceMaxPageSize) {
     this.engineImportProcessInstanceMaxPageSize = engineImportProcessInstanceMaxPageSize;
+  }
+
+  public void setEngineImportDecisionInstanceMaxPageSize(Integer engineImportDecisionInstanceMaxPageSize) {
+    this.engineImportDecisionInstanceMaxPageSize = engineImportDecisionInstanceMaxPageSize;
   }
 
   public void setEngineImportVariableInstanceMaxPageSize(Integer engineImportVariableInstanceMaxPageSize) {

@@ -1,8 +1,7 @@
-package org.camunda.optimize.service.engine.importing;
+package org.camunda.optimize.service.engine.importing.service;
 
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.service.engine.importing.service.DecisionDefinitionVersionResolverService;
 import org.camunda.optimize.service.es.reader.DecisionDefinitionReader;
 import org.junit.Before;
 import org.junit.Test;

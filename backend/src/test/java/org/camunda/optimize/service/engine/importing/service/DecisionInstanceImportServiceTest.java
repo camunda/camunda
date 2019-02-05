@@ -1,15 +1,13 @@
-package org.camunda.optimize.service.engine.importing;
+package org.camunda.optimize.service.engine.importing.service;
 
 import org.camunda.optimize.dto.engine.HistoricDecisionInputInstanceDto;
 import org.camunda.optimize.dto.engine.HistoricDecisionInstanceDto;
 import org.camunda.optimize.dto.engine.HistoricDecisionOutputInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.plugin.DecisionInputImportAdapterProvider;
 import org.camunda.optimize.plugin.DecisionOutputImportAdapterProvider;
-import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.engine.importing.service.DecisionDefinitionVersionResolverService;
-import org.camunda.optimize.service.engine.importing.service.DecisionInstanceImportService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionFetchException;
@@ -60,7 +58,8 @@ public class DecisionInstanceImportServiceTest {
       .thenReturn(Optional.of(VERSION_RESULT));
 
     this.underTest = new DecisionInstanceImportService(
-      decisionInstanceWriter, elasticsearchImportJobExecutor, engineContext, decisionDefinitionVersionResolverService,
+      decisionInstanceWriter, elasticsearchImportJobExecutor,
+      engineContext, decisionDefinitionVersionResolverService,
       decisionInputImportAdapterProvider, decisionOutputImportAdapterProvider
     );
   }

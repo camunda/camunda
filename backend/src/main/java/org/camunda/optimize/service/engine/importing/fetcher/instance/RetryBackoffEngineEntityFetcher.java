@@ -6,7 +6,6 @@ import org.camunda.optimize.service.engine.importing.fetcher.EngineEntityFetcher
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.annotation.PostConstruct;
 import java.util.List;
 
 public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto>
@@ -40,6 +39,10 @@ public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto>
     List<ENG> fetch();
   }
 
+  public void setBackoffCalculator(final BackoffCalculator backoffCalculator) {
+    this.backoffCalculator = backoffCalculator;
+  }
+
   private void sleep(long timeToSleep) {
     try {
       Thread.sleep(timeToSleep);
@@ -56,7 +59,11 @@ public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto>
   }
 
   private void logError(Exception e) {
-    logger.error("Error during fetching of entities. Please check the connection with [{}]!", engineContext.getEngineAlias(), e);
+    logger.error(
+      "Error during fetching of entities. Please check the connection with [{}]!",
+      engineContext.getEngineAlias(),
+      e
+    );
   }
 
 }
