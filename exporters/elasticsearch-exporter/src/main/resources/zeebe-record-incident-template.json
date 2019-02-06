@@ -33,6 +33,9 @@
             "jobKey": {
               "type": "long"
             },
+            "variableScopeKey": {
+              "type": "long"
+            },
             "payload": {
               "type": "text"
             }

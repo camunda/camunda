@@ -241,7 +241,8 @@ public class ExporterRecordMapper {
         asString(record.getElementId()),
         record.getWorkflowInstanceKey(),
         record.getElementInstanceKey(),
-        record.getJobKey());
+        record.getJobKey(),
+        record.getVariableScopeKey());
   }
 
   private MessageRecordValue ofMessageRecord(final LoggedEvent event) {

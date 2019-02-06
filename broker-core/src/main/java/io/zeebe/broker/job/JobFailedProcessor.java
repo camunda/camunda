@@ -59,7 +59,8 @@ public final class JobFailedProcessor implements TypedRecordProcessor<JobRecord>
           .setWorkflowInstanceKey(jobHeaders.getWorkflowInstanceKey())
           .setElementId(jobHeaders.getElementId())
           .setElementInstanceKey(jobHeaders.getElementInstanceKey())
-          .setJobKey(event.getKey());
+          .setJobKey(event.getKey())
+          .setVariableScopeKey(jobHeaders.getElementInstanceKey());
 
       streamWriter.appendNewCommand(IncidentIntent.CREATE, incidentEvent);
     }
