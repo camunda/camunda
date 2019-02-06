@@ -30,18 +30,19 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
  *
  * @param <T>
  */
-public class ElementReadyHandler<T extends ExecutableFlowNode> extends AbstractHandler<T> {
+public class ElementActivatingHandler<T extends ExecutableFlowNode> extends AbstractHandler<T> {
   private final IOMappingHelper ioMappingHelper;
 
-  public ElementReadyHandler() {
+  public ElementActivatingHandler() {
     this(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
   }
 
-  public ElementReadyHandler(WorkflowInstanceIntent nextState) {
+  public ElementActivatingHandler(WorkflowInstanceIntent nextState) {
     this(nextState, new IOMappingHelper());
   }
 
-  public ElementReadyHandler(WorkflowInstanceIntent nextState, IOMappingHelper ioMappingHelper) {
+  public ElementActivatingHandler(
+      WorkflowInstanceIntent nextState, IOMappingHelper ioMappingHelper) {
     super(nextState);
     this.ioMappingHelper = ioMappingHelper;
   }

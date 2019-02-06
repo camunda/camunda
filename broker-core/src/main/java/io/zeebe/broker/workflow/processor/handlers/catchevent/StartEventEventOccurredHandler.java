@@ -48,8 +48,6 @@ public class StartEventEventOccurredHandler<T extends ExecutableCatchEventElemen
       return false;
     }
 
-    // todo: how is event payload passed to workflow from this?
-
     final WorkflowInstanceRecord event = context.getRecord().getValue();
     final long workflowKey = event.getWorkflowKey();
     final DeployedWorkflow workflow = state.getWorkflowByKey(workflowKey);

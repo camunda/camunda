@@ -43,6 +43,7 @@ public class IOMappingHelper {
       if (hasOutputMappings) {
         variablesState.setVariablesLocalFromDocument(elementInstanceKey, payload);
       } else {
+        // todo: use elementInstanceKey which should fix #1892
         variablesState.setVariablesFromDocument(scopeInstanceKey, payload);
       }
 

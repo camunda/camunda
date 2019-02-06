@@ -21,7 +21,7 @@ import io.zeebe.broker.workflow.model.element.ExecutableExclusiveGateway;
 import io.zeebe.broker.workflow.model.element.ExecutableSequenceFlow;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.flownode.IOMappingHelper;
-import io.zeebe.broker.workflow.processor.handlers.element.ElementReadyHandler;
+import io.zeebe.broker.workflow.processor.handlers.element.ElementActivatingHandler;
 import io.zeebe.msgpack.el.CompiledJsonCondition;
 import io.zeebe.msgpack.el.JsonConditionException;
 import io.zeebe.msgpack.el.JsonConditionInterpreter;
@@ -31,29 +31,29 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
-public class ExclusiveGatewayElementReadyHandler<T extends ExecutableExclusiveGateway>
-    extends ElementReadyHandler<T> {
+public class ExclusiveGatewayElementActivatingHandler<T extends ExecutableExclusiveGateway>
+    extends ElementActivatingHandler<T> {
   private static final String NO_OUTGOING_FLOW_CHOSEN_ERROR =
       "Expected at least one condition to evaluate to true, or to have a default flow";
   private final WorkflowInstanceRecord record = new WorkflowInstanceRecord();
   private final JsonConditionInterpreter interpreter;
 
-  public ExclusiveGatewayElementReadyHandler() {
+  public ExclusiveGatewayElementActivatingHandler() {
     this(new JsonConditionInterpreter());
   }
 
-  public ExclusiveGatewayElementReadyHandler(JsonConditionInterpreter interpreter) {
+  public ExclusiveGatewayElementActivatingHandler(JsonConditionInterpreter interpreter) {
     super();
     this.interpreter = interpreter;
   }
 
-  public ExclusiveGatewayElementReadyHandler(
+  public ExclusiveGatewayElementActivatingHandler(
       WorkflowInstanceIntent nextState, JsonConditionInterpreter interpreter) {
     super(nextState);
     this.interpreter = interpreter;
   }
 
-  public ExclusiveGatewayElementReadyHandler(
+  public ExclusiveGatewayElementActivatingHandler(
       WorkflowInstanceIntent nextState,
       IOMappingHelper ioMappingHelper,
       JsonConditionInterpreter interpreter) {

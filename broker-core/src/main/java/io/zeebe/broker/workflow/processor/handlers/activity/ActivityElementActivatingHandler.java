@@ -15,27 +15,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.processor.handlers.catchevent;
+package io.zeebe.broker.workflow.processor.handlers.activity;
 
-import io.zeebe.broker.workflow.model.element.ExecutableCatchEventElement;
+import io.zeebe.broker.workflow.model.element.ExecutableActivity;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.CatchEventBehavior.MessageCorrelationKeyException;
 import io.zeebe.broker.workflow.processor.flownode.IOMappingHelper;
-import io.zeebe.broker.workflow.processor.handlers.element.ElementReadyHandler;
+import io.zeebe.broker.workflow.processor.handlers.element.ElementActivatingHandler;
 import io.zeebe.protocol.impl.record.value.incident.ErrorType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class IntermediateCatchEventElementReadyHandler<T extends ExecutableCatchEventElement>
-    extends ElementReadyHandler<T> {
-  public IntermediateCatchEventElementReadyHandler() {
-    super();
-  }
+public class ActivityElementActivatingHandler<T extends ExecutableActivity>
+    extends ElementActivatingHandler<T> {
+  public ActivityElementActivatingHandler() {}
 
-  public IntermediateCatchEventElementReadyHandler(WorkflowInstanceIntent nextState) {
+  public ActivityElementActivatingHandler(WorkflowInstanceIntent nextState) {
     super(nextState);
   }
 
-  public IntermediateCatchEventElementReadyHandler(
+  public ActivityElementActivatingHandler(
       WorkflowInstanceIntent nextState, IOMappingHelper ioMappingHelper) {
     super(nextState, ioMappingHelper);
   }

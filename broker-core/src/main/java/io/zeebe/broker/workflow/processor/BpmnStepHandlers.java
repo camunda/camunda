@@ -20,31 +20,31 @@ package io.zeebe.broker.workflow.processor;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.workflow.model.BpmnStep;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
+import io.zeebe.broker.workflow.processor.handlers.activity.ActivityElementActivatingHandler;
 import io.zeebe.broker.workflow.processor.handlers.activity.ActivityElementCompletingHandler;
-import io.zeebe.broker.workflow.processor.handlers.activity.ActivityElementReadyHandler;
 import io.zeebe.broker.workflow.processor.handlers.activity.ActivityElementTerminatedHandler;
 import io.zeebe.broker.workflow.processor.handlers.activity.ActivityElementTerminatingHandler;
 import io.zeebe.broker.workflow.processor.handlers.activity.ActivityEventOccurredHandler;
 import io.zeebe.broker.workflow.processor.handlers.catchevent.IntermediateCatchEventElementActivatedHandler;
+import io.zeebe.broker.workflow.processor.handlers.catchevent.IntermediateCatchEventElementActivatingHandler;
 import io.zeebe.broker.workflow.processor.handlers.catchevent.IntermediateCatchEventElementCompletingHandler;
-import io.zeebe.broker.workflow.processor.handlers.catchevent.IntermediateCatchEventElementReadyHandler;
 import io.zeebe.broker.workflow.processor.handlers.catchevent.IntermediateCatchEventElementTerminatingHandler;
 import io.zeebe.broker.workflow.processor.handlers.catchevent.IntermediateCatchEventEventOccurredHandler;
 import io.zeebe.broker.workflow.processor.handlers.catchevent.StartEventEventOccurredHandler;
 import io.zeebe.broker.workflow.processor.handlers.container.ContainerElementActivatedHandler;
 import io.zeebe.broker.workflow.processor.handlers.container.ContainerElementTerminatingHandler;
 import io.zeebe.broker.workflow.processor.handlers.element.ElementActivatedHandler;
+import io.zeebe.broker.workflow.processor.handlers.element.ElementActivatingHandler;
 import io.zeebe.broker.workflow.processor.handlers.element.ElementCompletedHandler;
 import io.zeebe.broker.workflow.processor.handlers.element.ElementCompletingHandler;
-import io.zeebe.broker.workflow.processor.handlers.element.ElementReadyHandler;
 import io.zeebe.broker.workflow.processor.handlers.element.ElementTerminatedHandler;
 import io.zeebe.broker.workflow.processor.handlers.element.ElementTerminatingHandler;
 import io.zeebe.broker.workflow.processor.handlers.element.EventOccurredHandler;
+import io.zeebe.broker.workflow.processor.handlers.gateway.EventBasedGatewayElementActivatingHandler;
 import io.zeebe.broker.workflow.processor.handlers.gateway.EventBasedGatewayElementCompletingHandler;
-import io.zeebe.broker.workflow.processor.handlers.gateway.EventBasedGatewayElementReadyHandler;
 import io.zeebe.broker.workflow.processor.handlers.gateway.EventBasedGatewayElementTerminatingHandler;
 import io.zeebe.broker.workflow.processor.handlers.gateway.EventBasedGatewayEventOccurredHandler;
-import io.zeebe.broker.workflow.processor.handlers.gateway.ExclusiveGatewayElementReadyHandler;
+import io.zeebe.broker.workflow.processor.handlers.gateway.ExclusiveGatewayElementActivatingHandler;
 import io.zeebe.broker.workflow.processor.handlers.receivetask.ReceiveTaskEventOccurredHandler;
 import io.zeebe.broker.workflow.processor.handlers.seqflow.FlowOutElementCompletedHandler;
 import io.zeebe.broker.workflow.processor.handlers.seqflow.ParallelMergeSequenceFlowTaken;
@@ -60,7 +60,7 @@ public class BpmnStepHandlers {
 
   // todo: later get rid of bpmn step since everything now maps to a STATE + TYPE combination
   public BpmnStepHandlers(ZeebeState state) {
-    stepHandlers.put(BpmnStep.ELEMENT_READY, new ElementReadyHandler<>());
+    stepHandlers.put(BpmnStep.ELEMENT_READY, new ElementActivatingHandler<>());
     stepHandlers.put(BpmnStep.ELEMENT_ACTIVATED, new ElementActivatedHandler<>());
     stepHandlers.put(BpmnStep.EVENT_OCCURRED, new EventOccurredHandler<>());
     stepHandlers.put(BpmnStep.ELEMENT_COMPLETING, new ElementCompletingHandler<>());
@@ -70,7 +70,7 @@ public class BpmnStepHandlers {
     stepHandlers.put(BpmnStep.ELEMENT_TERMINATED, new ElementTerminatedHandler<>());
     stepHandlers.put(BpmnStep.FLOWOUT_ELEMENT_COMPLETED, new FlowOutElementCompletedHandler<>());
 
-    stepHandlers.put(BpmnStep.ACTIVITY_ELEMENT_READY, new ActivityElementReadyHandler<>());
+    stepHandlers.put(BpmnStep.ACTIVITY_ELEMENT_READY, new ActivityElementActivatingHandler<>());
     stepHandlers.put(BpmnStep.ACTIVITY_EVENT_OCCURRED, new ActivityEventOccurredHandler<>());
     stepHandlers.put(
         BpmnStep.ACTIVITY_ELEMENT_COMPLETING, new ActivityElementCompletingHandler<>());
@@ -88,7 +88,8 @@ public class BpmnStepHandlers {
         new ContainerElementTerminatingHandler<>(state.getIncidentState()));
 
     stepHandlers.put(
-        BpmnStep.EVENT_BASED_GATEWAY_ELEMENT_READY, new EventBasedGatewayElementReadyHandler<>());
+        BpmnStep.EVENT_BASED_GATEWAY_ELEMENT_READY,
+        new EventBasedGatewayElementActivatingHandler<>());
     stepHandlers.put(
         BpmnStep.EVENT_BASED_GATEWAY_ELEMENT_ACTIVATED, new ElementActivatedHandler<>(null));
     stepHandlers.put(
@@ -101,11 +102,11 @@ public class BpmnStepHandlers {
         new EventBasedGatewayElementTerminatingHandler<>(state.getIncidentState()));
 
     stepHandlers.put(
-        BpmnStep.EXCLUSIVE_GATEWAY_ELEMENT_READY, new ExclusiveGatewayElementReadyHandler<>());
+        BpmnStep.EXCLUSIVE_GATEWAY_ELEMENT_READY, new ExclusiveGatewayElementActivatingHandler<>());
 
     stepHandlers.put(
         BpmnStep.INTERMEDIATE_CATCH_EVENT_ELEMENT_READY,
-        new IntermediateCatchEventElementReadyHandler<>());
+        new IntermediateCatchEventElementActivatingHandler<>());
     stepHandlers.put(
         BpmnStep.INTERMEDIATE_CATCH_EVENT_ELEMENT_ACTIVATED,
         new IntermediateCatchEventElementActivatedHandler<>());

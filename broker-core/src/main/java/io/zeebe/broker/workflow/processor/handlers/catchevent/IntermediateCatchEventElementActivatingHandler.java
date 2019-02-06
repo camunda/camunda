@@ -15,28 +15,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.processor.handlers.gateway;
+package io.zeebe.broker.workflow.processor.handlers.catchevent;
 
-import io.zeebe.broker.workflow.model.element.ExecutableEventBasedGateway;
+import io.zeebe.broker.workflow.model.element.ExecutableCatchEventElement;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.CatchEventBehavior.MessageCorrelationKeyException;
 import io.zeebe.broker.workflow.processor.flownode.IOMappingHelper;
-import io.zeebe.broker.workflow.processor.handlers.element.ElementReadyHandler;
+import io.zeebe.broker.workflow.processor.handlers.element.ElementActivatingHandler;
 import io.zeebe.protocol.impl.record.value.incident.ErrorType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class EventBasedGatewayElementReadyHandler<T extends ExecutableEventBasedGateway>
-    extends ElementReadyHandler<T> {
-
-  public EventBasedGatewayElementReadyHandler() {
-    this(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+public class IntermediateCatchEventElementActivatingHandler<T extends ExecutableCatchEventElement>
+    extends ElementActivatingHandler<T> {
+  public IntermediateCatchEventElementActivatingHandler() {
+    super();
   }
 
-  public EventBasedGatewayElementReadyHandler(WorkflowInstanceIntent nextState) {
+  public IntermediateCatchEventElementActivatingHandler(WorkflowInstanceIntent nextState) {
     super(nextState);
   }
 
-  public EventBasedGatewayElementReadyHandler(
+  public IntermediateCatchEventElementActivatingHandler(
       WorkflowInstanceIntent nextState, IOMappingHelper ioMappingHelper) {
     super(nextState, ioMappingHelper);
   }
