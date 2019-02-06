@@ -84,6 +84,24 @@ public class ZeebeEventBasedGatewayValidationTest extends AbstractZeebeValidatio
             expect(
                 EventBasedGateway.class,
                 "Event-based gateway must not have an outgoing sequence flow to other elements than message/timer intermediate catch events."))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .parallelGateway("parallel")
+            .eventBasedGateway("event")
+            .intermediateCatchEvent("catch1")
+            .timerWithDuration("PT1M")
+            .moveToLastGateway()
+            .intermediateCatchEvent("catch2")
+            .timerWithDuration("PT2M")
+            .moveToNode("parallel")
+            .connectTo("catch1")
+            .done(),
+        singletonList(
+            expect(
+                EventBasedGateway.class,
+                "Target elements of an event gateway must not have any additional incoming sequence flows other than that from the event gateway."))
       }
     };
   }
