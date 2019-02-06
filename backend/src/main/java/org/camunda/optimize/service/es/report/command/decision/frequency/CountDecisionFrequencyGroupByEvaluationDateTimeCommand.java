@@ -101,7 +101,8 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
       .dateHistogram(DATE_HISTOGRAM_AGGREGATION)
       .order(BucketOrder.key(false))
       .field(EVALUATION_DATE_TIME)
-      .dateHistogramInterval(interval);
+      .dateHistogramInterval(interval)
+      .timeZone(DateTimeZone.getDefault());
   }
 
   private AggregationBuilder createAutomaticIntervalAggregation(QueryBuilder query) throws OptimizeException {

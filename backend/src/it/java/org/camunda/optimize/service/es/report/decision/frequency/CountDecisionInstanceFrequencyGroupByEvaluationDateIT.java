@@ -16,7 +16,6 @@ import org.junit.runner.RunWith;
 
 import javax.ws.rs.core.Response;
 import java.sql.SQLException;
-import java.time.DayOfWeek;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -24,6 +23,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 
+import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.DecisionFilterUtilHelper.createDoubleInputVariableFilter;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.hamcrest.CoreMatchers.is;
@@ -381,28 +381,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
 
 
   private String formatToHistogramBucketKey(final OffsetDateTime offsetDateTime, final ChronoUnit unit) {
-    OffsetDateTime result = offsetDateTime;
-    switch (unit) {
-      case MILLIS:
-      case HOURS:
-        result = result.truncatedTo(unit);
-        break;
-      case DAYS:
-        result = result.truncatedTo(unit).withHour(1);
-        break;
-      case WEEKS:
-        result = result.with(DayOfWeek.MONDAY).truncatedTo(ChronoUnit.DAYS).withHour(1);
-        break;
-      case MONTHS:
-        result = result.withDayOfMonth(1).truncatedTo(ChronoUnit.DAYS).withHour(1);
-        break;
-      default:
-      case YEARS:
-        result = result.withDayOfYear(1).truncatedTo(ChronoUnit.DAYS).withHour(1);
-        break;
-    }
-    return embeddedOptimizeRule.getDateTimeFormatter().format(result);
-
+    return embeddedOptimizeRule.getDateTimeFormatter().format(truncateToStartOfUnit(offsetDateTime, unit));
   }
 
 }

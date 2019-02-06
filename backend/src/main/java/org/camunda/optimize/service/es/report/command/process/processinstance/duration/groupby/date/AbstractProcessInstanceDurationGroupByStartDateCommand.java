@@ -24,6 +24,7 @@ import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInter
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -106,6 +107,7 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
       .field(START_DATE)
       .order(BucketOrder.key(false))
       .dateHistogramInterval(interval)
+      .timeZone(DateTimeZone.getDefault())
       .subAggregation(
         createAggregationOperation()
       );
@@ -139,7 +141,7 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
     // For each entry
     for (Histogram.Bucket entry : agg.getBuckets()) {
       DateTime key = (DateTime) entry.getKey();    // Key
-      String formattedDate = key.toString(OPTIMIZE_DATE_FORMAT);
+      String formattedDate = key.withZone(DateTimeZone.getDefault()).toString(OPTIMIZE_DATE_FORMAT);
 
       long roundedDuration = processAggregationOperation(entry.getAggregations());
       result.put(formattedDate, roundedDuration);
@@ -148,8 +150,7 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
   }
 
   private Map<String, Long> processAutomaticIntervalAggregations(Aggregations aggregations) {
-    return intervalAggregationService.mapIntervalAggregationsToKeyBucketMap(
-      aggregations)
+    return intervalAggregationService.mapIntervalAggregationsToKeyBucketMap(aggregations)
       .entrySet()
       .stream()
       .collect(

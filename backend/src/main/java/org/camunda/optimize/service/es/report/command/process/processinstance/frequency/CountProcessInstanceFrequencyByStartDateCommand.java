@@ -103,7 +103,8 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessRepo
       .dateHistogram(DATE_HISTOGRAM_AGGREGATION)
       .order(BucketOrder.key(false))
       .field(START_DATE)
-      .dateHistogramInterval(interval);
+      .dateHistogramInterval(interval)
+      .timeZone(DateTimeZone.getDefault());
   }
 
   private AggregationBuilder createAutomaticIntervalAggregation(QueryBuilder query) throws OptimizeException {

@@ -24,7 +24,6 @@ import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.TimeZone;
@@ -340,8 +339,8 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     OffsetDateTime nextFireTime = getNextFireTime(trigger);
 
     assertThat(
-        nextFireTime.truncatedTo(ChronoUnit.SECONDS).withOffsetSameInstant(ZoneOffset.UTC),
-        is(OffsetDateTime.now().plus(intervalValue*7, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS).withOffsetSameInstant(ZoneOffset.UTC))
+        nextFireTime.truncatedTo(ChronoUnit.SECONDS),
+        is(OffsetDateTime.now().plus(intervalValue*7, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS))
     );
   }
 

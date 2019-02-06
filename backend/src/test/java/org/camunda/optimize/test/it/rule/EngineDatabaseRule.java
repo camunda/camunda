@@ -12,6 +12,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -403,7 +404,7 @@ public class EngineDatabaseRule extends TestWatcher {
   public int countHistoricDecisionInstances() throws SQLException {
     String sql = "select count(*) as total from act_hi_decinst;";
     String postgresSQL = "SELECT reltuples AS total FROM pg_class WHERE relname = 'act_hi_decinst';";
-    sql = usePostgresOptimizations() ? postgresSQL: sql;
+    sql = usePostgresOptimizations() ? postgresSQL : sql;
     ResultSet statement = connection.createStatement().executeQuery(sql);
     statement.next();
     return statement.getInt("total");
@@ -427,7 +428,9 @@ public class EngineDatabaseRule extends TestWatcher {
     // otherwise date equals queries like finishedAt queries won't work as expected with modified timestamps
     // due to the added precision that is not available on the engines REST-API
     return Timestamp.valueOf(
-      offsetDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd kk:mm:ss.SSS"))
+      offsetDateTime
+        .atZoneSimilarLocal(ZoneId.systemDefault())
+        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"))
     );
   }
 }

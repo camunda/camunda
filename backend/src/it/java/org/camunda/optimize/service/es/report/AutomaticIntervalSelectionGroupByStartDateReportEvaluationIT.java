@@ -23,6 +23,7 @@ import org.junit.rules.RuleChain;
 import javax.ws.rs.core.Response;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,9 +31,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByStartDate;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -157,16 +160,16 @@ public class AutomaticIntervalSelectionGroupByStartDateReportEvaluationIT {
     // then the single data point should be grouped by month
     Map<String, Long> resultMap = result.getResult();
     assertThat(resultMap.size(), is(1));
-    OffsetDateTime nowStrippedToMonth =
-      OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS).withDayOfMonth(1).withHour(1);
+    ZonedDateTime nowStrippedToMonth = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.MONTHS);
     String nowStrippedToMonthAsString = localDateTimeToString(nowStrippedToMonth);
+    assertThat(resultMap.keySet(), hasItem(nowStrippedToMonthAsString));
     assertThat(resultMap.get(nowStrippedToMonthAsString), is(1L));
   }
 
   @Test
   public void combinedReportsWithDistinctRanges() throws Exception {
     // given
-    OffsetDateTime now = OffsetDateTime.now();
+    ZonedDateTime now = ZonedDateTime.now();
     ProcessDefinitionEngineDto procDefFirstRange = startProcessInstancesInDayRange(now.plusDays(1), now.plusDays(3));
     ProcessDefinitionEngineDto procDefSecondRange = startProcessInstancesInDayRange(now.plusDays(4), now.plusDays(6));
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -186,7 +189,7 @@ public class AutomaticIntervalSelectionGroupByStartDateReportEvaluationIT {
   @Test
   public void combinedReportsWithOneIncludingRange() throws Exception {
     // given
-    OffsetDateTime now = OffsetDateTime.now();
+    ZonedDateTime now = ZonedDateTime.now();
     ProcessDefinitionEngineDto procDefFirstRange = startProcessInstancesInDayRange(now.plusDays(1), now.plusDays(6));
     ProcessDefinitionEngineDto procDefSecondRange = startProcessInstancesInDayRange(now.plusDays(3), now.plusDays(5));
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -206,7 +209,7 @@ public class AutomaticIntervalSelectionGroupByStartDateReportEvaluationIT {
   @Test
   public void combinedReportsWithIntersectingRange() throws Exception {
     // given
-    OffsetDateTime now = OffsetDateTime.now();
+    ZonedDateTime now = ZonedDateTime.now();
     ProcessDefinitionEngineDto procDefFirstRange = startProcessInstancesInDayRange(now.plusDays(1), now.plusDays(4));
     ProcessDefinitionEngineDto procDefSecondRange = startProcessInstancesInDayRange(now.plusDays(3), now.plusDays(6));
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -223,8 +226,8 @@ public class AutomaticIntervalSelectionGroupByStartDateReportEvaluationIT {
     assertResultIsInCorrectRanges(now.plusDays(1), now.plusDays(6), resultMap, 2);
   }
 
-  private void assertResultIsInCorrectRanges(OffsetDateTime startRange,
-                                             OffsetDateTime endRange,
+  private void assertResultIsInCorrectRanges(ZonedDateTime startRange,
+                                             ZonedDateTime endRange,
                                              Map<String,ProcessReportMapResultDto> resultMap,
                                              int resultSize) {
     assertThat(resultMap.size(), is(resultSize));
@@ -238,8 +241,8 @@ public class AutomaticIntervalSelectionGroupByStartDateReportEvaluationIT {
   }
 
   private void assertIsInRangeOfLastInterval(String lastIntervalAsString,
-                                             OffsetDateTime startTotal,
-                                             OffsetDateTime endTotal) {
+                                             ZonedDateTime startTotal,
+                                             ZonedDateTime endTotal) {
     long totalDuration = endTotal.toInstant().toEpochMilli() - startTotal.toInstant().toEpochMilli();
     long interval = totalDuration / NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
     assertThat(
@@ -286,13 +289,13 @@ public class AutomaticIntervalSelectionGroupByStartDateReportEvaluationIT {
             .execute();
   }
 
-  private ProcessDefinitionEngineDto startProcessInstancesInDayRange(OffsetDateTime min,
-                                                                     OffsetDateTime max) throws SQLException {
+  private ProcessDefinitionEngineDto startProcessInstancesInDayRange(ZonedDateTime min,
+                                                                     ZonedDateTime max) throws SQLException {
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
     ProcessInstanceEngineDto procInstMin = engineRule.startProcessInstance(processDefinition.getId());
     ProcessInstanceEngineDto procInstMax = engineRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseRule.changeProcessInstanceStartDate(procInstMin.getId(), min);
-    engineDatabaseRule.changeProcessInstanceStartDate(procInstMax.getId(), max);
+    engineDatabaseRule.changeProcessInstanceStartDate(procInstMin.getId(), min.toOffsetDateTime());
+    engineDatabaseRule.changeProcessInstanceStartDate(procInstMax.getId(), max.toOffsetDateTime());
     return processDefinition;
   }
 
@@ -363,7 +366,7 @@ public class AutomaticIntervalSelectionGroupByStartDateReportEvaluationIT {
       .getId();
   }
 
-  private String localDateTimeToString(OffsetDateTime time) {
+  private String localDateTimeToString(ZonedDateTime time) {
     return embeddedOptimizeRule.getDateTimeFormatter().format(time);
   }
 

@@ -13,8 +13,6 @@ import java.util.List;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 
-
-
 public class DurationFilterIT extends AbstractDurationFilterIT {
 
   @Test

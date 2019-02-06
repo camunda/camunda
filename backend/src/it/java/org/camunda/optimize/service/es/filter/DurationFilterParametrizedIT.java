@@ -13,8 +13,6 @@ import java.util.Collection;
 
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createProcessReportDataViewRawAsTable;
 
-
-
 @RunWith(Parameterized.class)
 public class DurationFilterParametrizedIT extends AbstractDurationFilterIT {
 
@@ -80,7 +78,5 @@ public class DurationFilterParametrizedIT extends AbstractDurationFilterIT {
     // then
     assertResult(processInstance, result);
   }
-
-
 
 }
