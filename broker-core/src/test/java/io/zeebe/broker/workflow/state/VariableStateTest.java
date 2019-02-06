@@ -666,7 +666,7 @@ public class VariableStateTest {
 
     final TypedRecord<WorkflowInstanceRecord> record = mockTypedRecord(key, parentKey);
     elementInstanceState.newInstance(
-        parent, key, record.getValue(), WorkflowInstanceIntent.ELEMENT_READY);
+        parent, key, record.getValue(), WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     elementInstanceState.flushDirtyState();
   }
 

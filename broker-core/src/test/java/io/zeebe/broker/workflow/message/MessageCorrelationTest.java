@@ -472,7 +472,7 @@ public class MessageCorrelationTest {
         .extracting(Record::getMetadata)
         .extracting(RecordMetadata::getIntent)
         .containsExactly(
-            WorkflowInstanceIntent.ELEMENT_READY,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
             WorkflowInstanceIntent.EVENT_OCCURRED,
             WorkflowInstanceIntent.ELEMENT_COMPLETING,
@@ -497,7 +497,7 @@ public class MessageCorrelationTest {
         .extracting(Record::getMetadata)
         .extracting(RecordMetadata::getIntent)
         .containsExactly(
-            WorkflowInstanceIntent.ELEMENT_READY,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
             WorkflowInstanceIntent.EVENT_OCCURRED,
             WorkflowInstanceIntent.ELEMENT_COMPLETING,
@@ -520,12 +520,12 @@ public class MessageCorrelationTest {
     assertThat(events)
         .extracting(r -> tuple(r.getValue().getElementId(), r.getMetadata().getIntent()))
         .containsSequence(
-            tuple("task", WorkflowInstanceIntent.ELEMENT_READY),
+            tuple("task", WorkflowInstanceIntent.ELEMENT_ACTIVATING),
             tuple("task", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
             tuple("task", WorkflowInstanceIntent.EVENT_OCCURRED),
             tuple("task", WorkflowInstanceIntent.ELEMENT_TERMINATING),
             tuple("task", WorkflowInstanceIntent.ELEMENT_TERMINATED),
-            tuple("msg1", WorkflowInstanceIntent.ELEMENT_READY),
+            tuple("msg1", WorkflowInstanceIntent.ELEMENT_ACTIVATING),
             tuple("msg1", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
             tuple("msg1", WorkflowInstanceIntent.ELEMENT_COMPLETING),
             tuple("msg1", WorkflowInstanceIntent.ELEMENT_COMPLETED));

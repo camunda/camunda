@@ -209,12 +209,12 @@ public class ParallelGatewayTest {
     assertThat(workflowInstanceEvents)
         .extracting(e -> e.getValue().getElementId(), e -> e.getMetadata().getIntent())
         .containsSequence(
-            tuple("fork", WorkflowInstanceIntent.ELEMENT_READY),
+            tuple("fork", WorkflowInstanceIntent.ELEMENT_ACTIVATING),
             tuple("fork", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
             tuple("fork", WorkflowInstanceIntent.ELEMENT_COMPLETING),
             tuple("fork", WorkflowInstanceIntent.ELEMENT_COMPLETED),
             tuple("flow2", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple("end", WorkflowInstanceIntent.ELEMENT_READY),
+            tuple("end", WorkflowInstanceIntent.ELEMENT_ACTIVATING),
             tuple("end", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
             tuple("end", WorkflowInstanceIntent.ELEMENT_COMPLETING),
             tuple("end", WorkflowInstanceIntent.ELEMENT_COMPLETED),
@@ -269,11 +269,11 @@ public class ParallelGatewayTest {
         .extracting(e -> e.getValue().getElementId(), e -> e.getMetadata().getIntent())
         .containsSubsequence(
             tuple("flow1", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple("join", WorkflowInstanceIntent.ELEMENT_READY))
+            tuple("join", WorkflowInstanceIntent.ELEMENT_ACTIVATING))
         .containsSubsequence(
             tuple("flow2", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple("join", WorkflowInstanceIntent.ELEMENT_READY))
-        .containsOnlyOnce(tuple("join", WorkflowInstanceIntent.ELEMENT_READY));
+            tuple("join", WorkflowInstanceIntent.ELEMENT_ACTIVATING))
+        .containsOnlyOnce(tuple("join", WorkflowInstanceIntent.ELEMENT_ACTIVATING));
   }
 
   @Test
@@ -328,7 +328,7 @@ public class ParallelGatewayTest {
             tuple("joinFlow1", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple("joinFlow1", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple("joinFlow2", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple("join", WorkflowInstanceIntent.ELEMENT_READY));
+            tuple("join", WorkflowInstanceIntent.ELEMENT_ACTIVATING));
   }
 
   @Test

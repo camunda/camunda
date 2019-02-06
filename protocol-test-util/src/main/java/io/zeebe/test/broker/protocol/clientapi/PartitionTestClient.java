@@ -145,7 +145,7 @@ public class PartitionTestClient {
     final ExecuteCommandResponse response = createWorkflowInstanceWithResponse(bpmnProcessId);
 
     assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_READY);
+    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
 
     return response.getKey();
   }
@@ -171,7 +171,7 @@ public class PartitionTestClient {
             .sendAndAwait();
 
     assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_READY);
+    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
 
     return response.getKey();
   }

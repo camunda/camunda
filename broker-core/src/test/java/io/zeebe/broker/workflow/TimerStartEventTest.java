@@ -131,7 +131,7 @@ public class TimerStartEventTest {
     brokerRule.getClock().addTime(Duration.ofSeconds(2));
 
     Assertions.assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_READY)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
                 .withElementType(BpmnElementType.START_EVENT)
                 .getFirst()
                 .getValue())
@@ -152,9 +152,9 @@ public class TimerStartEventTest {
             TimerIntent.TRIGGER,
             TimerIntent.TRIGGERED,
             WorkflowInstanceIntent.EVENT_OCCURRED, // causes the instance creation
-            WorkflowInstanceIntent.ELEMENT_READY, // causes the flow node activation
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING, // causes the flow node activation
             WorkflowInstanceIntent.ELEMENT_ACTIVATED, // input mappings applied
-            WorkflowInstanceIntent.ELEMENT_READY); // triggers the start event
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING); // triggers the start event
   }
 
   @Test
@@ -168,7 +168,7 @@ public class TimerStartEventTest {
 
     assertThat(RecordingExporter.timerRecords(TimerIntent.TRIGGERED).exists()).isTrue();
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_READY)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
                 .withElementId("process_3")
                 .exists())
         .isTrue();
@@ -177,7 +177,7 @@ public class TimerStartEventTest {
     brokerRule.getClock().addTime(Duration.ofSeconds(3));
     assertThat(RecordingExporter.timerRecords(TimerIntent.TRIGGERED).limit(2).count()).isEqualTo(2);
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_READY)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
                 .withElementId("process_3")
                 .limit(2)
                 .count())
@@ -322,31 +322,31 @@ public class TimerStartEventTest {
     brokerRule.getClock().addTime(Duration.ofSeconds(1));
 
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_READY)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
                 .withElementId("process")
                 .exists())
         .isTrue();
     final Instant firstModelTimestamp =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_READY)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .withElementId("process")
             .getFirst()
             .getTimestamp();
 
     brokerRule.getClock().addTime(Duration.ofSeconds(2));
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_READY)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
                 .withElementId("process")
                 .limit(2)
                 .count())
         .isEqualTo(2);
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_READY)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
                 .withElementId("process_3")
                 .exists())
         .isTrue();
 
     final Instant secondModelTimestamp =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_READY)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .withElementId("process_3")
             .getFirst()
             .getTimestamp();

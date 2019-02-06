@@ -119,7 +119,7 @@ public class TimerCatchEventTest {
     assertThat(RecordingExporter.workflowInstanceRecords().withElementId("timer").limit(5))
         .extracting(r -> r.getMetadata().getIntent())
         .containsExactly(
-            WorkflowInstanceIntent.ELEMENT_READY,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
             WorkflowInstanceIntent.EVENT_OCCURRED,
             WorkflowInstanceIntent.ELEMENT_COMPLETING,

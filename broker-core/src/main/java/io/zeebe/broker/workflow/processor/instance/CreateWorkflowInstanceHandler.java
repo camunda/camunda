@@ -64,7 +64,7 @@ public class CreateWorkflowInstanceHandler implements WorkflowInstanceCommandHan
 
         final EventOutput eventOutput = commandContext.getOutput();
         eventOutput.appendFollowUpEvent(
-            workflowInstanceKey, WorkflowInstanceIntent.ELEMENT_READY, command, workflow);
+            workflowInstanceKey, WorkflowInstanceIntent.ELEMENT_ACTIVATING, command, workflow);
 
         workflowState
             .getElementInstanceState()
@@ -72,7 +72,7 @@ public class CreateWorkflowInstanceHandler implements WorkflowInstanceCommandHan
             .setVariablesLocalFromDocument(workflowInstanceKey, command.getPayload());
 
         responseWriter.writeEventOnCommand(
-            workflowInstanceKey, WorkflowInstanceIntent.ELEMENT_READY, command, record);
+            workflowInstanceKey, WorkflowInstanceIntent.ELEMENT_ACTIVATING, command, record);
       } else {
         commandContext.reject(
             RejectionType.INVALID_STATE,

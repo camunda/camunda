@@ -65,7 +65,7 @@ public class ParallelMergeSequenceFlowTaken<T extends ExecutableSequenceFlow>
 
       context
           .getOutput()
-          .appendNewEvent(WorkflowInstanceIntent.ELEMENT_READY, context.getValue(), gateway);
+          .appendNewEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING, context.getValue(), gateway);
       context.getFlowScopeInstance().spawnToken();
     }
 

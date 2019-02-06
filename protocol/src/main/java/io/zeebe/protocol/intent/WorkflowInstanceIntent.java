@@ -24,7 +24,7 @@ public enum WorkflowInstanceIntent implements Intent {
 
   SEQUENCE_FLOW_TAKEN((short) 4),
 
-  ELEMENT_READY((short) 5),
+  ELEMENT_ACTIVATING((short) 5),
   ELEMENT_ACTIVATED((short) 6),
   ELEMENT_COMPLETING((short) 7),
   ELEMENT_COMPLETED((short) 8),
@@ -56,7 +56,7 @@ public enum WorkflowInstanceIntent implements Intent {
       case 4:
         return SEQUENCE_FLOW_TAKEN;
       case 5:
-        return ELEMENT_READY;
+        return ELEMENT_ACTIVATING;
       case 6:
         return ELEMENT_ACTIVATED;
       case 7:

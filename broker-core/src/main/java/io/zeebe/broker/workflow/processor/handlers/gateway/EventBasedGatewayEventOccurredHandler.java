@@ -52,7 +52,8 @@ public class EventBasedGatewayEventOccurredHandler<T extends ExecutableEventBase
         return false;
       }
 
-      // todo: gateway publishes the ELEMENT_READY of the next event, so we skip the sequence flow
+      // todo: gateway publishes the ELEMENT_ACTIVATING of the next event, so we skip the sequence
+      // flow
       // taken, which is counter intuitive for a stream observer
       deferEvent(context, event, flow.getTarget());
       return true;

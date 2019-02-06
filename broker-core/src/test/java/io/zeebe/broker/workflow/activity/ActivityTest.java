@@ -119,7 +119,7 @@ public class ActivityTest {
 
     // when
     final Record<WorkflowInstanceRecordValue> readyRecord =
-        testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_READY);
+        testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     final Record<WorkflowInstanceRecordValue> activatedRecord =
         testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
     final List<Record<TimerRecordValue>> subscriptions =

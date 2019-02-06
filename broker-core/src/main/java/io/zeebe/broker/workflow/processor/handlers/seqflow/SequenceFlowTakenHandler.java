@@ -44,7 +44,9 @@ public class SequenceFlowTakenHandler<T extends ExecutableSequenceFlow> extends 
     final ExecutableFlowNode targetNode = sequenceFlow.getTarget();
 
     final WorkflowInstanceRecord value = context.getValue();
-    context.getOutput().appendNewEvent(WorkflowInstanceIntent.ELEMENT_READY, value, targetNode);
+    context
+        .getOutput()
+        .appendNewEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING, value, targetNode);
 
     return true;
   }

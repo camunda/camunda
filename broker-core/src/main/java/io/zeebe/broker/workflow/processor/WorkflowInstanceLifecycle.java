@@ -18,9 +18,9 @@
 package io.zeebe.broker.workflow.processor;
 
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
+import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETING;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_READY;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_TERMINATING;
 
@@ -46,7 +46,7 @@ public class WorkflowInstanceLifecycle {
 
   public static final EnumSet<WorkflowInstanceIntent> ELEMENT_INSTANCE_STATES =
       EnumSet.of(
-          ELEMENT_READY,
+          ELEMENT_ACTIVATING,
           ELEMENT_ACTIVATED,
           ELEMENT_COMPLETING,
           ELEMENT_COMPLETED,
@@ -57,13 +57,13 @@ public class WorkflowInstanceLifecycle {
       EnumSet.of(ELEMENT_COMPLETED, WorkflowInstanceIntent.ELEMENT_TERMINATED);
 
   public static final EnumSet<WorkflowInstanceIntent> TERMINATABLE_STATES =
-      EnumSet.of(ELEMENT_READY, ELEMENT_ACTIVATED, ELEMENT_COMPLETING);
+      EnumSet.of(ELEMENT_ACTIVATING, ELEMENT_ACTIVATED, ELEMENT_COMPLETING);
 
   public static final Map<WorkflowInstanceIntent, Set<WorkflowInstanceIntent>> TRANSITION_RULES =
       new EnumMap<>(WorkflowInstanceIntent.class);
 
   static {
-    TRANSITION_RULES.put(ELEMENT_READY, EnumSet.of(ELEMENT_ACTIVATED, ELEMENT_TERMINATING));
+    TRANSITION_RULES.put(ELEMENT_ACTIVATING, EnumSet.of(ELEMENT_ACTIVATED, ELEMENT_TERMINATING));
     TRANSITION_RULES.put(ELEMENT_ACTIVATED, EnumSet.of(ELEMENT_COMPLETING, ELEMENT_TERMINATING));
     TRANSITION_RULES.put(ELEMENT_COMPLETING, EnumSet.of(ELEMENT_COMPLETED, ELEMENT_TERMINATING));
     TRANSITION_RULES.put(ELEMENT_TERMINATING, EnumSet.of(ELEMENT_TERMINATED));
@@ -80,7 +80,7 @@ public class WorkflowInstanceLifecycle {
   }
 
   public static boolean isInitialState(WorkflowInstanceIntent state) {
-    return state == ELEMENT_READY;
+    return state == ELEMENT_ACTIVATING;
   }
 
   public static boolean isElementInstanceState(WorkflowInstanceIntent state) {

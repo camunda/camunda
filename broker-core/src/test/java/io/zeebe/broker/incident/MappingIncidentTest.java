@@ -103,7 +103,7 @@ public class MappingIncidentTest {
 
     // then
     final Record failureEvent =
-        testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_READY);
+        testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     final Record createIncidentEvent =
         testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
     final Record<IncidentRecordValue> incidentEvent =
@@ -180,7 +180,7 @@ public class MappingIncidentTest {
     final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
     final Record<WorkflowInstanceRecordValue> failureEvent =
-        testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_READY);
+        testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     final Record<IncidentRecordValue> incidentEvent =
         testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
@@ -274,7 +274,7 @@ public class MappingIncidentTest {
 
     // then incident is created
     final Record<WorkflowInstanceRecordValue> failureEvent =
-        testClient.receiveElementInState("service", WorkflowInstanceIntent.ELEMENT_READY);
+        testClient.receiveElementInState("service", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     final Record<IncidentRecordValue> incidentEvent =
         testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
@@ -524,7 +524,7 @@ public class MappingIncidentTest {
     final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
     final Record failureEvent =
-        testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_READY);
+        testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     final Record<IncidentRecordValue> incidentEvent =
         testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
@@ -563,7 +563,7 @@ public class MappingIncidentTest {
     final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
     final Record failureEvent =
-        testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_READY);
+        testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     final Record firstIncident = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
     testClient.updatePayload(failureEvent.getKey(), MsgPackHelper.EMTPY_OBJECT);
     testClient.resolveIncident(firstIncident.getKey());
@@ -606,7 +606,7 @@ public class MappingIncidentTest {
     // create and resolve an first incident
     long workflowInstanceKey = testClient.createWorkflowInstance("process");
     Record failureEvent =
-        testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_READY);
+        testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     final Record<IncidentRecordValue> firstIncident = testClient.receiveFirstIncidentEvent(CREATED);
     testClient.updatePayload(failureEvent.getKey(), PAYLOAD);
     testClient.resolveIncident(firstIncident.getKey());
@@ -615,7 +615,7 @@ public class MappingIncidentTest {
     workflowInstanceKey = testClient.createWorkflowInstance("process");
     failureEvent =
         testClient.receiveFirstWorkflowInstanceEvent(
-            workflowInstanceKey, "failingTask", WorkflowInstanceIntent.ELEMENT_READY);
+            workflowInstanceKey, "failingTask", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     final Record secondIncidentEvent =
         testClient.receiveFirstIncidentEvent(workflowInstanceKey, IncidentIntent.CREATED);
 

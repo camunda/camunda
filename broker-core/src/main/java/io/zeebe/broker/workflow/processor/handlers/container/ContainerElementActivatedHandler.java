@@ -64,7 +64,7 @@ public class ContainerElementActivatedHandler<T extends ExecutableFlowElementCon
     context.getElementInstance().spawnToken();
 
     eventInstanceKey =
-        context.getOutput().appendNewEvent(WorkflowInstanceIntent.ELEMENT_READY, value);
+        context.getOutput().appendNewEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING, value);
     context
         .getElementInstanceState()
         .getVariablesState()

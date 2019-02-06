@@ -73,7 +73,7 @@ public class MessageIncidentTest {
     final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
 
     final Record<WorkflowInstanceRecordValue> failureEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_READY)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .withElementId("catch")
             .getFirst();
 
@@ -98,7 +98,7 @@ public class MessageIncidentTest {
         testClient.createWorkflowInstance(PROCESS_ID, MsgPackUtil.asMsgPack("orderId", true));
 
     final Record<WorkflowInstanceRecordValue> failureEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_READY)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .withElementId("catch")
             .getFirst();
 

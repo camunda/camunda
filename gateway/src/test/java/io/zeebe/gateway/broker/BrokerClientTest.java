@@ -510,7 +510,7 @@ public class BrokerClientTest {
             .onExecuteCommandRequest(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
             .respondWith()
             .event()
-            .intent(WorkflowInstanceIntent.ELEMENT_READY)
+            .intent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .key(r -> r.key())
             .value()
             .allOf((r) -> r.getCommand())

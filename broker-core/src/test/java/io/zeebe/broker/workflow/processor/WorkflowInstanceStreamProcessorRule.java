@@ -163,7 +163,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
         WorkflowInstanceIntent.CREATE,
         workflowInstanceRecord(BufferUtil.wrapString(processId), payload));
     final TypedRecord<WorkflowInstanceRecord> createdEvent =
-        awaitAndGetFirstRecordInState(WorkflowInstanceIntent.ELEMENT_READY);
+        awaitAndGetFirstRecordInState(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     return createdEvent;
   }
 

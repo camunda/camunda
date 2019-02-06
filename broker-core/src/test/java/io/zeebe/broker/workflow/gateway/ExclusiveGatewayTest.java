@@ -179,7 +179,7 @@ public class ExclusiveGatewayTest {
     List<Record<WorkflowInstanceRecordValue>> gateWays =
         testClient
             .receiveWorkflowInstances()
-            .withIntent(WorkflowInstanceIntent.ELEMENT_READY)
+            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .withElementType(BpmnElementType.EXCLUSIVE_GATEWAY)
             .limit(2)
             .collect(Collectors.toList());
@@ -196,7 +196,7 @@ public class ExclusiveGatewayTest {
 
     // then
     testClient.receiveElementInState(
-        workflowInstance2, "workflow", WorkflowInstanceIntent.ELEMENT_READY);
+        workflowInstance2, "workflow", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
 
     sequenceFlows =
         testClient
@@ -209,7 +209,7 @@ public class ExclusiveGatewayTest {
     gateWays =
         testClient
             .receiveWorkflowInstances()
-            .withIntent(WorkflowInstanceIntent.ELEMENT_READY)
+            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .withElementType(BpmnElementType.EXCLUSIVE_GATEWAY)
             .withWorkflowInstanceKey(workflowInstance2)
             .limit(2)
@@ -255,12 +255,12 @@ public class ExclusiveGatewayTest {
         .extracting(Record::getMetadata)
         .extracting(e -> e.getIntent())
         .containsExactly(
-            WorkflowInstanceIntent.ELEMENT_READY,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
             WorkflowInstanceIntent.ELEMENT_COMPLETING,
             WorkflowInstanceIntent.ELEMENT_COMPLETED,
             WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
-            WorkflowInstanceIntent.ELEMENT_READY,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
             WorkflowInstanceIntent.ELEMENT_COMPLETING,
             WorkflowInstanceIntent.ELEMENT_COMPLETED,
@@ -318,7 +318,7 @@ public class ExclusiveGatewayTest {
     assertThat(completedEvents)
         .extracting(r -> r.getMetadata().getIntent())
         .containsExactly(
-            WorkflowInstanceIntent.ELEMENT_READY,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
             WorkflowInstanceIntent.ELEMENT_COMPLETING,
             WorkflowInstanceIntent.ELEMENT_COMPLETED,

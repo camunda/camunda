@@ -75,7 +75,7 @@ public class EventOccurredHandler<T extends ExecutableFlowElement> extends Abstr
             .deferRecord(
                 context.getRecord().getKey(),
                 getEventRecord(context, event, element),
-                WorkflowInstanceIntent.ELEMENT_READY);
+                WorkflowInstanceIntent.ELEMENT_ACTIVATING);
 
     handleEvent(context, eventInstanceKey, event);
     return eventInstanceKey;
@@ -83,7 +83,8 @@ public class EventOccurredHandler<T extends ExecutableFlowElement> extends Abstr
 
   /**
    * Will trigger the creation of a new instance of the flow with the same elementId as the event in
-   * a synchronous fashion by publishing its ELEMENT_READY event and spawning a new token for it.
+   * a synchronous fashion by publishing its ELEMENT_ACTIVATING event and spawning a new token for
+   * it.
    */
   protected long publishEvent(
       BpmnStepContext<T> context, EventTrigger event, ExecutableFlowElement element) {
@@ -91,7 +92,7 @@ public class EventOccurredHandler<T extends ExecutableFlowElement> extends Abstr
         context
             .getOutput()
             .appendNewEvent(
-                WorkflowInstanceIntent.ELEMENT_READY, getEventRecord(context, event, element));
+                WorkflowInstanceIntent.ELEMENT_ACTIVATING, getEventRecord(context, event, element));
     handleEvent(context, eventInstanceKey, event);
     context.getFlowScopeInstance().spawnToken();
 

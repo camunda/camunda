@@ -74,8 +74,8 @@ public abstract class AbstractHandler<T extends ExecutableFlowElement>
   /**
    * Returns true if the current record intent is the same as the element's current state. This is
    * primarily to ensure we're not processing concurrent state transitions (e.g. writing
-   * ELEMENT_READY and ELEMENT_ACTIVATED in the same step will transition the element to ACTIVATED,
-   * and we shouldn't process the ELEMENT_READY in that case).
+   * ELEMENT_ACTIVATING and ELEMENT_ACTIVATED in the same step will transition the element to
+   * ACTIVATED, and we shouldn't process the ELEMENT_ACTIVATING in that case).
    */
   protected boolean isStateSameAsElementState(BpmnStepContext<T> context) {
     return context.getState() == context.getElementInstance().getState();

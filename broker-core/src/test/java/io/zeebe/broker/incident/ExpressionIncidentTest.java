@@ -97,7 +97,7 @@ public class ExpressionIncidentTest {
     // then incident is created
     final Record<WorkflowInstanceRecordValue> failingEvent =
         testClient.receiveFirstWorkflowInstanceEvent(
-            WorkflowInstanceIntent.ELEMENT_READY, BpmnElementType.EXCLUSIVE_GATEWAY);
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnElementType.EXCLUSIVE_GATEWAY);
 
     final Record<IncidentRecordValue> incidentCommand =
         testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
@@ -143,7 +143,7 @@ public class ExpressionIncidentTest {
         testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     final Record<WorkflowInstanceRecordValue> failureEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_READY);
+        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
 
     // when correct payload is used
     testClient.updatePayload(failureEvent.getKey(), asMsgPack("foo", 7).byteArray());
@@ -179,7 +179,7 @@ public class ExpressionIncidentTest {
             WorkflowInstanceIntent.ELEMENT_COMPLETING,
             WorkflowInstanceIntent.ELEMENT_COMPLETED,
             WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
-            WorkflowInstanceIntent.ELEMENT_READY,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
             WorkflowInstanceIntent.ELEMENT_COMPLETING,
             WorkflowInstanceIntent.ELEMENT_COMPLETED);
@@ -194,7 +194,7 @@ public class ExpressionIncidentTest {
     final long failedEventKey =
         testClient
             .receiveFirstWorkflowInstanceEvent(
-                WorkflowInstanceIntent.ELEMENT_READY, BpmnElementType.EXCLUSIVE_GATEWAY)
+                WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnElementType.EXCLUSIVE_GATEWAY)
             .getKey();
     testClient.updatePayload(failedEventKey, asMsgPack("foo", 10).byteArray());
     testClient.resolveIncident(incidentKey);
@@ -243,7 +243,7 @@ public class ExpressionIncidentTest {
         .extracting(RecordMetadata::getIntent)
         .containsSubsequence(
             WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
-            WorkflowInstanceIntent.ELEMENT_READY,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
             WorkflowInstanceIntent.ELEMENT_COMPLETING,
             WorkflowInstanceIntent.ELEMENT_COMPLETED);
@@ -262,7 +262,7 @@ public class ExpressionIncidentTest {
 
     final Record<WorkflowInstanceRecordValue> failureEvent =
         testClient.receiveFirstWorkflowInstanceEvent(
-            WorkflowInstanceIntent.ELEMENT_READY, BpmnElementType.EXCLUSIVE_GATEWAY);
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnElementType.EXCLUSIVE_GATEWAY);
 
     // when
     testClient.updatePayload(failureEvent.getKey(), asMsgPack("foo", 7).byteArray());

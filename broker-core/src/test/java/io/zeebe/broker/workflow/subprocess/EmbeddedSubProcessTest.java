@@ -121,28 +121,28 @@ public class EmbeddedSubProcessTest {
         .extracting(e -> e.getMetadata().getIntent(), e -> e.getValue().getElementId())
         .containsExactly(
             tuple(WorkflowInstanceIntent.CREATE, ""),
-            tuple(WorkflowInstanceIntent.ELEMENT_READY, PROCESS_ID),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, PROCESS_ID),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, PROCESS_ID),
-            tuple(WorkflowInstanceIntent.ELEMENT_READY, "start"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "start"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "start"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "start"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "start"),
             tuple(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, "flow1"),
-            tuple(WorkflowInstanceIntent.ELEMENT_READY, "subProcess"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "subProcess"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "subProcess"),
-            tuple(WorkflowInstanceIntent.ELEMENT_READY, "subProcessStart"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "subProcessStart"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "subProcessStart"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "subProcessStart"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "subProcessStart"),
             tuple(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, "subProcessFlow1"),
-            tuple(WorkflowInstanceIntent.ELEMENT_READY, "subProcessTask"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "subProcessTask"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "subProcessTask"));
 
     final Record<WorkflowInstanceRecordValue> subProcessReady =
         testClient
             .receiveWorkflowInstances()
             .withElementId("subProcess")
-            .withIntent(WorkflowInstanceIntent.ELEMENT_READY)
+            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .getFirst();
     assertThat(subProcessReady.getValue().getScopeInstanceKey()).isEqualTo(workflowInstanceKey);
 
@@ -150,7 +150,7 @@ public class EmbeddedSubProcessTest {
         testClient
             .receiveWorkflowInstances()
             .withElementId("subProcessTask")
-            .withIntent(WorkflowInstanceIntent.ELEMENT_READY)
+            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .getFirst();
     assertThat(subProcessTaskReady.getValue().getScopeInstanceKey())
         .isEqualTo(subProcessReady.getKey());
@@ -176,33 +176,33 @@ public class EmbeddedSubProcessTest {
         .extracting(e -> e.getMetadata().getIntent(), e -> e.getValue().getElementId())
         .containsExactly(
             tuple(WorkflowInstanceIntent.CREATE, ""),
-            tuple(WorkflowInstanceIntent.ELEMENT_READY, PROCESS_ID),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, PROCESS_ID),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, PROCESS_ID),
-            tuple(WorkflowInstanceIntent.ELEMENT_READY, "start"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "start"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "start"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "start"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "start"),
             tuple(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, "flow1"),
-            tuple(WorkflowInstanceIntent.ELEMENT_READY, "subProcess"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "subProcess"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "subProcess"),
-            tuple(WorkflowInstanceIntent.ELEMENT_READY, "subProcessStart"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "subProcessStart"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "subProcessStart"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "subProcessStart"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "subProcessStart"),
             tuple(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, "subProcessFlow1"),
-            tuple(WorkflowInstanceIntent.ELEMENT_READY, "subProcessTask"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "subProcessTask"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "subProcessTask"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "subProcessTask"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "subProcessTask"),
             tuple(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, "subProcessFlow2"),
-            tuple(WorkflowInstanceIntent.ELEMENT_READY, "subProcessEnd"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "subProcessEnd"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "subProcessEnd"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "subProcessEnd"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "subProcessEnd"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "subProcess"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "subProcess"),
             tuple(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, "flow2"),
-            tuple(WorkflowInstanceIntent.ELEMENT_READY, "end"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "end"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "end"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "end"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "end"),
@@ -278,11 +278,11 @@ public class EmbeddedSubProcessTest {
     assertThat(workflowInstanceEvents)
         .extracting(e -> e.getMetadata().getIntent(), e -> e.getValue().getElementId())
         .containsExactly(
-            tuple(WorkflowInstanceIntent.ELEMENT_READY, "outerSubProcess"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "outerSubProcess"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "outerSubProcess"),
-            tuple(WorkflowInstanceIntent.ELEMENT_READY, "innerSubProcess"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "innerSubProcess"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "innerSubProcess"),
-            tuple(WorkflowInstanceIntent.ELEMENT_READY, "task"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "task"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "task"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "task"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "task"),
@@ -362,7 +362,7 @@ public class EmbeddedSubProcessTest {
             tuple(WorkflowInstanceIntent.ELEMENT_TERMINATED, "task"),
             tuple(WorkflowInstanceIntent.ELEMENT_TERMINATED, "innerSubProcess"),
             tuple(WorkflowInstanceIntent.ELEMENT_TERMINATED, "outerSubProcess"),
-            tuple(WorkflowInstanceIntent.ELEMENT_READY, "event"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "event"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "event"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "event"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "event"));

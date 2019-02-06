@@ -126,7 +126,7 @@ public class BoundaryEventTest {
     final Record<WorkflowInstanceRecordValue> activityTerminating =
         testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_TERMINATED);
     final Record<WorkflowInstanceRecordValue> boundaryTriggering =
-        testClient.receiveElementInState("timer", WorkflowInstanceIntent.ELEMENT_READY);
+        testClient.receiveElementInState("timer", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
 
     awaitProcessCompleted();
 
@@ -236,7 +236,7 @@ public class BoundaryEventTest {
     final Record<WorkflowInstanceRecordValue> subProcessTerminated =
         testClient.receiveElementInState("sub", WorkflowInstanceIntent.ELEMENT_TERMINATED);
     final Record<WorkflowInstanceRecordValue> boundaryTriggering =
-        testClient.receiveElementInState("timer", WorkflowInstanceIntent.ELEMENT_READY);
+        testClient.receiveElementInState("timer", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     final Record<WorkflowInstanceRecordValue> boundaryTriggered =
         testClient.receiveElementInState("timer", WorkflowInstanceIntent.ELEMENT_COMPLETED);
 

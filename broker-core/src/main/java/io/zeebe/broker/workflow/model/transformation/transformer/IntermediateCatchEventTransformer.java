@@ -62,7 +62,7 @@ public class IntermediateCatchEventTransformer
 
   private void bindLifecycle(ExecutableCatchEventElement executableElement) {
     executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_READY, BpmnStep.INTERMEDIATE_CATCH_EVENT_ELEMENT_READY);
+        WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnStep.INTERMEDIATE_CATCH_EVENT_ELEMENT_READY);
     executableElement.bindLifecycleState(
         WorkflowInstanceIntent.ELEMENT_ACTIVATED,
         BpmnStep.INTERMEDIATE_CATCH_EVENT_ELEMENT_ACTIVATED);

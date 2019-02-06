@@ -112,9 +112,9 @@ public class MessageStartEventTest {
         .extracting(r -> r.getMetadata().getIntent())
         .containsExactly(
             WorkflowInstanceIntent.EVENT_OCCURRED, // message
-            WorkflowInstanceIntent.ELEMENT_READY, // workflow instance
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING, // workflow instance
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-            WorkflowInstanceIntent.ELEMENT_READY, // start event
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING, // start event
             WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     assertThat(records).allMatch(r -> r.getValue().getWorkflowKey() == workflowKey);
@@ -185,7 +185,7 @@ public class MessageStartEventTest {
 
     // check if two instances are created
     final List<Record<WorkflowInstanceRecordValue>> records =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_READY)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .withElementType(BpmnElementType.PROCESS)
             .limit(2)
             .asList();
@@ -262,9 +262,9 @@ public class MessageStartEventTest {
     assertThat(records.stream().map(r -> r.getMetadata().getIntent()))
         .containsExactly(
             WorkflowInstanceIntent.EVENT_OCCURRED, // message
-            WorkflowInstanceIntent.ELEMENT_READY, // workflow instance
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING, // workflow instance
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-            WorkflowInstanceIntent.ELEMENT_READY, // start event
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING, // start event
             WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     assertThat(records).allMatch(r -> r.getValue().getWorkflowKey() == workflowKey2);

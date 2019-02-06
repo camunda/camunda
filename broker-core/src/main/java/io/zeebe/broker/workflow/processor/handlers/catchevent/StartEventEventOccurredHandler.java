@@ -79,7 +79,7 @@ public class StartEventEventOccurredHandler<T extends ExecutableCatchEventElemen
         .getOutput()
         .appendFollowUpEvent(
             workflowInstanceKey,
-            WorkflowInstanceIntent.ELEMENT_READY,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
             record,
             workflow.getWorkflow());
   }
@@ -91,6 +91,6 @@ public class StartEventEventOccurredHandler<T extends ExecutableCatchEventElemen
 
     context
         .getOutput()
-        .deferRecord(workflowInstanceKey, event, WorkflowInstanceIntent.ELEMENT_READY);
+        .deferRecord(workflowInstanceKey, event, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
   }
 }

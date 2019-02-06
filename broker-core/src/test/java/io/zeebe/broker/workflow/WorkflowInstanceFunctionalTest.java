@@ -82,7 +82,7 @@ public class WorkflowInstanceFunctionalTest {
         testClient.receiveFirstWorkflowInstanceCommand(WorkflowInstanceIntent.CREATE);
     final Record<WorkflowInstanceRecordValue> startEvent =
         testClient.receiveFirstWorkflowInstanceEvent(
-            WorkflowInstanceIntent.ELEMENT_READY, BpmnElementType.START_EVENT);
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnElementType.START_EVENT);
     final long workflowInstanceKey = response.getKey();
 
     assertThat(startEvent.getKey()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
@@ -126,7 +126,7 @@ public class WorkflowInstanceFunctionalTest {
                 .withElementId("foo"))
         .extracting(r -> r.getMetadata().getIntent())
         .containsExactly(
-            WorkflowInstanceIntent.ELEMENT_READY,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
             WorkflowInstanceIntent.ELEMENT_COMPLETING,
             WorkflowInstanceIntent.ELEMENT_COMPLETED);
@@ -155,7 +155,7 @@ public class WorkflowInstanceFunctionalTest {
 
     // then
     final Record<WorkflowInstanceRecordValue> activityReady =
-        testClient.receiveElementInState("foo", WorkflowInstanceIntent.ELEMENT_READY);
+        testClient.receiveElementInState("foo", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     final Record<WorkflowInstanceRecordValue> activatedEvent =
         testClient.receiveElementInState("foo", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
@@ -273,19 +273,19 @@ public class WorkflowInstanceFunctionalTest {
         .extracting(e -> e.getIntent())
         .containsExactly(
             WorkflowInstanceIntent.CREATE,
-            WorkflowInstanceIntent.ELEMENT_READY,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-            WorkflowInstanceIntent.ELEMENT_READY,
-            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-            WorkflowInstanceIntent.ELEMENT_COMPLETING,
-            WorkflowInstanceIntent.ELEMENT_COMPLETED,
-            WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
-            WorkflowInstanceIntent.ELEMENT_READY,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
             WorkflowInstanceIntent.ELEMENT_COMPLETING,
             WorkflowInstanceIntent.ELEMENT_COMPLETED,
             WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
-            WorkflowInstanceIntent.ELEMENT_READY,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+            WorkflowInstanceIntent.ELEMENT_COMPLETING,
+            WorkflowInstanceIntent.ELEMENT_COMPLETED,
+            WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
             WorkflowInstanceIntent.ELEMENT_COMPLETING,
             WorkflowInstanceIntent.ELEMENT_COMPLETED,
