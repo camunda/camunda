@@ -30,9 +30,14 @@ public class DeploymentResource extends UnpackedObject {
   private final StringProperty resourceNameProp = new StringProperty("resourceName", "resource");
 
   public DeploymentResource() {
-    this.declareProperty(resourceProp)
-        .declareProperty(resourceTypeProp)
-        .declareProperty(resourceNameProp);
+    this.declareProperty(resourceTypeProp)
+        .declareProperty(resourceNameProp)
+        // the resource property is updated while iterating over the deployment record
+        // when a YAML workflow is transformed into its XML representation
+        // therefore the resource properties has to be the last one written to the buffer
+        // as otherwise it will potentially override other information
+        // https://github.com/zeebe-io/zeebe/issues/1931
+        .declareProperty(resourceProp);
   }
 
   public DirectBuffer getResource() {

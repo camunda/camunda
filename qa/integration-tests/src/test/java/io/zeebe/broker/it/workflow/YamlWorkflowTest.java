@@ -148,15 +148,33 @@ public class YamlWorkflowTest {
 
     assertWorkflowInstanceCompleted(
         "workflow-mappings",
-        (workflowInstance) -> {
-          assertThat(workflowInstance.getPayload()).isEqualTo("{\"foo\":1,\"result\":3}");
-        });
+        (workflowInstance) ->
+            assertThat(workflowInstance.getPayload()).isEqualTo("{\"foo\":1,\"result\":3}"));
   }
 
-  private void deploy(String resource) {
+  @Test
+  public void shouldCreateInstanceAfterMultipleWorkflowsDeployed() {
+    // given
+    final long firstKey = deploy("workflows/workflow-with-headers.yaml");
+    final long secondKey = deploy("workflows/simple-workflow.yaml");
+
+    // when
+    final WorkflowInstanceEvent firstWorkflowInstance =
+        clientRule.getClient().newCreateInstanceCommand().workflowKey(firstKey).send().join();
+
+    final WorkflowInstanceEvent secondWorkflowInstance =
+        clientRule.getClient().newCreateInstanceCommand().workflowKey(secondKey).send().join();
+
+    // then
+    assertWorkflowInstanceCreated(firstWorkflowInstance.getWorkflowInstanceKey());
+    assertWorkflowInstanceCreated(secondWorkflowInstance.getWorkflowInstanceKey());
+  }
+
+  private long deploy(String resource) {
     final DeploymentEvent deploymentEvent =
         clientRule.getClient().newDeployCommand().addResourceFromClasspath(resource).send().join();
 
     clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
+    return deploymentEvent.getWorkflows().get(0).getWorkflowKey();
   }
 }
