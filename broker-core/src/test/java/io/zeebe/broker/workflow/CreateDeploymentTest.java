@@ -299,11 +299,15 @@ public class CreateDeploymentTest {
   @Test
   public void shouldRejectDeploymentIfOneResourceIsNotValid() throws Exception {
     // given
-    final Path path = Paths.get(getClass().getResource("/workflows/invalid_process.bpmn").toURI());
-    final byte[] resource = Files.readAllBytes(path);
+    final Path path1 = Paths.get(getClass().getResource("/workflows/invalid_process.bpmn").toURI());
+    final Path path2 = Paths.get(getClass().getResource("/workflows/collaboration.bpmn").toURI());
+    final byte[] resource1 = Files.readAllBytes(path1);
+    final byte[] resource2 = Files.readAllBytes(path2);
 
     final List<Map<String, Object>> resources =
-        Arrays.asList(deploymentResource(resource, "process2.bpmn"));
+        Arrays.asList(
+            deploymentResource(resource1, "process1.bpmn"),
+            deploymentResource(resource2, "process2.bpmn"));
 
     // when
     final ExecuteCommandResponse resp =
