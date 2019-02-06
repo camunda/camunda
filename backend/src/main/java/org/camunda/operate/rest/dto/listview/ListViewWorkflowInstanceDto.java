@@ -128,11 +128,13 @@ public class ListViewWorkflowInstanceDto {
     workflowInstance.setWorkflowName(workflowInstanceEntity.getWorkflowName());
     workflowInstance.setWorkflowVersion(workflowInstanceEntity.getWorkflowVersion());
     workflowInstance.setOperations(OperationDto.createFrom(operations));
-    workflowInstance.setHasActiveOperation(operations.stream().anyMatch(
-      o ->
-        o.getState().equals(OperationState.SCHEDULED)
-        || o.getState().equals(OperationState.LOCKED)
-        || o.getState().equals(OperationState.SENT)));
+    if (operations != null) {
+      workflowInstance.setHasActiveOperation(operations.stream().anyMatch(
+        o ->
+          o.getState().equals(OperationState.SCHEDULED)
+          || o.getState().equals(OperationState.LOCKED)
+          || o.getState().equals(OperationState.SENT)));
+    }
     return workflowInstance;
   }
 
