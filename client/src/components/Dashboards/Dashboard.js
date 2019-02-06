@@ -8,16 +8,15 @@ import {withErrorHandling} from 'HOC';
 
 import {
   Button,
-  Input,
   ShareEntity,
   DashboardView,
   Icon,
   Dropdown,
   Popover,
-  ErrorMessage,
   ErrorPage,
   LoadingIndicator,
-  ConfirmationModal
+  ConfirmationModal,
+  EntityNameForm
 } from 'components';
 
 import {themed} from 'theme';
@@ -58,7 +57,7 @@ export default themed(
           lastModified: null,
           lastModifier: null,
           loaded: false,
-          redirect: false,
+          redirect: '',
           originalName: null,
           reports: [],
           originalReports: [],
@@ -74,10 +73,7 @@ export default themed(
 
       componentDidMount = async () => {
         const sharingEnabled = await isSharingEnabled();
-        this.setState({
-          sharingEnabled
-        });
-        await this.renderDashboard();
+        await this.renderDashboard(sharingEnabled);
       };
 
       componentWillUnmount = () => {
@@ -86,11 +82,10 @@ export default themed(
         }
       };
 
-      renderDashboard = async () => {
+      renderDashboard = async isSharingEnabled => {
         await this.props.mightFail(
           loadDashboard(this.id),
           async response => {
-            const isAuthorizedToShare = await isAuthorizedToShareDashboard(this.id);
             const {name, lastModifier, lastModified, reports} = response;
 
             this.setState({
@@ -101,7 +96,8 @@ export default themed(
               originalName: name,
               reports: reports || [],
               originalReports: reports || [],
-              isAuthorizedToShare
+              isAuthorizedToShare: await isAuthorizedToShareDashboard(this.id),
+              ...(isSharingEnabled !== 'undefined' ? {isSharingEnabled} : {})
             });
           },
           error => {
@@ -118,7 +114,7 @@ export default themed(
         await remove(this.id);
 
         this.setState({
-          redirect: true
+          redirect: '/dashboards'
         });
       };
 
@@ -128,15 +124,17 @@ export default themed(
         });
       };
 
-      saveChanges = async () => {
+      saveChanges = async (evt, name) => {
         await update(this.id, {
-          name: this.state.name,
+          name,
           reports: this.state.reports
         });
 
         this.setState({
           originalName: this.state.name,
           originalReports: this.state.reports,
+          name,
+          redirect: `/dashboard/${this.id}`,
           isAuthorizedToShare: await isAuthorizedToShareDashboard(this.id)
         });
       };
@@ -244,45 +242,16 @@ export default themed(
         return (
           <div className="Dashboard">
             <div className="Dashboard__header">
-              <div className="Dashboard__name-container">
-                <Input
-                  type="text"
-                  id={'name'}
-                  ref={this.inputRef}
-                  onChange={this.updateName}
-                  value={name || ''}
-                  className="Dashboard__name-input"
-                  placeholder="Dashboard Name"
-                  isInvalid={!this.state.name}
-                />
-                {!this.state.name && (
-                  <ErrorMessage className="Report__warning">
-                    Dashboard's name can not be empty
-                  </ErrorMessage>
-                )}
-                <div className="Dashboard__metadata">
-                  Last modified {moment(lastModified).format('lll')} by {lastModifier}
-                </div>
-              </div>
-              <div className="Dashboard__tools">
-                <Link
-                  className="Button Dashboard__tool-button Dashboard__save-button"
-                  to={`/dashboard/${this.id}`}
-                  onClick={this.saveChanges.bind(this)}
-                  disabled={!this.state.name}
-                >
-                  <Icon type="check" />
-                  Save
-                </Link>
-                <Link
-                  className="Button Dashboard__tool-button Dashboard__cancel-button"
-                  to={`/dashboard/${this.id}`}
-                  onClick={this.cancelChanges}
-                >
-                  <Icon type="stop" />
-                  Cancel
-                </Link>
-              </div>
+              <EntityNameForm
+                id={this.id}
+                initialName={name}
+                lastModified={lastModified}
+                lastModifier={lastModifier}
+                autofocus={this.isNew}
+                entity="dashboard"
+                onSave={this.saveChanges}
+                onCancel={this.cancelChanges}
+              />
             </div>
             <DashboardView
               disableReportScrolling
@@ -331,17 +300,17 @@ export default themed(
               })}
             >
               <div className="Dashboard__header">
-                <div className="Dashboard__name-container">
-                  <h1 className="Dashboard__heading">{name}</h1>
-                  <div className="Dashboard__metadata">
+                <div className="name-container">
+                  <h1 className="name">{name}</h1>
+                  <div className="metadata">
                     Last modified {moment(lastModified).format('lll')} by {lastModifier}
                   </div>
                 </div>
-                <div className="Dashboard__tools">
+                <div className="tools">
                   {!this.state.fullScreenActive && (
                     <React.Fragment>
                       <Link
-                        className="Dashboard__tool-button Dashboard__edit-button"
+                        className="tool-button edit-button"
                         to={`/dashboard/${this.id}/edit`}
                         onClick={this.setAutorefresh(null)}
                       >
@@ -350,15 +319,12 @@ export default themed(
                           Edit
                         </Button>
                       </Link>
-                      <Button
-                        onClick={this.showDeleteModal}
-                        className="Dashboard__tool-button Dashboard__delete-button"
-                      >
+                      <Button onClick={this.showDeleteModal} className="tool-button delete-button">
                         <Icon type="delete" />
                         Delete
                       </Button>
                       <Popover
-                        className="Dashboard__tool-button Dashboard__share-button"
+                        className="tool-button share-button"
                         icon="share"
                         title="Share"
                         disabled={!sharingEnabled || !isAuthorizedToShare}
@@ -375,13 +341,13 @@ export default themed(
                     </React.Fragment>
                   )}
                   {this.state.fullScreenActive && (
-                    <Button onClick={this.props.toggleTheme} className="Dashboard__tool-button">
+                    <Button onClick={this.props.toggleTheme} className="tool-button">
                       Toggle Theme
                     </Button>
                   )}
                   <Button
                     onClick={this.toggleFullscreen}
-                    className="Dashboard__tool-button Dashboard__fullscreen-button"
+                    className="tool-button Dashboard__fullscreen-button"
                   >
                     <Icon type={this.state.fullScreenActive ? 'exit-fullscreen' : 'fullscreen'} />
                     {this.state.fullScreenActive ? ' Leave' : ' Enter'} Fullscreen
@@ -442,14 +408,9 @@ export default themed(
         return '';
       };
 
-      inputRef = input => {
-        this.nameInput = input;
-      };
-
       componentDidUpdate() {
-        if (this.nameInput && this.isNew) {
-          this.nameInput.focus();
-          this.nameInput.select();
+        if (this.state.redirect) this.setState({redirect: false});
+        if (this.isNew) {
           this.isNew = false;
         }
       }
@@ -468,7 +429,7 @@ export default themed(
         }
 
         if (redirect) {
-          return <Redirect to="/dashboards" />;
+          return <Redirect to={redirect} />;
         }
 
         return (

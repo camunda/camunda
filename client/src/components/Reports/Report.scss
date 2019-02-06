@@ -1,5 +1,3 @@
-@import 'shared-styles/shared-styles.scss';
-
 .Report-container {
   flex-grow: 1;
   display: flex;
@@ -19,58 +17,47 @@
   display: flex;
   flex-shrink: 0;
   margin-bottom: 32px;
-}
 
-.Report__name-container {
-  flex-grow: 1;
-  padding-right: 48px;
-  overflow: hidden;
-  width: 100%;
+  .name-container {
+    flex-grow: 1;
+    padding-right: 48px;
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .metadata {
+    font-size: 14px;
+    color: #666666;
+    margin-top: 6px;
+  }
+
+  .name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+  }
+
+  .tools {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: baseline;
+    flex-shrink: 0;
+    margin-top: 8px;
+
+    .tool-button {
+      margin-right: 6px;
+    }
+
+    .tool-button:last-child {
+      margin-right: 0;
+    }
+  }
 }
 
 .Report__heading {
   font-size: 2em;
   font-weight: bold;
   margin: 0;
-}
-
-.Report__metadata {
-  font-size: 14px;
-  color: #666666;
-  margin-top: 6px;
-}
-
-.Report__name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  width: 100%;
-}
-
-.Input.Report__name-input {
-  font-size: 2em;
-  width: 100%;
-  font-weight: bold;
-
-  @include placeholder {
-    font-weight: normal;
-    color: #bdbdbd;
-  }
-}
-
-.Report__tools {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: baseline;
-  flex-shrink: 0;
-  margin-top: 8px;
-}
-
-.Report__tool-button {
-  margin-right: 6px;
-}
-
-.Report__tool-button:last-child {
-  margin-right: 0;
 }
 
 .Report__view {

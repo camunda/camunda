@@ -31,3 +31,4 @@ export {DatePicker} from './DatePicker';
 export {LoadingIndicator} from './LoadingIndicator';
 export {ConfirmationModal} from './ConfirmationModal';
 export {ColorPicker} from './ColorPicker';
+export {EntityNameForm} from './EntityNameForm';

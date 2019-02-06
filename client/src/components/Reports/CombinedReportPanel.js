@@ -113,7 +113,10 @@ export default class CombinedReportPanel extends React.Component {
   };
 
   updateColor = idx => color => {
-    const {report: {data}, updateReport} = this.props;
+    const {
+      report: {data},
+      updateReport
+    } = this.props;
     const newColorConfiguration = [...data.configuration.reportColors];
     newColorConfiguration[idx] = color;
     updateReport({

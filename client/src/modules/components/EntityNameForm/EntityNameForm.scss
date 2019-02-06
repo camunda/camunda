@@ -1,0 +1,12 @@
+@import 'shared-styles/shared-styles.scss';
+
+.Input.name-input {
+  font-size: 2em;
+  width: 100%;
+  font-weight: bold;
+
+  @include placeholder {
+    font-weight: normal;
+    color: #bdbdbd;
+  }
+}

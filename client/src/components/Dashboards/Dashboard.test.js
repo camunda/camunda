@@ -2,7 +2,7 @@ import React from 'react';
 import {mount, shallow} from 'enzyme';
 
 import ThemedDashboard from './Dashboard';
-import {loadDashboard, remove, update, isAuthorizedToShareDashboard} from './service';
+import {loadDashboard, remove, isAuthorizedToShareDashboard} from './service';
 
 const {WrappedComponent: Dashboard} = ThemedDashboard;
 
@@ -56,7 +56,8 @@ jest.mock('components', () => {
       <div className="ConfirmationModal" {...props}>
         {props.children}
       </div>
-    )
+    ),
+    EntityNameForm: ({children}) => <div>{children}</div>
   };
 });
 
@@ -189,7 +190,7 @@ it('should provide a link to edit mode in view mode', () => {
   const node = mount(shallow(<Dashboard {...props} />).get(0));
   node.setState({loaded: true});
 
-  expect(node.find('.Dashboard__edit-button')).toBePresent();
+  expect(node.find('.edit-button')).toBePresent();
 });
 
 it('should remove a dashboard on dashboard deletion', () => {
@@ -206,6 +207,10 @@ it('should remove a dashboard on dashboard deletion', () => {
 
 it('should redirect to the dashboard list on dashboard deletion', async () => {
   const node = mount(shallow(<Dashboard {...props} />).get(0));
+  // the componentDidUpdate is mocked because it resets the redirect state
+  // which prevents the redirect component from rendering while testing
+  node.instance().componentDidUpdate = jest.fn();
+
   node.setState({
     loaded: true,
     deleteModalVisible: true
@@ -220,7 +225,7 @@ it('should render a sharing popover', () => {
   const node = mount(shallow(<Dashboard {...props} />).get(0));
   node.setState({loaded: true});
 
-  expect(node.find('.Dashboard__share-button').first()).toIncludeText('Share');
+  expect(node.find('.share-button').first()).toIncludeText('Share');
 });
 
 it('should enter fullscreen mode', () => {
@@ -341,54 +346,13 @@ it('should return to light mode when the component is unmounted', async () => {
 });
 
 describe('edit mode', async () => {
-  it('should provide a link to view mode', () => {
-    props.match.params.viewMode = 'edit';
-
-    const node = mount(shallow(<Dashboard {...props} />).get(0));
-    node.setState({loaded: true});
-
-    expect(node.find('.Dashboard__save-button')).toBePresent();
-    expect(node.find('.Dashboard__cancel-button')).toBePresent();
-    expect(node.find('.Dashboard__edit-button')).not.toBePresent();
-  });
-
-  it('should provide name edit input', async () => {
-    props.match.params.viewMode = 'edit';
-    const node = mount(shallow(<Dashboard {...props} />).get(0));
-    node.setState({loaded: true, name: 'test name'});
-
-    expect(node.find('input#name')).toBePresent();
-  });
-
-  it('should invoke update on save click', async () => {
-    props.match.params.viewMode = 'edit';
-    const node = mount(shallow(<Dashboard {...props} />).get(0));
-    node.setState({loaded: true, name: 'test name'});
-
-    node.find('.Dashboard__save-button').simulate('click');
-
-    expect(update).toHaveBeenCalled();
-  });
-
-  it('should update name on input change', async () => {
-    props.match.params.viewMode = 'edit';
-    const node = mount(shallow(<Dashboard {...props} />).get(0));
-    node.setState({loaded: true, name: 'test name'});
-
-    const input = 'asdf';
-    node.find(`input[id="name"]`).simulate('change', {target: {value: input}});
-    expect(node).toHaveState('name', input);
-  });
-
   it('should reset name on cancel', () => {
     props.match.params.viewMode = 'edit';
     const node = mount(shallow(<Dashboard {...props} />).get(0));
-    node.setState({loaded: true, name: 'test name', originalName: 'test name'});
+    node.setState({loaded: true, name: 'name', originalName: 'test name'});
 
-    const input = 'asdf';
-    node.find(`input[id="name"]`).simulate('change', {target: {value: input}});
+    node.instance().cancelChanges();
 
-    node.find('.Dashboard__cancel-button').simulate('click');
     expect(node).toHaveState('name', 'test name');
   });
 
@@ -446,18 +410,6 @@ describe('edit mode', async () => {
     expect(node).toIncludeText('ResizeHandle');
   });
 
-  it('should disable the save button and highlight the input if name empty', () => {
-    props.match.params.viewMode = 'edit';
-    const node = mount(shallow(<Dashboard {...props} />).get(0));
-    node.setState({
-      loaded: true,
-      name: ''
-    });
-
-    expect(node.find('Input').props()).toHaveProperty('isInvalid', true);
-    expect(node.find('.Dashboard__save-button')).toBeDisabled();
-  });
-
   it('should disable the share button if not authorized', () => {
     const node = mount(shallow(<Dashboard {...props} />).get(0));
     node.setState({
@@ -467,7 +419,7 @@ describe('edit mode', async () => {
       sharingEnabled: true
     });
 
-    const shareButton = node.find('.Dashboard__share-button');
+    const shareButton = node.find('.share-button');
     expect(shareButton).toBeDisabled();
     expect(shareButton.props()).toHaveProperty(
       'tooltip',
@@ -484,7 +436,7 @@ describe('edit mode', async () => {
       sharingEnabled: true
     });
 
-    const shareButton = node.find('.Dashboard__share-button');
+    const shareButton = node.find('.share-button');
     expect(shareButton).not.toBeDisabled();
   });
 

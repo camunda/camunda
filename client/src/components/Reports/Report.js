@@ -6,16 +6,15 @@ import {withErrorHandling} from 'HOC';
 import {Link, Redirect} from 'react-router-dom';
 import {
   Button,
-  Input,
   ShareEntity,
   ReportView,
   Popover,
   Icon,
-  ErrorMessage,
   ErrorPage,
   LoadingIndicator,
   Message,
-  ConfirmationModal
+  ConfirmationModal,
+  EntityNameForm
 } from 'components';
 
 import {
@@ -50,10 +49,9 @@ export default withErrorHandling(
       this.state = {
         loaded: false,
         loadingReportData: false,
-        redirect: false,
+        redirect: '',
         confirmModalVisible: false,
         serverError: null,
-        redirectToReport: false,
         conflict: null,
         sharingEnabled: false
       };
@@ -108,13 +106,7 @@ export default withErrorHandling(
       await remove(this.id);
 
       this.setState({
-        redirect: true
-      });
-    };
-
-    updateName = evt => {
-      this.setState({
-        report: update(this.state.report, {name: {$set: evt.target.value}})
+        redirect: '/reports'
       });
     };
 
@@ -132,15 +124,17 @@ export default withErrorHandling(
       return str && str.length > 0;
     };
 
-    save = async evt => {
-      const {name, data, reportType, combined} = this.state.report;
+    save = async (evt, updatedName) => {
+      const {data, reportType, combined} = this.state.report;
+      const name = updatedName || this.state.report.name;
       await this.props.mightFail(
         saveReport(this.id, {name, data, reportType, combined}, this.state.conflict !== null),
         () => {
           this.setState({
             confirmModalVisible: false,
+            report: update(this.state.report, {name: {$set: name}}),
             originalData: this.state.report,
-            redirectToReport: !!evt,
+            redirect: `/report/${this.id}`,
             conflict: null
           });
         },
@@ -148,6 +142,7 @@ export default withErrorHandling(
           if (error.statusText === 'Conflict') {
             const conflictData = await error.json();
             this.setState({
+              report: update(this.state.report, {name: {$set: name}}),
               confirmModalVisible: true,
               conflict: {
                 type: 'Save',
@@ -196,7 +191,9 @@ export default withErrorHandling(
     };
 
     shouldShowCSVDownload = () => {
-      const {report: {result}} = this.state;
+      const {
+        report: {result}
+      } = this.state;
       return result;
     };
 
@@ -253,62 +250,31 @@ export default withErrorHandling(
     };
 
     renderEditMode = () => {
-      const {report, loadingReportData, redirectToReport} = this.state;
+      const {report, loadingReportData} = this.state;
       const {name, lastModifier, lastModified, data, combined, reportType} = report;
 
       return (
         <div className="Report">
           <div className="Report__header">
-            <div className="Report__name-container">
-              <Input
-                id="name"
-                type="text"
-                ref={this.inputRef}
-                onChange={this.updateName}
-                value={name || ''}
-                className="Report__name-input"
-                placeholder="Report Name"
-                isInvalid={!name}
-              />
-              {!name && (
-                <ErrorMessage className="Report__warning">
-                  {"Report's name can not be empty"}
-                </ErrorMessage>
-              )}
-              <div className="Report__metadata">
-                Last modified {moment(lastModified).format('lll')} by {lastModifier}
-              </div>
-            </div>
-            <div className="Report__tools">
-              <button
-                className="Button Report__tool-button Report__save-button"
-                disabled={!name}
-                onClick={this.save}
-              >
-                <Icon type="check" />
-                Save
-              </button>
-              {redirectToReport && <Redirect to={`/report/${this.id}`} />}
-              <Link
-                className="Button Report__tool-button Report__cancel-button"
-                to={`/report/${this.id}`}
-                onClick={this.cancel}
-              >
-                <Icon type="stop" />
-                Cancel
-              </Link>
-            </div>
+            <EntityNameForm
+              id={this.id}
+              initialName={name}
+              lastModified={lastModified}
+              lastModifier={lastModifier}
+              entity="report"
+              autofocus={this.isNew}
+              onSave={this.save}
+              onCancel={this.cancel}
+            />
           </div>
 
-          {!combined &&
-            reportType === 'process' && (
-              <ReportControlPanel report={report} updateReport={this.updateReport} />
-            )}
+          {!combined && reportType === 'process' && (
+            <ReportControlPanel report={report} updateReport={this.updateReport} />
+          )}
 
-          {!combined &&
-            reportType === 'decision' && (
-              <DecisionControlPanel report={report} updateReport={this.updateReport} />
-            )}
+          {!combined && reportType === 'decision' && (
+            <DecisionControlPanel report={report} updateReport={this.updateReport} />
+          )}
 
           {this.maxRawDataEntriesExceeded() && (
             <Message type="warning">
@@ -317,13 +283,11 @@ export default withErrorHandling(
             </Message>
           )}
 
-          {data &&
-            data.filter &&
-            incompatibleFilters(data.filter) && (
-              <Message type="warning">
-                No data is shown since the combination of filters is incompatible with each other
-              </Message>
-            )}
+          {data && data.filter && incompatibleFilters(data.filter) && (
+            <Message type="warning">
+              No data is shown since the combination of filters is incompatible with each other
+            </Message>
+          )}
 
           <div className="Report__view">
             <div className="Report__content">
@@ -382,31 +346,25 @@ export default withErrorHandling(
       return (
         <div className="Report">
           <div className="Report__header">
-            <div className="Report__name-container">
-              <h1 className="Report__name">{name}</h1>
-              <div className="Report__metadata">
+            <div className="name-container">
+              <h1 className="name">{name}</h1>
+              <div className="metadata">
                 Last modified {moment(lastModified).format('lll')} by {lastModifier}
               </div>
             </div>
-            <div className="Report__tools">
-              <Link
-                className="Report__tool-button Report__edit-button"
-                to={`/report/${this.id}/edit`}
-              >
+            <div className="tools">
+              <Link className="tool-button edit-button" to={`/report/${this.id}/edit`}>
                 <Button>
                   <Icon type="edit" />
                   Edit
                 </Button>
               </Link>
-              <Button
-                className="Report__tool-button Report__delete-button"
-                onClick={this.showDeleteModal}
-              >
+              <Button className="tool-button delete-button" onClick={this.showDeleteModal}>
                 <Icon type="delete" />
                 Delete
               </Button>
               <Popover
-                className="Report__tool-button Report__share-button"
+                className="tool-button share-button"
                 icon="share"
                 title="Share"
                 tooltip={!sharingEnabled ? 'Sharing is disabled per configuration' : ''}
@@ -442,15 +400,9 @@ export default withErrorHandling(
       );
     };
 
-    inputRef = input => {
-      this.nameInput = input;
-    };
-
     componentDidUpdate() {
-      if (this.state.redirectToReport) this.setState({redirectToReport: false});
-      if (this.nameInput && this.isNew) {
-        this.nameInput.focus();
-        this.nameInput.select();
+      if (this.state.redirect) this.setState({redirect: ''});
+      if (this.isNew) {
         this.isNew = false;
       }
     }
@@ -469,7 +421,7 @@ export default withErrorHandling(
       }
 
       if (redirect) {
-        return <Redirect to="/reports" />;
+        return <Redirect to={redirect} />;
       }
 
       const {name} = report;

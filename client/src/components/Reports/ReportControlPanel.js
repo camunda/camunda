@@ -19,7 +19,12 @@ import {Configuration} from './Configuration';
 
 import './ReportControlPanel.scss';
 
-const {options: {view, groupBy, visualization}, getLabelFor, isAllowed, update} = processConfig;
+const {
+  options: {view, groupBy, visualization},
+  getLabelFor,
+  isAllowed,
+  update
+} = processConfig;
 const groupByVariablePageSize = 5;
 
 export default class ReportControlPanel extends React.Component {
@@ -42,14 +47,18 @@ export default class ReportControlPanel extends React.Component {
   }
 
   loadFlowNodeNames = async () => {
-    const {data: {processDefinitionKey, processDefinitionVersion}} = this.props.report;
+    const {
+      data: {processDefinitionKey, processDefinitionVersion}
+    } = this.props.report;
     this.setState({
       flowNodeNames: await getFlowNodeNames(processDefinitionKey, processDefinitionVersion)
     });
   };
 
   loadProcessDefinitionName = async () => {
-    const {configuration: {xml}} = this.props.report.data;
+    const {
+      configuration: {xml}
+    } = this.props.report.data;
     if (xml) {
       const processDefinitionName = await extractProcessDefinitionName(xml);
       this.setState({
@@ -68,7 +77,9 @@ export default class ReportControlPanel extends React.Component {
   };
 
   definitionConfig = () => {
-    const {data: {processDefinitionKey, processDefinitionVersion}} = this.props.report;
+    const {
+      data: {processDefinitionKey, processDefinitionVersion}
+    } = this.props.report;
     return {
       processDefinitionKey,
       processDefinitionVersion

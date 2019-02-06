@@ -53,7 +53,8 @@ jest.mock('components', () => {
       <div className="ConfirmationModal" {...props}>
         {props.children}
       </div>
-    )
+    ),
+    EntityNameForm: ({children}) => <div>{children}</div>
   };
 });
 
@@ -183,7 +184,7 @@ it('should provide a link to edit mode in view mode', () => {
   const node = mount(shallow(<Report {...props} />).get(0));
   node.setState({loaded: true, report});
 
-  expect(node.find('.Report__edit-button')).toBePresent();
+  expect(node.find('.edit-button')).toBePresent();
 });
 
 it('should open a deletion modal on delete button click', async () => {
@@ -194,7 +195,7 @@ it('should open a deletion modal on delete button click', async () => {
   });
 
   await node
-    .find('.Report__delete-button')
+    .find('.delete-button')
     .first()
     .simulate('click');
 
@@ -216,14 +217,15 @@ it('should remove a report when delete is invoked', () => {
 
 it('should redirect to the report list on report deletion', async () => {
   const node = mount(shallow(<Report {...props} />).get(0));
+  // the componentDidUpdate is mocked because it resets the redirect state
+  // which prevents the redirect component from rendering while testing
+  node.instance().componentDidUpdate = jest.fn();
   node.setState({
     loaded: true,
-    report,
-    ConfirmModalVisible: true
+    report
   });
 
-  node.instance().deleteReport();
-  await node.update();
+  await node.instance().deleteReport();
 
   expect(node).toIncludeText('REDIRECT to /reports');
 });
@@ -325,7 +327,7 @@ it('should render a sharing popover', () => {
   const node = mount(shallow(<Report {...props} />).get(0));
   node.setState({loaded: true, report});
 
-  expect(node.find('.Report__share-button').first()).toIncludeText('Share');
+  expect(node.find('.share-button').first()).toIncludeText('Share');
 });
 
 it('should show a download csv button with the correct link', () => {
@@ -364,95 +366,15 @@ it('should reflect excluded columns in the csv download link', () => {
 });
 
 describe('edit mode', async () => {
-  it('should add isInvalid prop to the name input is name is empty', async () => {
-    props.match.params.viewMode = 'edit';
-    const node = await mount(shallow(<Report {...props} />).get(0));
-    await node.instance().componentDidMount();
-
-    await node.setState({
-      report: {
-        name: ''
-      },
-      loaded: true
-    });
-
-    expect(node.find('Input').props()).toHaveProperty('isInvalid', true);
-  });
-
-  it('should provide a link to view mode', async () => {
-    props.match.params.viewMode = 'edit';
-
-    const node = mount(shallow(<Report {...props} />).get(0));
-    node.setState({loaded: true, report});
-
-    expect(node.find('.Report__save-button')).toBePresent();
-    expect(node.find('.Report__cancel-button')).toBePresent();
-    expect(node.find('.Report__edit-button')).not.toBePresent();
-  });
-
-  it('should provide name edit input', async () => {
-    props.match.params.viewMode = 'edit';
-    const node = mount(shallow(<Report {...props} />).get(0));
-    node.setState({loaded: true, report: {name: 'test name'}});
-
-    expect(node.find('input#name')).toBePresent();
-  });
-
-  it('should invoke update on save click', async () => {
-    props.match.params.viewMode = 'edit';
-    const node = mount(shallow(<Report {...props} />).get(0));
-    node.setState({loaded: true, report: {name: ''}});
-
-    node.find('.Report__save-button').simulate('click');
-
-    expect(saveReport).toHaveBeenCalled();
-  });
-
-  it('should disable save button if report name is empty', async () => {
-    props.match.params.viewMode = 'edit';
-    const node = mount(shallow(<Report {...props} />).get(0));
-    node.setState({loaded: true, report: {name: ''}});
-
-    expect(node.find('.Report__save-button')).toBeDisabled();
-  });
-
-  it('should update name on input change', async () => {
-    props.match.params.viewMode = 'edit';
-    const node = mount(shallow(<Report {...props} />).get(0));
-    node.setState({loaded: true, report: {name: 'test name'}});
-
-    const input = 'asdf';
-    node.find(`input[id="name"]`).simulate('change', {target: {value: input}});
-    expect(node.state().report.name).toBe(input);
-  });
-
   it('should reset name on cancel', async () => {
     props.match.params.viewMode = 'edit';
     const node = await mount(shallow(<Report {...props} />).get(0));
     node.setState({loaded: true, report});
 
-    const input = 'asdf';
-    await node.find(`input[id="name"]`).simulate('change', {target: {value: input}});
-
-    await node.instance().componentDidMount();
+    node.setState({report: {...report, name: 'new Name'}});
 
     await node.instance().cancel();
-    expect(node.state().report.name).toBe('name');
-  });
 
-  it('should invoke cancel', async () => {
-    props.match.params.viewMode = 'edit';
-    const node = mount(shallow(<Report {...props} />).get(0));
-
-    const spy = jest.spyOn(node.instance(), 'cancel');
-    node.setState({loaded: true, report});
-
-    const input = 'asdf';
-    await node.find(`input[id="name"]`).simulate('change', {target: {value: input}});
-    await node.instance().componentDidMount();
-
-    await node.find('.Report__cancel-button').simulate('click');
-    expect(spy).toHaveBeenCalled();
     expect(node.state().report.name).toBe('name');
   });
 
@@ -552,7 +474,7 @@ describe('edit mode', async () => {
     });
 
     await node
-      .find('.Report__delete-button')
+      .find('.delete-button')
       .first()
       .simulate('click');
     expect(node.state().conflict.type).toEqual('Delete');
@@ -573,7 +495,7 @@ describe('edit mode', async () => {
       report
     });
 
-    await node.find('.Report__save-button').simulate('click');
+    await node.instance().save({});
     await node.update();
 
     expect(node.state().conflict.type).toEqual('Save');
