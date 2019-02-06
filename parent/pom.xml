@@ -45,7 +45,7 @@
     <version.protobuf>3.6.1</version.protobuf>
     <version.protoc>3.6.0</version.protoc>
     <version.rocksdbjni>5.17.2</version.rocksdbjni>
-    <version.sbe>1.12.0</version.sbe>
+    <version.sbe>1.12.1</version.sbe>
     <version.scala-parser>1.0.6</version.scala-parser>
     <version.scala>2.12.2</version.scala>
     <version.slf4j>1.7.25</version.slf4j>
