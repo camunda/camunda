@@ -128,6 +128,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     ListViewResponseDto response = getWorkflowInstances(allRunningQuery);
 
     assertThat(response.getWorkflowInstances()).hasSize(instanceCount);
+    assertThat(response.getWorkflowInstances()).allMatch(wi -> wi.isHasActiveOperation() == true);
     assertThat(response.getWorkflowInstances()).flatExtracting("operations").extracting(WorkflowInstanceTemplate.TYPE).containsOnly(OperationType.UPDATE_RETRIES);
     assertThat(response.getWorkflowInstances()).flatExtracting("operations").extracting(WorkflowInstanceTemplate.STATE).containsOnly(
       OperationState.SCHEDULED);
@@ -155,6 +156,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     ListViewResponseDto workflowInstances = getWorkflowInstances(workflowInstanceQuery);
 
     assertThat(workflowInstances.getWorkflowInstances()).hasSize(1);
+    assertThat(workflowInstances.getWorkflowInstances().get(0).isHasActiveOperation()).isEqualTo(true);
     assertThat(workflowInstances.getWorkflowInstances().get(0).getOperations()).hasSize(1);
     OperationDto operation = workflowInstances.getWorkflowInstances().get(0).getOperations().get(0);
     assertThat(operation.getType()).isEqualTo(OperationType.UPDATE_RETRIES);
@@ -166,6 +168,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.processAllEvents(8);
     workflowInstances = getWorkflowInstances(workflowInstanceQuery);
     assertThat(workflowInstances.getWorkflowInstances()).hasSize(1);
+    assertThat(workflowInstances.getWorkflowInstances().get(0).isHasActiveOperation()).isEqualTo(false);
     assertThat(workflowInstances.getWorkflowInstances().get(0).getOperations()).hasSize(1);
     operation = workflowInstances.getWorkflowInstances().get(0).getOperations().get(0);
     assertThat(operation.getType()).isEqualTo(OperationType.UPDATE_RETRIES);
@@ -196,6 +199,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     ListViewResponseDto workflowInstances = getWorkflowInstances(workflowInstanceQuery);
 
     assertThat(workflowInstances.getWorkflowInstances()).hasSize(1);
+    assertThat(workflowInstances.getWorkflowInstances().get(0).isHasActiveOperation()).isEqualTo(true);
     assertThat(workflowInstances.getWorkflowInstances().get(0).getOperations()).hasSize(1);
     OperationDto operation = workflowInstances.getWorkflowInstances().get(0).getOperations().get(0);
     assertThat(operation.getType()).isEqualTo(OperationType.CANCEL);
@@ -208,6 +212,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.refreshIndexesInElasticsearch();
     workflowInstances = getWorkflowInstances(workflowInstanceQuery);
     assertThat(workflowInstances.getWorkflowInstances()).hasSize(1);
+    assertThat(workflowInstances.getWorkflowInstances().get(0).isHasActiveOperation()).isEqualTo(false);
     assertThat(workflowInstances.getWorkflowInstances().get(0).getOperations()).hasSize(1);
     operation = workflowInstances.getWorkflowInstances().get(0).getOperations().get(0);
     assertThat(operation.getType()).isEqualTo(OperationType.CANCEL);
@@ -269,6 +274,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.refreshIndexesInElasticsearch();
     ListViewResponseDto workflowInstances = getWorkflowInstances(workflowInstanceQuery);
     assertThat(workflowInstances.getWorkflowInstances()).hasSize(1);
+    assertThat(workflowInstances.getWorkflowInstances().get(0).isHasActiveOperation()).isEqualTo(false);
     final List<OperationDto> operations = workflowInstances.getWorkflowInstances().get(0).getOperations();
     assertThat(operations).hasSize(2);
     assertThat(operations).filteredOn(op -> op.getState().equals(OperationState.COMPLETED)).hasSize(1)
@@ -295,6 +301,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     //the state of operation is FAILED, as there are no appropriate incidents
     ListViewResponseDto workflowInstances = getWorkflowInstances(workflowInstanceQuery);
     assertThat(workflowInstances.getWorkflowInstances()).hasSize(1);
+    assertThat(workflowInstances.getWorkflowInstances().get(0).isHasActiveOperation()).isEqualTo(false);
     assertThat(workflowInstances.getWorkflowInstances().get(0).getOperations()).hasSize(1);
     OperationDto operation = workflowInstances.getWorkflowInstances().get(0).getOperations().get(0);
     assertThat(operation.getState()).isEqualTo(OperationState.FAILED);
@@ -323,6 +330,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     //the state of operation is FAILED, as there are no appropriate incidents
     ListViewResponseDto workflowInstances = getWorkflowInstances(workflowInstanceQuery);
     assertThat(workflowInstances.getWorkflowInstances()).hasSize(1);
+    assertThat(workflowInstances.getWorkflowInstances().get(0).isHasActiveOperation()).isEqualTo(false);
     assertThat(workflowInstances.getWorkflowInstances().get(0).getOperations()).hasSize(1);
     OperationDto operation = workflowInstances.getWorkflowInstances().get(0).getOperations().get(0);
     assertThat(operation.getState()).isEqualTo(OperationState.FAILED);
@@ -358,6 +366,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     //the state of operation is FAILED, as the instance is in wrong state
     ListViewResponseDto workflowInstances = getWorkflowInstances(workflowInstanceQuery);
     assertThat(workflowInstances.getWorkflowInstances()).hasSize(1);
+    assertThat(workflowInstances.getWorkflowInstances().get(0).isHasActiveOperation()).isEqualTo(false);
     assertThat(workflowInstances.getWorkflowInstances().get(0).getOperations()).hasSize(1);
     OperationDto operation = workflowInstances.getWorkflowInstances().get(0).getOperations().get(0);
     assertThat(operation.getState()).isEqualTo(OperationState.FAILED);

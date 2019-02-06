@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.camunda.operate.entities.OperationEntity;
+import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.rest.dto.OperationDto;
 
@@ -23,6 +24,8 @@ public class ListViewWorkflowInstanceDto {
   private WorkflowInstanceStateDto state;
 
   private String bpmnProcessId;
+
+  private boolean hasActiveOperation = false;
 
   private List<OperationDto> operations = new ArrayList<>();
 
@@ -90,6 +93,14 @@ public class ListViewWorkflowInstanceDto {
     this.bpmnProcessId = bpmnProcessId;
   }
 
+  public boolean isHasActiveOperation() {
+    return hasActiveOperation;
+  }
+
+  public void setHasActiveOperation(boolean hasActiveOperation) {
+    this.hasActiveOperation = hasActiveOperation;
+  }
+
   public List<OperationDto> getOperations() {
     return operations;
   }
@@ -117,6 +128,11 @@ public class ListViewWorkflowInstanceDto {
     workflowInstance.setWorkflowName(workflowInstanceEntity.getWorkflowName());
     workflowInstance.setWorkflowVersion(workflowInstanceEntity.getWorkflowVersion());
     workflowInstance.setOperations(OperationDto.createFrom(operations));
+    workflowInstance.setHasActiveOperation(operations.stream().anyMatch(
+      o ->
+        o.getState().equals(OperationState.SCHEDULED)
+        || o.getState().equals(OperationState.LOCKED)
+        || o.getState().equals(OperationState.SENT)));
     return workflowInstance;
   }
 
