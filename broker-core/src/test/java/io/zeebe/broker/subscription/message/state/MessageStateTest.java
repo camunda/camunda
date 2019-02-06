@@ -368,7 +368,7 @@ public class MessageStateTest {
     assertThat(exist).isTrue();
 
     // and
-    assertThat(messageState.existMessageCorrelation(1L, 3L));
+    assertThat(messageState.existMessageCorrelation(1L, 3L)).isTrue();
   }
 
   @Test
