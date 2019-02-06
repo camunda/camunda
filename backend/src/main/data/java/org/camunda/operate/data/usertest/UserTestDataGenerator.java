@@ -87,7 +87,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
   }
 
-  private void createSpecialDataV1() {
+  public void createSpecialDataV1() {
     doNotTouchWorkflowInstanceKeys.add(startLoanProcess());
 
     final long instanceKey2 = startLoanProcess();
@@ -149,7 +149,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
   }
 
-  private void createSpecialDataV2() {
+  public void createSpecialDataV2() {
     final long instanceKey4 = startOrderProcess();
     completeTask(instanceKey4, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
     completeTask(instanceKey4, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
@@ -265,8 +265,6 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   }
 
   protected void progressWorkflowInstances() {
-    List<JobWorker> jobWorkers = new ArrayList<>();
-
     jobWorkers.add(progressReviewLoanRequestTask());
     jobWorkers.add(progressCheckSchufaTask());
     jobWorkers.add(progressSimpleTask("sendTheLoanDecision"));

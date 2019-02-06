@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_13jk2qx" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.4.0">
-  <bpmn:process id="eventBasedGatewayProcess" isExecutable="true">
-    <bpmn:startEvent id="StartEvent_1">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_13jk2qx" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.5.0">
+  <bpmn:process id="eventBasedGatewayProcess" name="Event based gateway with message start" isExecutable="true">
+    <bpmn:startEvent id="messageStartEvent" name="New client arrived">
       <bpmn:outgoing>SequenceFlow_027co6p</bpmn:outgoing>
+      <bpmn:messageEventDefinition messageRef="Message_022miys" />
     </bpmn:startEvent>
-    <bpmn:sequenceFlow id="SequenceFlow_027co6p" sourceRef="StartEvent_1" targetRef="eventBasedGateway" />
+    <bpmn:sequenceFlow id="SequenceFlow_027co6p" sourceRef="messageStartEvent" targetRef="eventBasedGateway" />
     <bpmn:eventBasedGateway id="eventBasedGateway">
       <bpmn:incoming>SequenceFlow_027co6p</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0zkwpkv</bpmn:outgoing>
@@ -116,10 +117,14 @@
       <zeebe:subscription correlationKey="$.clientId" />
     </bpmn:extensionElements>
   </bpmn:message>
+  <bpmn:message id="Message_022miys" name="newClientMessage" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="eventBasedGatewayProcess">
-      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="messageStartEvent">
         <dc:Bounds x="198" y="343" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="172" y="386" width="88" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_027co6p_di" bpmnElement="SequenceFlow_027co6p">
         <di:waypoint x="234" y="361" />

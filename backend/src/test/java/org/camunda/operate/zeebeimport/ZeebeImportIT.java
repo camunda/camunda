@@ -227,7 +227,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   }
 
   protected long getOnlyIncidentKey() {
-    final List<Record<IncidentRecordValue>> incidents = RecordingExporter.incidentRecords().filter(ir -> ir.getMetadata().getIntent().equals(IncidentIntent.CREATED))
+    final List<Record<IncidentRecordValue>> incidents = RecordingExporter.incidentRecords(IncidentIntent.CREATED)
       .collect(Collectors.toList());
     assertThat(incidents).hasSize(1);
     return incidents.get(0).getKey();

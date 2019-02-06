@@ -30,12 +30,49 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   List<Long> workflowInstanceKeys = new ArrayList<>();
 
   @Override
+  public void createSpecialDataV1() {
+    int orderId = random.nextInt(10);
+    long instanceKey = ZeebeTestUtil
+      .startWorkflowInstance(client, "interruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
+    doNotTouchWorkflowInstanceKeys.add(instanceKey);
+    sendMessages("interruptTask1", "{\"messageVar\": \"someValue\"\n}", 1, String.valueOf(orderId));
+
+    orderId = random.nextInt(10);
+    instanceKey = ZeebeTestUtil
+      .startWorkflowInstance(client, "interruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
+    doNotTouchWorkflowInstanceKeys.add(instanceKey);
+    sendMessages("interruptTask1", "{\"messageVar\": \"someValue\"\n}", 1, String.valueOf(orderId));
+    completeTask(instanceKey, "task2", null);
+
+    orderId = random.nextInt(10);
+    instanceKey = ZeebeTestUtil
+      .startWorkflowInstance(client, "nonInterruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
+    doNotTouchWorkflowInstanceKeys.add(instanceKey);
+    sendMessages("messageTask1", "{\"messageVar\": \"someValue\"\n}", 1, String.valueOf(orderId));
+
+    orderId = random.nextInt(10);
+    instanceKey = ZeebeTestUtil
+      .startWorkflowInstance(client, "nonInterruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
+    doNotTouchWorkflowInstanceKeys.add(instanceKey);
+    sendMessages("messageTask1", "{\"messageVar\": \"someValue\"\n}", 1, String.valueOf(orderId));
+    failTask(instanceKey, "task1", "error");
+
+    orderId = random.nextInt(10);
+    instanceKey = ZeebeTestUtil
+      .startWorkflowInstance(client, "nonInterruptingBoundaryEvent", "{\"orderId\": \"" + orderId + "\"\n}");
+    doNotTouchWorkflowInstanceKeys.add(instanceKey);
+    sendMessages("messageTask1", "{\"messageVar\": \"someValue\"\n}", 1, String.valueOf(orderId));
+    completeTask(instanceKey, "task1", null);
+
+  }
+
+  @Override
   protected void progressWorkflowInstances() {
 
     super.progressWorkflowInstances();
 
     //demo process
-    jobWorkers.add(progressDemoProcessTaskA());
+    jobWorkers.add(progressTaskA());
     jobWorkers.add(progressSimpleTask("taskB"));
     jobWorkers.add(progressSimpleTask("taskC"));
     jobWorkers.add(progressSimpleTask("taskD"));
@@ -58,22 +95,29 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     jobWorkers.add(progressSimpleTask("timerTaskInterrupted"));
     jobWorkers.add(progressSimpleTask("lastTask"));
 
+    //interruptingBoundaryEvent and nonInterruptingBoundaryEvent
+    jobWorkers.add(progressSimpleTask("task1"));
+    jobWorkers.add(progressSimpleTask("task2"));
+
     sendMessages("clientMessage", "{\"messageVar\": \"someValue\"}", 20);
     sendMessages("interruptMessageTask", "{\"messageVar2\": \"someValue2\"}", 20);
     sendMessages("dataReceived", "{\"messageVar3\": \"someValue3\"}", 20);
 
   }
 
-  private void sendMessages(String messageName, String payload, int count) {
+  private void sendMessages(String messageName, String payload, int count, String correlationKey) {
     for (int i = 0; i<count; i++) {
       client.newPublishMessageCommand()
         .messageName(messageName)
-        .correlationKey(String.valueOf(random.nextInt(7)))
+        .correlationKey(correlationKey)
         .payload(payload)
         .timeToLive(Duration.ofSeconds(30))
         .messageId(UUID.randomUUID().toString())
         .send().join();
     }
+  }
+  private void sendMessages(String messageName, String payload, int count) {
+    sendMessages(messageName, payload, count, String.valueOf(random.nextInt(7)));
   }
 
   @Override
@@ -130,7 +174,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
       .open();
   }
 
-  private JobWorker progressDemoProcessTaskA() {
+  private JobWorker progressTaskA() {
     return client.newWorker()
       .jobType("taskA")
       .handler((jobClient, job) -> {
@@ -155,13 +199,15 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     super.deployVersion1();
 
     //deploy workflows v.1
-    ZeebeTestUtil.deployWorkflow(client, "develop/demoProcess_v_1.bpmn");
-
     ZeebeTestUtil.deployWorkflow(client, "develop/complexProcess_v_1.bpmn");
 
     ZeebeTestUtil.deployWorkflow(client, "develop/eventBasedGatewayProcess_v_1.bpmn");
 
     ZeebeTestUtil.deployWorkflow(client, "develop/subProcess.bpmn");
+
+    ZeebeTestUtil.deployWorkflow(client, "develop/interruptingBoundaryEvent_v_1.bpmn");
+
+    ZeebeTestUtil.deployWorkflow(client, "develop/nonInterruptingBoundaryEvent_v_1.bpmn");
 
   }
 
@@ -170,21 +216,24 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     super.startWorkflowInstances(version);
     final int instancesCount = random.nextInt(30) + 30;
     for (int i = 0; i < instancesCount; i++) {
-      long instanceKey = ZeebeTestUtil.startWorkflowInstance(client, "demoProcess", "{\"a\": \"b\"}");
-      workflowInstanceKeys.add(instanceKey);
 
-      if (version < 2) {
-        instanceKey = ZeebeTestUtil.startWorkflowInstance(client, "eventBasedGatewayProcess",
-          "{\"clientId\": \"" + random.nextInt(10) + "\"\n}");
-        workflowInstanceKeys.add(instanceKey);
-
-        instanceKey = ZeebeTestUtil.startWorkflowInstance(client, "prWithSubprocess", null);
-        workflowInstanceKeys.add(instanceKey);
+      if (version == 1) {
+        //eventBasedGatewayProcess v.1
+        sendMessages("newClientMessage", "{\"clientId\": \"" + random.nextInt(10) + "\"\n}", 1);
       }
 
-      instanceKey = ZeebeTestUtil.startWorkflowInstance(client, "complexProcess",
-      "{\"clientId\": \"" + random.nextInt(10) + "\"\n}");
-      workflowInstanceKeys.add(instanceKey);
+      if (version == 2) {
+        workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "interruptingBoundaryEvent", null));
+        workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "nonInterruptingBoundaryEvent", null));
+      }
+      if (version < 2) {
+        workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "prWithSubprocess", null));
+      }
+
+      if (version < 3) {
+        workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "complexProcess", "{\"clientId\": \"" + random.nextInt(10) + "\"\n}"));
+      }
+
     }
   }
 
@@ -192,11 +241,13 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   protected void deployVersion2() {
     super.deployVersion2();
 //    deploy workflows v.2
-    ZeebeTestUtil.deployWorkflow(client, "develop/demoProcess_v_2.bpmn");
-
     ZeebeTestUtil.deployWorkflow(client, "develop/complexProcess_v_2.bpmn");
 
     ZeebeTestUtil.deployWorkflow(client, "develop/eventBasedGatewayProcess_v_2.bpmn");
+
+    ZeebeTestUtil.deployWorkflow(client, "develop/interruptingBoundaryEvent_v_2.bpmn");
+
+    ZeebeTestUtil.deployWorkflow(client, "develop/nonInterruptingBoundaryEvent_v_2.bpmn");
 
   }
 
@@ -204,9 +255,6 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   protected void deployVersion3() {
     super.deployVersion3();
     //deploy workflows v.3
-    ZeebeTestUtil.deployWorkflow(client, "develop/demoProcess_v_3.bpmn");
-
-    ZeebeTestUtil.deployWorkflow(client, "develop/complexProcess_v_3.bpmn");
 
   }
 
