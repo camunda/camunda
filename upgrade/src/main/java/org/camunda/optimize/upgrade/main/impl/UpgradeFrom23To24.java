@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.util.ReportUtil.buildDecisionDefinitionXmlByKeyAndVersionMap;
 import static org.camunda.optimize.upgrade.util.ReportUtil.buildSingleReportIdToVisualizationAndViewMap;
 import static org.camunda.optimize.upgrade.util.SchemaUpgradeUtil.createMappingAndSettingsJsonStringFromMapping;
 import static org.camunda.optimize.upgrade.util.SchemaUpgradeUtil.getDefaultReportConfigurationAsMap;
@@ -104,7 +105,10 @@ public class UpgradeFrom23To24 implements Upgrade {
   }
 
   private UpdateDataStep migrateConfigurationInSimpleDecisionReport() {
-    return new UpgradeSingleDecisionReportSettingsStep(getDefaultReportConfigurationAsMap());
+    return new UpgradeSingleDecisionReportSettingsStep(
+      getDefaultReportConfigurationAsMap(),
+      buildDecisionDefinitionXmlByKeyAndVersionMap(configurationService)
+    );
   }
 
   private UpdateDataStep migrateConfigurationInCombinedProcessReport() {

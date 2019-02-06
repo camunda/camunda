@@ -1,6 +1,7 @@
 package org.camunda.optimize.upgrade.util;
 
 import com.google.common.collect.ImmutableMap;
+import org.camunda.optimize.service.es.schema.type.DecisionDefinitionType;
 import org.camunda.optimize.service.es.schema.type.report.SingleProcessReportType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
@@ -19,6 +20,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE;
 
 public class ReportUtil {
@@ -47,6 +49,38 @@ public class ReportUtil {
         .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
     } catch (IOException e) {
       String errorMessage = "Could not retrieve all single reports to migrate combined reports!";
+      throw new UpgradeRuntimeException(errorMessage, e);
+    }
+  }
+
+  public static Map<String, Map<String, String>> buildDecisionDefinitionXmlByKeyAndVersionMap(
+    ConfigurationService configurationService) {
+    RestHighLevelClient client = ElasticsearchHighLevelRestClientBuilder.build(configurationService);
+    try {
+      final SearchRequest searchRequest = new SearchRequest(getOptimizeIndexAliasForType(DECISION_DEFINITION_TYPE));
+      searchRequest.source(new SearchSourceBuilder().size(10_000));
+      final SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+
+      return Arrays.stream(searchResponse.getHits().getHits())
+        .map(doc -> {
+          final Map<String, Object> sourceAsMap = doc.getSourceAsMap();
+
+          final String key = (String) sourceAsMap.get(DecisionDefinitionType.DECISION_DEFINITION_KEY);
+          final String version = (String) sourceAsMap.get(DecisionDefinitionType.DECISION_DEFINITION_VERSION);
+          final String xml = (String) sourceAsMap.get(DecisionDefinitionType.DECISION_DEFINITION_XML);
+
+          return new SimpleImmutableEntry<>(key, ImmutableMap.of(version, xml));
+        })
+        .collect(ImmutableMap.toImmutableMap(
+          Map.Entry::getKey,
+          Map.Entry::getValue,
+          (integerStringMap1, integerStringMap2) -> ImmutableMap.<String, String>builder()
+            .putAll(integerStringMap1)
+            .putAll(integerStringMap2)
+            .build()
+        ));
+    } catch (IOException e) {
+      String errorMessage = "Could not retrieve all decision definition XMLs!";
       throw new UpgradeRuntimeException(errorMessage, e);
     }
   }
