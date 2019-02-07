@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.clustering.base.partitions;
 
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_SERVICE;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.FOLLOWER_PARTITION_GROUP_NAME;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.RAFT_SERVICE_GROUP;
@@ -24,6 +25,7 @@ import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.follo
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.leaderPartitionServiceName;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.raftInstallServiceName;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.stateStorageFactoryServiceName;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.distributedLogPartitionServiceName;
 import static io.zeebe.raft.RaftServiceNames.leaderInitialEventCommittedServiceName;
 import static io.zeebe.raft.RaftServiceNames.raftServiceName;
 
@@ -33,6 +35,7 @@ import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.broker.logstreams.state.StateStorageFactory;
 import io.zeebe.broker.logstreams.state.StateStorageFactoryService;
 import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.raft.Raft;
@@ -115,6 +118,13 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
     stateStorageFactoryServiceName = stateStorageFactoryServiceName(logName);
     partitionInstall
         .createService(stateStorageFactoryServiceName, stateStorageFactoryService)
+        .install();
+
+    final DistributedLogstreamPartition distributedLogstreamPartition =
+        new DistributedLogstreamPartition(partitionId);
+    partitionInstall
+        .createService(distributedLogPartitionServiceName(logName), distributedLogstreamPartition)
+        .dependency(ATOMIX_SERVICE, distributedLogstreamPartition.getAtomixInjector())
         .install();
 
     final OneToOneRingBufferChannel messageBuffer =

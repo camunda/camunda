@@ -1,0 +1,149 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.zeebe.distributedlog;
+
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.distributedLogPartitionServiceName;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStorageAppenderRootService;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStorageAppenderServiceName;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStorageCommitListenerServiceName;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+
+import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
+import io.zeebe.logstreams.LogStreams;
+import io.zeebe.logstreams.log.BufferedLogStreamReader;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamWriterImpl;
+import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.test.util.TestUtil;
+import io.zeebe.util.sched.future.ActorFuture;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.concurrent.atomic.AtomicLong;
+import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class DistributedLogPartitionRule {
+
+  private final ServiceContainer serviceContainer;
+  private final int partition;
+  private final int nodeId;
+  private LogStream logStream;
+  private BufferedLogStreamReader uncommittedReader;
+  private BufferedLogStreamReader committedReader;
+  private LogStreamWriterImpl writer = new LogStreamWriterImpl();
+
+  private final RecordMetadata metadata = new RecordMetadata();
+  public static final Logger LOG = LoggerFactory.getLogger("io.zeebe.distributedlog.test");
+  private final String logName;
+
+  public DistributedLogPartitionRule(ServiceContainer serviceContainer, int nodeId, int partition) {
+    this.serviceContainer = serviceContainer;
+    this.nodeId = nodeId;
+    this.partition = partition;
+    this.logName = String.format("%d-%d", this.partition, this.nodeId);
+  }
+
+  public void start() throws IOException {
+    createLogStream();
+  }
+
+  public void close() {
+    if (serviceContainer.hasService(logStorageAppenderRootService(logName))) {
+      logStream.closeAppender().join(); // If opened
+    }
+    logStream.close();
+    serviceContainer.removeService(distributedLogPartitionServiceName(logName));
+  }
+
+  private void createLogStream() throws IOException {
+    final DistributedLogstreamPartition log = new DistributedLogstreamPartition(partition);
+    serviceContainer
+        .createService(distributedLogPartitionServiceName(logName), log)
+        .dependency(DistributedLogRule.ATOMIX_SERVICE_NAME, log.getAtomixInjector())
+        .install();
+
+    final ActorFuture<LogStream> logStreamFuture =
+        LogStreams.createFsLogStream(partition)
+            .logName(logName)
+            .deleteOnClose(true)
+            .logDirectory(
+                Files.createTempDirectory("dl-test-" + nodeId + "-" + partition + "-").toString())
+            .serviceContainer(serviceContainer)
+            .build();
+    logStream = logStreamFuture.join();
+
+    uncommittedReader = new BufferedLogStreamReader(logStream, true);
+    committedReader = new BufferedLogStreamReader(logStream, false);
+
+    TestUtil.waitUntil(
+        () -> serviceContainer.hasService(logStorageCommitListenerServiceName(logName)));
+  }
+
+  public void becomeLeader() {
+    logStream.openAppender();
+
+    TestUtil.waitUntil(
+        () -> serviceContainer.hasService(logStorageAppenderServiceName(logName)), 250);
+  }
+
+  public boolean eventAppended(String message, long writePosition) {
+    uncommittedReader.seek(writePosition);
+    if (uncommittedReader.hasNext()) {
+      final LoggedEvent event = uncommittedReader.next();
+      final String messageRead =
+          bufferAsString(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
+      final long eventPosition = event.getPosition();
+      return (message.equals(messageRead) && eventPosition == writePosition);
+    }
+    return false;
+  }
+
+  public long writeEvent(final String message) {
+    writer.wrap(logStream);
+
+    final AtomicLong writePosition = new AtomicLong();
+    final DirectBuffer value = wrapString(message);
+
+    TestUtil.doRepeatedly(
+            () -> writer.positionAsKey().metadataWriter(metadata.reset()).value(value).tryWrite())
+        .until(
+            position -> {
+              if (position != null && position >= 0) {
+                writePosition.set(position);
+                return true;
+              } else {
+                return false;
+              }
+            },
+            "Failed to write event with message {}",
+            message);
+    return writePosition.get();
+  }
+
+  public int getCommittedEventsCount() {
+    int numEvents = 0;
+    uncommittedReader.seekToFirstEvent();
+    while (uncommittedReader.hasNext()) {
+      uncommittedReader.next();
+      numEvents++;
+    }
+    return numEvents;
+  }
+}

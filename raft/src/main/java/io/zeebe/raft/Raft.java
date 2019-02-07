@@ -15,6 +15,7 @@
  */
 package io.zeebe.raft;
 
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStorageCommitListenerServiceName;
 import static io.zeebe.raft.RaftServiceNames.candidateServiceName;
 import static io.zeebe.raft.RaftServiceNames.followerServiceName;
 import static io.zeebe.raft.RaftServiceNames.joinServiceName;
@@ -23,7 +24,6 @@ import static io.zeebe.raft.RaftServiceNames.leaderInstallServiceName;
 import static io.zeebe.raft.RaftServiceNames.leaderOpenLogStreamServiceName;
 import static io.zeebe.raft.RaftServiceNames.leaderServiceName;
 import static io.zeebe.raft.RaftServiceNames.pollServiceName;
-import static io.zeebe.raft.RaftServiceNames.replicateLogConrollerServiceName;
 import static io.zeebe.raft.state.RaftTranisiton.TO_CANDIDATE;
 import static io.zeebe.raft.state.RaftTranisiton.TO_FOLLOWER;
 import static io.zeebe.raft.state.RaftTranisiton.TO_LEADER;
@@ -34,7 +34,6 @@ import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.raft.controller.AppendRaftEventController;
 import io.zeebe.raft.controller.LeaderCommitInitialEvent;
 import io.zeebe.raft.controller.LeaderOpenLogStreamAppenderService;
-import io.zeebe.raft.controller.MemberReplicateLogController;
 import io.zeebe.raft.controller.RaftJoinService;
 import io.zeebe.raft.controller.RaftPollService;
 import io.zeebe.raft.event.RaftConfigurationEventMember;
@@ -258,6 +257,7 @@ public class Raft extends Actor
         .dependency(LogStreamServiceNames.logWriteBufferServiceName(logStream.getLogName()))
         .dependency(openLogStreamServiceName)
         .dependency(joinServiceName(raftName))
+        .dependency(logStorageCommitListenerServiceName(raftName))
         .install();
 
     final LeaderCommitInitialEvent leaderCommitInitialEventService =
@@ -266,17 +266,6 @@ public class Raft extends Actor
         .createService(initialEventCommittedServiceName, leaderCommitInitialEventService)
         .dependency(leaderServiceName)
         .install();
-
-    for (final RaftMember raftMember : raftMembers.getMemberList()) {
-      final ServiceName<Void> replicateLogControllerServiceName =
-          replicateLogConrollerServiceName(raftName, term, raftMember.getNodeId());
-      final MemberReplicateLogController replicationController =
-          new MemberReplicateLogController(this, raftMember, clientTransport);
-      installOperation
-          .createService(replicateLogControllerServiceName, replicationController)
-          .dependency(leaderServiceName)
-          .install();
-    }
 
     final ActorFuture<Void> whenLeader = installOperation.install();
 
@@ -561,18 +550,6 @@ public class Raft extends Actor
     final RaftMember newMember = raftMembers.addMember(nodeId);
 
     if (newMember != null && state.getState() == RaftState.LEADER) {
-      // start replication
-      final int term = getTerm();
-      final ServiceName<AbstractRaftState> leaderServiceName = leaderServiceName(raftName, term);
-      final ServiceName<Void> replicateLogControllerServiceName =
-          replicateLogConrollerServiceName(raftName, term, newMember.getNodeId());
-
-      serviceContext
-          .createService(
-              replicateLogControllerServiceName,
-              new MemberReplicateLogController(this, newMember, clientTransport))
-          .dependency(leaderServiceName)
-          .install();
 
       notifyMemberJoinedListeners();
 
@@ -597,9 +574,6 @@ public class Raft extends Actor
             if (state.getState() == RaftState.LEADER) {
               raftMembers.removeMember(nodeId);
 
-              // stop replication
-              serviceContext.removeService(
-                  replicateLogConrollerServiceName(raftName, getTerm(), nodeId));
               leaveFuture.complete(true);
             } else {
               leaveFuture.complete(false);

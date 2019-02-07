@@ -57,6 +57,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -249,13 +250,13 @@ public class StreamProcessorControllerTest {
                       writtenEventPosition.set(position);
 
                       return position;
-                    }));
+                    })
+                .thenReturn(1L));
 
     final long firstEventPosition = writeEventAndWaitUntilProcessed(EVENT_1);
     waitUntil(() -> writtenEventPosition.get() > 0);
     final long position = writtenEventPosition.get();
     writer.waitForPositionToBeAppended(position);
-    logStreamRule.setCommitPosition(position);
 
     // then
     final LoggedEvent writtenEvent = reader.readEventAtPosition(position);
@@ -569,6 +570,7 @@ public class StreamProcessorControllerTest {
   }
 
   @Test
+  @Ignore // There are no events in the log which are not committed
   public void shouldTakeStateSnapshotEvenIfLastWrittenEventIsUncommitted() throws Exception {
     // given
     final ArgumentCaptor<StateSnapshotMetadata> args =
@@ -639,7 +641,7 @@ public class StreamProcessorControllerTest {
 
     final long eventPosition = writer.writeEvent(event, true);
 
-    waitUntil(() -> streamProcessor.getProcessedEventCount() == before + 1);
+    waitUntil(() -> streamProcessor.getProcessedEventCount() >= before + 1);
     return eventPosition;
   }
 

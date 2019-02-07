@@ -18,6 +18,7 @@ package io.zeebe.logstreams.log;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.logstreams.impl.LogBlockIndexWriter;
 import io.zeebe.logstreams.impl.LogStorageAppender;
+import io.zeebe.logstreams.impl.LogStorageCommitListener;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.sched.ActorCondition;
@@ -108,6 +109,9 @@ public interface LogStream extends AutoCloseable {
    * @return the log block index controller
    */
   LogBlockIndexWriter getLogBlockIndexWriter();
+
+  /** Returns the log stream controller, which writes the committed events to the log storage. */
+  LogStorageCommitListener getLogStorageCommitter();
 
   /** Stops the streaming to the log storage. New events are no longer append to the log storage. */
   ActorFuture<Void> closeAppender();

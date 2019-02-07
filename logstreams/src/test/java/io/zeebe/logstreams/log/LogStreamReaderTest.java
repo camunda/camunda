@@ -57,7 +57,6 @@ public class LogStreamReaderTest {
   @Before
   public void setUp() {
     reader = readerRule.getLogStreamReader();
-    logStreamRule.setCommitPosition(Long.MAX_VALUE);
   }
 
   @Test
@@ -184,22 +183,6 @@ public class LogStreamReaderTest {
   }
 
   @Test
-  public void shouldNotReturnUncommittedLoggedEvent() {
-    // given
-    final long firstPos = writer.writeEvent(EVENT_VALUE);
-    logStreamRule.setCommitPosition(firstPos);
-    writer.writeEvent(EVENT_VALUE);
-
-    // then
-    assertThat(reader.hasNext()).isTrue();
-    final LoggedEvent loggedEvent = reader.next();
-    assertThat(loggedEvent.getKey()).isEqualTo(firstPos);
-    assertThat(loggedEvent.getPosition()).isEqualTo(firstPos);
-
-    assertThat(reader.hasNext()).isFalse();
-  }
-
-  @Test
   public void shouldNotReturnLoggedEventUntilCommitted() {
     // given
     final long position = writer.writeEvent(EVENT_VALUE);
@@ -216,20 +199,6 @@ public class LogStreamReaderTest {
     final LoggedEvent loggedEvent = reader.next();
     assertThat(loggedEvent.getKey()).isEqualTo(position);
     assertThat(loggedEvent.getPosition()).isEqualTo(position);
-  }
-
-  @Test
-  public void shouldNotSeekToUncommittedLoggedEvent() {
-    // given
-    final long firstPos = writer.writeEvent(EVENT_VALUE);
-    logStreamRule.setCommitPosition(firstPos);
-    final long secondPos = writer.writeEvent(EVENT_VALUE);
-
-    // when
-    reader.seek(secondPos);
-
-    // then
-    assertThat(reader.hasNext()).isFalse();
   }
 
   @Test

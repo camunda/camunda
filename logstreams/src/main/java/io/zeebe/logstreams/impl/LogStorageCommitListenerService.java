@@ -13,12 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.logstreams.impl.service;
+package io.zeebe.logstreams.impl;
 
-import io.zeebe.dispatcher.Subscription;
 import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
-import io.zeebe.logstreams.impl.LogStorageAppender;
-import io.zeebe.logstreams.spi.LogStorage;
+import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
@@ -26,57 +24,44 @@ import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.sched.SchedulingHints;
 import io.zeebe.util.sched.channel.ActorConditions;
 
-public class LogStorageAppenderService implements Service<LogStorageAppender> {
-  private final Injector<LogStorage> logStorageInjector = new Injector<>();
-  private final Injector<Subscription> appenderSubscriptionInjector = new Injector<>();
+public class LogStorageCommitListenerService implements Service<LogStorageCommitListener> {
+
   private final Injector<DistributedLogstreamPartition> distributedLogstreamInjector =
       new Injector<>();
+  private final LogStream logStream;
 
-  private final int maxAppendBlockSize;
+  private LogStorageCommitListener logStorageCommitListener;
+  private final ActorConditions onLogStorageAppendedConditions;
 
-  private LogStorageAppender service;
-  private ActorConditions onLogStorageAppendedConditions;
-
-  public LogStorageAppenderService(
-      ActorConditions onLogStorageAppendedConditions, int maxAppendBlockSize) {
+  public LogStorageCommitListenerService(
+      LogStream logStream, ActorConditions onLogStorageAppendedConditions) {
+    this.logStream = logStream;
     this.onLogStorageAppendedConditions = onLogStorageAppendedConditions;
-    this.maxAppendBlockSize = maxAppendBlockSize;
   }
 
   @Override
   public void start(ServiceStartContext startContext) {
-    final LogStorage logStorage = logStorageInjector.getValue();
-    final Subscription subscription = appenderSubscriptionInjector.getValue();
-
-    service =
-        new LogStorageAppender(
-            startContext.getName(),
-            logStorage,
+    this.logStorageCommitListener =
+        new LogStorageCommitListener(
+            logStream.getLogStorage(),
+            logStream,
             distributedLogstreamInjector.getValue(),
-            subscription,
-            maxAppendBlockSize,
             onLogStorageAppendedConditions);
 
     startContext.async(
-        startContext.getScheduler().submitActor(service, true, SchedulingHints.ioBound()));
+        startContext
+            .getScheduler()
+            .submitActor(logStorageCommitListener, true, SchedulingHints.ioBound()));
   }
 
   @Override
   public void stop(ServiceStopContext stopContext) {
-    stopContext.async(service.close());
+    stopContext.async(logStorageCommitListener.close());
   }
 
   @Override
-  public LogStorageAppender get() {
-    return service;
-  }
-
-  public Injector<LogStorage> getLogStorageInjector() {
-    return logStorageInjector;
-  }
-
-  public Injector<Subscription> getAppenderSubscriptionInjector() {
-    return appenderSubscriptionInjector;
+  public LogStorageCommitListener get() {
+    return this.logStorageCommitListener;
   }
 
   public Injector<DistributedLogstreamPartition> getDistributedLogstreamInjector() {

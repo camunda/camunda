@@ -17,7 +17,12 @@
  */
 package io.zeebe.broker.util;
 
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.distributedLogPartitionServiceName;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 
 import io.zeebe.broker.exporter.stream.ExporterRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
@@ -26,7 +31,10 @@ import io.zeebe.broker.subscription.message.data.MessageStartEventSubscriptionRe
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.db.ZeebeDbFactory;
+import io.zeebe.distributedlog.CommitLogEvent;
+import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
 import io.zeebe.logstreams.LogStreams;
+import io.zeebe.logstreams.impl.LogStorageCommitListener;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
@@ -60,16 +68,17 @@ import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.LangUtil;
-import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.util.sched.future.ActorFuture;
 import java.io.File;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import org.mockito.stubbing.Answer;
 
 public class TestStreams {
   protected static final Map<Class<?>, ValueType> VALUE_TYPES = new HashMap<>();
@@ -120,28 +129,47 @@ public class TestStreams {
   }
 
   public LogStream createLogStream(final String name, final int partitionId) {
+
+    // Create distributed log service
+    final DistributedLogstreamPartition mockDistLog = mock(DistributedLogstreamPartition.class);
+    doAnswer(inv -> null).when(mockDistLog).addListener(any());
+
+    serviceContainer
+        .createService(distributedLogPartitionServiceName(name), () -> mockDistLog)
+        .install();
+
     final String rootPath = storageDirectory.getAbsolutePath();
-    final LogStream logStream =
+    final ActorFuture<LogStream> logStreamFuture =
         LogStreams.createFsLogStream(partitionId)
             .logRootPath(rootPath)
             .serviceContainer(serviceContainer)
             .logName(name)
             .deleteOnClose(true)
-            .build()
-            .join();
+            .build();
 
-    actorScheduler
-        .submitActor(
-            new Actor() {
-              @Override
-              protected void onActorStarting() {
-                final ActorCondition condition =
-                    actor.onCondition(
-                        "on-append", () -> logStream.setCommitPosition(Long.MAX_VALUE));
-                logStream.registerOnAppendCondition(condition);
-              }
-            })
-        .join();
+    // mock append
+    doAnswer(
+            (Answer<Void>)
+                invocation -> {
+                  final Object[] arguments = invocation.getArguments();
+                  if (arguments != null
+                      && arguments.length > 1
+                      && arguments[0] != null
+                      && arguments[1] != null) {
+                    final ByteBuffer buffer = (ByteBuffer) arguments[0];
+                    final long pos = (long) arguments[1];
+                    final byte[] bytes = new byte[buffer.remaining()];
+                    buffer.get(bytes);
+                    final LogStorageCommitListener listener =
+                        logStreamFuture.get().getLogStorageCommitter();
+                    listener.onCommit(new CommitLogEvent(pos, bytes));
+                  }
+                  return null;
+                })
+        .when(mockDistLog)
+        .append(any(ByteBuffer.class), anyLong());
+
+    final LogStream logStream = logStreamFuture.join();
 
     logStream.openAppender().join();
 

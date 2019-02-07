@@ -63,8 +63,6 @@ public class LogStreamWriterTest {
   @Before
   public void setUp() {
     writer = new LogStreamWriterImpl(logStreamRule.getLogStream());
-
-    logStreamRule.setCommitPosition(Long.MAX_VALUE);
   }
 
   private LoggedEvent getWrittenEvent(final long position) {

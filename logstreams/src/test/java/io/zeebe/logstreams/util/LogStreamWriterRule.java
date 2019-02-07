@@ -54,6 +54,7 @@ public class LogStreamWriterRule extends ExternalResource {
     return writeEvents(count, event, false);
   }
 
+  // TODO: Remove parameter commit. https://github.com/zeebe-io/zeebe/issues/2058
   public long writeEvents(final int count, final DirectBuffer event, final boolean commit) {
     long lastPosition = -1;
     for (int i = 1; i <= count; i++) {
@@ -62,10 +63,6 @@ public class LogStreamWriterRule extends ExternalResource {
     }
 
     waitForPositionToBeAppended(lastPosition);
-
-    if (commit) {
-      logStream.setCommitPosition(lastPosition);
-    }
 
     return lastPosition;
   }
@@ -78,14 +75,11 @@ public class LogStreamWriterRule extends ExternalResource {
     return writeEvent(w -> w.positionAsKey().value(event), commit);
   }
 
+  // TODO: Remove parameter commit. https://github.com/zeebe-io/zeebe/issues/2058
   public long writeEvent(final Consumer<LogStreamRecordWriter> writer, final boolean commit) {
     final long position = writeEventInternal(writer);
 
     waitForPositionToBeAppended(position);
-
-    if (commit) {
-      logStream.setCommitPosition(position);
-    }
 
     return position;
   }
@@ -115,7 +109,7 @@ public class LogStreamWriterRule extends ExternalResource {
 
   public void waitForPositionToBeAppended(final long position) {
     TestUtil.waitUntil(
-        () -> logStream.getLogStorageAppender().getCurrentAppenderPosition() > position,
+        () -> logStream.getCommitPosition() > position, // Now only committed events are appended.
         "Failed to wait for position {} to be appended",
         position);
   }

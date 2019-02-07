@@ -15,8 +15,10 @@
  */
 package io.zeebe.logstreams.impl.service;
 
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.distributedLogPartitionServiceName;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStorageAppenderRootService;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStorageAppenderServiceName;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStorageCommitListenerServiceName;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStreamRootServiceName;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logWriteBufferServiceName;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logWriteBufferSubscriptionServiceName;
@@ -29,6 +31,8 @@ import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.dispatcher.Subscription;
 import io.zeebe.logstreams.impl.LogBlockIndexWriter;
 import io.zeebe.logstreams.impl.LogStorageAppender;
+import io.zeebe.logstreams.impl.LogStorageCommitListener;
+import io.zeebe.logstreams.impl.LogStorageCommitListenerService;
 import io.zeebe.logstreams.impl.LogStreamBuilder;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.log.LogStream;
@@ -77,6 +81,8 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   private ActorFuture<LogStorageAppender> appenderFuture;
   private Dispatcher writeBuffer;
   private LogStorageAppender appender;
+  private ActorFuture<LogStorageCommitListener> committerFuture;
+  private LogStorageCommitListener committer;
 
   public LogStreamService(final LogStreamBuilder builder) {
     this.logName = builder.getLogName();
@@ -96,6 +102,26 @@ public class LogStreamService implements LogStream, Service<LogStream> {
     logStorage = logStorageInjector.getValue();
     logBlockIndex = logBlockIndexInjector.getValue();
     logBlockIndexWriter = logBockIndexWriterInjector.getValue();
+
+    committerFuture = openCommitListener();
+  }
+
+  private ActorFuture<LogStorageCommitListener> openCommitListener() {
+    final LogStorageCommitListenerService logStorageAppenderListenerService =
+        new LogStorageCommitListenerService(this, onLogStorageAppendedConditions);
+
+    // Service that listens to commit events from distributed-log and writes to logStorage
+    return serviceContext
+        .createService(
+            logStorageCommitListenerServiceName(logName), logStorageAppenderListenerService)
+        .dependency(
+            distributedLogPartitionServiceName(logName),
+            logStorageAppenderListenerService.getDistributedLogstreamInjector())
+        .install();
+  }
+
+  private ActorFuture<Void> closeCommitListener() {
+    return serviceContext.removeService(logStorageCommitListenerServiceName(logName));
   }
 
   @Override
@@ -142,6 +168,9 @@ public class LogStreamService implements LogStream, Service<LogStream> {
             .dependency(
                 logStorageInjector.getInjectedServiceName(),
                 appenderService.getLogStorageInjector())
+            .dependency(
+                distributedLogPartitionServiceName(logName),
+                appenderService.getDistributedLogstreamInjector())
             .install();
 
     return installOperation.installAndReturn(logStorageAppenderServiceName);
@@ -184,6 +213,7 @@ public class LogStreamService implements LogStream, Service<LogStream> {
 
   @Override
   public ActorFuture<Void> closeAsync() {
+    closeCommitListener();
     return serviceContainer.removeService(logStreamRootServiceName(logName));
   }
 
@@ -216,6 +246,14 @@ public class LogStreamService implements LogStream, Service<LogStream> {
       appender = appenderFuture.join();
     }
     return appender;
+  }
+
+  @Override
+  public LogStorageCommitListener getLogStorageCommitter() {
+    if (committer == null && committerFuture != null) {
+      committer = committerFuture.join();
+    }
+    return committer;
   }
 
   @Override

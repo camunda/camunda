@@ -17,6 +17,7 @@ package io.zeebe.logstreams.impl;
 
 import io.zeebe.dispatcher.BlockPeek;
 import io.zeebe.dispatcher.Subscription;
+import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.channel.ActorConditions;
@@ -26,7 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.agrona.MutableDirectBuffer;
 import org.slf4j.Logger;
 
-/** Consume the write buffer and append the blocks on the log storage. */
+/** Consume the write buffer and append the blocks to the distributedlog. */
 public class LogStorageAppender extends Actor {
   public static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
 
@@ -42,14 +43,18 @@ public class LogStorageAppender extends Actor {
   private Runnable peekedBlockHandler = this::appendBlock;
   private int maxAppendBlockSize;
 
+  private final DistributedLogstreamPartition distributedLog;
+
   public LogStorageAppender(
       String name,
       LogStorage logStorage,
+      DistributedLogstreamPartition distributedLog,
       Subscription writeBufferSubscription,
       int maxBlockSize,
       ActorConditions logStorageAppendConditions) {
     this.name = name;
     this.logStorage = logStorage;
+    this.distributedLog = distributedLog;
     this.writeBufferSubscription = writeBufferSubscription;
     this.maxAppendBlockSize = maxBlockSize;
     this.logStorageAppendConditions = logStorageAppendConditions;
@@ -62,6 +67,7 @@ public class LogStorageAppender extends Actor {
 
   @Override
   protected void onActorStarting() {
+
     actor.consume(writeBufferSubscription, this::peekBlock);
   }
 
@@ -77,22 +83,18 @@ public class LogStorageAppender extends Actor {
     final ByteBuffer rawBuffer = blockPeek.getRawBuffer();
     final MutableDirectBuffer buffer = blockPeek.getBuffer();
 
-    final long address = logStorage.append(rawBuffer);
-    if (address >= 0) {
+    try {
+      // CurrentAppenderPosition gives the position of the first event in the buffer. commitPosition
+      // must be > position of the last event in the block.
+      final long commitPosition = blockPeek.getNextPosition() - 1;
+      distributedLog.append(
+          rawBuffer,
+          commitPosition); // TODO: handle errors https://github.com/zeebe-io/zeebe/issues/2064
       blockPeek.markCompleted();
-      logStorageAppendConditions.signalConsumers();
-    } else {
-      isFailed.set(true);
-
-      final long positionOfFirstEventInBlock = LogEntryDescriptor.getPosition(buffer, 0);
-      LOG.error(
-          "Failed to append log storage on position '{}'. Stop writing to log storage until recovered.",
-          positionOfFirstEventInBlock);
-
-      // recover log storage from failure - see zeebe-io/zeebe#500
-      peekedBlockHandler = this::discardBlock;
-
-      discardBlock();
+    } catch (Exception e) {
+      // try again
+      LOG.info("Write failed");
+      e.printStackTrace();
     }
   }
 
