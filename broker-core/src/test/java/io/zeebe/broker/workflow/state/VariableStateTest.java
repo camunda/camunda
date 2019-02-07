@@ -536,6 +536,7 @@ public class VariableStateTest {
     assertThat(listener.created.get(0).name).isEqualTo("x");
     assertThat(listener.created.get(0).value).isEqualTo("foo".getBytes());
     assertThat(listener.created.get(0).scopeInstanceKey).isEqualTo(1L);
+    assertThat(listener.created.get(0).rootScopeKey).isEqualTo(1L);
 
     assertThat(listener.updated).isEmpty();
   }
@@ -557,6 +558,7 @@ public class VariableStateTest {
     assertThat(listener.updated.get(0).name).isEqualTo("x");
     assertThat(listener.updated.get(0).value).isEqualTo("bar".getBytes());
     assertThat(listener.updated.get(0).scopeInstanceKey).isEqualTo(1L);
+    assertThat(listener.updated.get(0).rootScopeKey).isEqualTo(1L);
   }
 
   @Test
@@ -590,10 +592,12 @@ public class VariableStateTest {
     assertThat(listener.created.get(0).name).isEqualTo("x");
     assertThat(listener.created.get(0).value).isEqualTo(stringToMsgpack("foo"));
     assertThat(listener.created.get(0).scopeInstanceKey).isEqualTo(1L);
+    assertThat(listener.created.get(0).rootScopeKey).isEqualTo(1L);
 
     assertThat(listener.created.get(1).name).isEqualTo("y");
     assertThat(listener.created.get(1).value).isEqualTo(stringToMsgpack("bar"));
     assertThat(listener.created.get(1).scopeInstanceKey).isEqualTo(1L);
+    assertThat(listener.created.get(0).rootScopeKey).isEqualTo(1L);
 
     assertThat(listener.updated).isEmpty();
   }
@@ -621,11 +625,13 @@ public class VariableStateTest {
     assertThat(listener.created.get(1).name).isEqualTo("y");
     assertThat(listener.created.get(1).value).isEqualTo(stringToMsgpack("bar"));
     assertThat(listener.created.get(1).scopeInstanceKey).isEqualTo(parentScope);
+    assertThat(listener.created.get(1).rootScopeKey).isEqualTo(parentScope);
 
     assertThat(listener.updated).hasSize(1);
     assertThat(listener.updated.get(0).name).isEqualTo("x");
     assertThat(listener.updated.get(0).value).isEqualTo(stringToMsgpack("bar"));
     assertThat(listener.updated.get(0).scopeInstanceKey).isEqualTo(childScope);
+    assertThat(listener.updated.get(0).rootScopeKey).isEqualTo(parentScope);
   }
 
   @Test
@@ -699,11 +705,13 @@ public class VariableStateTest {
       private final String name;
       private final byte[] value;
       private final long scopeInstanceKey;
+      private final long rootScopeKey;
 
-      VariableChange(String name, byte[] value, long scopeInstanceKey) {
+      VariableChange(String name, byte[] value, long scopeInstanceKey, long rootScopeKey) {
         this.name = name;
         this.value = value;
         this.scopeInstanceKey = scopeInstanceKey;
+        this.rootScopeKey = rootScopeKey;
       }
     }
 
@@ -711,18 +719,26 @@ public class VariableStateTest {
     private final List<VariableChange> updated = new ArrayList<>();
 
     @Override
-    public void onCreate(DirectBuffer name, DirectBuffer value, long scopeInstanceKey) {
+    public void onCreate(
+        DirectBuffer name, DirectBuffer value, long scopeInstanceKey, long rootScopeKey) {
       final VariableChange change =
           new VariableChange(
-              bufferAsString(name), BufferUtil.bufferAsArray(value), scopeInstanceKey);
+              bufferAsString(name),
+              BufferUtil.bufferAsArray(value),
+              scopeInstanceKey,
+              rootScopeKey);
       created.add(change);
     }
 
     @Override
-    public void onUpdate(DirectBuffer name, DirectBuffer value, long scopeInstanceKey) {
+    public void onUpdate(
+        DirectBuffer name, DirectBuffer value, long scopeInstanceKey, long rootScopeKey) {
       final VariableChange change =
           new VariableChange(
-              bufferAsString(name), BufferUtil.bufferAsArray(value), scopeInstanceKey);
+              bufferAsString(name),
+              BufferUtil.bufferAsArray(value),
+              scopeInstanceKey,
+              rootScopeKey);
       updated.add(change);
     }
   }

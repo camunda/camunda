@@ -32,4 +32,7 @@ public interface VariableRecordValue extends RecordValue {
 
   /** @return the key of the scope instance the variable belongs to. */
   long getScopeInstanceKey();
+
+  /** @return the key of the workflow instance the variable belongs to */
+  long getWorkflowInstanceKey();
 }
