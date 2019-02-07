@@ -191,6 +191,20 @@ pipeline {
         }
       }
     }
+    stage('Trigger release example repo job') {
+      when {
+        expression { params.PUSH_CHANGES == true }
+      }
+      steps {
+        build job: '/camunda-optimize-example-repo-release',
+            parameters: [
+                string(name: 'RELEASE_VERSION', value: "${params.RELEASE_VERSION}"),
+                string(name: 'DEVELOPMENT_VERSION', value: "${params.DEVELOPMENT_VERSION}"),
+                string(name: 'BRANCH', value: "${params.BRANCH}"),
+            ],
+        wait: false
+      }
+    }
   }
 
   post {

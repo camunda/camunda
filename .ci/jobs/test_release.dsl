@@ -5,7 +5,7 @@ pipelineJob('camunda-optimize-release-test') {
 
   definition {
     cpsScm {
-      scriptPath('.ci/pipelines/release.groovy')
+      scriptPath('.ci/pipelines/release_optimize.groovy')
       lightweight(false)
       scm {
         git {
@@ -23,11 +23,11 @@ pipelineJob('camunda-optimize-release-test') {
     stringParam('RELEASE_VERSION', '3.0.0', 'Version to release. Applied to pom.xml and Git tag.')
     stringParam('DEVELOPMENT_VERSION', '3.1.0-SNAPSHOT', 'Next development version.')
     stringParam('BRANCH', 'master', 'The branch used for the release checkout.')
-    booleanParam('PUSH_CHANGES', false, 'Should the changes be pushed to remote locations.')
+    booleanParam('PUSH_CHANGES', false, 'DO NOT SET THIS TO TRUE! If you do, you will perform an actual release.')
   }
   
   triggers {
     cron('H 4 * * *')
   }
-
+  
 }

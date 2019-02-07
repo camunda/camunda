@@ -5,7 +5,7 @@ pipelineJob('camunda-optimize-release') {
 
   definition {
     cpsScm {
-      scriptPath('.ci/pipelines/release.groovy')
+      scriptPath('.ci/pipelines/release_optimize.groovy')
       lightweight(false)
       scm {
         git {
