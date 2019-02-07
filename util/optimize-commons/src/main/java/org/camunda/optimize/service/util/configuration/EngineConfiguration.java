@@ -5,6 +5,7 @@ public class EngineConfiguration {
   private String name;
   private String rest;
   private EngineWebappsConfiguration webapps;
+  private boolean importEnabled = true;
 
   private EngineAuthenticationConfiguration authentication;
 
@@ -43,5 +44,13 @@ public class EngineConfiguration {
 
   public void setWebapps(EngineWebappsConfiguration webapps) {
     this.webapps = webapps;
+  }
+
+  public boolean isImportEnabled() {
+    return importEnabled;
+  }
+
+  public void setImportEnabled(final boolean importEnabled) {
+    this.importEnabled = importEnabled;
   }
 }

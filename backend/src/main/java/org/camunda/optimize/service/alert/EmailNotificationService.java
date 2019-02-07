@@ -24,7 +24,7 @@ public class EmailNotificationService implements NotificationService {
   @Override
   public void notifyRecipient(String text, String destination) {
     logger.debug("sending email [{}] to [{}]", text, destination);
-    if (configurationService.isEmailEnabled()) {
+    if (configurationService.getEmailEnabled()) {
       try {
         sendEmail(destination, text);
       } catch (EmailException e) {

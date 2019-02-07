@@ -10,8 +10,11 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import javax.websocket.ContainerProvider;
+import javax.websocket.DeploymentException;
 import javax.websocket.WebSocketContainer;
+import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -33,36 +36,68 @@ public class StatusWebSocketIT {
 
   @Test
   public void getImportStatus() throws Exception {
-    //given
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess(PROCESS_ID)
-        .startEvent()
-        .endEvent()
-      .done();
-    engineRule.deployAndStartProcess(processModel);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    // given
+    final StatusClientSocket socket = new StatusClientSocket();
+    connectStatusClientSocket(socket);
 
-    String dest = "ws://localhost:8090/ws/status";
-    StatusClientSocket socket = new StatusClientSocket();
-    WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+    // when
+    deployProcessAndTriggerImport();
 
-    //when
-    container.connectToServer(socket, new URI(dest));
-
-    //then
+    // then
     boolean statusCorrectlyReceived = socket.getLatch().await(300, TimeUnit.MILLISECONDS);
     assertThat(statusCorrectlyReceived, is(true));
   }
 
   @Test
   public void importStatusHasChanged() throws Exception {
-    //given
-    String dest = "ws://localhost:8090/ws/status";
-    AssertHasChangedStatusClientSocket socket = new AssertHasChangedStatusClientSocket();
-    WebSocketContainer container = ContainerProvider.getWebSocketContainer();
-    container.connectToServer(socket, new URI(dest));
+    // given
+    final AssertHasChangedStatusClientSocket socket = new AssertHasChangedStatusClientSocket();
+    connectStatusClientSocket(socket);
 
-    //when
+    // when
+    deployProcessAndTriggerImport();
+
+    //then
+    assertThat(socket.getReceivedTwoUpdatesLatch().await(300, TimeUnit.MILLISECONDS), is(true));
+    assertThat(socket.isImportStatusChanged(), is(true));
+  }
+
+  @Test
+  public void importStatusStaysFalseIfImportIsDeactivated() throws Exception {
+    try {
+      // given
+      embeddedOptimizeRule.getConfigurationService().getConfiguredEngines().values()
+        .forEach(engineConfiguration -> engineConfiguration.setImportEnabled(false));
+      embeddedOptimizeRule.reloadConfiguration();
+
+      final AssertHasChangedStatusClientSocket socket = new AssertHasChangedStatusClientSocket();
+      connectStatusClientSocket(socket);
+
+      //when
+      deployProcessAndTriggerImport();
+
+      //then
+      assertThat(socket.getReceivedTwoUpdatesLatch().await(300, TimeUnit.MILLISECONDS), is(false));
+      assertThat(socket.getReceivedTwoUpdatesLatch().getCount(), is(1L));
+      assertThat(socket.getImportStatus().isPresent(), is(true));
+      assertThat(socket.getImportStatus().get(), is(false));
+      assertThat(socket.isImportStatusChanged(), is(false));
+    } finally {
+      // cleanup
+      embeddedOptimizeRule.getConfigurationService().getConfiguredEngines().values()
+        .forEach(engineConfiguration -> engineConfiguration.setImportEnabled(true));
+      embeddedOptimizeRule.reloadConfiguration();
+    }
+  }
+
+  private void connectStatusClientSocket(Object statusClientSocket)
+    throws DeploymentException, IOException, URISyntaxException {
+    String dest = "ws://localhost:8090/ws/status";
+    WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+    container.connectToServer(statusClientSocket, new URI(dest));
+  }
+
+  private void deployProcessAndTriggerImport() {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess(PROCESS_ID)
       .startEvent()
       .endEvent()
@@ -70,9 +105,6 @@ public class StatusWebSocketIT {
     engineRule.deployAndStartProcess(processModel);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
-
-    //then
-    assertThat(socket.hasImportStatusChanged, is(true));
   }
 
 }

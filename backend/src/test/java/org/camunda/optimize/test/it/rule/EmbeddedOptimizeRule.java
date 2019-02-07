@@ -167,14 +167,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     }
   }
 
-  public void scheduleImport() {
-    for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
-      scheduler.scheduleNextRound();
-      makeSureAllScheduledJobsAreFinished();
-    }
-  }
-
-  private EngineImportSchedulerFactory getImportSchedulerFactory() {
+  public EngineImportSchedulerFactory getImportSchedulerFactory() {
     return getOptimize().getApplicationContext().getBean(EngineImportSchedulerFactory.class);
   }
 

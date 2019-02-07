@@ -50,22 +50,28 @@ public class EngineImportSchedulerFactory implements ConfigurationReloadable {
 
 
   private List<EngineImportScheduler> buildSchedulers() {
-    List<EngineImportScheduler> result = new ArrayList<>();
+    final List<EngineImportScheduler> result = new ArrayList<>();
+
     for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
       try {
-        List<EngineImportMediator> mediators = createMediatorList(engineContext);
-        EngineImportScheduler scheduler = new EngineImportScheduler(
+        final List<EngineImportMediator> mediators = createMediatorList(engineContext);
+        final EngineImportScheduler scheduler = new EngineImportScheduler(
           mediators,
           engineContext.getEngineAlias()
         );
+
+        if (!configurationService.isEngineImportEnabled(engineContext.getEngineAlias())) {
+          logger.info("Engine import was disabled by config for engine with alias {}.", engineContext.getEngineAlias());
+          scheduler.disable();
+        }
+
         result.add(scheduler);
       } catch (Exception e) {
         logger.error("Can't create scheduler for engine [{}]", engineContext.getEngineAlias(), e);
       }
-
     }
 
-    return result.isEmpty() ? null : result;
+    return result;
   }
 
   private List<EngineImportMediator> createMediatorList(EngineContext engineContext) {
@@ -79,7 +85,7 @@ public class EngineImportSchedulerFactory implements ConfigurationReloadable {
     mediators.add(
       beanHelper.getInstance(ProcessDefinitionXmlEngineImportMediator.class, engineContext)
     );
-    if (configurationService.isImportDmnDataEnabled()) {
+    if (configurationService.getImportDmnDataEnabled()) {
       mediators.add(
         beanHelper.getInstance(DecisionDefinitionEngineImportMediator.class, engineContext)
       );
@@ -101,7 +107,7 @@ public class EngineImportSchedulerFactory implements ConfigurationReloadable {
       beanHelper.getInstance(RunningProcessInstanceEngineImportMediator.class, engineContext));
     mediators.add(
       beanHelper.getInstance(VariableUpdateEngineImportMediator.class, engineContext));
-    if (configurationService.isImportDmnDataEnabled()) {
+    if (configurationService.getImportDmnDataEnabled()) {
       mediators.add(
         beanHelper.getInstance(DecisionInstanceEngineImportMediator.class, engineContext));
     }
@@ -113,7 +119,6 @@ public class EngineImportSchedulerFactory implements ConfigurationReloadable {
     if (schedulers == null) {
       this.schedulers = this.buildSchedulers();
     }
-
     return schedulers;
   }
 

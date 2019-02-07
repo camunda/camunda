@@ -2,6 +2,8 @@ package org.camunda.optimize.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.OnMessage;
@@ -22,15 +24,17 @@ import static org.hamcrest.MatcherAssert.assertThat;
  */
 @ClientEndpoint
 public class StatusClientSocket {
+  private static final Logger logger = LoggerFactory.getLogger(StatusClientSocket.class);
 
   private CountDownLatch latch = new CountDownLatch(1);
-
+  private ObjectMapper objectMapper = new ObjectMapper();
 
   @OnMessage
   public void onText(String message, Session session) throws Exception {
-    System.out.println("Message received from server:" + message);
-    ObjectMapper objectMapper = new ObjectMapper();
+    logger.info("Message received from server:" + message);
+
     StatusWithProgressDto dto = objectMapper.readValue(message, StatusWithProgressDto.class);
+
     assertThat(dto.getIsImporting(), is(notNullValue()));
     assertThat(dto.getIsImporting().get(ENGINE_ALIAS), is(true));
     latch.countDown();

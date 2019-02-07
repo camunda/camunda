@@ -137,7 +137,7 @@ public class AlertService {
 
   public EmailAlertEnabledDto isAlertingEnabled() {
     EmailAlertEnabledDto check = new EmailAlertEnabledDto();
-    check.setEnabled(configurationService.isEmailEnabled());
+    check.setEnabled(configurationService.getEmailEnabled());
     return check;
   }
 

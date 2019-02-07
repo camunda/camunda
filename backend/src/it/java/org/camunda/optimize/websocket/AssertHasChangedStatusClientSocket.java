@@ -2,10 +2,14 @@ package org.camunda.optimize.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
+import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
 
 import static org.camunda.optimize.websocket.StatusWebSocketIT.ENGINE_ALIAS;
 import static org.hamcrest.CoreMatchers.is;
@@ -22,17 +26,35 @@ import static org.hamcrest.MatcherAssert.assertThat;
 @ClientEndpoint
 public class AssertHasChangedStatusClientSocket {
 
-  private Boolean importStatus;
-  public boolean hasImportStatusChanged = false;
+  private static final Logger logger = LoggerFactory.getLogger(AssertHasChangedStatusClientSocket.class);
+
+  private CountDownLatch receivedTwoUpdatesLatch = new CountDownLatch(2);
+
+  private Boolean importStatus = null;
+  private boolean importStatusChanged = false;
+  private ObjectMapper objectMapper = new ObjectMapper();
 
   @OnMessage
   public void onText(String message, Session session) throws Exception {
-    System.out.println("Message received from server:" + message);
-    ObjectMapper objectMapper = new ObjectMapper();
+    logger.info("Message received from server:" + message);
+
     StatusWithProgressDto dto = objectMapper.readValue(message, StatusWithProgressDto.class);
+
     assertThat(dto.getIsImporting(), is(notNullValue()));
-    hasImportStatusChanged |= dto.getIsImporting().get(ENGINE_ALIAS) != importStatus;
+    importStatusChanged |= importStatus != null && dto.getIsImporting().get(ENGINE_ALIAS) != importStatus;
     importStatus = dto.getIsImporting().get(ENGINE_ALIAS);
+    receivedTwoUpdatesLatch.countDown();
   }
 
+  public CountDownLatch getReceivedTwoUpdatesLatch() {
+    return receivedTwoUpdatesLatch;
+  }
+
+  public Optional<Boolean> getImportStatus() {
+    return Optional.ofNullable(importStatus);
+  }
+
+  public boolean isImportStatusChanged() {
+    return importStatusChanged;
+  }
 }

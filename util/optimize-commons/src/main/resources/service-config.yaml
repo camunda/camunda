@@ -38,6 +38,8 @@ engines:
     name: default
     #A base URL that will be used for connections to the Camunda Engine REST API.
     rest: 'http://localhost:8080/engine-rest'
+    # Determines whether this instance of Optimize should import definition & historical data from this engine.
+    importEnabled: true
     authentication:
       #Toggles basic authentication on or off. When enabling basic
       #authentication, please be aware that you also need to adjust the values

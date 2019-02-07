@@ -68,10 +68,6 @@ public class DecisionImportIT {
     allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_TYPE, 0L);
     allEntriesInElasticsearchHaveAllDataWithCount(PROC_INSTANCE_TYPE, 1L);
     allEntriesInElasticsearchHaveAllDataWithCount(PROC_DEF_TYPE, 1L);
-
-    // cleanup
-    embeddedOptimizeRule.getConfigurationService().setImportDmnDataEnabled(true);
-    embeddedOptimizeRule.reloadConfiguration();
   }
 
   @Test

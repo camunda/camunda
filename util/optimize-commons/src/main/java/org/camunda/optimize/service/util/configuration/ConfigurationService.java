@@ -54,6 +54,8 @@ public class ConfigurationService {
   private static final String ENGINE_REST_PATH = "/engine/";
   private static final String[] DEFAULT_CONFIG_LOCATIONS = {"service-config.yaml", "environment-config.yaml"};
   private static final String[] DEFAULT_DEPRECATED_CONFIG_LOCATIONS = {"deprecated-config.yaml"};
+  private static final String ERROR_NO_ENGINE_WITH_ALIAS = "No Engine configured with alias ";
+
   private ReadContext configJsonContext;
   private Map<String, String> deprecatedConfigKeys;
 
@@ -66,7 +68,6 @@ public class ConfigurationService {
   private String decisionDefinitionXmlEndpoint;
 
   private String engineDateFormat;
-  private String optimizeDateFormat;
   private Long initialBackoff;
   private Long maximumBackoff;
 
@@ -688,11 +689,17 @@ public class ConfigurationService {
   }
 
   public String getDefaultEngineAuthenticationUser(String engineAlias) {
-    return getEngineConfiguration(engineAlias).getAuthentication().getUser();
+    return getEngineConfiguration(engineAlias)
+      .map(EngineConfiguration::getAuthentication)
+      .map(EngineAuthenticationConfiguration::getUser)
+      .orElseThrow(() -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + engineAlias));
   }
 
   public String getDefaultEngineAuthenticationPassword(String engineAlias) {
-    return getEngineConfiguration(engineAlias).getAuthentication().getPassword();
+    return getEngineConfiguration(engineAlias)
+      .map(EngineConfiguration::getAuthentication)
+      .map(EngineAuthenticationConfiguration::getPassword)
+      .orElseThrow(() -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + engineAlias));
   }
 
   /**
@@ -704,15 +711,23 @@ public class ConfigurationService {
    * @return <b>raw</b> REST endpoint, without engine suffix
    */
   public String getEngineRestApiEndpoint(String engineAlias) {
-    return getEngineConfiguration(engineAlias).getRest();
+    return getEngineConfiguration(engineAlias)
+      .map(EngineConfiguration::getRest)
+      .orElseThrow(() -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + engineAlias));
   }
 
   public String getEngineName(String engineAlias) {
-    return getEngineConfiguration(engineAlias).getName();
+    return getEngineConfiguration(engineAlias).map(EngineConfiguration::getName)
+      .orElseThrow(() -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + engineAlias));
   }
 
-  private EngineConfiguration getEngineConfiguration(String engineAlias) {
-    return this.getConfiguredEngines().get(engineAlias);
+  public boolean isEngineImportEnabled(String engineAlias) {
+    return getEngineConfiguration(engineAlias).map(EngineConfiguration::isImportEnabled)
+      .orElseThrow(() -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + engineAlias));
+  }
+
+  public Optional<EngineConfiguration> getEngineConfiguration(String engineAlias) {
+    return Optional.ofNullable(this.getConfiguredEngines().get(engineAlias));
   }
 
   public Properties getQuartzProperties() {
@@ -740,14 +755,14 @@ public class ConfigurationService {
     return alertEmailPassword;
   }
 
-  public boolean isEmailEnabled() {
+  public boolean getEmailEnabled() {
     if (emailEnabled == null) {
       emailEnabled = configJsonContext.read(ConfigurationServiceConstants.EMAIL_ENABLED);
     }
     return emailEnabled;
   }
 
-  public Boolean isImportDmnDataEnabled() {
+  public Boolean getImportDmnDataEnabled() {
     if (importDmnDataEnabled == null) {
       importDmnDataEnabled = configJsonContext.read(ConfigurationServiceConstants.IMPORT_DMN_DATA);
     }
@@ -925,10 +940,6 @@ public class ConfigurationService {
     this.engineDateFormat = engineDateFormat;
   }
 
-  public void setOptimizeDateFormat(String optimizeDateFormat) {
-    this.optimizeDateFormat = optimizeDateFormat;
-  }
-
   public void setInitialBackoff(Long initialBackoff) {
     this.initialBackoff = initialBackoff;
   }
@@ -1094,6 +1105,7 @@ public class ConfigurationService {
                                                 elasticsearchConnectionNodes) {
     this.elasticsearchConnectionNodes = elasticsearchConnectionNodes;
   }
+
 
   public void setImportDmnDataEnabled(Boolean importDmnDataEnabled) {
     this.importDmnDataEnabled = importDmnDataEnabled;

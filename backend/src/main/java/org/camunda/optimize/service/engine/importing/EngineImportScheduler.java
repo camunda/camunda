@@ -38,12 +38,12 @@ public class EngineImportScheduler extends Thread {
   }
 
   public void disable() {
-    logger.debug("Scheduler is disabled and will soon shut down");
+    logger.debug("Scheduler for engine {} is disabled", engineAlias);
     isEnabled = false;
   }
 
   public void enable() {
-    logger.debug("Scheduler was enabled and will soon start scheduling the import");
+    logger.debug("Scheduler for engine {} was enabled and will soon start scheduling the import", engineAlias);
     isEnabled = true;
   }
 
@@ -70,7 +70,7 @@ public class EngineImportScheduler extends Thread {
     List<EngineImportMediator> currentImportRound = obtainActiveMediators();
     currentImportRound = currentImportRound.stream()
       .filter(e -> e instanceof ProcessDefinitionXmlEngineImportMediator || e instanceof DecisionDefinitionXmlEngineImportMediator)
-    .collect(Collectors.toList());
+      .collect(Collectors.toList());
     scheduleCurrentImportRound(currentImportRound);
   }
 

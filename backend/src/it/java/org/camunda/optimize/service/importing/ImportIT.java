@@ -7,7 +7,6 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.filter.CanceledInstancesOnlyQueryFilter;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EngineConfiguration;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -37,6 +36,8 @@ import java.util.Map.Entry;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_DEF_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -51,7 +52,7 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertTrue;
 
 
-public class ImportIT  {
+public class ImportIT {
 
   private static final String HTTP_LOCALHOST = "http://localhost:8080";
 
@@ -62,7 +63,33 @@ public class ImportIT  {
 
   @Rule
   public RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule).around(engineDatabaseRule);
+    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule).around(engineDatabaseRule);
+
+  @Test
+  public void importCanBeDisabled() throws IOException {
+    // given
+    embeddedOptimizeRule.getConfigurationService().getConfiguredEngines().values()
+      .forEach(engineConfiguration -> engineConfiguration.setImportEnabled(false));
+    embeddedOptimizeRule.reloadConfiguration();
+
+    deployAndStartSimpleServiceTask();
+    engineRule.deployAndStartDecisionDefinition();
+    BpmnModelInstance exampleProcess = Bpmn.createExecutableProcess().name("foo").startEvent().endEvent().done();
+    engineRule.deployAndStartProcess(exampleProcess);
+
+    // when
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // then
+    allEntriesInElasticsearchHaveAllDataWithCount(PROC_INSTANCE_TYPE, 0L);
+    allEntriesInElasticsearchHaveAllDataWithCount(PROC_DEF_TYPE, 0L);
+    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_TYPE, 0L);
+    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_TYPE, 0L);
+    assertThat(embeddedOptimizeRule.getImportSchedulerFactory().getImportSchedulers().size(), is(greaterThan(0)));
+    embeddedOptimizeRule.getImportSchedulerFactory().getImportSchedulers()
+      .forEach(engineImportScheduler -> assertThat(engineImportScheduler.isEnabled(), is(false)));
+  }
 
   @Test
   public void allProcessDefinitionFieldDataOfImportIsAvailable() throws IOException {
@@ -145,7 +172,10 @@ public class ImportIT  {
 
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
-    assertThat(idsResp.getHits().getAt(0).getSourceAsMap().get(ProcessInstanceType.STATE), is(CanceledInstancesOnlyQueryFilter.EXTERNALLY_TERMINATED));
+    assertThat(
+      idsResp.getHits().getAt(0).getSourceAsMap().get(ProcessInstanceType.STATE),
+      is(CanceledInstancesOnlyQueryFilter.EXTERNALLY_TERMINATED)
+    );
   }
 
   private ProcessInstanceEngineDto deployAndStartUserTaskProcess() {
@@ -216,7 +246,7 @@ public class ImportIT  {
 
     // when
     variables.put("secondVar", "foo");
-    engineRule.startProcessInstance(firstProcInst.getDefinitionId(),variables);
+    engineRule.startProcessInstance(firstProcInst.getDefinitionId(), variables);
     variables.put("thirdVar", "bar");
     engineRule.startProcessInstance(firstProcInst.getDefinitionId(), variables);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -225,11 +255,11 @@ public class ImportIT  {
     // then
     List<VariableRetrievalDto> variablesResponseDtos =
       embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildGetVariablesRequest(firstProcInst.getProcessDefinitionKey(), firstProcInst.getProcessDefinitionVersion())
-            .executeAndReturnList(VariableRetrievalDto.class, 200);
+        .getRequestExecutor()
+        .buildGetVariablesRequest(firstProcInst.getProcessDefinitionKey(), firstProcInst.getProcessDefinitionVersion())
+        .executeAndReturnList(VariableRetrievalDto.class, 200);
 
-    assertThat(variablesResponseDtos.size(),is(3));
+    assertThat(variablesResponseDtos.size(), is(3));
   }
 
   @Test
@@ -237,9 +267,9 @@ public class ImportIT  {
     //given
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
-        .startEvent()
-        .userTask()
-        .endEvent()
+      .startEvent()
+      .userTask()
+      .endEvent()
       .done();
     engineRule.deployAndStartProcess(processModel);
 
@@ -259,9 +289,9 @@ public class ImportIT  {
   public void completedActivitiesOverwriteRunningActivities() throws IOException {
     //given
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-        .startEvent()
-        .userTask()
-        .endEvent()
+      .startEvent()
+      .userTask()
+      .endEvent()
       .done();
     engineRule.deployAndStartProcess(processModel);
 
@@ -284,9 +314,9 @@ public class ImportIT  {
   public void runningActivitiesDoNotOverwriteCompletedActivities() throws IOException {
     //given
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-        .startEvent()
-          .name("startEvent")
-        .endEvent()
+      .startEvent()
+      .name("startEvent")
+      .endEvent()
       .done();
     engineRule.deployAndStartProcess(processModel);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -336,7 +366,7 @@ public class ImportIT  {
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
-    List<Long> firstRoundIndexes =  embeddedOptimizeRule.getImportIndexes();
+    List<Long> firstRoundIndexes = embeddedOptimizeRule.getImportIndexes();
 
     // then
     embeddedOptimizeRule.resetImportStartIndexes();
@@ -458,7 +488,8 @@ public class ImportIT  {
   @Test
   public void doNotSkipProcessInstancesWithSameEndTime() throws Exception {
     // given
-    int originalMaxPageSize = embeddedOptimizeRule.getConfigurationService().getEngineImportProcessInstanceMaxPageSize();
+    int originalMaxPageSize = embeddedOptimizeRule.getConfigurationService()
+      .getEngineImportProcessInstanceMaxPageSize();
     embeddedOptimizeRule.getConfigurationService().setEngineImportProcessInstanceMaxPageSize(1);
     startTwoProcessInstancesWithSameEndTime();
 
@@ -473,8 +504,6 @@ public class ImportIT  {
   }
 
   private Long getImportedActivityCount() throws IOException {
-    ConfigurationService configurationService = embeddedOptimizeRule.getConfigurationService();
-
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(QueryBuilders.matchAllQuery())
       .size(0)
@@ -498,8 +527,8 @@ public class ImportIT  {
       .get(EVENTS);
     ValueCount countAggregator =
       nested.getAggregations()
-      .get(EVENTS +"_count");
-     return countAggregator.getValue();
+        .get(EVENTS + "_count");
+    return countAggregator.getValue();
   }
 
   private void startTwoProcessInstancesWithSameEndTime() throws SQLException {
@@ -522,10 +551,10 @@ public class ImportIT  {
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskWithVariables(Map<String, Object> variables) {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
-        .startEvent()
-        .serviceTask()
-          .camundaExpression("${true}")
-        .endEvent()
+      .startEvent()
+      .serviceTask()
+      .camundaExpression("${true}")
+      .endEvent()
       .done();
     return engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
@@ -570,7 +599,10 @@ public class ImportIT  {
 
   private ProcessInstanceEngineDto createImportAndDeleteTwoProcessInstancesWithVariables(Map<String, Object> variables) {
     ProcessInstanceEngineDto firstProcInst = deployAndStartSimpleServiceTaskWithVariables(variables);
-    ProcessInstanceEngineDto secondProcInst = engineRule.startProcessInstance(firstProcInst.getDefinitionId(), variables);
+    ProcessInstanceEngineDto secondProcInst = engineRule.startProcessInstance(
+      firstProcInst.getDefinitionId(),
+      variables
+    );
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
     engineRule.deleteHistoricProcessInstance(firstProcInst.getId());
