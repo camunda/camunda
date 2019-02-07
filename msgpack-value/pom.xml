@@ -45,18 +45,6 @@
       <scope>test</scope>
     </dependency>
 
-    <dependency>
-      <groupId>org.msgpack</groupId>
-      <artifactId>msgpack-core</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.msgpack</groupId>
-      <artifactId>jackson-dataformat-msgpack</artifactId>
-      <scope>test</scope>
-    </dependency>
-
 </dependencies>
 
 </project>

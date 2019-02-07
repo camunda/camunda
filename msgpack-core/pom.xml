@@ -19,7 +19,7 @@
 
     <dependency>
       <groupId>org.msgpack</groupId>
-      <artifactId>jackson-dataformat-msgpack</artifactId>
+      <artifactId>msgpack-core</artifactId>
       <scope>test</scope>
     </dependency>
 
