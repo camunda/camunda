@@ -409,7 +409,7 @@ export default themed(
       };
 
       componentDidUpdate() {
-        if (this.state.redirect) this.setState({redirect: false});
+        if (this.state.redirect) this.setState({redirect: ''});
         if (this.isNew) {
           this.isNew = false;
         }
