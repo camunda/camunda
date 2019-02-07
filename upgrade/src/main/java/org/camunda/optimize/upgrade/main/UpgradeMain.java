@@ -1,5 +1,6 @@
 package org.camunda.optimize.upgrade.main;
 
+import org.camunda.optimize.jetty.util.LoggingConfigurationReader;
 import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom23To24;
@@ -26,6 +27,7 @@ public class UpgradeMain {
   private static Map<String, Upgrade> upgrades = new HashMap<>();
 
   static {
+    new LoggingConfigurationReader().defineLogbackLoggingConfiguration();
     upgrades.put("2.4.0", new UpgradeFrom23To24());
     upgrades.put("2.5.0", new UpgradeFrom24To25());
   }

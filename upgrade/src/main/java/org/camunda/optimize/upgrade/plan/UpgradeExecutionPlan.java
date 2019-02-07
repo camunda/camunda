@@ -1,7 +1,6 @@
 package org.camunda.optimize.upgrade.plan;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.jetty.util.LoggingConfigurationReader;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.StrictTypeMappingCreator;
 import org.camunda.optimize.service.es.schema.TypeMappingCreator;
@@ -44,8 +43,6 @@ public class UpgradeExecutionPlan implements UpgradePlan {
   private ESIndexAdjuster esIndexAdjuster;
 
   public UpgradeExecutionPlan() {
-    new LoggingConfigurationReader().defineLogbackLoggingConfiguration();
-
     configurationService = new ConfigurationService();
     validationService = new ValidationService(configurationService);
     validationService.validateConfiguration();
