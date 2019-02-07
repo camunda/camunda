@@ -4,7 +4,7 @@ import ReportBlankSlate from './ReportBlankSlate';
 import {isEmpty} from './service';
 import {Table, Number, Chart} from './views';
 
-import {formatters} from 'services';
+import {getConfig} from './service';
 
 const checkReport = props => {
   const {
@@ -23,53 +23,19 @@ const checkReport = props => {
   }
 };
 
-const getConfig = props => {
-  const {report, disableReportScrolling, customProps, defaultErrorMessage} = props;
-  let {
-    data: {visualization}
-  } = report;
-  let config = {};
-
+const getComponent = visualization => {
   switch (visualization) {
-    case 'table':
-      config = {
-        Component: Table,
-        props: {
-          disableReportScrolling
-        }
-      };
-      break;
     case 'number':
-      config = {
-        Component: Number,
-        props: {
-          formatter: formatters.frequency
-        }
-      };
-      break;
+      return Number;
+    case 'table':
+      return Table;
     case 'bar':
     case 'line':
     case 'pie':
-      config = {
-        Component: Chart,
-        props: {
-          formatter: formatters.frequency
-        }
-      };
-      break;
+      return Chart;
     default:
-      config.Component = ReportBlankSlate;
-      break;
+      return ReportBlankSlate;
   }
-
-  config.props = {
-    errorMessage: defaultErrorMessage,
-    ...config.props,
-    ...(customProps ? customProps[visualization] || {} : {}),
-    report
-  };
-
-  return config;
 };
 
 export default function DecisionReportView(props) {
@@ -79,10 +45,12 @@ export default function DecisionReportView(props) {
       <ReportBlankSlate message={'To display a report, please select ' + somethingMissing + '.'} />
     );
 
-  const {Component, props: componentProps} = getConfig(props);
+  const {visualization, view} = props.report.data;
+  const Component = getComponent(visualization);
+
   return (
     <div className="component">
-      <Component {...componentProps} />
+      <Component {...getConfig(props, view.property)} />
     </div>
   );
 }

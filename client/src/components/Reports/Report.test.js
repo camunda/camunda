@@ -515,10 +515,7 @@ describe('edit mode', async () => {
 
     evaluateReport.mockClear();
 
-    node
-      .find('ReportView')
-      .prop('customProps')
-      .table.updateSorting('columnId', 'desc');
+    node.instance().updateSorting('columnId', 'desc');
 
     expect(evaluateReport).toHaveBeenCalled();
     expect(evaluateReport.mock.calls[0][0].data.parameters.sorting).toEqual({

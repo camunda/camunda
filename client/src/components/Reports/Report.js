@@ -297,11 +297,7 @@ export default withErrorHandling(
                 <ReportView
                   report={report}
                   applyAddons={this.applyAddons(ColumnRearrangement)}
-                  customProps={{
-                    table: {
-                      updateSorting: this.updateSorting
-                    }
-                  }}
+                  updateSorting={this.updateSorting}
                 />
               )}
             </div>

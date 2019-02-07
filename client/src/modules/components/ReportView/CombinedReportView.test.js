@@ -7,11 +7,7 @@ import {Chart, Table} from './views';
 jest.mock('./service', () => {
   return {
     isEmpty: str => !str,
-    getCombinedTableProps: () => ({
-      data: {a: 1, b: 2},
-      labels: ['a', 'b'],
-      processInstanceCount: [100, 200]
-    })
+    getConfig: props => props
   };
 });
 
@@ -58,7 +54,7 @@ const CombinedReport = {
 };
 
 it('should provide an errorMessage property to the component', () => {
-  const node = shallow(<CombinedReportView report={CombinedReport} />);
+  const node = shallow(<CombinedReportView report={CombinedReport} errorMessage="test" />);
 
   expect(node.find(Table)).toHaveProp('errorMessage');
 });
@@ -75,17 +71,6 @@ it('should instruct to select one or more reports if no reports are selected for
   const node = shallow(<CombinedReportView report={report} />);
 
   expect(node.find('ReportBlankSlate').prop('message')).toContain('one or more reports');
-});
-
-it('should pass on custom props if indicated by the visualization', () => {
-  const node = shallow(
-    <CombinedReportView
-      report={CombinedReport}
-      customProps={{table: {someInfo: 'very important'}}}
-    />
-  );
-
-  expect(node.find(Table)).toHaveProp('someInfo', 'very important');
 });
 
 it('should pass the report to the visualization component', () => {

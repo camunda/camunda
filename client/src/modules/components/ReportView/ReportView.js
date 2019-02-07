@@ -8,7 +8,7 @@ import {ErrorBoundary, Message} from 'components';
 
 import './ReportView.scss';
 
-const defaultErrorMessage =
+const errorMessage =
   'Cannot display data for the given report settings. Please choose another combination!';
 
 export default function ReportView(props) {
@@ -22,11 +22,11 @@ export default function ReportView(props) {
     return (
       <ErrorBoundary>
         <div className="ReportView">
-          <View {...props} defaultErrorMessage />
+          <View {...props} errorMessage />
         </div>
       </ErrorBoundary>
     );
   } else {
-    return <Message type="error">{defaultErrorMessage}</Message>;
+    return <Message type="error">{errorMessage}</Message>;
   }
 }

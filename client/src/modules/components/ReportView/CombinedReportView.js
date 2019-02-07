@@ -1,62 +1,30 @@
 import React from 'react';
-import {formatters} from 'services';
+import {getConfig} from './service';
 import ReportBlankSlate from './ReportBlankSlate';
 import {Table, Chart} from './views';
 
-const getConfig = ({report, disableReportScrolling, customProps, defaultErrorMessage}, data) => {
-  let config = {props: {}};
-
-  switch (data.visualization) {
+const getComponent = visualization => {
+  switch (visualization) {
     case 'number':
-      config.Component = Chart;
-      break;
+      return Chart;
     case 'table':
-      config = {
-        Component: Table,
-        props: {
-          disableReportScrolling
-        }
-      };
-      break;
+      return Table;
     case 'bar':
     case 'line':
-      config.Component = Chart;
-      break;
+      return Chart;
     default:
-      config.Component = ReportBlankSlate;
-      break;
+      return ReportBlankSlate;
   }
-
-  switch (data.view.property) {
-    case 'frequency':
-      config.props.formatter = formatters.frequency;
-      break;
-    case 'duration':
-      config.props.formatter = formatters.duration;
-      break;
-    default:
-      config.props.formatter = v => v;
-  }
-
-  config.props = {
-    ...config.props,
-    ...(customProps ? customProps[data.visualization] || {} : {}),
-    report,
-    errorMessage: defaultErrorMessage
-  };
-
-  return config;
 };
 
 export default function CombinedReportView(props) {
-  const {report: {result, data}} = props;
+  const {result} = props.report;
   if (result && typeof result === 'object' && Object.keys(result).length) {
-    const singleReportData = Object.values(result)[0].data;
-    const combinedReportData = {...singleReportData, configuration: data.configuration};
-    const {Component, props: componentProps} = getConfig(props, combinedReportData);
+    const {view, visualization} = Object.values(result)[0].data;
+    const Component = getComponent(visualization);
     return (
       <div className="component">
-        <Component {...componentProps} />
+        <Component {...getConfig(props, view.property)} />
       </div>
     );
   }

@@ -19,7 +19,7 @@ jest.mock('services', () => {
 jest.mock('./service', () => {
   return {
     isEmpty: str => !str,
-    formatReportResult: (data, result) => result
+    getConfig: props => props
   };
 });
 
@@ -70,7 +70,7 @@ it('should provide an errorMessage property to the component', () => {
     result: 1234
   };
 
-  const node = shallow(<ProcessReportView report={report} />);
+  const node = shallow(<ProcessReportView report={report} errorMessage={'test'} />);
   node.setState({
     loaded: true
   });
@@ -284,20 +284,6 @@ it('should include the instance count if indicated in the config', () => {
 
   expect(node.find('.additionalInfo')).toBePresent();
   expect(node.find('.additionalInfo').text()).toContain('723');
-});
-
-it('should pass on custom props if indicated by the visualization', () => {
-  const node = shallow(
-    <ProcessReportView
-      report={exampleDurationReport}
-      customProps={{table: {someInfo: 'very important'}}}
-    />
-  );
-  node.setState({
-    loaded: true
-  });
-
-  expect(node.find(Table)).toHaveProp('someInfo', 'very important');
 });
 
 it('should pass the report to the visualization component', () => {

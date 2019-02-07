@@ -4,7 +4,7 @@ import {LoadingIndicator} from 'components';
 import {getFlowNodeNames, formatters} from 'services';
 import ReportBlankSlate from './ReportBlankSlate';
 
-import {isEmpty} from './service';
+import {isEmpty, getConfig} from './service';
 
 import {Number, Table, Heatmap, Chart} from './views';
 
@@ -57,13 +57,23 @@ export default class ProcessReportView extends React.Component {
       );
     }
 
-    const {report: {data, processInstanceCount}} = this.props;
+    const {
+      report: {
+        data: {configuration, view},
+        processInstanceCount
+      }
+    } = this.props;
 
     if (!this.state.loaded) {
       return <LoadingIndicator />;
     }
 
-    const {Component, props} = this.getConfig();
+    const Component = this.getComponent();
+    const props = getConfig(
+      {...this.props, flowNodeNames: this.state.flowNodeNames},
+      view.property
+    );
+
     return (
       <>
         <div className="component">
@@ -73,7 +83,7 @@ export default class ProcessReportView extends React.Component {
             <Component {...props} />
           )}
         </div>
-        {data.configuration.showInstanceCount && (
+        {configuration.showInstanceCount && (
           <div className="additionalInfo">
             Total Instance
             <br />
@@ -86,7 +96,9 @@ export default class ProcessReportView extends React.Component {
   }
 
   checkReport = () => {
-    const {report: {data}} = this.props;
+    const {
+      report: {data}
+    } = this.props;
 
     if (isEmpty(data.processDefinitionKey) || isEmpty(data.processDefinitionVersion)) {
       return 'a Process Definition';
@@ -101,59 +113,20 @@ export default class ProcessReportView extends React.Component {
     }
   };
 
-  getConfig = () => {
-    const {report, disableReportScrolling, customProps, defaultErrorMessage} = this.props;
-    const {visualization, view} = report.data;
-    const {flowNodeNames} = this.state;
-    let config = {props: {}};
-
-    switch (visualization) {
+  getComponent = () => {
+    switch (this.props.report.data.visualization) {
       case 'number':
-        config.Component = Number;
-        break;
+        return Number;
       case 'table':
-        config = {
-          Component: Table,
-          props: {
-            disableReportScrolling
-          }
-        };
-        break;
-      case 'heat':
-        config.Component = Heatmap;
-        break;
+        return Table;
       case 'bar':
       case 'line':
       case 'pie':
-        config.Component = Chart;
-        break;
+        return Chart;
+      case 'heat':
+        return Heatmap;
       default:
-        config.Component = ReportBlankSlate;
-        break;
+        return ReportBlankSlate;
     }
-
-    switch (view.property) {
-      case 'frequency':
-        config.props.formatter = formatters.frequency;
-        break;
-      case 'duration':
-        config.props.formatter = formatters.duration;
-        break;
-      default:
-        config.props.formatter = v => v;
-    }
-
-    if (visualization !== 'number') {
-      config.props.flowNodeNames = flowNodeNames;
-    }
-
-    config.props = {
-      errorMessage: defaultErrorMessage,
-      ...config.props,
-      ...(customProps ? customProps[visualization] || {} : {}),
-      report
-    };
-
-    return config;
   };
 }
