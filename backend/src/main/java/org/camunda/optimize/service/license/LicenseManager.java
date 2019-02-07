@@ -6,6 +6,7 @@ import org.camunda.bpm.licensecheck.OptimizeLicenseKey;
 import org.camunda.optimize.dto.optimize.query.LicenseInformationDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.metadata.Version;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
@@ -118,6 +119,18 @@ public class LicenseManager {
 
   private String retrieveLicense() throws InvalidLicenseException {
     if (optimizeLicense == null) {
+      logger.info("\n############### Heads up ################\n" +
+                     "You tried to access Optimize, but no valid license could be\n" +
+                     "found. Please enter a valid license key!  If you already have \n" +
+                     "a valid key you can have a look here, how to add it to Optimize:\n" +
+                     "\n" +
+                     "https://docs.camunda.org/optimize/"+ Version.getMajorAndMinor(Version.VERSION) +"/user-guide/license/ \n" +
+                     "\n" +
+                     "In case you don't have a valid license, feel free to contact us at:\n" +
+                     "\n" +
+                     "https://camunda.com/contact/\n" +
+                     "\n" +
+                     "You will now be redirected to the license page...");
       throw new InvalidLicenseException("No license stored in Optimize. Please provide a valid Optimize license");
     }
     return optimizeLicense;

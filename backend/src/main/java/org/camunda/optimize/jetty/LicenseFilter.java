@@ -55,6 +55,7 @@ public class LicenseFilter implements Filter {
       } catch (InvalidLicenseException e) {
         logger.warn("Given License is invalid or not available, redirecting to license page!");
         servletResponse.sendRedirect(LICENSE_PAGE);
+        return;
       } catch (Exception e) {
         logger.error("could not fetch license", e);
         servletResponse.sendRedirect(ERROR_PAGE);

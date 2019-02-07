@@ -123,7 +123,7 @@ public class LicenseCheckingRestServiceIT {
     String errorMessage =
             embeddedOptimizeRule.getRequestExecutor()
                     .buildValidateAndStoreLicenseRequest(license)
-                    .execute(String.class, 500);
+                    .execute(String.class, 400);
 
     // then
     assertThat(errorMessage.contains("Your license has expired."), is(true));
@@ -137,7 +137,7 @@ public class LicenseCheckingRestServiceIT {
     String errorMessage = embeddedOptimizeRule
             .getRequestExecutor()
             .buildValidateLicenseRequest()
-            .execute(String.class, 500);
+            .execute(String.class, 400);
 
     // then
     assertThat(errorMessage.contains("No license stored in Optimize. Please provide a valid Optimize license"), is(true));
