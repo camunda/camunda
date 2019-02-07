@@ -61,7 +61,7 @@ public class JobOutputMappingTest {
   public Consumer<ServiceTaskBuilder> mappings;
 
   @Parameter(2)
-  public List<Tuple> expectedActivtyVariables;
+  public List<Tuple> expectedActivityVariables;
 
   @Parameter(3)
   public List<Tuple> expectedScopeVariables;
@@ -140,6 +140,12 @@ public class JobOutputMappingTest {
         activityVariables(tuple("y", "0")),
         scopeVariables(tuple("x", "1"))
       },
+      {
+        "{'z': 1, 'j': 1}",
+        mapping(b -> b.zeebeInput("$.i", "$.z")),
+        activityVariables(tuple("z", "0")),
+        scopeVariables(tuple("j", "1"))
+      },
     };
   }
 
@@ -176,22 +182,22 @@ public class JobOutputMappingTest {
             .getFirst()
             .getKey();
 
-    final Record<VariableRecordValue> initialVariabl =
+    final Record<VariableRecordValue> initialVariable =
         RecordingExporter.variableRecords(VariableIntent.CREATED).withName("i").getFirst();
 
     assertThat(
             RecordingExporter.variableRecords()
-                .skipUntil(r -> r.getPosition() > initialVariabl.getPosition())
+                .skipUntil(r -> r.getPosition() > initialVariable.getPosition())
                 .withScopeInstanceKey(elementInstanceKey)
-                .limit(expectedActivtyVariables.size()))
+                .limit(expectedActivityVariables.size()))
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getName(), v.getValue()))
-        .hasSize(expectedActivtyVariables.size())
-        .containsAll(expectedActivtyVariables);
+        .hasSize(expectedActivityVariables.size())
+        .containsAll(expectedActivityVariables);
 
     assertThat(
             RecordingExporter.variableRecords()
-                .skipUntil(r -> r.getPosition() > initialVariabl.getPosition())
+                .skipUntil(r -> r.getPosition() > initialVariable.getPosition())
                 .withScopeInstanceKey(scopeInstanceKey)
                 .limit(expectedScopeVariables.size()))
         .extracting(Record::getValue)
