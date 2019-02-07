@@ -68,7 +68,7 @@ public class DeploymentTransformer {
 
     while (resourceIterator.hasNext()) {
       final DeploymentResource deploymentResource = resourceIterator.next();
-      success = transformResource(deploymentEvent, validationErrors, deploymentResource);
+      success &= transformResource(deploymentEvent, validationErrors, deploymentResource);
     }
 
     if (!success) {
