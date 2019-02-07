@@ -242,6 +242,40 @@ public class ReportConflictIT {
     checkCollectionsStillContainReport(expectedConflictedItemIds, reportId);
   }
 
+  @Test
+  public void noErrorOnUpdateSingleReportWithConflictOnCombinedReportWithoutReportColors() {
+    // given
+    String firstSingleReportId = createAndStoreDefaultProcessReportDefinition(
+      ProcessReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode(RANDOM_KEY, RANDOM_VERSION)
+    );
+    String secondSingleReportId = createAndStoreDefaultProcessReportDefinition(
+      ProcessReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode(RANDOM_KEY, RANDOM_VERSION)
+    );
+    String combinedReportId = createNewCombinedReport();
+    CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
+    CombinedReportDataDto combinedReportData = createCombinedReport(firstSingleReportId, secondSingleReportId);
+    combinedReportData.getConfiguration().setReportColors(Collections.emptyList());
+    report.setData(combinedReportData);
+    updateReport(combinedReportId, report);
+
+    // when
+    final SingleProcessReportDefinitionDto firstSingleReport =
+      (SingleProcessReportDefinitionDto) getReport(firstSingleReportId);
+    final SingleProcessReportDefinitionDto reportUpdate = new SingleProcessReportDefinitionDto();
+    reportUpdate.setData(ProcessReportDataBuilderHelper.createAverageProcessInstanceDurationGroupByStartDateReport(
+      firstSingleReport.getData().getProcessDefinitionKey(),
+      firstSingleReport.getData().getProcessDefinitionVersion(),
+      GroupByDateUnit.DAY
+    ));
+
+    // then
+    Response response = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildUpdateReportRequest(firstSingleReportId, reportUpdate, true)
+      .execute();
+    assertThat(response.getStatus(), is(204));
+  }
+
   private void checkCollectionsStillContainReport(String[] expectedConflictedItemIds, String reportId) {
     List<ResolvedReportCollectionDefinitionDto> collections = getAllCollections();
     collections.removeIf(r -> r.getId().equals(EVERYTHING_ELSE_COLLECTION_ID));
@@ -405,16 +439,20 @@ public class ReportConflictIT {
   }
 
   private String createNewCombinedReport(String... singleReportIds) {
-    String reportId = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildCreateCombinedReportRequest()
-      .execute(IdDto.class, 200)
-      .getId();
+    String reportId = createNewCombinedReport();
 
     CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
     report.setData(createCombinedReport(singleReportIds));
     updateReport(reportId, report);
     return reportId;
+  }
+
+  private String createNewCombinedReport() {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateCombinedReportRequest()
+      .execute(IdDto.class, 200)
+      .getId();
   }
 
   private static CombinedReportDataDto createCombinedReport(String... reportIds) {

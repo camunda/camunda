@@ -278,7 +278,9 @@ public class ReportWriter {
         "for(int i=0; i<reportIds.size(); i++) {" +
         "  if(params.idToRemove.equals(reportIds.get(i))) {" +
         "     ctx._source.data.reportIds.remove(i);" +
-        "     ctx._source.data.configuration.reportColors.remove(i);" +
+        "     if(i < ctx._source.data.configuration.reportColors.size()) {" +
+        "       ctx._source.data.configuration.reportColors.remove(i);" +
+        "     }" +
         "  }" +
         "}",
       Collections.singletonMap("idToRemove", reportId)
