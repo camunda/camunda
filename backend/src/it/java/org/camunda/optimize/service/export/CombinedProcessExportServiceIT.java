@@ -31,6 +31,7 @@ import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.crea
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createPiFrequencyCountGroupedByNone;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.isEmptyString;
 
 
 public class CombinedProcessExportServiceIT {
@@ -160,7 +161,7 @@ public class CombinedProcessExportServiceIT {
   }
 
   @Test
-  public void combinedReportWithoutReportsProducesNoResult() {
+  public void combinedReportWithoutReportsProducesEmptyResult() throws IOException {
     //given
     String combinedReportId = createNewCombinedReport();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -173,7 +174,9 @@ public class CombinedProcessExportServiceIT {
             .execute();
 
     // then
-    assertThat(response.getStatus(), is(404));
+    assertThat(response.getStatus(), is(200));
+    String actualContent = getActualContentAsString(response);
+    assertThat(actualContent.trim(), isEmptyString());
   }
 
   private String getActualContentAsString(Response response) throws IOException {

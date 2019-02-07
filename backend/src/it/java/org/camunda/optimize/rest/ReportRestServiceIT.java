@@ -401,27 +401,6 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void nullDataInCombinedReportThrowsReportEvaluationException() {
-    // given
-    String reportId = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildCreateCombinedReportRequest()
-      .execute(IdDto.class, 200)
-      .getId();
-
-    // then
-    ReportEvaluationException errorMessage = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildEvaluateSavedReportRequest(reportId)
-      .execute(ReportEvaluationException.class, 500);
-
-    // then
-    assertThat(errorMessage.getReportDefinition(), is(notNullValue()));
-    assertThat(errorMessage.getReportDefinition().getName(), is(notNullValue()));
-    assertThat(errorMessage.getReportDefinition().getId(), is(notNullValue()));
-  }
-
-  @Test
   public void nullReportIdsThrowsReportEvaluationException() {
     // then
     CombinedReportDataDto combinedReport = ProcessReportDataBuilderHelper.createCombinedReport();

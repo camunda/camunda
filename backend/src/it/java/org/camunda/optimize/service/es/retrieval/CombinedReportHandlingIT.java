@@ -102,6 +102,7 @@ public class CombinedReportHandlingIT {
       data.getConfiguration().getColor(),
       is(ReportConfigurationDto.DEFAULT_CONFIGURATION_COLOR)
     );
+    assertThat(definitionDto.getData().getReportIds(), notNullValue());
   }
 
   @Test
