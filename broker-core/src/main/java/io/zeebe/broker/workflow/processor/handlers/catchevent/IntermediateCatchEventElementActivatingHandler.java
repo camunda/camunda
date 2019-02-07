@@ -20,7 +20,7 @@ package io.zeebe.broker.workflow.processor.handlers.catchevent;
 import io.zeebe.broker.workflow.model.element.ExecutableCatchEventElement;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.CatchEventBehavior.MessageCorrelationKeyException;
-import io.zeebe.broker.workflow.processor.flownode.IOMappingHelper;
+import io.zeebe.broker.workflow.processor.handlers.IOMappingHelper;
 import io.zeebe.broker.workflow.processor.handlers.element.ElementActivatingHandler;
 import io.zeebe.protocol.impl.record.value.incident.ErrorType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;

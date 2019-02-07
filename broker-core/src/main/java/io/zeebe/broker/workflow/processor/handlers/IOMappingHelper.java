@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.processor.flownode;
+package io.zeebe.broker.workflow.processor.handlers;
 
 import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
@@ -61,10 +61,8 @@ public class IOMappingHelper {
       variablesState.setVariablesFromDocument(scopeInstanceKey, mergedPayload);
     }
 
-    // todo: when refactoring handler hierarchy this should go away as default behaviour shouldn't
-    // be to apply output mappings
+    // TODO (saig0) #1852: temporary way to calculate the right payload
     if (scopeInstanceKey >= 0) {
-      // TODO (saig0) #1852: temporary way to calculate the right payload
       record.setPayload(variablesState.getVariablesAsDocument(scopeInstanceKey));
     }
   }

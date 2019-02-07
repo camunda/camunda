@@ -53,7 +53,7 @@ public class ContainerElementTerminatingHandler<T extends ExecutableFlowElementC
         elementInstanceState.getChildren(elementInstance.getKey());
 
     if (children.isEmpty()) {
-      // todo: should we do this in general on every element? probably not
+      // todo: https://github.com/zeebe-io/zeebe/issues/1970
       elementInstanceState.visitFailedRecords(
           elementInstance.getKey(),
           (token) -> {

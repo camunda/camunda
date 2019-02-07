@@ -66,7 +66,6 @@ public abstract class AbstractHandler<T extends ExecutableFlowElement>
     return true;
   }
 
-  // todo: is this the best way to check if the current element is the root scope?
   protected boolean isRootScope(BpmnStepContext<T> context) {
     return context.getRecord().getValue().getScopeInstanceKey() == -1;
   }
@@ -111,6 +110,7 @@ public abstract class AbstractHandler<T extends ExecutableFlowElement>
     // todo: this is an ugly workaround which should be removed once we have a better workflow
     // instance state abstraction: essentially, whenever transitioning to a terminating state, we
     // want to reject any potential event triggers
+    // https://github.com/zeebe-io/zeebe/issues/1980
     if (nextState == WorkflowInstanceIntent.ELEMENT_COMPLETING
         || nextState == WorkflowInstanceIntent.ELEMENT_TERMINATING) {
       context

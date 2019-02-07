@@ -43,7 +43,6 @@ public class ActivityEventOccurredHandler<T extends ExecutableActivity>
     final ExecutableBoundaryEvent boundaryEvent = getBoundaryEvent(context, event);
 
     if (boundaryEvent == null) {
-      // todo: consider wrapping BpmnStepProcessor single handling with mdc context
       Loggers.WORKFLOW_PROCESSOR_LOGGER.error(
           "No boundary event found with ID {} for process {}",
           BufferUtil.bufferAsString(event.getElementId()),

@@ -31,17 +31,6 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * TODO: rewrite this
- *
- * <p>We have two types of elements:
- *
- * <ul>
- *   <li>Those that simply <i>happen</i>, i.e. that are represented by a single event (e.g. sequence
- *       flow, none start event, ..)
- *   <li>Those that are <i>stateful</i> at runtime, i.e. that have a lifecycle and are represented
- *       as instances in the index (e.g. service task, sub process, ..)
- */
 public class WorkflowInstanceLifecycle {
 
   public static final EnumSet<WorkflowInstanceIntent> ELEMENT_INSTANCE_STATES =
@@ -50,11 +39,11 @@ public class WorkflowInstanceLifecycle {
           ELEMENT_ACTIVATED,
           ELEMENT_COMPLETING,
           ELEMENT_COMPLETED,
-          WorkflowInstanceIntent.ELEMENT_TERMINATING,
-          WorkflowInstanceIntent.ELEMENT_TERMINATED);
+          ELEMENT_TERMINATING,
+          ELEMENT_TERMINATED);
 
   public static final EnumSet<WorkflowInstanceIntent> FINAL_ELEMENT_INSTANCE_STATES =
-      EnumSet.of(ELEMENT_COMPLETED, WorkflowInstanceIntent.ELEMENT_TERMINATED);
+      EnumSet.of(ELEMENT_COMPLETED, ELEMENT_TERMINATED);
 
   public static final EnumSet<WorkflowInstanceIntent> TERMINATABLE_STATES =
       EnumSet.of(ELEMENT_ACTIVATING, ELEMENT_ACTIVATED, ELEMENT_COMPLETING);

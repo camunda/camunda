@@ -28,6 +28,7 @@ import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 
 // todo: this skips the sequence flow taken and just starts the next element
+// https://github.com/zeebe-io/zeebe/issues/1979
 public class EventBasedGatewayEventOccurredHandler<T extends ExecutableEventBasedGateway>
     extends EventOccurredHandler<T> {
   public EventBasedGatewayEventOccurredHandler() {
@@ -52,9 +53,6 @@ public class EventBasedGatewayEventOccurredHandler<T extends ExecutableEventBase
         return false;
       }
 
-      // todo: gateway publishes the ELEMENT_ACTIVATING of the next event, so we skip the sequence
-      // flow
-      // taken, which is counter intuitive for a stream observer
       deferEvent(context, event, flow.getTarget());
       return true;
     }

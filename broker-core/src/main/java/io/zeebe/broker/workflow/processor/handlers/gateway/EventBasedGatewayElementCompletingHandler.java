@@ -19,7 +19,7 @@ package io.zeebe.broker.workflow.processor.handlers.gateway;
 
 import io.zeebe.broker.workflow.model.element.ExecutableEventBasedGateway;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
-import io.zeebe.broker.workflow.processor.flownode.IOMappingHelper;
+import io.zeebe.broker.workflow.processor.handlers.IOMappingHelper;
 import io.zeebe.broker.workflow.processor.handlers.element.ElementCompletingHandler;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 

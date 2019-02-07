@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.workflow.processor.handlers.servicetask;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.incident.processor.IncidentState;
 import io.zeebe.broker.job.JobState;
 import io.zeebe.broker.workflow.model.element.ExecutableServiceTask;
@@ -43,7 +44,6 @@ public class ServiceTaskElementTerminatingHandler<T extends ExecutableServiceTas
     this.jobState = jobState;
   }
 
-  // todo: if we fail to apply output mappings, then the job still...exists?
   @Override
   protected boolean handleState(BpmnStepContext<T> context) {
     if (!super.handleState(context)) {
@@ -55,13 +55,13 @@ public class ServiceTaskElementTerminatingHandler<T extends ExecutableServiceTas
     if (jobKey > 0) {
       final JobRecord job = jobState.getJob(jobKey);
 
-      // todo: is this something that warrants to fail hard? this is just cleanup anyway...
-      if (job == null) {
-        throw new IllegalStateException(
-            String.format("Expected to find job with key %d, but no job found", jobKey));
+      if (job != null) {
+        context.getCommandWriter().appendFollowUpCommand(jobKey, JobIntent.CANCEL, job);
+      } else {
+        Loggers.WORKFLOW_PROCESSOR_LOGGER.warn(
+            "Expected to find job with key {}, but no job found", jobKey);
       }
 
-      context.getCommandWriter().appendFollowUpCommand(jobKey, JobIntent.CANCEL, job);
       resolveExistingJobIncident(jobKey, context);
     }
 

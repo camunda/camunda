@@ -30,45 +30,6 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceReco
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.metrics.MetricsManager;
 
-// todo: rewrite this
-/*
- * Workflow Execution Concept:
- *
- * Processing concept:
- *
- * In: 1 event ---> BPMN step evaluation ---> Out: n events
- *
- * Data structures:
- *
- * - Index
- * - Events in log stream
- *
- * The index always contains the latest, materialized state of a workflow instance.
- * Events on the log stream have two purposes:
- *
- * - They represent changes to that state (=> that can be recorded via exporters)
- * - A state change can trigger other state changes, i.e. the workflow stream processor
- *   reacts to them. This allows us to break complex operations into smaller, atomic steps.
- *
- * In conclusion:
- *
- * - Whenever we process an event or command, we publish their effects as follow-up events.
- *   At the time of publication, the index already contains these effects.
- *
- * Index state:
- *
- * - In the index, we have two things:
- *   - element instances
- *   - tokens
- * - An element instance is an instance of a stateful BPMN element (e.g. service task, subprocess)
- * - A token is any event that is published to get from one element instance to another (e.g. sequence
- *   flow events, gateways). Some of these events are stored in the index for later reference (e.g.
- *   parallel merge), but most are not. There is no concept of token identity.
- * - Element instances are explicitly represented in the index (e.g. to be able to cancel them),
- *   tokens are counted (e.g. if there is still "something" going on, when we would
- *   like to complete a scope).
- * - Both things are transparently maintained in the index whenever an event is consumed or published.
- */
 public class WorkflowEngineState implements StreamProcessorLifecycleAware {
 
   private final WorkflowState workflowState;

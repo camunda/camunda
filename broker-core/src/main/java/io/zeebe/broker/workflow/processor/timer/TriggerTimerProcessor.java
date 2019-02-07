@@ -50,8 +50,7 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
 
   private final CatchEventBehavior catchEventBehavior;
   private final WorkflowState workflowState;
-  private final WorkflowInstanceRecord eventOccurredRecord =
-      new WorkflowInstanceRecord().setBpmnElementType(BpmnElementType.START_EVENT);
+  private final WorkflowInstanceRecord eventOccurredRecord = new WorkflowInstanceRecord();
 
   public TriggerTimerProcessor(
       final WorkflowState workflowState, CatchEventBehavior catchEventBehavior) {
@@ -59,7 +58,6 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
     this.catchEventBehavior = catchEventBehavior;
   }
 
-  // todo: refactor this big ass method
   @Override
   public void processRecord(
       TypedRecord<TimerRecord> record,

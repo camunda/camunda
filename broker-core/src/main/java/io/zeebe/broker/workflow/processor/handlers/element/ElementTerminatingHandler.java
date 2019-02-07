@@ -49,6 +49,7 @@ public class ElementTerminatingHandler<T extends ExecutableFlowNode> extends Abs
   protected boolean handleState(BpmnStepContext<T> context) {
     // todo: this is used to be executed after the child class' terminate logic; see if it matters
     // could perhaps be moved to the terminated phase
+    // https://github.com/zeebe-io/zeebe/issues/1978
     incidentState.forExistingWorkflowIncident(
         context.getRecord().getKey(),
         (record, key) -> context.getOutput().appendResolvedIncidentEvent(key, record));

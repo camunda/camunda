@@ -56,7 +56,7 @@ public class ExclusiveGatewayTransformer implements ModelElementTransformer<Excl
           WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnStep.FLOWOUT_ELEMENT_COMPLETED);
     } else {
       gateway.bindLifecycleState(
-          WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnStep.EXCLUSIVE_GATEWAY_ELEMENT_READY);
+          WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnStep.EXCLUSIVE_GATEWAY_ELEMENT_ACTIVATING);
     }
   }
 

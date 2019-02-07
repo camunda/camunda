@@ -38,7 +38,6 @@ public class EventTrigger extends UnpackedObject implements DbValue {
     this.declareProperty(elementIdProp).declareProperty(payloadProp).declareProperty(eventKeyProp);
   }
 
-  // todo: is copying here necessary?
   // Copies over the previous event
   public EventTrigger(EventTrigger other) {
     this();

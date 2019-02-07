@@ -27,9 +27,6 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
  * Differs from {@link ActivityEventOccurredHandler} in the case where the triggered event is the
  * receive task's message trigger, at which point the task will complete.
  *
- * <p>TODO: consider moving the case where the elementId is the element itself to the general
- * activity
- *
  * @param <T>
  */
 public class ReceiveTaskEventOccurredHandler<T extends ExecutableReceiveTask>

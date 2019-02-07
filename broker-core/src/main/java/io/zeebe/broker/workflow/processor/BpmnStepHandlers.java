@@ -58,9 +58,8 @@ import java.util.Map;
 public class BpmnStepHandlers {
   private final Map<BpmnStep, BpmnStepHandler<?>> stepHandlers = new EnumMap<>(BpmnStep.class);
 
-  // todo: later get rid of bpmn step since everything now maps to a STATE + TYPE combination
   public BpmnStepHandlers(ZeebeState state) {
-    stepHandlers.put(BpmnStep.ELEMENT_READY, new ElementActivatingHandler<>());
+    stepHandlers.put(BpmnStep.ELEMENT_ACTIVATING, new ElementActivatingHandler<>());
     stepHandlers.put(BpmnStep.ELEMENT_ACTIVATED, new ElementActivatedHandler<>());
     stepHandlers.put(BpmnStep.EVENT_OCCURRED, new EventOccurredHandler<>());
     stepHandlers.put(BpmnStep.ELEMENT_COMPLETING, new ElementCompletingHandler<>());
@@ -70,7 +69,8 @@ public class BpmnStepHandlers {
     stepHandlers.put(BpmnStep.ELEMENT_TERMINATED, new ElementTerminatedHandler<>());
     stepHandlers.put(BpmnStep.FLOWOUT_ELEMENT_COMPLETED, new FlowOutElementCompletedHandler<>());
 
-    stepHandlers.put(BpmnStep.ACTIVITY_ELEMENT_READY, new ActivityElementActivatingHandler<>());
+    stepHandlers.put(
+        BpmnStep.ACTIVITY_ELEMENT_ACTIVATING, new ActivityElementActivatingHandler<>());
     stepHandlers.put(BpmnStep.ACTIVITY_EVENT_OCCURRED, new ActivityEventOccurredHandler<>());
     stepHandlers.put(
         BpmnStep.ACTIVITY_ELEMENT_COMPLETING, new ActivityElementCompletingHandler<>());
@@ -88,7 +88,7 @@ public class BpmnStepHandlers {
         new ContainerElementTerminatingHandler<>(state.getIncidentState()));
 
     stepHandlers.put(
-        BpmnStep.EVENT_BASED_GATEWAY_ELEMENT_READY,
+        BpmnStep.EVENT_BASED_GATEWAY_ELEMENT_ACTIVATING,
         new EventBasedGatewayElementActivatingHandler<>());
     stepHandlers.put(
         BpmnStep.EVENT_BASED_GATEWAY_ELEMENT_ACTIVATED, new ElementActivatedHandler<>(null));
@@ -102,10 +102,11 @@ public class BpmnStepHandlers {
         new EventBasedGatewayElementTerminatingHandler<>(state.getIncidentState()));
 
     stepHandlers.put(
-        BpmnStep.EXCLUSIVE_GATEWAY_ELEMENT_READY, new ExclusiveGatewayElementActivatingHandler<>());
+        BpmnStep.EXCLUSIVE_GATEWAY_ELEMENT_ACTIVATING,
+        new ExclusiveGatewayElementActivatingHandler<>());
 
     stepHandlers.put(
-        BpmnStep.INTERMEDIATE_CATCH_EVENT_ELEMENT_READY,
+        BpmnStep.INTERMEDIATE_CATCH_EVENT_ELEMENT_ACTIVATING,
         new IntermediateCatchEventElementActivatingHandler<>());
     stepHandlers.put(
         BpmnStep.INTERMEDIATE_CATCH_EVENT_ELEMENT_ACTIVATED,

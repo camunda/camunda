@@ -88,7 +88,6 @@ public final class CorrelateWorkflowInstanceSubscription
   @Override
   public void onClose() {}
 
-  // todo: refactor this big ass method
   @Override
   public void processRecord(
       final TypedRecord<WorkflowInstanceSubscriptionRecord> record,

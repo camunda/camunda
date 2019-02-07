@@ -48,7 +48,6 @@ public class SequenceFlowTransformer implements ModelElementTransformer<Sequence
   }
 
   private void bindLifecycle(final ExecutableSequenceFlow sequenceFlow) {
-    // todo: bind to a different handler iff its a parallel merge
     final ExecutableFlowNode target = sequenceFlow.getTarget();
     if (target.getElementType() == BpmnElementType.PARALLEL_GATEWAY) {
       sequenceFlow.bindLifecycleState(

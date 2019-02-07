@@ -51,7 +51,8 @@ public class FlowNodeTransformer implements ModelElementTransformer<FlowNode> {
   }
 
   private void bindLifecycle(ExecutableFlowNode element) {
-    element.bindLifecycleState(WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnStep.ELEMENT_READY);
+    element.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnStep.ELEMENT_ACTIVATING);
     element.bindLifecycleState(
         WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.ELEMENT_ACTIVATED);
     element.bindLifecycleState(WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.EVENT_OCCURRED);
