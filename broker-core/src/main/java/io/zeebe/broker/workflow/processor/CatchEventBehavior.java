@@ -27,14 +27,21 @@ import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.broker.workflow.model.element.ExecutableCatchEvent;
 import io.zeebe.broker.workflow.model.element.ExecutableCatchEventSupplier;
 import io.zeebe.broker.workflow.model.element.ExecutableMessage;
+import io.zeebe.broker.workflow.processor.message.MessageCorrelationKeyContext;
+import io.zeebe.broker.workflow.processor.message.MessageCorrelationKeyContext.VariablesDocumentSupplier;
+import io.zeebe.broker.workflow.processor.message.MessageCorrelationKeyException;
 import io.zeebe.broker.workflow.state.TimerInstance;
 import io.zeebe.broker.workflow.state.WorkflowInstanceSubscription;
 import io.zeebe.model.bpmn.util.time.Timer;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResult;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResults;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.util.sched.clock.ActorClock;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public class CatchEventBehavior {
@@ -45,6 +52,7 @@ public class CatchEventBehavior {
   private final MsgPackQueryProcessor queryProcessor = new MsgPackQueryProcessor();
   private final WorkflowInstanceSubscription subscription = new WorkflowInstanceSubscription();
   private final TimerRecord timerRecord = new TimerRecord();
+  private final Map<DirectBuffer, DirectBuffer> extractedCorrelationKeys = new HashMap<>();
 
   public CatchEventBehavior(ZeebeState state, SubscriptionCommandSender subscriptionCommandSender) {
     this.state = state;
@@ -52,8 +60,6 @@ public class CatchEventBehavior {
   }
 
   public void unsubscribeFromEvents(long elementInstanceKey, BpmnStepContext<?> context) {
-    // at the moment, the way the state is handled we don't need specific event information to
-    // unsubscribe from an event trigger, but once messages are supported it will be necessary.
     unsubscribeFromTimerEvents(elementInstanceKey, context.getOutput().getStreamWriter());
     unsubscribeFromMessageEvents(elementInstanceKey, context);
     context.getStateDb().getEventScopeInstanceState().deleteInstance(elementInstanceKey);
@@ -62,14 +68,22 @@ public class CatchEventBehavior {
   public void subscribeToEvents(
       BpmnStepContext<?> context, final ExecutableCatchEventSupplier supplier)
       throws MessageCorrelationKeyException {
+    final List<ExecutableCatchEvent> events = supplier.getEvents();
+    final VariablesDocumentSupplier variablesSupplier =
+        context.getElementInstanceState().getVariablesState()::getVariablesAsDocument;
+    final MessageCorrelationKeyContext elementContext =
+        new MessageCorrelationKeyContext(variablesSupplier, context.getRecord().getKey());
+    final MessageCorrelationKeyContext scopeContext =
+        new MessageCorrelationKeyContext(
+            variablesSupplier, context.getRecord().getValue().getScopeInstanceKey());
 
-    // validate all subscriptions first, in case an incident is raised
-    for (ExecutableCatchEvent event : supplier.getEvents()) {
-      validateEventSubscription(context, event);
-    }
+    // collect all message correlation keys from their respective payload, as this might fail and
+    // we might need to raise an incident
+    final Map<DirectBuffer, DirectBuffer> extractedCorrelationKeys =
+        extractMessageCorrelationKeys(events, elementContext, scopeContext);
 
     // if all subscriptions are valid then open the subscriptions
-    for (final ExecutableCatchEvent event : supplier.getEvents()) {
+    for (final ExecutableCatchEvent event : events) {
       if (event.isTimer()) {
         subscribeToTimerEvent(
             context.getRecord().getKey(),
@@ -78,7 +92,7 @@ public class CatchEventBehavior {
             event.getTimer(),
             context.getOutput().getStreamWriter());
       } else if (event.isMessage()) {
-        subscribeToMessageEvent(context, event);
+        subscribeToMessageEvent(context, event, extractedCorrelationKeys.get(event.getId()));
       }
     }
 
@@ -86,12 +100,6 @@ public class CatchEventBehavior {
         .getStateDb()
         .getEventScopeInstanceState()
         .createInstance(context.getRecord().getKey(), supplier.getInterruptingElementIds());
-  }
-
-  private void validateEventSubscription(BpmnStepContext<?> context, ExecutableCatchEvent event) {
-    if (event.isMessage()) {
-      extractCorrelationKey(context, event.getMessage());
-    }
   }
 
   public void subscribeToTimerEvent(
@@ -128,14 +136,14 @@ public class CatchEventBehavior {
     writer.appendFollowUpCommand(timer.getKey(), TimerIntent.CANCEL, timerRecord);
   }
 
-  private void subscribeToMessageEvent(BpmnStepContext<?> context, ExecutableCatchEvent handler) {
+  private void subscribeToMessageEvent(
+      BpmnStepContext<?> context, ExecutableCatchEvent handler, DirectBuffer extractedKey) {
     final ExecutableMessage message = handler.getMessage();
-    final DirectBuffer extractedKey = extractCorrelationKey(context, message);
 
     final long workflowInstanceKey = context.getValue().getWorkflowInstanceKey();
     final long elementInstanceKey = context.getRecord().getKey();
     final DirectBuffer messageName = cloneBuffer(message.getMessageName());
-    final DirectBuffer correlationKey = cloneBuffer(extractedKey);
+    final DirectBuffer correlationKey = extractedKey;
     final boolean closeOnCorrelate = handler.shouldCloseMessageSubscriptionOnCorrelate();
 
     subscription.setMessageName(messageName);
@@ -189,9 +197,9 @@ public class CatchEventBehavior {
   }
 
   private DirectBuffer extractCorrelationKey(
-      BpmnStepContext<?> context, ExecutableMessage message) {
+      ExecutableMessage message, MessageCorrelationKeyContext context) {
     final QueryResults results =
-        queryProcessor.process(message.getCorrelationKey(), context.getValue().getPayload());
+        queryProcessor.process(message.getCorrelationKey(), context.getVariablesAsDocument());
     final String errorMessage;
 
     if (results.size() == 1) {
@@ -215,7 +223,7 @@ public class CatchEventBehavior {
     final String failureMessage =
         String.format(
             "Failed to extract the correlation-key by '%s': %s", expression, errorMessage);
-    throw new MessageCorrelationKeyException(failureMessage);
+    throw new MessageCorrelationKeyException(context, failureMessage);
   }
 
   private boolean sendCloseMessageSubscriptionCommand(
@@ -237,11 +245,24 @@ public class CatchEventBehavior {
         workflowInstanceKey, elementInstanceKey, messageName, correlationKey, closeOnCorrelate);
   }
 
-  public class MessageCorrelationKeyException extends RuntimeException {
-    private static final long serialVersionUID = 8929284049646192937L;
+  private Map<DirectBuffer, DirectBuffer> extractMessageCorrelationKeys(
+      List<ExecutableCatchEvent> events,
+      MessageCorrelationKeyContext elementContext,
+      MessageCorrelationKeyContext scopeContext) {
+    extractedCorrelationKeys.clear();
 
-    MessageCorrelationKeyException(String message) {
-      super(message);
+    for (ExecutableCatchEvent event : events) {
+      if (event.isMessage()) {
+        final MessageCorrelationKeyContext context =
+            event.getElementType() == BpmnElementType.BOUNDARY_EVENT
+                ? scopeContext
+                : elementContext;
+        final DirectBuffer correlationKey = extractCorrelationKey(event.getMessage(), context);
+
+        extractedCorrelationKeys.put(event.getId(), cloneBuffer(correlationKey));
+      }
     }
+
+    return extractedCorrelationKeys;
   }
 }
