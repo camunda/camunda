@@ -6,16 +6,17 @@ services:
       context: .
       dockerfile: Dockerfile.build
     container_name: operate
-    command:
-      - --spring.config.location=file:/usr/app/config/application.yml
     environment:
       - SPRING_PROFILES_ACTIVE=dev,dev-data
+      - JAVA_OPTS=-Dlogging.config=file:/usr/app/config/log4j2.xml
+      - SPRING_CONFIG_LOCATION=file:/usr/app/config/application.yml
     image: camunda/operate:latest
     ports:
       - 8080:8080
     restart: always
     volumes:
-      - ./application.yml:/usr/app/config/application.yml
+      - ./config/application.yml:/usr/app/config/application.yml
+      - ./config/log4j2.xml:/usr/app/config/log4j2.xml
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.6.0
@@ -55,5 +56,5 @@ services:
       - 8000:8000
     restart: always
     volumes:
-      - ./zeebe.cfg.toml:/usr/local/zeebe/conf/zeebe.cfg.toml
+      - ./config/zeebe.cfg.toml:/usr/local/zeebe/conf/zeebe.cfg.toml
 
