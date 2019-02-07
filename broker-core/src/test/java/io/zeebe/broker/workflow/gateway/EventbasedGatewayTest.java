@@ -126,7 +126,7 @@ public class EventbasedGatewayTest {
     testClient.deploy(WORKFLOW_WITH_TIMERS);
     testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "123"));
 
-    assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(2).exists());
+    assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(2).exists()).isTrue();
 
     // when
     brokerRule.getClock().addTime(Duration.ofSeconds(1));
@@ -208,7 +208,7 @@ public class EventbasedGatewayTest {
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.GATEWAY_ACTIVATED)
             .getFirst();
 
-    assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(2).exists());
+    assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(2).exists()).isTrue();
 
     // when
     brokerRule.getClock().addTime(Duration.ofSeconds(1));
@@ -227,9 +227,10 @@ public class EventbasedGatewayTest {
         .isTrue();
 
     assertThat(
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withElementId(PROCESS_ID)
-            .exists());
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+                .withElementId(PROCESS_ID)
+                .exists())
+        .isTrue();
   }
 
   @Test
@@ -299,9 +300,10 @@ public class EventbasedGatewayTest {
         .isTrue();
 
     assertThat(
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withElementId(PROCESS_ID)
-            .exists());
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+                .withElementId(PROCESS_ID)
+                .exists())
+        .isTrue();
   }
 
   @Test
@@ -310,7 +312,7 @@ public class EventbasedGatewayTest {
     testClient.deploy(WORKFLOW_WITH_TIMERS);
     testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "123"));
 
-    assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(2).exists());
+    assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(2).exists()).isTrue();
 
     // when
     brokerRule.getClock().addTime(Duration.ofSeconds(1));
@@ -329,10 +331,11 @@ public class EventbasedGatewayTest {
     testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "123"));
 
     assertThat(
-        RecordingExporter.workflowInstanceSubscriptionRecords(
-                WorkflowInstanceSubscriptionIntent.OPENED)
-            .limit(2)
-            .exists());
+            RecordingExporter.workflowInstanceSubscriptionRecords(
+                    WorkflowInstanceSubscriptionIntent.OPENED)
+                .limit(2)
+                .exists())
+        .isTrue();
 
     // when
     testClient.publishMessage("msg-1", "123");
@@ -355,12 +358,13 @@ public class EventbasedGatewayTest {
     final long workflowInstanceKey =
         testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "123"));
 
-    assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(1).exists());
+    assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(1).exists()).isTrue();
     assertThat(
-        RecordingExporter.workflowInstanceSubscriptionRecords(
-                WorkflowInstanceSubscriptionIntent.OPENED)
-            .limit(1)
-            .exists());
+            RecordingExporter.workflowInstanceSubscriptionRecords(
+                    WorkflowInstanceSubscriptionIntent.OPENED)
+                .limit(1)
+                .exists())
+        .isTrue();
 
     // when
     testClient.cancelWorkflowInstance(workflowInstanceKey);

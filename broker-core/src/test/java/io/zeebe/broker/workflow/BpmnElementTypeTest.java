@@ -105,7 +105,7 @@ public class BpmnElementTypeTest {
               // wait for message subscription for the start event to be opened
               RecordingExporter.messageStartEventSubscriptionRecords(
                       MessageStartEventSubscriptionIntent.OPENED)
-                  .exists();
+                  .getFirst();
 
               testClient.publishMessage(messageName(), "");
             }
