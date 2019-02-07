@@ -62,3 +62,15 @@ it('should invoke cancel', async () => {
   await node.find('.cancel-button').simulate('click');
   expect(spy).toHaveBeenCalled();
 });
+
+it('should select the name input field if Report is just created', async () => {
+  const node = await shallow(<EntityNameForm autofocus={true} />);
+
+  const input = {focus: jest.fn(), select: jest.fn()};
+  node.instance().inputRef(input);
+
+  await node.instance().componentDidMount();
+
+  expect(input.focus).toHaveBeenCalled();
+  expect(input.select).toHaveBeenCalled();
+});
