@@ -1,24 +1,19 @@
 package org.camunda.optimize.rest.util;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
-import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Cookie;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.camunda.optimize.rest.util.AuthenticationUtil.OPTIMIZE_AUTHORIZATION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-
 public class AuthenticationUtilTest {
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
 
   @Test
   public void getToken() {
@@ -30,17 +25,17 @@ public class AuthenticationUtilTest {
     Mockito.when(requestMock.getCookies()).thenReturn(cookies);
 
     // when
-    String token = AuthenticationUtil.getToken(requestMock);
+    Optional<String> token = AuthenticationUtil.getToken(requestMock);
 
     // then
-    assertThat(token, is("test"));
+    assertThat(token.isPresent(), is(true));
+    assertThat(token.get(), is("test"));
   }
 
   @Test
-  public void getTokenException() throws Exception {
+  public void getTokenException() {
     ContainerRequestContext requestMock = Mockito.mock(ContainerRequestContext.class);
-    thrown.expect(NotAuthorizedException.class);
-    AuthenticationUtil.getToken(requestMock);
+    assertThat(AuthenticationUtil.getToken(requestMock), is(Optional.empty()));
   }
 
 }

@@ -21,7 +21,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
 
-import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUser;
+import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUserOrFailNotAuthorized;
 
 
 @Secured
@@ -43,7 +43,7 @@ public class CollectionRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public IdDto createNewCollection(@Context ContainerRequestContext requestContext) {
-    String userId = getRequestUser(requestContext);
+    String userId = getRequestUserOrFailNotAuthorized(requestContext);
     return collectionService.createNewCollectionAndReturnId(userId);
   }
 
@@ -62,7 +62,7 @@ public class CollectionRestService {
                                @PathParam("id") String collectionId,
                                SimpleCollectionDefinitionDto updatedCollection) {
     updatedCollection.setId(collectionId);
-    String userId = getRequestUser(requestContext);
+    String userId = getRequestUserOrFailNotAuthorized(requestContext);
     collectionService.updateCollection(updatedCollection, userId);
   }
 

@@ -71,8 +71,7 @@ public class AuthenticationRestService {
   @GET
   @Path("logout")
   public Response logout(@Context ContainerRequestContext requestContext) {
-    String token = AuthenticationUtil.getToken(requestContext);
-    sessionService.expireToken(token);
+    AuthenticationUtil.getToken(requestContext).ifPresent(sessionService::invalidateAuthToken);
     return Response.status(200).entity("OK").cookie(createDeleteOptimizeAuthCookie()).build();
   }
 }

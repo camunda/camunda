@@ -91,7 +91,7 @@ public class AuthenticationExtractorPluginIT {
     // given
     String basePackage = "org.camunda.optimize.plugin.security.authentication.util1";
     addAuthenticationExtractorBasePackagesToConfiguration(basePackage);
-    NewCookie newCookie = simulateFirstUserRequestAndReturnCookies(KERMIT_USER);
+    NewCookie newCookie = simulateSingleSignOnAuthHeaderRequestAndReturnCookies(KERMIT_USER);
 
     // when
     Response response = embeddedOptimizeRule.getRequestExecutor()
@@ -157,7 +157,7 @@ public class AuthenticationExtractorPluginIT {
     // given
     String basePackage = "org.camunda.optimize.plugin.security.authentication.util1";
     addAuthenticationExtractorBasePackagesToConfiguration(basePackage);
-    NewCookie newCookie = simulateFirstUserRequestAndReturnCookies(KERMIT_USER);
+    NewCookie newCookie = simulateSingleSignOnAuthHeaderRequestAndReturnCookies(KERMIT_USER);
 
     // when
     Response response = embeddedOptimizeRule.getRequestExecutor()
@@ -177,7 +177,7 @@ public class AuthenticationExtractorPluginIT {
     String basePackage = "org.camunda.optimize.plugin.security.authentication.util1";
     addAuthenticationExtractorBasePackagesToConfiguration(basePackage);
 
-    NewCookie newCookie = simulateFirstUserRequestAndReturnCookies(KERMIT_USER);
+    NewCookie newCookie = simulateSingleSignOnAuthHeaderRequestAndReturnCookies(KERMIT_USER);
 
     // when
     Response response = embeddedOptimizeRule.getRequestExecutor()
@@ -196,7 +196,7 @@ public class AuthenticationExtractorPluginIT {
     deployAndImportTestDefinition();
     String basePackage = "org.camunda.optimize.plugin.security.authentication.util1";
     addAuthenticationExtractorBasePackagesToConfiguration(basePackage);
-    NewCookie newCookie = simulateFirstUserRequestAndReturnCookies(KERMIT_USER);
+    NewCookie newCookie = simulateSingleSignOnAuthHeaderRequestAndReturnCookies(KERMIT_USER);
 
     // when I fetch the process definitions
     List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeRule.getRequestExecutor()
@@ -211,7 +211,7 @@ public class AuthenticationExtractorPluginIT {
     // when session is expired then the session is renewed and the authorizations updated
     grantSingleDefinitionAuthorizationsForKermit();
     moveTimeByOneDay();
-    newCookie = simulateFirstUserRequestAndReturnCookies(KERMIT_USER);
+    newCookie = simulateSingleSignOnAuthHeaderRequestAndReturnCookies(KERMIT_USER);
 
     // then kermit should have access to the authorized definition
     definitions = embeddedOptimizeRule.getRequestExecutor()
@@ -263,7 +263,7 @@ public class AuthenticationExtractorPluginIT {
     assertThat(deleteCookie.getPath(), is("/"));
   }
 
-  private NewCookie simulateFirstUserRequestAndReturnCookies(String headerValue) {
+  private NewCookie simulateSingleSignOnAuthHeaderRequestAndReturnCookies(String headerValue) {
     Response initialOptimizeResponse = embeddedOptimizeRule
       .rootTarget("/").request().header(CUSTOM_AUTH_HEADER, headerValue).get();
 

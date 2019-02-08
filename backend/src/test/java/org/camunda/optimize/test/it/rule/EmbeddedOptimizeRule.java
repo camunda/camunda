@@ -268,7 +268,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   private void invalidateAuthorizationCache()
     throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-    final Method invalidateCacheMethod = DefinitionAuthorizationService.class.getDeclaredMethod("invalidateCache");
+    final Method invalidateCacheMethod = DefinitionAuthorizationService.class.getDeclaredMethod("reset");
     invalidateCacheMethod.setAccessible(true);
     invalidateCacheMethod.invoke(getDefinitionAuthorizationService());
   }

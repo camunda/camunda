@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.util.configuration;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -61,6 +62,7 @@ public class ConfigurationService {
 
   private Map<String, EngineConfiguration> configuredEngines;
   private Integer tokenLifeTime;
+  private String tokenSecret;
   private String userValidationEndpoint;
   private String processDefinitionEndpoint;
   private String processDefinitionXmlEndpoint;
@@ -313,7 +315,15 @@ public class ConfigurationService {
     return configuredEngines;
   }
 
-  public Integer getTokenLifeTime() {
+  public Optional<String> getTokenSecret() {
+    if (tokenSecret == null) {
+      tokenSecret = configJsonContext.read(ConfigurationServiceConstants.TOKEN_SECRET);
+    }
+    return Optional.ofNullable(tokenSecret);
+  }
+
+  @JsonIgnore
+  public Integer getTokenLifeTimeMinutes() {
     if (tokenLifeTime == null) {
       tokenLifeTime = configJsonContext.read(ConfigurationServiceConstants.TOKEN_LIFE_TIME);
     }

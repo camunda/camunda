@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.util.Optional;
 
 import static org.camunda.optimize.rest.util.AuthenticationUtil.OPTIMIZE_AUTHORIZATION;
-import static org.camunda.optimize.rest.util.AuthenticationUtil.extractTokenFromAuthorizationValue;
+import static org.camunda.optimize.rest.util.AuthenticationUtil.extractTokenFromAuthorizationValueOrFailNotAuthorized;
 
 public class SingleSignOnFilter implements Filter {
 
@@ -53,18 +53,18 @@ public class SingleSignOnFilter implements Filter {
    * single sign on functionality to Optimize.
    */
   @Override
-  public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws
-                                                                                            IOException,
-                                                                                            ServletException {
+  public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+    throws IOException, ServletException {
     logger.trace("Received new request.");
     initBeans();
     HttpServletResponse servletResponse = (HttpServletResponse) response;
     HttpServletRequest servletRequest = (HttpServletRequest) request;
-    servletResponse.addHeader(HttpHeaders.CACHE_CONTROL, NO_STORE);
 
     if (authenticationExtractorProvider.hasPluginsConfigured()) {
+      servletResponse.addHeader(HttpHeaders.CACHE_CONTROL, NO_STORE);
       provideAuthentication(servletResponse, servletRequest);
     }
+
     chain.doFilter(request, response);
   }
 
@@ -97,8 +97,8 @@ public class SingleSignOnFilter implements Filter {
     boolean hasCookieWithActiveToken =
       retrieveOptimizeAuthCookie(servletRequest)
         .map(authCookie -> {
-          String token = extractTokenFromAuthorizationValue(authCookie.getValue());
-          return !sessionService.hasTokenExpired(token);
+          String token = extractTokenFromAuthorizationValueOrFailNotAuthorized(authCookie.getValue());
+          return sessionService.isValidAuthToken(token);
         })
         .orElse(false);
     return hasCookieWithActiveToken;
@@ -117,7 +117,8 @@ public class SingleSignOnFilter implements Filter {
   }
 
   private void createSessionIfIsAuthorizedToAccessOptimize(HttpServletRequest servletRequest,
-                                                           HttpServletResponse servletResponse, String userName) {
+                                                           HttpServletResponse servletResponse,
+                                                           String userName) {
     for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
       boolean isAuthorized = applicationAuthorizationService.isAuthorizedToAccessOptimize(userName, engineContext);
       if (isAuthorized) {
@@ -132,17 +133,13 @@ public class SingleSignOnFilter implements Filter {
     }
   }
 
-  private void manageUserSession(HttpServletRequest servletRequest, HttpServletResponse servletResponse, String userName) {
+  private void manageUserSession(HttpServletRequest servletRequest,
+                                 HttpServletResponse servletResponse,
+                                 String userName) {
     Optional<Cookie> authCookie = retrieveOptimizeAuthCookie(servletRequest);
-    if (authCookie.isPresent()) {
-      String token = extractTokenFromAuthorizationValue(authCookie.get().getValue());
-      if (sessionService.hasTokenExpired(token)) {
-        logger.trace("Updating session information for {} with token {}", userName, token);
-        sessionService.updateExpiryDate(token);
-      }
-    } else {
+    if (!authCookie.isPresent()) {
       logger.trace("Creating new session for {}", userName);
-      String securityToken = sessionService.createSessionAndReturnSecurityToken(userName);
+      String securityToken = sessionService.createAuthToken(userName);
       setOptimizeAuthCookie(servletRequest, servletResponse, securityToken);
     }
   }

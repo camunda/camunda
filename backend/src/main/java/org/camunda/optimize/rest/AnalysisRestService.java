@@ -15,7 +15,7 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
-import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUser;
+import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUserOrFailNotAuthorized;
 
 @Secured
 @Component
@@ -35,7 +35,7 @@ public class AnalysisRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public BranchAnalysisDto getBranchAnalysis(@Context ContainerRequestContext requestContext,
                                              BranchAnalysisQueryDto branchAnalysisDto) {
-    String userId = getRequestUser(requestContext);
+    String userId = getRequestUserOrFailNotAuthorized(requestContext);
     return branchAnalysisReader.branchAnalysis(userId, branchAnalysisDto);
   }
 }

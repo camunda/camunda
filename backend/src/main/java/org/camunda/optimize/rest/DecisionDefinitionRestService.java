@@ -20,7 +20,7 @@ import javax.ws.rs.core.MediaType;
 import java.util.Collection;
 import java.util.List;
 
-import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUser;
+import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUserOrFailNotAuthorized;
 
 
 @Secured
@@ -47,7 +47,7 @@ public class DecisionDefinitionRestService {
   public Collection<DecisionDefinitionOptimizeDto> getDecisionDefinitions(@Context ContainerRequestContext requestContext,
                                                                           @QueryParam("includeXml") boolean includeXml) {
 
-    String userId = getRequestUser(requestContext);
+    String userId = getRequestUserOrFailNotAuthorized(requestContext);
     return decisionDefinitionReader.getFullyImportedDecisionDefinitions(userId, includeXml);
   }
 
@@ -60,7 +60,7 @@ public class DecisionDefinitionRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Path("/groupedByKey")
   public List<DecisionDefinitionGroupOptimizeDto> getDecisionDefinitionsGroupedByKey(@Context ContainerRequestContext requestContext) {
-    String userId = getRequestUser(requestContext);
+    String userId = getRequestUserOrFailNotAuthorized(requestContext);
     return decisionDefinitionReader.getDecisionDefinitionsGroupedByKey(userId);
   }
 
@@ -78,7 +78,7 @@ public class DecisionDefinitionRestService {
   public String getDecisionDefinitionXml(@Context ContainerRequestContext requestContext,
                                          @QueryParam("key") String decisionDefinitionKey,
                                          @QueryParam("version") String decisionDefinitionVersion) {
-    final String userId = getRequestUser(requestContext);
+    final String userId = getRequestUserOrFailNotAuthorized(requestContext);
     return decisionDefinitionReader.getDecisionDefinitionXml(userId, decisionDefinitionKey, decisionDefinitionVersion)
       .orElseThrow(() -> {
         String notFoundErrorMessage = "Could not find xml for decision definition with key [" + decisionDefinitionKey +

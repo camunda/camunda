@@ -197,7 +197,7 @@ public class QueryPerformanceTest {
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(report)
-      .withGivenAuthHeader(authenticationHeader)
+      .withGivenAuthCookie(authenticationHeader)
       .execute();
     assertThat(response.getStatus(), is(200));
     Instant finish = Instant.now();

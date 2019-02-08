@@ -20,7 +20,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUser;
+import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUserOrFailNotAuthorized;
 
 
 @Path("/export")
@@ -39,7 +39,7 @@ public class ExportRestService {
                                @PathParam("reportId") String reportId,
                                @PathParam("fileName") String fileName,
                                @QueryParam("excludedColumns") String excludedColumnsString) {
-    final String userId = getRequestUser(requestContext);
+    final String userId = getRequestUserOrFailNotAuthorized(requestContext);
     final String resultFileName = fileName == null ? System.currentTimeMillis() + ".csv" : fileName;
     final Set<String> excludedColumns = Optional.ofNullable(excludedColumnsString)
       .map(strings -> Arrays.stream(strings.split(",")).collect(Collectors.toSet()))

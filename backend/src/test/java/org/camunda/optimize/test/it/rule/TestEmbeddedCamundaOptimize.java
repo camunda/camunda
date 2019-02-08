@@ -1,6 +1,7 @@
 package org.camunda.optimize.test.it.rule;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.http.entity.mime.MIME;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
@@ -51,7 +52,9 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
   private static final Logger logger = LoggerFactory.getLogger(TestEmbeddedCamundaOptimize.class);
-  private static final ObjectMapper configObjectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+  private static final ObjectMapper configObjectMapper = new ObjectMapper().registerModules(
+    new JavaTimeModule(), new Jdk8Module()
+  );
 
   public static final String DEFAULT_USERNAME = "demo";
   private static final String DEFAULT_PASSWORD = "demo";

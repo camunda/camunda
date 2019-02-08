@@ -14,6 +14,7 @@ public class SpyTokenServiceFactory implements FactoryBean<SessionService> {
 
   @Autowired
   private ConfigurationService configurationService;
+
   @Autowired
   private DefinitionAuthorizationService authorizationService;
 

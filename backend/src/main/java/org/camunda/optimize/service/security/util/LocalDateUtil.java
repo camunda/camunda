@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.security.util;
 
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
 public class LocalDateUtil {
@@ -19,6 +20,10 @@ public class LocalDateUtil {
       return CURRENT_TIME;
     }
     return OffsetDateTime.now();
+  }
+
+  public static LocalDateTime getCurrentLocalDateTime() {
+    return getCurrentDateTime().toLocalDateTime();
   }
 
 }

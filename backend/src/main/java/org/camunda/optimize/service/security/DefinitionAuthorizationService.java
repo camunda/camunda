@@ -33,6 +33,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 @Component
 public class DefinitionAuthorizationService implements SessionListener, ConfigurationReloadable {
   private static final int CACHE_MAXIMUM_SIZE = 1000;
+  private static final int MAX_INACTIVE_MINUTES_TIMEOUT = 5;
 
   private final ApplicationAuthorizationService applicationAuthorizationService;
   private final EngineContextFactory engineContextFactory;
@@ -61,7 +62,7 @@ public class DefinitionAuthorizationService implements SessionListener, Configur
   }
 
   @Override
-  public void onSessionCreate(final String userId) {
+  public void onSessionCreateOrRefresh(final String userId) {
     // invalidate to force removal of old entry synchronously
     authorizationLoadingCache.invalidate(userId);
     // trigger eager load of authorizations when new session is created
@@ -80,14 +81,15 @@ public class DefinitionAuthorizationService implements SessionListener, Configur
 
   // used to clear cache in test context
   @VisibleForTesting
-  private void invalidateCache() {
+  private void reset() {
     authorizationLoadingCache.invalidateAll();
   }
 
   private void initAuthorizationsCache(final ConfigurationService configurationService) {
     authorizationLoadingCache = Caffeine.newBuilder()
       .maximumSize(CACHE_MAXIMUM_SIZE)
-      .expireAfterWrite(configurationService.getTokenLifeTime(), TimeUnit.MINUTES)
+      .expireAfterWrite(configurationService.getTokenLifeTimeMinutes(), TimeUnit.MINUTES)
+      .expireAfterAccess(getAccessRefreshTime(configurationService), TimeUnit.MINUTES)
       .build(this::fetchDefinitionAuthorizationsForUserId);
   }
 
@@ -100,36 +102,6 @@ public class DefinitionAuthorizationService implements SessionListener, Configur
     }
     return Optional.ofNullable(result)
       .orElseThrow(() -> new RuntimeException("Failed to get authorizations from any engine for user " + userId));
-  }
-
-  private DefinitionAuthorizations retrieveDefinitionAuthorizations(String username, EngineContext engineContext) {
-    final List<GroupDto> groups = engineContext.getAllGroupsOfUser(username);
-    final List<AuthorizationDto> allDefinitionAuthorizations = ImmutableList.<AuthorizationDto>builder()
-      .addAll(engineContext.getAllProcessDefinitionAuthorizations())
-      .addAll(engineContext.getAllDecisionDefinitionAuthorizations())
-      .build();
-
-    final List<AuthorizationDto> groupAuthorizations = extractGroupAuthorizations(groups, allDefinitionAuthorizations);
-    final List<AuthorizationDto> userAuthorizations = extractUserAuthorizations(username, allDefinitionAuthorizations);
-
-    return new DefinitionAuthorizations(allDefinitionAuthorizations, groupAuthorizations, userAuthorizations);
-  }
-
-  private List<AuthorizationDto> extractGroupAuthorizations(List<GroupDto> groupsOfUser,
-                                                            List<AuthorizationDto> allAuthorizations) {
-    Set<String> groupIds = groupsOfUser.stream().map(GroupDto::getId).collect(Collectors.toSet());
-    return allAuthorizations
-      .stream()
-      .filter(a -> groupIds.contains(a.getGroupId()))
-      .collect(Collectors.toList());
-  }
-
-  private List<AuthorizationDto> extractUserAuthorizations(String username,
-                                                           List<AuthorizationDto> allAuthorizations) {
-    return allAuthorizations
-      .stream()
-      .filter(a -> username.equals(a.getUserId()))
-      .collect(Collectors.toList());
   }
 
   private boolean isAuthorizedToSeeDefinition(final String userId, final String decisionDefinitionKey,
@@ -151,9 +123,8 @@ public class DefinitionAuthorizationService implements SessionListener, Configur
         // the revoking of definition permissions works correctly
 
         // global authorizations
-        addGloballyAuthorizedDefinitions(
-          definitionAuthorizations.getAllDefinitionAuthorizations(), authorizations, resourceType
-        );
+        definitionAuthorizations.getAllDefinitionAuthorizations()
+          .forEach(a -> addGloballyAuthorizedDefinition(a, authorizations, resourceType));
 
         // group authorizations
         addDefinitionAuthorizations(
@@ -169,46 +140,59 @@ public class DefinitionAuthorizationService implements SessionListener, Configur
     return authorizations;
   }
 
-  private void addDefinitionAuthorizations(final List<AuthorizationDto> groupAuthorizations,
+  private static int getAccessRefreshTime(final ConfigurationService configurationService) {
+    // refresh authorizations after inactivity of 1/3 of session time or after 5 minutes inactivity whatever is smaller
+    return Math.min(configurationService.getTokenLifeTimeMinutes() / 3, MAX_INACTIVE_MINUTES_TIMEOUT);
+  }
+
+  private static DefinitionAuthorizations retrieveDefinitionAuthorizations(String username, EngineContext engineContext) {
+    final List<GroupDto> groups = engineContext.getAllGroupsOfUser(username);
+    final List<AuthorizationDto> allDefinitionAuthorizations = ImmutableList.<AuthorizationDto>builder()
+      .addAll(engineContext.getAllProcessDefinitionAuthorizations())
+      .addAll(engineContext.getAllDecisionDefinitionAuthorizations())
+      .build();
+
+    final List<AuthorizationDto> groupAuthorizations = extractGroupAuthorizations(groups, allDefinitionAuthorizations);
+    final List<AuthorizationDto> userAuthorizations = extractUserAuthorizations(username, allDefinitionAuthorizations);
+
+    return new DefinitionAuthorizations(allDefinitionAuthorizations, groupAuthorizations, userAuthorizations);
+  }
+
+  private static List<AuthorizationDto> extractGroupAuthorizations(List<GroupDto> groupsOfUser,
+                                                            List<AuthorizationDto> allAuthorizations) {
+    final Set<String> groupIds = groupsOfUser.stream().map(GroupDto::getId).collect(Collectors.toSet());
+    return allAuthorizations
+      .stream()
+      .filter(a -> groupIds.contains(a.getGroupId()))
+      .collect(Collectors.toList());
+  }
+
+  private static List<AuthorizationDto> extractUserAuthorizations(String username,
+                                                           List<AuthorizationDto> allAuthorizations) {
+    return allAuthorizations
+      .stream()
+      .filter(a -> username.equals(a.getUserId()))
+      .collect(Collectors.toList());
+  }
+
+  private static void addDefinitionAuthorizations(final List<AuthorizationDto> groupAuthorizations,
                                            final ResourceDefinitionAuthorizations resourceAuthorizations,
                                            final int resourceType) {
-    removeAuthorizationsForAllDefinitions(groupAuthorizations, resourceAuthorizations, resourceType);
-    addAuthorizationsForAllDefinitions(groupAuthorizations, resourceAuthorizations, resourceType);
-    removeAuthorizationsForProhibitedDefinition(groupAuthorizations, resourceAuthorizations, resourceType);
-    addAuthorizationsForSingleDefinitions(groupAuthorizations, resourceAuthorizations, resourceType);
+    groupAuthorizations.forEach(
+      authDto -> removeAuthorizationForAllDefinitions(authDto, resourceAuthorizations, resourceType)
+    );
+    groupAuthorizations.forEach(
+      authDto -> addAuthorizationForAllDefinitions(authDto, resourceAuthorizations, resourceType)
+    );
+    groupAuthorizations.forEach(
+      authDto -> removeAuthorizationForProhibitedDefinition(authDto, resourceAuthorizations, resourceType)
+    );
+    groupAuthorizations.forEach(
+      authDto -> addAuthorizationForDefinition(authDto, resourceAuthorizations, resourceType)
+    );
   }
 
-  private void addGloballyAuthorizedDefinitions(final List<AuthorizationDto> authorizations,
-                                                final ResourceDefinitionAuthorizations resourceAuthorizations,
-                                                final int resourceType) {
-    authorizations.forEach(a -> addGloballyAuthorizedDefinition(a, resourceAuthorizations, resourceType));
-  }
-
-  private void addAuthorizationsForAllDefinitions(final List<AuthorizationDto> authorizations,
-                                                  final ResourceDefinitionAuthorizations resourceAuthorizations,
-                                                  final int resourceType) {
-    authorizations.forEach(a -> addAuthorizationForAllDefinitions(a, resourceAuthorizations, resourceType));
-  }
-
-  private void addAuthorizationsForSingleDefinitions(final List<AuthorizationDto> authorizations,
-                                                     final ResourceDefinitionAuthorizations resourceAuthorizations,
-                                                     final int resourceType) {
-    authorizations.forEach(a -> addAuthorizationForDefinition(a, resourceAuthorizations, resourceType));
-  }
-
-  private void removeAuthorizationsForAllDefinitions(final List<AuthorizationDto> authorizations,
-                                                     final ResourceDefinitionAuthorizations resourceAuthorizations,
-                                                     final int resourceType) {
-    authorizations.forEach(a -> removeAuthorizationForAllDefinitions(a, resourceAuthorizations, resourceType));
-  }
-
-  private void removeAuthorizationsForProhibitedDefinition(final List<AuthorizationDto> authorizations,
-                                                           final ResourceDefinitionAuthorizations resourceAuthorizations,
-                                                           final int resourceType) {
-    authorizations.forEach(a -> removeAuthorizationForProhibitedDefinition(a, resourceAuthorizations, resourceType));
-  }
-
-  private void addGloballyAuthorizedDefinition(final AuthorizationDto authorization,
+  private static void addGloballyAuthorizedDefinition(final AuthorizationDto authorization,
                                                final ResourceDefinitionAuthorizations resourceAuthorizations,
                                                final int resourceType) {
     boolean hasPermissions = hasCorrectPermissions(authorization);
@@ -224,7 +208,7 @@ public class DefinitionAuthorizationService implements SessionListener, Configur
     }
   }
 
-  private void addAuthorizationForAllDefinitions(final AuthorizationDto authorization,
+  private static void addAuthorizationForAllDefinitions(final AuthorizationDto authorization,
                                                  final ResourceDefinitionAuthorizations resourceAuthorizations,
                                                  final int resourceType) {
     boolean hasPermissions = hasCorrectPermissions(authorization);
@@ -238,7 +222,7 @@ public class DefinitionAuthorizationService implements SessionListener, Configur
     }
   }
 
-  private void addAuthorizationForDefinition(final AuthorizationDto authorization,
+  private static void addAuthorizationForDefinition(final AuthorizationDto authorization,
                                              final ResourceDefinitionAuthorizations resourceAuthorizations,
                                              final int resourceType) {
     boolean hasPermissions = hasCorrectPermissions(authorization);
@@ -252,7 +236,7 @@ public class DefinitionAuthorizationService implements SessionListener, Configur
     }
   }
 
-  private void removeAuthorizationForAllDefinitions(final AuthorizationDto authorization,
+  private static void removeAuthorizationForAllDefinitions(final AuthorizationDto authorization,
                                                     final ResourceDefinitionAuthorizations resourceAuthorizations,
                                                     final int resourceType) {
     boolean hasPermissions = hasCorrectPermissions(authorization);
@@ -266,7 +250,7 @@ public class DefinitionAuthorizationService implements SessionListener, Configur
     }
   }
 
-  private void removeAuthorizationForProhibitedDefinition(final AuthorizationDto authorization,
+  private static void removeAuthorizationForProhibitedDefinition(final AuthorizationDto authorization,
                                                           final ResourceDefinitionAuthorizations resourceAuthorizations,
                                                           final int resourceType) {
     boolean hasPermissions = hasCorrectPermissions(authorization);
@@ -280,12 +264,12 @@ public class DefinitionAuthorizationService implements SessionListener, Configur
     }
   }
 
-  private boolean hasCorrectPermissions(final AuthorizationDto authorization) {
+  private static boolean hasCorrectPermissions(final AuthorizationDto authorization) {
     List<String> permissions = authorization.getPermissions();
     return permissions.contains(ALL_PERMISSION) || permissions.contains(READ_HISTORY_PERMISSION);
   }
 
-  private class ResourceDefinitionAuthorizations {
+  private static class ResourceDefinitionAuthorizations {
 
     private boolean canSeeAll = false;
     private final Set<String> authorizedDefinitions = new HashSet<>();

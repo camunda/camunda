@@ -20,7 +20,7 @@ import javax.ws.rs.core.MediaType;
 import java.util.Collection;
 import java.util.List;
 
-import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUser;
+import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUserOrFailNotAuthorized;
 
 
 @Secured
@@ -44,7 +44,7 @@ public class ProcessDefinitionRestService {
       @Context ContainerRequestContext requestContext,
       @QueryParam("includeXml") boolean includeXml) {
 
-    String userId = getRequestUser(requestContext);
+    String userId = getRequestUserOrFailNotAuthorized(requestContext);
     return processDefinitionReader.getProcessDefinitions(userId, includeXml);
   }
 
@@ -58,7 +58,7 @@ public class ProcessDefinitionRestService {
   @Path("/groupedByKey")
   public List<ProcessDefinitionGroupOptimizeDto> getProcessDefinitionsGroupedByKey(
     @Context ContainerRequestContext requestContext) {
-    String userId = getRequestUser(requestContext);
+    String userId = getRequestUserOrFailNotAuthorized(requestContext);
     return processDefinitionReader.getProcessDefinitionsGroupedByKey(userId);
   }
 
@@ -77,7 +77,7 @@ public class ProcessDefinitionRestService {
       @Context ContainerRequestContext requestContext,
       @QueryParam("processDefinitionKey") String processDefinitionKey,
       @QueryParam("processDefinitionVersion") String processDefinitionVersion) {
-    final String userId = getRequestUser(requestContext);
+    final String userId = getRequestUserOrFailNotAuthorized(requestContext);
     return processDefinitionReader.getProcessDefinitionXml(userId, processDefinitionKey, processDefinitionVersion)
       .orElseThrow(() -> {
         String notFoundErrorMessage = "Could not find xml for process definition with key [" + processDefinitionKey +

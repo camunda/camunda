@@ -1,9 +1,13 @@
 ---
 auth:
   token:
-    #Optimize uses token-based authentication to keep track of which users are
-    #logged in. Define when a token is supposed to expire.
+    # Optimize uses token-based authentication to keep track of which users are
+    # logged in. Define when a token is supposed to expire.
     lifeMin: 15
+    # Optional secret used to sign authentication tokens, it's recommended to use at least a 16 character secret.
+    # If set `null` a random secret will be generated with each startup of Optimize.
+    secret: null
+
 container:
   # A host name or IP address, to identify a specific network interface on
   # which to listen.

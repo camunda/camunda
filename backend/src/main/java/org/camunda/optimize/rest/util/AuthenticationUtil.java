@@ -9,37 +9,48 @@ import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.NewCookie;
+import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 public class AuthenticationUtil {
 
-  public static String OPTIMIZE_AUTHORIZATION = "X-Optimize-Authorization";
-  private final static Logger logger = LoggerFactory.getLogger(AuthenticationUtil.class);
+  private static final Logger logger = LoggerFactory.getLogger(AuthenticationUtil.class);
 
-  public static String getToken(ContainerRequestContext requestContext) {
-    String authorizationHeader = extractAuthorizationCookie(requestContext);
-    return extractTokenFromAuthorizationValue(authorizationHeader);
+  public static String OPTIMIZE_AUTHORIZATION = "X-Optimize-Authorization";
+
+  public static Optional<String> getToken(ContainerRequestContext requestContext) {
+    return extractAuthorizationCookie(requestContext)
+      .map(AuthenticationUtil::extractTokenFromAuthorizationValueOrFailNotAuthorized);
   }
 
-  public static Optional<String> getSessionIssuer(String token) {
+  public static Optional<Date> getTokenExpiresAt(String token) {
+    return getTokenAttribute(token, DecodedJWT::getExpiresAt);
+  }
+
+  public static Optional<String> getTokenSubject(String token) {
+    return getTokenAttribute(token, DecodedJWT::getSubject);
+  }
+
+  private static <T> Optional<T> getTokenAttribute(final String token,
+                                                   final Function<DecodedJWT, T> getTokenAttributeFunction) {
     try {
       final DecodedJWT decoded = JWT.decode(token);
-      return Optional.of(decoded.getIssuer());
+      return Optional.of(getTokenAttributeFunction.apply(decoded));
     } catch (Exception e) {
-      String errorMessage = "Could not decode security token to extract issuer!";
-      logger.debug(errorMessage, e);
+      logger.debug("Could not decode security token to extract attribute!", e);
     }
     return Optional.empty();
   }
 
-  public static String getRequestUser(ContainerRequestContext requestContext) {
-    String token = AuthenticationUtil.getToken(requestContext);
-    Optional<String> sessionIssuer = getSessionIssuer(token);
-    return sessionIssuer.orElseThrow(() -> new NotAuthorizedException("Could not extract request user!"));
+  public static String getRequestUserOrFailNotAuthorized(ContainerRequestContext requestContext) {
+    return getToken(requestContext)
+      .flatMap(AuthenticationUtil::getTokenSubject)
+      .orElseThrow(() -> new NotAuthorizedException("Could not extract request user!"));
   }
 
-  private static String extractAuthorizationCookie(ContainerRequestContext requestContext) {
+  private static Optional<String> extractAuthorizationCookie(ContainerRequestContext requestContext) {
     // load just issued token if set by previous filter
     String authorizationHeader = (String) requestContext.getProperty(OPTIMIZE_AUTHORIZATION);
     if (authorizationHeader == null) {
@@ -50,10 +61,10 @@ public class AuthenticationUtil {
         }
       }
     }
-    return authorizationHeader;
+    return Optional.ofNullable(authorizationHeader);
   }
 
-  public static String extractTokenFromAuthorizationValue(String authorizationHeader) {
+  public static String extractTokenFromAuthorizationValueOrFailNotAuthorized(String authorizationHeader) {
     // Check if the HTTP Authorization header is present and formatted correctly
     if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
       throw new NotAuthorizedException("Authorization header must be provided");
@@ -65,7 +76,9 @@ public class AuthenticationUtil {
 
   public static NewCookie createDeleteOptimizeAuthCookie() {
     logger.trace("Deleting Optimize authentication cookie.");
-    return new NewCookie(OPTIMIZE_AUTHORIZATION, "", "/", null, "delete cookie", 0, false);
+    return new NewCookie(
+      OPTIMIZE_AUTHORIZATION, "", "/", null, "delete cookie", 0, false
+    );
   }
 
   public static NewCookie createNewOptimizeAuthCookie(String securityToken) {
@@ -78,7 +91,7 @@ public class AuthenticationUtil {
       1,
       null,
       -1,
-      null,
+      getTokenExpiresAt(securityToken).orElse(null),
       false,
       false
     );

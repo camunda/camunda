@@ -31,7 +31,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriInfo;
 import java.util.List;
 
-import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUser;
+import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUserOrFailNotAuthorized;
 
 
 @Secured
@@ -56,7 +56,7 @@ public class ReportRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public IdDto createNewReport(@Context ContainerRequestContext requestContext,
                                @NotNull ReportDefinitionDto reportDefinitionDto) {
-    String userId = getRequestUser(requestContext);
+    String userId = getRequestUserOrFailNotAuthorized(requestContext);
     if (reportDefinitionDto instanceof SingleProcessReportDefinitionDto) {
       return reportService.createNewSingleProcessReport(userId);
     } else if (reportDefinitionDto instanceof SingleDecisionReportDefinitionDto) {
@@ -77,7 +77,7 @@ public class ReportRestService {
                            @PathParam("id") String reportId,
                            @QueryParam("force") boolean force,
                            @NotNull ReportDefinitionDto updatedReport) throws OptimizeException {
-    String userId = getRequestUser(requestContext);
+    String userId = getRequestUserOrFailNotAuthorized(requestContext);
     updatedReport.setId(reportId);
     updatedReport.setLastModifier(userId);
     updatedReport.setLastModified(LocalDateUtil.getCurrentDateTime());
@@ -104,7 +104,7 @@ public class ReportRestService {
                                                     @Context ContainerRequestContext requestContext) {
     MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
 
-    String userId = getRequestUser(requestContext);
+    String userId = getRequestUserOrFailNotAuthorized(requestContext);
     return reportService.findAndFilterReports(userId, queryParameters);
   }
 
@@ -116,7 +116,7 @@ public class ReportRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public ReportDefinitionDto getReport(@Context ContainerRequestContext requestContext,
                                        @PathParam("id") String reportId) {
-    String userId = getRequestUser(requestContext);
+    String userId = getRequestUserOrFailNotAuthorized(requestContext);
     return reportService.getReportWithAuthorizationCheck(reportId, userId);
   }
 
@@ -128,7 +128,7 @@ public class ReportRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public ConflictResponseDto getDeleteConflicts(@Context ContainerRequestContext requestContext,
                                                 @PathParam("id") String reportId) {
-    String userId = getRequestUser(requestContext);
+    String userId = getRequestUserOrFailNotAuthorized(requestContext);
     return reportService.getReportDeleteConflictingItemsWithAuthorizationCheck(userId, reportId);
   }
 
@@ -141,7 +141,7 @@ public class ReportRestService {
   public void deleteReport(@Context ContainerRequestContext requestContext,
                            @PathParam("id") String reportId,
                            @QueryParam("force") boolean force) throws OptimizeException {
-    String userId = getRequestUser(requestContext);
+    String userId = getRequestUserOrFailNotAuthorized(requestContext);
     reportService.deleteReportWithAuthorizationCheck(userId, reportId, force);
   }
 
@@ -158,7 +158,7 @@ public class ReportRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public ReportResultDto evaluateReportById(@Context ContainerRequestContext requestContext,
                                         @PathParam("id") String reportId) {
-    String userId = getRequestUser(requestContext);
+    String userId = getRequestUserOrFailNotAuthorized(requestContext);
     return reportService.evaluateSavedReport(userId, reportId).getResultAsDto();
   }
 
@@ -174,7 +174,7 @@ public class ReportRestService {
   public ReportResultDto evaluateProvidedReport(@Context ContainerRequestContext requestContext,
                                                 @NotNull ReportDefinitionDto reportDefinitionDto) {
 
-    String userId = getRequestUser(requestContext);
+    String userId = getRequestUserOrFailNotAuthorized(requestContext);
     return reportService.evaluateReport(userId, reportDefinitionDto).getResultAsDto();
   }
 

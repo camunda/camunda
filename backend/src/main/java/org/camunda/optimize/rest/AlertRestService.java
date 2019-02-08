@@ -24,7 +24,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
 
-import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUser;
+import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUserOrFailNotAuthorized;
 
 @Path("/alert")
 @Component
@@ -37,7 +37,7 @@ public class AlertRestService {
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   public List<AlertDefinitionDto> getStoredAlerts(@Context ContainerRequestContext requestContext) {
-    String userId = getRequestUser(requestContext);
+    String userId = getRequestUserOrFailNotAuthorized(requestContext);
     return alertService.getStoredAlerts(userId);
   }
 
@@ -49,7 +49,7 @@ public class AlertRestService {
       AlertCreationDto toCreate
   ) {
     ValidationHelper.ensureNotNull("creation object", toCreate);
-    String user = AuthenticationUtil.getRequestUser(requestContext);
+    String user = AuthenticationUtil.getRequestUserOrFailNotAuthorized(requestContext);
     return alertService.createAlert(toCreate, user);
   }
 
@@ -63,7 +63,7 @@ public class AlertRestService {
       AlertCreationDto toCreate
   ) {
     ValidationHelper.ensureNotNull("creation object", toCreate);
-    String user = AuthenticationUtil.getRequestUser(requestContext);
+    String user = AuthenticationUtil.getRequestUserOrFailNotAuthorized(requestContext);
     alertService.updateAlert(alertId, toCreate, user);
   }
 

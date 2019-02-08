@@ -60,12 +60,10 @@ public class AuthenticationService {
         if (isAuthorized) {
           return createUserSession(credentials);
         }
-
       }
     }
 
-    boolean userWasAuthenticated =
-      authenticationResults.stream().anyMatch(AuthenticationResultDto::isAuthenticated);
+    boolean userWasAuthenticated = authenticationResults.stream().anyMatch(AuthenticationResultDto::isAuthenticated);
     if (userWasAuthenticated) {
       // could not find an engine that grants optimize permission
       String errorMessage = "The user [" + credentials.getUsername() + "] is not authorized to "
@@ -96,7 +94,6 @@ public class AuthenticationService {
   }
 
   private String createUserSession(CredentialsDto credentials) {
-    // Issue a token for the user
-    return sessionService.createSessionAndReturnSecurityToken(credentials.getUsername());
+    return sessionService.createAuthToken(credentials.getUsername());
   }
 }

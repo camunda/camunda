@@ -25,7 +25,7 @@ import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.util.List;
 
-import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUser;
+import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUserOrFailNotAuthorized;
 
 
 @Secured
@@ -46,7 +46,7 @@ public class DashboardRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public IdDto createNewDashboard(@Context ContainerRequestContext requestContext) {
-    String userId = getRequestUser(requestContext);
+    String userId = getRequestUserOrFailNotAuthorized(requestContext);
     return dashboardService.createNewDashboardAndReturnId(userId);
   }
 
@@ -64,7 +64,7 @@ public class DashboardRestService {
                               @PathParam("id") String dashboardId,
                               DashboardDefinitionDto updatedDashboard) {
     updatedDashboard.setId(dashboardId);
-    String userId = getRequestUser(requestContext);
+    String userId = getRequestUserOrFailNotAuthorized(requestContext);
     dashboardService.updateDashboard(updatedDashboard, userId);
   }
 

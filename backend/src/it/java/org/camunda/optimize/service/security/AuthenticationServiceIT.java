@@ -16,10 +16,8 @@ import javax.ws.rs.core.Response;
 import java.io.UnsupportedEncodingException;
 import java.time.OffsetDateTime;
 
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 
 public class AuthenticationServiceIT {
@@ -30,7 +28,7 @@ public class AuthenticationServiceIT {
 
   @Rule
   public RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   @Test
   public void authenticateUser() {
@@ -42,7 +40,7 @@ public class AuthenticationServiceIT {
     Response response = embeddedOptimizeRule.authenticateUserRequest("kermit", "kermit");
 
     //then
-    assertThat(response.getStatus(),is(200));
+    assertThat(response.getStatus(), is(200));
   }
 
   //comment in back after stopping support of engine 7.8
@@ -68,7 +66,7 @@ public class AuthenticationServiceIT {
     Response response = embeddedOptimizeRule.authenticateUserRequest("kermit", "kermit");
 
     //then
-    assertThat(response.getStatus(),is(401));
+    assertThat(response.getStatus(), is(401));
   }
 
   @Test
@@ -79,18 +77,18 @@ public class AuthenticationServiceIT {
 
     //when
     Response testResponse =
-            embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildAuthTestRequest()
-            .withoutAuthentication()
-            .addSingleCookie(AuthenticationUtil.OPTIMIZE_AUTHORIZATION, "Bearer " + token)
-            .addSingleCookie(HttpHeaders.AUTHORIZATION, "Basic ZGVtbzpkZW1v")
-            .execute();
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildAuthTestRequest()
+        .withoutAuthentication()
+        .addSingleCookie(AuthenticationUtil.OPTIMIZE_AUTHORIZATION, "Bearer " + token)
+        .addSingleCookie(HttpHeaders.AUTHORIZATION, "Basic ZGVtbzpkZW1v")
+        .execute();
 
     //then
-    assertThat(testResponse.getStatus(),is(200));
+    assertThat(testResponse.getStatus(), is(200));
     String responseEntity = testResponse.readEntity(String.class);
-    assertThat(responseEntity,is("OK"));
+    assertThat(responseEntity, is("OK"));
   }
 
   @Test
@@ -100,38 +98,47 @@ public class AuthenticationServiceIT {
     authenticateAdminUser();
     Algorithm algorithm = Algorithm.HMAC256("secret");
     String selfGeneratedEvilToken = JWT.create()
-        .withIssuer("admin")
-        .sign(algorithm);
+      .withIssuer("admin")
+      .sign(algorithm);
 
     //when
     Response logoutResponse =
-            embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildLogOutRequest()
-            .withGivenAuthHeader("Bearer " + selfGeneratedEvilToken)
-            .execute();
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildLogOutRequest()
+        .withGivenAuthCookie("Bearer " + selfGeneratedEvilToken)
+        .execute();
 
     //then
     assertThat(logoutResponse.getStatus(), is(401));
   }
 
   @Test
-  public void authenticatingSameUserTwiceDisablesFirstToken() {
+  public void authenticatingSameUserTwiceCreatesNewIndependentSession() {
     // given
     addAdminUserAndGrantAccessPermission();
-    String firstToken = authenticateAdminUser();
-    authenticateAdminUser();
+
+    final String firstToken = authenticateAdminUser();
+    final String secondToken = authenticateAdminUser();
 
     // when
-    Response logoutResponse =
-            embeddedOptimizeRule
-                    .getRequestExecutor()
-                    .buildLogOutRequest()
-                    .withGivenAuthHeader("Bearer " + firstToken)
-                    .execute();
+    final Response logoutResponse =
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildLogOutRequest()
+        .withGivenAuthCookie("Bearer " + firstToken)
+        .execute();
+    assertThat(logoutResponse.getStatus(), is(200));
 
     // then
-    assertThat(logoutResponse.getStatus(), is(401));
+    final Response getReportsResponse =
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildGetAllReportsRequest()
+        .withGivenAuthCookie("Bearer " + secondToken)
+        .execute();
+
+    assertThat(getReportsResponse.getStatus(), is(200));
   }
 
   @Test
@@ -141,46 +148,46 @@ public class AuthenticationServiceIT {
 
     // then
     Response response = embeddedOptimizeRule.authenticateUserRequest("kermit", "kermit");
-    assertThat(response.getStatus(),is(403));
+    assertThat(response.getStatus(), is(403));
   }
 
   @Test
   public void tokenShouldExpireAfterConfiguredTime() {
     // given
-    int expiryTime = embeddedOptimizeRule.getConfigurationService().getTokenLifeTime();
+    int expiryTime = embeddedOptimizeRule.getConfigurationService().getTokenLifeTimeMinutes();
     engineRule.addUser("genzo", "genzo");
     engineRule.grantUserOptimizeAccess("genzo");
     String firstToken = embeddedOptimizeRule.authenticateUser("genzo", "genzo");
 
     // when
     Response testAuthenticationResponse = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildAuthTestRequest()
-            .withGivenAuthHeader("Bearer " + firstToken)
-            .execute();
+      .getRequestExecutor()
+      .buildAuthTestRequest()
+      .withGivenAuthCookie("Bearer " + firstToken)
+      .execute();
 
     //then
-    assertThat(testAuthenticationResponse.getStatus(),is(200));
+    assertThat(testAuthenticationResponse.getStatus(), is(200));
 
     // when
     LocalDateUtil.setCurrentTime(get1MinuteAfterExpiryTime(expiryTime));
     testAuthenticationResponse = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildAuthTestRequest()
-            .withGivenAuthHeader("Bearer " + firstToken)
-            .execute();
+      .getRequestExecutor()
+      .buildAuthTestRequest()
+      .withGivenAuthCookie("Bearer " + firstToken)
+      .execute();
 
     //then
-    assertThat(testAuthenticationResponse.getStatus(),is(401));
+    assertThat(testAuthenticationResponse.getStatus(), is(401));
 
   }
 
   private OffsetDateTime get1MinuteAfterExpiryTime(int expiryTime) {
-    return LocalDateUtil.getCurrentDateTime().plusMinutes(expiryTime+1);
+    return LocalDateUtil.getCurrentDateTime().plusMinutes(expiryTime + 1);
   }
 
   private String authenticateAdminUser() {
-    return embeddedOptimizeRule.authenticateUser("admin","admin");
+    return embeddedOptimizeRule.authenticateUser("admin", "admin");
   }
 
   private void addAdminUserAndGrantAccessPermission() {

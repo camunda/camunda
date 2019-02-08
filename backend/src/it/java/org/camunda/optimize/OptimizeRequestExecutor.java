@@ -38,7 +38,6 @@ import static org.camunda.optimize.AbstractAlertIT.ALERT;
 import static org.camunda.optimize.rest.util.AuthenticationUtil.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.rest.util.AuthenticationUtil.createOptimizeAuthCookieValue;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class OptimizeRequestExecutor {
@@ -105,8 +104,8 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor withGivenAuthHeader(String header) {
-    this.authCookie = header;
+  public OptimizeRequestExecutor withGivenAuthCookie(String authCookie) {
+    this.authCookie = authCookie;
     return this;
   }
 

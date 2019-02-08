@@ -26,7 +26,7 @@ import static org.camunda.optimize.rest.util.AuthenticationUtil.createDeleteOpti
 @Provider
 @Priority(Priorities.AUTHENTICATION)
 @Component
-public class AuthenticationFilter implements ContainerRequestFilter {
+public class RequestAuthenticationFilter implements ContainerRequestFilter {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -54,8 +54,10 @@ public class AuthenticationFilter implements ContainerRequestFilter {
       return;
     }
     try {
-      String token = AuthenticationUtil.getToken(requestContext);
-      boolean isValidToken = sessionService.isValidToken(token);
+      boolean isValidToken = AuthenticationUtil.getToken(requestContext)
+        .map(sessionService::isValidAuthToken)
+        .orElse(false);
+
       if (!isValidToken) {
         handleInvalidToken(requestContext);
       }
@@ -76,7 +78,8 @@ public class AuthenticationFilter implements ContainerRequestFilter {
       redirectToLoginPage(requestContext);
     } else {
       requestContext.abortWith(
-        Response.status(Response.Status.UNAUTHORIZED).cookie(createDeleteOptimizeAuthCookie()).build());
+        Response.status(Response.Status.UNAUTHORIZED).cookie(createDeleteOptimizeAuthCookie()).build()
+      );
     }
   }
 
