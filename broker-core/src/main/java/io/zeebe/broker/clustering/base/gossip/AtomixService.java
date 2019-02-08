@@ -17,8 +17,6 @@
  */
 package io.zeebe.broker.clustering.base.gossip;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryBuilder;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
@@ -32,13 +30,10 @@ import io.zeebe.broker.Loggers;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
-import io.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.transport.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 import org.slf4j.Logger;
 
 public class AtomixService implements Service<Atomix> {
@@ -65,18 +60,16 @@ public class AtomixService implements Service<Atomix> {
 
     final NodeDiscoveryProvider discoveryProvider =
         createDiscoveryProvider(clusterCfg, localMemberId);
-    final Properties properties = createNodeProperties(networkCfg);
 
-    LOG.info("Setup atomix node in cluster {}", clusterCfg.getClusterName());
+    LOG.debug("Setup atomix node in cluster {}", clusterCfg.getClusterName());
 
     final AtomixBuilder atomixBuilder =
         Atomix.builder()
             .withClusterId(clusterCfg.getClusterName())
             .withMemberId(localMemberId)
-            .withProperties(properties)
             .withAddress(Address.from(host, port))
             .withMembershipProvider(discoveryProvider);
-    // if (nodeId == 0) { //Configuring only on one node causes lot of delay when starting node
+
     final PrimaryBackupPartitionGroup partitionGroup =
         PrimaryBackupPartitionGroup.builder("group")
             .withMemberGroupStrategy(MemberGroupStrategy.NODE_AWARE)
@@ -89,8 +82,6 @@ public class AtomixService implements Service<Atomix> {
             .build();
 
     atomixBuilder.withManagementGroup(systemGroup).withPartitionGroups(partitionGroup);
-    // }
-
     atomix = atomixBuilder.build();
   }
 
@@ -116,34 +107,5 @@ public class AtomixService implements Service<Atomix> {
           nodes.add(node);
         });
     return builder.withNodes(nodes).build();
-  }
-
-  private Properties createNodeProperties(NetworkCfg networkCfg) {
-    final Properties properties = new Properties();
-
-    final ObjectMapper objectMapper = new ObjectMapper();
-    try {
-      addAddressToProperties(
-          "replicationAddress", networkCfg.getReplication(), properties, objectMapper);
-      addAddressToProperties(
-          "subscriptionAddress", networkCfg.getSubscription(), properties, objectMapper);
-      addAddressToProperties(
-          "managementAddress", networkCfg.getManagement(), properties, objectMapper);
-      addAddressToProperties("clientAddress", networkCfg.getClient(), properties, objectMapper);
-    } catch (JsonProcessingException e) {
-      e.printStackTrace();
-    }
-    return properties;
-  }
-
-  private void addAddressToProperties(
-      String addressName,
-      SocketBindingCfg socketBindingCfg,
-      Properties properties,
-      ObjectMapper objectMapper)
-      throws JsonProcessingException {
-    final SocketAddress inetSocketAddress = socketBindingCfg.toSocketAddress();
-    final String value = objectMapper.writeValueAsString(inetSocketAddress.toString());
-    properties.setProperty(addressName, value);
   }
 }

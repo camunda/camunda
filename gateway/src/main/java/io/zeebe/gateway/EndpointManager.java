@@ -111,6 +111,7 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
 
   private void addBrokerInfo(Builder brokerInfo, Integer brokerId, BrokerClusterState topology) {
     final String[] addressParts = topology.getBrokerAddress(brokerId).split(":");
+
     brokerInfo
         .setNodeId(brokerId)
         .setHost(addressParts[0])

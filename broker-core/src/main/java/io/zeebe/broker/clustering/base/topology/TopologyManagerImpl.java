@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.clustering.base.topology;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEventListener;
@@ -24,32 +25,28 @@ import io.atomix.cluster.Member;
 import io.atomix.core.Atomix;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.system.configuration.ClusterCfg;
+import io.zeebe.gateway.impl.broker.cluster.TopologyDistributionInfo;
 import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftStateListener;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.LogUtil;
-import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.function.Function;
-import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
 public class TopologyManagerImpl extends Actor
     implements TopologyManager, RaftStateListener, ClusterMembershipEventListener {
-  public static final DirectBuffer CONTACT_POINTS_EVENT_TYPE =
-      BufferUtil.wrapString("contact_points");
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
   private final Topology topology;
   private final Atomix atomix;
-
+  private final TopologyDistributionInfo distributionInfo;
   private final ObjectMapper mapper = new ObjectMapper();
 
   private final List<TopologyMemberListener> topologyMemberListers = new ArrayList<>();
@@ -57,12 +54,29 @@ public class TopologyManagerImpl extends Actor
 
   public TopologyManagerImpl(Atomix atomix, NodeInfo localBroker, ClusterCfg clusterCfg) {
     this.atomix = atomix;
+
+    // initialize topology
     this.topology =
         new Topology(
             localBroker,
             clusterCfg.getClusterSize(),
             clusterCfg.getPartitionsCount(),
             clusterCfg.getReplicationFactor());
+    distributionInfo =
+        new TopologyDistributionInfo(
+            localBroker.getNodeId(),
+            topology.getPartitionsCount(),
+            topology.getClusterSize(),
+            topology.getReplicationFactor());
+    distributionInfo.setApiAddress("client", localBroker.getClientApiAddress().toString());
+    distributionInfo.setApiAddress("management", localBroker.getManagementApiAddress().toString());
+    distributionInfo.setApiAddress(
+        "replication", localBroker.getReplicationApiAddress().toString());
+    distributionInfo.setApiAddress(
+        "subscription", localBroker.getSubscriptionApiAddress().toString());
+
+    // ensures that the first published event will contain the broker's info
+    publishTopologyChanges();
   }
 
   @Override
@@ -96,13 +110,13 @@ public class TopologyManagerImpl extends Actor
 
           raft.unregisterRaftStateListener(this);
 
-          publishLocalPartitions();
+          publishTopologyChanges();
         });
   }
 
   @Override
   public void onStateChange(Raft raft, RaftState raftState) {
-    LOG.info(
+    LOG.debug(
         "Raft state changed in node {}  partition {} to {}",
         topology.getLocal().getNodeId(),
         raft.getPartitionId(),
@@ -117,153 +131,146 @@ public class TopologyManagerImpl extends Actor
           updatePartition(
               raft.getPartitionId(), raft.getReplicationFactor(), memberInfo, raft.getState());
 
-          publishLocalPartitions();
+          publishTopologyChanges();
         });
   }
 
   @Override
   public void event(ClusterMembershipEvent clusterMembershipEvent) {
-
-    final Member eventSource = clusterMembershipEvent.subject();
-    final Member localNode = atomix.getMembershipService().getLocalMember();
-
-    if (localNode.id().equals(eventSource.id())) {
-      // don't process events from myself
-      return;
-    }
-
-    LOG.info(
-        "Member {} receives event {}",
-        atomix.getMembershipService().getLocalMember().id(),
-        clusterMembershipEvent);
-
     actor.call(
         () -> {
-          final String id = clusterMembershipEvent.subject().id().id();
-          try {
-            Integer.parseInt(id);
-          } catch (NumberFormatException e) {
-            LOG.info(
-                "Broker {} received event from invalid broker '{}'. Ignoring.",
-                atomix.getMembershipService().getLocalMember().id().id(),
-                id);
+          final Member eventSource = clusterMembershipEvent.subject();
+          final Member localNode = atomix.getMembershipService().getLocalMember();
+          LOG.debug("Member {} received event {}", localNode.id(), clusterMembershipEvent);
+
+          final TopologyDistributionInfo distInfo = extractTopologyFromProperties(eventSource);
+
+          if (distInfo == null || eventSource.id().id().equals(localNode.id().id())) {
+            LOG.debug("Member {} ignoring event from {}", localNode.id(), eventSource.id());
             return;
           }
 
           switch (clusterMembershipEvent.type()) {
             case METADATA_CHANGED:
-              onMemberMetadataChanged(clusterMembershipEvent);
+              onMetadataChanged(distInfo);
               break;
+
             case MEMBER_ADDED:
-              onMemberAdded(clusterMembershipEvent);
+              onMemberAdded(distInfo);
+              onMetadataChanged(distInfo);
+
               break;
             case MEMBER_REMOVED:
-              onMemberRemoved(clusterMembershipEvent);
+              onMemberRemoved(distInfo);
               break;
-            default:
-              LOG.info(
-                  "Im node {}, event received from {} {}. Nothing to do",
-                  localNode.id(),
-                  eventSource.id(),
-                  clusterMembershipEvent.type());
           }
         });
   }
 
-  private void onMemberMetadataChanged(ClusterMembershipEvent clusterMembershipEvent) {
-    final Member eventSource = clusterMembershipEvent.subject();
-    final Member localNode = atomix.getMembershipService().getLocalMember();
-
-    LOG.info("Member {} process metadata change of member {}", localNode.id(), eventSource.id());
-
-    updatePartitionInfo(eventSource);
-  }
-
-  private void onMemberRemoved(ClusterMembershipEvent clusterMembershipEvent) {
-    final Member eventSource = clusterMembershipEvent.subject();
-    final Member localNode = atomix.getMembershipService().getLocalMember();
-
-    LOG.info("Member {} process event member {} removed", localNode.id(), eventSource.id());
-
-    final NodeInfo nodeInfo = topology.getMember(Integer.parseInt(eventSource.id().id()));
+  // Remove a member from the topology
+  private void onMemberRemoved(TopologyDistributionInfo distInfo) {
+    final NodeInfo nodeInfo = topology.getMember(distInfo.getNodeId());
     if (nodeInfo != null) {
       topology.removeMember(nodeInfo);
       notifyMemberRemoved(nodeInfo);
     }
   }
 
-  private void onMemberAdded(ClusterMembershipEvent clusterMembershipEvent) {
-    final Member eventSource = clusterMembershipEvent.subject();
-    final Member localNode = atomix.getMembershipService().getLocalMember();
+  // Add a new member to the topology, including its interface's addresses
+  private void onMemberAdded(TopologyDistributionInfo distInfo) {
+    final NodeInfo nodeInfo =
+        new NodeInfo(
+            distInfo.getNodeId(),
+            SocketAddress.from(distInfo.getApiAddress("client")),
+            SocketAddress.from(distInfo.getApiAddress("management")),
+            SocketAddress.from(distInfo.getApiAddress("replication")),
+            SocketAddress.from(distInfo.getApiAddress("subscription")));
 
-    LOG.info("Member {} process event member {} added", localNode.id(), eventSource.id());
-
-    final Properties newProperties = eventSource.properties();
-    final String replicationAddress = newProperties.getProperty("replicationAddress");
-    final String managementAddress = newProperties.getProperty("managementAddress");
-    final String clientApiAddress = newProperties.getProperty("clientAddress");
-    final String subscriptionAddress = newProperties.getProperty("subscriptionAddress");
-    try {
-      final InetSocketAddress replication =
-          mapper.readValue(replicationAddress, InetSocketAddress.class);
-      final InetSocketAddress management =
-          mapper.readValue(managementAddress, InetSocketAddress.class);
-      final InetSocketAddress client = mapper.readValue(clientApiAddress, InetSocketAddress.class);
-      final InetSocketAddress subscription =
-          mapper.readValue(subscriptionAddress, InetSocketAddress.class);
-
-      final NodeInfo nodeInfo =
-          new NodeInfo(
-              Integer.parseInt(eventSource.id().id()),
-              new SocketAddress(client),
-              new SocketAddress(management),
-              new SocketAddress(replication),
-              new SocketAddress(subscription));
-
-      topology.addMember(nodeInfo);
-      notifyMemberAdded(nodeInfo);
-      updatePartitionInfo(eventSource);
-
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
+    topology.addMember(nodeInfo);
+    notifyMemberAdded(nodeInfo);
   }
 
   // Update local knowledge about the partitions of remote node
-  private void updatePartitionInfo(Member node) {
-    final Properties properties = node.properties();
-    final NodeInfo nodeInfo = topology.getMember(Integer.parseInt(node.id().id()));
-    for (String p : properties.stringPropertyNames()) {
-      if (p.startsWith("partition-")) {
-        final int partitionId = Integer.parseInt(p.split("-")[1]);
+  private void onMetadataChanged(TopologyDistributionInfo distInfo) {
+    final NodeInfo nodeInfo = topology.getMember(distInfo.getNodeId());
 
-        final PartitionInfo partitionInfo =
-            topology.updatePartition(
-                partitionId,
-                0, // ignore replicationFactor
-                nodeInfo,
-                RaftState.valueOf(properties.getProperty(p)));
+    for (Integer partitionId : distInfo.getPartitionRoles().keySet()) {
+      final RaftState role = distInfo.getPartitionNodeRole(partitionId);
 
-        notifyPartitionUpdated(partitionInfo, nodeInfo);
-      }
+      final PartitionInfo updatedPartition =
+          topology.updatePartition(partitionId, topology.getReplicationFactor(), nodeInfo, role);
+      notifyPartitionUpdated(updatedPartition, nodeInfo);
     }
   }
 
-  // propagate local partition info to other nodes
-  private void publishLocalPartitions() {
-    final Properties memberProperties = atomix.getMembershipService().getLocalMember().properties();
-    for (PartitionInfo p : topology.getLocal().getLeaders()) {
-      memberProperties.setProperty("partition-" + p.getPartitionId(), RaftState.LEADER.toString());
+  // Extract a topology from the node's properties and, if any exists, validate it
+  private TopologyDistributionInfo extractTopologyFromProperties(Member eventSource) {
+    final String jsonTopology = eventSource.properties().getProperty("topology");
+    if (jsonTopology == null) {
+      LOG.debug("Node {} has no topology information", eventSource.id());
+      return null;
     }
-    for (PartitionInfo p : topology.getLocal().getFollowers()) {
-      memberProperties.setProperty(
-          "partition-" + p.getPartitionId(), RaftState.FOLLOWER.toString());
+
+    final TopologyDistributionInfo distInfo;
+    try {
+      distInfo = mapper.readValue(jsonTopology, TopologyDistributionInfo.class);
+    } catch (IOException e) {
+      LOG.error("Error reading topology of node {}. Error: {}", eventSource.id(), e.getMessage());
+      return null;
     }
-    memberProperties.setProperty(
-        "replicationFactor", Integer.toString(topology.getReplicationFactor()));
-    memberProperties.setProperty("clusterSize", Integer.toString(topology.getClusterSize()));
-    memberProperties.setProperty(
-        "partitionsCount", Integer.toString(topology.getPartitionsCount()));
+
+    if (!isStaticConfigValid(distInfo)) {
+      LOG.error(
+          "Static configuration of node {} differs from local node {}",
+          eventSource.id(),
+          atomix.getMembershipService().getLocalMember().id());
+      return null;
+    }
+
+    return distInfo;
+  }
+
+  // Validate that the remote node's configuration is equal to the local node
+  private boolean isStaticConfigValid(TopologyDistributionInfo distInfo) {
+    return distInfo.getNodeId() >= 0
+        && distInfo.getNodeId() < topology.getClusterSize()
+        && topology.getClusterSize() == distInfo.getClusterSize()
+        && topology.getPartitionsCount() == distInfo.getPartitionsCount()
+        && topology.getReplicationFactor() == distInfo.getReplicationFactor();
+  }
+
+  // Propagate local partition info to other nodes through Atomix member properties
+  private void publishTopologyChanges() {
+    try {
+      final Properties memberProperties =
+          atomix.getMembershipService().getLocalMember().properties();
+      final TopologyDistributionInfo distributionInfo = createDistributionTopology();
+      memberProperties.setProperty("topology", mapper.writeValueAsString(distributionInfo));
+    } catch (JsonProcessingException e) {
+      LOG.error(
+          "{}: Couldn't publish topology information - {}",
+          topology.getLocal().getNodeId(),
+          e.getMessage());
+    }
+  }
+
+  // Transforms the local topology into a the serializable format
+  private TopologyDistributionInfo createDistributionTopology() {
+    final NodeInfo local = topology.getLocal();
+    distributionInfo.clearPartitions();
+
+    for (PartitionInfo partitionInfo : topology.getPartitions()) {
+      final int partitionId = partitionInfo.getPartitionId();
+      final NodeInfo leader = topology.getLeader(partitionId);
+
+      if (leader != null && leader.getNodeId() == local.getNodeId()) {
+        distributionInfo.setPartitionRole(partitionId, RaftState.LEADER);
+      } else {
+        distributionInfo.setPartitionRole(partitionId, RaftState.FOLLOWER);
+      }
+    }
+
+    return distributionInfo;
   }
 
   public ActorFuture<Void> close() {
