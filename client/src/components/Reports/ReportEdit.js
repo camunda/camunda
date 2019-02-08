@@ -3,7 +3,13 @@ import update from 'immutability-helper';
 import {withErrorHandling} from 'HOC';
 
 import {Redirect} from 'react-router-dom';
-import {ReportView, LoadingIndicator, Message, ConfirmationModal, EntityNameForm} from 'components';
+import {
+  ReportRenderer,
+  LoadingIndicator,
+  Message,
+  ConfirmationModal,
+  EntityNameForm
+} from 'components';
 
 import {loadProcessDefinitionXml, evaluateReport, saveReport} from './service';
 
@@ -227,7 +233,7 @@ export default withErrorHandling(
                 {loadingReportData ? (
                   <LoadingIndicator />
                 ) : (
-                  <ReportView
+                  <ReportRenderer
                     report={report}
                     applyAddons={this.applyAddons(ColumnRearrangement)}
                     customProps={{

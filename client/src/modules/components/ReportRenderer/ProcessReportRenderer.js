@@ -6,9 +6,9 @@ import ReportBlankSlate from './ReportBlankSlate';
 
 import {isEmpty, getConfig} from './service';
 
-import {Number, Table, Heatmap, Chart} from './views';
+import {Number, Table, Heatmap, Chart} from './visualizations';
 
-export default class ProcessReportView extends React.Component {
+export default class ProcessReportRenderer extends React.Component {
   state = {
     flowNodeNames: null,
     loaded: false

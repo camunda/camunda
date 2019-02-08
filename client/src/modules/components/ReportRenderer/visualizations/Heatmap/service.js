@@ -41,7 +41,7 @@ function generateHeatmap(viewer, data) {
       x: Math.round(x),
       y: Math.round(y),
       radius,
-      value: (VALUE_SHIFT + value / heatmapDataValueMax * (1 - VALUE_SHIFT)) / COOLNESS
+      value: (VALUE_SHIFT + (value / heatmapDataValueMax) * (1 - VALUE_SHIFT)) / COOLNESS
     };
   });
 
@@ -160,12 +160,10 @@ function drawSequenceFlow(data, waypoints, value, {xOffset, yOffset}) {
     };
     const normalizedMovementVector = {
       x:
-        movementVector.x /
-        (Math.abs(movementVector.x) + Math.abs(movementVector.y)) *
+        (movementVector.x / (Math.abs(movementVector.x) + Math.abs(movementVector.y))) *
         SEQUENCEFLOW_STEPWIDTH,
       y:
-        movementVector.y /
-        (Math.abs(movementVector.x) + Math.abs(movementVector.y)) *
+        (movementVector.y / (Math.abs(movementVector.x) + Math.abs(movementVector.y))) *
         SEQUENCEFLOW_STEPWIDTH
     };
 

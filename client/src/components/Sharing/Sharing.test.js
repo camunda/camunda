@@ -13,7 +13,7 @@ jest.mock('./service', () => {
 
 jest.mock('components', () => {
   return {
-    ReportView: () => <div id="report">ReportView</div>,
+    ReportRenderer: () => <div id="report">ReportRenderer</div>,
     DashboardView: () => <div id="dashboard">DashboardView</div>,
     Button: () => <div>Button</div>,
     Icon: () => <span>Icon</span>,
@@ -90,7 +90,7 @@ it('should have report if everything is fine', () => {
     evaluationResult: {name: 'foo'}
   });
 
-  expect(node.find('#report')).toIncludeText('ReportView');
+  expect(node.find('#report')).toIncludeText('ReportRenderer');
 });
 
 it('should retrieve report for the given id', () => {

@@ -2,7 +2,7 @@ import React, {Component} from 'react';
 import moment from 'moment';
 import {Link, Redirect} from 'react-router-dom';
 
-import {Button, ShareEntity, ReportView, Popover, Icon, ConfirmationModal} from 'components';
+import {Button, ShareEntity, ReportRenderer, Popover, Icon, ConfirmationModal} from 'components';
 import {
   shareReport,
   revokeReportSharing,
@@ -12,7 +12,7 @@ import {
 } from './service';
 import {checkDeleteConflict} from 'services';
 
-export default class ReportOverview extends Component {
+export default class ReportView extends Component {
   state = {
     confirmModalVisible: false,
     conflict: null
@@ -145,7 +145,7 @@ export default class ReportOverview extends Component {
           </div>
           <div className="Report__view">
             <div className="Report__content">
-              <ReportView report={report} />
+              <ReportRenderer report={report} />
             </div>
           </div>
         </div>

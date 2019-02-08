@@ -1,7 +1,7 @@
 import React from 'react';
 import {getConfig} from './service';
 import ReportBlankSlate from './ReportBlankSlate';
-import {Table, Chart} from './views';
+import {Table, Chart} from './visualizations';
 
 const getComponent = visualization => {
   switch (visualization) {
@@ -17,7 +17,7 @@ const getComponent = visualization => {
   }
 };
 
-export default function CombinedReportView(props) {
+export default function CombinedReportRenderer(props) {
   const {result} = props.report;
   if (result && typeof result === 'object' && Object.keys(result).length) {
     const {view, visualization} = Object.values(result)[0].data;

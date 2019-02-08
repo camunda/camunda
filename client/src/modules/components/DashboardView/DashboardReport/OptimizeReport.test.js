@@ -19,7 +19,7 @@ jest.mock('react-router-dom', () => {
 
 jest.mock('components', () => {
   return {
-    ReportView: () => <div>ReportView</div>,
+    ReportRenderer: () => <div>ReportRenderer</div>,
     LoadingIndicator: props => (
       <div className="sk-circle" {...props}>
         Loading...
@@ -43,14 +43,14 @@ it('should load the report provided by id', () => {
   expect(loadReport).toHaveBeenCalledWith({...props.report});
 });
 
-it('should render the ReportView if data is loaded', async () => {
+it('should render the ReportRenderer if data is loaded', async () => {
   loadReport.mockReturnValue('data');
 
   const node = mount(<OptimizeReport {...props} />);
 
   await node.instance().loadReportData();
 
-  expect(node).toIncludeText('ReportView');
+  expect(node).toIncludeText('ReportRenderer');
 });
 
 it('should render an error message if report rendering went wrong', async () => {

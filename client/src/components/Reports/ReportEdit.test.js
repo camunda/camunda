@@ -195,7 +195,7 @@ it('should set the correct parameters when updating sorting', () => {
   evaluateReport.mockClear();
 
   node
-    .find('ReportView')
+    .find('ReportRenderer')
     .prop('customProps')
     .table.updateSorting('columnId', 'desc');
 

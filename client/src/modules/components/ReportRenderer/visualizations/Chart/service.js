@@ -35,7 +35,7 @@ export function formatTooltip(
 
 function getRelativeValue(data, total) {
   if (data === null) return '';
-  return Math.round(data / total * 1000) / 10 + '%';
+  return Math.round((data / total) * 1000) / 10 + '%';
 }
 
 export function getTooltipLabelColor(tooltipItem, chart, type) {

@@ -1,7 +1,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import ReportOverview from './ReportOverview';
+import ReportView from './ReportView';
 import {remove} from './service';
 
 import {checkDeleteConflict} from 'services';
@@ -44,7 +44,7 @@ const report = {
 };
 
 it('should display the key properties of a report', () => {
-  const node = shallow(<ReportOverview report={report} />);
+  const node = shallow(<ReportView report={report} />);
 
   node.setState({
     loaded: true,
@@ -57,13 +57,13 @@ it('should display the key properties of a report', () => {
 });
 
 it('should provide a link to edit mode in view mode', () => {
-  const node = shallow(<ReportOverview report={report} />);
+  const node = shallow(<ReportView report={report} />);
 
   expect(node.find('.edit-button')).toBePresent();
 });
 
 it('should open a deletion modal on delete button click', async () => {
-  const node = shallow(<ReportOverview report={report} />);
+  const node = shallow(<ReportView report={report} />);
 
   await node.find('.delete-button').prop('onClick')();
 
@@ -71,7 +71,7 @@ it('should open a deletion modal on delete button click', async () => {
 });
 
 it('should remove a report when delete is invoked', () => {
-  const node = shallow(<ReportOverview report={report} />);
+  const node = shallow(<ReportView report={report} />);
   node.setState({
     ConfirmModalVisible: true
   });
@@ -81,7 +81,7 @@ it('should remove a report when delete is invoked', () => {
 });
 
 it('should redirect to the report list on report deletion', async () => {
-  const node = shallow(<ReportOverview report={report} />);
+  const node = shallow(<ReportView report={report} />);
 
   await node.instance().deleteReport();
 
@@ -89,20 +89,20 @@ it('should redirect to the report list on report deletion', async () => {
   expect(node.props().to).toEqual('/reports');
 });
 
-it('should contain a ReportView with the report evaluation result', () => {
-  const node = shallow(<ReportOverview report={report} />);
+it('should contain a ReportRenderer with the report evaluation result', () => {
+  const node = shallow(<ReportView report={report} />);
 
-  expect(node).toIncludeText('ReportView');
+  expect(node).toIncludeText('ReportRenderer');
 });
 
 it('should render a sharing popover', () => {
-  const node = shallow(<ReportOverview report={report} />);
+  const node = shallow(<ReportView report={report} />);
 
   expect(node.find('.share-button')).toBePresent();
 });
 
 it('should show a download csv button with the correct link', () => {
-  const node = shallow(<ReportOverview report={report} />);
+  const node = shallow(<ReportView report={report} />);
   expect(node.find('.Report__csv-download-button')).toBePresent();
 
   const href = node.find('.Report__csv-download-button').props().href;
@@ -116,7 +116,7 @@ it('should reflect excluded columns in the csv download link', () => {
     ...report,
     data: {...report.data, configuration: {excludedColumns: ['prop1', 'var__VariableName']}}
   };
-  const node = shallow(<ReportOverview report={newReport} />);
+  const node = shallow(<ReportView report={newReport} />);
   expect(node.find('.Report__csv-download-button')).toBePresent();
 
   const href = node.find('.Report__csv-download-button').props().href;
@@ -128,7 +128,7 @@ it('should set conflict state when conflict happens on delete button click', asy
   checkDeleteConflict.mockReturnValue({
     conflictedItems
   });
-  const node = shallow(<ReportOverview report={report} />);
+  const node = shallow(<ReportView report={report} />);
 
   await node.find('.delete-button').prop('onClick')();
   expect(node.state().conflict.type).toEqual('Delete');

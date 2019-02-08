@@ -1,8 +1,8 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import CombinedReportView from './CombinedReportView';
-import {Chart, Table} from './views';
+import CombinedReportRenderer from './CombinedReportRenderer';
+import {Chart, Table} from './visualizations';
 
 jest.mock('./service', () => {
   return {
@@ -54,9 +54,30 @@ const CombinedReport = {
 };
 
 it('should provide an errorMessage property to the component', () => {
-  const node = shallow(<CombinedReportView report={CombinedReport} errorMessage="test" />);
+  const node = shallow(<CombinedReportRenderer report={CombinedReport} errorMessage="test" />);
 
   expect(node.find(Table)).toHaveProp('errorMessage');
+});
+
+it('should render a chart if visualization is number', () => {
+  const node = shallow(
+    <CombinedReportRenderer
+      report={{
+        ...CombinedReport,
+        result: {
+          'report A': {
+            ...reportA,
+            data: {
+              ...reportA.data,
+              visualization: 'number'
+            }
+          }
+        }
+      }}
+    />
+  );
+
+  expect(node.find(Chart)).toBePresent();
 });
 
 it('should instruct to select one or more reports if no reports are selected for combined reports', () => {
@@ -68,47 +89,13 @@ it('should instruct to select one or more reports if no reports are selected for
     }
   };
 
-  const node = shallow(<CombinedReportView report={report} />);
+  const node = shallow(<CombinedReportRenderer report={report} />);
 
   expect(node.find('ReportBlankSlate').prop('errorMessage')).toContain('one or more reports');
 });
 
 it('should pass the report to the visualization component', () => {
-  const node = shallow(<CombinedReportView report={CombinedReport} />);
+  const node = shallow(<CombinedReportRenderer report={CombinedReport} />);
 
   expect(node.find(Table)).toHaveProp('report', CombinedReport);
-});
-
-xit('should convert results of a combined number report to a correctly formatted barchart data', () => {
-  const NumberReportA = {
-    ...reportA,
-    data: {
-      ...reportA.data,
-      visualization: 'number'
-    },
-    result: 100
-  };
-
-  const NumberReportB = {
-    ...reportA,
-    name: 'report B',
-    result: 200
-  };
-
-  const CombinedReport = {
-    combined: true,
-    reportType: 'process',
-    data: {
-      configuration: {},
-      reports: ['NumberReportA', 'NumberReportB'],
-      visualization: 'number'
-    },
-    result: {
-      NumberReportA: NumberReportA,
-      NumberReportB: NumberReportB
-    }
-  };
-
-  const node = shallow(<CombinedReportView report={CombinedReport} />);
-  expect(node.find(Chart)).toHaveProp('data', [{'report A': 100}, {'report B': 200}]);
 });

@@ -1,7 +1,7 @@
 import React from 'react';
 
 import './Sharing.scss';
-import {ReportView, DashboardView, Icon, Button, LoadingIndicator} from 'components';
+import {ReportRenderer, DashboardView, Icon, Button, LoadingIndicator} from 'components';
 import {Link} from 'react-router-dom';
 import {evaluateEntity, createLoadReportCallback} from './service';
 
@@ -36,7 +36,7 @@ export default class Sharing extends React.Component {
 
   getSharingView = () => {
     if (this.getType() === 'report') {
-      return <ReportView report={this.state.evaluationResult} />;
+      return <ReportRenderer report={this.state.evaluationResult} />;
     } else {
       return (
         <DashboardView

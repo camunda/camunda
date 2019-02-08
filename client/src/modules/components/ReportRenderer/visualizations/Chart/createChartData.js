@@ -20,7 +20,9 @@ function createCombinedChartData({report, theme, targetValue}) {
 
   const {reportsNames, resultArr} = getCombinedChartProps(result, data);
 
-  const {configuration: {reportColors}} = data;
+  const {
+    configuration: {reportColors}
+  } = data;
 
   const isDark = theme === 'dark';
 
@@ -63,7 +65,11 @@ function createCombinedChartData({report, theme, targetValue}) {
 function createSingleChartData({report, theme, targetValue, flowNodeNames}) {
   const {result, data} = report;
   const isDark = theme === 'dark';
-  const {groupBy, visualization, configuration: {color}} = data;
+  const {
+    groupBy,
+    visualization,
+    configuration: {color}
+  } = data;
   const formattedResult = formatReportResult(data, result);
 
   let labels = Object.keys(formattedResult);

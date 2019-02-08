@@ -48,7 +48,7 @@ const Heatmap = ({report, formatter, errorMessage}) => {
           node.innerHTML = `target duration: ${formatters.duration(target)}<br/>`;
 
           if (typeof real === 'number') {
-            const relation = real / target * 100;
+            const relation = (real / target) * 100;
 
             node.innerHTML += `actual duration: ${formatters.duration(real)}<br/>${
               relation < 1 ? '< 1' : Math.round(relation)

@@ -70,11 +70,11 @@ it('should render ReportEdit component if viewMode is edit', async () => {
   expect(node.find('ReportEditErrorHandler')).toBePresent();
 });
 
-it('should render ReportOverview component if viewMode is view', async () => {
+it('should render ReportView component if viewMode is view', async () => {
   props.match.params.viewMode = 'view';
 
   const node = await shallow(<Report {...props} />).dive();
   node.setState({loaded: true});
 
-  expect(node.find('ReportOverview')).toBePresent();
+  expect(node.find('ReportView')).toBePresent();
 });

@@ -2,7 +2,7 @@ import React from 'react';
 
 import classnames from 'classnames';
 
-import {ReportView, LoadingIndicator} from 'components';
+import {ReportRenderer, LoadingIndicator} from 'components';
 import {Link} from 'react-router-dom';
 
 import {themed} from 'theme';
@@ -71,7 +71,7 @@ export default themed(
             {this.state.data.errorMessage ? (
               this.state.data.errorMessage
             ) : (
-              <ReportView
+              <ReportRenderer
                 disableReportScrolling={disableReportScrolling}
                 report={this.state.data}
               />

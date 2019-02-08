@@ -2,7 +2,7 @@ import React from 'react';
 import ReportBlankSlate from './ReportBlankSlate';
 
 import {isEmpty} from './service';
-import {Table, Number, Chart, DecisionTable} from './views';
+import {Table, Number, Chart, DecisionTable} from './visualizations';
 
 import {getConfig} from './service';
 
@@ -38,7 +38,7 @@ const getComponent = (groupBy, visualization) => {
   }
 };
 
-export default function DecisionReportView(props) {
+export default function DecisionReportRenderer(props) {
   const somethingMissing = checkReport(props);
   if (somethingMissing)
     return (

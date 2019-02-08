@@ -1,8 +1,10 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import ProcessReportView from './ProcessReportView';
-import {Number, Table} from './views';
+import ProcessReportRenderer from './ProcessReportRenderer';
+import {Number, Table} from './visualizations';
+
+import {getFlowNodeNames} from 'services';
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -23,26 +25,32 @@ jest.mock('./service', () => {
   };
 });
 
-it('should display a number if visualization is number', () => {
-  const report = {
-    combined: false,
-    reportType: 'process',
-    data: {
-      processDefinitionKey: 'aKey',
-      processDefinitionVersion: '1',
-      view: {
-        operation: 'foo'
-      },
-      groupBy: {
-        type: 'bar'
-      },
-      visualization: 'number',
-      configuration: {}
+const report = {
+  combined: false,
+  reportType: 'process',
+  data: {
+    processDefinitionKey: 'aKey',
+    processDefinitionVersion: '1',
+    view: {
+      operation: 'foo'
     },
-    result: 1234
-  };
+    groupBy: {
+      type: 'bar'
+    },
+    visualization: 'number',
+    configuration: {}
+  },
+  result: 1234
+};
 
-  const node = shallow(<ProcessReportView report={report} />);
+it('should call getFlowNodeNames on mount', () => {
+  shallow(<ProcessReportRenderer report={report} type="process" />);
+
+  expect(getFlowNodeNames).toHaveBeenCalled();
+});
+
+it('should display a number if visualization is number', () => {
+  const node = shallow(<ProcessReportRenderer report={report} />);
   node.setState({
     loaded: true
   });
@@ -52,25 +60,7 @@ it('should display a number if visualization is number', () => {
 });
 
 it('should provide an errorMessage property to the component', () => {
-  const report = {
-    combined: false,
-    reportType: 'process',
-    data: {
-      processDefinitionKey: 'aKey',
-      processDefinitionVersion: '1',
-      view: {
-        operation: 'foo'
-      },
-      groupBy: {
-        type: 'bar'
-      },
-      visualization: 'number',
-      configuration: {}
-    },
-    result: 1234
-  };
-
-  const node = shallow(<ProcessReportView report={report} errorMessage={'test'} />);
+  const node = shallow(<ProcessReportRenderer report={report} errorMessage={'test'} />);
   node.setState({
     loaded: true
   });
@@ -78,24 +68,15 @@ it('should provide an errorMessage property to the component', () => {
 });
 
 it('should instruct to add a process definition key if not available', () => {
-  const report = {
-    combined: false,
-    reportType: 'process',
+  const newReport = {
+    ...report,
     data: {
-      processDefinitionKey: '',
-      processDefinitionVersion: '1',
-      view: {
-        operation: 'foo'
-      },
-      groupBy: {
-        type: 'bar'
-      },
-      visualization: 'number'
-    },
-    result: 1234
+      ...report.data,
+      processDefinitionKey: ''
+    }
   };
 
-  const node = shallow(<ProcessReportView report={report} type="process" />);
+  const node = shallow(<ProcessReportRenderer report={newReport} type="process" />);
   node.setState({
     loaded: true
   });
@@ -103,24 +84,15 @@ it('should instruct to add a process definition key if not available', () => {
 });
 
 it('should instruct to add a process definition version if not available', () => {
-  const report = {
-    combined: false,
-    reportType: 'process',
+  const newReport = {
+    ...report,
     data: {
-      processDefinitionKey: 'aKey',
-      processDefinitionVersion: '',
-      view: {
-        operation: 'foo'
-      },
-      groupBy: {
-        type: 'bar'
-      },
-      visualization: 'number'
-    },
-    result: 1234
+      ...report.data,
+      processDefinitionVersion: ''
+    }
   };
 
-  const node = shallow(<ProcessReportView report={report} type="process" />);
+  const node = shallow(<ProcessReportRenderer report={newReport} type="process" />);
   node.setState({
     loaded: true
   });
@@ -128,22 +100,14 @@ it('should instruct to add a process definition version if not available', () =>
 });
 
 it('should instruct to add view option if not available', () => {
-  const report = {
-    combined: false,
-    reportType: 'process',
+  const newReport = {
+    ...report,
     data: {
-      processDefinitionKey: 'aKey',
-      processDefinitionVersion: '1',
-      view: null,
-      groupBy: {
-        type: 'bar'
-      },
-      visualization: 'number'
-    },
-    result: 1234
+      ...report.data,
+      view: null
+    }
   };
-
-  const node = shallow(<ProcessReportView report={report} />);
+  const node = shallow(<ProcessReportRenderer report={newReport} />);
   node.setState({
     loaded: true
   });
@@ -151,22 +115,15 @@ it('should instruct to add view option if not available', () => {
 });
 
 it('should instruct to add group by option if not available', () => {
-  const report = {
-    combined: false,
-    reportType: 'process',
+  const newReport = {
+    ...report,
     data: {
-      processDefinitionKey: 'aKey',
-      processDefinitionVersion: '1',
-      view: {
-        operation: 'foo'
-      },
-      groupBy: null,
-      visualization: 'number'
-    },
-    result: 1234
+      ...report.data,
+      groupBy: null
+    }
   };
 
-  const node = shallow(<ProcessReportView report={report} />);
+  const node = shallow(<ProcessReportRenderer report={newReport} />);
   node.setState({
     loaded: true
   });
@@ -174,24 +131,15 @@ it('should instruct to add group by option if not available', () => {
 });
 
 it('should instruct to add visualization option if not available', () => {
-  const report = {
-    combined: false,
-    reportType: 'process',
+  const newReport = {
+    ...report,
     data: {
-      processDefinitionKey: 'aKey',
-      processDefinitionVersion: '1',
-      view: {
-        operation: 'foo'
-      },
-      groupBy: {
-        type: 'bar'
-      },
+      ...report.data,
       visualization: null
-    },
-    result: 1234
+    }
   };
 
-  const node = shallow(<ProcessReportView report={report} />);
+  const node = shallow(<ProcessReportRenderer report={newReport} />);
   node.setState({
     loaded: true
   });
@@ -199,25 +147,17 @@ it('should instruct to add visualization option if not available', () => {
 });
 
 it('should not add instruction for group by if operation is raw data', () => {
-  const report = {
-    combined: false,
-    reportType: 'process',
+  const newReport = {
+    ...report,
     data: {
-      processDefinitionKey: 'aKey',
-      processDefinitionVersion: '1',
-      configuration: {},
+      ...report.data,
       view: {
         operation: 'rawData'
-      },
-      groupBy: {
-        type: ''
-      },
-      visualization: 'table'
-    },
-    result: 1234
+      }
+    }
   };
 
-  const node = shallow(<ProcessReportView report={report} />);
+  const node = shallow(<ProcessReportRenderer report={newReport} />);
   node.setState({
     loaded: true
   });
@@ -249,7 +189,7 @@ const exampleDurationReport = {
 
 it('should call the applyAddons function if provided', () => {
   const spy = jest.fn();
-  const node = shallow(<ProcessReportView report={exampleDurationReport} applyAddons={spy} />);
+  const node = shallow(<ProcessReportRenderer report={exampleDurationReport} applyAddons={spy} />);
   node.setState({
     loaded: true
   });
@@ -277,7 +217,7 @@ it('should include the instance count if indicated in the config', () => {
     result: []
   };
 
-  const node = shallow(<ProcessReportView report={report} />);
+  const node = shallow(<ProcessReportRenderer report={report} />);
   node.setState({
     loaded: true
   });
@@ -287,7 +227,7 @@ it('should include the instance count if indicated in the config', () => {
 });
 
 it('should pass the report to the visualization component', () => {
-  const node = shallow(<ProcessReportView report={exampleDurationReport} type="process" />);
+  const node = shallow(<ProcessReportRenderer report={exampleDurationReport} type="process" />);
   node.setState({
     loaded: true
   });

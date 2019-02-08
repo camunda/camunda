@@ -5,7 +5,7 @@ import {ErrorPage, LoadingIndicator} from 'components';
 import {loadSingleReport, evaluateReport} from './service';
 
 import ReportEdit from './ReportEdit';
-import ReportOverview from './ReportOverview';
+import ReportView from './ReportView';
 
 import './Report.scss';
 
@@ -68,7 +68,7 @@ export default withErrorHandling(
               report={this.state.report}
             />
           ) : (
-            <ReportOverview report={this.state.report} />
+            <ReportView report={this.state.report} />
           )}
         </div>
       );

@@ -155,3 +155,25 @@ it('should return correct cominbed chart repot data properties for single report
     reportsNames: ['report A', 'report A']
   });
 });
+
+it('should convert results of a combined number report to a correctly formatted barchart data', () => {
+  const NumberReportA = {
+    name: 'report A',
+    data: {
+      visualization: 'number'
+    },
+    result: 100
+  };
+
+  const result = {
+    NumberReportA: NumberReportA,
+    NumberReportB: NumberReportA
+  };
+
+  const chartProps = getCombinedChartProps(result, {visualization: 'number'});
+
+  expect(chartProps).toEqual({
+    resultArr: [{'report A': 100}, {'report A': 100}],
+    reportsNames: ['report A', 'report A']
+  });
+});

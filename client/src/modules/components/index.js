@@ -9,7 +9,7 @@ export {ButtonGroup} from './ButtonGroup';
 export {BPMNDiagram, ClickBehavior} from './BPMNDiagram';
 export {ControlGroup} from './ControlGroup';
 export {CopyToClipboard} from './CopyToClipboard';
-export {ReportView} from './ReportView';
+export {ReportRenderer} from './ReportRenderer';
 export {ErrorBoundary} from './ErrorBoundary';
 export {Logo} from './Logo';
 export {Icon} from './Icon';

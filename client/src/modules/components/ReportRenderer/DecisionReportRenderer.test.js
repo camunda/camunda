@@ -1,8 +1,8 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import DecisionReportView from './DecisionReportView';
-import {Table} from './views';
+import DecisionReportRenderer from './DecisionReportRenderer';
+import {Table} from './visualizations';
 
 jest.mock('./service', () => {
   return {
@@ -30,12 +30,12 @@ const report = {
 };
 
 it('should provide an errorMessage property to the component', () => {
-  const node = shallow(<DecisionReportView report={report} errorMessage={'test'} />);
+  const node = shallow(<DecisionReportRenderer report={report} errorMessage={'test'} />);
   expect(node.find(Table)).toHaveProp('errorMessage');
 });
 
 it('should pass the report Type to the visualization component', () => {
-  const node = shallow(<DecisionReportView report={report} />);
+  const node = shallow(<DecisionReportRenderer report={report} />);
 
   expect(node.find(Table)).toHaveProp('report', report);
 });

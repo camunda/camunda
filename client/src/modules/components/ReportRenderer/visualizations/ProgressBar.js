@@ -18,7 +18,7 @@ export default function ProgressBar({min, max, value, formatter, precision}) {
     leftLabel = rightLabel = 'Invalid Configuration';
   } else {
     relative = Math.min(1, Math.max(0, (value - min) / (max - min)));
-    goalPercentage = (max - min) * 100 / (value - min);
+    goalPercentage = ((max - min) * 100) / (value - min);
     goalExceeded = max < value;
     leftLabel = formatter(min);
     rightLabel = goalExceeded ? formatter(value, precision) : 'Goal ' + formatter(max);
