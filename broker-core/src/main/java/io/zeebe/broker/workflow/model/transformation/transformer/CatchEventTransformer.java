@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.workflow.model.transformation.transformer;
 
+import io.zeebe.broker.workflow.model.BpmnStep;
 import io.zeebe.broker.workflow.model.element.ExecutableCatchEventElement;
 import io.zeebe.broker.workflow.model.element.ExecutableMessage;
 import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
@@ -31,6 +32,7 @@ import io.zeebe.model.bpmn.util.time.Interval;
 import io.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.zeebe.model.bpmn.util.time.TimeDateTimer;
 import io.zeebe.model.bpmn.util.time.Timer;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class CatchEventTransformer implements ModelElementTransformer<CatchEvent> {
   @Override
@@ -44,10 +46,16 @@ public class CatchEventTransformer implements ModelElementTransformer<CatchEvent
     final ExecutableCatchEventElement executableElement =
         workflow.getElementById(element.getId(), ExecutableCatchEventElement.class);
 
-    if (element.getEventDefinitions().isEmpty()) { // NONE catch event
-      return;
-    }
+    executableElement.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnStep.FLOWOUT_ELEMENT_COMPLETED);
 
+    if (!element.getEventDefinitions().isEmpty()) {
+      transformEventDefinition(element, context, executableElement);
+    }
+  }
+
+  private void transformEventDefinition(
+      CatchEvent element, TransformContext context, ExecutableCatchEventElement executableElement) {
     final EventDefinition eventDefinition = element.getEventDefinitions().iterator().next();
     if (eventDefinition instanceof MessageEventDefinition) {
       transformMessageEventDefinition(

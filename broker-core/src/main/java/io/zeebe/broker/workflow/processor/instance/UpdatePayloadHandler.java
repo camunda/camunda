@@ -69,7 +69,7 @@ public class UpdatePayloadHandler implements WorkflowInstanceCommandHandler {
       workflowState
           .getElementInstanceState()
           .getVariablesState()
-          .setVariablesLocalFromDocument(command.getKey(), commandValue.getPayload());
+          .setVariablesFromDocument(command.getKey(), commandValue.getPayload());
     } else {
       final IndexedRecord failedRecord =
           workflowState.getElementInstanceState().getFailedRecord(command.getKey());

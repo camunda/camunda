@@ -25,6 +25,7 @@ public class ExecutableReceiveTask extends ExecutableActivity implements Executa
     super(id);
 
     getEvents().add(this);
+    getInterruptingElementIds().add(this.getId());
   }
 
   private ExecutableMessage message;

@@ -16,8 +16,8 @@
 package io.zeebe.broker.it.util;
 
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
+import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_READY;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.PAYLOAD_UPDATED;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,7 +40,7 @@ public class ZeebeAssertHelper {
 
   public static void assertWorkflowInstanceCreated(long workflowInstanceKey) {
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_READY)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
                 .withKey(workflowInstanceKey)
                 .withWorkflowInstanceKey(workflowInstanceKey)
                 .exists())
@@ -48,7 +48,7 @@ public class ZeebeAssertHelper {
   }
 
   public static void assertWorkflowInstanceCreated(Consumer<WorkflowInstanceRecordValue> consumer) {
-    assertWorkflowInstanceState(WorkflowInstanceIntent.ELEMENT_READY, consumer);
+    assertWorkflowInstanceState(WorkflowInstanceIntent.ELEMENT_ACTIVATING, consumer);
   }
 
   public static void assertJobCreated(String jobType) {
@@ -73,7 +73,7 @@ public class ZeebeAssertHelper {
   }
 
   public static void assertElementReady(String element) {
-    assertElementInState(ELEMENT_READY, element, (e) -> {});
+    assertElementInState(ELEMENT_ACTIVATING, element, (e) -> {});
   }
 
   public static void assertWorkflowInstanceCanceled(String bpmnId) {

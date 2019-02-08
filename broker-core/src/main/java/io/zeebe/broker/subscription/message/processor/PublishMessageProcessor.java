@@ -171,6 +171,7 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
     return responseWriter.flush();
   }
 
+  // todo: use event scope for start events
   private void correlateMessageStartEvents(
       final TypedRecord<MessageRecord> command, final TypedStreamWriter streamWriter) {
     final DirectBuffer messageName = command.getValue().getName();

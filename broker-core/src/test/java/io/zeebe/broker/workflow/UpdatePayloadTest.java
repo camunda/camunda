@@ -29,6 +29,7 @@ import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.msgpack.spec.MsgPackHelper;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -180,7 +181,8 @@ public class UpdatePayloadTest {
     testClient.createWorkflowInstance("wf", asMsgPack("id", "123"));
 
     final Record<WorkflowInstanceRecordValue> catchEventEntered =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        testClient.receiveFirstWorkflowInstanceEvent(
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.INTERMEDIATE_CATCH_EVENT);
 
     // when
     updatePayload(
@@ -192,7 +194,8 @@ public class UpdatePayloadTest {
 
     // then
     final Record<WorkflowInstanceRecordValue> catchEventOccurred =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
+        testClient.receiveFirstWorkflowInstanceEvent(
+            WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.INTERMEDIATE_CATCH_EVENT);
 
     assertWorkflowInstancePayload(catchEventOccurred, "{'id':'123', 'x': 1, 'y': 2}");
   }
@@ -274,11 +277,13 @@ public class UpdatePayloadTest {
   }
 
   private Record<WorkflowInstanceRecordValue> waitForActivityCompletedEvent() {
-    return testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
+    return testClient.receiveFirstWorkflowInstanceEvent(
+        WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.SERVICE_TASK);
   }
 
   private Record<WorkflowInstanceRecordValue> waitForActivityActivatedEvent() {
-    return testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+    return testClient.receiveFirstWorkflowInstanceEvent(
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.SERVICE_TASK);
   }
 
   private ExecuteCommandResponse updatePayload(

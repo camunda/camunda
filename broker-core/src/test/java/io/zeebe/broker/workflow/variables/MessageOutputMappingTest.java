@@ -149,17 +149,17 @@ public class MessageOutputMappingTest {
 
     // then
     final long elementInstanceKey =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_ACTIVATED)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
             .withElementId("catch-event")
             .getFirst()
             .getKey();
 
-    final Record<VariableRecordValue> initialVariabl =
+    final Record<VariableRecordValue> initialVariable =
         RecordingExporter.variableRecords(VariableIntent.CREATED).withName("key").getFirst();
 
     assertThat(
             RecordingExporter.variableRecords()
-                .skipUntil(r -> r.getPosition() > initialVariabl.getPosition())
+                .skipUntil(r -> r.getPosition() > initialVariable.getPosition())
                 .withScopeInstanceKey(elementInstanceKey)
                 .limit(expectedActivtyVariables.size()))
         .extracting(Record::getValue)
@@ -169,7 +169,7 @@ public class MessageOutputMappingTest {
 
     assertThat(
             RecordingExporter.variableRecords()
-                .skipUntil(r -> r.getPosition() > initialVariabl.getPosition())
+                .skipUntil(r -> r.getPosition() > initialVariable.getPosition())
                 .withScopeInstanceKey(scopeInstanceKey)
                 .limit(expectedScopeVariables.size()))
         .extracting(Record::getValue)

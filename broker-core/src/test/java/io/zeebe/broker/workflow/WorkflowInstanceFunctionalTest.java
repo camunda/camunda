@@ -30,6 +30,7 @@ import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
@@ -80,7 +81,8 @@ public class WorkflowInstanceFunctionalTest {
     final Record<WorkflowInstanceRecordValue> workflowCreateCmd =
         testClient.receiveFirstWorkflowInstanceCommand(WorkflowInstanceIntent.CREATE);
     final Record<WorkflowInstanceRecordValue> startEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.EVENT_TRIGGERED);
+        testClient.receiveFirstWorkflowInstanceEvent(
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnElementType.START_EVENT);
     final long workflowInstanceKey = response.getKey();
 
     assertThat(startEvent.getKey()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
@@ -124,12 +126,16 @@ public class WorkflowInstanceFunctionalTest {
                 .withElementId("foo"))
         .extracting(r -> r.getMetadata().getIntent())
         .containsExactly(
-            WorkflowInstanceIntent.EVENT_ACTIVATING, WorkflowInstanceIntent.EVENT_ACTIVATED);
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+            WorkflowInstanceIntent.ELEMENT_COMPLETING,
+            WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     assertWorkflowInstanceRecord(
         workflowInstanceKey,
         "foo",
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.EVENT_ACTIVATED));
+        testClient.receiveFirstWorkflowInstanceEvent(
+            WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.END_EVENT));
   }
 
   @Test
@@ -149,7 +155,7 @@ public class WorkflowInstanceFunctionalTest {
 
     // then
     final Record<WorkflowInstanceRecordValue> activityReady =
-        testClient.receiveElementInState("foo", WorkflowInstanceIntent.ELEMENT_READY);
+        testClient.receiveElementInState("foo", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     final Record<WorkflowInstanceRecordValue> activatedEvent =
         testClient.receiveElementInState("foo", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
@@ -267,18 +273,22 @@ public class WorkflowInstanceFunctionalTest {
         .extracting(e -> e.getIntent())
         .containsExactly(
             WorkflowInstanceIntent.CREATE,
-            WorkflowInstanceIntent.ELEMENT_READY,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-            WorkflowInstanceIntent.EVENT_TRIGGERING,
-            WorkflowInstanceIntent.EVENT_TRIGGERED,
-            WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
-            WorkflowInstanceIntent.ELEMENT_READY,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
             WorkflowInstanceIntent.ELEMENT_COMPLETING,
             WorkflowInstanceIntent.ELEMENT_COMPLETED,
             WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
-            WorkflowInstanceIntent.EVENT_ACTIVATING,
-            WorkflowInstanceIntent.EVENT_ACTIVATED,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+            WorkflowInstanceIntent.ELEMENT_COMPLETING,
+            WorkflowInstanceIntent.ELEMENT_COMPLETED,
+            WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+            WorkflowInstanceIntent.ELEMENT_COMPLETING,
+            WorkflowInstanceIntent.ELEMENT_COMPLETED,
             WorkflowInstanceIntent.ELEMENT_COMPLETING,
             WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
@@ -348,7 +358,7 @@ public class WorkflowInstanceFunctionalTest {
     brokerRule.startBroker();
 
     // then I can still start workflow instance (i.e. stream processor did not crash
-    final long newWorkflowInstancekey = testClient.createWorkflowInstance(PROCESS_ID);
-    assertThat(newWorkflowInstancekey).isGreaterThan(0);
+    final long newWorkflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
+    assertThat(newWorkflowInstanceKey).isGreaterThan(0);
   }
 }

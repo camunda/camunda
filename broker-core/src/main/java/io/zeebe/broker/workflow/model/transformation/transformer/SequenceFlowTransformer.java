@@ -23,24 +23,14 @@ import io.zeebe.broker.workflow.model.element.ExecutableSequenceFlow;
 import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
-import io.zeebe.model.bpmn.instance.Activity;
 import io.zeebe.model.bpmn.instance.ConditionExpression;
-import io.zeebe.model.bpmn.instance.Event;
-import io.zeebe.model.bpmn.instance.EventBasedGateway;
-import io.zeebe.model.bpmn.instance.ExclusiveGateway;
-import io.zeebe.model.bpmn.instance.FlowNode;
-import io.zeebe.model.bpmn.instance.ParallelGateway;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
 import io.zeebe.msgpack.el.CompiledJsonCondition;
 import io.zeebe.msgpack.el.JsonConditionFactory;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class SequenceFlowTransformer implements ModelElementTransformer<SequenceFlow> {
-
-  public static final String UNEXPECTED_TARGET_TYPE_MESSAGE =
-      "Expected sequence flow target type to be one of [Activity, Event, ExclusiveGateway, EventBaseGateway, or ParallelGateway], "
-          + "but actual target type was '%s'";
-
   @Override
   public Class<SequenceFlow> getType() {
     return SequenceFlow.class;
@@ -54,37 +44,18 @@ public class SequenceFlowTransformer implements ModelElementTransformer<Sequence
 
     compileCondition(element, sequenceFlow);
     connectWithFlowNodes(element, workflow, sequenceFlow);
-    bindLifecycle(element, sequenceFlow);
+    bindLifecycle(sequenceFlow);
   }
 
-  private void bindLifecycle(
-      final SequenceFlow element, final ExecutableSequenceFlow sequenceFlow) {
-    final FlowNode target = element.getTarget();
-
-    final BpmnStep step;
-
-    if (target instanceof Activity) {
-      step = BpmnStep.ENTER_FLOW_NODE;
-
-    } else if (target instanceof Event) {
-      step = BpmnStep.ENTER_EVENT;
-
-    } else if (target instanceof ExclusiveGateway || target instanceof EventBasedGateway) {
-      step = BpmnStep.ACTIVATE_GATEWAY;
-
-    } else if (target instanceof ParallelGateway) {
-      if (target.getIncoming().size() == 1) {
-        step = BpmnStep.ACTIVATE_GATEWAY;
-      } else {
-        step = BpmnStep.PARALLEL_MERGE;
-      }
-
+  private void bindLifecycle(final ExecutableSequenceFlow sequenceFlow) {
+    final ExecutableFlowNode target = sequenceFlow.getTarget();
+    if (target.getElementType() == BpmnElementType.PARALLEL_GATEWAY) {
+      sequenceFlow.bindLifecycleState(
+          WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, BpmnStep.PARALLEL_MERGE_SEQUENCE_FLOW_TAKEN);
     } else {
-      throw new RuntimeException(
-          String.format(UNEXPECTED_TARGET_TYPE_MESSAGE, target.getClass().getSimpleName()));
+      sequenceFlow.bindLifecycleState(
+          WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, BpmnStep.SEQUENCE_FLOW_TAKEN);
     }
-
-    sequenceFlow.bindLifecycleState(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, step);
   }
 
   private void connectWithFlowNodes(
@@ -99,6 +70,7 @@ public class SequenceFlowTransformer implements ModelElementTransformer<Sequence
     source.addOutgoing(sequenceFlow);
     target.addIncoming(sequenceFlow);
     sequenceFlow.setTarget(target);
+    sequenceFlow.setSource(source);
   }
 
   private void compileCondition(

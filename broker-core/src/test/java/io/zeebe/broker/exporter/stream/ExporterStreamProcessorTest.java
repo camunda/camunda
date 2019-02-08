@@ -583,7 +583,7 @@ public class ExporterStreamProcessorTest {
             bpmnElementType);
 
     // then
-    assertRecordExported(WorkflowInstanceIntent.ELEMENT_READY, record, recordValue);
+    assertRecordExported(WorkflowInstanceIntent.ELEMENT_ACTIVATING, record, recordValue);
   }
 
   @Test

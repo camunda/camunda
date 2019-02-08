@@ -40,8 +40,10 @@ public class SubProcessTransformer implements ModelElementTransformer<SubProcess
         currentWorkflow.getElementById(element.getId(), ExecutableFlowElementContainer.class);
 
     subprocess.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.TRIGGER_START_EVENT);
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.CONTAINER_ELEMENT_ACTIVATED);
     subprocess.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.TERMINATE_CONTAINED_INSTANCES);
+        WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnStep.FLOWOUT_ELEMENT_COMPLETED);
+    subprocess.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.CONTAINER_ELEMENT_TERMINATING);
   }
 }

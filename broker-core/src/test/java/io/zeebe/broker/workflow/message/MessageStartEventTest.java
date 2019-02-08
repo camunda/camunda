@@ -28,6 +28,7 @@ import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ProcessBuilder;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
@@ -111,10 +112,10 @@ public class MessageStartEventTest {
         .extracting(r -> r.getMetadata().getIntent())
         .containsExactly(
             WorkflowInstanceIntent.EVENT_OCCURRED, // message
-            WorkflowInstanceIntent.ELEMENT_READY, // workflow instance
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING, // workflow instance
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-            WorkflowInstanceIntent.EVENT_TRIGGERING, // start event
-            WorkflowInstanceIntent.EVENT_TRIGGERED);
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING, // start event
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     assertThat(records).allMatch(r -> r.getValue().getWorkflowKey() == workflowKey);
 
@@ -184,7 +185,8 @@ public class MessageStartEventTest {
 
     // check if two instances are created
     final List<Record<WorkflowInstanceRecordValue>> records =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_READY)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementType(BpmnElementType.PROCESS)
             .limit(2)
             .asList();
 
@@ -220,7 +222,7 @@ public class MessageStartEventTest {
 
     // check if two instances are created
     final List<Record<WorkflowInstanceRecordValue>> records =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERING)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETING)
             .limit(2)
             .asList();
 
@@ -260,10 +262,10 @@ public class MessageStartEventTest {
     assertThat(records.stream().map(r -> r.getMetadata().getIntent()))
         .containsExactly(
             WorkflowInstanceIntent.EVENT_OCCURRED, // message
-            WorkflowInstanceIntent.ELEMENT_READY, // workflow instance
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING, // workflow instance
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-            WorkflowInstanceIntent.EVENT_TRIGGERING, // start event
-            WorkflowInstanceIntent.EVENT_TRIGGERED);
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING, // start event
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     assertThat(records).allMatch(r -> r.getValue().getWorkflowKey() == workflowKey2);
   }

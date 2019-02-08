@@ -79,4 +79,8 @@ public enum ZbColumnFamilies {
   INCIDENTS,
   INCIDENT_WORKFLOW_INSTANCES,
   INCIDENT_JOBS,
+
+  // event
+  EVENT_SCOPE,
+  EVENT_TRIGGER,
 }

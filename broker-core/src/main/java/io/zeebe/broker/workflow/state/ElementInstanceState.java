@@ -209,11 +209,11 @@ public class ElementInstanceState {
   }
 
   public void storeRecord(
-      long scopeKey, TypedRecord<WorkflowInstanceRecord> record, Purpose purpose) {
-    final long key = record.getKey();
-    final WorkflowInstanceIntent intent = (WorkflowInstanceIntent) record.getMetadata().getIntent();
-    final WorkflowInstanceRecord value = record.getValue();
-
+      long key,
+      long scopeKey,
+      WorkflowInstanceRecord value,
+      WorkflowInstanceIntent intent,
+      Purpose purpose) {
     final IndexedRecord indexedRecord = new IndexedRecord(key, intent, value);
     final StoredRecord storedRecord = new StoredRecord(indexedRecord, purpose);
 
@@ -221,6 +221,12 @@ public class ElementInstanceState {
 
     recordColumnFamily.put(recordKey, storedRecord);
     recordParentChildColumnFamily.put(recordParentStateRecordKey, DbNil.INSTANCE);
+  }
+
+  public void storeRecord(
+      long scopeKey, TypedRecord<WorkflowInstanceRecord> record, Purpose purpose) {
+    final WorkflowInstanceIntent intent = (WorkflowInstanceIntent) record.getMetadata().getIntent();
+    storeRecord(record.getKey(), scopeKey, record.getValue(), intent, purpose);
   }
 
   public void removeStoredRecord(long scopeKey, long recordKey, Purpose purpose) {

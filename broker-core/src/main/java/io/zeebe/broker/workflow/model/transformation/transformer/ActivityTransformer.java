@@ -37,14 +37,17 @@ public class ActivityTransformer implements ModelElementTransformer<Activity> {
     final ExecutableActivity activity =
         workflow.getElementById(element.getId(), ExecutableActivity.class);
 
-    activity.bindLifecycleState(WorkflowInstanceIntent.ELEMENT_READY, BpmnStep.ACTIVATE_ACTIVITY);
     activity.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.COMPLETE_ACTIVITY);
+        WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnStep.ACTIVITY_ELEMENT_ACTIVATING);
     activity.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_COMPLETED, context.getCurrentFlowNodeOutgoingStep());
+        WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.ACTIVITY_EVENT_OCCURRED);
     activity.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.TERMINATE_ACTIVITY);
+        WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.ACTIVITY_ELEMENT_COMPLETING);
     activity.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.PROPAGATE_TERMINATION);
+        WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnStep.FLOWOUT_ELEMENT_COMPLETED);
+    activity.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.ACTIVITY_ELEMENT_TERMINATING);
+    activity.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.ACTIVITY_ELEMENT_TERMINATED);
   }
 }

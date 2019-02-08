@@ -31,6 +31,7 @@ import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -100,7 +101,8 @@ public class BoundaryEventTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_ACTIVATED)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+                .withElementType(BpmnElementType.END_EVENT)
                 .limit(2))
         .extracting(Record::getValue)
         .extracting(WorkflowInstanceRecordValue::getElementId)
@@ -119,18 +121,18 @@ public class BoundaryEventTest {
 
     final Record<TimerRecordValue> timerTriggered =
         testClient.receiveTimerRecord("timer", TimerIntent.TRIGGERED);
+    final Record<WorkflowInstanceRecordValue> activityEventOccurred =
+        testClient.receiveElementInState("task", WorkflowInstanceIntent.EVENT_OCCURRED);
     final Record<WorkflowInstanceRecordValue> activityTerminating =
-        testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_TERMINATING);
+        testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_TERMINATED);
     final Record<WorkflowInstanceRecordValue> boundaryTriggering =
-        testClient.receiveElementInState("timer", WorkflowInstanceIntent.EVENT_TRIGGERING);
-    final Record<WorkflowInstanceRecordValue> boundaryTriggered =
-        testClient.receiveElementInState("timer", WorkflowInstanceIntent.EVENT_TRIGGERED);
+        testClient.receiveElementInState("timer", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
 
     awaitProcessCompleted();
 
     // then
     assertRecordsPublishedInOrder(
-        timerTriggered, activityTerminating, boundaryTriggering, boundaryTriggered);
+        timerTriggered, activityEventOccurred, activityTerminating, boundaryTriggering);
   }
 
   @Test
@@ -193,7 +195,7 @@ public class BoundaryEventTest {
 
     // then
     final Record<WorkflowInstanceRecordValue> boundaryTriggered =
-        testClient.receiveElementInState("timer", WorkflowInstanceIntent.EVENT_TRIGGERED);
+        testClient.receiveElementInState("timer", WorkflowInstanceIntent.ELEMENT_COMPLETED);
     assertThat(boundaryTriggered.getValue().getPayloadAsMap())
         .contains(entry("foo", 1), entry("oof", 2));
   }
@@ -234,9 +236,9 @@ public class BoundaryEventTest {
     final Record<WorkflowInstanceRecordValue> subProcessTerminated =
         testClient.receiveElementInState("sub", WorkflowInstanceIntent.ELEMENT_TERMINATED);
     final Record<WorkflowInstanceRecordValue> boundaryTriggering =
-        testClient.receiveElementInState("timer", WorkflowInstanceIntent.EVENT_TRIGGERING);
+        testClient.receiveElementInState("timer", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     final Record<WorkflowInstanceRecordValue> boundaryTriggered =
-        testClient.receiveElementInState("timer", WorkflowInstanceIntent.EVENT_TRIGGERED);
+        testClient.receiveElementInState("timer", WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     assertRecordsPublishedInOrder(
         timerTriggered,

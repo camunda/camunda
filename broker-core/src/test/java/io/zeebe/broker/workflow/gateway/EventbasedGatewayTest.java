@@ -29,6 +29,7 @@ import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.TimerIntent;
@@ -135,17 +136,26 @@ public class EventbasedGatewayTest {
     assertThat(
             RecordingExporter.workflowInstanceRecords()
                 .skipUntil(
-                    r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.GATEWAY_ACTIVATED)
+                    r ->
+                        r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED
+                            && r.getValue().getBpmnElementType()
+                                == BpmnElementType.EVENT_BASED_GATEWAY)
                 .limitToWorkflowInstanceCompleted())
         .extracting(r -> tuple(r.getValue().getElementId(), r.getMetadata().getIntent()))
         .containsExactly(
-            tuple("gateway", WorkflowInstanceIntent.GATEWAY_ACTIVATED),
-            tuple("timer-1", WorkflowInstanceIntent.EVENT_OCCURRED),
-            tuple("timer-1", WorkflowInstanceIntent.EVENT_TRIGGERING),
-            tuple("timer-1", WorkflowInstanceIntent.EVENT_TRIGGERED),
+            tuple("gateway", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("gateway", WorkflowInstanceIntent.EVENT_OCCURRED),
+            tuple("gateway", WorkflowInstanceIntent.ELEMENT_COMPLETING),
+            tuple("gateway", WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple("timer-1", WorkflowInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("timer-1", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("timer-1", WorkflowInstanceIntent.ELEMENT_COMPLETING),
+            tuple("timer-1", WorkflowInstanceIntent.ELEMENT_COMPLETED),
             tuple("to-end1", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple("end1", WorkflowInstanceIntent.EVENT_ACTIVATING),
-            tuple("end1", WorkflowInstanceIntent.EVENT_ACTIVATED),
+            tuple("end1", WorkflowInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("end1", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("end1", WorkflowInstanceIntent.ELEMENT_COMPLETING),
+            tuple("end1", WorkflowInstanceIntent.ELEMENT_COMPLETED),
             tuple(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETING),
             tuple(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED));
   }
@@ -160,7 +170,8 @@ public class EventbasedGatewayTest {
 
     // then
     final Record<WorkflowInstanceRecordValue> gatewayEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.GATEWAY_ACTIVATED)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.EVENT_BASED_GATEWAY)
             .getFirst();
 
     final List<Record<TimerRecordValue>> timerEvents =
@@ -183,7 +194,8 @@ public class EventbasedGatewayTest {
 
     // then
     final Record<WorkflowInstanceRecordValue> gatewayEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.GATEWAY_ACTIVATED)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.EVENT_BASED_GATEWAY)
             .getFirst();
 
     final List<Record<WorkflowInstanceSubscriptionRecordValue>> subscriptionEvents =
@@ -205,7 +217,8 @@ public class EventbasedGatewayTest {
     testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "123"));
 
     final Record<WorkflowInstanceRecordValue> gatewayEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.GATEWAY_ACTIVATED)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.EVENT_BASED_GATEWAY)
             .getFirst();
 
     assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(2).exists()).isTrue();
@@ -245,7 +258,8 @@ public class EventbasedGatewayTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.GATEWAY_ACTIVATED)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+                .withElementType(BpmnElementType.EVENT_BASED_GATEWAY)
                 .exists())
         .isTrue();
 
@@ -278,7 +292,8 @@ public class EventbasedGatewayTest {
     testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "123"));
 
     final Record<WorkflowInstanceRecordValue> gatewayEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.GATEWAY_ACTIVATED)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.EVENT_BASED_GATEWAY)
             .getFirst();
 
     // when

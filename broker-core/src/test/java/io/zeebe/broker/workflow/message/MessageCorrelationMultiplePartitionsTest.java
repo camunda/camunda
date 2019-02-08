@@ -23,6 +23,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.impl.SubscriptionUtil;
@@ -33,6 +35,7 @@ import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.Rule;
@@ -118,10 +121,13 @@ public class MessageCorrelationMultiplePartitionsTest {
     testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", CORRELATION_KEY_PARTITION_2));
 
     // then
-    assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERED)
-                .withElementId("receive-message")
-                .limit(3))
+    final List<Record<WorkflowInstanceRecordValue>> events =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .withElementId("receive-message")
+            .limit(3)
+            .collect(Collectors.toList());
+
+    assertThat(events)
         .extracting(r -> r.getValue().getPayloadAsMap().get("p"))
         .contains("p0", "p1", "p2");
   }

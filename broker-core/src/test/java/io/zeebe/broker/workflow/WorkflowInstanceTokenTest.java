@@ -59,7 +59,7 @@ public class WorkflowInstanceTokenTest {
     testClient.createWorkflowInstance(PROCESS_ID);
 
     // then
-    assertThatWorkflowInstanceCompletedAfter("end", WorkflowInstanceIntent.EVENT_ACTIVATED);
+    assertThatWorkflowInstanceCompletedAfter("end", WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
 
   @Test
@@ -71,7 +71,7 @@ public class WorkflowInstanceTokenTest {
     testClient.createWorkflowInstance(PROCESS_ID);
 
     // then
-    assertThatWorkflowInstanceCompletedAfter("start", WorkflowInstanceIntent.EVENT_TRIGGERED);
+    assertThatWorkflowInstanceCompletedAfter("start", WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
 
   @Test
@@ -113,7 +113,7 @@ public class WorkflowInstanceTokenTest {
     testClient.completeJobOfType("task-2");
 
     // then
-    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.EVENT_ACTIVATED);
+    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
 
   @Test
@@ -138,7 +138,7 @@ public class WorkflowInstanceTokenTest {
     testClient.completeJobOfType("task-2");
 
     // then
-    assertThatWorkflowInstanceCompletedAfter("end", WorkflowInstanceIntent.EVENT_ACTIVATED);
+    assertThatWorkflowInstanceCompletedAfter("end", WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
 
   @Test
@@ -163,7 +163,7 @@ public class WorkflowInstanceTokenTest {
     testClient.publishMessage("msg", "123");
 
     // then
-    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.EVENT_ACTIVATED);
+    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
 
   @Test
@@ -190,7 +190,7 @@ public class WorkflowInstanceTokenTest {
     brokerRule.getClock().addTime(Duration.ofSeconds(1));
 
     // then
-    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.EVENT_ACTIVATED);
+    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
 
   @Test
@@ -220,7 +220,7 @@ public class WorkflowInstanceTokenTest {
     testClient.completeJobOfType("task-2");
 
     // then
-    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.EVENT_ACTIVATED);
+    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
 
   @Test
@@ -250,7 +250,7 @@ public class WorkflowInstanceTokenTest {
     testClient.publishMessage("msg-1", "123");
 
     // then
-    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.EVENT_ACTIVATED);
+    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
 
   @Test
@@ -272,7 +272,7 @@ public class WorkflowInstanceTokenTest {
     brokerRule.getClock().addTime(Duration.ofSeconds(1));
 
     // then
-    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.EVENT_ACTIVATED);
+    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
 
   @Test
@@ -296,8 +296,8 @@ public class WorkflowInstanceTokenTest {
     testClient.completeJobOfType("task-1");
 
     // then
-    assertThatWorkflowInstanceCompletedAfter("end-1", WorkflowInstanceIntent.EVENT_ACTIVATED);
-    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.EVENT_ACTIVATED);
+    assertThatWorkflowInstanceCompletedAfter("end-1", WorkflowInstanceIntent.ELEMENT_COMPLETED);
+    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
 
   @Test
@@ -329,7 +329,7 @@ public class WorkflowInstanceTokenTest {
     testClient.publishMessage("msg", "123");
 
     // then
-    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.EVENT_ACTIVATED);
+    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
 
   @Test
@@ -360,7 +360,7 @@ public class WorkflowInstanceTokenTest {
     testClient.resolveIncident(incident.getKey());
 
     // then
-    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.EVENT_ACTIVATED);
+    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
 
   @Test
@@ -394,7 +394,7 @@ public class WorkflowInstanceTokenTest {
     testClient.resolveIncident(incident.getKey());
 
     // then
-    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.EVENT_ACTIVATED);
+    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
 
   private void assertThatWorkflowInstanceCompletedAfter(

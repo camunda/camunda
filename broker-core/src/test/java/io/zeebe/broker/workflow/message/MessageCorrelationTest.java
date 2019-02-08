@@ -29,6 +29,7 @@ import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
@@ -116,7 +117,8 @@ public class MessageCorrelationTest {
 
     // then
     final Record<WorkflowInstanceRecordValue> event =
-        testClient.receiveElementInState("receive-message", WorkflowInstanceIntent.EVENT_TRIGGERED);
+        testClient.receiveElementInState(
+            "receive-message", WorkflowInstanceIntent.ELEMENT_COMPLETED);
     assertWorkflowInstancePayload(event, "{'key':'order-123', 'foo':'bar'}");
   }
 
@@ -132,7 +134,8 @@ public class MessageCorrelationTest {
 
     // then
     final Record<WorkflowInstanceRecordValue> event =
-        testClient.receiveElementInState("receive-message", WorkflowInstanceIntent.EVENT_TRIGGERED);
+        testClient.receiveElementInState(
+            "receive-message", WorkflowInstanceIntent.ELEMENT_COMPLETED);
     assertWorkflowInstancePayload(event, "{'key':'order-123', 'foo':'bar'}");
   }
 
@@ -148,7 +151,8 @@ public class MessageCorrelationTest {
 
     // then
     final Record<WorkflowInstanceRecordValue> event =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
+        testClient.receiveFirstWorkflowInstanceEvent(
+            WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.PROCESS);
     assertWorkflowInstancePayload(event, "{'key':123, 'foo':'bar'}");
   }
 
@@ -165,7 +169,8 @@ public class MessageCorrelationTest {
 
     // then
     final Record<WorkflowInstanceRecordValue> event =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
+        testClient.receiveFirstWorkflowInstanceEvent(
+            WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.PROCESS);
 
     assertWorkflowInstancePayload(event, "{'key':'order-123', 'nr':1}");
   }
@@ -187,7 +192,8 @@ public class MessageCorrelationTest {
 
     // then
     final Record<WorkflowInstanceRecordValue> event =
-        testClient.receiveElementInState("receive-message", WorkflowInstanceIntent.EVENT_TRIGGERED);
+        testClient.receiveElementInState(
+            "receive-message", WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     assertThat(event.getValue().getWorkflowInstanceKey()).isEqualTo(workflowInstanceKey);
   }
@@ -205,7 +211,8 @@ public class MessageCorrelationTest {
 
     // then
     final Record<WorkflowInstanceRecordValue> event =
-        testClient.receiveElementInState("receive-message", WorkflowInstanceIntent.EVENT_TRIGGERED);
+        testClient.receiveElementInState(
+            "receive-message", WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     assertWorkflowInstancePayload(event, "{'key':'order-123', 'nr':2}");
   }
@@ -227,12 +234,16 @@ public class MessageCorrelationTest {
     // then
     final Record<WorkflowInstanceRecordValue> catchEventOccurred1 =
         testClient.receiveFirstWorkflowInstanceEvent(
-            workflowInstanceKey1, WorkflowInstanceIntent.ELEMENT_COMPLETED);
+            workflowInstanceKey1,
+            WorkflowInstanceIntent.ELEMENT_COMPLETED,
+            BpmnElementType.INTERMEDIATE_CATCH_EVENT);
     assertWorkflowInstancePayload(catchEventOccurred1, "{'key':'order-123', 'nr':1}");
 
     final Record<WorkflowInstanceRecordValue> catchEventOccurred2 =
         testClient.receiveFirstWorkflowInstanceEvent(
-            workflowInstanceKey2, WorkflowInstanceIntent.ELEMENT_COMPLETED);
+            workflowInstanceKey2,
+            WorkflowInstanceIntent.ELEMENT_COMPLETED,
+            BpmnElementType.INTERMEDIATE_CATCH_EVENT);
     assertWorkflowInstancePayload(catchEventOccurred2, "{'key':'order-456', 'nr':2}");
   }
 
@@ -253,7 +264,7 @@ public class MessageCorrelationTest {
     final List<Record<WorkflowInstanceRecordValue>> events =
         testClient
             .receiveWorkflowInstances()
-            .withIntent(WorkflowInstanceIntent.EVENT_TRIGGERED)
+            .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
             .withElementId("receive-message")
             .limit(2)
             .collect(Collectors.toList());
@@ -276,7 +287,7 @@ public class MessageCorrelationTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERED)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
                 .filter(r -> r.getValue().getElementId().startsWith("message"))
                 .limit(2)
                 .asList())
@@ -312,7 +323,7 @@ public class MessageCorrelationTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERED)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
                 .filter(r -> r.getValue().getElementId().startsWith("message"))
                 .limit(2)
                 .asList())
@@ -350,7 +361,7 @@ public class MessageCorrelationTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERED)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
                 .filter(r -> r.getValue().getElementId().startsWith("message"))
                 .limit(2)
                 .asList())
@@ -377,7 +388,7 @@ public class MessageCorrelationTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERED)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
                 .filter(r -> r.getValue().getElementId().startsWith("message"))
                 .limit(2)
                 .asList())
@@ -398,7 +409,7 @@ public class MessageCorrelationTest {
 
     // then
     assertThat(RecordingExporter.workflowInstanceRecords().limitToWorkflowInstanceCompleted())
-        .filteredOn(r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.EVENT_ACTIVATED)
+        .filteredOn(r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED)
         .extracting(Record::getValue)
         .extracting(WorkflowInstanceRecordValue::getElementId)
         .contains("msg1End")
@@ -417,7 +428,7 @@ public class MessageCorrelationTest {
 
     // then
     assertThat(RecordingExporter.workflowInstanceRecords().limitToWorkflowInstanceCompleted())
-        .filteredOn(r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.EVENT_ACTIVATED)
+        .filteredOn(r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED)
         .extracting(Record::getValue)
         .extracting(WorkflowInstanceRecordValue::getElementId)
         .contains("taskEnd")
@@ -436,7 +447,7 @@ public class MessageCorrelationTest {
 
     // then
     assertThat(RecordingExporter.workflowInstanceRecords().limitToWorkflowInstanceCompleted())
-        .filteredOn(r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.EVENT_ACTIVATED)
+        .filteredOn(r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED)
         .extracting(Record::getValue)
         .extracting(WorkflowInstanceRecordValue::getElementId)
         .contains("msg2End")
@@ -461,11 +472,11 @@ public class MessageCorrelationTest {
         .extracting(Record::getMetadata)
         .extracting(RecordMetadata::getIntent)
         .containsExactly(
-            WorkflowInstanceIntent.EVENT_ACTIVATING,
-            WorkflowInstanceIntent.EVENT_ACTIVATED,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
             WorkflowInstanceIntent.EVENT_OCCURRED,
-            WorkflowInstanceIntent.EVENT_TRIGGERING,
-            WorkflowInstanceIntent.EVENT_TRIGGERED);
+            WorkflowInstanceIntent.ELEMENT_COMPLETING,
+            WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
 
   @Test
@@ -486,7 +497,7 @@ public class MessageCorrelationTest {
         .extracting(Record::getMetadata)
         .extracting(RecordMetadata::getIntent)
         .containsExactly(
-            WorkflowInstanceIntent.ELEMENT_READY,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
             WorkflowInstanceIntent.EVENT_OCCURRED,
             WorkflowInstanceIntent.ELEMENT_COMPLETING,
@@ -509,13 +520,15 @@ public class MessageCorrelationTest {
     assertThat(events)
         .extracting(r -> tuple(r.getValue().getElementId(), r.getMetadata().getIntent()))
         .containsSequence(
-            tuple("task", WorkflowInstanceIntent.ELEMENT_READY),
+            tuple("task", WorkflowInstanceIntent.ELEMENT_ACTIVATING),
             tuple("task", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
-            tuple("msg1", WorkflowInstanceIntent.EVENT_OCCURRED),
+            tuple("task", WorkflowInstanceIntent.EVENT_OCCURRED),
             tuple("task", WorkflowInstanceIntent.ELEMENT_TERMINATING),
             tuple("task", WorkflowInstanceIntent.ELEMENT_TERMINATED),
-            tuple("msg1", WorkflowInstanceIntent.EVENT_TRIGGERING),
-            tuple("msg1", WorkflowInstanceIntent.EVENT_TRIGGERED));
+            tuple("msg1", WorkflowInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("msg1", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("msg1", WorkflowInstanceIntent.ELEMENT_COMPLETING),
+            tuple("msg1", WorkflowInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -543,8 +556,8 @@ public class MessageCorrelationTest {
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> msgEndEvents =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_ACTIVATED)
-            .withElementId("msg1End")
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .withElementId("msg1")
             .limit(3)
             .asList();
 

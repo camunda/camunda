@@ -42,12 +42,17 @@ public class ProcessTransformer implements ModelElementTransformer<Process> {
     context.addWorkflow(workflow);
     context.setCurrentWorkflow(workflow);
 
-    workflow.bindLifecycleState(WorkflowInstanceIntent.ELEMENT_READY, BpmnStep.ACTIVATE_FLOW_NODE);
     workflow.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.TRIGGER_START_EVENT);
+        WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnStep.ELEMENT_ACTIVATING);
     workflow.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.COMPLETE_PROCESS);
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.CONTAINER_ELEMENT_ACTIVATED);
     workflow.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.TERMINATE_CONTAINED_INSTANCES);
+        WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.ELEMENT_COMPLETING);
+    workflow.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnStep.ELEMENT_COMPLETED);
+    workflow.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.CONTAINER_ELEMENT_TERMINATING);
+    workflow.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.ELEMENT_TERMINATED);
   }
 }

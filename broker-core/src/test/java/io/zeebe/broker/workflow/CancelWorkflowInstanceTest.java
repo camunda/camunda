@@ -258,7 +258,7 @@ public class CancelWorkflowInstanceTest {
     final long workflowInstanceKey =
         testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("id", "123"));
 
-    testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.EVENT_ACTIVATED);
+    testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     final ExecuteCommandResponse response = cancelWorkflowInstance(workflowInstanceKey);
 

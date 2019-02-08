@@ -17,6 +17,7 @@ package io.zeebe.test.util.record;
 
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.stream.Stream;
 
@@ -63,6 +64,10 @@ public class WorkflowInstanceRecordStream
         r ->
             r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_COMPLETED
                 && r.getKey() == r.getValue().getWorkflowInstanceKey());
+  }
+
+  public WorkflowInstanceRecordStream withElementType(BpmnElementType elementType) {
+    return valueFilter(v -> v.getBpmnElementType() == elementType);
   }
 
   /**

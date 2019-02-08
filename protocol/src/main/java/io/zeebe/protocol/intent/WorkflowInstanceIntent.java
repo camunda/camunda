@@ -24,20 +24,14 @@ public enum WorkflowInstanceIntent implements Intent {
 
   SEQUENCE_FLOW_TAKEN((short) 4),
 
-  GATEWAY_ACTIVATED((short) 5),
+  ELEMENT_ACTIVATING((short) 5),
+  ELEMENT_ACTIVATED((short) 6),
+  ELEMENT_COMPLETING((short) 7),
+  ELEMENT_COMPLETED((short) 8),
+  ELEMENT_TERMINATING((short) 9),
+  ELEMENT_TERMINATED((short) 10),
 
-  ELEMENT_READY((short) 6),
-  ELEMENT_ACTIVATED((short) 7),
-  ELEMENT_COMPLETING((short) 8),
-  ELEMENT_COMPLETED((short) 9),
-  ELEMENT_TERMINATING((short) 10),
-  ELEMENT_TERMINATED((short) 11),
-
-  EVENT_ACTIVATING((short) 12),
-  EVENT_ACTIVATED((short) 13),
-  EVENT_TRIGGERING((short) 14),
-  EVENT_TRIGGERED((short) 15),
-  EVENT_OCCURRED((short) 16);
+  EVENT_OCCURRED((short) 11);
 
   private final short value;
 
@@ -62,28 +56,18 @@ public enum WorkflowInstanceIntent implements Intent {
       case 4:
         return SEQUENCE_FLOW_TAKEN;
       case 5:
-        return GATEWAY_ACTIVATED;
+        return ELEMENT_ACTIVATING;
       case 6:
-        return ELEMENT_READY;
-      case 7:
         return ELEMENT_ACTIVATED;
-      case 8:
+      case 7:
         return ELEMENT_COMPLETING;
-      case 9:
+      case 8:
         return ELEMENT_COMPLETED;
-      case 10:
+      case 9:
         return ELEMENT_TERMINATING;
-      case 11:
+      case 10:
         return ELEMENT_TERMINATED;
-      case 12:
-        return EVENT_ACTIVATING;
-      case 13:
-        return EVENT_ACTIVATED;
-      case 14:
-        return EVENT_TRIGGERING;
-      case 15:
-        return EVENT_TRIGGERED;
-      case 16:
+      case 11:
         return EVENT_OCCURRED;
       default:
         return Intent.UNKNOWN;

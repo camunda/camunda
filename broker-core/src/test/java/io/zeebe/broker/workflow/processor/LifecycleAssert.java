@@ -18,9 +18,9 @@
 package io.zeebe.broker.workflow.processor;
 
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
+import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETING;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_READY;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_TERMINATING;
 
@@ -46,12 +46,12 @@ public class LifecycleAssert
       ELEMENT_LIFECYCLE;
   private static final EnumSet<WorkflowInstanceIntent> FINAL_STATES =
       EnumSet.of(ELEMENT_COMPLETED, ELEMENT_TERMINATED);
-  private static final WorkflowInstanceIntent INITIAL_STATE = ELEMENT_READY;
+  private static final WorkflowInstanceIntent INITIAL_STATE = ELEMENT_ACTIVATING;
 
   static {
     ELEMENT_LIFECYCLE = new EnumMap<>(WorkflowInstanceIntent.class);
 
-    ELEMENT_LIFECYCLE.put(ELEMENT_READY, EnumSet.of(ELEMENT_ACTIVATED, ELEMENT_TERMINATING));
+    ELEMENT_LIFECYCLE.put(ELEMENT_ACTIVATING, EnumSet.of(ELEMENT_ACTIVATED, ELEMENT_TERMINATING));
     ELEMENT_LIFECYCLE.put(ELEMENT_ACTIVATED, EnumSet.of(ELEMENT_COMPLETING, ELEMENT_TERMINATING));
     ELEMENT_LIFECYCLE.put(ELEMENT_COMPLETING, EnumSet.of(ELEMENT_COMPLETED, ELEMENT_TERMINATING));
     ELEMENT_LIFECYCLE.put(ELEMENT_COMPLETED, EnumSet.noneOf(WorkflowInstanceIntent.class));

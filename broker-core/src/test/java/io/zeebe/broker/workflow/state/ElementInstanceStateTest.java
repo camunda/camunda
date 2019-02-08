@@ -79,7 +79,7 @@ public class ElementInstanceStateTest {
     otherRecord.setPayload(asMsgPack("foo", "bar"));
     final ElementInstance childInstance =
         elementInstanceState.newInstance(
-            parentInstance, 101, otherRecord, WorkflowInstanceIntent.ELEMENT_READY);
+            parentInstance, 101, otherRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
 
     // then
     assertElementInstance(parentInstance, 1);
@@ -144,7 +144,7 @@ public class ElementInstanceStateTest {
             100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
     workflowInstanceRecord.setElementId("subProcess");
     elementInstanceState.newInstance(
-        parentInstance, 101, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_READY);
+        parentInstance, 101, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
 
     // when
     final ElementInstance childInstance = elementInstanceState.getInstance(101L);
@@ -162,7 +162,7 @@ public class ElementInstanceStateTest {
             100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
     workflowInstanceRecord.setElementId("subProcess");
     elementInstanceState.newInstance(
-        parentInstance, 101, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_READY);
+        parentInstance, 101, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
 
     // when
     final ElementInstance updatedParentInstance = elementInstanceState.getInstance(100L);
@@ -180,7 +180,7 @@ public class ElementInstanceStateTest {
             100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
     workflowInstanceRecord.setElementId("subProcess");
     elementInstanceState.newInstance(
-        parentInstance, 101, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_READY);
+        parentInstance, 101, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     elementInstanceState.flushDirtyState();
     elementInstanceState.removeInstance(101L);
 
@@ -207,10 +207,10 @@ public class ElementInstanceStateTest {
             100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
     workflowInstanceRecord.setElementId("subProcess");
     elementInstanceState.newInstance(
-        parentInstance, 101, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_READY);
+        parentInstance, 101, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     workflowInstanceRecord.setElementId("subProcess2");
     elementInstanceState.newInstance(
-        parentInstance, 102, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_READY);
+        parentInstance, 102, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     elementInstanceState.flushDirtyState();
 
     // when
@@ -240,7 +240,7 @@ public class ElementInstanceStateTest {
 
     // when
     instance.spawnToken();
-    instance.setState(WorkflowInstanceIntent.ELEMENT_READY);
+    instance.setState(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     instance.setJobKey(5);
     elementInstanceState.flushDirtyState();
 
@@ -248,7 +248,7 @@ public class ElementInstanceStateTest {
     final ElementInstance updatedInstance = elementInstanceState.getInstance(100);
 
     assertThat(updatedInstance.getKey()).isEqualTo(100);
-    assertThat(updatedInstance.getState()).isEqualTo(WorkflowInstanceIntent.ELEMENT_READY);
+    assertThat(updatedInstance.getState()).isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     assertThat(updatedInstance.getJobKey()).isEqualTo(5);
     assertThat(updatedInstance.canTerminate()).isTrue();
 
@@ -270,14 +270,14 @@ public class ElementInstanceStateTest {
 
     // when
     instance.spawnToken();
-    instance.setState(WorkflowInstanceIntent.ELEMENT_READY);
+    instance.setState(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     instance.setJobKey(5);
 
     // then
     final ElementInstance updatedInstance = elementInstanceState.getInstance(100);
 
     assertThat(updatedInstance.getKey()).isEqualTo(100);
-    assertThat(updatedInstance.getState()).isEqualTo(WorkflowInstanceIntent.ELEMENT_READY);
+    assertThat(updatedInstance.getState()).isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     assertThat(updatedInstance.getJobKey()).isEqualTo(5);
     assertThat(updatedInstance.canTerminate()).isTrue();
 
@@ -300,7 +300,7 @@ public class ElementInstanceStateTest {
 
     // when
     instance.spawnToken();
-    instance.setState(WorkflowInstanceIntent.ELEMENT_READY);
+    instance.setState(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     instance.setJobKey(5);
 
     // then
@@ -360,10 +360,10 @@ public class ElementInstanceStateTest {
             100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
     workflowInstanceRecord.setElementId("subProcess");
     elementInstanceState.newInstance(
-        parentInstance, 101, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_READY);
+        parentInstance, 101, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     workflowInstanceRecord.setElementId("subProcess2");
     elementInstanceState.newInstance(
-        parentInstance, 102, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_READY);
+        parentInstance, 102, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     elementInstanceState.flushDirtyState();
 
     // when
@@ -455,7 +455,7 @@ public class ElementInstanceStateTest {
 
     workflowInstanceRecord.setElementId("subProcess");
     elementInstanceState.newInstance(
-        parentInstance, child, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_READY);
+        parentInstance, child, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     elementInstanceState
         .getVariablesState()
         .setVariableLocal(child, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("2"));
@@ -504,7 +504,7 @@ public class ElementInstanceStateTest {
 
   private void assertChildInstance(ElementInstance childInstance, long key, String elementId) {
     assertThat(childInstance.getKey()).isEqualTo(key);
-    assertThat(childInstance.getState()).isEqualTo(WorkflowInstanceIntent.ELEMENT_READY);
+    assertThat(childInstance.getState()).isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     assertThat(childInstance.getJobKey()).isEqualTo(0);
     assertThat(childInstance.canTerminate()).isTrue();
 

@@ -26,6 +26,7 @@ import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
@@ -53,7 +54,7 @@ public class ExclusiveGatewayTest {
   }
 
   @Test
-  public void shouldSpitOnExclusiveGateway() {
+  public void shouldSplitOnExclusiveGateway() {
     final BpmnModelInstance workflowDefinition =
         Bpmn.createExecutableProcess("workflow")
             .startEvent()
@@ -81,7 +82,8 @@ public class ExclusiveGatewayTest {
         testClient.createWorkflowInstance("workflow", asMsgPack("foo", 12));
 
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_ACTIVATED)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+                .withElementType(BpmnElementType.END_EVENT)
                 .limit(3))
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getWorkflowInstanceKey(), v.getElementId()))
@@ -177,7 +179,8 @@ public class ExclusiveGatewayTest {
     List<Record<WorkflowInstanceRecordValue>> gateWays =
         testClient
             .receiveWorkflowInstances()
-            .withIntent(WorkflowInstanceIntent.GATEWAY_ACTIVATED)
+            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementType(BpmnElementType.EXCLUSIVE_GATEWAY)
             .limit(2)
             .collect(Collectors.toList());
 
@@ -193,7 +196,7 @@ public class ExclusiveGatewayTest {
 
     // then
     testClient.receiveElementInState(
-        workflowInstance2, "workflow", WorkflowInstanceIntent.ELEMENT_COMPLETED);
+        workflowInstance2, "workflow", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
 
     sequenceFlows =
         testClient
@@ -206,7 +209,8 @@ public class ExclusiveGatewayTest {
     gateWays =
         testClient
             .receiveWorkflowInstances()
-            .withIntent(WorkflowInstanceIntent.GATEWAY_ACTIVATED)
+            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementType(BpmnElementType.EXCLUSIVE_GATEWAY)
             .withWorkflowInstanceKey(workflowInstance2)
             .limit(2)
             .collect(Collectors.toList());
@@ -251,10 +255,15 @@ public class ExclusiveGatewayTest {
         .extracting(Record::getMetadata)
         .extracting(e -> e.getIntent())
         .containsExactly(
-            WorkflowInstanceIntent.GATEWAY_ACTIVATED,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+            WorkflowInstanceIntent.ELEMENT_COMPLETING,
+            WorkflowInstanceIntent.ELEMENT_COMPLETED,
             WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
-            WorkflowInstanceIntent.EVENT_ACTIVATING,
-            WorkflowInstanceIntent.EVENT_ACTIVATED,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+            WorkflowInstanceIntent.ELEMENT_COMPLETING,
+            WorkflowInstanceIntent.ELEMENT_COMPLETED,
             WorkflowInstanceIntent.ELEMENT_COMPLETING,
             WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
@@ -281,7 +290,8 @@ public class ExclusiveGatewayTest {
     final List<Record<WorkflowInstanceRecordValue>> completedEvents =
         RecordingExporter.workflowInstanceRecords()
             .limitToWorkflowInstanceCompleted()
-            .withIntent(WorkflowInstanceIntent.EVENT_ACTIVATED)
+            .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .withElementType(BpmnElementType.END_EVENT)
             .collect(Collectors.toList());
 
     assertThat(completedEvents).extracting(r -> r.getValue().getElementId()).containsExactly("a");
@@ -308,7 +318,10 @@ public class ExclusiveGatewayTest {
     assertThat(completedEvents)
         .extracting(r -> r.getMetadata().getIntent())
         .containsExactly(
-            WorkflowInstanceIntent.GATEWAY_ACTIVATED,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+            WorkflowInstanceIntent.ELEMENT_COMPLETING,
+            WorkflowInstanceIntent.ELEMENT_COMPLETED,
             WorkflowInstanceIntent.ELEMENT_COMPLETING,
             WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }

@@ -30,6 +30,7 @@ import io.zeebe.model.bpmn.instance.ExclusiveGateway;
 import io.zeebe.model.bpmn.instance.ParallelGateway;
 import io.zeebe.model.bpmn.instance.Process;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
@@ -96,7 +97,9 @@ public class ParallelGatewayStreamProcessorTest {
     // when
     // waiting until the end event has been reached
     streamProcessor.blockAfterWorkflowInstanceRecord(
-        r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.EVENT_ACTIVATED);
+        r ->
+            r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_COMPLETED
+                && r.getValue().getBpmnElementType() == BpmnElementType.END_EVENT);
     streamProcessorRule.completeFirstJob();
 
     waitUntil(() -> streamProcessor.isBlocked());

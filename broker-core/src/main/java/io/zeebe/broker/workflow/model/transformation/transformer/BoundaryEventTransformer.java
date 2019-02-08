@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.workflow.model.transformation.transformer;
 
-import io.zeebe.broker.workflow.model.BpmnStep;
 import io.zeebe.broker.workflow.model.element.ExecutableActivity;
 import io.zeebe.broker.workflow.model.element.ExecutableBoundaryEvent;
 import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
@@ -25,7 +24,6 @@ import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.Activity;
 import io.zeebe.model.bpmn.instance.BoundaryEvent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class BoundaryEventTransformer implements ModelElementTransformer<BoundaryEvent> {
   @Override
@@ -41,16 +39,6 @@ public class BoundaryEventTransformer implements ModelElementTransformer<Boundar
 
     element.setCancelActivity(event.cancelActivity());
     attachToActivity(event, workflow, element);
-
-    bindLifecycle(context, element);
-  }
-
-  private void bindLifecycle(TransformContext context, ExecutableBoundaryEvent element) {
-    element.bindLifecycleState(
-        WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.TRIGGER_BOUNDARY_EVENT);
-    element.bindLifecycleState(WorkflowInstanceIntent.EVENT_TRIGGERING, BpmnStep.APPLY_EVENT);
-    element.bindLifecycleState(
-        WorkflowInstanceIntent.EVENT_TRIGGERED, context.getCurrentFlowNodeOutgoingStep());
   }
 
   private void attachToActivity(

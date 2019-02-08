@@ -619,7 +619,7 @@ public class BrokerReprocessingTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERED)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
                 .withElementId("catch-event")
                 .exists())
         .isTrue();
@@ -646,7 +646,7 @@ public class BrokerReprocessingTest {
         startWorkflowInstance(PROCESS_ID, singletonMap("orderId", "order-123"))
             .getWorkflowInstanceKey();
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERED)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
                 .withElementId("catch-event")
                 .exists())
         .isTrue();
@@ -676,7 +676,7 @@ public class BrokerReprocessingTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_TRIGGERED)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
                 .withElementId("timer")
                 .exists())
         .isTrue();

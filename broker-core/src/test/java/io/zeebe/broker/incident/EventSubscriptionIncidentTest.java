@@ -134,42 +134,42 @@ public class EventSubscriptionIncidentTest {
         "boundary catch event (first event)",
         WF_BOUNDARY_EVENT,
         "task",
-        WorkflowInstanceIntent.ELEMENT_READY,
+        WorkflowInstanceIntent.ELEMENT_ACTIVATING,
         WorkflowInstanceIntent.ELEMENT_ACTIVATED
       },
       {
         "boundary catch event (second event)",
         WF_BOUNDARY_EVENT_2,
         "task",
-        WorkflowInstanceIntent.ELEMENT_READY,
+        WorkflowInstanceIntent.ELEMENT_ACTIVATING,
         WorkflowInstanceIntent.ELEMENT_ACTIVATED
       },
       {
         "receive task (boundary event)",
         WF_RECEIVE_TASK,
         "task",
-        WorkflowInstanceIntent.ELEMENT_READY,
+        WorkflowInstanceIntent.ELEMENT_ACTIVATING,
         WorkflowInstanceIntent.ELEMENT_ACTIVATED
       },
       {
         "receive task (task)",
         WF_RECEIVE_TASK_2,
         "task",
-        WorkflowInstanceIntent.ELEMENT_READY,
+        WorkflowInstanceIntent.ELEMENT_ACTIVATING,
         WorkflowInstanceIntent.ELEMENT_ACTIVATED
       },
       {
         "event-based gateway (first event)",
         WF_EVENT_BASED_GATEWAY,
         "gateway",
-        WorkflowInstanceIntent.GATEWAY_ACTIVATED,
+        WorkflowInstanceIntent.ELEMENT_ACTIVATING,
         null
       },
       {
         "event-based gateway (second event)",
         WF_EVENT_BASED_GATEWAY_2,
         "gateway",
-        WorkflowInstanceIntent.GATEWAY_ACTIVATED,
+        WorkflowInstanceIntent.ELEMENT_ACTIVATING,
         null
       }
     };
