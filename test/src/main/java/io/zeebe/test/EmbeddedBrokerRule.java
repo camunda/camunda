@@ -309,6 +309,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
   public static void assignSocketAddresses(final BrokerCfg brokerCfg) {
     final NetworkCfg network = brokerCfg.getNetwork();
     brokerCfg.getGateway().getNetwork().setPort(SocketUtil.getNextAddress().port());
+    brokerCfg.getGateway().getCluster().setPort(SocketUtil.getNextAddress().port());
     network.getClient().setPort(SocketUtil.getNextAddress().port());
     network.getManagement().setPort(SocketUtil.getNextAddress().port());
     network.getReplication().setPort(SocketUtil.getNextAddress().port());
