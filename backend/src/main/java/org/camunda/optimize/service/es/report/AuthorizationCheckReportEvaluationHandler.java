@@ -7,7 +7,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.result.ReportResult;
-import org.camunda.optimize.service.security.SessionService;
+import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -15,10 +15,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class AuthorizationCheckReportEvaluationHandler extends ReportEvaluationHandler {
 
-  public AuthorizationCheckReportEvaluationHandler(ReportReader reportReader,
-                                                   SingleReportEvaluator singleReportEvaluator,
-                                                   CombinedReportEvaluator combinedReportEvaluator) {
+  private final DefinitionAuthorizationService authorizationService;
+
+  @Autowired
+  public AuthorizationCheckReportEvaluationHandler(final ReportReader reportReader,
+                                                   final SingleReportEvaluator singleReportEvaluator,
+                                                   final CombinedReportEvaluator combinedReportEvaluator,
+                                                   final DefinitionAuthorizationService authorizationService) {
     super(reportReader, singleReportEvaluator, combinedReportEvaluator);
+    this.authorizationService = authorizationService;
   }
 
   public ReportResult evaluateSavedReport(String userId, String reportId) {
@@ -29,21 +34,18 @@ public class AuthorizationCheckReportEvaluationHandler extends ReportEvaluationH
     return super.evaluateReport(userId, reportDefinition);
   }
 
-  @Autowired
-  private SessionService sessionService;
-
   protected boolean isAuthorizedToSeeReport(String userId, ReportDefinitionDto report) {
     if (report instanceof SingleProcessReportDefinitionDto) {
       SingleProcessReportDefinitionDto processReport = (SingleProcessReportDefinitionDto) report;
       ProcessReportDataDto reportData = processReport.getData();
       if (reportData != null) {
-        return sessionService.isAuthorizedToSeeProcessDefinition(userId, reportData.getProcessDefinitionKey());
+        return authorizationService.isAuthorizedToSeeProcessDefinition(userId, reportData.getProcessDefinitionKey());
       }
     } else if (report instanceof SingleDecisionReportDefinitionDto) {
       SingleDecisionReportDefinitionDto decisionReport = (SingleDecisionReportDefinitionDto) report;
       DecisionReportDataDto reportData = decisionReport.getData();
       if (reportData != null) {
-        return sessionService.isAuthorizedToSeeDecisionDefinition(userId, reportData.getDecisionDefinitionKey());
+        return authorizationService.isAuthorizedToSeeDecisionDefinition(userId, reportData.getDecisionDefinitionKey());
       }
     }
     return true;

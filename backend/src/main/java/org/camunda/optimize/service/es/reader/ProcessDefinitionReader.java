@@ -8,7 +8,7 @@ import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesResponseDto;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.security.SessionService;
+import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -47,15 +47,15 @@ public class ProcessDefinitionReader {
   private RestHighLevelClient esClient;
   private ConfigurationService configurationService;
   private ObjectMapper objectMapper;
-  private SessionService sessionService;
+  private DefinitionAuthorizationService authorizationService;
 
   @Autowired
   public ProcessDefinitionReader(RestHighLevelClient esClient, ConfigurationService configurationService,
-                                 ObjectMapper objectMapper, SessionService sessionService) {
+                                 ObjectMapper objectMapper, DefinitionAuthorizationService authorizationService) {
     this.esClient = esClient;
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;
-    this.sessionService = sessionService;
+    this.authorizationService = authorizationService;
   }
 
   public List<ProcessDefinitionOptimizeDto> getProcessDefinitionsAsService() {
@@ -159,7 +159,7 @@ public class ProcessDefinitionReader {
   }
 
   private boolean isAuthorizedToReadProcessDefinition(final String userId, final ProcessDefinitionOptimizeDto def) {
-    return sessionService.isAuthorizedToSeeProcessDefinition(userId, def.getKey());
+    return authorizationService.isAuthorizedToSeeProcessDefinition(userId, def.getKey());
   }
 
   private String convertToValidVersion(String processDefinitionKey, String processDefinitionVersion) {

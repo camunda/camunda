@@ -18,19 +18,22 @@ import java.util.stream.Collectors;
 @Component
 public class AuthenticationService {
 
-  private Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger logger = LoggerFactory.getLogger(AuthenticationService.class);
+
+  private final EngineAuthenticationProvider engineAuthenticationProvider;
+  private final EngineContextFactory engineContextFactory;
+  private final SessionService sessionService;
+  private final ApplicationAuthorizationService applicationAuthorizationService;
 
   @Autowired
-  private EngineAuthenticationProvider engineAuthenticationProvider;
-
-  @Autowired
-  private EngineContextFactory engineContextFactory;
-
-  @Autowired
-  private SessionService sessionService;
-
-  @Autowired
-  private ApplicationAuthorizationService applicationAuthorizationService;
+  public AuthenticationService(final EngineAuthenticationProvider engineAuthenticationProvider,
+                               final EngineContextFactory engineContextFactory, final SessionService sessionService,
+                               final ApplicationAuthorizationService applicationAuthorizationService) {
+    this.engineAuthenticationProvider = engineAuthenticationProvider;
+    this.engineContextFactory = engineContextFactory;
+    this.sessionService = sessionService;
+    this.applicationAuthorizationService = applicationAuthorizationService;
+  }
 
   /**
    * Authenticates user and checks for optimize authorization.
@@ -45,15 +48,17 @@ public class AuthenticationService {
     List<AuthenticationResultDto> authenticationResults = new ArrayList<>();
     for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
 
-      AuthenticationResultDto authResult =
-        engineAuthenticationProvider.performAuthenticationCheck(credentials, engineContext);
+      final AuthenticationResultDto authResult = engineAuthenticationProvider.performAuthenticationCheck(
+        credentials, engineContext
+      );
       authenticationResults.add(authResult);
 
       if (authResult.isAuthenticated()) {
-        boolean isAuthorized =
-          applicationAuthorizationService.isAuthorizedToAccessOptimize(credentials.getUsername(), engineContext);
+        final boolean isAuthorized = applicationAuthorizationService.isAuthorizedToAccessOptimize(
+          credentials.getUsername(), engineContext
+        );
         if (isAuthorized) {
-          return createUserSession(credentials, engineContext);
+          return createUserSession(credentials);
         }
 
       }
@@ -90,11 +95,8 @@ public class AuthenticationService {
     return authenticationErrorMessage;
   }
 
-  private String createUserSession(CredentialsDto credentials, EngineContext engineContext) {
+  private String createUserSession(CredentialsDto credentials) {
     // Issue a token for the user
-    return sessionService.createSessionAndReturnSecurityToken(
-      credentials.getUsername(),
-      engineContext
-    );
+    return sessionService.createSessionAndReturnSecurityToken(credentials.getUsername());
   }
 }

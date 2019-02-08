@@ -136,6 +136,8 @@ public class EngineIntegrationRule extends TestWatcher {
   protected void starting(Description description) {
     if (shouldCleanEngine) {
       cleanEngine();
+      addUser("demo", "demo");
+      grantAllAuthorizations("demo");
     }
   }
 

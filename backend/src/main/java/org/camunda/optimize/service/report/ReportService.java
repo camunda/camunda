@@ -30,7 +30,7 @@ import org.camunda.optimize.service.es.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConflictException;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.security.SessionService;
+import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.camunda.optimize.service.security.SharingService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.slf4j.Logger;
@@ -74,7 +74,7 @@ public class ReportService {
   private CollectionService collectionService;
 
   @Autowired
-  private SessionService sessionService;
+  private DefinitionAuthorizationService authorizationService;
 
   public ConflictResponseDto getReportDeleteConflictingItemsWithAuthorizationCheck(String userId, String reportId) {
     ReportDefinitionDto currentReportVersion = getReportWithAuthorizationCheck(reportId, userId);
@@ -134,15 +134,15 @@ public class ReportService {
   }
 
   public IdDto createNewSingleDecisionReport(String userId) {
-      return reportWriter.createNewSingleDecisionReport(userId);
+    return reportWriter.createNewSingleDecisionReport(userId);
   }
 
   public IdDto createNewSingleProcessReport(String userId) {
-      return reportWriter.createNewSingleProcessReport(userId);
+    return reportWriter.createNewSingleProcessReport(userId);
   }
 
   public IdDto createNewCombinedProcessReport(String userId) {
-      return reportWriter.createNewCombinedReport(userId);
+    return reportWriter.createNewCombinedReport(userId);
   }
 
   public void updateCombinedProcessReportWithAuthorizationCheck(String reportId,
@@ -220,7 +220,8 @@ public class ReportService {
   }
 
   private void checkForUpdateConflictsOnSingleProcessDefinition(SingleProcessReportDefinitionDto currentReportVersion,
-                                                                SingleProcessReportDefinitionDto reportUpdateDto) throws OptimizeConflictException {
+                                                                SingleProcessReportDefinitionDto reportUpdateDto)
+    throws OptimizeConflictException {
     final Set<ConflictedItemDto> conflictedItems = new LinkedHashSet<>();
 
     final String reportId = currentReportVersion.getId();
@@ -302,7 +303,8 @@ public class ReportService {
     return reports;
   }
 
-  private SingleProcessReportDefinitionDto getSingleProcessReportWithAuthorizationCheck(String reportId, String userId) {
+  private SingleProcessReportDefinitionDto getSingleProcessReportWithAuthorizationCheck(String reportId,
+                                                                                        String userId) {
     SingleProcessReportDefinitionDto report = reportReader.getSingleProcessReport(reportId);
     if (!isAuthorizedToSeeSingleProcessReport(userId, report)) {
       throw new ForbiddenException("User [" + userId + "] is not authorized to access or edit report [" +
@@ -343,16 +345,16 @@ public class ReportService {
     final ProcessReportDataDto reportData = reportDefinition.getData();
     if (reportData != null) {
       return
-        sessionService.isAuthorizedToSeeProcessDefinition(userId, reportData.getProcessDefinitionKey());
+        authorizationService.isAuthorizedToSeeProcessDefinition(userId, reportData.getProcessDefinitionKey());
     }
     return true;
   }
 
   private boolean isAuthorizedToSeeSingleDecisionReport(String userId,
-                                                       SingleDecisionReportDefinitionDto reportDefinition) {
+                                                        SingleDecisionReportDefinitionDto reportDefinition) {
     final DecisionReportDataDto reportData = reportDefinition.getData();
     if (reportData != null) {
-      return sessionService.isAuthorizedToSeeDecisionDefinition(userId, reportData.getDecisionDefinitionKey());
+      return authorizationService.isAuthorizedToSeeDecisionDefinition(userId, reportData.getDecisionDefinitionKey());
     }
     return true;
   }
@@ -362,13 +364,13 @@ public class ReportService {
       SingleProcessReportDefinitionDto processDefinition = (SingleProcessReportDefinitionDto) reportDefinition;
       final ProcessReportDataDto reportData = processDefinition.getData();
       if (reportData != null) {
-        return sessionService.isAuthorizedToSeeProcessDefinition(userId, reportData.getProcessDefinitionKey());
+        return authorizationService.isAuthorizedToSeeProcessDefinition(userId, reportData.getProcessDefinitionKey());
       }
     } else if (reportDefinition instanceof SingleDecisionReportDefinitionDto) {
       SingleDecisionReportDefinitionDto decisionReport = (SingleDecisionReportDefinitionDto) reportDefinition;
       DecisionReportDataDto reportData = decisionReport.getData();
       if (reportData != null) {
-        return sessionService.isAuthorizedToSeeDecisionDefinition(userId, reportData.getDecisionDefinitionKey());
+        return authorizationService.isAuthorizedToSeeDecisionDefinition(userId, reportData.getDecisionDefinitionKey());
       }
     }
     return true;

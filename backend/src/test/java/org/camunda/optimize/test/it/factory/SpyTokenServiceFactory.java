@@ -1,5 +1,7 @@
 package org.camunda.optimize.test.it.factory;
 
+import com.google.common.collect.ImmutableList;
+import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.mockito.Mockito;
@@ -12,12 +14,13 @@ public class SpyTokenServiceFactory implements FactoryBean<SessionService> {
 
   @Autowired
   private ConfigurationService configurationService;
+  @Autowired
+  private DefinitionAuthorizationService authorizationService;
 
   @Override
   public SessionService getObject() throws Exception {
     if (sessionService == null) {
-      sessionService = new SessionService();
-      sessionService.setConfigurationService(configurationService);
+      sessionService = new SessionService(configurationService, ImmutableList.of(authorizationService));
       sessionService = Mockito.spy(sessionService);
     }
     return sessionService;

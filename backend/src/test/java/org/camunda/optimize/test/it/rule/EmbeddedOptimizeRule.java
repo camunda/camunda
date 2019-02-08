@@ -21,6 +21,7 @@ import org.camunda.optimize.service.engine.importing.service.mediator.StoreIndex
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.writer.RunningActivityInstanceWriter;
+import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.BeanHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -35,6 +36,8 @@ import org.springframework.context.ApplicationContext;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedList;
@@ -53,13 +56,14 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   /**
    * 1. Reset import start indexes
-   *
+   * <p>
    * 2. Schedule import of all entities, execute all available jobs sequentially
    * until nothing more exists in scheduler queue.
-   *
+   * <p>
    * NOTE: this will not store indexes in the ES.
    */
-  public EmbeddedOptimizeRule() {}
+  public EmbeddedOptimizeRule() {
+  }
 
   public EmbeddedOptimizeRule(String context) {
     this.context = context;
@@ -131,10 +135,10 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   public void storeImportIndexesToElasticsearch() {
     for (EngineContext engineContext : getConfiguredEngines()) {
       StoreIndexesEngineImportMediator storeIndexesEngineImportJobFactory = (StoreIndexesEngineImportMediator)
-          getApplicationContext().getBean(
-              BeanHelper.getBeanName(StoreIndexesEngineImportMediator.class),
-              engineContext
-          );
+        getApplicationContext().getBean(
+          BeanHelper.getBeanName(StoreIndexesEngineImportMediator.class),
+          engineContext
+        );
       storeIndexesEngineImportJobFactory.disableBlocking();
 
       storeIndexesEngineImportJobFactory.importNextPage();
@@ -186,7 +190,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   public OptimizeRequestExecutor getRequestExecutor() {
     return requestExecutor;
   }
-  
+
   protected void starting(Description description) {
     try {
       startOptimize();
@@ -253,12 +257,20 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   protected void finished(Description description) {
     try {
       this.getAlertService().getScheduler().clear();
+      invalidateAuthorizationCache();
       TestEmbeddedCamundaOptimize.getInstance().resetConfiguration();
       LocalDateUtil.reset();
       reloadConfiguration();
     } catch (Exception e) {
-      logger.error("clean up after test", e);
+      logger.error("Failed to clean up after test", e);
     }
+  }
+
+  private void invalidateAuthorizationCache()
+    throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+    final Method invalidateCacheMethod = DefinitionAuthorizationService.class.getDeclaredMethod("invalidateCache");
+    invalidateCacheMethod.setAccessible(true);
+    invalidateCacheMethod.invoke(getDefinitionAuthorizationService());
   }
 
   public void reloadConfiguration() {
@@ -359,7 +371,8 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   public void updateImportIndex() {
     for (String engineAlias : getConfigurationService().getConfiguredEngines().keySet()) {
       if (getIndexProvider().getDefinitionBasedHandlers(engineAlias) != null) {
-        for (TimestampBasedImportIndexHandler importIndexHandler : getIndexProvider().getDefinitionBasedHandlers(engineAlias)) {
+        for (TimestampBasedImportIndexHandler importIndexHandler : getIndexProvider().getDefinitionBasedHandlers(
+          engineAlias)) {
           importIndexHandler.updateImportIndex();
         }
       }
@@ -372,6 +385,10 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   public AlertService getAlertService() {
     return getApplicationContext().getBean(AlertService.class);
+  }
+
+  public DefinitionAuthorizationService getDefinitionAuthorizationService() {
+    return getApplicationContext().getBean(DefinitionAuthorizationService.class);
   }
 
 

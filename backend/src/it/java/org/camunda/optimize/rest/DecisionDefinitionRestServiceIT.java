@@ -77,7 +77,6 @@ public class DecisionDefinitionRestServiceIT {
     assertThat(definitions, is(notNullValue()));
     assertThat(definitions.size(), is(1));
     assertThat(definitions.get(0).getId(), is(authorizedToSee.getId()));
-    ;
   }
 
   @Test

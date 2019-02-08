@@ -23,7 +23,6 @@ import java.util.Optional;
 
 @Component
 public class CombinedReportEvaluator {
-
   private static final Logger logger = LoggerFactory.getLogger(CombinedReportEvaluator.class);
 
   private SingleReportEvaluatorForCombinedReports singleReportEvaluator;
@@ -52,8 +51,7 @@ public class CombinedReportEvaluator {
       .forEach(
         r -> {
           CommandContext commandContext = singleReportEvaluator.createCommandContext(r.getData());
-          Command command =
-            singleReportEvaluator.extractCommand(r.getData());
+          Command command = singleReportEvaluator.extractCommand(r.getData());
           if (command instanceof AutomaticGroupByDateCommand) {
             Optional<Stats> stat = ((AutomaticGroupByDateCommand) command).evaluateGroupByDateValueStats(commandContext);
             stat.ifPresent(calculator::addStat);

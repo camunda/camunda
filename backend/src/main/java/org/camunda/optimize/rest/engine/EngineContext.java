@@ -42,11 +42,11 @@ public class EngineContext {
     return engineAlias;
   }
 
-  public List<GroupDto> getAllGroupsOfUser(String username) {
+  public List<GroupDto> getAllGroupsOfUser(String userId) {
     try {
       Response response = getEngineClient()
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-        .queryParam(MEMBER, username)
+        .queryParam(MEMBER, userId)
         .path(GROUP_ENDPOINT)
         .request(MediaType.APPLICATION_JSON)
         .get();
@@ -56,7 +56,7 @@ public class EngineContext {
         // @formatter:on
       }
     } catch (Exception e) {
-      logger.error("Could not fetch groups for user [{}]", username, e);
+      logger.error("Could not fetch groups for user [{}]", userId, e);
     }
     return new ArrayList<>();
   }

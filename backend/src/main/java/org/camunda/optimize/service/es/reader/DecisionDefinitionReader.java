@@ -6,7 +6,7 @@ import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto
 import org.camunda.optimize.dto.optimize.query.definition.DecisionDefinitionGroupOptimizeDto;
 import org.camunda.optimize.service.es.schema.type.DecisionDefinitionType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.security.SessionService;
+import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -44,18 +44,17 @@ public class DecisionDefinitionReader {
 
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
-  private final SessionService sessionService;
+  private final DefinitionAuthorizationService authorizationService;
   private final RestHighLevelClient esClient;
 
   @Autowired
-  public DecisionDefinitionReader(
-    final ConfigurationService configurationService,
-    final ObjectMapper objectMapper,
-    final SessionService sessionService,
-    RestHighLevelClient esClient) {
+  public DecisionDefinitionReader(final ConfigurationService configurationService,
+                                  final ObjectMapper objectMapper,
+                                  final DefinitionAuthorizationService authorizationService,
+                                  final RestHighLevelClient esClient) {
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;
-    this.sessionService = sessionService;
+    this.authorizationService = authorizationService;
     this.esClient = esClient;
   }
 
@@ -189,7 +188,7 @@ public class DecisionDefinitionReader {
 
   private boolean isAuthorizedToSeeDecisionDefinition(final String userId,
                                                       final DecisionDefinitionOptimizeDto definitionOptimizeDto) {
-    return sessionService.isAuthorizedToSeeDecisionDefinition(userId, definitionOptimizeDto.getKey());
+    return authorizationService.isAuthorizedToSeeDecisionDefinition(userId, definitionOptimizeDto.getKey());
   }
 
   private String convertToValidVersion(String decisionDefinitionKey, String decisionDefinitionVersion) {

@@ -11,7 +11,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

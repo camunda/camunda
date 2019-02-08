@@ -86,14 +86,14 @@ public class SingleSignOnFilter implements Filter {
   }
 
   private void provideAuthentication(HttpServletResponse servletResponse, HttpServletRequest servletRequest) {
-    boolean hasCookieWithActiveToken = hasCookieWithActiveToken(servletResponse, servletRequest);
+    boolean hasCookieWithActiveToken = hasCookieWithActiveToken(servletRequest);
     if (!hasCookieWithActiveToken) {
       logger.trace("Creating new auth header for the Optimize cookie.");
       addTokenFromAuthenticationExtractorPlugins(servletRequest, servletResponse);
     }
   }
 
-  private boolean hasCookieWithActiveToken(HttpServletResponse servletResponse, HttpServletRequest servletRequest) {
+  private boolean hasCookieWithActiveToken(HttpServletRequest servletRequest) {
     boolean hasCookieWithActiveToken =
       retrieveOptimizeAuthCookie(servletRequest)
         .map(authCookie -> {
@@ -119,34 +119,30 @@ public class SingleSignOnFilter implements Filter {
   private void createSessionIfIsAuthorizedToAccessOptimize(HttpServletRequest servletRequest,
                                                            HttpServletResponse servletResponse, String userName) {
     for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
-      boolean isAuthorized =
-        applicationAuthorizationService.isAuthorizedToAccessOptimize(userName, engineContext);
+      boolean isAuthorized = applicationAuthorizationService.isAuthorizedToAccessOptimize(userName, engineContext);
       if (isAuthorized) {
         logger.trace(
           "User [{}] was authorized from engine [{}] to access Optimize.",
           userName,
           engineContext.getEngineAlias()
         );
-        manageUserSession(servletRequest, servletResponse, userName, engineContext);
+        manageUserSession(servletRequest, servletResponse, userName);
       }
 
     }
   }
 
-  private void manageUserSession(HttpServletRequest servletRequest, HttpServletResponse servletResponse,
-                                 String userName, EngineContext engineContext) {
+  private void manageUserSession(HttpServletRequest servletRequest, HttpServletResponse servletResponse, String userName) {
     Optional<Cookie> authCookie = retrieveOptimizeAuthCookie(servletRequest);
     if (authCookie.isPresent()) {
       String token = extractTokenFromAuthorizationValue(authCookie.get().getValue());
       if (sessionService.hasTokenExpired(token)) {
         logger.trace("Updating session information for {} with token {}", userName, token);
         sessionService.updateExpiryDate(token);
-        sessionService.updateDefinitionAuthorizations(userName, engineContext);
       }
     } else {
       logger.trace("Creating new session for {}", userName);
-      String securityToken =
-        sessionService.createSessionAndReturnSecurityToken(userName, engineContext);
+      String securityToken = sessionService.createSessionAndReturnSecurityToken(userName);
       setOptimizeAuthCookie(servletRequest, servletResponse, securityToken);
     }
   }

@@ -3,10 +3,6 @@ package org.camunda.optimize.service.security;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
-import org.apache.commons.collections.ListUtils;
-import org.camunda.optimize.dto.engine.AuthorizationDto;
-import org.camunda.optimize.dto.engine.GroupDto;
-import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,23 +13,27 @@ import java.security.SecureRandom;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 import static org.camunda.optimize.rest.util.AuthenticationUtil.getSessionIssuer;
 
 @Component
 public class SessionService {
-
-  private Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger logger = LoggerFactory.getLogger(SessionService.class);
 
   private static ConcurrentHashMap<String, Session> userSessions = new ConcurrentHashMap<>();
   private Random secureRandom = new SecureRandom();
   private final static int SECRET_LENGTH = 16;
 
+  private final ConfigurationService configurationService;
+  private final List<SessionListener> sessionListeners;
+
   @Autowired
-  private ConfigurationService configurationService;
+  public SessionService(final ConfigurationService configurationService,
+                        final List<SessionListener> sessionListeners) {
+    this.configurationService = configurationService;
+    this.sessionListeners = sessionListeners;
+  }
 
   public boolean isValidToken(String token) {
     Optional<String> username = getSessionIssuer(token);
@@ -67,7 +67,10 @@ public class SessionService {
 
   public void expireToken(String token) {
     Optional<String> username = getSessionIssuer(token);
-    username.ifPresent(user -> userSessions.remove(user));
+    username.ifPresent(user -> {
+      userSessions.remove(user);
+      sessionListeners.forEach(sessionListener -> sessionListener.onSessionDestroy(user));
+    });
   }
 
   public void updateExpiryDate(String token) {
@@ -80,87 +83,28 @@ public class SessionService {
     );
   }
 
-  public boolean isAuthorizedToSeeProcessDefinition(String username, String processDefinitionKey) {
-    if (userSessions.containsKey(username)) {
-      Session session = userSessions.get(username);
-      return session.isAuthorizedToSeeProcessDefinition(processDefinitionKey);
-    }
-    return false;
-  }
-
-  public boolean isAuthorizedToSeeDecisionDefinition(String username, String decisionDefinitionKey) {
-    if (userSessions.containsKey(username)) {
-      Session session = userSessions.get(username);
-      return session.isAuthorizedToSeeDecisionDefinition(decisionDefinitionKey);
-    }
-    return false;
-  }
-
-  public String createSessionAndReturnSecurityToken(String username, EngineContext engineContext) {
+  public String createSessionAndReturnSecurityToken(String userId) {
 
     Algorithm hashingAlgorithm = generateAlgorithm();
     String token = JWT.create()
-      .withIssuer(username)
+      .withIssuer(userId)
       .sign(hashingAlgorithm);
 
     JWTVerifier verifier = JWT.require(hashingAlgorithm)
-      .withIssuer(username)
+      .withIssuer(userId)
       .build(); //Reusable verifier instance
 
     TokenVerifier tokenVerifier = new TokenVerifier(configurationService.getTokenLifeTime(), verifier);
-    DefinitionAuthorizations definitionAuthorizations = retrieveDefinitionAuthorizations(username, engineContext);
-    Session session = new Session(tokenVerifier, definitionAuthorizations);
-    userSessions.put(username, session);
+    Session session = new Session(tokenVerifier);
+    userSessions.put(userId, session);
+
+    sessionListeners.forEach(sessionListener -> sessionListener.onSessionCreate(userId));
 
     return token;
   }
 
-  public void updateDefinitionAuthorizations(String username, EngineContext engineContext) {
-
-    DefinitionAuthorizations definitionAuthorizations = retrieveDefinitionAuthorizations(username, engineContext);
-    userSessions.computeIfPresent(username, (__, session) -> {
-      session.updateDefinitionAuthorizations(definitionAuthorizations);
-      return session;
-    });
-  }
-
-  private DefinitionAuthorizations retrieveDefinitionAuthorizations(String username, EngineContext engineContext) {
-
-    List<GroupDto> groups = engineContext.getAllGroupsOfUser(username);
-    List<AuthorizationDto> allDefinitionAuthorizations = ListUtils.union(
-      engineContext.getAllProcessDefinitionAuthorizations(),
-      engineContext.getAllDecisionDefinitionAuthorizations()
-    );
-    List<AuthorizationDto> groupAuthorizations = extractGroupAuthorizations(groups, allDefinitionAuthorizations);
-    List<AuthorizationDto> userAuthorizations = extractUserAuthorizations(username, allDefinitionAuthorizations);
-
-    return new DefinitionAuthorizations(allDefinitionAuthorizations, groupAuthorizations, userAuthorizations);
-  }
-
-  private List<AuthorizationDto> extractGroupAuthorizations(List<GroupDto> groupsOfUser,
-                                                            List<AuthorizationDto> allAuthorizations) {
-    Set<String> groupIds = groupsOfUser.stream().map(GroupDto::getId).collect(Collectors.toSet());
-    return allAuthorizations
-      .stream()
-      .filter(a -> groupIds.contains(a.getGroupId()))
-      .collect(Collectors.toList());
-  }
-
-  private List<AuthorizationDto> extractUserAuthorizations(String username,
-                                                           List<AuthorizationDto> allAuthorizations) {
-    return allAuthorizations
-      .stream()
-      .filter(a -> username.equals(a.getUserId()))
-      .collect(Collectors.toList());
-  }
-
-
   public ConfigurationService getConfigurationService() {
     return configurationService;
-  }
-
-  public void setConfigurationService(ConfigurationService configurationService) {
-    this.configurationService = configurationService;
   }
 
 }
