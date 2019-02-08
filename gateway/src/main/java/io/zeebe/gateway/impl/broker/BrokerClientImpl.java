@@ -17,6 +17,9 @@ package io.zeebe.gateway.impl.broker;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
+import io.atomix.core.Atomix;
+import io.atomix.primitive.partition.MemberGroupStrategy;
+import io.atomix.protocols.backup.partition.PrimaryBackupPartitionGroup;
 import io.atomix.utils.net.Address;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
@@ -103,7 +106,7 @@ public class BrokerClientImpl implements BrokerClient {
     internalTransport = internalTransportBuilder.build();
 
     atomix =
-        AtomixCluster.builder()
+        Atomix.builder()
             .withHost(clusterCfg.getHost())
             .withPort(clusterCfg.getPort())
             .withMemberId(clusterCfg.getMemberId())
@@ -111,6 +114,11 @@ public class BrokerClientImpl implements BrokerClient {
             .withMembershipProvider(
                 BootstrapDiscoveryProvider.builder()
                     .withNodes(Address.from(clusterCfg.getContactPoint()))
+                    .build())
+            .withManagementGroup(
+                PrimaryBackupPartitionGroup.builder("system")
+                    .withMemberGroupStrategy(MemberGroupStrategy.NODE_AWARE)
+                    .withNumPartitions(1)
                     .build())
             .build();
 
@@ -132,7 +140,6 @@ public class BrokerClientImpl implements BrokerClient {
             LOG.error("{}: Atomix failed to start '{}' :", clusterCfg.getMemberId(), t.toString());
           } else {
             LOG.debug("{}: Atomix started", clusterCfg.getMemberId());
-            topologyManager.addInitialCluster(atomix.getMembershipService().getMembers());
           }
         });
 

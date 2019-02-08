@@ -28,8 +28,6 @@ import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.io.IOException;
-import java.util.Properties;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
@@ -53,17 +51,6 @@ public class BrokerTopologyManagerImpl extends Actor
     this.topology = new AtomicReference<>(new BrokerClusterStateImpl());
   }
 
-  public void addInitialCluster(Set<Member> initialCluster) {
-    actor.submit(
-        () -> {
-          LOG.debug("{}: Setting up initial state", atomixMemberId);
-
-          for (Member broker : initialCluster) {
-            onMembershipEvent(Type.MEMBER_ADDED, broker);
-          }
-        });
-  }
-
   public ActorFuture<Void> close() {
     return actor.close();
   }
@@ -79,110 +66,74 @@ public class BrokerTopologyManagerImpl extends Actor
     actor.call(
         () -> {
           LOG.debug("{}: Received event: {}", atomixMemberId, event);
-          onMembershipEvent(event.type(), event.subject());
+          final Member subject = event.subject();
+          final Type eventType = event.type();
+
+          final BrokerClusterStateImpl newTopology = new BrokerClusterStateImpl(topology.get());
+          final TopologyDistributionInfo remoteTopology = extractTopologyFromProperties(subject);
+
+          if (remoteTopology == null) {
+            LOG.debug("{}: Ignoring event from {}", atomixMemberId, subject.id());
+            return;
+          }
+
+          switch (eventType) {
+            case MEMBER_ADDED:
+              newTopology.addBrokerIfAbsent(remoteTopology.getNodeId());
+              processProperties(remoteTopology, newTopology);
+              break;
+
+            case METADATA_CHANGED:
+              processProperties(remoteTopology, newTopology);
+              break;
+
+            case MEMBER_REMOVED:
+              newTopology.removeBroker(remoteTopology.getNodeId());
+              processProperties(remoteTopology, newTopology);
+              break;
+          }
+
+          topology.set(newTopology);
         });
   }
 
-  private void onMembershipEvent(Type eventType, Member subject) {
-    final Properties properties = subject.properties();
-    final String memberId = subject.id().id();
-    final int brokerId;
-
-    try {
-      brokerId = Integer.parseInt(memberId);
-    } catch (NumberFormatException e) {
-      LOG.debug("{}: Ignoring member named '{}'", atomixMemberId, memberId);
-      return;
-    }
-
-    final BrokerClusterStateImpl newTopology = new BrokerClusterStateImpl(topology.get());
-    switch (eventType) {
-      case MEMBER_ADDED:
-        newTopology.addBrokerIfAbsent(brokerId);
-        processProperties(properties, brokerId, newTopology);
-        break;
-
-      case METADATA_CHANGED:
-        processProperties(properties, brokerId, newTopology);
-        break;
-
-      case MEMBER_REMOVED:
-        newTopology.removeBroker(brokerId);
-        processProperties(properties, brokerId, newTopology);
-        break;
-    }
-
-    topology.set(newTopology);
-  }
-
-  /*
-   * Processes properties and updates the topology accordingly. Can be safely used by both
-   * MEMBER_ADDED and MEMBER_REMOVED since, if a broker is not in the topology, updates related to
-   * it will not be made.
-   */
+  // Update topology information based on the distributed event
   private void processProperties(
-      Properties properties, int brokerId, BrokerClusterStateImpl newTopology) {
-    for (String propertyName : properties.stringPropertyNames()) {
-      final String propertyValue = properties.getProperty(propertyName);
+      TopologyDistributionInfo remoteTopology, BrokerClusterStateImpl newTopology) {
 
-      if (propertyName.startsWith("partition-")) {
-        updatePartitions(propertyName, propertyValue, brokerId, newTopology);
-      } else if (propertyName.equals("clientAddress")) {
-        updateBrokerClientAddress(propertyValue, brokerId, newTopology);
-      } else {
-        updateClusterInfo(propertyName, propertyValue, brokerId, newTopology);
+    newTopology.setClusterSize(remoteTopology.getClusterSize());
+    newTopology.setPartitionsCount(remoteTopology.getPartitionsCount());
+    newTopology.setReplicationFactor(remoteTopology.getReplicationFactor());
+
+    for (Integer partitionId : remoteTopology.getPartitionRoles().keySet()) {
+      newTopology.addPartitionIfAbsent(partitionId);
+
+      if (remoteTopology.getPartitionNodeRole(partitionId) == RaftState.LEADER) {
+        newTopology.setPartitionLeader(partitionId, remoteTopology.getNodeId());
       }
     }
+
+    final String clientAddress = remoteTopology.getApiAddress("client");
+    newTopology.setBrokerAddressIfPresent(remoteTopology.getNodeId(), clientAddress);
+    registerEndpoint.accept(remoteTopology.getNodeId(), SocketAddress.from(clientAddress));
   }
 
-  private void updatePartitions(
-      String propertyName, String propertyValue, int brokerId, BrokerClusterStateImpl newTopology) {
-    final int partitionId = Integer.parseInt(propertyName.split("-")[1]);
-    newTopology.addPartitionIfAbsent(partitionId);
-
-    if (RaftState.valueOf(propertyValue) == RaftState.LEADER) {
-      newTopology.setPartitionLeader(partitionId, brokerId);
-      LOG.debug(
-          "{}: Added broker {} as leader of partition {}", atomixMemberId, brokerId, partitionId);
+  // Try to extract a topology from the node's properties
+  private TopologyDistributionInfo extractTopologyFromProperties(Member eventSource) {
+    final String jsonTopology = eventSource.properties().getProperty("topology");
+    if (jsonTopology == null) {
+      LOG.debug("Node {} has no topology information", eventSource.id());
+      return null;
     }
-  }
 
-  private void updateBrokerClientAddress(
-      String clientApiAddress, int brokerId, BrokerClusterStateImpl newTopology) {
+    final TopologyDistributionInfo distInfo;
     try {
-      final String socketAddress = objectMapper.readValue(clientApiAddress, String.class);
-      registerEndpoint.accept(brokerId, SocketAddress.from(socketAddress));
-      newTopology.setBrokerAddressIfPresent(brokerId, socketAddress);
+      distInfo = objectMapper.readValue(jsonTopology, TopologyDistributionInfo.class);
     } catch (IOException e) {
-      LOG.error("{}: Invalid client address for broker {}:  ", atomixMemberId, brokerId, e);
+      LOG.error("Error reading topology {} of node {}", e.getMessage(), eventSource.id());
+      return null;
     }
-  }
 
-  private void updateClusterInfo(
-      String propertyName, String propertyValue, int brokerId, BrokerClusterStateImpl newTopology) {
-
-    try {
-      switch (propertyName) {
-        case "replicationFactor":
-          newTopology.setReplicationFactor(Integer.parseInt(propertyValue));
-          break;
-
-        case "clusterSize":
-          newTopology.setClusterSize(Integer.parseInt(propertyValue));
-          break;
-
-        case "partitionsCount":
-          newTopology.setPartitionsCount(Integer.parseInt(propertyValue));
-          break;
-      }
-
-    } catch (NumberFormatException e) {
-      LOG.debug(
-          "{}: broker {} has invalid property '{}' of value '{}'",
-          atomixMemberId,
-          brokerId,
-          propertyName,
-          propertyValue);
-    }
+    return distInfo;
   }
 }
