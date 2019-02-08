@@ -20,16 +20,6 @@ export default class ProcessDefinitionSelection extends React.Component {
     });
   };
 
-  propagateChange = (key, version) => {
-    this.props.onChange(
-      {
-        decisionDefinitionKey: {$set: key},
-        decisionDefinitionVersion: {$set: version}
-      },
-      true
-    );
-  };
-
   changeKey = async evt => {
     let key = evt.target.value;
     let version;
@@ -39,7 +29,7 @@ export default class ProcessDefinitionSelection extends React.Component {
       const selectedDefinition = this.getLatestDefinition(key);
       version = selectedDefinition.version;
     }
-    this.propagateChange(key, version);
+    this.props.onChange(key, version);
   };
 
   changeVersion = async evt => {
@@ -49,7 +39,7 @@ export default class ProcessDefinitionSelection extends React.Component {
       // reset to please select
       version = '';
     }
-    this.propagateChange(key, version);
+    this.props.onChange(key, version);
   };
 
   getLatestDefinition = key => {

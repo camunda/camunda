@@ -8,7 +8,7 @@ export const visualization = {
 
 export const groupBy = {
   none: {data: {type: 'none'}, label: 'None'},
-  // rules: {data: {type: 'rules'}, label: 'Rules'},
+  rules: {data: {type: 'matchedRule'}, label: 'Rules'},
   evaluationDate: {
     data: {
       type: 'evaluationDateTime',
@@ -46,10 +46,10 @@ const combinations = {
       entity: groupBy.none,
       then: [visualization.number]
     },
-    // {
-    //   entity: groupBy.rules,
-    //   then: [visualization.table]
-    // },
+    {
+      entity: groupBy.rules,
+      then: [visualization.table]
+    },
     {
       entity: groupBy.evaluationDate,
       then: [visualization.table, visualization.pie, visualization.line, visualization.bar]

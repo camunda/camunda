@@ -1,0 +1,26 @@
+.DecisionTable {
+  .view-drd,
+  .powered-by-logo {
+    display: none;
+  }
+
+  .hit.header {
+    vertical-align: bottom;
+  }
+
+  .CustomCell,
+  .hit.header,
+  tfoot td {
+    border: 1px solid lightgray;
+  }
+
+  .dmn-decision-table-container table thead {
+    border-bottom: 0;
+
+    tr:last-child th,
+    .hit-policy,
+    .annotation {
+      border-bottom: 3px double #444;
+    }
+  }
+}

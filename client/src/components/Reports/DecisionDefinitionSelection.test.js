@@ -44,7 +44,7 @@ it('should update to most recent version when key is selected', async () => {
 
   node.instance().changeKey({target: {value: 'foo'}});
 
-  expect(spy.mock.calls[0][0].decisionDefinitionVersion).toEqual({$set: 2});
+  expect(spy).toHaveBeenCalledWith('foo', 2);
 });
 
 it('should update definition if versions is changed', async () => {
@@ -54,9 +54,9 @@ it('should update definition if versions is changed', async () => {
     <DecisionDefinitionSelection decisionDefinitionKey="foo" onChange={spy} />
   );
 
-  node.instance().changeVersion({target: {value: '1'}});
+  node.instance().changeVersion({target: {value: 1}});
 
-  expect(spy.mock.calls[0][0].decisionDefinitionVersion).toEqual({$set: '1'});
+  expect(spy).toHaveBeenCalledWith('foo', 1);
 });
 
 it('should set key and version, if process definition is already available', async () => {

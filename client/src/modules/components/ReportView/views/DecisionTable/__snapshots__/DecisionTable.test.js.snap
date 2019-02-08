@@ -1,0 +1,38 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should render content in DmnJsPortals 1`] = `
+<div
+  className="DecisionTable"
+>
+  <DmnJsPortal
+    key="a"
+    renderIn="htmlA"
+  >
+    <i>
+      1
+       (
+      33.3
+      %)
+    </i>
+  </DmnJsPortal>
+  <DmnJsPortal
+    key="b"
+    renderIn="htmlB"
+  >
+    <i>
+      2
+       (
+      66.7
+      %)
+    </i>
+  </DmnJsPortal>
+  <DmnJsPortal
+    renderIn="htmlSum"
+  >
+    <b>
+      3
+       Evaluations
+    </b>
+  </DmnJsPortal>
+</div>
+`;

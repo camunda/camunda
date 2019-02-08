@@ -2,7 +2,7 @@ import React from 'react';
 import ReportBlankSlate from './ReportBlankSlate';
 
 import {isEmpty} from './service';
-import {Table, Number, Chart} from './views';
+import {Table, Number, Chart, DecisionTable} from './views';
 
 import {getConfig} from './service';
 
@@ -23,12 +23,12 @@ const checkReport = props => {
   }
 };
 
-const getComponent = visualization => {
+const getComponent = (groupBy, visualization) => {
   switch (visualization) {
     case 'number':
       return Number;
     case 'table':
-      return Table;
+      return groupBy === 'matchedRule' ? DecisionTable : Table;
     case 'bar':
     case 'line':
     case 'pie':
@@ -45,8 +45,12 @@ export default function DecisionReportView(props) {
       <ReportBlankSlate message={'To display a report, please select ' + somethingMissing + '.'} />
     );
 
-  const {visualization, view} = props.report.data;
-  const Component = getComponent(visualization);
+  const {
+    visualization,
+    view,
+    groupBy: {type}
+  } = props.report.data;
+  const Component = getComponent(type, visualization);
 
   return (
     <div className="component">

@@ -40,5 +40,4 @@ socket.onmessage = function(evt) {
   }
 
   logContainer.appendChild(entry);
-  logContainer.scrollTop = Number.MAX_SAFE_INTEGER;
 };

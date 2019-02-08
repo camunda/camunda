@@ -20,6 +20,15 @@ export async function loadProcessDefinitionXml(processDefinitionKey, processDefi
   return await response.text();
 }
 
+export async function loadDecisionDefinitionXml(key, version) {
+  const response = await get('api/decision-definition/xml', {
+    key,
+    version
+  });
+
+  return await response.text();
+}
+
 export async function loadVariables(processDefinitionKey, processDefinitionVersion) {
   const response = await get('api/variables', {
     processDefinitionKey,

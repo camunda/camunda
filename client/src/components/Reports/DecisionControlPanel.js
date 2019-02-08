@@ -3,7 +3,7 @@ import {Popover, Dropdown, Labeled} from 'components';
 
 import DecisionDefinitionSelection from './DecisionDefinitionSelection';
 
-import {isChecked} from './service';
+import {isChecked, loadDecisionDefinitionXml} from './service';
 import {getDataKeys, decisionConfig} from 'services';
 
 export default class DecisionControlPanel extends React.Component {
@@ -16,8 +16,23 @@ export default class DecisionControlPanel extends React.Component {
     }
   };
 
+  changeDefinition = async (key, version) => {
+    const change = {
+      decisionDefinitionKey: {$set: key},
+      decisionDefinitionVersion: {$set: version}
+    };
+
+    if (key && version) {
+      change.configuration = {xml: {$set: await loadDecisionDefinitionXml(key, version)}};
+    }
+
+    this.props.updateReport(change, true);
+  };
+
   render() {
-    const {data: {decisionDefinitionKey, decisionDefinitionVersion}} = this.props.report;
+    const {
+      data: {decisionDefinitionKey, decisionDefinitionVersion}
+    } = this.props.report;
     return (
       <div className="DecisionControlPanel ReportControlPanel">
         <ul>
@@ -27,7 +42,7 @@ export default class DecisionControlPanel extends React.Component {
                 <DecisionDefinitionSelection
                   decisionDefinitionKey={decisionDefinitionKey}
                   decisionDefinitionVersion={decisionDefinitionVersion}
-                  onChange={this.props.updateReport}
+                  onChange={this.changeDefinition}
                 />
               </Popover>
             </Labeled>
