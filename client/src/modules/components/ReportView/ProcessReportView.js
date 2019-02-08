@@ -52,7 +52,7 @@ export default class ProcessReportView extends React.Component {
     if (somethingMissing) {
       return (
         <ReportBlankSlate
-          message={'To display a report, please select ' + somethingMissing + '.'}
+          errorMessage={'To display a report, please select ' + somethingMissing + '.'}
         />
       );
     }

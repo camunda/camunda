@@ -22,7 +22,7 @@ export default function ReportView(props) {
     return (
       <ErrorBoundary>
         <div className="ReportView">
-          <View {...props} errorMessage />
+          <View {...props} errorMessage={errorMessage} />
         </div>
       </ErrorBoundary>
     );

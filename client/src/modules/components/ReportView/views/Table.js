@@ -116,7 +116,7 @@ export default withErrorHandling(
       } = this.props;
 
       if (!result || typeof result !== 'object') {
-        return <ReportBlankSlate message={errorMessage} />;
+        return <ReportBlankSlate errorMessage={errorMessage} />;
       }
 
       if (this.state.needEndpoint && this.state.camundaEndpoints === null) {

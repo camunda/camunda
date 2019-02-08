@@ -191,7 +191,7 @@ it('should display an error message for a non-object result (single number)', as
   );
 
   expect(node.find('ReportBlankSlate')).toBePresent();
-  expect(node.find('ReportBlankSlate').prop('message')).toBe('Error');
+  expect(node.find('ReportBlankSlate').prop('errorMessage')).toBe('Error');
 });
 
 it('should display an error message if no data is provided', async () => {
@@ -200,7 +200,7 @@ it('should display an error message if no data is provided', async () => {
   );
 
   expect(node.find('ReportBlankSlate')).toBePresent();
-  expect(node.find('ReportBlankSlate').prop('message')).toBe('Error');
+  expect(node.find('ReportBlankSlate').prop('errorMessage')).toBe('Error');
 });
 
 it('should display an error message if data is null', async () => {
@@ -209,7 +209,7 @@ it('should display an error message if data is null', async () => {
   );
 
   expect(node.find('ReportBlankSlate')).toBePresent();
-  expect(node.find('ReportBlankSlate').prop('message')).toBe('Error');
+  expect(node.find('ReportBlankSlate').prop('errorMessage')).toBe('Error');
 });
 
 it('should not display an error message if data is valid', async () => {

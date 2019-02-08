@@ -25,13 +25,13 @@ it('should construct a Chart', () => {
 it('should display an error message for a non-object result (single number)', () => {
   const node = shallow(<Chart report={{...report, result: 7}} errorMessage="Error" />);
 
-  expect(node.find('ReportBlankSlate').prop('message')).toBe('Error');
+  expect(node.find('ReportBlankSlate').prop('errorMessage')).toBe('Error');
 });
 
 it('should display an error message if no data is provided', () => {
   const node = shallow(<Chart report={report} errorMessage="Error" />);
 
-  expect(node.find('ReportBlankSlate').prop('message')).toBe('Error');
+  expect(node.find('ReportBlankSlate').prop('errorMessage')).toBe('Error');
 });
 
 it('should use the provided type for the ChartRenderer', () => {
@@ -132,5 +132,5 @@ it('should display an error message if there was data and the second time no dat
 
   node.setProps({report: {...report, data: null}});
 
-  expect(node.find('ReportBlankSlate').prop('message')).toBe('Error');
+  expect(node.find('ReportBlankSlate').prop('errorMessage')).toBe('Error');
 });

@@ -19,12 +19,15 @@ export default themed(
     };
 
     render() {
-      const {report: {result}, errorMessage} = this.props;
+      const {
+        report: {result},
+        errorMessage
+      } = this.props;
 
       let errorMessageFragment = null;
       if (!result || typeof result !== 'object') {
         this.destroyChart();
-        errorMessageFragment = <ReportBlankSlate message={errorMessage} />;
+        errorMessageFragment = <ReportBlankSlate errorMessage={errorMessage} />;
       }
 
       return (
@@ -42,8 +45,12 @@ export default themed(
     };
 
     createNewChart = () => {
-      const {report: {result}} = this.props;
-      let {report: {data}} = this.props;
+      const {
+        report: {result}
+      } = this.props;
+      let {
+        report: {data}
+      } = this.props;
 
       if (!result || typeof result !== 'object') {
         return;

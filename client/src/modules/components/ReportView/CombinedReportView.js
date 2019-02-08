@@ -32,7 +32,7 @@ export default function CombinedReportView(props) {
   return (
     <ReportBlankSlate
       isCombined={true}
-      message={'To display a report, please select one or more reports from the list.'}
+      errorMessage={'To display a report, please select one or more reports from the list.'}
     />
   );
 }

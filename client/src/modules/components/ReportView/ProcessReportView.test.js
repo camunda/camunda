@@ -99,7 +99,7 @@ it('should instruct to add a process definition key if not available', () => {
   node.setState({
     loaded: true
   });
-  expect(node.find('ReportBlankSlate').prop('message')).toContain('Process Definition');
+  expect(node.find('ReportBlankSlate').prop('errorMessage')).toContain('Process Definition');
 });
 
 it('should instruct to add a process definition version if not available', () => {
@@ -124,7 +124,7 @@ it('should instruct to add a process definition version if not available', () =>
   node.setState({
     loaded: true
   });
-  expect(node.find('ReportBlankSlate').prop('message')).toContain('Process Definition');
+  expect(node.find('ReportBlankSlate').prop('errorMessage')).toContain('Process Definition');
 });
 
 it('should instruct to add view option if not available', () => {
@@ -147,7 +147,7 @@ it('should instruct to add view option if not available', () => {
   node.setState({
     loaded: true
   });
-  expect(node.find('ReportBlankSlate').prop('message')).toContain('View');
+  expect(node.find('ReportBlankSlate').prop('errorMessage')).toContain('View');
 });
 
 it('should instruct to add group by option if not available', () => {
@@ -170,7 +170,7 @@ it('should instruct to add group by option if not available', () => {
   node.setState({
     loaded: true
   });
-  expect(node.find('ReportBlankSlate').prop('message')).toContain('Group by');
+  expect(node.find('ReportBlankSlate').prop('errorMessage')).toContain('Group by');
 });
 
 it('should instruct to add visualization option if not available', () => {
@@ -195,7 +195,7 @@ it('should instruct to add visualization option if not available', () => {
   node.setState({
     loaded: true
   });
-  expect(node.find('ReportBlankSlate').prop('message')).toContain('Visualize as');
+  expect(node.find('ReportBlankSlate').prop('errorMessage')).toContain('Visualize as');
 });
 
 it('should not add instruction for group by if operation is raw data', () => {

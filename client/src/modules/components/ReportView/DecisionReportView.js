@@ -42,7 +42,9 @@ export default function DecisionReportView(props) {
   const somethingMissing = checkReport(props);
   if (somethingMissing)
     return (
-      <ReportBlankSlate message={'To display a report, please select ' + somethingMissing + '.'} />
+      <ReportBlankSlate
+        errorMessage={'To display a report, please select ' + somethingMissing + '.'}
+      />
     );
 
   const {

@@ -70,7 +70,7 @@ it('should instruct to select one or more reports if no reports are selected for
 
   const node = shallow(<CombinedReportView report={report} />);
 
-  expect(node.find('ReportBlankSlate').prop('message')).toContain('one or more reports');
+  expect(node.find('ReportBlankSlate').prop('errorMessage')).toContain('one or more reports');
 });
 
 it('should pass the report to the visualization component', () => {
