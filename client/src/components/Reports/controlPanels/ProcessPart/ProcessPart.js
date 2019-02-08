@@ -90,14 +90,12 @@ export default class ProcessPart extends React.Component {
               {end ? end.name || end.id : 'Please select end'}
             </ActionItem>
           </span>
-          {start &&
-            end &&
-            !hasPath && (
-              <Message type="warning">
-                You selected two nodes, but there is no obvious connection between those nodes.
-                Report results may be empty or misleading.
-              </Message>
-            )}
+          {start && end && !hasPath && (
+            <Message type="warning">
+              You selected two nodes, but there is no obvious connection between those nodes. Report
+              results may be empty or misleading.
+            </Message>
+          )}
           <div className="diagram-container">
             <BPMNDiagram xml={this.props.xml}>
               <ClickBehavior

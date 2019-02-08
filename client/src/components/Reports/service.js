@@ -1,5 +1,4 @@
 import {get, del, put, post} from 'request';
-import {getDataKeys} from 'services';
 
 export async function loadSingleReport(id) {
   const response = await get('api/report/' + id);
@@ -28,19 +27,6 @@ export async function loadDecisionDefinitionXml(key, version) {
 
   return await response.text();
 }
-
-export async function loadVariables(processDefinitionKey, processDefinitionVersion) {
-  const response = await get('api/variables', {
-    processDefinitionKey,
-    processDefinitionVersion,
-    namePrefix: '',
-    sortOrder: 'asc',
-    orderBy: 'name'
-  });
-
-  return await response.json();
-}
-
 export async function isSharingEnabled() {
   const response = await get(`api/share/isEnabled`);
   const json = await response.json();
@@ -104,19 +90,3 @@ export const isRawDataReport = (report, data) => {
     report.result[0]
   );
 };
-
-export async function loadDecisionDefinitions() {
-  const response = await get('api/decision-definition/groupedByKey');
-
-  return await response.json();
-}
-
-export function isChecked(data, current) {
-  return (
-    current &&
-    getDataKeys(data).every(
-      prop =>
-        JSON.stringify(current[prop]) === JSON.stringify(data[prop]) || Array.isArray(data[prop])
-    )
-  );
-}

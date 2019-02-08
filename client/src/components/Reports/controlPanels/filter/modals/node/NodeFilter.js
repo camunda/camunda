@@ -72,7 +72,9 @@ export default class NodeFilter extends React.Component {
         {this.createOperator(
           this.state.operator === 'in'
             ? 'is'
-            : this.state.selectedNodes.length > 1 ? 'is neither' : 'is not'
+            : this.state.selectedNodes.length > 1
+            ? 'is neither'
+            : 'is not'
         )}
         {previewList}
       </ul>

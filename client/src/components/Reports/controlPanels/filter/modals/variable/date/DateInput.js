@@ -27,7 +27,11 @@ export default class DateInput extends React.Component {
     this.props.setValid(valid);
   };
 
-  static parseFilter = ({data: {data: {start, end}}}) => {
+  static parseFilter = ({
+    data: {
+      data: {start, end}
+    }
+  }) => {
     return {
       startDate: moment(start),
       endDate: moment(end)

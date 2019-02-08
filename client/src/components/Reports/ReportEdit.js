@@ -14,9 +14,9 @@ import {
 import {loadProcessDefinitionXml, evaluateReport, saveReport} from './service';
 
 import {loadProcessDefinitions, incompatibleFilters} from 'services';
-import ReportControlPanel from './ReportControlPanel';
-import DecisionControlPanel from './DecisionControlPanel';
-import CombinedReportPanel from './CombinedReportPanel';
+import ReportControlPanel from './controlPanels/ReportControlPanel';
+import DecisionControlPanel from './controlPanels/DecisionControlPanel';
+import CombinedReportPanel from './controlPanels/CombinedReportPanel';
 
 import ColumnRearrangement from './ColumnRearrangement';
 
