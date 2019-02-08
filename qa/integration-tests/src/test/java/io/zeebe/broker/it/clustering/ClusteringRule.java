@@ -217,6 +217,7 @@ public class ClusteringRule extends ExternalResource {
     final GatewayCfg gatewayCfg = new GatewayCfg();
     gatewayCfg.getCluster().setContactPoint(contactPoint).setClusterName(clusterName);
     gatewayCfg.getNetwork().setPort(SocketUtil.getNextAddress().port());
+    gatewayCfg.getCluster().setPort(SocketUtil.getNextAddress().port());
     gatewayCfg.init();
 
     final Gateway gateway = new Gateway(gatewayCfg);

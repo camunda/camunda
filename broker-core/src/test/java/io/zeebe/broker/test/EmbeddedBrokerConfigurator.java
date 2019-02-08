@@ -75,6 +75,10 @@ public class EmbeddedBrokerConfigurator {
     return cfg -> cfg.getGateway().getNetwork().setPort(port);
   }
 
+  public static Consumer<BrokerCfg> setGatewayClusterPort(final int port) {
+    return cfg -> cfg.getGateway().getCluster().setPort(port);
+  }
+
   public static Consumer<BrokerCfg> setClientApiPort(final int port) {
     return cfg -> cfg.getNetwork().getClient().setPort(port);
   }
