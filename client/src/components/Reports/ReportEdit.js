@@ -194,7 +194,7 @@ export default withErrorHandling(
                 initialName={name}
                 lastModified={lastModified}
                 lastModifier={lastModifier}
-                entity="report"
+                entity="Report"
                 autofocus={this.props.isNew}
                 onSave={this.save}
                 onCancel={this.cancel}

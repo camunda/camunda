@@ -62,7 +62,7 @@ export default class EntityNameForm extends Component {
           </button>
           <Link
             className="Button tool-button cancel-button"
-            to={`/${entity}/${id}`}
+            to={`/${entity.toLowerCase()}/${id}`}
             onClick={this.props.onCancel}
           >
             <Icon type="stop" />

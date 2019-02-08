@@ -248,7 +248,7 @@ export default themed(
                 lastModified={lastModified}
                 lastModifier={lastModifier}
                 autofocus={this.isNew}
-                entity="dashboard"
+                entity="Dashboard"
                 onSave={this.saveChanges}
                 onCancel={this.cancelChanges}
               />
