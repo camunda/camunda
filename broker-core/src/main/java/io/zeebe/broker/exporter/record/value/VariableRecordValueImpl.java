@@ -26,13 +26,19 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
   private final String name;
   private final String value;
   private final long scopeInstanceKey;
+  private final long workflowInstanceKey;
 
   public VariableRecordValueImpl(
-      final ExporterObjectMapper objectMapper, String name, String value, long scopeInstanceKey) {
+      final ExporterObjectMapper objectMapper,
+      String name,
+      String value,
+      long scopeInstanceKey,
+      long workflowInstanceKey) {
     super(objectMapper);
     this.name = name;
     this.value = value;
     this.scopeInstanceKey = scopeInstanceKey;
+    this.workflowInstanceKey = workflowInstanceKey;
   }
 
   @Override
@@ -51,11 +57,17 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
   }
 
   @Override
+  public long getWorkflowInstanceKey() {
+    return workflowInstanceKey;
+  }
+
+  @Override
   public int hashCode() {
     final int prime = 31;
     int result = 1;
     result = prime * result + ((name == null) ? 0 : name.hashCode());
     result = prime * result + (int) (scopeInstanceKey ^ (scopeInstanceKey >>> 32));
+    result = prime * result + (int) (workflowInstanceKey ^ (workflowInstanceKey >>> 32));
     result = prime * result + ((value == null) ? 0 : value.hashCode());
     return result;
   }
@@ -82,14 +94,14 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
     if (scopeInstanceKey != other.scopeInstanceKey) {
       return false;
     }
-    if (value == null) {
-      if (other.value != null) {
-        return false;
-      }
-    } else if (!value.equals(other.value)) {
+    if (workflowInstanceKey != other.workflowInstanceKey) {
       return false;
     }
-    return true;
+    if (value == null) {
+      return other.value == null;
+    } else {
+      return value.equals(other.value);
+    }
   }
 
   @Override
@@ -100,6 +112,8 @@ public class VariableRecordValueImpl extends RecordValueImpl implements Variable
         + value
         + ", scopeInstanceKey="
         + scopeInstanceKey
+        + ", workflowInstanceKey="
+        + workflowInstanceKey
         + "]";
   }
 }

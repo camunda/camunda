@@ -20,6 +20,9 @@
             },
             "scopeInstanceKey": {
               "type": "long"
+            },
+            "workflowInstanceKey": {
+              "type": "long"
             }
           }
         }

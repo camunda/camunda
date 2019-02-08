@@ -354,7 +354,8 @@ public class ExporterRecordMapper {
         objectMapper,
         asString(record.getName()),
         asJson(record.getValue()),
-        record.getScopeInstanceKey());
+        record.getScopeInstanceKey(),
+        record.getWorkflowInstanceKey());
   }
 
   // UTILS

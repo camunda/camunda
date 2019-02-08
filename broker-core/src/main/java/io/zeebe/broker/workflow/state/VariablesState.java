@@ -139,14 +139,16 @@ public class VariablesState {
       variablesColumnFamily.put(scopeKeyVariableNameKey, newVariable);
 
       if (listener != null) {
-        listener.onCreate(variableName.getBuffer(), newValue, scopeKey);
+        final long rootScopeKey = getRootScopeKey(scopeKey);
+        listener.onCreate(variableName.getBuffer(), newValue, scopeKey, rootScopeKey);
       }
 
     } else if (!BufferUtil.equals(currentValue, newValue)) {
       variablesColumnFamily.put(scopeKeyVariableNameKey, newVariable);
 
       if (listener != null) {
-        listener.onUpdate(variableName.getBuffer(), newValue, scopeKey);
+        final long rootScopeKey = getRootScopeKey(scopeKey);
+        listener.onUpdate(variableName.getBuffer(), newValue, scopeKey, rootScopeKey);
       }
 
     } else {
@@ -427,6 +429,20 @@ public class VariablesState {
     this.listener = listener;
   }
 
+  private long getRootScopeKey(long scopeKey) {
+    long rootScopeKey = scopeKey;
+    long currentScopeKey = scopeKey;
+
+    do {
+      currentScopeKey = getParent(currentScopeKey);
+      if (currentScopeKey != NO_PARENT) {
+        rootScopeKey = currentScopeKey;
+      }
+    } while (currentScopeKey != NO_PARENT);
+
+    return rootScopeKey;
+  }
+
   private class IndexedDocument implements Iterable<Void> {
     // variable name offset -> variable value offset
     private Int2IntHashMap entries = new Int2IntHashMap(-1);
@@ -529,8 +545,8 @@ public class VariablesState {
   }
 
   public interface VariableListener {
-    void onCreate(DirectBuffer name, DirectBuffer value, long scopeInstanceKey);
+    void onCreate(DirectBuffer name, DirectBuffer value, long scopeInstanceKey, long rootScopeKey);
 
-    void onUpdate(DirectBuffer name, DirectBuffer value, long scopeInstanceKey);
+    void onUpdate(DirectBuffer name, DirectBuffer value, long scopeInstanceKey, long rootScopeKey);
   }
 }
