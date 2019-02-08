@@ -53,7 +53,7 @@
     <version.rocksdbjni>5.17.2</version.rocksdbjni>
     <version.sbe>1.12.1</version.sbe>
     <version.scala-parser>1.0.6</version.scala-parser>
-    <version.scala>2.12.2</version.scala>
+    <version.scala>2.12.8</version.scala>
     <version.slf4j>1.7.25</version.slf4j>
     <version.snakeyaml>1.23</version.snakeyaml>
     <version.streamex>0.6.8</version.streamex>
