@@ -26,6 +26,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Map;
 import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.elasticsearch.action.admin.indices.template.put.PutIndexTemplateRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
@@ -162,13 +167,29 @@ public class ElasticsearchClient {
 
     // use single thread for rest client
     final RestClientBuilder builder =
-        RestClient.builder(httpHost)
-            .setHttpClientConfigCallback(
-                httpClientBuilder ->
-                    httpClientBuilder.setDefaultIOReactorConfig(
-                        IOReactorConfig.custom().setIoThreadCount(1).build()));
+        RestClient.builder(httpHost).setHttpClientConfigCallback(this::setHttpClientConfigCallback);
 
     return new RestHighLevelClient(builder);
+  }
+
+  private HttpAsyncClientBuilder setHttpClientConfigCallback(HttpAsyncClientBuilder builder) {
+    builder.setDefaultIOReactorConfig(IOReactorConfig.custom().setIoThreadCount(1).build());
+
+    if (configuration.authentication.isPresent()) {
+      setupBasicAuthentication(builder);
+    }
+
+    return builder;
+  }
+
+  private void setupBasicAuthentication(HttpAsyncClientBuilder builder) {
+    final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+    credentialsProvider.setCredentials(
+        AuthScope.ANY,
+        new UsernamePasswordCredentials(
+            configuration.authentication.username, configuration.authentication.password));
+
+    builder.setDefaultCredentialsProvider(credentialsProvider);
   }
 
   private static HttpHost urlToHttpHost(final String url) {

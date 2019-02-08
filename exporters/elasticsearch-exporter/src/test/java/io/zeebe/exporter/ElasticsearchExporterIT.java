@@ -15,14 +15,16 @@
  */
 package io.zeebe.exporter;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.carrotsearch.hppc.cursors.ObjectCursor;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.util.ElasticsearchForkedJvm;
+import io.zeebe.exporter.util.ElasticsearchNode;
 import io.zeebe.test.exporter.ExporterIntegrationRule;
+import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.util.ZbLogger;
 import java.io.IOException;
 import java.util.Map;
@@ -30,30 +32,25 @@ import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.security.AuthenticateResponse;
 import org.elasticsearch.common.collect.ImmutableOpenMap;
 import org.elasticsearch.common.settings.Settings;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.slf4j.Logger;
 
 public class ElasticsearchExporterIT {
-
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  @Rule public final ExporterIntegrationRule exporterBrokerRule = new ExporterIntegrationRule();
+  private ElasticsearchNode elastic = new ElasticsearchForkedJvm();
 
+  private final ExporterIntegrationRule exporterBrokerRule = new ExporterIntegrationRule();
   private ElasticsearchExporterConfiguration configuration;
   private ElasticsearchTestClient esClient;
 
   @Before
-  public void setUp() {
-    configuration =
-        exporterBrokerRule.getExporterConfiguration(
-            "elasticsearch", ElasticsearchExporterConfiguration.class);
-    esClient = createElasticsearchClient(configuration);
-  }
+  public void setUp() {}
 
   @After
   public void tearDown() throws IOException {
@@ -61,10 +58,21 @@ public class ElasticsearchExporterIT {
       esClient.close();
       esClient = null;
     }
+
+    exporterBrokerRule.stop();
+    elastic.stop();
+    RecordingExporter.reset();
   }
 
   @Test
   public void shouldExportRecords() {
+    // given
+    elastic.start();
+    configuration = getDefaultConfiguration();
+    exporterBrokerRule.configure("es", ElasticsearchExporter.class, configuration);
+    exporterBrokerRule.start();
+    esClient = createElasticsearchClient(configuration);
+
     // when
     exporterBrokerRule.performSampleWorkload();
 
@@ -74,6 +82,40 @@ public class ElasticsearchExporterIT {
     assertIndexSettings();
 
     // assert all records which where recorded during the tests where exported
+    exporterBrokerRule.visitExportedRecords(
+        r -> {
+          if (configuration.shouldIndexRecord(r)) {
+            assertRecordExported(r);
+          }
+        });
+  }
+
+  @Test
+  public void shouldUseBasicAuthenticationIfConfigured() {
+    // given
+    final String password = "1234567";
+    final String username = "zeebe";
+    elastic.withUser(username, password).start();
+    configuration = getDefaultConfiguration();
+    configuration.authentication.username = username;
+    configuration.authentication.password = password;
+    esClient = createElasticsearchClient(configuration);
+
+    // then - enforces checking we are not using the superuser role from anonymous users
+    try {
+      final AuthenticateResponse response =
+          esClient.client.security().authenticate(RequestOptions.DEFAULT);
+      assertThat(response.getUser().getUsername()).isEqualTo(username);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+
+    // when
+    exporterBrokerRule.configure("es", ElasticsearchExporter.class, configuration);
+    exporterBrokerRule.start();
+    exporterBrokerRule.performSampleWorkload();
+
+    // then
     exporterBrokerRule.visitExportedRecords(
         r -> {
           if (configuration.shouldIndexRecord(r)) {
@@ -126,6 +168,34 @@ public class ElasticsearchExporterIT {
     }
 
     return MAPPER.convertValue(jsonNode, Map.class);
+  }
+
+  public ElasticsearchExporterConfiguration getDefaultConfiguration() {
+    final ElasticsearchExporterConfiguration configuration =
+        new ElasticsearchExporterConfiguration();
+
+    configuration.url = elastic.getRestHttpHost().toString();
+
+    configuration.bulk.delay = 1;
+    configuration.bulk.size = 1;
+
+    configuration.index.prefix = "test-record";
+    configuration.index.createTemplate = true;
+    configuration.index.command = true;
+    configuration.index.event = true;
+    configuration.index.rejection = true;
+    configuration.index.deployment = true;
+    configuration.index.incident = true;
+    configuration.index.job = true;
+    configuration.index.jobBatch = true;
+    configuration.index.message = true;
+    configuration.index.messageSubscription = true;
+    configuration.index.raft = true;
+    configuration.index.variable = true;
+    configuration.index.workflowInstance = true;
+    configuration.index.workflowInstanceSubscription = true;
+
+    return configuration;
   }
 
   public static class ElasticsearchTestClient extends ElasticsearchClient {

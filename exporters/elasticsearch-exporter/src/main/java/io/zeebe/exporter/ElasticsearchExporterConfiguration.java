@@ -27,6 +27,7 @@ public class ElasticsearchExporterConfiguration {
 
   public IndexConfiguration index = new IndexConfiguration();
   public BulkConfiguration bulk = new BulkConfiguration();
+  public AuthenticationConfiguration authentication = new AuthenticationConfiguration();
 
   @Override
   public String toString() {
@@ -38,6 +39,8 @@ public class ElasticsearchExporterConfiguration {
         + index
         + ", bulk="
         + bulk
+        + ", authentication="
+        + authentication
         + '}';
   }
 
@@ -110,6 +113,20 @@ public class ElasticsearchExporterConfiguration {
     @Override
     public String toString() {
       return "BulkConfiguration{" + "delay=" + delay + ", size=" + size + '}';
+    }
+  }
+
+  public static class AuthenticationConfiguration {
+    public String username;
+    public String password;
+
+    public boolean isPresent() {
+      return (username != null && !username.isEmpty()) && (password != null && !password.isEmpty());
+    }
+
+    @Override
+    public String toString() {
+      return "AuthenticationConfiguration{" + "username='" + username + '\'' + '}';
     }
   }
 
