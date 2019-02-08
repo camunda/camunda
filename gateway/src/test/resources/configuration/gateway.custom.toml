@@ -6,6 +6,10 @@ port = 123
 contactPoint = "foobar:1234"
 transportBuffer = "4K"
 requestTimeout = "123h"
+clusterName = "testCluster"
+memberId = "testMember"
+host = "1.2.3.4"
+port = 12321
 
 [threads]
 managementThreads = 100

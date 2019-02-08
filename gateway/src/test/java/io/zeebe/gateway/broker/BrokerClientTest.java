@@ -79,8 +79,8 @@ public class BrokerClientTest {
     final GatewayCfg configuration = new GatewayCfg();
     configuration
         .getCluster()
-        .setAtomixHost("0.0.0.0")
-        .setAtomixPort(SocketUtil.getNextAddress().port())
+        .setHost("0.0.0.0")
+        .setPort(SocketUtil.getNextAddress().port())
         .setContactPoint(broker.getSocketAddress().toString())
         .setRequestTimeout("3s");
     clock = new ControlledActorClock();

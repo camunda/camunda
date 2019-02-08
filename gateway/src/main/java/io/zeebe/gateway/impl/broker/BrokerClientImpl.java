@@ -104,9 +104,9 @@ public class BrokerClientImpl implements BrokerClient {
 
     atomix =
         AtomixCluster.builder()
-            .withHost(clusterCfg.getAtomixHost())
-            .withPort(clusterCfg.getAtomixPort())
-            .withMemberId(clusterCfg.getAtomixMemberId())
+            .withHost(clusterCfg.getHost())
+            .withPort(clusterCfg.getPort())
+            .withMemberId(clusterCfg.getMemberId())
             .withClusterId(clusterCfg.getClusterName())
             .withMembershipProvider(
                 BootstrapDiscoveryProvider.builder()
@@ -116,23 +116,22 @@ public class BrokerClientImpl implements BrokerClient {
 
     LOG.debug(
         "{}: Atomix address {}:{}",
-        clusterCfg.getAtomixMemberId(),
-        clusterCfg.getAtomixHost(),
-        clusterCfg.getAtomixPort());
+        clusterCfg.getMemberId(),
+        clusterCfg.getHost(),
+        clusterCfg.getPort());
 
     topologyManager =
         new BrokerTopologyManagerImpl(
-            internalTransport.getOutput(), this::registerEndpoint, clusterCfg.getAtomixMemberId());
+            internalTransport.getOutput(), this::registerEndpoint, clusterCfg.getMemberId());
     atomix.getMembershipService().addListener(topologyManager);
 
     final CompletableFuture<Void> joinedFuture = atomix.start();
     joinedFuture.whenComplete(
         (r, t) -> {
           if (t != null) {
-            LOG.error(
-                "{}: Atomix failed to start '{}' :", clusterCfg.getAtomixMemberId(), t.toString());
+            LOG.error("{}: Atomix failed to start '{}' :", clusterCfg.getMemberId(), t.toString());
           } else {
-            LOG.debug("{}: Atomix started", clusterCfg.getAtomixMemberId());
+            LOG.debug("{}: Atomix started", clusterCfg.getMemberId());
             topologyManager.addInitialCluster(atomix.getMembershipService().getMembers());
           }
         });
