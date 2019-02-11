@@ -51,11 +51,12 @@ export const CONTEXTUAL_MESSAGE_TYPE = {
   DROP_SELECTION: 'DROP_SELECTION'
 };
 
-export const INSTANCE_STATE = {
+export const STATE = {
   ACTIVE: 'ACTIVE',
   COMPLETED: 'COMPLETED',
   CANCELED: 'CANCELED',
-  INCIDENT: 'INCIDENT'
+  INCIDENT: 'INCIDENT',
+  TERMINATED: 'TERMINATED'
 };
 
 export const SORT_ORDER = {
@@ -90,13 +91,6 @@ export const UNNAMED_ACTIVITY = 'Unnamed Activity';
 
 export const FLOW_NODE_STATE_OVERLAY_ID = 'flow-node-state';
 export const STATISTICS_OVERLAY_ID = 'flow-nodes-statistics';
-
-export const ACTIVITY_STATE = {
-  ACTIVE: 'ACTIVE',
-  COMPLETED: 'COMPLETED',
-  TERMINATED: 'TERMINATED',
-  INCIDENT: 'INCIDENT'
-};
 
 export const DROPDOWN_PLACEMENT = {
   TOP: 'top',

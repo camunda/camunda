@@ -1,4 +1,4 @@
-import {INSTANCE_STATE} from 'modules/constants';
+import {STATE} from 'modules/constants';
 
 /**
  * @returns the last operation from an operations list or an empty {}
@@ -12,9 +12,7 @@ export const getActiveIncident = (incidents = []) => {
   let activeIncident = null;
 
   if (incidents.length > 0) {
-    activeIncident = incidents.filter(
-      ({state}) => state === INSTANCE_STATE.ACTIVE
-    )[0];
+    activeIncident = incidents.filter(({state}) => state === STATE.ACTIVE)[0];
   }
 
   return activeIncident;
@@ -22,9 +20,9 @@ export const getActiveIncident = (incidents = []) => {
 
 export function getInstanceState({state, incidents}) {
   if (
-    state === INSTANCE_STATE.COMPLETED ||
-    state === INSTANCE_STATE.CANCELED ||
-    state === INSTANCE_STATE.INCIDENT
+    state === STATE.COMPLETED ||
+    state === STATE.CANCELED ||
+    state === STATE.INCIDENT
   ) {
     return state;
   }
@@ -33,7 +31,7 @@ export function getInstanceState({state, incidents}) {
   // so we look at instance.incidents
   // https://app.camunda.com/jira/browse/OPE-400
   const hasActiveIncident = Boolean(getActiveIncident(incidents));
-  return hasActiveIncident ? INSTANCE_STATE.INCIDENT : INSTANCE_STATE.ACTIVE;
+  return hasActiveIncident ? STATE.INCIDENT : STATE.ACTIVE;
 }
 
 export function getIncidentMessage({incidents}) {

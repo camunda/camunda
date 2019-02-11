@@ -1,5 +1,5 @@
 import {getInstanceState} from 'modules/utils/instance';
-import {INSTANCE_STATE, OPERATION_TYPE} from 'modules/constants';
+import {STATE, OPERATION_TYPE} from 'modules/constants';
 
 /**
  * @returns an query object based on the type of operation to perform
@@ -24,7 +24,7 @@ export const wrapIdinQuery = (operationType, instance) => {
  * @param {*} instance object with complete instance data
  */
 export const isWithIncident = instance => {
-  return getInstanceState(instance) === INSTANCE_STATE.INCIDENT;
+  return getInstanceState(instance) === STATE.INCIDENT;
 };
 
 /**
@@ -33,7 +33,5 @@ export const isWithIncident = instance => {
  */
 export const isRunning = instance => {
   const state = getInstanceState(instance);
-  return (
-    state !== INSTANCE_STATE.COMPLETED && state !== INSTANCE_STATE.CANCELED
-  );
+  return state !== STATE.COMPLETED && state !== STATE.CANCELED;
 };

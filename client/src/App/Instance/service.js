@@ -1,4 +1,4 @@
-import {ACTIVITY_STATE, UNNAMED_ACTIVITY} from 'modules/constants';
+import {STATE, UNNAMED_ACTIVITY} from 'modules/constants';
 
 /**
  * @returns activityId -> name map
@@ -23,7 +23,7 @@ export function getFlowNodeStateOverlays(activitiesMap) {
       // If the activity is completed, only push an overlay
       // if the activity is an end event.
       const shouldPushOverlay =
-        state !== ACTIVITY_STATE.COMPLETED ? true : type === 'END_EVENT';
+        state !== STATE.COMPLETED ? true : type === 'END_EVENT';
 
       return !shouldPushOverlay ? overlays : [...overlays, {id, state}];
     },

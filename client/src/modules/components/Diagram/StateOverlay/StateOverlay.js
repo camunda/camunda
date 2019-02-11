@@ -7,7 +7,7 @@ import {ReactComponent as CompletedLightIcon} from 'modules/components/Icon/diag
 import {ReactComponent as CompletedDarkIcon} from 'modules/components/Icon/diagram-badge-single-instance-completed-dark.svg';
 import {ReactComponent as CanceledLightIcon} from 'modules/components/Icon/diagram-badge-single-instance-canceled-light.svg';
 import {ReactComponent as CanceledDarkIcon} from 'modules/components/Icon/diagram-badge-single-instance-canceled-dark.svg';
-import {FLOW_NODE_STATE_OVERLAY_ID, ACTIVITY_STATE} from 'modules/constants';
+import {FLOW_NODE_STATE_OVERLAY_ID, STATE} from 'modules/constants';
 
 import Overlay from '../Overlay';
 
@@ -29,16 +29,16 @@ export default function StateOverlay(props) {
   let TargetIcon;
 
   switch (state) {
-    case ACTIVITY_STATE.INCIDENT:
+    case STATE.INCIDENT:
       TargetIcon = IncidentIcon;
       break;
-    case ACTIVITY_STATE.ACTIVE:
+    case STATE.ACTIVE:
       TargetIcon = ActiveIcon;
       break;
-    case ACTIVITY_STATE.COMPLETED:
+    case STATE.COMPLETED:
       TargetIcon = theme === 'light' ? CompletedLightIcon : CompletedDarkIcon;
       break;
-    case ACTIVITY_STATE.TERMINATED:
+    case STATE.TERMINATED:
       TargetIcon = theme === 'light' ? CanceledLightIcon : CanceledDarkIcon;
       break;
     default:
@@ -61,7 +61,7 @@ export default function StateOverlay(props) {
 
 StateOverlay.propTypes = {
   id: PropTypes.string.isRequired,
-  state: PropTypes.oneOf(Object.keys(ACTIVITY_STATE)).isRequired,
+  state: PropTypes.oneOf(Object.keys(STATE)).isRequired,
   onOverlayAdd: PropTypes.func.isRequired,
   onOverlayClear: PropTypes.func.isRequired,
   isViewerLoaded: PropTypes.bool.isRequired,

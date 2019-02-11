@@ -8,11 +8,7 @@ import {
   flushPromises
 } from 'modules/testUtils';
 
-import {
-  INSTANCE_STATE,
-  OPERATION_STATE,
-  OPERATION_TYPE
-} from 'modules/constants';
+import {STATE, OPERATION_STATE, OPERATION_TYPE} from 'modules/constants';
 
 import Actions from './Actions';
 import ActionStatus from 'modules/components/ActionStatus';
@@ -84,7 +80,7 @@ describe('Actions', () => {
 
     describe('retry', () => {
       beforeEach(() => {
-        mockInstance = createInstance({state: INSTANCE_STATE.INCIDENT});
+        mockInstance = createInstance({state: STATE.INCIDENT});
         isWithIncident = true;
         isRunning = false;
         onButtonClick = jest.fn();
@@ -132,7 +128,7 @@ describe('Actions', () => {
     });
     describe('cancel', () => {
       beforeEach(() => {
-        mockInstance = createInstance({state: INSTANCE_STATE.ACTIVE});
+        mockInstance = createInstance({state: STATE.ACTIVE});
         isWithIncident = false;
         isRunning = true;
         node = shallow(<Actions instance={mockInstance} />);

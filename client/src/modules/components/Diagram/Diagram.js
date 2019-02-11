@@ -5,7 +5,7 @@ import {flatMap} from 'lodash';
 
 import {themed} from 'modules/theme';
 
-import {ACTIVITY_STATE} from 'modules/constants';
+import {STATE} from 'modules/constants';
 
 import * as Styled from './styled';
 import DiagramControls from './DiagramControls';
@@ -26,7 +26,7 @@ class Diagram extends React.PureComponent {
     flowNodeStateOverlays: PropTypes.arrayOf(
       PropTypes.shape({
         id: PropTypes.string.isRequired,
-        state: PropTypes.oneOf(Object.keys(ACTIVITY_STATE)).isRequired
+        state: PropTypes.oneOf(Object.keys(STATE)).isRequired
       })
     ),
     flowNodesStatistics: PropTypes.arrayOf(
@@ -277,17 +277,18 @@ class Diagram extends React.PureComponent {
           handleZoomOut={this.handleZoomOut}
           handleZoomReset={this.handleZoomReset}
         />
-        {this.props.selectedFlowNodeId && this.props.metadata && (
-          <PopoverOverlay
-            key={this.props.selectedFlowNodeId}
-            selectedFlowNode={{
-              id: this.props.selectedFlowNodeId,
-              name: this.getFlownNodeName(this.props.selectedFlowNodeId)
-            }}
-            metadata={this.props.metadata}
-            {...overlayProps}
-          />
-        )}
+        {this.props.selectedFlowNodeId &&
+          this.props.metadata && (
+            <PopoverOverlay
+              key={this.props.selectedFlowNodeId}
+              selectedFlowNode={{
+                id: this.props.selectedFlowNodeId,
+                name: this.getFlownNodeName(this.props.selectedFlowNodeId)
+              }}
+              metadata={this.props.metadata}
+              {...overlayProps}
+            />
+          )}
         {this.renderFlowNodeStateOverlays(overlayProps)}
         {this.renderStatisticsOverlays(overlayProps)}
       </Styled.Diagram>

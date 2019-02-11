@@ -1,4 +1,5 @@
 Example:
+
 ```js
 <div style={{marginBottom: '5px'}}>
   <StateIcon instance={{
@@ -24,8 +25,10 @@ Example:
     incidents: []
   }}/> {' '}  canceled
 </div>
-
-
-
-
+<div style={{marginBottom: '5px'}}>
+  <StateIcon instance={{
+    state: 'SOME_NEW_STATE',
+    incidents: []
+  }}/> {' '}  backup icon if state type doesn't match available icon
+</div>
 ```

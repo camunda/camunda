@@ -1,4 +1,4 @@
-import {INSTANCE_STATE, OPERATION_TYPE} from 'modules/constants';
+import {STATE, OPERATION_TYPE} from 'modules/constants';
 import {wrapIdinQuery, isWithIncident, isRunning} from './service';
 
 const mockIncidentInstance = {
@@ -53,11 +53,11 @@ describe('Action services', () => {
     describe('isRunning', () => {
       const mockCompletedInstance = {
         id: '8590375632-2',
-        state: INSTANCE_STATE.COMPLETED
+        state: STATE.COMPLETED
       };
       const mockCanceldInstance = {
         id: '8590375632-2',
-        state: INSTANCE_STATE.CANCELED
+        state: STATE.CANCELED
       };
 
       it('should return true if an instance is running', () => {

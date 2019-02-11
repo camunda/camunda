@@ -27,3 +27,10 @@ exports[`StateIcon should render Incident Icon 1`] = `
   theme="dark"
 />
 `;
+
+exports[`StateIcon should render an Alias Icon if no suitable icon is available 1`] = `
+<styled.div
+  someProp="some prop"
+  theme="dark"
+/>
+`;

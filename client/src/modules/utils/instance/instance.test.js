@@ -1,10 +1,10 @@
 import {createInstance} from 'modules/testUtils';
-import {INSTANCE_STATE} from 'modules/constants';
+import {STATE} from 'modules/constants';
 
 import * as instanceUtils from './instance';
 import {xTimes, createOperation} from 'modules/testUtils';
 
-const {ACTIVE, INCIDENT, COMPLETED, CANCELED} = INSTANCE_STATE;
+const {ACTIVE, INCIDENT, COMPLETED, CANCELED} = STATE;
 
 const active = {state: ACTIVE, incidents: []};
 const activeWithIncidents = {

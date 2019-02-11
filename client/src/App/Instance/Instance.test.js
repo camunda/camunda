@@ -16,7 +16,7 @@ import {
   createMinimalProcess
 } from 'modules/testUtils';
 
-import {INSTANCE_STATE, PAGE_TITLE} from 'modules/constants';
+import {STATE, PAGE_TITLE} from 'modules/constants';
 import * as instancesApi from 'modules/api/instances/instances';
 import * as diagramApi from 'modules/api/diagram/diagram';
 import * as eventsApi from 'modules/api/events/events';
@@ -46,7 +46,7 @@ const INCIDENT = createIncident({
 
 const INSTANCE = createInstance({
   id: '4294980768',
-  state: INSTANCE_STATE.ACTIVE,
+  state: STATE.ACTIVE,
   incidents: [INCIDENT]
 });
 
@@ -187,7 +187,7 @@ describe('Instance', () => {
 
     const COMPLETED_INSTANCE = createInstance({
       id: '4294980768',
-      state: INSTANCE_STATE.COMPLETED,
+      state: STATE.COMPLETED,
       activities: [
         ...activities,
         {
@@ -201,7 +201,7 @@ describe('Instance', () => {
     });
     const CANCELED_INSTANCE = createInstance({
       id: '4294980768',
-      state: INSTANCE_STATE.CANCELED,
+      state: STATE.CANCELED,
       activities: [
         ...activities,
         {

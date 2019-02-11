@@ -3,7 +3,7 @@ import {shallow, mount} from 'enzyme';
 
 import {createActivity, createBeautifiedMetadata} from 'modules/testUtils';
 import {Colors, ThemeProvider} from 'modules/theme';
-import {ACTIVITY_STATE} from 'modules/constants';
+import {STATE} from 'modules/constants';
 import {parsedDiagram} from 'modules/utils/bpmn';
 import {ReactComponent as IncidentIcon} from 'modules/components/Icon/diagram-badge-single-instance-incident.svg';
 import {ReactComponent as ActiveIcon} from 'modules/components/Icon/diagram-badge-single-instance-active.svg';
@@ -223,10 +223,10 @@ describe('Diagram', () => {
 
   describe('flownode state overlays', () => {
     const flowNodeStateOverlays = [
-      createActivity({state: ACTIVITY_STATE.ACTIVE}),
-      createActivity({state: ACTIVITY_STATE.INCIDENT}),
-      createActivity({state: ACTIVITY_STATE.COMPLETED}),
-      createActivity({state: ACTIVITY_STATE.TERMINATED})
+      createActivity({state: STATE.ACTIVE}),
+      createActivity({state: STATE.INCIDENT}),
+      createActivity({state: STATE.COMPLETED}),
+      createActivity({state: STATE.TERMINATED})
     ];
 
     it('should render flownode state overlays', () => {

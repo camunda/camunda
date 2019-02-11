@@ -1,4 +1,4 @@
-import {ACTIVITY_STATE} from 'modules/constants';
+import {STATE} from 'modules/constants';
 
 /**
  * flushes promises in queue
@@ -423,7 +423,7 @@ export const createFlowNodeInstance = (options = {}) => {
     id: randomFlowNodeInstanceIdIterator.next().value,
     parentId: '1684',
     startDate: '2019-02-07T09:02:34.760+0000',
-    state: ACTIVITY_STATE.ACTIVE,
+    state: STATE.ACTIVE,
     type: 'bpmn:StartEvent',
     ...options
   };
@@ -449,17 +449,17 @@ export const createRawTree = depth => {
       createRawTreeNode({
         activityId: 'StartEvent1234',
         type: 'START_EVENT',
-        state: ACTIVITY_STATE.COMPLETED
+        state: STATE.COMPLETED
       }),
       createRawTreeNode({
         activityId: 'Service5678',
         type: 'SERVICE_TASK',
-        state: ACTIVITY_STATE.COMPLETED
+        state: STATE.COMPLETED
       }),
       createRawTreeNode({
         activityId: 'SubProcess5678',
         type: 'SUB_PROCESS',
-        state: ACTIVITY_STATE.INCIDENT,
+        state: STATE.INCIDENT,
         children: [
           createRawTreeNode({
             activityId: 'Service5678',
@@ -501,17 +501,17 @@ export const createMinimalProcess = () => {
         createRawTreeNode({
           activityId: 'StartEvent1234',
           type: 'START_EVENT',
-          state: ACTIVITY_STATE.COMPLETED
+          state: STATE.COMPLETED
         }),
         createRawTreeNode({
           activityId: 'Service5678',
           type: 'SERVICE_TASK',
-          state: ACTIVITY_STATE.COMPLETED
+          state: STATE.COMPLETED
         }),
         createRawTreeNode({
           activityId: 'EndEvent1234',
           type: 'End_Event',
-          state: ACTIVITY_STATE.COMPLETED
+          state: STATE.COMPLETED
         })
       ]
     }
@@ -527,12 +527,12 @@ export const createDeepNestedTree = depth => {
 
     createFlowNodeInstance({
       type: 'bpmn:Task',
-      state: ACTIVITY_STATE.COMPLETED
+      state: STATE.COMPLETED
     }),
     createFlowNodeInstance({type: 'bpmn:Task'}),
     createFlowNodeInstance({
       type: 'bpmn:SubProcess',
-      state: ACTIVITY_STATE.INCIDENT,
+      state: STATE.INCIDENT,
       children: [
         createFlowNodeInstance({
           type: 'bpmn:Task'

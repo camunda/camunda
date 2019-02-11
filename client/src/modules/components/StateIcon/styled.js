@@ -45,3 +45,20 @@ export const CanceledIcon = styled(Stop)`
     light: '0.75'
   })};
 `;
+
+export const AliasIcon = styled.div`
+  ${iconPosition};
+
+  height: 15px;
+  width: 15px;
+  border-radius: 50%;
+
+  background: ${themeStyle({
+    dark: '#ffffff',
+    light: Colors.uiLight06
+  })};
+  opacity: ${themeStyle({
+    dark: '0.46',
+    light: '0.4'
+  })};
+`;

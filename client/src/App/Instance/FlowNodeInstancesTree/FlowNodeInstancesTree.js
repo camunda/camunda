@@ -2,7 +2,7 @@ import React, {Fragment} from 'react';
 import PropTypes from 'prop-types';
 
 import Foldable from './Foldable';
-import {INSTANCE_STATE} from 'modules/constants';
+import {STATE} from 'modules/constants';
 
 import Bar from './Bar';
 import * as Styled from './styled';
@@ -13,7 +13,7 @@ export default class FlowNodeInstancesTree extends React.Component {
       id: PropTypes.string,
       type: PropTypes.string.isRequired,
       activityId: PropTypes.string,
-      state: PropTypes.oneOf(Object.values(INSTANCE_STATE)),
+      state: PropTypes.oneOf(Object.values(STATE)),
       children: PropTypes.array
     }),
     selectedTreeRowIds: PropTypes.array.isRequired,
