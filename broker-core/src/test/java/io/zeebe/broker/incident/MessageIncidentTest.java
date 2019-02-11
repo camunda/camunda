@@ -88,7 +88,8 @@ public class MessageIncidentTest {
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasElementId("catch")
         .hasElementInstanceKey(failureEvent.getKey())
-        .hasJobKey(-1L);
+        .hasJobKey(-1L)
+        .hasVariableScopeKey(failureEvent.getKey());
   }
 
   @Test
@@ -114,7 +115,8 @@ public class MessageIncidentTest {
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasElementId("catch")
         .hasElementInstanceKey(failureEvent.getKey())
-        .hasJobKey(-1L);
+        .hasJobKey(-1L)
+        .hasVariableScopeKey(failureEvent.getKey());
   }
 
   @Test

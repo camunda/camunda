@@ -113,6 +113,7 @@ public class MappingIncidentTest {
     assertThat(createIncidentEvent.getSourceRecordPosition()).isEqualTo(failureEvent.getPosition());
     assertThat(incidentEvent.getSourceRecordPosition())
         .isEqualTo(createIncidentEvent.getPosition());
+    assertThat(incidentEvent.getValue().getVariableScopeKey()).isEqualTo(failureEvent.getKey());
 
     assertIOMappingIncidentWithNoData(workflowInstanceKey, failureEvent, incidentEvent);
   }
@@ -134,10 +135,14 @@ public class MappingIncidentTest {
 
     // when
     testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
-    final Record incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
+    final Record<WorkflowInstanceRecordValue> failureEvent =
+        testClient.receiveElementInState("service", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+    final Record<IncidentRecordValue> incidentEvent =
+        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     // then incident is created
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
+    assertThat(incidentEvent.getValue().getVariableScopeKey()).isEqualTo(failureEvent.getKey());
     assertIncidentRecordValue(
         ErrorType.IO_MAPPING_ERROR.name(),
         "No data found for query $.notExisting.",

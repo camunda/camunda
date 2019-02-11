@@ -58,4 +58,10 @@ public interface IncidentRecordValue extends RecordValue {
    *     belongs to no task.
    */
   long getJobKey();
+
+  /**
+   * @return the key of the element instance to use in order to update the correct payload before
+   *     resolving the incident.
+   */
+  long getVariableScopeKey();
 }

@@ -126,12 +126,17 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
   }
 
   public void raiseIncident(ErrorType errorType, String errorMessage) {
+    raiseIncident(errorType, record.getKey(), errorMessage);
+  }
+
+  public void raiseIncident(ErrorType errorType, long variableScopeKey, String errorMessage) {
     incidentCommand.reset();
 
     incidentCommand
         .initFromWorkflowInstanceFailure(record.getKey(), record.getValue())
         .setErrorType(errorType)
-        .setErrorMessage(errorMessage);
+        .setErrorMessage(errorMessage)
+        .setVariableScopeKey(variableScopeKey);
 
     eventOutput.storeFailedRecord(record);
     commandWriter.appendNewCommand(IncidentIntent.CREATE, incidentCommand);

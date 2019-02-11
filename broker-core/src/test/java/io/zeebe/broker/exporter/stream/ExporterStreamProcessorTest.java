@@ -412,7 +412,8 @@ public class ExporterStreamProcessorTest {
             .setBpmnProcessId(wrapString(bpmnProcessId))
             .setErrorMessage(errorMessage)
             .setErrorType(errorType)
-            .setJobKey(jobKey);
+            .setJobKey(jobKey)
+            .setVariableScopeKey(elementInstanceKey);
 
     final IncidentRecordValue recordValue =
         new IncidentRecordValueImpl(
@@ -423,7 +424,8 @@ public class ExporterStreamProcessorTest {
             elementId,
             workflowInstanceKey,
             elementInstanceKey,
-            jobKey);
+            jobKey,
+            elementInstanceKey);
 
     // then
     assertRecordExported(IncidentIntent.CREATED, record, recordValue);

@@ -108,7 +108,8 @@ public class IncidentAssert {
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasElementId(elementId)
         .hasElementInstanceKey(elementInstanceKey)
-        .hasJobKey(jobKey);
+        .hasJobKey(jobKey)
+        .hasVariableScopeKey(elementInstanceKey);
   }
 
   public static void assertIncidentContainErrorDetails(Record<IncidentRecordValue> incidentEvent) {
