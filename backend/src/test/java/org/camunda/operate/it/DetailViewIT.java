@@ -35,6 +35,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.zeebe.client.ZeebeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.rest.ActivityInstanceRestService.ACTIVITY_INSTANCE_URL;
+import static org.junit.Assert.fail;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -67,6 +68,29 @@ public class DetailViewIT extends OperateZeebeIntegrationTest {
     this.mockMvc = mockMvcTestRule.getMockMvc();
   }
 
+  @Test
+  public void testActivityInstanceTreeForNonInterruptingBoundaryEvent() throws Exception {
+    // having
+    String processId = "nonInterruptingBoundaryEvent";
+    deployWorkflow("nonInterruptingBoundaryEvent_v_2.bpmn");
+    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, null);
+    //let the boundary event happen
+    Thread.sleep(1500L);
+    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceKey, "task2");
+
+    //when
+    ActivityInstanceTreeDto response = getActivityInstanceTreeFromRest(workflowInstanceKey);
+
+    //then
+    assertThat(response.getChildren()).hasSize(4);
+    String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
+    assertThat(response.getChildren()).hasSize(4);
+    assertChild(response.getChildren(), 0, "startEvent", ActivityState.COMPLETED, workflowInstanceId, ActivityType.START_EVENT, 0);
+    assertChild(response.getChildren(), 1, "task1", ActivityState.ACTIVE, workflowInstanceId, ActivityType.SERVICE_TASK, 0);
+    //TODO OPE-407
+    //assertChild(response.getChildren(), 2, "boundaryEvent", ActivityState.COMPLETED, workflowInstanceId, ActivityType.BOUNDARY_EVENT, 0);
+    //assertChild(response.getChildren(), 3, "task2", ActivityState.ACTIVE, workflowInstanceId, ActivityType.SERVICE_TASK, 0);
+  }
 
   @Test
   public void testActivityInstanceTreeIsBuild() throws Exception {

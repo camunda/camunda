@@ -14,6 +14,7 @@ import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.zeebeimport.cache.WorkflowCache;
+import org.camunda.operate.zeebeimport.record.Intent;
 import org.camunda.operate.zeebeimport.record.value.IncidentRecordValueImpl;
 import org.camunda.operate.zeebeimport.record.value.WorkflowInstanceRecordValueImpl;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
@@ -80,7 +81,7 @@ public class DetailViewZeebeRecordProcessor {
     final String intentStr = record.getMetadata().getIntent().name();
     WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
 
-    if (!isProcessEvent(recordValue) && !isOfType(recordValue, BpmnElementType.SEQUENCE_FLOW)){
+    if (!isProcessEvent(recordValue) && !isOfType(recordValue, BpmnElementType.SEQUENCE_FLOW) && !intentStr.equals(Intent.UNKNOWN.name())){
       bulkRequestBuilder.add(persistActivityInstance(record, intentStr, recordValue));
     }
   }
