@@ -194,7 +194,7 @@ pipeline {
     stage('Install required packages') {
       steps {
         container('maven') {
-          sh 'apt-get update && apt-get install jq -y'
+          sh 'apt-get update && apt-get install jq netcat -y'
         }
       }
     }
