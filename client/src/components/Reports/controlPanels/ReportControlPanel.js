@@ -7,13 +7,14 @@ import {
   getFlowNodeNames,
   processConfig,
   formatters,
-  getDataKeys
+  getDataKeys,
+  loadProcessDefinitionXml
 } from 'services';
 
 import {TargetValueComparison} from './targetValue';
 import {ProcessPart} from './ProcessPart';
 
-import {loadVariables, loadProcessDefinitionXml, isChecked} from './service';
+import {loadVariables, isChecked} from './service';
 
 import {Configuration} from './Configuration';
 

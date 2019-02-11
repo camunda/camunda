@@ -1,7 +1,7 @@
 import React from 'react';
 import {Select, LoadingIndicator, Labeled} from 'components';
 
-import {loadDecisionDefinitions} from './service';
+import {loadDecisionDefinitions} from 'services';
 
 export default class ProcessDefinitionSelection extends React.Component {
   constructor(props) {

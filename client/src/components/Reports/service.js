@@ -10,23 +10,6 @@ export async function remove(id) {
   return await del(`api/report/${id}?force=true`);
 }
 
-export async function loadProcessDefinitionXml(processDefinitionKey, processDefinitionVersion) {
-  const response = await get('api/process-definition/xml', {
-    processDefinitionKey,
-    processDefinitionVersion
-  });
-
-  return await response.text();
-}
-
-export async function loadDecisionDefinitionXml(key, version) {
-  const response = await get('api/decision-definition/xml', {
-    key,
-    version
-  });
-
-  return await response.text();
-}
 export async function isSharingEnabled() {
   const response = await get(`api/share/isEnabled`);
   const json = await response.json();

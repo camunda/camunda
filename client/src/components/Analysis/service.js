@@ -1,13 +1,4 @@
-import {get, post} from 'request';
-
-export async function loadProcessDefinitionXml(processDefinitionKey, processDefinitionVersion) {
-  const response = await get('api/process-definition/xml', {
-    processDefinitionKey,
-    processDefinitionVersion
-  });
-
-  return await response.text();
-}
+import {post} from 'request';
 
 export async function loadFrequencyData(processDefinitionKey, processDefinitionVersion, filter) {
   const response = await post(

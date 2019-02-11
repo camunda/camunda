@@ -1,24 +1,6 @@
 import {get} from 'request';
 import {getDataKeys} from 'services';
 
-export async function loadProcessDefinitionXml(processDefinitionKey, processDefinitionVersion) {
-  const response = await get('api/process-definition/xml', {
-    processDefinitionKey,
-    processDefinitionVersion
-  });
-
-  return await response.text();
-}
-
-export async function loadDecisionDefinitionXml(key, version) {
-  const response = await get('api/decision-definition/xml', {
-    key,
-    version
-  });
-
-  return await response.text();
-}
-
 export async function loadVariables(processDefinitionKey, processDefinitionVersion) {
   const response = await get('api/variables', {
     processDefinitionKey,
@@ -39,10 +21,4 @@ export function isChecked(data, current) {
         JSON.stringify(current[prop]) === JSON.stringify(data[prop]) || Array.isArray(data[prop])
     )
   );
-}
-
-export async function loadDecisionDefinitions() {
-  const response = await get('api/decision-definition/groupedByKey');
-
-  return await response.json();
 }

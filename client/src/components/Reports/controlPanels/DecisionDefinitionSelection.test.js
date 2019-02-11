@@ -3,10 +3,12 @@ import {shallow} from 'enzyme';
 
 import DecisionDefinitionSelection from './DecisionDefinitionSelection';
 
-import {loadDecisionDefinitions} from './service';
+import {loadDecisionDefinitions} from 'services';
 
-jest.mock('./service', () => {
+jest.mock('services', () => {
+  const rest = jest.requireActual('services');
   return {
+    ...rest,
     loadDecisionDefinitions: jest.fn()
   };
 });

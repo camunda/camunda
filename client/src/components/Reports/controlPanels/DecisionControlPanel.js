@@ -3,8 +3,8 @@ import {Popover, Dropdown, Labeled} from 'components';
 
 import DecisionDefinitionSelection from './DecisionDefinitionSelection';
 
-import {isChecked, loadDecisionDefinitionXml} from './service';
-import {getDataKeys, decisionConfig} from 'services';
+import {isChecked} from './service';
+import {getDataKeys, decisionConfig, loadDecisionDefinitionXml} from 'services';
 
 export default class DecisionControlPanel extends React.Component {
   createTitle = () => {

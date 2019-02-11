@@ -1,11 +1,11 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
-import {loadProcessDefinitionXml, loadFrequencyData} from './service';
+import {loadFrequencyData} from './service';
 
 import Analysis from './Analysis';
 
-import {incompatibleFilters} from 'services';
+import {incompatibleFilters, loadProcessDefinitionXml} from 'services';
 
 jest.mock('./AnalysisControlPanel', () => () => <div>ControlPanel</div>);
 
@@ -18,13 +18,13 @@ jest.mock('components', () => {
 
 jest.mock('./service', () => {
   return {
-    loadProcessDefinitionXml: jest.fn(),
     loadFrequencyData: jest.fn()
   };
 });
 
 jest.mock('services', () => {
   return {
+    loadProcessDefinitionXml: jest.fn(),
     loadProcessDefinitions: () => [{key: 'key', versions: [{version: 2}, {version: 1}]}],
     incompatibleFilters: jest.fn()
   };

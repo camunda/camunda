@@ -11,9 +11,9 @@ import {
   EntityNameForm
 } from 'components';
 
-import {loadProcessDefinitionXml, evaluateReport, saveReport} from './service';
+import {evaluateReport, saveReport} from './service';
 
-import {loadProcessDefinitions, incompatibleFilters} from 'services';
+import {loadProcessDefinitions, incompatibleFilters, loadProcessDefinitionXml} from 'services';
 import ReportControlPanel from './controlPanels/ReportControlPanel';
 import DecisionControlPanel from './controlPanels/DecisionControlPanel';
 import CombinedReportPanel from './controlPanels/CombinedReportPanel';

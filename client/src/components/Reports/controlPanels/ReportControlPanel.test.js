@@ -4,7 +4,12 @@ import {shallow} from 'enzyme';
 import {Dropdown} from 'components';
 
 import ReportControlPanel from './ReportControlPanel';
-import {extractProcessDefinitionName, processConfig, getFlowNodeNames} from 'services';
+import {
+  extractProcessDefinitionName,
+  processConfig,
+  getFlowNodeNames,
+  loadProcessDefinitionXml
+} from 'services';
 
 import * as service from './service';
 import {ProcessDefinitionSelection} from 'components';
@@ -16,6 +21,7 @@ jest.mock('services', () => {
 
   return {
     ...rest,
+    loadProcessDefinitionXml: jest.fn().mockReturnValue('I am a process definition xml'),
     processConfig: {
       getLabelFor: () => 'foo',
       options: {
@@ -42,7 +48,6 @@ jest.mock('services', () => {
 });
 
 service.loadVariables = jest.fn().mockReturnValue([]);
-service.loadProcessDefinitionXml = jest.fn().mockReturnValue('I am a process definition xml');
 
 const report = {
   data: {
@@ -249,11 +254,11 @@ it('should load the process definition xml when a new definition is selected', a
   const spy = jest.fn();
   const node = shallow(<ReportControlPanel report={report} updateReport={spy} />);
 
-  service.loadProcessDefinitionXml.mockClear();
+  loadProcessDefinitionXml.mockClear();
 
   await node.find(ProcessDefinitionSelection).prop('onChange')('newDefinition', 1);
 
-  expect(service.loadProcessDefinitionXml).toHaveBeenCalledWith('newDefinition', 1);
+  expect(loadProcessDefinitionXml).toHaveBeenCalledWith('newDefinition', 1);
 });
 
 it('should remove incompatible filters when changing the process definition', async () => {
