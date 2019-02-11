@@ -115,6 +115,12 @@ public class MessageOutputMappingTest {
         activityVariables(tuple("x", "1")),
         scopeVariables(tuple("i", "1"))
       },
+      {
+        "{'i': 2, 'x': 1}",
+        mapping(b -> b.zeebeInput("$.i", "$.x")),
+        activityVariables(tuple("x", "0")),
+        scopeVariables(tuple("i", "2"))
+      },
     };
   }
 
