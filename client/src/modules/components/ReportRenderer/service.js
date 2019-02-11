@@ -4,22 +4,13 @@ export function isEmpty(str) {
   return !str || 0 === str.length;
 }
 
-export function getConfig(props, viewProperty) {
-  let formatter = {};
-
+export function getFormatter(viewProperty) {
   switch (viewProperty) {
     case 'frequency':
-      formatter = formatters.frequency;
-      break;
+      return formatters.frequency;
     case 'duration':
-      formatter = formatters.duration;
-      break;
+      return formatters.duration;
     default:
-      formatter = v => v;
+      return v => v;
   }
-
-  return {
-    formatter,
-    ...props
-  };
 }

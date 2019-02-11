@@ -4,7 +4,7 @@ import {LoadingIndicator} from 'components';
 import {getFlowNodeNames, formatters} from 'services';
 import ReportBlankSlate from './ReportBlankSlate';
 
-import {isEmpty, getConfig} from './service';
+import {isEmpty, getFormatter} from './service';
 
 import {Number, Table, Heatmap, Chart} from './visualizations';
 
@@ -69,10 +69,12 @@ export default class ProcessReportRenderer extends React.Component {
     }
 
     const Component = this.getComponent();
-    const props = getConfig(
-      {...this.props, flowNodeNames: this.state.flowNodeNames},
-      view.property
-    );
+
+    const props = {
+      ...this.props,
+      formatter: getFormatter(view.property),
+      flowNodeNames: this.state.flowNodeNames
+    };
 
     return (
       <>

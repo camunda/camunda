@@ -1,5 +1,5 @@
 import React from 'react';
-import {getConfig} from './service';
+import {getFormatter} from './service';
 import ReportBlankSlate from './ReportBlankSlate';
 import {Table, Chart} from './visualizations';
 
@@ -24,7 +24,7 @@ export default function CombinedReportRenderer(props) {
     const Component = getComponent(visualization);
     return (
       <div className="component">
-        <Component {...getConfig(props, view.property)} />
+        <Component {...props} formatter={getFormatter(view.property)} />
       </div>
     );
   }

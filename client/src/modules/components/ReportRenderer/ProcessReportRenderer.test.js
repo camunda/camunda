@@ -21,7 +21,7 @@ jest.mock('services', () => {
 jest.mock('./service', () => {
   return {
     isEmpty: str => !str,
-    getConfig: props => props
+    getFormatter: view => v => v
   };
 });
 

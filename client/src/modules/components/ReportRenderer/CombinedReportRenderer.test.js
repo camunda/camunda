@@ -7,7 +7,7 @@ import {Chart, Table} from './visualizations';
 jest.mock('./service', () => {
   return {
     isEmpty: str => !str,
-    getConfig: props => props
+    getFormatter: view => v => v
   };
 });
 

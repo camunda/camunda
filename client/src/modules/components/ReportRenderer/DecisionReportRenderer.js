@@ -4,7 +4,7 @@ import ReportBlankSlate from './ReportBlankSlate';
 import {isEmpty} from './service';
 import {Table, Number, Chart, DecisionTable} from './visualizations';
 
-import {getConfig} from './service';
+import {getFormatter} from './service';
 
 const checkReport = props => {
   const {
@@ -56,7 +56,7 @@ export default function DecisionReportRenderer(props) {
 
   return (
     <div className="component">
-      <Component {...getConfig(props, view.property)} />
+      <Component {...props} formatter={getFormatter(view.property)} />
     </div>
   );
 }
