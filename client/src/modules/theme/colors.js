@@ -68,6 +68,7 @@ const Colors = {
   lightButton02: '#9ea9b7',
   lightButton03: '#88889a',
   lightButton04: '#f1f2f5',
+  lightButton05: '#e7e9ee',
 
   // Scope Labels
   darkScopeLabel: '#4A4C51',

@@ -5,13 +5,21 @@ import TimeStampLabel from '../TimeStampLabel';
 
 import * as Styled from './styled';
 
-const BarComponent = ({node, isSelected, hasBoldTitle, onTreeRowSelection}) => (
-  <Styled.Bar isSelected={isSelected} onClick={() => onTreeRowSelection(node)}>
-    <Styled.NodeIcon type={node.type} data-test={`flowNodeIcon-${node.type}`} />
-    <Styled.NodeName bold={hasBoldTitle}>{node.name}</Styled.NodeName>
-    <TimeStampLabel timeStamp={node.endDate} />
-  </Styled.Bar>
-);
+const BarComponent = ({node, isSelected}) => {
+  // console.log('render Bar');
+  return (
+    <Styled.Bar isSelected={isSelected}>
+      <Styled.NodeIcon
+        type={node.type}
+        data-test={`flowNodeIcon-${node.type}`}
+      />
+      <Styled.NodeName isBold={!!node.children.length}>
+        {node.name}
+      </Styled.NodeName>
+      <TimeStampLabel timeStamp={node.endDate} isSelected={isSelected} />
+    </Styled.Bar>
+  );
+};
 
 export default React.memo(BarComponent);
 export const NoWrapBar = BarComponent;
@@ -23,7 +31,5 @@ BarComponent.propTypes = {
     type: PropTypes.string.isRequired,
     endDate: PropTypes.string
   }),
-  onTreeRowSelection: PropTypes.func,
-  isSelected: PropTypes.bool,
-  hasBoldTitle: PropTypes.bool
+  isSelected: PropTypes.bool
 };

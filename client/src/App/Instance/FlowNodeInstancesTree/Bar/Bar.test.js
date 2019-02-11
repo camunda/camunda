@@ -24,17 +24,10 @@ const mockNode = createFlowNodeInstance({
   name: 'Some Name'
 });
 
-const mockOnTreeRowSelection = jest.fn();
-
 const renderComponent = () => {
   const mountedComponent = mount(
     <ThemeProvider>
-      <NoWrapBar
-        node={mockNode}
-        hasBoldTitle={true}
-        isSelected={false}
-        onTreeRowSelection={mockOnTreeRowSelection}
-      />
+      <NoWrapBar node={mockNode} isSelected={false} />
     </ThemeProvider>
   );
 
@@ -58,10 +51,5 @@ describe('Bar', () => {
 
   it('should render Time Stamp Component', () => {
     expect(node.find(TimeStampLabel)).toExist();
-  });
-
-  it('should onClick select a flow node in the diagram', () => {
-    node.simulate('click');
-    expect(mockOnTreeRowSelection).toHaveBeenCalledWith(mockNode);
   });
 });

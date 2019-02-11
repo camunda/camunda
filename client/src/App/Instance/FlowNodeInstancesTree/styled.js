@@ -9,7 +9,7 @@ export const NodeStateIcon = styled(
 )`
   top: 6px;
   left: ${({positionMultiplier}) =>
-    positionMultiplier ? -positionMultiplier * 30 + 'px' : '5px'};
+    positionMultiplier ? -positionMultiplier * 33 + 'px' : '5px'};
 `;
 
 const connectionLineStyles = css`
@@ -31,7 +31,7 @@ const connectionDotStyles = css`
   &:before {
     content: '';
     position: absolute;
-    left: -49px;
+    left: -51px;
     top: 12px;
     height: 6px;
     width: 6px;
@@ -62,11 +62,5 @@ export const Ul = themed(styled.ul`
 `);
 
 export const Li = styled.li`
-  margin-left: 30px;
-`;
-
-export const StateIconWrapper = styled.div`
-  position: absolute;
-  left: ${({positionMultiplier}) =>
-    positionMultiplier ? -positionMultiplier * 30 + 'px' : '5px'};
+  margin-left: 32px;
 `;

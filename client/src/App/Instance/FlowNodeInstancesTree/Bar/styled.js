@@ -18,13 +18,19 @@ export const Bar = themed(styled.div`
   })};
   border-width: 0px 1px 1px 1px;
   border-style: solid;
-  background: ${({isSelected}) =>
-    isSelected
-      ? Colors.selections
-      : themeStyle({
-          dark: Colors.darkItemEven,
-          light: Colors.lightItemEven
-        })};
+
+  border-color: ${({isSelected}) => isSelected && Colors.primaryButton01};
+  background: ${({isSelected}) => isSelected && Colors.selections};
+  color: ${({isSelected}) => isSelected && '#fff'};
+
+  > svg {
+    fill: ${({isSelected}) => isSelected && 'white'};
+  }
+
+  /* Border between Icon and Name */
+  > span {
+    border-color: ${({isSelected}) => isSelected && 'rgba(255, 255, 255, 0.9)'};
+  }
 `);
 
 export const NodeName = themed(styled.span`
@@ -35,5 +41,5 @@ export const NodeName = themed(styled.span`
     })};
   margin-left: 5px;
   padding-left: 5px;
-  font-weight: ${({bold}) => (bold ? 'bold' : '')};
+  font-weight: ${({isBold}) => (isBold ? 'bold' : '')};
 `);

@@ -25,7 +25,7 @@ export default class FlowNodeInstancesTree extends React.Component {
   renderNode = () => {
     const {node, treeDepth} = this.props;
     const hasChildren = node.children.length > 0;
-
+    const isSelected = this.props.selectedTreeRowIds.includes(node.id);
     return (
       <Styled.Li data-test={node.id}>
         <Styled.NodeDetails
@@ -38,12 +38,14 @@ export default class FlowNodeInstancesTree extends React.Component {
           />
         </Styled.NodeDetails>
         <Foldable isFoldable={treeDepth >= 2 && hasChildren}>
-          <Foldable.Summary data-test={node.id}>
+          <Foldable.Summary
+            data-test={node.id}
+            onSelection={() => this.props.onTreeRowSelection(node)}
+            isSelected={isSelected}
+          >
             <Bar
               node={this.props.getNodeWithName(node)}
-              hasBoldTitle={!!node.children}
-              isSelected={this.props.selectedTreeRowIds.includes(node.id)}
-              onTreeRowSelection={this.props.onTreeRowSelection}
+              isSelected={isSelected}
             />
           </Foldable.Summary>
           {hasChildren && this.renderChildren()}

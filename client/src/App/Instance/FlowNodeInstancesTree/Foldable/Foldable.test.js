@@ -28,10 +28,9 @@ describe('Foldable', () => {
     expect(SummaryNode.contains(fooSummaryText)).toBe(true);
 
     // Summary Label
-    const SummaryLabelNode = SummaryNode.dive().find(Styled.SummaryLabel);
-    expect(SummaryLabelNode).toHaveLength(1);
-    expect(SummaryLabelNode.prop('onClick')).toBe(mockOnSelection);
-    expect(SummaryLabelNode.prop('isSelected')).toBe(true);
+    const FocusButtonNode = SummaryNode.dive().find(Styled.FocusButton);
+    expect(FocusButtonNode).toHaveLength(1);
+    expect(FocusButtonNode.prop('onClick')).toBe(mockOnSelection);
 
     // Summary Expand Button
     const FoldButtonNode = SummaryNode.dive().find(Styled.FoldButton);

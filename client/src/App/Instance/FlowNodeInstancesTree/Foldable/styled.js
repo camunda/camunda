@@ -48,23 +48,37 @@ export const Summary = themed(styled.div`
   height: 28px;
 `);
 
-export const SummaryLabel = themed(styled.button`
+export const SummaryLabel = themed(styled.div`
   position: absolute;
   left: 0;
   top: 0;
   width: 100%;
+
   margin: 0;
   padding: 0;
   border: none;
   font-size: 14px;
   text-align: left;
-  background-color: ${props =>
-    !props.isSelected ? 'transparent' : Colors.selections};
-  color: ${({theme, isSelected}) => {
-    return isSelected || theme === 'dark'
-      ? 'rgba(255, 255, 255, 0.9)'
-      : Colors.uiDark04;
-  }};
+`);
+
+export const FocusButton = themed(styled.button`
+  position: absolute;
+  background: transparent;
+  left: 0;
+  top: 0;
+  height: 100%;
+  z-index: 1;
+  width: calc(100% - 3px);
+
+  /* Apply hover styles to sibling (SummaryLabel)*/
+  &:hover + div {
+    background: ${({isSelected}) =>
+      !isSelected &&
+      themeStyle({
+        dark: Colors.uiDark04,
+        light: Colors.lightButton05
+      })};
+  }
 `);
 
 export const Details = themed(styled.div`
