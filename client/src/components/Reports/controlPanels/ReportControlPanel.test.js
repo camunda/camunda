@@ -184,7 +184,12 @@ it('should not show an "Always show tooltips" button for other visualizations', 
 
 it('should load the flownode names and hand them to the filter and process part', async () => {
   const node = shallow(
-    <ReportControlPanel report={report} view={{entity: 'processInstance', property: 'duration'}} />
+    <ReportControlPanel
+      report={{
+        ...report,
+        data: {...report.data, view: {entity: 'processInstance', property: 'duration'}}
+      }}
+    />
   );
 
   await flushPromises();
@@ -197,12 +202,22 @@ it('should load the flownode names and hand them to the filter and process part'
 
 it('should only display process part button if view is process instance duration', () => {
   const node = shallow(
-    <ReportControlPanel report={report} view={{entity: 'processInstance', property: 'duration'}} />
+    <ReportControlPanel
+      report={{
+        ...report,
+        data: {...report.data, view: {entity: 'processInstance', property: 'duration'}}
+      }}
+    />
   );
 
   expect(node.find('ProcessPart')).toBePresent();
 
-  node.setProps({view: {entity: 'processInstance', property: 'frequency'}});
+  node.setProps({
+    report: {
+      ...report,
+      data: {...report.data, view: {entity: 'processInstance', property: 'frequency'}}
+    }
+  });
 
   expect(node.find('ProcessPart')).not.toBePresent();
 });

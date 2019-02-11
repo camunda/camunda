@@ -206,7 +206,7 @@ export default class ReportControlPanel extends React.Component {
   }
 
   shouldDisplayProcessPart = () => {
-    const {view} = this.props;
+    const {view} = this.props.report.data;
     return view && view.entity === 'processInstance' && view.property === 'duration';
   };
 
