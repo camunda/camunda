@@ -9,7 +9,7 @@ const BarComponent = ({node, isSelected, hasBoldTitle, onTreeRowSelection}) => (
   <Styled.Bar isSelected={isSelected} onClick={() => onTreeRowSelection(node)}>
     <Styled.NodeIcon type={node.type} data-test={`flowNodeIcon-${node.type}`} />
     <Styled.NodeName bold={hasBoldTitle}>{node.name}</Styled.NodeName>
-    <TimeStampLabel timeStamp={node.startDate} />
+    <TimeStampLabel timeStamp={node.endDate} />
   </Styled.Bar>
 );
 
@@ -21,7 +21,7 @@ BarComponent.propTypes = {
     id: PropTypes.string.isRequired,
     name: PropTypes.string.isRequired,
     type: PropTypes.string.isRequired,
-    startDate: PropTypes.string
+    endDate: PropTypes.string
   }),
   onTreeRowSelection: PropTypes.func,
   isSelected: PropTypes.bool,
