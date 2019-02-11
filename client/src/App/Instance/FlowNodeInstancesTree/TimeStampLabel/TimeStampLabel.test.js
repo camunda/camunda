@@ -20,7 +20,9 @@ describe('TimeStampLabel', () => {
   let node;
 
   beforeEach(() => {
-    node = renderNode(<TimeStampLabel timestamp={'01 Dec 2018 00:00:00'} />);
+    node = renderNode(
+      <TimeStampLabel isSelected={false} timestamp={'01 Dec 2018 00:00:00'} />
+    );
   });
 
   it('should not render a time stamp as a default', () => {
@@ -29,7 +31,7 @@ describe('TimeStampLabel', () => {
   });
 
   it('should not render a component if no timestamp is passed', () => {
-    node = renderNode(<TimeStampLabel />);
+    node = renderNode(<TimeStampLabel isSelected={false} />);
     expect(node.find(Styled.TimeStamp)).not.toExist();
   });
 });
