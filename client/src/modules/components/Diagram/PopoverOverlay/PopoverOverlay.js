@@ -30,12 +30,7 @@ export default class PopoverOverlay extends React.Component {
       theme
     } = this.props;
 
-    const summaryKeys = [
-      'Flow Node Instance Id',
-      'Job Id',
-      'Start Time',
-      'End Time'
-    ];
+    const summaryKeys = ['activityInstanceId', 'jobId', 'startDate', 'endDate'];
     const summary = compactObject(pickFromObject(metadata, summaryKeys));
 
     return (
@@ -74,7 +69,7 @@ export default class PopoverOverlay extends React.Component {
           {this.state.isModalVisibile && (
             <Modal onModalClose={this.handleModalClose}>
               <Modal.Header>{`Flow Node Instance "${selectedFlowNode.name ||
-                metadata['Flow Node Instance Id']}" Metadata`}</Modal.Header>
+                metadata['activityInstanceId']}" Metadata`}</Modal.Header>
               <Styled.ModalBody>
                 <pre>
                   <Styled.LinesSeparator />

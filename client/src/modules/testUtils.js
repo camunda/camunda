@@ -406,11 +406,11 @@ export const createEvents = activities =>
     })
   );
 
-export const createBeautifiedMetadata = activityId => ({
-  'End Time': '--',
-  'Flow Node Instance Id': activityId,
-  'Job Id': '67',
-  'Start Time': '28 Jan 2019 13:37:46',
+export const createMetadata = activityId => ({
+  endDate: '--',
+  activityInstanceId: activityId,
+  jobId: '67',
+  startDate: '28 Jan 2019 13:37:46',
   incidentErrorMessage: 'Cannot connect to server delivery05',
   incidentErrorType: 'JOB_NO_RETRIES'
 });

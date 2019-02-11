@@ -23,8 +23,7 @@ import {
   getFlowNodeStateOverlays,
   getActivityIdToNameMap,
   isRunningInstance,
-  beautifyMetadataKey,
-  getActivityIdToActivityInstanceMap
+  getActivityIdToActivityInstancesMap
 } from './service';
 import * as Styled from './styled';
 
@@ -77,7 +76,7 @@ export default class Instance extends Component {
 
     const activityIdToNameMap = getActivityIdToNameMap(bpmnElements);
 
-    const activityIdToActivityInstanceMap = getActivityIdToActivityInstanceMap(
+    const activityIdToActivityInstanceMap = getActivityIdToActivityInstancesMap(
       activitiesInstancesTree
     );
 
@@ -137,7 +136,7 @@ export default class Instance extends Component {
     // get the first activity instance corresponding to the flowNodeId
     const treeRowIds = !flowNodeId
       ? [instance.id]
-      : activityIdToActivityInstanceMap.get(flowNodeId).map(({id}) => id);
+      : [...activityIdToActivityInstanceMap.get(flowNodeId).keys()];
 
     this.setState({
       selection: {
@@ -168,7 +167,7 @@ export default class Instance extends Component {
       fetchEvents(id)
     ]);
 
-    const activityIdToActivityInstanceMap = getActivityIdToActivityInstanceMap(
+    const activityIdToActivityInstanceMap = getActivityIdToActivityInstancesMap(
       activitiesInstancesTree
     );
 
@@ -204,16 +203,14 @@ export default class Instance extends Component {
     // get the last event corresponding to the given flowNodeId (= activityId)
     const {activityInstanceId, metadata} = events.reduce(
       (acc, event) =>
-        event.activityId === flowNodeId && event.activityInstanceId
-          ? event
-          : acc,
+        event.activityInstanceId === treeRowIds[0] ? event : acc,
       null
     );
 
     // get corresponding start and end dates
-    const {startDate, endDate} = activityIdToActivityInstanceMap.get(
-      flowNodeId
-    )[0];
+    const {startDate, endDate} = activityIdToActivityInstanceMap
+      .get(flowNodeId)
+      .get(activityInstanceId);
 
     // return a cleaned-up and beautified metadata object
     return Object.entries({
@@ -222,10 +219,8 @@ export default class Instance extends Component {
       startDate,
       endDate
     }).reduce((cleanMetadata, [key, value]) => {
-      const beautifiedKey = beautifyMetadataKey(key);
-
       if (['startDate', 'endDate'].includes(key)) {
-        return {...cleanMetadata, [beautifiedKey]: formatDate(value)};
+        return {...cleanMetadata, [key]: formatDate(value)};
       }
 
       // ignore other empty values
@@ -233,7 +228,7 @@ export default class Instance extends Component {
         return cleanMetadata;
       }
 
-      return {...cleanMetadata, [beautifiedKey]: value};
+      return {...cleanMetadata, [key]: value};
     }, {});
   };
 

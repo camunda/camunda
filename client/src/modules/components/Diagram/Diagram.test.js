@@ -1,7 +1,7 @@
 import React from 'react';
 import {shallow, mount} from 'enzyme';
 
-import {createActivity, createBeautifiedMetadata} from 'modules/testUtils';
+import {createActivity, createMetadata} from 'modules/testUtils';
 import {Colors, ThemeProvider} from 'modules/theme';
 import {STATE} from 'modules/constants';
 import {parsedDiagram} from 'modules/utils/bpmn';
@@ -326,12 +326,12 @@ describe('Diagram', () => {
 
   describe('metadata popover', () => {
     const {activityId} = createActivity();
-    const mockBeautifiedMetadata = createBeautifiedMetadata(activityId);
+    const mockBeautifiedMetadata = createMetadata(activityId);
     const summary = {
-      'Job Id': mockBeautifiedMetadata['Job Id'],
-      'Flow Node Instance Id': mockBeautifiedMetadata['Flow Node Instance Id'],
-      'Start Time': mockBeautifiedMetadata['Start Time'],
-      'End Time': mockBeautifiedMetadata['End Time']
+      jobId: mockBeautifiedMetadata['jobId'],
+      activityInstanceId: mockBeautifiedMetadata['activityInstanceId'],
+      startDate: mockBeautifiedMetadata['startDate'],
+      endDate: mockBeautifiedMetadata['endDate']
     };
 
     it('should render a popover containing the summary of the metadata', () => {

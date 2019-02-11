@@ -13,12 +13,12 @@ export function getActivityIdToNameMap(elements) {
 
 /**
  * @returns {Array} of flow node state overlays to be added the diagram.
- * @param {*} activitiesMap
+ * @param {*} activityIdToActivityInstanceMap
  */
-export function getFlowNodeStateOverlays(activitiesMap) {
-  return [...activitiesMap.entries()].reduce(
-    (overlays, [id, activityInstances]) => {
-      const {state, type} = activityInstances[0];
+export function getFlowNodeStateOverlays(activityIdToActivityInstanceMap) {
+  return [...activityIdToActivityInstanceMap.entries()].reduce(
+    (overlays, [id, activityInstancesMap]) => {
+      const {state, type} = activityInstancesMap.values().next().value;
 
       // If the activity is completed, only push an overlay
       // if the activity is an end event.
@@ -38,13 +38,13 @@ export function isRunningInstance(state) {
 export function beautifyMetadataKey(key) {
   switch (key) {
     case 'activityInstanceId':
-      return 'Flow Node Instance Id';
+      return 'activityInstanceId';
     case 'jobId':
-      return 'Job Id';
+      return 'jobId';
     case 'startDate':
-      return 'Start Time';
+      return 'startDate';
     case 'endDate':
-      return 'End Time';
+      return 'endDate';
     default:
       return key;
   }
@@ -56,7 +56,7 @@ export function beautifyMetadataKey(key) {
  * @param {*} activitiesInstancesTree
  * @param {*} [activityIdToActivityInstanceMap] optional
  */
-export function getActivityIdToActivityInstanceMap(
+export function getActivityIdToActivityInstancesMap(
   activitiesInstancesTree,
   activityIdToActivityInstanceMap = new Map()
 ) {
@@ -64,20 +64,19 @@ export function getActivityIdToActivityInstanceMap(
 
   return children.reduce(
     (activityIdToActivityInstanceMap, activityInstance) => {
-      const {activityId} = activityInstance;
+      const {id, activityId} = activityInstance;
 
       // update activityIdToActivityInstanceMap
-      const siblingActivityInstances =
-        activityIdToActivityInstanceMap.get(activityId) || [];
+      const activityInstancesMap =
+        activityIdToActivityInstanceMap.get(activityId) || new Map();
 
-      activityIdToActivityInstanceMap.set(activityId, [
-        ...siblingActivityInstances,
-        activityInstance
-      ]);
+      activityInstancesMap.set(id, activityInstance);
+
+      activityIdToActivityInstanceMap.set(activityId, activityInstancesMap);
 
       return !activityInstance.children
         ? activityIdToActivityInstanceMap
-        : getActivityIdToActivityInstanceMap(
+        : getActivityIdToActivityInstancesMap(
             activityInstance,
             activityIdToActivityInstanceMap
           );

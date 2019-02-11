@@ -112,7 +112,9 @@ describe('Instance', () => {
     activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
       mockTree
     );
-    eventsApi.fetchEvents = mockResolvedAsyncFn([createEvent()]);
+    eventsApi.fetchEvents = mockResolvedAsyncFn(
+      createEvents(mockTree.children)
+    );
   });
 
   it('should render properly', async () => {
@@ -325,7 +327,7 @@ describe('Instance', () => {
       activityId = 'Task123';
       treeRowId = 'activityInstanceOfTask123';
 
-      mockEvents = [createEvent({activityId, id: treeRowId})];
+      mockEvents = [createEvent({activityId, activityInstanceId: treeRowId})];
       treeNode = createRawTreeNode({
         id: treeRowId,
         activityId
@@ -402,10 +404,10 @@ describe('Instance', () => {
 
         // then
         expect(node.find('Diagram').prop('metadata')).toEqual({
-          'End Time': '12 Dec 2018 00:00:00',
-          'Flow Node Instance Id': '1215',
-          'Job Id': '66',
-          'Start Time': '12 Dec 2018 00:00:00',
+          endDate: '12 Dec 2018 00:00:00',
+          activityInstanceId: 'activityInstanceOfTask123',
+          jobId: '66',
+          startDate: '12 Dec 2018 00:00:00',
           jobCustomHeaders: {},
           jobRetries: 3,
           jobType: 'shipArticles',
@@ -424,8 +426,8 @@ describe('Instance', () => {
         const emptyMetaData = {};
 
         mockEvents = [
-          createEvent({activityId, id: matchingTreeRowIds[0]}),
-          createEvent({activityId, id: matchingTreeRowIds[1]})
+          createEvent({activityId, activityInstanceId: matchingTreeRowIds[0]}),
+          createEvent({activityId, activityInstanceId: matchingTreeRowIds[1]})
         ];
 
         mockTree = {
