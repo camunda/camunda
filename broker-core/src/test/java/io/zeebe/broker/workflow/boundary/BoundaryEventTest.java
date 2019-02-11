@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.entry;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.record.Assertions;
 import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.IncidentRecordValue;
 import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.exporter.record.value.TimerRecordValue;
 import io.zeebe.exporter.record.value.VariableRecordValue;
@@ -32,12 +33,15 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
 import io.zeebe.protocol.BpmnElementType;
+import io.zeebe.protocol.impl.record.value.incident.ErrorType;
+import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
+import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Arrays;
@@ -270,6 +274,71 @@ public class BoundaryEventTest {
         testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     assertRecordsPublishedInOrder(timerTriggered, jobCompleted, activityCompleted);
+  }
+
+  @Test
+  public void shouldUseScopeToExtractCorrelationKeys() {
+    // given
+    final String processId = "shouldHaveScopeKeyIfBoundaryEvent";
+    final BpmnModelInstance workflow =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .serviceTask("task", c -> c.zeebeTaskType("type").zeebeInput("$.bar", "$.foo"))
+            .boundaryEvent(
+                "event", b -> b.message(m -> m.zeebeCorrelationKey("$.foo").name("message")))
+            .endEvent()
+            .moveToActivity("task")
+            .endEvent()
+            .done();
+    testClient.deploy(workflow);
+
+    // when
+    testClient.createWorkflowInstance(
+        processId, MsgPackUtil.asMsgPack(m -> m.put("foo", 1).put("bar", 2)));
+    testClient.publishMessage("message", "1");
+
+    // then
+    // if correlation key was extracted from the task, then foo in the task scope would be 2 and
+    // no event occurred would be published
+    assertThat(testClient.receiveElementInState("task", WorkflowInstanceIntent.EVENT_OCCURRED))
+        .isNotNull();
+  }
+
+  @Test
+  public void shouldHaveScopeKeyIfBoundaryEvent() {
+    // given
+    final String processId = "shouldHaveScopeKeyIfBoundaryEvent";
+    final BpmnModelInstance workflow =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .serviceTask("task", c -> c.zeebeTaskType("type"))
+            .boundaryEvent(
+                "event", b -> b.message(m -> m.zeebeCorrelationKey("$.orderId").name("message")))
+            .endEvent()
+            .moveToActivity("task")
+            .endEvent()
+            .done();
+    testClient.deploy(workflow);
+
+    // when
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(processId, MsgPackUtil.asMsgPack("orderId", true));
+    final Record<WorkflowInstanceRecordValue> failureEvent =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementId("task")
+            .getFirst();
+
+    // then
+    final Record<IncidentRecordValue> incidentRecord =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();
+
+    Assertions.assertThat(incidentRecord.getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR.name())
+        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasElementId("task")
+        .hasElementInstanceKey(failureEvent.getKey())
+        .hasJobKey(-1L)
+        .hasVariableScopeKey(workflowInstanceKey);
   }
 
   private void awaitProcessCompleted() {

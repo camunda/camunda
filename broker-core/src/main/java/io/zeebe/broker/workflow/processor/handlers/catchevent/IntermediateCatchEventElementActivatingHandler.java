@@ -19,9 +19,9 @@ package io.zeebe.broker.workflow.processor.handlers.catchevent;
 
 import io.zeebe.broker.workflow.model.element.ExecutableCatchEventElement;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
-import io.zeebe.broker.workflow.processor.CatchEventBehavior.MessageCorrelationKeyException;
 import io.zeebe.broker.workflow.processor.handlers.IOMappingHelper;
 import io.zeebe.broker.workflow.processor.handlers.element.ElementActivatingHandler;
+import io.zeebe.broker.workflow.processor.message.MessageCorrelationKeyException;
 import io.zeebe.protocol.impl.record.value.incident.ErrorType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
@@ -47,7 +47,8 @@ public class IntermediateCatchEventElementActivatingHandler<T extends Executable
         context.getCatchEventBehavior().subscribeToEvents(context, context.getElement());
         return true;
       } catch (MessageCorrelationKeyException e) {
-        context.raiseIncident(ErrorType.EXTRACT_VALUE_ERROR, e.getMessage());
+        context.raiseIncident(
+            ErrorType.EXTRACT_VALUE_ERROR, e.getContext().getVariablesScopeKey(), e.getMessage());
       }
     }
 
