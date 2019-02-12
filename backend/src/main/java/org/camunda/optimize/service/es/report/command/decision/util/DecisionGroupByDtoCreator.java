@@ -30,24 +30,26 @@ public class DecisionGroupByDtoCreator {
   }
 
   public static DecisionGroupByDto createGroupDecisionByInputVariable() {
-    return createGroupDecisionByInputVariable(null);
+    return createGroupDecisionByInputVariable(null, null);
   }
 
-  public static DecisionGroupByDto createGroupDecisionByInputVariable(String variableId) {
+  public static DecisionGroupByDto createGroupDecisionByInputVariable(String variableId, String variableName) {
     DecisionGroupByVariableValueDto groupByValueDto = new DecisionGroupByVariableValueDto();
     groupByValueDto.setId(variableId);
+    groupByValueDto.setName(variableName);
     DecisionGroupByInputVariableDto groupByDto = new DecisionGroupByInputVariableDto();
     groupByDto.setValue(groupByValueDto);
     return groupByDto;
   }
 
   public static DecisionGroupByDto createGroupDecisionByOutputVariable() {
-    return createGroupDecisionByOutputVariable(null);
+    return createGroupDecisionByOutputVariable(null, null);
   }
 
-  public static DecisionGroupByDto createGroupDecisionByOutputVariable(String variableId) {
+  public static DecisionGroupByDto createGroupDecisionByOutputVariable(String variableId, String variableName) {
     DecisionGroupByVariableValueDto groupByValueDto = new DecisionGroupByVariableValueDto();
     groupByValueDto.setId(variableId);
+    groupByValueDto.setName(variableName);
     DecisionGroupByOutputVariableDto groupByDto = new DecisionGroupByOutputVariableDto();
     groupByDto.setValue(groupByValueDto);
     return groupByDto;

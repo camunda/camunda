@@ -3,6 +3,9 @@ package org.camunda.optimize.service.es.retrieval;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.configuration.ReportConfigurationDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -16,6 +19,8 @@ import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.util.DateUtilHelper;
+import org.camunda.optimize.test.util.DecisionReportDataBuilder;
+import org.camunda.optimize.test.util.DecisionReportDataType;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
@@ -141,7 +146,7 @@ public class SingleReportHandlingIT {
   }
 
   @Test
-  public void updateReport() {
+  public void testUpdateProcessReport() {
     // given
     String id = createNewReport();
     ProcessReportDataDto reportData = new ProcessReportDataDto();
@@ -171,8 +176,7 @@ public class SingleReportHandlingIT {
 
     // then
     assertThat(reports.size(), is(1));
-    SingleProcessReportDefinitionDto newReport =
-      (SingleProcessReportDefinitionDto) reports.get(0);
+    SingleProcessReportDefinitionDto newReport = (SingleProcessReportDefinitionDto) reports.get(0);
     assertThat(newReport.getData().getProcessDefinitionKey(), is("procdef"));
     assertThat(newReport.getData().getProcessDefinitionVersion(), is("123"));
     assertThat(newReport.getData().getConfiguration().getyLabel(), is("fooYLabel"));
@@ -183,6 +187,41 @@ public class SingleReportHandlingIT {
     assertThat(newReport.getLastModified(), is(not(shouldBeIgnoredDate)));
     assertThat(newReport.getName(), is("MyReport"));
     assertThat(newReport.getOwner(), is("NewOwner"));
+  }
+
+  @Test
+  public void testUpdateDecisionReportWithGroupByInputVariableName() {
+    // given
+    String id = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateSingleDecisionReportRequest()
+      .execute(IdDto.class, 200)
+      .getId();
+
+    final String variableName = "variableName";
+    DecisionReportDataDto expectedReportData = DecisionReportDataBuilder.create()
+      .setDecisionDefinitionKey("ID")
+      .setDecisionDefinitionVersion("1")
+      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_INPUT_VARIABLE)
+      .setVariableId("id")
+      .setVariableName(variableName)
+      .build();
+
+    SingleDecisionReportDefinitionDto report = new SingleDecisionReportDefinitionDto();
+    report.setData(expectedReportData);
+    updateReport(id, report);
+
+    // when
+    updateReport(id, report);
+    List<ReportDefinitionDto> reports = getAllReports();
+
+    // then
+    assertThat(reports.size(), is(1));
+    SingleDecisionReportDefinitionDto reportFromApi = (SingleDecisionReportDefinitionDto) reports.get(0);
+    final DecisionGroupByVariableValueDto value = (DecisionGroupByVariableValueDto)
+      reportFromApi.getData().getGroupBy().getValue();
+    assertThat(value.getName().isPresent(), is(true));
+    assertThat(value.getName().get(), is(variableName));
   }
 
   @Test
@@ -272,8 +311,8 @@ public class SingleReportHandlingIT {
 
   private List<ProcessFilterDto> createExecutedFlowNodeFilter() {
     List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
-          .id("task1")
-          .build();
+      .id("task1")
+      .build();
     return new ArrayList<>(flowNodeFilter);
   }
 
@@ -519,10 +558,10 @@ public class SingleReportHandlingIT {
 
   private String createNewReport() {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateSingleProcessReportRequest()
-            .execute(IdDto.class, 200)
-            .getId();
+      .getRequestExecutor()
+      .buildCreateSingleProcessReportRequest()
+      .execute(IdDto.class, 200)
+      .getId();
   }
 
   private void updateReport(String id, ReportDefinitionDto updatedReport) {
@@ -532,16 +571,16 @@ public class SingleReportHandlingIT {
 
   private Response getUpdateReportResponse(String id, ReportDefinitionDto updatedReport) {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildUpdateReportRequest(id, updatedReport)
-            .execute();
+      .getRequestExecutor()
+      .buildUpdateReportRequest(id, updatedReport)
+      .execute();
   }
 
   private RawDataProcessReportResultDto evaluateRawDataReportById(String reportId) {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildEvaluateSavedReportRequest(reportId)
-            .execute(RawDataProcessReportResultDto.class, 200);
+      .getRequestExecutor()
+      .buildEvaluateSavedReportRequest(reportId)
+      .execute(RawDataProcessReportResultDto.class, 200);
   }
 
   private List<ReportDefinitionDto> getAllReports() {
@@ -550,9 +589,9 @@ public class SingleReportHandlingIT {
 
   private List<ReportDefinitionDto> getAllReportsWithQueryParam(Map<String, Object> queryParams) {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildGetAllReportsRequest()
-            .addQueryParams(queryParams)
-            .executeAndReturnList(ReportDefinitionDto.class, 200);
+      .getRequestExecutor()
+      .buildGetAllReportsRequest()
+      .addQueryParams(queryParams)
+      .executeAndReturnList(ReportDefinitionDto.class, 200);
   }
 }

@@ -7,6 +7,7 @@ import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
 import org.camunda.optimize.service.es.filter.FilterOperatorConstants;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
@@ -191,7 +192,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       )))
       .build();
 
-    final DecisionReportMapResultDto result =  evaluateMapReport(reportData);
+    final DecisionReportMapResultDto result = evaluateMapReport(reportData);
 
     // then
     assertThat(result.getDecisionInstanceCount(), is(2L));
@@ -320,6 +321,32 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
   }
 
   @Test
+  public void testVariableNameIsAvailable() {
+    // given
+    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineRule.deployDecisionDefinition();
+    final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
+
+
+    // different version
+    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineRule.deployAndStartDecisionDefinition();
+    engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+      decisionDefinitionDto1, decisionDefinitionVersion1, INPUT_AMOUNT_ID, "amount"
+    );
+
+    // then
+    final DecisionGroupByVariableValueDto value = (DecisionGroupByVariableValueDto)
+      result.getData().getGroupBy().getValue();
+    assertThat(value.getName().isPresent(), is(true));
+    assertThat(value.getName().get(), is("amount"));
+  }
+
+  @Test
   public void optimizeExceptionOnViewPropertyIsNull() {
     // given
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -367,11 +394,25 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion,
     final String variableId) {
+    return evaluateDecisionInstanceFrequencyByInputVariable(
+      decisionDefinitionDto,
+      decisionDefinitionVersion,
+      variableId,
+      null
+    );
+  }
+
+  private DecisionReportMapResultDto evaluateDecisionInstanceFrequencyByInputVariable(
+    final DecisionDefinitionEngineDto decisionDefinitionDto,
+    final String decisionDefinitionVersion,
+    final String variableId,
+    final String variableName) {
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
       .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
       .setDecisionDefinitionVersion(decisionDefinitionVersion)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_INPUT_VARIABLE)
       .setVariableId(variableId)
+      .setVariableName(variableName)
       .build();
     return evaluateMapReport(reportData);
   }

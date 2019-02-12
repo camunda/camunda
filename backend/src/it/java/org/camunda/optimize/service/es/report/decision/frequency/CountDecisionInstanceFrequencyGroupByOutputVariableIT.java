@@ -5,6 +5,7 @@ import junitparams.JUnitParamsRunner;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.util.DecisionReportDataBuilder;
@@ -262,6 +263,32 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
   }
 
   @Test
+  public void testVariableNameIsAvailable() {
+    // given
+    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineRule.deployDecisionDefinition();
+    final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
+
+
+    // different version
+    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineRule.deployAndStartDecisionDefinition();
+    engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
+      decisionDefinitionDto1, decisionDefinitionVersion1, OUTPUT_AUDIT_ID, "audit"
+    );
+
+    // then
+    final DecisionGroupByVariableValueDto value = (DecisionGroupByVariableValueDto)
+      result.getData().getGroupBy().getValue();
+    assertThat(value.getName().isPresent(), is(true));
+    assertThat(value.getName().get(), is("audit"));
+  }
+
+  @Test
   public void optimizeExceptionOnViewPropertyIsNull() {
     // given
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -299,11 +326,22 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion,
     final String variableId) {
+    return evaluateDecisionInstanceFrequencyByOutputVariable(
+      decisionDefinitionDto, decisionDefinitionVersion, variableId, null
+    );
+  }
+
+  private DecisionReportMapResultDto evaluateDecisionInstanceFrequencyByOutputVariable(
+    final DecisionDefinitionEngineDto decisionDefinitionDto,
+    final String decisionDefinitionVersion,
+    final String variableId,
+    final String variableName) {
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
       .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
       .setDecisionDefinitionVersion(decisionDefinitionVersion)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE)
       .setVariableId(variableId)
+      .setVariableName(variableName)
       .build();
     return evaluateMapReport(reportData);
   }

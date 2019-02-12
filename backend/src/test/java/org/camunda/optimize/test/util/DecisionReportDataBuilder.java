@@ -23,6 +23,7 @@ public class DecisionReportDataBuilder {
   private String decisionDefinitionKey;
   private String decisionDefinitionVersion;
   private String variableId;
+  private String variableName;
   private GroupByDateUnit dateInterval;
 
   private List<DecisionFilterDto> filter = new ArrayList<>();
@@ -47,12 +48,12 @@ public class DecisionReportDataBuilder {
         break;
       case COUNT_DEC_INST_FREQ_GROUP_BY_INPUT_VARIABLE:
         reportData = createCountFrequencyReportGroupByInputVariable(
-          decisionDefinitionKey, decisionDefinitionVersion, variableId
+          decisionDefinitionKey, decisionDefinitionVersion, variableId, variableName
         );
         break;
       case COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE:
         reportData = createCountFrequencyReportGroupByOutputVariable(
-          decisionDefinitionKey, decisionDefinitionVersion, variableId
+          decisionDefinitionKey, decisionDefinitionVersion, variableId, variableName
         );
         break;
       case COUNT_DEC_INST_FREQ_GROUP_BY_MATCHED_RULE:
@@ -82,6 +83,11 @@ public class DecisionReportDataBuilder {
 
   public DecisionReportDataBuilder setVariableId(String variableId) {
     this.variableId = variableId;
+    return this;
+  }
+
+  public DecisionReportDataBuilder setVariableName(String variableName) {
+    this.variableName = variableName;
     return this;
   }
 
@@ -136,25 +142,27 @@ public class DecisionReportDataBuilder {
 
   private static DecisionReportDataDto createCountFrequencyReportGroupByInputVariable(String decisionDefinitionKey,
                                                                                       String decisionDefinitionVersion,
-                                                                                      String variableId) {
+                                                                                      String variableId,
+                                                                                      String variableName) {
     final DecisionReportDataDto decisionReportDataDto = new DecisionReportDataDto();
     decisionReportDataDto.setDecisionDefinitionKey(decisionDefinitionKey);
     decisionReportDataDto.setDecisionDefinitionVersion(decisionDefinitionVersion);
     decisionReportDataDto.setVisualization(DecisionVisualization.TABLE);
     decisionReportDataDto.setView(createCountFrequencyView());
-    decisionReportDataDto.setGroupBy(createGroupDecisionByInputVariable(variableId));
+    decisionReportDataDto.setGroupBy(createGroupDecisionByInputVariable(variableId, variableName));
     return decisionReportDataDto;
   }
 
   private static DecisionReportDataDto createCountFrequencyReportGroupByOutputVariable(String decisionDefinitionKey,
                                                                                        String decisionDefinitionVersion,
-                                                                                       String variableId) {
+                                                                                       String variableId,
+                                                                                       String variableName) {
     final DecisionReportDataDto decisionReportDataDto = new DecisionReportDataDto();
     decisionReportDataDto.setDecisionDefinitionKey(decisionDefinitionKey);
     decisionReportDataDto.setDecisionDefinitionVersion(decisionDefinitionVersion);
     decisionReportDataDto.setVisualization(DecisionVisualization.TABLE);
     decisionReportDataDto.setView(createCountFrequencyView());
-    decisionReportDataDto.setGroupBy(createGroupDecisionByOutputVariable(variableId));
+    decisionReportDataDto.setGroupBy(createGroupDecisionByOutputVariable(variableId, variableName));
     return decisionReportDataDto;
   }
 

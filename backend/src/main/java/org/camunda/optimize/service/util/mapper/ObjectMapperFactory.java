@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -52,7 +53,7 @@ public class ObjectMapperFactory {
 
     ObjectMapper mapper = Jackson2ObjectMapperBuilder
       .json()
-      .modules(javaTimeModule)
+      .modules(new Jdk8Module(), javaTimeModule)
       .featuresToDisable(
         SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
         DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
