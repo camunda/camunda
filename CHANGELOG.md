@@ -7,13 +7,50 @@
 * **broker:**
   *  reject deployment which contains at least one invalid resource ([fd478adc](https://github.com/zeebe-io/zeebe/commit/fd478adc2691b427c54389461c6f4bdd685d7267))
   *  ensure YAML transformation does not break the msgpack serialization ([575178cf](https://github.com/zeebe-io/zeebe/commit/575178cf87a05fff1db6ecc8eb31d89a94a547b5))
+  *  limit jobs in JobBatchRecord to 65Kb ([6324a8e5](https://github.com/zeebe-io/zeebe/commit/6324a8e5b905cfc10b38e8688f94cb381b132ff4))
+  *  reject create workflowinstance command when there is no none start event ([7651fcc7](https://github.com/zeebe-io/zeebe/commit/7651fcc73cbe50639e60fb40caf3c9c6fe06b8fb))
+  *  expand log block index if capacity is reached ([1b6adfeb](https://github.com/zeebe-io/zeebe/commit/1b6adfeb5060dd4ae6b1ba27d6b706898e4b9b15))
+  *  fix state interference with processor ([5b948b09](https://github.com/zeebe-io/zeebe/commit/5b948b09dcbe19b4fdae5e0d98bd5f727d7855fb))
+  *  ignore empty or invalid task headers ([7cb055c8](https://github.com/zeebe-io/zeebe/commit/7cb055c8c858477f84b05516eca74a0b0e1aff2f))
+  *  reject empty correlation key ([879ae05a](https://github.com/zeebe-io/zeebe/commit/879ae05a35d7b582ff6158560917d32f566ec616))
+  *  event-based gateways can't be triggered twice ([e5c38366](https://github.com/zeebe-io/zeebe/commit/e5c3836613203f43c98e5c3415278094a4c4399e))
+  *  prevent canceling of element instances ([a9b16ae0](https://github.com/zeebe-io/zeebe/commit/a9b16ae05266fed49569ffc676ac3576b2a126cc))
+  *  don't open subscription if incident is raised ([6e2f3671](https://github.com/zeebe-io/zeebe/commit/6e2f3671862b85dfa2dbf833f71674898b9ee483))
+  *  save the last exported record position before closing the state * ensure the RocksDB directory is deleted ([cd912d8f](https://github.com/zeebe-io/zeebe/commit/cd912d8fb3e2ebb378bc34570f4484cfdbd159f2))
+  *  close gateway before service containers ([cd74ac24](https://github.com/zeebe-io/zeebe/commit/cd74ac24911b94931d31c78ed38cae8b0171436a))
+  *  ignore unreferenced messages in transformer ([6c9f1035](https://github.com/zeebe-io/zeebe/commit/6c9f1035b3e33eee7b0cedaa4554ea206d7d3753))
+  *  Convert numeric correlation key to string ([953ec7b7](https://github.com/zeebe-io/zeebe/commit/953ec7b7632f77205bd5ae7334f38b427a932009))
+  * add explicit endianness in logstream ([d8dbd667](https://github.com/zeebe-io/zeebe/commit/d8dbd6670dea805ba1154f8a91cbeb6987f601ad))
+  * avoid overflow on String16 type ([bf2fb4cd](https://github.com/zeebe-io/zeebe/commit/bf2fb4cdd2dcfa10b91b0dcde05160def289a5f6))
 
 #### Features
 
 * **broker:**
   *  add workflowInstanceKey to variable records ([35b2f1e4](https://github.com/zeebe-io/zeebe/commit/35b2f1e45351d29109a2fef0810116ca6661f72f))
   *  unify lifecycle of flow elements ([7c2589ab](https://github.com/zeebe-io/zeebe/commit/7c2589abf5ca310e8fc3909cc2b8c042e45db55a))
-
+  *  improve error reporting in gRPC API ([c02e6d80](https://github.com/zeebe-io/zeebe/commit/c02e6d801a1cb2748767b36a718b31e8cca5fbf1))
+  *  added bpmn element type to WorkflowInstanceRecord ([09e7e0c5](https://github.com/zeebe-io/zeebe/commit/09e7e0c5b4159185a475b3b341d7c4bfa45b360b))
+  *  export variable records to elasticsearch ([f96aa8fc](https://github.com/zeebe-io/zeebe/commit/f96aa8fce13ba9c94f083195d92cc791ecebc6bc))
+  *  consistent and meaningful error message format ([ff34a27a](https://github.com/zeebe-io/zeebe/commit/ff34a27ae719ae42ade4248f1a7e17cae749022e))
+  *  add list of variables to be fetched on activation to protocol ([7a7d63ca](https://github.com/zeebe-io/zeebe/commit/7a7d63ca8835602e4203d437259eef342b8b7640))
+  *  added support for timeDate timer definitions ([ae1823a0](https://github.com/zeebe-io/zeebe/commit/ae1823a0d4dd2d2a0aa10f5a7bd4a418644e165c))
+  *  support timer start event ([f28c318b](https://github.com/zeebe-io/zeebe/commit/f28c318b25c3ffa6654016dae45e8fe12a4a9149))
+  *  support non-interrupting message boundary events ([4fa149fb](https://github.com/zeebe-io/zeebe/commit/4fa149fbaf29bef34e30001b9fa28573bd9e7d39))
+  *  support message start events ([2364e08c](https://github.com/zeebe-io/zeebe/commit/2364e08cdcd8f59a87b37c51cb9db7d9e4d84a42)) ([157e66e2](https://github.com/zeebe-io/zeebe/commit/157e66e21ec135216e3f69724395c14fe6849c2a))
+  *  write variable events ([40b32063](https://github.com/zeebe-io/zeebe/commit/40b3206329e1e19c18f98d557eb3403dfebe6d3b))
+  *  propagate variables on presence of out mappings ([64f45fbe](https://github.com/zeebe-io/zeebe/commit/64f45fbe29ba51417e75c848c730569ba47d0c1e))
+  *  allow updating job retries in all job states ([6e056f7f](https://github.com/zeebe-io/zeebe/commit/6e056f7f21c099dc26dfa61a554eb3b13f0f724f))
+  *  support non-interrupting timer boundary events ([84313356](https://github.com/zeebe-io/zeebe/commit/8431335624d02941e90b568c13e74b847f65f3a7))
+  * allow non-strict condtions ([c8f4480d](https://github.com/zeebe-io/zeebe/commit/c8f4480d707048ad9ae4dfcda685483485cda2e0))
+  *  provide integration test utitilities for exporter authors ([5cbbcfc9](https://github.com/zeebe-io/zeebe/commit/5cbbcfc948b7d16e6a9f7f4641774675f60ac219))
+  *  adds a slew of Exporter test utilities ([899221ea](https://github.com/zeebe-io/zeebe/commit/899221ead4b03a2c017fcb410ba22bc4367a6985))
+* **clients/go:**  
+  * add optional list of variables to activate jobs/job worker ([911aeea5](https://github.com/zeebe-io/zeebe/commit/911aeea5f08bcd02239236d18b140a43c1031f4a))
+  * Add omitempty-ignoring object marshaller method to go api ([4823b42b](https://github.com/zeebe-io/zeebe/commit/4823b42b865bdc4e14be96c6d55cdd4e6dc4502b))
+* **clients/java:**
+    *  add optional list of variables to activate jobs/job worker ([6eabff25](https://github.com/zeebe-io/zeebe/commit/6eabff250e1226ac197a0c5f2c327f80e79bc99a))
+    *  propagate job worker exception message to broker ([23a70ea8](https://github.com/zeebe-io/zeebe/commit/23a70ea83a69fd9005dd5ebd38403b18f18939aa))
+* **clients/zbctl:**  set error message in fail command to stderr content ([8f8b3889](https://github.com/zeebe-io/zeebe/commit/8f8b3889079559a83a5ec3cdc83fa40f80321f3b))
 
 
 <a name="0.14.0"></a>
