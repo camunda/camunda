@@ -85,7 +85,7 @@ public class StartEventEventOccurredHandler<T extends ExecutableCatchEventElemen
   private void deferStartEventRecord(
       BpmnStepContext<T> context, long workflowInstanceKey, WorkflowInstanceRecord event) {
     event.setWorkflowInstanceKey(workflowInstanceKey);
-    event.setScopeInstanceKey(workflowInstanceKey);
+    event.setFlowScopeKey(workflowInstanceKey);
 
     context
         .getOutput()

@@ -49,7 +49,7 @@ public class ContainerElementActivatedHandler<T extends ExecutableFlowElementCon
     }
 
     final ExecutableFlowElementContainer element = context.getElement();
-    final long scopeInstanceKey = context.getRecord().getKey();
+    final long flowScopeKey = context.getRecord().getKey();
     final WorkflowInstanceRecord value = context.getValue();
     final ExecutableCatchEventElement firstStartEvent = element.getStartEvents().get(0);
     final long eventInstanceKey;
@@ -60,7 +60,7 @@ public class ContainerElementActivatedHandler<T extends ExecutableFlowElementCon
     } else {
       populateRecordFromDeferredRecord(context, value);
     }
-    value.setScopeInstanceKey(scopeInstanceKey);
+    value.setFlowScopeKey(flowScopeKey);
     context.getElementInstance().spawnToken();
 
     eventInstanceKey =

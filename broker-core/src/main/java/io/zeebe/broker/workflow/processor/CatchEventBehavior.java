@@ -23,7 +23,6 @@ import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
-import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.broker.workflow.model.element.ExecutableCatchEvent;
 import io.zeebe.broker.workflow.model.element.ExecutableCatchEventSupplier;
 import io.zeebe.broker.workflow.model.element.ExecutableMessage;
@@ -37,6 +36,7 @@ import io.zeebe.msgpack.query.MsgPackQueryProcessor;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResult;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResults;
 import io.zeebe.protocol.BpmnElementType;
+import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.HashMap;
@@ -75,7 +75,7 @@ public class CatchEventBehavior {
         new MessageCorrelationKeyContext(variablesSupplier, context.getRecord().getKey());
     final MessageCorrelationKeyContext scopeContext =
         new MessageCorrelationKeyContext(
-            variablesSupplier, context.getRecord().getValue().getScopeInstanceKey());
+            variablesSupplier, context.getRecord().getValue().getFlowScopeKey());
 
     // collect all message correlation keys from their respective payload, as this might fail and
     // we might need to raise an incident

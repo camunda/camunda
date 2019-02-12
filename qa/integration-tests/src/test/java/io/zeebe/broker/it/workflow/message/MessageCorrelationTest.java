@@ -105,7 +105,7 @@ public class MessageCorrelationTest {
         RecordingExporter.variableRecords().withName("foo").getFirst();
     Assertions.assertThat(variableEvent.getValue())
         .hasValue("\"bar\"")
-        .hasScopeInstanceKey(workflowInstanceEvent.getValue().getWorkflowInstanceKey());
+        .hasScopeKey(workflowInstanceEvent.getValue().getWorkflowInstanceKey());
   }
 
   @Test

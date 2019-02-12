@@ -67,7 +67,7 @@ public abstract class AbstractHandler<T extends ExecutableFlowElement>
   }
 
   protected boolean isRootScope(BpmnStepContext<T> context) {
-    return context.getRecord().getValue().getScopeInstanceKey() == -1;
+    return context.getRecord().getValue().getFlowScopeKey() == -1;
   }
 
   /**

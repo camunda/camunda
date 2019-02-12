@@ -18,8 +18,8 @@
 package io.zeebe.broker.workflow.processor;
 
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
-import io.zeebe.broker.workflow.data.VariableRecord;
 import io.zeebe.broker.workflow.state.VariablesState.VariableListener;
+import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.zeebe.protocol.intent.VariableIntent;
 import org.agrona.DirectBuffer;
 
@@ -35,11 +35,11 @@ public class UpdateVariableStreamWriter implements VariableListener {
 
   @Override
   public void onCreate(
-      DirectBuffer name, DirectBuffer value, long scopeInstanceKey, long rootScopeKey) {
+      DirectBuffer name, DirectBuffer value, long variableScopeKey, long rootScopeKey) {
     record
         .setName(name)
         .setValue(value)
-        .setScopeInstanceKey(scopeInstanceKey)
+        .setScopeKey(variableScopeKey)
         .setWorkflowInstanceKey(rootScopeKey);
 
     streamWriter.appendNewEvent(VariableIntent.CREATED, record);
@@ -47,11 +47,11 @@ public class UpdateVariableStreamWriter implements VariableListener {
 
   @Override
   public void onUpdate(
-      DirectBuffer name, DirectBuffer value, long scopeInstanceKey, long rootScopeKey) {
+      DirectBuffer name, DirectBuffer value, long variableScopeKey, long rootScopeKey) {
     record
         .setName(name)
         .setValue(value)
-        .setScopeInstanceKey(scopeInstanceKey)
+        .setScopeKey(variableScopeKey)
         .setWorkflowInstanceKey(rootScopeKey);
 
     streamWriter.appendNewEvent(VariableIntent.UPDATED, record);

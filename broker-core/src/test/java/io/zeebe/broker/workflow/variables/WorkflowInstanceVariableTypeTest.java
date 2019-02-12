@@ -87,7 +87,7 @@ public class WorkflowInstanceVariableTypeTest {
     final Record<VariableRecordValue> variableRecord =
         RecordingExporter.variableRecords(VariableIntent.CREATED).getFirst();
     Assertions.assertThat(variableRecord.getValue())
-        .hasScopeInstanceKey(workflowInstanceKey)
+        .hasScopeKey(workflowInstanceKey)
         .hasName("x")
         .hasValue(expectedValue);
   }

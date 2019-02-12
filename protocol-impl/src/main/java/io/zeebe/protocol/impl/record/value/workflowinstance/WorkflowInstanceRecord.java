@@ -36,7 +36,7 @@ public class WorkflowInstanceRecord extends UnpackedObject {
   public static final String PROP_WORKFLOW_KEY = "workflowKey";
   public static final String PROP_WORKFLOW_PAYLOAD = "payload";
   public static final String PROP_WORKFLOW_BPMN_TYPE = "bpmnElementType";
-  public static final String PROP_WORKFLOW_SCOPE_KEY = "scopeInstanceKey";
+  public static final String PROP_WORKFLOW_SCOPE_KEY = "flowScopeKey";
 
   private final StringProperty bpmnProcessIdProp =
       new StringProperty(PROP_WORKFLOW_BPMN_PROCESS_ID, "");
@@ -49,7 +49,7 @@ public class WorkflowInstanceRecord extends UnpackedObject {
 
   private final DocumentProperty payloadProp = new DocumentProperty(PROP_WORKFLOW_PAYLOAD);
 
-  private final LongProperty scopeInstanceKeyProp = new LongProperty(PROP_WORKFLOW_SCOPE_KEY, -1L);
+  private final LongProperty flowScopeKeyProp = new LongProperty(PROP_WORKFLOW_SCOPE_KEY, -1L);
 
   private final EnumProperty<BpmnElementType> bpmnElementTypeProp =
       new EnumProperty(PROP_WORKFLOW_BPMN_TYPE, BpmnElementType.class, BpmnElementType.UNSPECIFIED);
@@ -61,7 +61,7 @@ public class WorkflowInstanceRecord extends UnpackedObject {
         .declareProperty(workflowInstanceKeyProp)
         .declareProperty(elementIdProp)
         .declareProperty(payloadProp)
-        .declareProperty(scopeInstanceKeyProp)
+        .declareProperty(flowScopeKeyProp)
         .declareProperty(bpmnElementTypeProp);
   }
 
@@ -112,12 +112,12 @@ public class WorkflowInstanceRecord extends UnpackedObject {
     return this;
   }
 
-  public long getScopeInstanceKey() {
-    return scopeInstanceKeyProp.getValue();
+  public long getFlowScopeKey() {
+    return flowScopeKeyProp.getValue();
   }
 
-  public WorkflowInstanceRecord setScopeInstanceKey(long scopeInstanceKey) {
-    this.scopeInstanceKeyProp.setValue(scopeInstanceKey);
+  public WorkflowInstanceRecord setFlowScopeKey(long flowScopeKey) {
+    this.flowScopeKeyProp.setValue(flowScopeKey);
     return this;
   }
 
@@ -166,7 +166,7 @@ public class WorkflowInstanceRecord extends UnpackedObject {
     elementIdProp.setValue(record.getElementId());
     bpmnProcessIdProp.setValue(record.getBpmnProcessId());
     payloadProp.setValue(record.getPayload());
-    scopeInstanceKeyProp.setValue(record.getScopeInstanceKey());
+    flowScopeKeyProp.setValue(record.getFlowScopeKey());
     versionProp.setValue(record.getVersion());
     workflowKeyProp.setValue(record.getWorkflowKey());
     workflowInstanceKeyProp.setValue(record.getWorkflowInstanceKey());

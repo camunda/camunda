@@ -69,7 +69,7 @@ public class WorkflowInstanceVariableTest {
     final Record<VariableRecordValue> variableRecord =
         RecordingExporter.variableRecords(VariableIntent.CREATED).getFirst();
     Assertions.assertThat(variableRecord.getValue())
-        .hasScopeInstanceKey(workflowInstanceKey)
+        .hasScopeKey(workflowInstanceKey)
         .hasName("x")
         .hasValue("1");
   }
@@ -88,7 +88,7 @@ public class WorkflowInstanceVariableTest {
     final Record<VariableRecordValue> variableRecord =
         RecordingExporter.variableRecords(VariableIntent.CREATED).getFirst();
     Assertions.assertThat(variableRecord.getValue())
-        .hasScopeInstanceKey(workflowInstanceKey)
+        .hasScopeKey(workflowInstanceKey)
         .hasName("x")
         .hasValue("1");
   }
@@ -112,7 +112,7 @@ public class WorkflowInstanceVariableTest {
     final Record<VariableRecordValue> variableRecord =
         RecordingExporter.variableRecords(VariableIntent.CREATED).withName("y").getFirst();
     Assertions.assertThat(variableRecord.getValue())
-        .hasScopeInstanceKey(workflowInstanceKey)
+        .hasScopeKey(workflowInstanceKey)
         .hasName("y")
         .hasValue("1");
   }
@@ -131,7 +131,7 @@ public class WorkflowInstanceVariableTest {
     final Record<VariableRecordValue> variableRecord =
         RecordingExporter.variableRecords(VariableIntent.CREATED).getFirst();
     Assertions.assertThat(variableRecord.getValue())
-        .hasScopeInstanceKey(workflowInstanceKey)
+        .hasScopeKey(workflowInstanceKey)
         .hasName("x")
         .hasValue("1");
   }
@@ -166,7 +166,7 @@ public class WorkflowInstanceVariableTest {
     final Record<VariableRecordValue> variableRecord =
         RecordingExporter.variableRecords(VariableIntent.UPDATED).getFirst();
     Assertions.assertThat(variableRecord.getValue())
-        .hasScopeInstanceKey(workflowInstanceKey)
+        .hasScopeKey(workflowInstanceKey)
         .hasName("x")
         .hasValue("2");
   }
@@ -190,7 +190,7 @@ public class WorkflowInstanceVariableTest {
     final Record<VariableRecordValue> variableRecord =
         RecordingExporter.variableRecords(VariableIntent.UPDATED).getFirst();
     Assertions.assertThat(variableRecord.getValue())
-        .hasScopeInstanceKey(workflowInstanceKey)
+        .hasScopeKey(workflowInstanceKey)
         .hasName("y")
         .hasValue("2");
   }
@@ -209,7 +209,7 @@ public class WorkflowInstanceVariableTest {
     final Record<VariableRecordValue> variableRecord =
         RecordingExporter.variableRecords(VariableIntent.UPDATED).getFirst();
     Assertions.assertThat(variableRecord.getValue())
-        .hasScopeInstanceKey(workflowInstanceKey)
+        .hasScopeKey(workflowInstanceKey)
         .hasName("x")
         .hasValue("2");
   }

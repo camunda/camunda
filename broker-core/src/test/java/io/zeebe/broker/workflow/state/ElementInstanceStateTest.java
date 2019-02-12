@@ -520,7 +520,7 @@ public class ElementInstanceStateTest {
     workflowInstanceRecord.setElementId("startEvent");
     workflowInstanceRecord.setBpmnProcessId(wrapString("process1"));
     workflowInstanceRecord.setWorkflowInstanceKey(1000L);
-    workflowInstanceRecord.setScopeInstanceKey(1001L);
+    workflowInstanceRecord.setFlowScopeKey(1001L);
     workflowInstanceRecord.setVersion(1);
     workflowInstanceRecord.setWorkflowKey(2);
     workflowInstanceRecord.setBpmnElementType(BpmnElementType.START_EVENT);
@@ -536,7 +536,7 @@ public class ElementInstanceStateTest {
     assertThat(record.getElementId()).isEqualTo(elementId);
     assertThat(record.getBpmnProcessId()).isEqualTo(wrapString("process1"));
     assertThat(record.getWorkflowInstanceKey()).isEqualTo(1000L);
-    assertThat(record.getScopeInstanceKey()).isEqualTo(1001L);
+    assertThat(record.getFlowScopeKey()).isEqualTo(1001L);
     assertThat(record.getVersion()).isEqualTo(1);
     assertThat(record.getWorkflowKey()).isEqualTo(2);
     assertThat(record.getBpmnElementType()).isEqualTo(BpmnElementType.START_EVENT);

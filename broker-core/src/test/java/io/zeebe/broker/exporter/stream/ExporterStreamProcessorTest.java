@@ -46,7 +46,6 @@ import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.util.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
-import io.zeebe.broker.workflow.data.VariableRecord;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.RecordValue;
@@ -70,6 +69,7 @@ import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.ExporterIntent;
@@ -558,7 +558,7 @@ public class ExporterStreamProcessorTest {
     final int version = 12;
     final int workflowInstanceKey = 1234;
     final String elementId = "activity";
-    final int scopeInstanceKey = 123;
+    final int flowScopeKey = 123;
     final BpmnElementType bpmnElementType = BpmnElementType.SERVICE_TASK;
 
     final WorkflowInstanceRecord record =
@@ -570,7 +570,7 @@ public class ExporterStreamProcessorTest {
             .setVersion(version)
             .setWorkflowKey(workflowKey)
             .setWorkflowInstanceKey(workflowInstanceKey)
-            .setScopeInstanceKey(scopeInstanceKey);
+            .setFlowScopeKey(flowScopeKey);
 
     final WorkflowInstanceRecordValue recordValue =
         new io.zeebe.broker.exporter.record.value.WorkflowInstanceRecordValueImpl(
@@ -581,7 +581,7 @@ public class ExporterStreamProcessorTest {
             version,
             workflowKey,
             workflowInstanceKey,
-            scopeInstanceKey,
+            flowScopeKey,
             bpmnElementType);
 
     // then
@@ -693,19 +693,18 @@ public class ExporterStreamProcessorTest {
     // given
     final String name = "x";
     final String value = "1";
-    final long scopeInstanceKey = 3;
+    final long scopeKey = 3;
     final long workflowInstanceKey = 2;
 
     final VariableRecord record =
         new VariableRecord()
             .setName(wrapString(name))
             .setValue(MsgPackUtil.asMsgPack(value))
-            .setScopeInstanceKey(scopeInstanceKey)
+            .setScopeKey(scopeKey)
             .setWorkflowInstanceKey(workflowInstanceKey);
 
     final VariableRecordValue recordValue =
-        new VariableRecordValueImpl(
-            OBJECT_MAPPER, name, value, scopeInstanceKey, workflowInstanceKey);
+        new VariableRecordValueImpl(OBJECT_MAPPER, name, value, scopeKey, workflowInstanceKey);
 
     // then
     assertRecordExported(VariableIntent.CREATED, record, recordValue);

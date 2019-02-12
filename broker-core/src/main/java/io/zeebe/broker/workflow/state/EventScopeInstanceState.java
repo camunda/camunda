@@ -28,7 +28,7 @@ import org.agrona.DirectBuffer;
 
 public class EventScopeInstanceState {
 
-  private final DbLong eventScopeInstanceKey;
+  private final DbLong eventScopeKey;
   private final EventScopeInstance eventScopeInstance;
   private final ColumnFamily<DbLong, EventScopeInstance> eventScopeInstanceColumnFamily;
 
@@ -39,11 +39,10 @@ public class EventScopeInstanceState {
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, EventTrigger> eventTriggerColumnFamily;
 
   public EventScopeInstanceState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
-    eventScopeInstanceKey = new DbLong();
+    eventScopeKey = new DbLong();
     eventScopeInstance = new EventScopeInstance();
     eventScopeInstanceColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.EVENT_SCOPE, eventScopeInstanceKey, eventScopeInstance);
+        zeebeDb.createColumnFamily(ZbColumnFamilies.EVENT_SCOPE, eventScopeKey, eventScopeInstance);
 
     eventTriggerScopeKey = new DbLong();
     eventTriggerEventKey = new DbLong();
@@ -61,9 +60,9 @@ public class EventScopeInstanceState {
   public void shutdownInstance(long eventScopeKey) {
     final EventScopeInstance instance = getInstance(eventScopeKey);
     if (instance != null) {
-      eventScopeInstanceKey.wrapLong(eventScopeKey);
+      this.eventScopeKey.wrapLong(eventScopeKey);
       instance.setAccepting(false);
-      eventScopeInstanceColumnFamily.put(eventScopeInstanceKey, instance);
+      eventScopeInstanceColumnFamily.put(this.eventScopeKey, instance);
     }
   }
 
@@ -74,13 +73,13 @@ public class EventScopeInstanceState {
    * @param interruptingIds list of element IDs which should set accepting to false
    */
   public void createInstance(long eventScopeKey, Collection<DirectBuffer> interruptingIds) {
-    eventScopeInstanceKey.wrapLong(eventScopeKey);
+    this.eventScopeKey.wrapLong(eventScopeKey);
     eventScopeInstance.setAccepting(true);
     for (DirectBuffer interruptingId : interruptingIds) {
       eventScopeInstance.addInterrupting(interruptingId);
     }
 
-    eventScopeInstanceColumnFamily.put(eventScopeInstanceKey, eventScopeInstance);
+    eventScopeInstanceColumnFamily.put(this.eventScopeKey, eventScopeInstance);
   }
 
   /**
@@ -90,8 +89,8 @@ public class EventScopeInstanceState {
    * @return the event scope instance or null
    */
   public EventScopeInstance getInstance(long eventScopeKey) {
-    eventScopeInstanceKey.wrapLong(eventScopeKey);
-    final EventScopeInstance instance = eventScopeInstanceColumnFamily.get(eventScopeInstanceKey);
+    this.eventScopeKey.wrapLong(eventScopeKey);
+    final EventScopeInstance instance = eventScopeInstanceColumnFamily.get(this.eventScopeKey);
     return instance != null ? new EventScopeInstance(instance) : null;
   }
 
@@ -108,8 +107,8 @@ public class EventScopeInstanceState {
         (BiConsumer<DbCompositeKey<DbLong, DbLong>, EventTrigger>)
             (key, value) -> deleteTrigger(key));
 
-    eventScopeInstanceKey.wrapLong(eventScopeKey);
-    eventScopeInstanceColumnFamily.delete(eventScopeInstanceKey);
+    this.eventScopeKey.wrapLong(eventScopeKey);
+    eventScopeInstanceColumnFamily.delete(this.eventScopeKey);
   }
 
   /**
@@ -121,13 +120,13 @@ public class EventScopeInstanceState {
    */
   public boolean triggerEvent(
       long eventScopeKey, long eventKey, DirectBuffer elementId, DirectBuffer payload) {
-    eventScopeInstanceKey.wrapLong(eventScopeKey);
-    final EventScopeInstance instance = eventScopeInstanceColumnFamily.get(eventScopeInstanceKey);
+    this.eventScopeKey.wrapLong(eventScopeKey);
+    final EventScopeInstance instance = eventScopeInstanceColumnFamily.get(this.eventScopeKey);
 
     if (instance != null && instance.isAccepting()) {
       if (instance.isInterrupting(elementId)) {
         instance.setAccepting(false);
-        eventScopeInstanceColumnFamily.put(eventScopeInstanceKey, instance);
+        eventScopeInstanceColumnFamily.put(this.eventScopeKey, instance);
       }
 
       createTrigger(eventScopeKey, eventKey, elementId, payload);

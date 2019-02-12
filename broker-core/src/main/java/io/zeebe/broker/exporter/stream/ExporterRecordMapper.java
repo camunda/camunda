@@ -36,8 +36,6 @@ import io.zeebe.broker.exporter.record.value.raft.RaftMemberImpl;
 import io.zeebe.broker.subscription.message.data.MessageStartEventSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
-import io.zeebe.broker.workflow.data.TimerRecord;
-import io.zeebe.broker.workflow.data.VariableRecord;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.RecordMetadata;
 import io.zeebe.exporter.record.RecordValue;
@@ -64,6 +62,8 @@ import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobHeaders;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
+import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.raft.event.RaftConfigurationEventMember;
@@ -294,7 +294,7 @@ public class ExporterRecordMapper {
         record.getVersion(),
         record.getWorkflowKey(),
         record.getWorkflowInstanceKey(),
-        record.getScopeInstanceKey(),
+        record.getFlowScopeKey(),
         record.getBpmnElementType());
   }
 
@@ -355,7 +355,7 @@ public class ExporterRecordMapper {
         objectMapper,
         asString(record.getName()),
         asJson(record.getValue()),
-        record.getScopeInstanceKey(),
+        record.getScopeKey(),
         record.getWorkflowInstanceKey());
   }
 

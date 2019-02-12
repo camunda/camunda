@@ -97,7 +97,7 @@ public class WorkflowInstanceAssert
                 r ->
                     ((TypedEventImpl) r).getSourceEventPosition() > terminatingRecord.getPosition())
             .map(r -> recordsByPosition.get(((TypedEventImpl) r).getSourceEventPosition()))
-            .filter(r -> r.getValue().getScopeInstanceKey() == instanceKey)
+            .filter(r -> r.getValue().getFlowScopeKey() == instanceKey)
             .filter(r -> isFlowEvaluatingState(r.getMetadata().getIntent()))
             .findFirst();
 

@@ -30,7 +30,7 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
   private final int version;
   private final long workflowKey;
   private final long workflowInstanceKey;
-  private final long scopeInstanceKey;
+  private final long flowScopeKey;
   private final BpmnElementType bpmnElementType;
 
   public WorkflowInstanceRecordValueImpl(
@@ -41,7 +41,7 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
       final int version,
       final long workflowKey,
       final long workflowInstanceKey,
-      final long scopeInstanceKey,
+      final long flowScopeKey,
       final BpmnElementType bpmnElementType) {
     super(objectMapper, payload);
     this.bpmnProcessId = bpmnProcessId;
@@ -49,7 +49,7 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
     this.version = version;
     this.workflowKey = workflowKey;
     this.workflowInstanceKey = workflowInstanceKey;
-    this.scopeInstanceKey = scopeInstanceKey;
+    this.flowScopeKey = flowScopeKey;
     this.bpmnElementType = bpmnElementType;
   }
 
@@ -79,8 +79,8 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
   }
 
   @Override
-  public long getScopeInstanceKey() {
-    return scopeInstanceKey;
+  public long getFlowScopeKey() {
+    return flowScopeKey;
   }
 
   @Override
@@ -103,7 +103,7 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
     return version == that.version
         && workflowKey == that.workflowKey
         && workflowInstanceKey == that.workflowInstanceKey
-        && scopeInstanceKey == that.scopeInstanceKey
+        && flowScopeKey == that.flowScopeKey
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(elementId, that.elementId)
         && bpmnElementType == that.bpmnElementType;
@@ -118,7 +118,7 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
         version,
         workflowKey,
         workflowInstanceKey,
-        scopeInstanceKey,
+        flowScopeKey,
         bpmnElementType);
   }
 
@@ -137,8 +137,8 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
         + workflowKey
         + ", workflowInstanceKey="
         + workflowInstanceKey
-        + ", scopeInstanceKey="
-        + scopeInstanceKey
+        + ", flowScopeKey="
+        + flowScopeKey
         + ", bpmnElementType="
         + bpmnElementType
         + ", payload='"

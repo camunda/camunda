@@ -111,7 +111,7 @@ public class ActivityInputMappingTest {
     testClient.createWorkflowInstance(PROCESS_ID, initialPayload);
 
     // then
-    final long scopeInstanceKey =
+    final long flowScopeKey =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
             .withElementId("sub")
             .getFirst()
@@ -119,7 +119,7 @@ public class ActivityInputMappingTest {
 
     assertThat(
             RecordingExporter.variableRecords()
-                .withScopeInstanceKey(scopeInstanceKey)
+                .withScopeKey(flowScopeKey)
                 .limit(expectedActivityVariables.size()))
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getName(), v.getValue()))

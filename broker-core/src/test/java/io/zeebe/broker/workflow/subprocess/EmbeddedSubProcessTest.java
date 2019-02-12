@@ -144,7 +144,7 @@ public class EmbeddedSubProcessTest {
             .withElementId("subProcess")
             .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .getFirst();
-    assertThat(subProcessReady.getValue().getScopeInstanceKey()).isEqualTo(workflowInstanceKey);
+    assertThat(subProcessReady.getValue().getFlowScopeKey()).isEqualTo(workflowInstanceKey);
 
     final Record<WorkflowInstanceRecordValue> subProcessTaskReady =
         testClient
@@ -152,7 +152,7 @@ public class EmbeddedSubProcessTest {
             .withElementId("subProcessTask")
             .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .getFirst();
-    assertThat(subProcessTaskReady.getValue().getScopeInstanceKey())
+    assertThat(subProcessTaskReady.getValue().getFlowScopeKey())
         .isEqualTo(subProcessReady.getKey());
   }
 

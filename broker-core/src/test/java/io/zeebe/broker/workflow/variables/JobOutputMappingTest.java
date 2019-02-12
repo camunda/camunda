@@ -172,7 +172,7 @@ public class JobOutputMappingTest {
             .done());
 
     // when
-    final long scopeInstanceKey = testClient.createWorkflowInstance(PROCESS_ID, "{'i': 0}");
+    final long flowScopeKey = testClient.createWorkflowInstance(PROCESS_ID, "{'i': 0}");
     testClient.completeJobOfType("test", jobPayload);
 
     // then
@@ -188,7 +188,7 @@ public class JobOutputMappingTest {
     assertThat(
             RecordingExporter.variableRecords()
                 .skipUntil(r -> r.getPosition() > initialVariable.getPosition())
-                .withScopeInstanceKey(elementInstanceKey)
+                .withScopeKey(elementInstanceKey)
                 .limit(expectedActivityVariables.size()))
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getName(), v.getValue()))
@@ -198,7 +198,7 @@ public class JobOutputMappingTest {
     assertThat(
             RecordingExporter.variableRecords()
                 .skipUntil(r -> r.getPosition() > initialVariable.getPosition())
-                .withScopeInstanceKey(scopeInstanceKey)
+                .withScopeKey(flowScopeKey)
                 .limit(expectedScopeVariables.size()))
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getName(), v.getValue()))
