@@ -1,5 +1,6 @@
 import reportConfig from './reportConfig';
 import * as process from './process';
+import * as decision from './decision';
 
 const {
   options: {view, groupBy, visualization},
@@ -19,10 +20,20 @@ it('should get a label for a complex view', () => {
   ).toBe('Count Frequency of: Process Instances');
 });
 
-it('should get a label for gorup by variables', () => {
+it('should get a label for group by variables', () => {
   expect(getLabelFor(groupBy, {type: 'variable', value: {name: 'aName', type: 'String'}})).toBe(
     'Variable: aName'
   );
+});
+
+it('should get a label for group by variables for dmn', () => {
+  expect(
+    getLabelFor(
+      decision.groupBy,
+      {type: 'inputVariable', value: {id: 'anId'}},
+      '<definitions><input id="anId" label="aName" /></definitions>'
+    )
+  ).toBe('Input Variable: aName');
 });
 
 it('should return the groupBy based on the view if the groupBy is unambiguous', () => {

@@ -34,7 +34,7 @@ export default function reportConfig({view, groupBy, visualization}) {
    * @param config One of the configuration objects of the reportConfig service (view, groupBy, visualization)
    * @param entry One data entry of the configuration object. This corresponds to the payload sent to the backend
    */
-  const getLabelFor = (config, entry) => {
+  const getLabelFor = (config, entry, xml) => {
     const obj = getObject(config, entry);
 
     if (obj) {
@@ -44,11 +44,18 @@ export default function reportConfig({view, groupBy, visualization}) {
         return `${label}: ${entry.value.name}`;
       }
 
+      if (data.type === 'inputVariable' || data.type === 'outputVariable') {
+        return `${label}: ${new DOMParser()
+          .parseFromString(xml, 'text/xml')
+          .getElementById(entry.value.id)
+          .getAttribute('label')}`;
+      }
+
       const dataKeys = getDataKeys(data);
 
       const submenu = dataKeys.find(key => Array.isArray(data[key]));
       if (submenu) {
-        return `${label}: ${getLabelFor(data[submenu], entry[submenu])}`;
+        return `${label}: ${getLabelFor(data[submenu], entry[submenu], xml)}`;
       }
       return label;
     }

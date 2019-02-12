@@ -231,7 +231,13 @@ export default class ReportControlPanel extends React.Component {
 
   renderDropdown = (type, config) => {
     const {data} = this.props.report;
-    const {processDefinitionKey, processDefinitionVersion, view, groupBy} = data;
+    const {
+      processDefinitionKey,
+      processDefinitionVersion,
+      view,
+      groupBy,
+      configuration: {xml}
+    } = data;
     let disabled = false;
 
     if (!processDefinitionKey || !processDefinitionVersion) {
@@ -245,7 +251,7 @@ export default class ReportControlPanel extends React.Component {
     }
     return (
       <Dropdown
-        label={getLabelFor(config, data[type]) || 'Please Select...'}
+        label={getLabelFor(config, data[type], xml) || 'Please Select...'}
         className="configDropdown"
         disabled={disabled}
       >

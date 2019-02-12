@@ -22,21 +22,21 @@ export const groupBy = {
       ]
     },
     label: 'Evaluation Date'
+  },
+  inputVariable: {
+    data: {
+      type: 'inputVariable',
+      value: []
+    },
+    label: 'Input Variable'
+  },
+  outputVariable: {
+    data: {
+      type: 'outputVariable',
+      value: []
+    },
+    label: 'Output Variable'
   }
-  // inputVariable: {
-  //   data: {
-  //     type: 'inputVariable',
-  //     value: []
-  //   },
-  //   label: 'Input Variable'
-  // },
-  // outputVariable: {
-  //   data: {
-  //     type: 'outputVariable',
-  //     value: []
-  //   },
-  //   label: 'Output Variable'
-  // }
 };
 
 const combinations = {
@@ -53,15 +53,15 @@ const combinations = {
     {
       entity: groupBy.evaluationDate,
       then: [visualization.table, visualization.pie, visualization.line, visualization.bar]
+    },
+    {
+      entity: groupBy.inputVariable,
+      then: [visualization.table, visualization.pie, visualization.line, visualization.bar]
+    },
+    {
+      entity: groupBy.outputVariable,
+      then: [visualization.table, visualization.pie, visualization.line, visualization.bar]
     }
-    // {
-    //   entity: groupBy.inputVariable,
-    //   then: [visualization.table, visualization.pie, visualization.line, visualization.bar]
-    // },
-    // {
-    //   entity: groupBy.outputVariable,
-    //   then: [visualization.table, visualization.pie, visualization.line, visualization.bar]
-    // }
   ]
 };
 

@@ -16,7 +16,7 @@ jest.mock('services', () => {
         view: {foo: {data: 'foo', label: 'viewfoo'}},
         groupBy: {
           foo: {data: 'foo', label: 'groupbyfoo'},
-          variable: {data: {value: []}, label: 'Variables'}
+          inputVariable: {data: {value: []}, label: 'Input Variable'}
         },
         visualization: {foo: {data: 'foo', label: 'visualizationfoo'}}
       },
@@ -35,7 +35,10 @@ const report = {
     groupBy: {type: 'none', unit: null},
     visualization: 'table',
     filter: null,
-    configuration: {xml: 'fooXml'}
+    configuration: {
+      xml:
+        '<decision id="aKey"><input id="anId" label="aName" /><input id="anotherId" label="anotherName" /></decision>'
+    }
   }
 };
 
@@ -65,4 +68,13 @@ it('should not disable the groupBy and visualization Selects if view is selected
 
   expect(node.find('.configDropdown').at(1)).not.toBeDisabled();
   expect(node.find('.configDropdown').at(2)).not.toBeDisabled();
+});
+
+it('should include variables in the groupby options', () => {
+  const node = shallow(<DecisionControlPanel report={report} />);
+
+  const varDropdown = node.find('[label="Group by"] Submenu DropdownOption');
+
+  expect(varDropdown.at(0).prop('children')).toBe('aName');
+  expect(varDropdown.at(1).prop('children')).toBe('anotherName');
 });

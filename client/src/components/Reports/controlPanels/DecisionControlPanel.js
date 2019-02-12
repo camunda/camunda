@@ -69,7 +69,13 @@ export default class DecisionControlPanel extends React.Component {
 
   renderDropdown = (type, config) => {
     const {data} = this.props.report;
-    const {decisionDefinitionKey, decisionDefinitionVersion, view, groupBy} = data;
+    const {
+      decisionDefinitionKey,
+      decisionDefinitionVersion,
+      view,
+      groupBy,
+      configuration: {xml}
+    } = data;
     let disabled = false;
 
     if (!decisionDefinitionKey || !decisionDefinitionVersion) {
@@ -83,7 +89,7 @@ export default class DecisionControlPanel extends React.Component {
     }
     return (
       <Dropdown
-        label={decisionConfig.getLabelFor(config, data[type]) || 'Please Select...'}
+        label={decisionConfig.getLabelFor(config, data[type], xml) || 'Please Select...'}
         className="configDropdown"
         disabled={disabled}
       >
@@ -105,9 +111,25 @@ export default class DecisionControlPanel extends React.Component {
     const {data} = this.props.report;
     const disabled = type === 'groupBy' && !decisionConfig.isAllowed(data.view, configData);
     const checked = isChecked(configData, data[type]);
+
+    let options = configData[submenu];
+
+    if (type === 'groupBy' && key.includes('Variable')) {
+      options = [
+        ...new DOMParser()
+          .parseFromString(data.configuration.xml, 'text/xml')
+          .querySelectorAll(
+            `decision[id="${data.decisionDefinitionKey}"] ${key.replace('Variable', '')}`
+          )
+      ].map(node => ({
+        data: {id: node.getAttribute('id')},
+        label: node.getAttribute('label')
+      }));
+    }
+
     return (
       <Dropdown.Submenu label={label} key={key} disabled={disabled} checked={checked}>
-        {configData[submenu].map((entry, idx) => {
+        {options.map((entry, idx) => {
           const subData = {...configData, [submenu]: entry.data};
           const checked = isChecked(subData, data[type]);
           return (

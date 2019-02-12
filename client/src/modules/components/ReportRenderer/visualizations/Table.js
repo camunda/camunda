@@ -129,15 +129,17 @@ export default withErrorHandling(
     }
 
     formatData = () => {
-      const {report, updateSorting} = this.props;
       const {
-        reportType,
-        combined,
-        data,
-        processInstanceCount,
-        decisionInstanceCount,
-        result
-      } = report;
+        report: {reportType, combined, data, processInstanceCount, decisionInstanceCount, result},
+        updateSorting
+      } = this.props;
+
+      const {
+        parameters,
+        configuration: {excludedColumns, columnOrder, xml},
+        groupBy,
+        view
+      } = data;
 
       // Combined Report
       if (combined) return this.processCombinedData();
@@ -146,10 +148,6 @@ export default withErrorHandling(
 
       // raw data
       if (isRaw(result)) {
-        const {
-          parameters,
-          configuration: {excludedColumns, columnOrder}
-        } = data;
         return {
           ...processRawData({
             data: formattedResult,
@@ -167,13 +165,13 @@ export default withErrorHandling(
       let labels;
       if (reportType === 'process') {
         labels = [
-          processConfig.getLabelFor(processConfig.options.groupBy, data.groupBy),
-          processConfig.getLabelFor(processConfig.options.view, data.view)
+          processConfig.getLabelFor(processConfig.options.groupBy, groupBy, xml),
+          processConfig.getLabelFor(processConfig.options.view, view, xml)
         ];
       } else if (reportType === 'decision') {
         labels = [
-          decisionConfig.getLabelFor(decisionConfig.options.groupBy, data.groupBy),
-          decisionConfig.getLabelFor(decisionConfig.options.view, data.view)
+          decisionConfig.getLabelFor(decisionConfig.options.groupBy, groupBy, xml),
+          decisionConfig.getLabelFor(decisionConfig.options.view, view, xml)
         ];
       }
       return this.processSingleData(
