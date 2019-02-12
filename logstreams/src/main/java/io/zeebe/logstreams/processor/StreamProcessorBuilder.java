@@ -37,8 +37,6 @@ public class StreamProcessorBuilder {
   protected int id;
   protected String name;
 
-  protected StreamProcessor streamProcessor;
-
   protected LogStream logStream;
 
   protected ActorScheduler actorScheduler;
@@ -55,11 +53,17 @@ public class StreamProcessorBuilder {
 
   protected ServiceContainer serviceContainer;
   private List<ServiceName<?>> additionalDependencies;
+  private StreamProcessorFactory streamProcessorFactory;
 
-  public StreamProcessorBuilder(int id, String name, StreamProcessor streamProcessor) {
+  public StreamProcessorBuilder(int id, String name) {
     this.id = id;
     this.name = name;
-    this.streamProcessor = streamProcessor;
+  }
+
+  public StreamProcessorBuilder streamProcessorFactory(
+      StreamProcessorFactory streamProcessorFactory) {
+    this.streamProcessorFactory = streamProcessorFactory;
+    return this;
   }
 
   public StreamProcessorBuilder additionalDependencies(
@@ -132,7 +136,7 @@ public class StreamProcessorBuilder {
   }
 
   private void validate() {
-    Objects.requireNonNull(streamProcessor, "No stream processor provided.");
+    Objects.requireNonNull(streamProcessorFactory, "No stream processor factory provided.");
     Objects.requireNonNull(logStream, "No log stream provided.");
     Objects.requireNonNull(actorScheduler, "No task scheduler provided.");
     Objects.requireNonNull(serviceContainer, "No service container provided.");
@@ -143,7 +147,7 @@ public class StreamProcessorBuilder {
     final StreamProcessorContext ctx = new StreamProcessorContext();
     ctx.setId(id);
     ctx.setName(name);
-    ctx.setStreamProcessor(streamProcessor);
+    ctx.setStreamProcessorFactory(streamProcessorFactory);
 
     ctx.setLogStream(logStream);
 

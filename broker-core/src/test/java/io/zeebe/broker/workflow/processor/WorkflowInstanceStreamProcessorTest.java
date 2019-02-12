@@ -23,6 +23,7 @@ import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.timeout;
@@ -32,10 +33,13 @@ import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.util.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
-import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.BpmnElementType;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.TimerIntent;
@@ -44,14 +48,18 @@ import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 
 public class WorkflowInstanceStreamProcessorTest {
+
+  @Rule public Timeout timeoutRule = new Timeout(2, TimeUnit.MINUTES);
 
   private static final String PROCESS_ID = "process";
 
@@ -141,7 +149,10 @@ public class WorkflowInstanceStreamProcessorTest {
 
     assertThat(rejection.getMetadata().getIntent()).isEqualTo(WorkflowInstanceIntent.CANCEL);
     assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
-        .isEqualTo("Workflow instance is not running");
+        .isEqualTo(
+            "Expected to cancel a workflow instance with key '"
+                + createdEvent.getKey()
+                + "', but no such workflow was found");
   }
 
   @Test
@@ -150,7 +161,10 @@ public class WorkflowInstanceStreamProcessorTest {
     streamProcessorRule.deploy(SERVICE_TASK_WORKFLOW);
 
     streamProcessor.blockAfterWorkflowInstanceRecord(
-        isForElement("start")); // blocks before handling sequence flow taken
+        isForElement(
+            "start",
+            WorkflowInstanceIntent
+                .ELEMENT_COMPLETED)); // blocks before handling sequence flow taken
 
     final TypedRecord<WorkflowInstanceRecord> createdEvent =
         streamProcessorRule.createWorkflowInstance(PROCESS_ID);
@@ -189,7 +203,9 @@ public class WorkflowInstanceStreamProcessorTest {
 
     // stop when ELEMENT_COMPLETED is written
     streamProcessor.blockAfterWorkflowInstanceRecord(
-        r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_COMPLETING);
+        r ->
+            r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_COMPLETING
+                && r.getValue().getBpmnElementType() == BpmnElementType.SERVICE_TASK);
 
     final TypedRecord<WorkflowInstanceRecord> createdEvent =
         streamProcessorRule.createWorkflowInstance(PROCESS_ID);
@@ -360,7 +376,8 @@ public class WorkflowInstanceStreamProcessorTest {
             catchEvent.getValue().getWorkflowInstanceKey(),
             catchEvent.getKey(),
             wrapString("order canceled"),
-            wrapString("order-123"));
+            wrapString("order-123"),
+            true);
   }
 
   @Test
@@ -393,8 +410,7 @@ public class WorkflowInstanceStreamProcessorTest {
 
     assertThat(rejection.getMetadata().getIntent())
         .isEqualTo(WorkflowInstanceSubscriptionIntent.OPEN);
-    assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
-        .isEqualTo("subscription is already open");
+    assertThat(rejection.getMetadata().getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
   }
 
   @Test
@@ -429,8 +445,7 @@ public class WorkflowInstanceStreamProcessorTest {
 
     assertThat(rejection.getMetadata().getIntent())
         .isEqualTo(WorkflowInstanceSubscriptionIntent.CORRELATE);
-    assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
-        .isEqualTo("subscription is already correlated");
+    assertThat(rejection.getMetadata().getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
 
     verify(streamProcessorRule.getMockSubscriptionCommandSender(), timeout(5_000).times(2))
         .correlateMessageSubscription(
@@ -477,8 +492,9 @@ public class WorkflowInstanceStreamProcessorTest {
 
     assertThat(rejection.getMetadata().getIntent())
         .isEqualTo(WorkflowInstanceSubscriptionIntent.CORRELATE);
-    assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
-        .isEqualTo("activity is not active anymore");
+    // since we mock the message partition, we never get the acknowledged CLOSE command, so our
+    // subscription remains in closing state
+    assertThat(rejection.getMetadata().getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
   }
 
   @Test
@@ -546,8 +562,7 @@ public class WorkflowInstanceStreamProcessorTest {
 
     assertThat(rejection.getMetadata().getIntent())
         .isEqualTo(WorkflowInstanceSubscriptionIntent.CLOSE);
-    assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
-        .isEqualTo("subscription is already closed");
+    assertThat(rejection.getMetadata().getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
   }
 
   @Test
@@ -556,6 +571,8 @@ public class WorkflowInstanceStreamProcessorTest {
     streamProcessorRule.deploy(TIMER_BOUNDARY_EVENT_WORKFLOW);
     streamProcessor.blockAfterJobEvent(r -> r.getMetadata().getIntent() == JobIntent.CREATED);
     streamProcessorRule.createWorkflowInstance(PROCESS_ID);
+
+    waitUntil(() -> streamProcessor.isBlocked());
 
     // when
     final TypedRecord<TimerRecord> timerRecord =
@@ -570,12 +587,14 @@ public class WorkflowInstanceStreamProcessorTest {
 
     // then
 
-    // will still output the events since the trigger was written before the task was completed,
-    // but it will not do anything.
     assertThat(envRule.events().onlyTimerRecords().collect(Collectors.toList()))
-        .extracting(r -> r.getMetadata().getIntent())
+        .extracting(TypedRecord::getMetadata)
+        .extracting(m -> tuple(m.getRecordType(), m.getIntent()))
         .containsExactly(
-            TimerIntent.CREATE, TimerIntent.CREATED, TimerIntent.TRIGGER, TimerIntent.TRIGGERED);
+            tuple(RecordType.COMMAND, TimerIntent.CREATE),
+            tuple(RecordType.EVENT, TimerIntent.CREATED),
+            tuple(RecordType.COMMAND, TimerIntent.TRIGGER),
+            tuple(RecordType.COMMAND_REJECTION, TimerIntent.TRIGGER));
     // ensures timer1 node never exists as far as execution goes
     assertThat(
             envRule
@@ -609,6 +628,8 @@ public class WorkflowInstanceStreamProcessorTest {
                 && r.getValue().getElementId().equals(wrapString("task")));
     streamProcessorRule.createWorkflowInstance(PROCESS_ID);
 
+    waitUntil(() -> streamProcessor.isBlocked());
+
     // when
     final TypedRecord<TimerRecord> timer1Record =
         streamProcessorRule.awaitTimerInState("timer1", TimerIntent.CREATED);
@@ -625,11 +646,12 @@ public class WorkflowInstanceStreamProcessorTest {
             envRule
                 .events()
                 .onlyWorkflowInstanceRecords()
-                .withIntent(WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING)
+                .skipUntil(r -> r.getValue().getElementId().equals(wrapString("task")))
+                .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETING)
                 .map(TypedRecord::getValue)
                 .map(WorkflowInstanceRecord::getElementId)
                 .map(BufferUtil::bufferAsString))
-        .containsExactly("timer1");
+        .containsExactly("timer1", "timer1End", "process");
   }
 
   private Predicate<TypedRecord<WorkflowInstanceRecord>> isForElement(final String elementId) {

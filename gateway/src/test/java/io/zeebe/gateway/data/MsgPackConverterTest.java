@@ -19,6 +19,7 @@ import static io.zeebe.util.StringUtil.getBytes;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.gateway.impl.data.MsgPackConverter;
+import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.util.LangUtil;
 import io.zeebe.util.StreamUtil;
 import java.io.ByteArrayInputStream;
@@ -86,13 +87,64 @@ public class MsgPackConverterTest {
   }
 
   @Test
-  public void shouldThrowExceptionIfStringIsNotAJsonObject() throws Exception {
+  public void shouldConvertStringFromMsgPackToJsonString() throws Exception {
+    // when
+    final String json =
+        converter.convertToJson(MsgPackUtil.encodeMsgPack(b -> b.packString("x")).byteArray());
+
+    // then
+    assertThat(json).isEqualTo("\"x\"");
+  }
+
+  @Test
+  public void shouldConvertIntegerFromMsgPackToJsonString() throws Exception {
+    // when
+    final String json =
+        converter.convertToJson(MsgPackUtil.encodeMsgPack(b -> b.packInt(123)).byteArray());
+
+    // then
+    assertThat(json).isEqualTo("123");
+  }
+
+  @Test
+  public void shouldConvertBooleanFromMsgPackToJsonString() throws Exception {
+    // when
+    final String json =
+        converter.convertToJson(MsgPackUtil.encodeMsgPack(b -> b.packBoolean(true)).byteArray());
+
+    // then
+    assertThat(json).isEqualTo("true");
+  }
+
+  @Test
+  public void shouldConvertArrayFromMsgPackToJsonString() throws Exception {
+    // when
+    final String json =
+        converter.convertToJson(
+            MsgPackUtil.encodeMsgPack(b -> b.packArrayHeader(2).packInt(1).packInt(2)).byteArray());
+
+    // then
+    assertThat(json).isEqualTo("[1,2]");
+  }
+
+  @Test
+  public void shouldConvertNullFromMsgPackToJsonString() throws Exception {
+    // when
+    final String json =
+        converter.convertToJson(MsgPackUtil.encodeMsgPack(b -> b.packNil()).byteArray());
+
+    // then
+    assertThat(json).isEqualTo("null");
+  }
+
+  @Test
+  public void shouldThrowExceptionIfNotAJsonObject() throws Exception {
     // then
     exception.expect(RuntimeException.class);
     exception.expectMessage("Failed to convert JSON to MessagePack");
 
     // when
-    converter.convertToMsgPack("123");
+    converter.convertToMsgPack("}");
   }
 
   @Test

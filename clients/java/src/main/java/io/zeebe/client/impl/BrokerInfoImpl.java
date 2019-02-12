@@ -20,6 +20,7 @@ import io.zeebe.client.api.commands.PartitionBrokerRole;
 import io.zeebe.client.api.commands.PartitionInfo;
 import io.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class BrokerInfoImpl implements BrokerInfo {
@@ -78,7 +79,10 @@ public class BrokerInfoImpl implements BrokerInfo {
       } else if (partition.getRole() == GatewayOuterClass.Partition.PartitionBrokerRole.FOLLOWER) {
         this.role = PartitionBrokerRole.FOLLOWER;
       } else {
-        throw new RuntimeException("unknown partition broker role");
+        throw new RuntimeException(
+            String.format(
+                "Unexpected partition broker role %s, should be one of %s",
+                partition.getRole(), Arrays.toString(PartitionBrokerRole.values())));
       }
     }
 

@@ -20,6 +20,7 @@ package io.zeebe.broker.workflow.state;
 import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
+import io.zeebe.broker.workflow.processor.UpdateVariableStreamWriter;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceLifecycle;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceMetrics;
 import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
@@ -29,44 +30,6 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceReco
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.metrics.MetricsManager;
 
-/*
- * Workflow Execution Concept:
- *
- * Processing concept:
- *
- * In: 1 event ---> BPMN step evaluation ---> Out: n events
- *
- * Data structures:
- *
- * - Index
- * - Events in log stream
- *
- * The index always contains the latest, materialized state of a workflow instance.
- * Events on the log stream have two purposes:
- *
- * - They represent changes to that state (=> that can be recorded via exporters)
- * - A state change can trigger other state changes, i.e. the workflow stream processor
- *   reacts to them. This allows us to break complex operations into smaller, atomic steps.
- *
- * In conclusion:
- *
- * - Whenever we process an event or command, we publish their effects as follow-up events.
- *   At the time of publication, the index already contains these effects.
- *
- * Index state:
- *
- * - In the index, we have two things:
- *   - element instances
- *   - tokens
- * - An element instance is an instance of a stateful BPMN element (e.g. service task, subprocess)
- * - A token is any event that is published to get from one element instance to another (e.g. sequence
- *   flow events, gateways). Some of these events are stored in the index for later reference (e.g.
- *   parallel merge), but most are not. There is no concept of token identity.
- * - Element instances are explicitly represented in the index (e.g. to be able to cancel them),
- *   tokens are counted (e.g. if there is still "something" going on, when we would
- *   like to complete a scope).
- * - Both things are transparently maintained in the index whenever an event is consumed or published.
- */
 public class WorkflowEngineState implements StreamProcessorLifecycleAware {
 
   private final WorkflowState workflowState;
@@ -87,6 +50,11 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
 
     this.metrics = new WorkflowInstanceMetrics(metricsManager, logStream.getPartitionId());
     this.elementInstanceState = workflowState.getElementInstanceState();
+
+    final UpdateVariableStreamWriter updateVariableStreamWriter =
+        new UpdateVariableStreamWriter(streamProcessor.getStreamWriter());
+
+    elementInstanceState.getVariablesState().setListener(updateVariableStreamWriter);
   }
 
   @Override
@@ -94,64 +62,26 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
     metrics.close();
   }
 
-  public void onEventConsumed(TypedRecord<WorkflowInstanceRecord> record) {
-
-    if (isFlowTriggeringEvent(record)) {
-      final long scopeKey = record.getValue().getScopeInstanceKey();
-      workflowState.getElementInstanceState().consumeToken(scopeKey);
-    }
-    // else: element instances remain in the index until a final state is published
-  }
-
-  private static boolean isFlowTriggeringEvent(TypedRecord<WorkflowInstanceRecord> record) {
-    final WorkflowInstanceIntent state = (WorkflowInstanceIntent) record.getMetadata().getIntent();
-    final long scopeKey = record.getValue().getScopeInstanceKey();
-
-    return WorkflowInstanceLifecycle.isTokenState(state)
-        || (WorkflowInstanceLifecycle.isFinalState(state) && scopeKey >= 0);
-  }
-
   public void onEventProduced(
       long key, WorkflowInstanceIntent state, WorkflowInstanceRecord value) {
+
     if (WorkflowInstanceLifecycle.isElementInstanceState(state)) {
       onElementInstanceEventProduced(key, state, value);
-    } else if (state == WorkflowInstanceIntent.PAYLOAD_UPDATED) {
-      // current hack: PAYLOAD_UPDATED can be part of both, element instance and token lifecycle
-      //   => we should improve that when we redesign incidents and payloads
-      if (elementInstanceState.getInstance(key) != null) {
-        onElementInstanceEventProduced(key, state, value);
-      } else {
-        // ignore => the only use case for payload updates of token events is currently incidents;
-        //   see ExclusiveSplitHandler.raiseIncident for explanation why we don't count another
-        // token here
-      }
-    } else {
-      onTokenEventProduced(key, state, value);
     }
   }
 
-  public void deferTokenEvent(TypedRecord<WorkflowInstanceRecord> event) {
-    final long scopeKey = event.getValue().getScopeInstanceKey();
-    elementInstanceState.storeTokenEvent(scopeKey, event, Purpose.DEFERRED_TOKEN);
-    elementInstanceState.spawnToken(scopeKey); // the token remains active
+  public void deferRecord(
+      long key, long scopeKey, WorkflowInstanceRecord value, WorkflowInstanceIntent state) {
+    elementInstanceState.storeRecord(key, scopeKey, value, state, Purpose.DEFERRED);
   }
 
-  public void storeFailedToken(TypedRecord<WorkflowInstanceRecord> event) {
-    final long scopeKey = event.getValue().getScopeInstanceKey();
-    elementInstanceState.storeTokenEvent(scopeKey, event, Purpose.FAILED_TOKEN);
+  public void storeFailedRecord(TypedRecord<WorkflowInstanceRecord> event) {
+    final long scopeKey = event.getValue().getFlowScopeKey();
+    elementInstanceState.storeRecord(scopeKey, event, Purpose.FAILED);
   }
 
-  public void consumeStoredRecord(long scopeKey, long key, Purpose purpose) {
+  public void removeStoredRecord(long scopeKey, long key, Purpose purpose) {
     elementInstanceState.removeStoredRecord(scopeKey, key, purpose);
-    if (purpose == Purpose.DEFERRED_TOKEN) {
-      elementInstanceState.consumeToken(scopeKey);
-    }
-  }
-
-  private void onTokenEventProduced(
-      long key, WorkflowInstanceIntent state, WorkflowInstanceRecord value) {
-    final long scopeKey = value.getScopeInstanceKey();
-    elementInstanceState.spawnToken(scopeKey);
   }
 
   private void onElementInstanceEventProduced(
@@ -160,8 +90,6 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
     // only instances that have a multi-state lifecycle are represented in the index
     if (WorkflowInstanceLifecycle.isInitialState(state)) {
       createNewElementInstance(key, state, value);
-    } else if (WorkflowInstanceLifecycle.isFinalState(state)) {
-      removeElementInstance(key, value);
     } else {
       updateElementInstance(key, state, value);
     }
@@ -183,22 +111,14 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
 
   private void removeElementInstance(long key, WorkflowInstanceRecord value) {
     elementInstanceState.removeInstance(key);
-
-    final long scopeInstanceKey = value.getScopeInstanceKey();
-
-    // a final state is triggers continued execution, i.e. we count a new token
-    if (scopeInstanceKey >= 0) // i.e. not root scope
-    {
-      elementInstanceState.spawnToken(scopeInstanceKey);
-    }
   }
 
   private void createNewElementInstance(
       long key, WorkflowInstanceIntent state, WorkflowInstanceRecord value) {
-    final long scopeInstanceKey = value.getScopeInstanceKey();
+    final long flowScopeKey = value.getFlowScopeKey();
 
-    if (scopeInstanceKey >= 0) {
-      final ElementInstance flowScopeInstance = elementInstanceState.getInstance(scopeInstanceKey);
+    if (flowScopeKey >= 0) {
+      final ElementInstance flowScopeInstance = elementInstanceState.getInstance(flowScopeKey);
       elementInstanceState.newInstance(flowScopeInstance, key, value, state);
     } else {
       elementInstanceState.newInstance(key, value, state);
@@ -212,7 +132,7 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
         metrics.countInstanceCanceled();
       } else if (state == WorkflowInstanceIntent.ELEMENT_COMPLETED) {
         metrics.countInstanceCompleted();
-      } else if (state == WorkflowInstanceIntent.ELEMENT_READY) {
+      } else if (state == WorkflowInstanceIntent.ELEMENT_ACTIVATING) {
         metrics.countInstanceCreated();
       }
     }

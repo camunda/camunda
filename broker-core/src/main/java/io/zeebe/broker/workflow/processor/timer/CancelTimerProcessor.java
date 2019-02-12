@@ -21,13 +21,15 @@ import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
-import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.broker.workflow.state.TimerInstance;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.protocol.clientapi.RejectionType;
+import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.intent.TimerIntent;
 
 public class CancelTimerProcessor implements TypedRecordProcessor<TimerRecord> {
+  public static final String NO_TIMER_FOUND_MESSAGE =
+      "Expected to cancel timer with key '%d', but no such timer was found";
   private final WorkflowState workflowState;
 
   public CancelTimerProcessor(final WorkflowState workflowState) {
@@ -45,7 +47,7 @@ public class CancelTimerProcessor implements TypedRecordProcessor<TimerRecord> {
 
     if (timerInstance == null) {
       streamWriter.appendRejection(
-          record, RejectionType.NOT_APPLICABLE, "timer is already triggered or canceled");
+          record, RejectionType.NOT_FOUND, String.format(NO_TIMER_FOUND_MESSAGE, record.getKey()));
     } else {
       streamWriter.appendFollowUpEvent(record.getKey(), TimerIntent.CANCELED, timer);
       workflowState.getTimerState().remove(timerInstance);

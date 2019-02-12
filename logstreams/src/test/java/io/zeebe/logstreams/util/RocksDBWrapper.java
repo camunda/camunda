@@ -15,62 +15,38 @@
  */
 package io.zeebe.logstreams.util;
 
-import static io.zeebe.util.StringUtil.getBytes;
+import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.ZeebeDb;
+import io.zeebe.db.impl.DbLong;
+import io.zeebe.db.impl.DbString;
+import io.zeebe.db.impl.DefaultColumnFamily;
 
-import java.nio.ByteBuffer;
-import org.rocksdb.RocksDB;
-import org.rocksdb.RocksDBException;
-
-// Slow and inefficient, only for testing
 public class RocksDBWrapper {
-  private RocksDB db;
 
-  public void wrap(RocksDB db) {
-    this.db = db;
+  private DbString key;
+  private DbLong value;
+  private ColumnFamily<DbString, DbLong> defaultColumnFamily;
+
+  public void wrap(ZeebeDb<DefaultColumnFamily> db) {
+    key = new DbString();
+    value = new DbLong();
+    defaultColumnFamily = db.createColumnFamily(DefaultColumnFamily.DEFAULT, key, value);
   }
 
-  public int getInt(String key) throws RocksDBException {
-    return toInt(db.get(getBytes(key)));
+  public int getInt(String key) {
+    this.key.wrapString(key);
+    final DbLong zbLong = defaultColumnFamily.get(this.key);
+    return zbLong != null ? (int) zbLong.getValue() : -1;
   }
 
-  public void putInt(String key, int value) throws RocksDBException {
-    db.put(getBytes(key), ofInt(value));
+  public void putInt(String key, int value) {
+    this.key.wrapString(key);
+    this.value.wrapLong(value);
+    defaultColumnFamily.put(this.key, this.value);
   }
 
-  public long getLong(String key) throws RocksDBException {
-    return toLong(db.get(getBytes(key)));
-  }
-
-  public void putLong(String key, long value) throws RocksDBException {
-    db.put(getBytes(key), ofLong(value));
-  }
-
-  public boolean mayExist(String key) throws RocksDBException {
-    final StringBuilder builder = new StringBuilder();
-    return db.keyMayExist(getBytes(key), builder);
-  }
-
-  // CONVERSION
-
-  private byte[] ofInt(int value) {
-    final ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES);
-    buffer.putInt(value);
-
-    return buffer.array();
-  }
-
-  private int toInt(byte[] value) {
-    return ByteBuffer.wrap(value).getInt();
-  }
-
-  private byte[] ofLong(long value) {
-    final ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
-    buffer.putLong(value);
-
-    return buffer.array();
-  }
-
-  private long toLong(byte[] value) {
-    return ByteBuffer.wrap(value).getLong();
+  public boolean mayExist(String key) {
+    this.key.wrapString(key);
+    return defaultColumnFamily.exists(this.key);
   }
 }

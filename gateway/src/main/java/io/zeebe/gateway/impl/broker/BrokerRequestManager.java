@@ -16,9 +16,12 @@
 package io.zeebe.gateway.impl.broker;
 
 import io.zeebe.gateway.cmd.BrokerErrorException;
-import io.zeebe.gateway.cmd.ClientCommandRejectedException;
-import io.zeebe.gateway.cmd.ClientException;
+import io.zeebe.gateway.cmd.BrokerRejectionException;
+import io.zeebe.gateway.cmd.BrokerResponseException;
 import io.zeebe.gateway.cmd.ClientOutOfMemoryException;
+import io.zeebe.gateway.cmd.ClientResponseException;
+import io.zeebe.gateway.cmd.IllegalBrokerResponseException;
+import io.zeebe.gateway.cmd.NoTopologyAvailableException;
 import io.zeebe.gateway.impl.ErrorResponseHandler;
 import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
@@ -84,7 +87,7 @@ public class BrokerRequestManager extends Actor {
     sendRequest(
         request,
         responseConsumer,
-        rejection -> throwableConsumer.accept(new ClientCommandRejectedException(rejection)),
+        rejection -> throwableConsumer.accept(new BrokerRejectionException(rejection)),
         error -> throwableConsumer.accept(new BrokerErrorException(error)),
         throwableConsumer);
   }
@@ -108,13 +111,14 @@ public class BrokerRequestManager extends Actor {
                 errorConsumer.accept(response.getError());
               } else {
                 throwableConsumer.accept(
-                    new ClientException("Unknown response received: " + response));
+                    new IllegalBrokerResponseException(
+                        "Expected broker response to be either response, rejection, or error, but is neither of them"));
               }
             } else {
               throwableConsumer.accept(error);
             }
-          } catch (Exception e) {
-            throwableConsumer.accept(new ClientException("Failed to handle response", e));
+          } catch (RuntimeException e) {
+            throwableConsumer.accept(new BrokerResponseException(e));
           }
         });
   }
@@ -156,7 +160,9 @@ public class BrokerRequestManager extends Actor {
               fetchTopologyBeforeRequest(request, responseConsumer, remainingRetries - 1);
             } else {
               responseConsumer.accept(
-                  null, new ClientException("Unable to fetch partitions for request"));
+                  null,
+                  new NoTopologyAvailableException(
+                      "Expected to discover at least one partition before dispatching request, but none found"));
             }
           } else if (remainingRetries > 1) {
             fetchTopologyBeforeRequest(request, responseConsumer, remainingRetries - 1);
@@ -186,17 +192,12 @@ public class BrokerRequestManager extends Actor {
               } else {
                 responseConsumer.accept(null, error);
               }
-            } catch (Exception e) {
-              responseConsumer.accept(
-                  null, new ClientException("Failed to read response: " + e.getMessage(), e));
+            } catch (RuntimeException e) {
+              responseConsumer.accept(null, new ClientResponseException(e));
             }
           });
     } else {
-      responseConsumer.accept(
-          null,
-          new ClientOutOfMemoryException(
-              "Broker client is out of buffer memory and cannot make "
-                  + "new requests until memory is reclaimed."));
+      responseConsumer.accept(null, new ClientOutOfMemoryException());
     }
   }
 
@@ -222,7 +223,7 @@ public class BrokerRequestManager extends Actor {
           headerDecoder.version());
 
       final ErrorCode errorCode = errorHandler.getErrorCode();
-      return errorCode == ErrorCode.PARTITION_NOT_FOUND || errorCode == ErrorCode.REQUEST_TIMEOUT;
+      return errorCode == ErrorCode.PARTITION_LEADER_MISMATCH;
     } else {
       return false;
     }
@@ -241,7 +242,9 @@ public class BrokerRequestManager extends Actor {
         if (partitionId == BrokerClusterState.PARTITION_ID_NULL) {
           // should not happen as the request manager fetches the topology before starting the
           // request
-          throw new IllegalStateException("Not partitions available");
+          throw new NoTopologyAvailableException(
+              "Expected to pick next broker against which to request from, "
+                  + "but no partitions available");
         }
         request.setPartitionId(partitionId);
       }
@@ -264,8 +267,10 @@ public class BrokerRequestManager extends Actor {
     } else {
       // should not happen as the the broker request manager fetches topology before publish message
       // request if not present
-      throw new IllegalStateException(
-          "Topology not yet available, unable to send publish message request");
+      throw new NoTopologyAvailableException(
+          String.format(
+              "Expected to pick partition for message with correlation key '%s', but no topology is available",
+              request.getCorrelationKey()));
     }
   }
 

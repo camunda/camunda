@@ -22,18 +22,20 @@ import io.zeebe.broker.exporter.record.RecordImpl;
 import io.zeebe.broker.exporter.record.value.IncidentRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.JobBatchRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.JobRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.MessageStartEventSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.MessageSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.RaftRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.TimerRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.VariableRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.WorkflowInstanceRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.WorkflowInstanceSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.deployment.DeployedWorkflowImpl;
 import io.zeebe.broker.exporter.record.value.deployment.DeploymentResourceImpl;
 import io.zeebe.broker.exporter.record.value.job.HeadersImpl;
 import io.zeebe.broker.exporter.record.value.raft.RaftMemberImpl;
+import io.zeebe.broker.subscription.message.data.MessageStartEventSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
-import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.RecordMetadata;
 import io.zeebe.exporter.record.RecordValue;
@@ -43,6 +45,7 @@ import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.exporter.record.value.MessageRecordValue;
 import io.zeebe.exporter.record.value.MessageSubscriptionRecordValue;
 import io.zeebe.exporter.record.value.RaftRecordValue;
+import io.zeebe.exporter.record.value.VariableRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.exporter.record.value.deployment.DeployedWorkflow;
@@ -59,6 +62,8 @@ import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobHeaders;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
+import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.raft.event.RaftConfigurationEventMember;
@@ -115,6 +120,12 @@ public class ExporterRecordMapper {
         break;
       case TIMER:
         valueSupplier = this::ofTimerRecord;
+        break;
+      case MESSAGE_START_EVENT_SUBSCRIPTION:
+        valueSupplier = this::ofMessageStartEventSubscriptionRecord;
+        break;
+      case VARIABLE:
+        valueSupplier = this::ofVariableRecord;
         break;
       default:
         return null;
@@ -230,7 +241,8 @@ public class ExporterRecordMapper {
         asString(record.getElementId()),
         record.getWorkflowInstanceKey(),
         record.getElementInstanceKey(),
-        record.getJobKey());
+        record.getJobKey(),
+        record.getVariableScopeKey());
   }
 
   private MessageRecordValue ofMessageRecord(final LoggedEvent event) {
@@ -258,6 +270,18 @@ public class ExporterRecordMapper {
         record.getElementInstanceKey());
   }
 
+  private MessageStartEventSubscriptionRecordValueImpl ofMessageStartEventSubscriptionRecord(
+      final LoggedEvent event) {
+    final MessageStartEventSubscriptionRecord record = new MessageStartEventSubscriptionRecord();
+    event.readValue(record);
+
+    return new MessageStartEventSubscriptionRecordValueImpl(
+        objectMapper,
+        record.getWorkflowKey(),
+        asString(record.getStartEventId()),
+        asString(record.getMessageName()));
+  }
+
   private WorkflowInstanceRecordValue ofWorkflowInstanceRecord(final LoggedEvent event) {
     final WorkflowInstanceRecord record = new WorkflowInstanceRecord();
     event.readValue(record);
@@ -270,7 +294,8 @@ public class ExporterRecordMapper {
         record.getVersion(),
         record.getWorkflowKey(),
         record.getWorkflowInstanceKey(),
-        record.getScopeInstanceKey());
+        record.getFlowScopeKey(),
+        record.getBpmnElementType());
   }
 
   private WorkflowInstanceSubscriptionRecordValue ofWorkflowInstanceSubscriptionRecord(
@@ -307,7 +332,8 @@ public class ExporterRecordMapper {
         Duration.ofMillis(record.getTimeout()),
         record.getAmount(),
         jobKeys,
-        jobs);
+        jobs,
+        record.getTruncated());
   }
 
   private RecordValue ofTimerRecord(LoggedEvent event) {
@@ -319,6 +345,18 @@ public class ExporterRecordMapper {
         record.getElementInstanceKey(),
         record.getDueDate(),
         asString(record.getHandlerNodeId()));
+  }
+
+  private VariableRecordValue ofVariableRecord(LoggedEvent event) {
+    final VariableRecord record = new VariableRecord();
+    event.readValue(record);
+
+    return new VariableRecordValueImpl(
+        objectMapper,
+        asString(record.getName()),
+        asJson(record.getValue()),
+        record.getScopeKey(),
+        record.getWorkflowInstanceKey());
   }
 
   // UTILS

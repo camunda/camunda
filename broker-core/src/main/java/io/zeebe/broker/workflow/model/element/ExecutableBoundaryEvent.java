@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.workflow.model.element;
 
-public class ExecutableBoundaryEvent extends ExecutableIntermediateCatchElement {
+public class ExecutableBoundaryEvent extends ExecutableCatchEventElement {
   private boolean cancelActivity;
 
   public ExecutableBoundaryEvent(String id) {
@@ -25,6 +25,11 @@ public class ExecutableBoundaryEvent extends ExecutableIntermediateCatchElement 
   }
 
   public boolean cancelActivity() {
+    return cancelActivity;
+  }
+
+  @Override
+  public boolean shouldCloseMessageSubscriptionOnCorrelate() {
     return cancelActivity;
   }
 

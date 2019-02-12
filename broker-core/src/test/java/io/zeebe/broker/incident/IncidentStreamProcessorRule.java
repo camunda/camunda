@@ -20,6 +20,7 @@ package io.zeebe.broker.incident;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -31,7 +32,6 @@ import io.zeebe.broker.job.JobEventProcessors;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
-import io.zeebe.broker.util.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.broker.workflow.processor.BpmnStepProcessor;
 import io.zeebe.broker.workflow.processor.WorkflowEventProcessors;
@@ -62,7 +62,6 @@ public class IncidentStreamProcessorRule extends ExternalResource {
   private TopologyManager mockTopologyManager;
   private DueDateTimerChecker mockTimerEventScheduler;
 
-  private StreamProcessorControl streamProcessor;
   private WorkflowState workflowState;
   private ZeebeState zeebeState;
 
@@ -77,7 +76,8 @@ public class IncidentStreamProcessorRule extends ExternalResource {
     mockTimerEventScheduler = mock(DueDateTimerChecker.class);
 
     when(mockSubscriptionCommandSender.hasPartitionIds()).thenReturn(true);
-    when(mockSubscriptionCommandSender.openMessageSubscription(anyLong(), anyLong(), any(), any()))
+    when(mockSubscriptionCommandSender.openMessageSubscription(
+            anyLong(), anyLong(), any(), any(), anyBoolean()))
         .thenReturn(true);
     when(mockSubscriptionCommandSender.correlateMessageSubscription(
             anyInt(), anyLong(), anyLong(), any()))
@@ -86,25 +86,24 @@ public class IncidentStreamProcessorRule extends ExternalResource {
             anyInt(), anyLong(), anyLong(), any(DirectBuffer.class)))
         .thenReturn(true);
 
-    streamProcessor =
-        environmentRule.runStreamProcessor(
-            (typedEventStreamProcessorBuilder, zeebeState) -> {
-              IncidentStreamProcessorRule.this.zeebeState = zeebeState;
-              IncidentStreamProcessorRule.this.workflowState = zeebeState.getWorkflowState();
-              final BpmnStepProcessor stepProcessor =
-                  WorkflowEventProcessors.addWorkflowProcessors(
-                      typedEventStreamProcessorBuilder,
-                      zeebeState,
-                      mockSubscriptionCommandSender,
-                      mockTopologyManager,
-                      mockTimerEventScheduler);
+    environmentRule.runStreamProcessor(
+        (typedEventStreamProcessorBuilder, zeebeDb) -> {
+          this.zeebeState = new ZeebeState(zeebeDb);
+          this.workflowState = zeebeState.getWorkflowState();
+          final BpmnStepProcessor stepProcessor =
+              WorkflowEventProcessors.addWorkflowProcessors(
+                  typedEventStreamProcessorBuilder,
+                  zeebeState,
+                  mockSubscriptionCommandSender,
+                  mockTopologyManager,
+                  mockTimerEventScheduler);
 
-              IncidentEventProcessors.addProcessors(
-                  typedEventStreamProcessorBuilder, zeebeState, stepProcessor);
-              JobEventProcessors.addJobProcessors(typedEventStreamProcessorBuilder, zeebeState);
+          IncidentEventProcessors.addProcessors(
+              typedEventStreamProcessorBuilder, zeebeState, stepProcessor);
+          JobEventProcessors.addJobProcessors(typedEventStreamProcessorBuilder, zeebeState);
 
-              return typedEventStreamProcessorBuilder.build();
-            });
+          return typedEventStreamProcessorBuilder.build();
+        });
   }
 
   public ZeebeState getZeebeState() {
@@ -149,7 +148,7 @@ public class IncidentStreamProcessorRule extends ExternalResource {
         WorkflowInstanceIntent.CREATE,
         workflowInstanceRecord(BufferUtil.wrapString(processId), payload));
     final TypedRecord<WorkflowInstanceRecord> createdEvent =
-        awaitAndGetFirstRecordInState(WorkflowInstanceIntent.ELEMENT_READY);
+        awaitAndGetFirstRecordInState(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     return createdEvent;
   }
 

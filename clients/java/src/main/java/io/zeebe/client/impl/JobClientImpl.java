@@ -17,16 +17,10 @@ package io.zeebe.client.impl;
 
 import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.api.clients.JobClient;
-import io.zeebe.client.api.commands.ActivateJobsCommandStep1;
 import io.zeebe.client.api.commands.CompleteJobCommandStep1;
 import io.zeebe.client.api.commands.FailJobCommandStep1;
-import io.zeebe.client.api.commands.UpdateRetriesJobCommandStep1;
-import io.zeebe.client.api.subscription.JobWorkerBuilderStep1;
-import io.zeebe.client.impl.job.ActivateJobsCommandImpl;
 import io.zeebe.client.impl.job.CompleteJobCommandImpl;
 import io.zeebe.client.impl.job.FailJobCommandImpl;
-import io.zeebe.client.impl.job.JobUpdateRetriesCommandImpl;
-import io.zeebe.client.impl.subscription.JobWorkerBuilderImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.util.CloseableSilently;
 import java.util.List;
@@ -61,21 +55,5 @@ public class JobClientImpl implements JobClient {
   @Override
   public FailJobCommandStep1 newFailCommand(long jobKey) {
     return new FailJobCommandImpl(asyncStub, jobKey);
-  }
-
-  @Override
-  public UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(long jobKey) {
-    return new JobUpdateRetriesCommandImpl(asyncStub, jobKey);
-  }
-
-  @Override
-  public JobWorkerBuilderStep1 newWorker() {
-    return new JobWorkerBuilderImpl(
-        config, asyncStub, this, objectMapper, executorService, closeables);
-  }
-
-  @Override
-  public ActivateJobsCommandStep1 newActivateJobsCommand() {
-    return new ActivateJobsCommandImpl(asyncStub, config, objectMapper);
   }
 }

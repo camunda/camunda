@@ -39,6 +39,11 @@ public class ZeebeExpressionValidator {
   }
 
   public void validateJsonPath(String jsonPath, ValidationResultCollector resultCollector) {
+    if (jsonPath == null) {
+      resultCollector.addError(0, String.format("JSON path query is empty"));
+      return;
+    }
+
     final JsonPathQueryCompiler queryCompiler = new JsonPathQueryCompiler();
     final JsonPathQuery compiledQuery = queryCompiler.compile(jsonPath);
 

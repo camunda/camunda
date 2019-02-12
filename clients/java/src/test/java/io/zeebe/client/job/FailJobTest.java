@@ -30,7 +30,7 @@ public class FailJobTest extends ClientTest {
     final int newRetries = 23;
 
     // when
-    client.jobClient().newFailCommand(jobKey).retries(newRetries).send().join();
+    client.newFailCommand(jobKey).retries(newRetries).send().join();
 
     // then
     final FailJobRequest request = gatewayService.getLastRequest();
@@ -45,13 +45,7 @@ public class FailJobTest extends ClientTest {
     final int newRetries = 23;
 
     // when
-    client
-        .jobClient()
-        .newFailCommand(jobKey)
-        .retries(newRetries)
-        .errorMessage("failed message")
-        .send()
-        .join();
+    client.newFailCommand(jobKey).retries(newRetries).errorMessage("failed message").send().join();
 
     // then
     final FailJobRequest request = gatewayService.getLastRequest();

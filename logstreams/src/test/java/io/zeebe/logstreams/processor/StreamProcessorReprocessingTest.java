@@ -26,11 +26,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.zeebe.db.ZeebeDb;
+import io.zeebe.db.impl.DefaultColumnFamily;
+import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.state.StateController;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.logstreams.util.LogStreamRule;
@@ -64,7 +66,8 @@ public class StreamProcessorReprocessingTest {
             final String logDirectory = logStreamBuilder.getLogDirectory();
             final StateStorage stateStorage = new StateStorage(logDirectory);
             stateSnapshotController =
-                new StateSnapshotController(new StateController(), stateStorage);
+                new StateSnapshotController(
+                    ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class), stateStorage);
           });
   private final LogStreamWriterRule writer = new LogStreamWriterRule(logStreamRule);
 
@@ -79,33 +82,50 @@ public class StreamProcessorReprocessingTest {
 
   @Before
   public void init() {
-    streamProcessor = RecordingStreamProcessor.createSpy();
-    eventProcessor = streamProcessor.getEventProcessorSpy();
 
     eventFilter = mock(EventFilter.class);
     when(eventFilter.applies(any())).thenReturn(true);
   }
 
   private StreamProcessorService openStreamProcessorController() {
-    return openStreamProcessorController(streamProcessor);
+    return openStreamProcessorControllerAsync(() -> {}).join();
   }
 
-  private ActorFuture<StreamProcessorService> openStreamProcessorControllerAsync() {
-    return openStreamProcessorControllerAsync(streamProcessor);
-  }
-
-  private StreamProcessorService openStreamProcessorController(StreamProcessor streamProcessor) {
-    return openStreamProcessorControllerAsync(streamProcessor).join();
+  private StreamProcessorService openStreamProcessorController(Runnable runnable) {
+    return openStreamProcessorControllerAsync(runnable).join();
   }
 
   private ActorFuture<StreamProcessorService> openStreamProcessorControllerAsync(
-      StreamProcessor streamProcessor) {
+      Runnable runnable) {
+    return openStreamProcessorControllerAsync(
+        zeebeDb -> {
+          createStreamProcessor(zeebeDb);
+          runnable.run();
+          return streamProcessor;
+        });
+  }
 
-    return LogStreams.createStreamProcessor(PROCESSOR_NAME, PROCESSOR_ID, streamProcessor)
+  private StreamProcessor createStreamProcessor(ZeebeDb zeebeDb) {
+    final RecordingStreamProcessor recordingProcessor = RecordingStreamProcessor.createSpy(zeebeDb);
+    this.streamProcessor = recordingProcessor;
+    eventProcessor = recordingProcessor.getEventProcessorSpy();
+    return streamProcessor;
+  }
+
+  private StreamProcessorService openStreamProcessorController(
+      StreamProcessorFactory streamProcessorFactory) {
+    return openStreamProcessorControllerAsync(streamProcessorFactory).join();
+  }
+
+  private ActorFuture<StreamProcessorService> openStreamProcessorControllerAsync(
+      StreamProcessorFactory streamProcessorFactory) {
+
+    return LogStreams.createStreamProcessor(PROCESSOR_NAME, PROCESSOR_ID)
         .logStream(logStreamRule.getLogStream())
         .actorScheduler(logStreamRule.getActorScheduler())
         .snapshotController(stateSnapshotController)
         .serviceContainer(logStreamRule.getServiceContainer())
+        .streamProcessorFactory(streamProcessorFactory)
         .eventFilter(eventFilter)
         .build();
   }
@@ -219,11 +239,9 @@ public class StreamProcessorReprocessingTest {
     final long eventPosition3 =
         writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition2));
 
-    // return null as event processor for first event
-    doReturn(null).doCallRealMethod().when(streamProcessor).onEvent(any());
-
     // when
-    openStreamProcessorController();
+    openStreamProcessorController(
+        () -> doReturn(null).doCallRealMethod().when(streamProcessor).onEvent(any()));
 
     waitUntil(() -> streamProcessor.getProcessedEventCount() == 2);
 
@@ -269,12 +287,13 @@ public class StreamProcessorReprocessingTest {
     // given [1|S:-] --> [2|S:1]
     final long eventPosition1 = writeEvent();
     writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition1));
-
-    doThrow(new RuntimeException("expected")).when(eventProcessor).processEvent();
+    final ActorFuture<StreamProcessorService> future =
+        openStreamProcessorControllerAsync(
+            () -> {
+              doThrow(new RuntimeException("expected")).when(eventProcessor).processEvent();
+            });
 
     // when
-    final ActorFuture<StreamProcessorService> future = openStreamProcessorControllerAsync();
-
     waitUntil(() -> future.isDone());
 
     // then
@@ -287,9 +306,10 @@ public class StreamProcessorReprocessingTest {
   @Test
   public void shouldNotReprocessEventsIfReadOnly() {
     final StreamProcessorBuilder builder =
-        LogStreams.createStreamProcessor("read-only", PROCESSOR_ID, streamProcessor)
+        LogStreams.createStreamProcessor("read-only", PROCESSOR_ID)
             .logStream(logStreamRule.getLogStream())
             .snapshotController(stateSnapshotController)
+            .streamProcessorFactory(this::createStreamProcessor)
             .actorScheduler(logStreamRule.getActorScheduler())
             .serviceContainer(logStreamRule.getServiceContainer())
             .readOnly(true);
@@ -349,7 +369,7 @@ public class StreamProcessorReprocessingTest {
             });
 
     // when
-    openStreamProcessorController(processor);
+    openStreamProcessorController(zeebeDb -> processor);
 
     // then
     waitUntil(() -> processedRecords.get() == numberOfRecords + 2);
@@ -382,7 +402,7 @@ public class StreamProcessorReprocessingTest {
                 }
               }
             });
-    openStreamProcessorController(processor);
+    openStreamProcessorController(zeebeDb -> processor);
 
     // when
     waitUntil(() -> barrier.getNumberWaiting() == 1);

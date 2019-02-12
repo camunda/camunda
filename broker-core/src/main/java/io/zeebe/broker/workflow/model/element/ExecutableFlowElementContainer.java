@@ -17,6 +17,9 @@
  */
 package io.zeebe.broker.workflow.model.element;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * ExecutableFlowElementContainer is currently used to represent processes as well ({@link
  * io.zeebe.model.bpmn.instance.Process}), which may seem counter intuitive; at the moment, the
@@ -26,17 +29,27 @@ package io.zeebe.broker.workflow.model.element;
  */
 public class ExecutableFlowElementContainer extends ExecutableActivity {
 
-  private ExecutableFlowNode startEvent;
+  private final List<ExecutableCatchEventElement> startEvents;
 
   public ExecutableFlowElementContainer(String id) {
     super(id);
+    startEvents = new ArrayList<>();
   }
 
-  public ExecutableFlowNode getStartEvent() {
-    return startEvent;
+  public ExecutableCatchEventElement getNoneStartEvent() {
+    for (ExecutableCatchEventElement startEvent : startEvents) {
+      if (startEvent.isNone()) {
+        return startEvent;
+      }
+    }
+    return null;
   }
 
-  public void setStartEvent(ExecutableFlowNode startEvent) {
-    this.startEvent = startEvent;
+  public List<ExecutableCatchEventElement> getStartEvents() {
+    return startEvents;
+  }
+
+  public void addStartEvent(ExecutableCatchEventElement startEvent) {
+    this.startEvents.add(startEvent);
   }
 }

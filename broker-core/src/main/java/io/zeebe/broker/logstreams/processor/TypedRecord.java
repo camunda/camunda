@@ -27,4 +27,8 @@ public interface TypedRecord<T extends UnpackedObject> {
   RecordMetadata getMetadata();
 
   T getValue();
+
+  default int getMaxValueLength() {
+    throw new UnsupportedOperationException();
+  }
 }

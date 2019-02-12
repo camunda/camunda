@@ -1,0 +1,32 @@
+{
+  "index_patterns": [
+    "zeebe-record-variable_*"
+  ],
+  "order": 20,
+  "aliases": {
+    "zeebe-record-variable": {}
+  },
+  "mappings": {
+    "_doc": {
+      "properties": {
+        "value": {
+          "dynamic": "strict",
+          "properties": {
+            "name": {
+              "type": "keyword"
+            },
+            "value": {
+              "type": "text"
+            },
+            "scopeKey": {
+              "type": "long"
+            },
+            "workflowInstanceKey": {
+              "type": "long"
+            }
+          }
+        }
+      }
+    }
+  }
+}

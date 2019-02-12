@@ -18,7 +18,6 @@ package io.zeebe.example.data;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.api.clients.JobClient;
-import io.zeebe.client.api.clients.WorkflowClient;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.subscription.JobHandler;
 import java.util.Scanner;
@@ -30,13 +29,10 @@ public class HandlePayloadAsPojo {
     final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
     try (ZeebeClient client = builder.build()) {
-      final WorkflowClient workflowClient = client.workflowClient();
-      final JobClient jobClient = client.jobClient();
-
       final Order order = new Order();
       order.setOrderId(31243);
 
-      workflowClient
+      client
           .newCreateInstanceCommand()
           .bpmnProcessId("demoProcess")
           .latestVersion()
@@ -44,7 +40,7 @@ public class HandlePayloadAsPojo {
           .send()
           .join();
 
-      jobClient.newWorker().jobType("foo").handler(new DemoJobHandler()).open();
+      client.newWorker().jobType("foo").handler(new DemoJobHandler()).open();
 
       // run until System.in receives exit command
       waitUntilSystemInput("exit");

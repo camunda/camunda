@@ -27,6 +27,8 @@ import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.intent.DeploymentIntent;
 
 public class DeploymentCreateProcessor implements TypedRecordProcessor<DeploymentRecord> {
+  public static final String DEPLOYMENT_ALREADY_EXISTS_MESSAGE =
+      "Expected to create a new deployment with key '%d', but there is already an existing deployment with that key";
 
   private final WorkflowState workflowState;
 
@@ -44,7 +46,10 @@ public class DeploymentCreateProcessor implements TypedRecordProcessor<Deploymen
     if (workflowState.putDeployment(event.getKey(), deploymentEvent)) {
       streamWriter.appendFollowUpEvent(event.getKey(), DeploymentIntent.CREATED, deploymentEvent);
     } else {
-      streamWriter.appendRejection(event, RejectionType.NOT_APPLICABLE, "Deployment already exist");
+      streamWriter.appendRejection(
+          event,
+          RejectionType.ALREADY_EXISTS,
+          String.format(DEPLOYMENT_ALREADY_EXISTS_MESSAGE, event.getKey()));
     }
   }
 }

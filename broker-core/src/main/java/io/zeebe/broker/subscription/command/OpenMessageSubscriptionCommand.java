@@ -23,6 +23,7 @@ import static io.zeebe.broker.subscription.OpenMessageSubscriptionDecoder.messag
 import static io.zeebe.broker.subscription.OpenMessageSubscriptionDecoder.subscriptionPartitionIdNullValue;
 import static io.zeebe.broker.subscription.OpenMessageSubscriptionDecoder.workflowInstanceKeyNullValue;
 
+import io.zeebe.broker.subscription.BooleanType;
 import io.zeebe.broker.subscription.OpenMessageSubscriptionDecoder;
 import io.zeebe.broker.subscription.OpenMessageSubscriptionEncoder;
 import io.zeebe.broker.util.SbeBufferWriterReader;
@@ -39,6 +40,7 @@ public class OpenMessageSubscriptionCommand
   private int subscriptionPartitionId;
   private long workflowInstanceKey;
   private long elementInstanceKey;
+  private boolean closeOnCorrelate;
 
   private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
   private final UnsafeBuffer correlationKey = new UnsafeBuffer(0, 0);
@@ -70,6 +72,7 @@ public class OpenMessageSubscriptionCommand
         .subscriptionPartitionId(subscriptionPartitionId)
         .workflowInstanceKey(workflowInstanceKey)
         .elementInstanceKey(elementInstanceKey)
+        .closeOnCorrelate(closeOnCorrelate ? BooleanType.TRUE : BooleanType.FALSE)
         .putMessageName(messageName, 0, messageName.capacity())
         .putCorrelationKey(correlationKey, 0, correlationKey.capacity());
   }
@@ -81,6 +84,7 @@ public class OpenMessageSubscriptionCommand
     subscriptionPartitionId = decoder.subscriptionPartitionId();
     workflowInstanceKey = decoder.workflowInstanceKey();
     elementInstanceKey = decoder.elementInstanceKey();
+    closeOnCorrelate = decoder.closeOnCorrelate() == BooleanType.TRUE;
 
     offset = decoder.limit();
 
@@ -136,5 +140,13 @@ public class OpenMessageSubscriptionCommand
 
   public DirectBuffer getCorrelationKey() {
     return correlationKey;
+  }
+
+  public boolean shouldCloseOnCorrelate() {
+    return closeOnCorrelate;
+  }
+
+  public void setCloseOnCorrelate(boolean closeOnCorrelate) {
+    this.closeOnCorrelate = closeOnCorrelate;
   }
 }

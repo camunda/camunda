@@ -60,9 +60,7 @@ public class BrokerLeaderChangeTest {
 
     // then
     final Optional<PartitionInfo> partitionInfo =
-        clusteringRule
-            .getTopologyFromBroker(oldLeader)
-            .stream()
+        clusteringRule.getTopologyFromBroker(oldLeader).stream()
             .filter(b -> b.getNodeId() == oldLeader)
             .flatMap(b -> b.getPartitions().stream().filter(p -> p.getPartitionId() == partition))
             .findFirst();
@@ -97,7 +95,7 @@ public class BrokerLeaderChangeTest {
 
       jobWorker =
           clientRule
-              .getJobClient()
+              .getClient()
               .newWorker()
               .jobType(JOB_TYPE)
               .handler(

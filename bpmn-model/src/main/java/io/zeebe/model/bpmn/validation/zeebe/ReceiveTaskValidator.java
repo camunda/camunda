@@ -36,8 +36,7 @@ public class ReceiveTaskValidator implements ModelElementValidator<ReceiveTask> 
     }
 
     final boolean hasDuplicateMessageListener =
-        ModelUtil.getActivityMessageBoundaryEvents(element)
-            .stream()
+        ModelUtil.getActivityMessageBoundaryEvents(element).stream()
             .anyMatch(event -> event.getMessage().getName().equals(message.getName()));
 
     if (hasDuplicateMessageListener) {

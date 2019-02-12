@@ -15,12 +15,14 @@
  */
 package io.zeebe.logstreams.log;
 
+import static io.zeebe.logstreams.impl.log.index.LogBlockIndex.GROW_FACTOR;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
+import java.util.function.Function;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Rule;
@@ -40,11 +42,7 @@ public class LogBlockIndexTest {
   }
 
   protected LogBlockIndex createNewBlockIndex(int capacity) {
-    return new LogBlockIndex(
-        capacity,
-        c -> {
-          return new UnsafeBuffer(ByteBuffer.allocate(c));
-        });
+    return new LogBlockIndex(capacity, c -> new UnsafeBuffer(ByteBuffer.allocate(c)));
   }
 
   @Test
@@ -74,22 +72,28 @@ public class LogBlockIndexTest {
   }
 
   @Test
-  public void shouldNotAddBlockIfCapacityReached() {
+  public void shouldExpandAndAddBlockIfCapacityReached() {
     // given
     final int capacity = blockIndex.capacity();
+    int elements = 0;
+    final Function<Integer, Long> addrFunc = x -> x * 10L;
 
-    while (capacity > blockIndex.size()) {
-      blockIndex.addBlock(blockIndex.size(), 0);
+    for (; elements <= capacity; elements++) {
+      blockIndex.addBlock(elements, addrFunc.apply(elements));
+    }
+
+    // when
+    for (; elements < capacity + 5; elements++) {
+      blockIndex.addBlock(elements, addrFunc.apply(elements));
     }
 
     // then
-    exception.expect(RuntimeException.class);
-    exception.expectMessage(
-        String.format(
-            "LogBlockIndex capacity of %d entries reached. Cannot add new block.", capacity));
+    assertThat(blockIndex.size()).isEqualTo(elements);
+    assertThat(blockIndex.capacity()).isEqualTo(Math.round(capacity * GROW_FACTOR));
 
-    // when
-    blockIndex.addBlock(blockIndex.size(), 0);
+    for (int i = 0; i < elements; i++) {
+      assertThat(blockIndex.getAddress(i)).isEqualTo(addrFunc.apply(i));
+    }
   }
 
   @Test

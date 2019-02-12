@@ -180,9 +180,7 @@ public class StubBrokerRule extends ExternalResource {
 
   public List<ControlMessageRequest> getReceivedControlMessageRequestsByType(
       final ControlMessageType type) {
-    return channelHandler
-        .getReceivedControlMessageRequests()
-        .stream()
+    return channelHandler.getReceivedControlMessageRequests().stream()
         .filter((r) -> type == r.messageType())
         .collect(Collectors.toList());
   }

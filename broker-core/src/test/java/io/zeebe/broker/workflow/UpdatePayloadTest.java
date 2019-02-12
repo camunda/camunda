@@ -29,6 +29,7 @@ import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.msgpack.spec.MsgPackHelper;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -81,7 +82,8 @@ public class UpdatePayloadTest {
 
     // when
     final ExecuteCommandResponse response =
-        updatePayload(activityInstanceEvent.getKey(), MsgPackUtil.asMsgPack("{'foo':'bar'}"));
+        updatePayload(
+            activityInstanceEvent.getKey(), MsgPackUtil.asMsgPackReturnArray("{'foo':'bar'}"));
 
     // then
     assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.PAYLOAD_UPDATED);
@@ -153,7 +155,7 @@ public class UpdatePayloadTest {
         waitForActivityActivatedEvent();
 
     // when
-    updatePayload(activityInstanceEvent.getKey(), MsgPackUtil.asMsgPack("{'b':'wf'}"));
+    updatePayload(activityInstanceEvent.getKey(), MsgPackUtil.asMsgPackReturnArray("{'b':'wf'}"));
 
     testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.PAYLOAD_UPDATED);
 
@@ -179,10 +181,12 @@ public class UpdatePayloadTest {
     testClient.createWorkflowInstance("wf", asMsgPack("id", "123"));
 
     final Record<WorkflowInstanceRecordValue> catchEventEntered =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        testClient.receiveFirstWorkflowInstanceEvent(
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.INTERMEDIATE_CATCH_EVENT);
 
     // when
-    updatePayload(catchEventEntered.getKey(), MsgPackUtil.asMsgPack("{'id':'123', 'x': 1}"));
+    updatePayload(
+        catchEventEntered.getKey(), MsgPackUtil.asMsgPackReturnArray("{'id':'123', 'x': 1}"));
 
     testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.PAYLOAD_UPDATED);
 
@@ -190,7 +194,8 @@ public class UpdatePayloadTest {
 
     // then
     final Record<WorkflowInstanceRecordValue> catchEventOccurred =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
+        testClient.receiveFirstWorkflowInstanceEvent(
+            WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.INTERMEDIATE_CATCH_EVENT);
 
     assertWorkflowInstancePayload(catchEventOccurred, "{'id':'123', 'x': 1, 'y': 2}");
   }
@@ -206,13 +211,15 @@ public class UpdatePayloadTest {
     // when
     final Throwable throwable =
         catchThrowable(
-            () -> updatePayload(activityInstanceEvent.getKey(), MsgPackUtil.asMsgPack("'foo'")));
+            () ->
+                updatePayload(
+                    activityInstanceEvent.getKey(), MsgPackUtil.asMsgPackReturnArray("'foo'")));
 
     // then
     assertThat(throwable).isInstanceOf(RuntimeException.class);
-    assertThat(throwable.getMessage()).contains("Could not read property 'payload'.");
+    assertThat(throwable.getMessage()).contains("Could not read property 'payload'");
     assertThat(throwable.getMessage())
-        .contains("Document has invalid format. On root level an object is only allowed.");
+        .contains("Expected document to be a root level object, but was 'STRING'");
   }
 
   @Test
@@ -222,8 +229,7 @@ public class UpdatePayloadTest {
 
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.getRejectionReason()).isEqualTo("Workflow instance is not running");
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
 
     final Record<WorkflowInstanceRecordValue> rejection =
         testClient
@@ -258,8 +264,7 @@ public class UpdatePayloadTest {
 
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.getRejectionReason()).isEqualTo("Workflow instance is not running");
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
 
     final Record<WorkflowInstanceRecordValue> rejection =
         testClient
@@ -272,11 +277,13 @@ public class UpdatePayloadTest {
   }
 
   private Record<WorkflowInstanceRecordValue> waitForActivityCompletedEvent() {
-    return testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
+    return testClient.receiveFirstWorkflowInstanceEvent(
+        WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.SERVICE_TASK);
   }
 
   private Record<WorkflowInstanceRecordValue> waitForActivityActivatedEvent() {
-    return testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+    return testClient.receiveFirstWorkflowInstanceEvent(
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnElementType.SERVICE_TASK);
   }
 
   private ExecuteCommandResponse updatePayload(

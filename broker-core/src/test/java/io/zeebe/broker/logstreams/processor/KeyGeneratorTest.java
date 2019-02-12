@@ -19,31 +19,24 @@ package io.zeebe.broker.logstreams.processor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
 import io.zeebe.broker.logstreams.state.ZeebeState;
+import io.zeebe.broker.util.ZeebeStateRule;
+import io.zeebe.db.ZeebeDb;
 import io.zeebe.protocol.Protocol;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 public class KeyGeneratorTest {
 
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
+  @Rule public ZeebeStateRule stateRule = new ZeebeStateRule();
 
   private KeyGenerator keyGenerator;
-  private ZeebeState zeebeState;
 
   @Before
   public void setUp() throws Exception {
-    zeebeState = new ZeebeState();
-    zeebeState.open(folder.newFolder("db"), false);
-    keyGenerator = zeebeState.getKeyGenerator();
-  }
-
-  @After
-  public void tearDown() {
-    zeebeState.close();
+    keyGenerator = stateRule.getZeebeState().getKeyGenerator();
   }
 
   @Test
@@ -72,8 +65,8 @@ public class KeyGeneratorTest {
   @Test
   public void shouldGetUniqueValuesOverPartitions() throws Exception {
     // given
-    final ZeebeState otherZeebeState = new ZeebeState(1);
-    otherZeebeState.open(folder.newFolder("db2"), false);
+    final ZeebeDb<ZbColumnFamilies> newDb = stateRule.createNewDb();
+    final ZeebeState otherZeebeState = new ZeebeState(1, newDb);
     final KeyGenerator keyGenerator2 = otherZeebeState.getKeyGenerator();
 
     final long keyOfFirstPartition = keyGenerator.nextKey();
@@ -87,6 +80,6 @@ public class KeyGeneratorTest {
     assertThat(Protocol.decodePartitionId(keyOfFirstPartition)).isEqualTo(0);
     assertThat(Protocol.decodePartitionId(keyOfSecondPartition)).isEqualTo(1);
 
-    otherZeebeState.close();
+    newDb.close();
   }
 }

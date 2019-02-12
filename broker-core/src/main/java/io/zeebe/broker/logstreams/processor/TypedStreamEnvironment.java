@@ -18,9 +18,9 @@
 package io.zeebe.broker.logstreams.processor;
 
 import io.zeebe.broker.exporter.stream.ExporterRecord;
+import io.zeebe.broker.subscription.message.data.MessageStartEventSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
-import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -29,6 +29,8 @@ import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
+import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.transport.ServerOutput;
 import java.util.EnumMap;
@@ -47,10 +49,13 @@ public class TypedStreamEnvironment {
     EVENT_REGISTRY.put(ValueType.MESSAGE, MessageRecord.class);
     EVENT_REGISTRY.put(ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionRecord.class);
     EVENT_REGISTRY.put(
+        ValueType.MESSAGE_START_EVENT_SUBSCRIPTION, MessageStartEventSubscriptionRecord.class);
+    EVENT_REGISTRY.put(
         ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION, WorkflowInstanceSubscriptionRecord.class);
     EVENT_REGISTRY.put(ValueType.EXPORTER, ExporterRecord.class);
     EVENT_REGISTRY.put(ValueType.JOB_BATCH, JobBatchRecord.class);
     EVENT_REGISTRY.put(ValueType.TIMER, TimerRecord.class);
+    EVENT_REGISTRY.put(ValueType.VARIABLE, VariableRecord.class);
   }
 
   private TypedStreamReader reader;

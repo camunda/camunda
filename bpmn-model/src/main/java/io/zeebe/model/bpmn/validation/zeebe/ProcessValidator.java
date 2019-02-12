@@ -30,11 +30,18 @@ public class ProcessValidator implements ModelElementValidator<Process> {
 
   @Override
   public void validate(Process element, ValidationResultCollector validationResultCollector) {
-
     final Collection<StartEvent> topLevelStartEvents =
         element.getChildElementsByType(StartEvent.class);
-    if (topLevelStartEvents.size() != 1) {
-      validationResultCollector.addError(0, "Must have exactly one start event");
+    if (topLevelStartEvents.size() == 0) {
+      validationResultCollector.addError(0, "Must have at least one start event");
+    } else if (topLevelStartEvents.size() > 1
+        && topLevelStartEvents.stream().anyMatch(this::isNoneEvent)) {
+      validationResultCollector.addError(
+          0, "Must be either one none start event or multiple message/timer start events");
     }
+  }
+
+  private boolean isNoneEvent(StartEvent startEvent) {
+    return startEvent.getEventDefinitions().isEmpty();
   }
 }

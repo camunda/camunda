@@ -31,6 +31,8 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class UpdatePayloadHandler implements WorkflowInstanceCommandHandler {
 
+  public static final String NO_ELEMENT_FOUND_MESSAGE =
+      "Expected to update the payload of failed element with key '%d', but no such element was found";
   private final WorkflowState workflowState;
 
   public UpdatePayloadHandler(WorkflowState workflowState) {
@@ -50,33 +52,39 @@ public class UpdatePayloadHandler implements WorkflowInstanceCommandHandler {
       final WorkflowInstanceRecord elementInstanceValue = elementInstance.getValue();
       elementInstanceValue.setPayload(commandValue.getPayload());
 
-      final IndexedRecord failedToken =
-          workflowState.getElementInstanceState().getFailedToken(command.getKey());
+      final IndexedRecord failedRecord =
+          workflowState.getElementInstanceState().getFailedRecord(command.getKey());
 
-      if (failedToken != null) {
-        final WorkflowInstanceRecord value = failedToken.getValue();
+      if (failedRecord != null) {
+        final WorkflowInstanceRecord value = failedRecord.getValue();
         value.setPayload(commandValue.getPayload());
-        workflowState.getElementInstanceState().updateFailedToken(failedToken);
+        workflowState.getElementInstanceState().updateFailedRecord(failedRecord);
       }
 
       output.appendFollowUpEvent(
           command.getKey(), WorkflowInstanceIntent.PAYLOAD_UPDATED, elementInstanceValue);
       responseWriter.writeEventOnCommand(
           command.getKey(), WorkflowInstanceIntent.PAYLOAD_UPDATED, elementInstanceValue, command);
-    } else {
-      final IndexedRecord failedToken =
-          workflowState.getElementInstanceState().getFailedToken(command.getKey());
 
-      if (failedToken != null) {
-        final WorkflowInstanceRecord value = failedToken.getValue();
+      workflowState
+          .getElementInstanceState()
+          .getVariablesState()
+          .setVariablesFromDocument(command.getKey(), commandValue.getPayload());
+    } else {
+      final IndexedRecord failedRecord =
+          workflowState.getElementInstanceState().getFailedRecord(command.getKey());
+
+      if (failedRecord != null) {
+        final WorkflowInstanceRecord value = failedRecord.getValue();
         value.setPayload(commandValue.getPayload());
-        workflowState.getElementInstanceState().updateFailedToken(failedToken);
+        workflowState.getElementInstanceState().updateFailedRecord(failedRecord);
 
         output.appendFollowUpEvent(command.getKey(), WorkflowInstanceIntent.PAYLOAD_UPDATED, value);
         responseWriter.writeEventOnCommand(
             command.getKey(), WorkflowInstanceIntent.PAYLOAD_UPDATED, value, command);
       } else {
-        commandContext.reject(RejectionType.NOT_APPLICABLE, "Workflow instance is not running");
+        commandContext.reject(
+            RejectionType.NOT_FOUND, String.format(NO_ELEMENT_FOUND_MESSAGE, command.getKey()));
       }
     }
   }

@@ -24,21 +24,28 @@
       <type name="numInGroup" primitiveType="uint8" semanticType="NumInGroup"/>
     </composite>
 
+    <enum name="BooleanType" encodingType="uint8" semanticType="Boolean">
+      <validValue name="FALSE">0</validValue>
+      <validValue name="TRUE">1</validValue>
+    </enum>
+
   </types>
 
   <sbe:message name="OpenMessageSubscription" id="0">
     <field name="subscriptionPartitionId" id="0" type="uint16"/>
     <field name="workflowInstanceKey" id="1" type="uint64"/>
     <field name="elementInstanceKey" id="2" type="uint64"/>
-    <data name="messageName" id="3" type="varDataEncoding"/>
-    <data name="correlationKey" id="4" type="varDataEncoding"/>
+    <field name="closeOnCorrelate" id="3" type="BooleanType"/>
+    <data name="messageName" id="4" type="varDataEncoding"/>
+    <data name="correlationKey" id="5" type="varDataEncoding"/>
   </sbe:message>
 
   <sbe:message name="OpenWorkflowInstanceSubscription" id="1">
     <field name="subscriptionPartitionId" id="0" type="uint16"/>
     <field name="workflowInstanceKey" id="1" type="uint64"/>
     <field name="elementInstanceKey" id="2" type="uint64"/>
-    <data name="messageName" id="3" type="varDataEncoding"/>
+    <field name="closeOnCorrelate" id="3" type="BooleanType"/>
+    <data name="messageName" id="4" type="varDataEncoding"/>
   </sbe:message>
 
   <sbe:message name="CorrelateWorkflowInstanceSubscription" id="2">

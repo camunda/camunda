@@ -21,9 +21,9 @@ import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriterImpl;
-import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.broker.workflow.state.TimerInstance;
 import io.zeebe.broker.workflow.state.WorkflowState;
+import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ScheduledTimer;
@@ -93,7 +93,9 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
     timerRecord
         .setElementInstanceKey(timer.getElementInstanceKey())
         .setDueDate(timer.getDueDate())
-        .setHandlerNodeId(timer.getHandlerNodeId());
+        .setHandlerNodeId(timer.getHandlerNodeId())
+        .setRepetitions(timer.getRepetitions())
+        .setWorkflowKey(timer.getWorkflowKey());
 
     streamWriter.appendFollowUpCommand(timer.getKey(), TimerIntent.TRIGGER, timerRecord);
 

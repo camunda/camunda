@@ -42,8 +42,8 @@ public class MultipleClientTest {
     // given
     final RecordingJobHandler handler1 = new RecordingJobHandler();
     final RecordingJobHandler handler2 = new RecordingJobHandler();
-    client1.getJobClient().newWorker().jobType("foo").handler(handler1).open();
-    client2.getJobClient().newWorker().jobType("bar").handler(handler2).open();
+    client1.getClient().newWorker().jobType("foo").handler(handler1).open();
+    client2.getClient().newWorker().jobType("bar").handler(handler2).open();
 
     // when
     final long job1Key = client1.createSingleJob("foo");

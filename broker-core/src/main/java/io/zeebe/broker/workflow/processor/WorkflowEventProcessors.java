@@ -66,19 +66,19 @@ public class WorkflowEventProcessors {
 
     addWorkflowInstanceCommandProcessor(typedProcessorBuilder, workflowEngineState);
 
-    final CatchEventOutput catchEventOutput =
-        new CatchEventOutput(zeebeState, subscriptionCommandSender);
+    final CatchEventBehavior catchEventOutput =
+        new CatchEventBehavior(zeebeState, subscriptionCommandSender);
     final BpmnStepProcessor bpmnStepProcessor =
         new BpmnStepProcessor(workflowEngineState, zeebeState, catchEventOutput);
     addBpmnStepProcessor(typedProcessorBuilder, bpmnStepProcessor);
 
     addMessageStreamProcessors(
         typedProcessorBuilder,
-        workflowState,
         subscriptionState,
         topologyManager,
-        subscriptionCommandSender);
-    addTimerStreamProcessors(typedProcessorBuilder, timerChecker, workflowState);
+        subscriptionCommandSender,
+        workflowState);
+    addTimerStreamProcessors(typedProcessorBuilder, timerChecker, workflowState, catchEventOutput);
     return bpmnStepProcessor;
   }
 
@@ -106,10 +106,10 @@ public class WorkflowEventProcessors {
 
   private static void addMessageStreamProcessors(
       final TypedEventStreamProcessorBuilder streamProcessorBuilder,
-      WorkflowState workflowState,
       WorkflowInstanceSubscriptionState subscriptionState,
       TopologyManager topologyManager,
-      SubscriptionCommandSender subscriptionCommandSender) {
+      SubscriptionCommandSender subscriptionCommandSender,
+      WorkflowState workflowState) {
     streamProcessorBuilder
         .onCommand(
             ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
@@ -119,7 +119,7 @@ public class WorkflowEventProcessors {
             ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
             WorkflowInstanceSubscriptionIntent.CORRELATE,
             new CorrelateWorkflowInstanceSubscription(
-                topologyManager, workflowState, subscriptionState, subscriptionCommandSender))
+                topologyManager, subscriptionState, subscriptionCommandSender, workflowState))
         .onCommand(
             ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
             WorkflowInstanceSubscriptionIntent.CLOSE,
@@ -129,13 +129,17 @@ public class WorkflowEventProcessors {
   private static void addTimerStreamProcessors(
       final TypedEventStreamProcessorBuilder streamProcessorBuilder,
       DueDateTimerChecker timerChecker,
-      WorkflowState workflowState) {
+      WorkflowState workflowState,
+      CatchEventBehavior catchEventOutput) {
     streamProcessorBuilder
         .onCommand(
             ValueType.TIMER,
             TimerIntent.CREATE,
             new CreateTimerProcessor(timerChecker, workflowState))
-        .onCommand(ValueType.TIMER, TimerIntent.TRIGGER, new TriggerTimerProcessor(workflowState))
+        .onCommand(
+            ValueType.TIMER,
+            TimerIntent.TRIGGER,
+            new TriggerTimerProcessor(workflowState, catchEventOutput))
         .onCommand(ValueType.TIMER, TimerIntent.CANCEL, new CancelTimerProcessor(workflowState))
         .withListener(timerChecker);
   }

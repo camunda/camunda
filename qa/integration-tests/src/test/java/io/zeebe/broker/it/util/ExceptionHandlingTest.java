@@ -62,6 +62,7 @@ public class ExceptionHandlingTest {
     assertThat(thirdCause)
         .hasCauseInstanceOf(ConnectException.class)
         .hasMessageContaining("Connection refused:")
-        .hasMessageContaining("localhost/0:0:0:0:0:0:0:1:1234");
+        .hasMessageContaining("localhost")
+        .hasMessageContaining(":1234");
   }
 }

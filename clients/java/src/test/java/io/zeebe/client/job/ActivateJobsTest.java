@@ -27,6 +27,8 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.zeebe.gateway.protocol.GatewayOuterClass.JobHeaders;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.Test;
 
 public class ActivateJobsTest extends ClientTest {
@@ -81,7 +83,6 @@ public class ActivateJobsTest extends ClientTest {
     // when
     final ActivateJobsResponse response =
         client
-            .jobClient()
             .newActivateJobsCommand()
             .jobType("foo")
             .amount(3)
@@ -126,14 +127,7 @@ public class ActivateJobsTest extends ClientTest {
     final Duration timeout = Duration.ofMinutes(2);
 
     // when
-    client
-        .jobClient()
-        .newActivateJobsCommand()
-        .jobType("foo")
-        .amount(3)
-        .timeout(timeout)
-        .send()
-        .join();
+    client.newActivateJobsCommand().jobType("foo").amount(3).timeout(timeout).send().join();
 
     // then
     final ActivateJobsRequest request = gatewayService.getLastRequest();
@@ -141,9 +135,47 @@ public class ActivateJobsTest extends ClientTest {
   }
 
   @Test
+  public void shouldSetFetchVariables() {
+    // given
+    final List<String> fetchVariables = Arrays.asList("foo", "bar", "baz");
+
+    // when
+    client
+        .newActivateJobsCommand()
+        .jobType("foo")
+        .amount(3)
+        .fetchVariables(fetchVariables)
+        .send()
+        .join();
+
+    // then
+    final ActivateJobsRequest request = gatewayService.getLastRequest();
+    assertThat(request.getFetchVariableList()).containsExactlyInAnyOrderElementsOf(fetchVariables);
+  }
+
+  @Test
+  public void shouldSetFetchVariablesAsVargs() {
+    // given
+    final String[] fetchVariables = new String[] {"foo", "bar", "baz"};
+
+    // when
+    client
+        .newActivateJobsCommand()
+        .jobType("foo")
+        .amount(3)
+        .fetchVariables(fetchVariables)
+        .send()
+        .join();
+
+    // then
+    final ActivateJobsRequest request = gatewayService.getLastRequest();
+    assertThat(request.getFetchVariableList()).containsExactlyInAnyOrder(fetchVariables);
+  }
+
+  @Test
   public void shouldSetDefaultValues() {
     // when
-    client.jobClient().newActivateJobsCommand().jobType("foo").amount(3).send().join();
+    client.newActivateJobsCommand().jobType("foo").amount(3).send().join();
 
     // then
     final ActivateJobsRequest request = gatewayService.getLastRequest();
@@ -159,9 +191,7 @@ public class ActivateJobsTest extends ClientTest {
         ActivateJobsRequest.class, () -> new ClientException("Invalid request"));
 
     // when
-    assertThatThrownBy(
-            () ->
-                client.jobClient().newActivateJobsCommand().jobType("foo").amount(3).send().join())
+    assertThatThrownBy(() -> client.newActivateJobsCommand().jobType("foo").amount(3).send().join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("Invalid request");
   }

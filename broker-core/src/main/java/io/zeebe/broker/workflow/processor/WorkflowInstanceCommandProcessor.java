@@ -34,7 +34,7 @@ public class WorkflowInstanceCommandProcessor
 
   public WorkflowInstanceCommandProcessor(WorkflowEngineState state) {
     this.state = state;
-    this.commandHandlers = new WorkflowInstanceCommandHandlers(state.getWorkflowState());
+    this.commandHandlers = new WorkflowInstanceCommandHandlers(state);
     final EventOutput output = new EventOutput(state);
     this.context = new WorkflowInstanceCommandContext(output);
   }

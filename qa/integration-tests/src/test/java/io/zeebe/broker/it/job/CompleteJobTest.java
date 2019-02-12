@@ -15,18 +15,20 @@
  */
 package io.zeebe.broker.it.job;
 
+import static io.zeebe.broker.it.util.StatusCodeMatcher.hasStatusCode;
+import static io.zeebe.broker.it.util.StatusDescriptionMatcher.descriptionContains;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.entry;
 
+import io.grpc.Status.Code;
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.it.util.ZeebeAssertHelper;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.response.ActivatedJob;
-import io.zeebe.client.cmd.ClientException;
+import io.zeebe.client.cmd.ClientStatusException;
 import java.util.Collections;
 import org.junit.Before;
 import org.junit.Rule;
@@ -54,7 +56,7 @@ public class CompleteJobTest {
     clientRule.createSingleJob("test");
 
     final RecordingJobHandler jobHandler = new RecordingJobHandler();
-    clientRule.getJobClient().newWorker().jobType("test").handler(jobHandler).open();
+    clientRule.getClient().newWorker().jobType("test").handler(jobHandler).open();
 
     waitUntil(() -> !jobHandler.getHandledJobs().isEmpty());
     jobEvent = jobHandler.getHandledJobs().get(0);
@@ -64,7 +66,7 @@ public class CompleteJobTest {
   @Test
   public void shouldCompleteJobWithoutPayload() {
     // when
-    clientRule.getJobClient().newCompleteCommand(jobKey).send().join();
+    clientRule.getClient().newCompleteCommand(jobKey).send().join();
 
     // then
     ZeebeAssertHelper.assertJobCompleted(
@@ -78,7 +80,7 @@ public class CompleteJobTest {
   @Test
   public void shouldCompleteJobNullPayload() {
     // when
-    clientRule.getJobClient().newCompleteCommand(jobKey).payload("null").send().join();
+    clientRule.getClient().newCompleteCommand(jobKey).payload("null").send().join();
 
     // then
     ZeebeAssertHelper.assertJobCompleted(
@@ -92,7 +94,7 @@ public class CompleteJobTest {
   @Test
   public void shouldCompleteJobWithPayload() {
     // when
-    clientRule.getJobClient().newCompleteCommand(jobKey).payload("{\"foo\":\"bar\"}").send().join();
+    clientRule.getClient().newCompleteCommand(jobKey).payload("{\"foo\":\"bar\"}").send().join();
 
     // then
     ZeebeAssertHelper.assertJobCompleted(
@@ -105,22 +107,22 @@ public class CompleteJobTest {
 
   @Test
   public void shouldThrowExceptionOnCompleteJobWithInvalidPayload() {
-    // when
-    final Throwable throwable =
-        catchThrowable(
-            () -> clientRule.getJobClient().newCompleteCommand(jobKey).payload("[]").send().join());
+    // expect
+    thrown.expect(ClientStatusException.class);
+    thrown.expect(hasStatusCode(Code.INVALID_ARGUMENT));
+    thrown.expect(
+        descriptionContains(
+            "Property 'payload' is invalid: Expected document to be a root level object, but was 'ARRAY'"));
 
-    // then
-    assertThat(throwable).isInstanceOf(ClientException.class);
-    assertThat(throwable.getMessage())
-        .contains("Document has invalid format. On root level an object is only allowed.");
+    // when
+    clientRule.getClient().newCompleteCommand(jobKey).payload("[]").send().join();
   }
 
   @Test
   public void shouldCompleteJobWithPayloadAsMap() {
     // when
     clientRule
-        .getJobClient()
+        .getClient()
         .newCompleteCommand(jobKey)
         .payload(Collections.singletonMap("foo", "bar"))
         .send()
@@ -141,7 +143,7 @@ public class CompleteJobTest {
     payload.foo = "bar";
 
     // when
-    clientRule.getJobClient().newCompleteCommand(jobKey).payload(payload).send().join();
+    clientRule.getClient().newCompleteCommand(jobKey).payload(payload).send().join();
 
     // then
     ZeebeAssertHelper.assertJobCompleted(
@@ -155,17 +157,13 @@ public class CompleteJobTest {
   @Test
   public void shouldProvideReasonInExceptionMessageOnRejection() {
     // given
-    final JobClient jobClient = clientRule.getClient().jobClient();
+    final JobClient jobClient = clientRule.getClient();
     final long jobKey = clientRule.createSingleJob("bar");
     jobClient.newCompleteCommand(jobKey).send().join();
 
-    // then
-    thrown.expect(ClientException.class);
-    thrown.expectMessage(
-        "Command (COMPLETE) for event with key "
-            + jobKey
-            + " was rejected. It is not applicable in the current state. "
-            + "Job does not exist");
+    // expect
+    thrown.expect(ClientStatusException.class);
+    thrown.expect(hasStatusCode(Code.NOT_FOUND));
 
     // when
     jobClient.newCompleteCommand(jobKey).send().join();

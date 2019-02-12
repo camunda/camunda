@@ -33,7 +33,7 @@ public class MsgPackConstants {
   public static final byte[] OTHER_PAYLOAD;
 
   static {
-    MSGPACK_PAYLOAD = MsgPackUtil.asMsgPack(JSON_DOCUMENT);
-    OTHER_PAYLOAD = MsgPackUtil.asMsgPack(OTHER_DOCUMENT);
+    MSGPACK_PAYLOAD = MsgPackUtil.asMsgPackReturnArray(JSON_DOCUMENT);
+    OTHER_PAYLOAD = MsgPackUtil.asMsgPackReturnArray(OTHER_DOCUMENT);
   }
 }

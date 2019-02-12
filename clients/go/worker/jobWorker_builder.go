@@ -1,3 +1,18 @@
+// Copyright © 2018 Camunda Services GmbH (info@camunda.com)
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
 package worker
 
 import (
@@ -55,6 +70,8 @@ type JobWorkerBuilderStep3 interface {
 	PollInterval(time.Duration) JobWorkerBuilderStep3
 	// Set the threshold of buffered activated jobs before polling for new jobs, i.e. threshold * BufferSize(int)
 	PollThreshold(float64) JobWorkerBuilderStep3
+	// Set list of variable names which should be fetched on job activation
+	FetchVariables(...string) JobWorkerBuilderStep3
 	// Open the job worker and start polling and handling jobs
 	Open() JobWorker
 }
@@ -109,7 +126,11 @@ func (builder *JobWorkerBuilder) PollThreshold(pollThreshold float64) JobWorkerB
 		log.Println("Ignoring invalid poll threshold", pollThreshold, "which should be greater then zero for job worker and using instead", builder.concurrency)
 	}
 	return builder
+}
 
+func (builder *JobWorkerBuilder) FetchVariables(fetchVariables ...string) JobWorkerBuilderStep3 {
+	builder.request.FetchVariable = fetchVariables
+	return builder
 }
 
 func (builder *JobWorkerBuilder) Open() JobWorker {

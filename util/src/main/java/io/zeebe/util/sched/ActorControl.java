@@ -485,9 +485,13 @@ public class ActorControl {
     return task.getLifecyclePhase();
   }
 
+  public boolean isCalledFromWithinActor(ActorJob job) {
+    return job != null && job.getActor() == actor;
+  }
+
   private ActorJob ensureCalledFromWithinActor(String methodName) {
     final ActorJob currentJob = ensureCalledFromActorThread(methodName).getCurrentJob();
-    if (currentJob == null || currentJob.getActor() != this.actor) {
+    if (!isCalledFromWithinActor(currentJob)) {
       throw new UnsupportedOperationException(
           "Incorrect usage of actor."
               + methodName

@@ -18,20 +18,39 @@
 package io.zeebe.broker.workflow.model.element;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import org.agrona.DirectBuffer;
 
-public class ExecutableActivity extends ExecutableFlowNode {
+public class ExecutableActivity extends ExecutableFlowNode implements ExecutableCatchEventSupplier {
   private List<ExecutableBoundaryEvent> boundaryEvents = new ArrayList<>();
+  private List<ExecutableCatchEvent> catchEvents = new ArrayList<>();
+  private List<DirectBuffer> interruptingIds = new ArrayList<>();
 
   public ExecutableActivity(String id) {
     super(id);
+  }
+
+  public void attach(ExecutableBoundaryEvent boundaryEvent) {
+    boundaryEvents.add(boundaryEvent);
+    catchEvents.add(boundaryEvent);
+
+    if (boundaryEvent.cancelActivity()) {
+      interruptingIds.add(boundaryEvent.getId());
+    }
+  }
+
+  @Override
+  public List<ExecutableCatchEvent> getEvents() {
+    return catchEvents;
   }
 
   public List<ExecutableBoundaryEvent> getBoundaryEvents() {
     return boundaryEvents;
   }
 
-  public void attach(ExecutableBoundaryEvent boundaryEvent) {
-    boundaryEvents.add(boundaryEvent);
+  @Override
+  public Collection<DirectBuffer> getInterruptingElementIds() {
+    return interruptingIds;
   }
 }

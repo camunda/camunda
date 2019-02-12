@@ -21,9 +21,8 @@ import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionState;
-import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.broker.util.ZeebeStateRule;
 import io.zeebe.util.collection.Tuple;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,24 +30,16 @@ import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 public class WorkflowInstanceSubscriptionStateTest {
 
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-
-  @Rule public AutoCloseableRule closeables = new AutoCloseableRule();
+  @Rule public ZeebeStateRule stateRule = new ZeebeStateRule();
 
   private WorkflowInstanceSubscriptionState state;
 
   @Before
-  public void setUp() throws Exception {
-    final ZeebeState stateController = new ZeebeState();
-    stateController.open(folder.newFolder("rocksdb"), false);
-
-    state = stateController.getWorkflowInstanceSubscriptionState();
-
-    closeables.manage(stateController);
+  public void setUp() {
+    state = stateRule.getZeebeState().getWorkflowInstanceSubscriptionState();
   }
 
   @Test
@@ -307,6 +298,7 @@ public class WorkflowInstanceSubscriptionStateTest {
         wrapString(handlerId),
         wrapString(name),
         wrapString(correlationKey),
-        1_000);
+        1_000,
+        true);
   }
 }

@@ -21,30 +21,24 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.logstreams.state.ZeebeState;
-import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.broker.util.ZeebeStateRule;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 public class MessageSubscriptionStateTest {
 
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-
-  @Rule public AutoCloseableRule closeables = new AutoCloseableRule();
+  @Rule public ZeebeStateRule stateRule = new ZeebeStateRule();
 
   private MessageSubscriptionState state;
 
   @Before
-  public void setUp() throws Exception {
-    final ZeebeState stateController = new ZeebeState();
-    stateController.open(folder.newFolder("rocksdb"), false);
+  public void setUp() {
 
-    state = stateController.getMessageSubscriptionState();
-
-    closeables.manage(stateController);
+    final ZeebeState zeebeState = stateRule.getZeebeState();
+    state = zeebeState.getMessageSubscriptionState();
   }
 
   @Test
@@ -351,6 +345,6 @@ public class MessageSubscriptionStateTest {
   private MessageSubscription subscription(
       String name, String correlationKey, long elementInstanceKey) {
     return new MessageSubscription(
-        1L, elementInstanceKey, wrapString(name), wrapString(correlationKey));
+        1L, elementInstanceKey, wrapString(name), wrapString(correlationKey), true);
   }
 }

@@ -30,6 +30,7 @@ public class IncidentRecordValueImpl extends RecordValueImpl implements Incident
   private final long workflowInstanceKey;
   private final long elementInstanceKey;
   private final long jobKey;
+  private final long variableScopeKey;
 
   public IncidentRecordValueImpl(
       final ExporterObjectMapper objectMapper,
@@ -39,7 +40,8 @@ public class IncidentRecordValueImpl extends RecordValueImpl implements Incident
       final String elementId,
       final long workflowInstanceKey,
       final long elementInstanceKey,
-      final long jobKey) {
+      final long jobKey,
+      final long variableScopeKey) {
     super(objectMapper);
     this.errorType = errorType;
     this.errorMessage = errorMessage;
@@ -48,6 +50,7 @@ public class IncidentRecordValueImpl extends RecordValueImpl implements Incident
     this.workflowInstanceKey = workflowInstanceKey;
     this.elementInstanceKey = elementInstanceKey;
     this.jobKey = jobKey;
+    this.variableScopeKey = variableScopeKey;
   }
 
   @Override
@@ -86,6 +89,11 @@ public class IncidentRecordValueImpl extends RecordValueImpl implements Incident
   }
 
   @Override
+  public long getVariableScopeKey() {
+    return variableScopeKey;
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (this == o) {
       return true;
@@ -98,6 +106,7 @@ public class IncidentRecordValueImpl extends RecordValueImpl implements Incident
     return workflowInstanceKey == that.workflowInstanceKey
         && elementInstanceKey == that.elementInstanceKey
         && jobKey == that.jobKey
+        && variableScopeKey == that.variableScopeKey
         && Objects.equals(errorType, that.errorType)
         && Objects.equals(errorMessage, that.errorMessage)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
@@ -114,7 +123,8 @@ public class IncidentRecordValueImpl extends RecordValueImpl implements Incident
         elementId,
         workflowInstanceKey,
         elementInstanceKey,
-        jobKey);
+        jobKey,
+        variableScopeKey);
   }
 
   @Override
@@ -138,6 +148,8 @@ public class IncidentRecordValueImpl extends RecordValueImpl implements Incident
         + elementInstanceKey
         + ", jobKey="
         + jobKey
+        + ", variableScopeKey="
+        + variableScopeKey
         + '}';
   }
 }

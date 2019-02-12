@@ -20,11 +20,11 @@ package io.zeebe.broker.workflow.model.transformation.transformer;
 import io.zeebe.broker.workflow.model.element.AbstractFlowElement;
 import io.zeebe.broker.workflow.model.element.ExecutableActivity;
 import io.zeebe.broker.workflow.model.element.ExecutableBoundaryEvent;
+import io.zeebe.broker.workflow.model.element.ExecutableCatchEventElement;
 import io.zeebe.broker.workflow.model.element.ExecutableEventBasedGateway;
 import io.zeebe.broker.workflow.model.element.ExecutableExclusiveGateway;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElementContainer;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
-import io.zeebe.broker.workflow.model.element.ExecutableIntermediateCatchElement;
 import io.zeebe.broker.workflow.model.element.ExecutableReceiveTask;
 import io.zeebe.broker.workflow.model.element.ExecutableSequenceFlow;
 import io.zeebe.broker.workflow.model.element.ExecutableServiceTask;
@@ -44,6 +44,7 @@ import io.zeebe.model.bpmn.instance.SequenceFlow;
 import io.zeebe.model.bpmn.instance.ServiceTask;
 import io.zeebe.model.bpmn.instance.StartEvent;
 import io.zeebe.model.bpmn.instance.SubProcess;
+import io.zeebe.protocol.BpmnElementType;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -60,12 +61,12 @@ public class FlowElementInstantiationTransformer implements ModelElementTransfor
     ELEMENT_FACTORIES.put(EndEvent.class, ExecutableFlowNode::new);
     ELEMENT_FACTORIES.put(EventBasedGateway.class, ExecutableEventBasedGateway::new);
     ELEMENT_FACTORIES.put(ExclusiveGateway.class, ExecutableExclusiveGateway::new);
-    ELEMENT_FACTORIES.put(IntermediateCatchEvent.class, ExecutableIntermediateCatchElement::new);
+    ELEMENT_FACTORIES.put(IntermediateCatchEvent.class, ExecutableCatchEventElement::new);
     ELEMENT_FACTORIES.put(ParallelGateway.class, ExecutableFlowNode::new);
     ELEMENT_FACTORIES.put(SequenceFlow.class, ExecutableSequenceFlow::new);
     ELEMENT_FACTORIES.put(ServiceTask.class, ExecutableServiceTask::new);
     ELEMENT_FACTORIES.put(ReceiveTask.class, ExecutableReceiveTask::new);
-    ELEMENT_FACTORIES.put(StartEvent.class, ExecutableFlowNode::new);
+    ELEMENT_FACTORIES.put(StartEvent.class, ExecutableCatchEventElement::new);
     ELEMENT_FACTORIES.put(SubProcess.class, ExecutableFlowElementContainer::new);
   }
 
@@ -77,14 +78,17 @@ public class FlowElementInstantiationTransformer implements ModelElementTransfor
   @Override
   public void transform(FlowElement element, TransformContext context) {
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
-    final Class<?> elemenType = element.getElementType().getInstanceType();
+    final Class<?> elementType = element.getElementType().getInstanceType();
 
-    final Function<String, AbstractFlowElement> elementFactory = ELEMENT_FACTORIES.get(elemenType);
+    final Function<String, AbstractFlowElement> elementFactory = ELEMENT_FACTORIES.get(elementType);
     if (elementFactory == null) {
-      throw new IllegalStateException("no transformer found for element type: " + elemenType);
+      throw new IllegalStateException("no transformer found for element type: " + elementType);
     }
 
     final AbstractFlowElement executableElement = elementFactory.apply(element.getId());
+
+    executableElement.setElementType(
+        BpmnElementType.bpmnElementTypeFor(element.getElementType().getTypeName()));
 
     workflow.addFlowElement(executableElement);
   }

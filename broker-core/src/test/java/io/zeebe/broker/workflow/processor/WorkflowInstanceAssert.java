@@ -67,8 +67,7 @@ public class WorkflowInstanceAssert
     final DirectBuffer elementIdBuffer = BufferUtil.wrapString(elementId);
 
     final Optional<TypedRecord<WorkflowInstanceRecord>> terminatingRecordOptional =
-        actual
-            .stream()
+        actual.stream()
             .filter(
                 r ->
                     r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_TERMINATING
@@ -93,13 +92,12 @@ public class WorkflowInstanceAssert
     //   - is in an event in the terminating flow scope
     //   - is a non-terminating event
     final Optional<TypedRecord<WorkflowInstanceRecord>> firstViolatingRecord =
-        actual
-            .stream()
+        actual.stream()
             .filter(
                 r ->
                     ((TypedEventImpl) r).getSourceEventPosition() > terminatingRecord.getPosition())
             .map(r -> recordsByPosition.get(((TypedEventImpl) r).getSourceEventPosition()))
-            .filter(r -> r.getValue().getScopeInstanceKey() == instanceKey)
+            .filter(r -> r.getValue().getFlowScopeKey() == instanceKey)
             .filter(r -> isFlowEvaluatingState(r.getMetadata().getIntent()))
             .findFirst();
 
@@ -113,10 +111,8 @@ public class WorkflowInstanceAssert
   }
 
   private static boolean isFlowEvaluatingState(Intent state) {
-    return state == WorkflowInstanceIntent.START_EVENT_OCCURRED
-        || state == WorkflowInstanceIntent.END_EVENT_OCCURRED
-        || state == WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN
+    return state == WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN
         || state == WorkflowInstanceIntent.ELEMENT_COMPLETED
-        || state == WorkflowInstanceIntent.ELEMENT_READY;
+        || state == WorkflowInstanceIntent.ELEMENT_ACTIVATING;
   }
 }

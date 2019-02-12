@@ -19,8 +19,9 @@ import io.zeebe.model.bpmn.instance.TimeCycle;
 import io.zeebe.model.bpmn.instance.TimeDate;
 import io.zeebe.model.bpmn.instance.TimeDuration;
 import io.zeebe.model.bpmn.instance.TimerEventDefinition;
+import io.zeebe.model.bpmn.util.time.Interval;
 import io.zeebe.model.bpmn.util.time.RepeatingInterval;
-import java.time.Duration;
+import io.zeebe.model.bpmn.util.time.TimeDateTimer;
 import java.time.format.DateTimeParseException;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
@@ -40,8 +41,8 @@ public class TimerEventDefinitionValidator implements ModelElementValidator<Time
     int definitionsCount = 0;
 
     if (timeDate != null) {
-      validationResultCollector.addError(
-          0, "Timer event definitions with timeDate are not supported");
+
+      validateTimeDate(element.getTimeDate(), validationResultCollector);
       definitionsCount++;
     }
 
@@ -51,20 +52,27 @@ public class TimerEventDefinitionValidator implements ModelElementValidator<Time
     }
 
     if (timeCycle != null) {
-      validateTimeCycle(element, validationResultCollector, timeCycle);
+      validateTimeCycle(validationResultCollector, timeCycle);
       definitionsCount++;
     }
 
     if (definitionsCount != 1) {
       validationResultCollector.addError(
-          0, "Must be exactly one type of timer: timeDuration, or timeCycle");
+          0, "Must be exactly one type of timer: timeDuration, timeDate or timeCycle");
+    }
+  }
+
+  private void validateTimeDate(
+      TimeDate timeDate, ValidationResultCollector validationResultCollector) {
+    try {
+      TimeDateTimer.parse(timeDate.getTextContent());
+    } catch (DateTimeParseException e) {
+      validationResultCollector.addError(0, "Time date is invalid");
     }
   }
 
   private void validateTimeCycle(
-      TimerEventDefinition element,
-      ValidationResultCollector validationResultCollector,
-      TimeCycle timeCycle) {
+      ValidationResultCollector validationResultCollector, TimeCycle timeCycle) {
     try {
       RepeatingInterval.parse(timeCycle.getTextContent());
     } catch (DateTimeParseException e) {
@@ -75,7 +83,7 @@ public class TimerEventDefinitionValidator implements ModelElementValidator<Time
   private void validateTimeDuration(
       ValidationResultCollector validationResultCollector, TimeDuration timeDuration) {
     try {
-      Duration.parse(timeDuration.getTextContent());
+      Interval.parse(timeDuration.getTextContent());
     } catch (DateTimeParseException e) {
       validationResultCollector.addError(0, "Time duration is invalid");
     }

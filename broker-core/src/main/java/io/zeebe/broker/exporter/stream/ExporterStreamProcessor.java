@@ -22,6 +22,7 @@ import io.zeebe.broker.exporter.context.ExporterContext;
 import io.zeebe.broker.exporter.record.RecordMetadataImpl;
 import io.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.zeebe.broker.exporter.stream.ExporterRecord.ExporterPosition;
+import io.zeebe.db.ZeebeDb;
 import io.zeebe.exporter.context.Controller;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.spi.Exporter;
@@ -31,8 +32,6 @@ import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
-import io.zeebe.logstreams.state.StateSnapshotController;
-import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
@@ -51,7 +50,7 @@ public class ExporterStreamProcessor implements StreamProcessor {
   private final List<ExporterContainer> containers;
   private final int partitionId;
 
-  private final ExporterStreamProcessorState state = new ExporterStreamProcessorState();
+  private final ExporterStreamProcessorState state;
   private final RecordExporter recordExporter = new RecordExporter();
   private final ExporterRecordProcessor exporterRecordProcessor = new ExporterRecordProcessor();
 
@@ -59,7 +58,11 @@ public class ExporterStreamProcessor implements StreamProcessor {
   private LogStreamReader logStreamReader;
 
   public ExporterStreamProcessor(
-      final int partitionId, final Collection<ExporterDescriptor> descriptors) {
+      ZeebeDb<ExporterColumnFamilies> zeebeDb,
+      final int partitionId,
+      final Collection<ExporterDescriptor> descriptors) {
+    state = new ExporterStreamProcessorState(zeebeDb);
+
     this.partitionId = partitionId;
 
     this.containers = new ArrayList<>(descriptors.size());
@@ -68,8 +71,8 @@ public class ExporterStreamProcessor implements StreamProcessor {
     }
   }
 
-  public StateSnapshotController createSnapshotController(final StateStorage storage) {
-    return new StateSnapshotController(state, storage);
+  public ExporterStreamProcessorState getState() {
+    return state;
   }
 
   @Override
@@ -131,8 +134,6 @@ public class ExporterStreamProcessor implements StreamProcessor {
         container.context.getLogger().error("Error on close", e);
       }
     }
-
-    state.close();
   }
 
   private boolean shouldCommitPositions() {
@@ -158,9 +159,7 @@ public class ExporterStreamProcessor implements StreamProcessor {
     public void updateLastExportedRecordPosition(final long position) {
       actorControl.run(
           () -> {
-            if (state.isOpened()) {
-              state.setPosition(getId(), position);
-            }
+            state.setPosition(getId(), position);
             this.position = position;
           });
     }
@@ -257,9 +256,5 @@ public class ExporterStreamProcessor implements StreamProcessor {
 
       return 0;
     }
-  }
-
-  public ExporterStreamProcessorState getState() {
-    return state;
   }
 }

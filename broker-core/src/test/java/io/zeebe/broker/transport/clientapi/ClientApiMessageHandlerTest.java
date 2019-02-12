@@ -306,13 +306,11 @@ public class ClientApiMessageHandlerTest {
 
     final ErrorResponseDecoder errorDecoder = serverOutput.getAsErrorResponse(0);
 
-    assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.PARTITION_NOT_FOUND);
-    assertThat(errorDecoder.errorData())
-        .isEqualTo("Cannot execute command. Partition with id '99' not found");
+    assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.PARTITION_LEADER_MISMATCH);
   }
 
   @Test
-  public void shouldNotHandleUnkownRequest() {
+  public void shouldNotHandleUnknownRequest() {
     // given
     headerEncoder
         .wrap(buffer, 0)
@@ -333,9 +331,7 @@ public class ClientApiMessageHandlerTest {
 
     final ErrorResponseDecoder errorDecoder = serverOutput.getAsErrorResponse(0);
 
-    assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.MESSAGE_NOT_SUPPORTED);
-    assertThat(errorDecoder.errorData())
-        .isEqualTo("Cannot handle message. Template id '999' is not supported.");
+    assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.INVALID_MESSAGE_TEMPLATE);
   }
 
   @Test
@@ -358,11 +354,6 @@ public class ClientApiMessageHandlerTest {
     final ErrorResponseDecoder errorDecoder = serverOutput.getAsErrorResponse(0);
 
     assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.INVALID_CLIENT_VERSION);
-    assertThat(errorDecoder.errorData())
-        .isEqualTo(
-            String.format(
-                "Client has newer version than broker (%d > %d)",
-                (int) Short.MAX_VALUE, ExecuteCommandRequestEncoder.SCHEMA_VERSION));
   }
 
   @Test
@@ -387,10 +378,7 @@ public class ClientApiMessageHandlerTest {
 
     final ErrorResponseDecoder errorDecoder = serverOutput.getAsErrorResponse(0);
 
-    assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.INVALID_MESSAGE);
-    assertThat(errorDecoder.errorData())
-        .contains("Cannot deserialize command:")
-        .contains("Property 'name' has no valid value");
+    assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.MALFORMED_REQUEST);
   }
 
   @Test
@@ -412,9 +400,7 @@ public class ClientApiMessageHandlerTest {
 
     final ErrorResponseDecoder errorDecoder = serverOutput.getAsErrorResponse(0);
 
-    assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.MESSAGE_NOT_SUPPORTED);
-    assertThat(errorDecoder.errorData())
-        .isEqualTo("Cannot execute command. Invalid event type 'NULL_VAL'.");
+    assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.UNSUPPORTED_MESSAGE);
   }
 
   protected int writeCommandRequestToBuffer(

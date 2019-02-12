@@ -16,18 +16,34 @@
 package io.zeebe.model.bpmn.util.time;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.time.Period;
-import java.time.format.DateTimeParseException;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.Temporal;
+import java.time.temporal.TemporalAmount;
+import java.time.temporal.TemporalUnit;
+import java.time.temporal.UnsupportedTemporalTypeException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /** Combines {@link java.time.Period}, and {@link java.time.Duration} */
-public class Interval {
+public class Interval implements TemporalAmount {
+  private static final Duration ACCURATE_DURATION_UPPER_BOUND = Duration.ofDays(1);
+
+  private final List<TemporalUnit> units;
   private final Period period;
   private final Duration duration;
 
   public Interval(Period period, Duration duration) {
     this.period = period;
     this.duration = duration;
+    this.units = new ArrayList<>();
+
+    this.units.addAll(period.getUnits());
+    this.units.addAll(duration.getUnits());
   }
 
   public Period getPeriod() {
@@ -36,6 +52,49 @@ public class Interval {
 
   public Duration getDuration() {
     return duration;
+  }
+
+  public long toEpochMilli(long fromEpochMilli) {
+    if (!isCalendarBased()) {
+      return fromEpochMilli + getDuration().toMillis();
+    }
+
+    final Instant start = Instant.ofEpochMilli(fromEpochMilli);
+    final ZonedDateTime zoneAwareStart = ZonedDateTime.ofInstant(start, ZoneId.systemDefault());
+    return zoneAwareStart.plus(this).toInstant().toEpochMilli();
+  }
+
+  /**
+   * {@link Duration#get(TemporalUnit)} only accepts {@link ChronoUnit#SECONDS} and {@link
+   * ChronoUnit#NANOS}, so for any other units, this call is delegated to {@link
+   * Period#get(TemporalUnit)}, though it could easily be the other way around.
+   *
+   * @param unit the {@code TemporalUnit} for which to return the value
+   * @return the long value of the unit
+   * @throws UnsupportedTemporalTypeException if the unit is not supported
+   */
+  @Override
+  public long get(TemporalUnit unit) {
+    if (unit == ChronoUnit.SECONDS || unit == ChronoUnit.NANOS) {
+      return duration.get(unit);
+    }
+
+    return period.get(unit);
+  }
+
+  @Override
+  public List<TemporalUnit> getUnits() {
+    return units;
+  }
+
+  @Override
+  public Temporal addTo(Temporal temporal) {
+    return temporal.plus(period).plus(duration);
+  }
+
+  @Override
+  public Temporal subtractFrom(Temporal temporal) {
+    return temporal.minus(period).minus(duration);
   }
 
   @Override
@@ -71,6 +130,10 @@ public class Interval {
     return period.toString() + duration.toString().substring(1);
   }
 
+  private boolean isCalendarBased() {
+    return !getPeriod().isZero() || getDuration().compareTo(ACCURATE_DURATION_UPPER_BOUND) >= 0;
+  }
+
   /**
    * Only supports a subset of ISO8601, combining both period and duration.
    *
@@ -78,29 +141,25 @@ public class Interval {
    * @return parsed interval
    */
   public static Interval parse(String text) {
-    final int timeOffset = text.lastIndexOf("T");
-    final Period period;
-    final Duration duration;
+    String sign = "";
+    int startOffset = 0;
 
-    // to remain consistent with normal duration parsing which requires a duration to start with P
-    if (text.charAt(0) != 'P') {
-      throw new DateTimeParseException("Must start with P", text, 0);
+    if (text.startsWith("-")) {
+      startOffset = 1;
+      sign = "-";
+    } else if (text.startsWith("+")) {
+      startOffset = 1;
     }
 
-    if (timeOffset > 0) {
-      duration = Duration.parse(String.format("P%S", text.substring(timeOffset)));
-    } else {
-      duration = Duration.ZERO;
+    final int durationOffset = text.indexOf('T');
+    if (durationOffset == -1) {
+      return new Interval(Period.parse(text), Duration.ZERO);
+    } else if (durationOffset == startOffset + 1) {
+      return new Interval(Period.ZERO, Duration.parse(text));
     }
 
-    if (timeOffset == -1) {
-      period = Period.parse(text);
-    } else if (timeOffset > 1) {
-      period = Period.parse(text.substring(0, timeOffset));
-    } else {
-      period = Period.ZERO;
-    }
-
-    return new Interval(period, duration);
+    return new Interval(
+        Period.parse(text.substring(0, durationOffset)),
+        Duration.parse(sign + "P" + text.substring(durationOffset)));
   }
 }

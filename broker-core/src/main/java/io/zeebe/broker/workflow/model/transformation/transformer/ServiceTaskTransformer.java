@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.workflow.model.transformation.transformer;
 
+import static io.zeebe.broker.Broker.LOG;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.zeebe.broker.workflow.model.BpmnStep;
@@ -30,7 +31,8 @@ import io.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 import io.zeebe.msgpack.spec.MsgPackWriter;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -62,9 +64,10 @@ public class ServiceTaskTransformer implements ModelElementTransformer<ServiceTa
   }
 
   private void bindLifecycle(final ExecutableServiceTask serviceTask) {
-    serviceTask.bindLifecycleState(WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.CREATE_JOB);
     serviceTask.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.TERMINATE_JOB_TASK);
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.SERVICE_TASK_ELEMENT_ACTIVATED);
+    serviceTask.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.SERVICE_TASK_ELEMENT_TERMINATING);
   }
 
   private void transformTaskDefinition(
@@ -80,34 +83,54 @@ public class ServiceTaskTransformer implements ModelElementTransformer<ServiceTa
     final ZeebeTaskHeaders taskHeaders = element.getSingleExtensionElement(ZeebeTaskHeaders.class);
 
     if (taskHeaders != null) {
-      final DirectBuffer encodedHeaders = encode(taskHeaders);
-      serviceTask.setEncodedHeaders(encodedHeaders);
+      final List<ZeebeHeader> validHeaders =
+          taskHeaders.getHeaders().stream()
+              .filter(this::isValidHeader)
+              .collect(Collectors.toList());
+
+      if (validHeaders.size() < taskHeaders.getHeaders().size()) {
+        LOG.warn(
+            "Ignoring invalid headers for task '{}'. Must have non-empty key and value.",
+            element.getName());
+      }
+
+      if (!validHeaders.isEmpty()) {
+        final DirectBuffer encodedHeaders = encode(validHeaders);
+        serviceTask.setEncodedHeaders(encodedHeaders);
+      }
     }
   }
 
-  private DirectBuffer encode(ZeebeTaskHeaders taskHeaders) {
+  private DirectBuffer encode(List<ZeebeHeader> taskHeaders) {
     final MutableDirectBuffer buffer = new UnsafeBuffer(0, 0);
 
-    final Collection<ZeebeHeader> headers = taskHeaders.getHeaders();
+    final ExpandableArrayBuffer expandableBuffer =
+        new ExpandableArrayBuffer(INITIAL_SIZE_KEY_VALUE_PAIR * taskHeaders.size());
 
-    if (!headers.isEmpty()) {
-      final ExpandableArrayBuffer expandableBuffer =
-          new ExpandableArrayBuffer(INITIAL_SIZE_KEY_VALUE_PAIR * headers.size());
-      msgPackWriter.wrap(expandableBuffer, 0);
-      msgPackWriter.writeMapHeader(headers.size());
+    msgPackWriter.wrap(expandableBuffer, 0);
+    msgPackWriter.writeMapHeader(taskHeaders.size());
 
-      headers.forEach(
-          h -> {
+    taskHeaders.forEach(
+        h -> {
+          if (isValidHeader(h)) {
             final DirectBuffer key = wrapString(h.getKey());
             msgPackWriter.writeString(key);
 
             final DirectBuffer value = wrapString(h.getValue());
             msgPackWriter.writeString(value);
-          });
+          }
+        });
 
-      buffer.wrap(expandableBuffer.byteArray(), 0, msgPackWriter.getOffset());
-    }
+    buffer.wrap(expandableBuffer.byteArray(), 0, msgPackWriter.getOffset());
 
     return buffer;
+  }
+
+  private boolean isValidHeader(ZeebeHeader header) {
+    return header != null
+        && header.getValue() != null
+        && !header.getValue().isEmpty()
+        && header.getKey() != null
+        && !header.getKey().isEmpty();
   }
 }

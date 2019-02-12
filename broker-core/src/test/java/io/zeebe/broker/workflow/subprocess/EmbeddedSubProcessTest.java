@@ -121,22 +121,38 @@ public class EmbeddedSubProcessTest {
         .extracting(e -> e.getMetadata().getIntent(), e -> e.getValue().getElementId())
         .containsExactly(
             tuple(WorkflowInstanceIntent.CREATE, ""),
-            tuple(WorkflowInstanceIntent.ELEMENT_READY, PROCESS_ID),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, PROCESS_ID),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, PROCESS_ID),
-            tuple(WorkflowInstanceIntent.START_EVENT_OCCURRED, "start"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "start"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "start"),
+            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "start"),
+            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "start"),
             tuple(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, "flow1"),
-            tuple(WorkflowInstanceIntent.ELEMENT_READY, "subProcess"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "subProcess"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "subProcess"),
-            tuple(WorkflowInstanceIntent.START_EVENT_OCCURRED, "subProcessStart"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "subProcessStart"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "subProcessStart"),
+            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "subProcessStart"),
+            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "subProcessStart"),
             tuple(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, "subProcessFlow1"),
-            tuple(WorkflowInstanceIntent.ELEMENT_READY, "subProcessTask"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "subProcessTask"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "subProcessTask"));
 
-    final Record<WorkflowInstanceRecordValue> subProcessReady = workflowInstanceEvents.get(5);
-    assertThat(subProcessReady.getValue().getScopeInstanceKey()).isEqualTo(workflowInstanceKey);
+    final Record<WorkflowInstanceRecordValue> subProcessReady =
+        testClient
+            .receiveWorkflowInstances()
+            .withElementId("subProcess")
+            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .getFirst();
+    assertThat(subProcessReady.getValue().getFlowScopeKey()).isEqualTo(workflowInstanceKey);
 
-    final Record<WorkflowInstanceRecordValue> subProcessTaskReady = workflowInstanceEvents.get(9);
-    assertThat(subProcessTaskReady.getValue().getScopeInstanceKey())
+    final Record<WorkflowInstanceRecordValue> subProcessTaskReady =
+        testClient
+            .receiveWorkflowInstances()
+            .withElementId("subProcessTask")
+            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .getFirst();
+    assertThat(subProcessTaskReady.getValue().getFlowScopeKey())
         .isEqualTo(subProcessReady.getKey());
   }
 
@@ -160,24 +176,36 @@ public class EmbeddedSubProcessTest {
         .extracting(e -> e.getMetadata().getIntent(), e -> e.getValue().getElementId())
         .containsExactly(
             tuple(WorkflowInstanceIntent.CREATE, ""),
-            tuple(WorkflowInstanceIntent.ELEMENT_READY, PROCESS_ID),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, PROCESS_ID),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, PROCESS_ID),
-            tuple(WorkflowInstanceIntent.START_EVENT_OCCURRED, "start"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "start"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "start"),
+            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "start"),
+            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "start"),
             tuple(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, "flow1"),
-            tuple(WorkflowInstanceIntent.ELEMENT_READY, "subProcess"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "subProcess"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "subProcess"),
-            tuple(WorkflowInstanceIntent.START_EVENT_OCCURRED, "subProcessStart"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "subProcessStart"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "subProcessStart"),
+            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "subProcessStart"),
+            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "subProcessStart"),
             tuple(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, "subProcessFlow1"),
-            tuple(WorkflowInstanceIntent.ELEMENT_READY, "subProcessTask"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "subProcessTask"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "subProcessTask"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "subProcessTask"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "subProcessTask"),
             tuple(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, "subProcessFlow2"),
-            tuple(WorkflowInstanceIntent.END_EVENT_OCCURRED, "subProcessEnd"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "subProcessEnd"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "subProcessEnd"),
+            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "subProcessEnd"),
+            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "subProcessEnd"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "subProcess"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "subProcess"),
             tuple(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, "flow2"),
-            tuple(WorkflowInstanceIntent.END_EVENT_OCCURRED, "end"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "end"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "end"),
+            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "end"),
+            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "end"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, PROCESS_ID),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, PROCESS_ID));
   }
@@ -208,104 +236,6 @@ public class EmbeddedSubProcessTest {
 
     final Headers headers = jobCreatedEvent.getValue().getHeaders();
     Assertions.assertThat(headers).hasElementId("task");
-  }
-
-  @Test
-  public void shouldApplyInputMappings() {
-    // given
-    final BpmnModelInstance model =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .subProcess("subProces", b -> b.zeebeInput("$.key", "$.mappedKey"))
-            .embeddedSubProcess()
-            .startEvent()
-            .serviceTask("task", b -> b.zeebeTaskType("type"))
-            .endEvent()
-            .subProcessDone()
-            .endEvent()
-            .done();
-
-    final byte[] payload = BufferUtil.bufferAsArray(MsgPackUtil.asMsgPack("key", "val"));
-    final byte[] expectedMappedPayload =
-        BufferUtil.bufferAsArray(MsgPackUtil.asMsgPack("mappedKey", "val"));
-
-    testClient.deploy(model);
-
-    // when
-    testClient.createWorkflowInstance(PROCESS_ID, payload);
-
-    // then
-    final Record<JobRecordValue> jobCreatedEvent =
-        testClient.receiveFirstJobEvent(JobIntent.CREATED);
-    MsgPackUtil.assertEquality(expectedMappedPayload, jobCreatedEvent.getValue().getPayload());
-  }
-
-  @Test
-  public void shouldApplyOutputMappings() {
-    // given
-    final BpmnModelInstance model =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .subProcess("subProces", b -> b.zeebeOutput("$.key", "$.mappedKey"))
-            .embeddedSubProcess()
-            .startEvent()
-            .serviceTask("task", b -> b.zeebeTaskType("type"))
-            .endEvent()
-            .subProcessDone()
-            .endEvent()
-            .done();
-
-    final byte[] payload = BufferUtil.bufferAsArray(MsgPackUtil.asMsgPack("key", "val"));
-    final byte[] expectedMappedPayload =
-        BufferUtil.bufferAsArray(MsgPackUtil.asMsgPack("mappedKey", "val"));
-
-    testClient.deploy(model);
-    testClient.createWorkflowInstance(PROCESS_ID);
-
-    // when
-    testClient.completeJobOfType("type", payload);
-
-    // then
-    final Record<WorkflowInstanceRecordValue> instanceCompletedEvent =
-        testClient.receiveElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED);
-    MsgPackUtil.assertEquality(
-        expectedMappedPayload, instanceCompletedEvent.getValue().getPayload());
-  }
-
-  @Test
-  public void shouldApplyBothMappings() {
-    // given
-    final BpmnModelInstance model =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .subProcess(
-                "subProcess", b -> b.zeebeInput("$.key", "$.foo").zeebeOutput("$.foo", "$.key"))
-            .embeddedSubProcess()
-            .startEvent()
-            .serviceTask("task", b -> b.zeebeTaskType("type"))
-            .endEvent()
-            .subProcessDone()
-            .endEvent()
-            .done();
-
-    final byte[] payload = BufferUtil.bufferAsArray(MsgPackUtil.asMsgPack("key", "val"));
-    final byte[] otherPayload = BufferUtil.bufferAsArray(MsgPackUtil.asMsgPack("foo", "val2"));
-
-    final byte[] expectedMappedPayload =
-        BufferUtil.bufferAsArray(MsgPackUtil.asMsgPack("key", "val2"));
-
-    testClient.deploy(model);
-    testClient.createWorkflowInstance(PROCESS_ID, payload);
-
-    // when
-    testClient.completeJobOfType("type", otherPayload);
-
-    // then
-    final Record<WorkflowInstanceRecordValue> instanceCompletedEvent =
-        testClient.receiveElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED);
-
-    MsgPackUtil.assertEquality(
-        expectedMappedPayload, instanceCompletedEvent.getValue().getPayload());
   }
 
   @Test
@@ -348,11 +278,11 @@ public class EmbeddedSubProcessTest {
     assertThat(workflowInstanceEvents)
         .extracting(e -> e.getMetadata().getIntent(), e -> e.getValue().getElementId())
         .containsExactly(
-            tuple(WorkflowInstanceIntent.ELEMENT_READY, "outerSubProcess"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "outerSubProcess"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "outerSubProcess"),
-            tuple(WorkflowInstanceIntent.ELEMENT_READY, "innerSubProcess"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "innerSubProcess"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "innerSubProcess"),
-            tuple(WorkflowInstanceIntent.ELEMENT_READY, "task"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "task"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "task"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "task"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "task"),
@@ -425,13 +355,16 @@ public class EmbeddedSubProcessTest {
     assertThat(workflowInstanceEvents)
         .extracting(e -> e.getMetadata().getIntent(), e -> e.getValue().getElementId())
         .containsExactly(
+            tuple(WorkflowInstanceIntent.EVENT_OCCURRED, "outerSubProcess"),
             tuple(WorkflowInstanceIntent.ELEMENT_TERMINATING, "outerSubProcess"),
             tuple(WorkflowInstanceIntent.ELEMENT_TERMINATING, "innerSubProcess"),
             tuple(WorkflowInstanceIntent.ELEMENT_TERMINATING, "task"),
             tuple(WorkflowInstanceIntent.ELEMENT_TERMINATED, "task"),
             tuple(WorkflowInstanceIntent.ELEMENT_TERMINATED, "innerSubProcess"),
-            tuple(WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING, "event"),
             tuple(WorkflowInstanceIntent.ELEMENT_TERMINATED, "outerSubProcess"),
-            tuple(WorkflowInstanceIntent.CATCH_EVENT_TRIGGERED, "event"));
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "event"),
+            tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "event"),
+            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "event"),
+            tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "event"));
   }
 }

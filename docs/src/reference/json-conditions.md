@@ -49,7 +49,33 @@ $.orderCount >= 5 && $.orderCount < 15
 </table>
 
 A Null-Value can be used to check if a property is set (e.g., `$.owner == null`).
-If the property doesn't exist, then the JSON Path evaluation fails.
+If the any property in specified JSON Path doesn't exist, then it would be resolved as `null` and could be compared as such.
+
+<table style="width:100%">
+  <tr>
+    <th>Payload</th>
+    <th>JSON Path</th>
+    <th>Value</th
+  </tr>
+
+  <tr>
+    <td>{"foo": 3}</td>
+    <td>$.foo</td>
+    <td>3</td>
+  </tr>
+
+  <tr>
+    <td>{"foo": 3}</td>
+    <td>$.bar</td>
+    <td>null</td>
+  </tr>
+
+  <tr>
+    <td>{"foo": 3}</td>
+    <td>$.bar.baz</td>
+    <td>null</td>
+  </tr>
+</table>
 
 ### Comparison Operators
 
@@ -100,6 +126,7 @@ If the property doesn't exist, then the JSON Path evaluation fails.
 The operators `<`, `<=`, `>` and `>=` can only be used for numbers.
 
 If the values of an operator have different types, then the evaluation fails.
+Comparing null or missing property with a number is considered as comparing different types.
 
 ### Logical Operators
 

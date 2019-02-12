@@ -33,12 +33,7 @@ public class WorkflowTest {
   public void deploy() {
     client = testRule.getClient();
 
-    client
-        .workflowClient()
-        .newDeployCommand()
-        .addResourceFromClasspath("process.bpmn")
-        .send()
-        .join();
+    client.newDeployCommand().addResourceFromClasspath("process.bpmn").send().join();
 
     RecordingExporter.deploymentRecords(DeploymentIntent.CREATED).getFirst();
   }
@@ -46,16 +41,9 @@ public class WorkflowTest {
   @Test
   public void shouldCompleteWorkflowInstance() {
     final WorkflowInstanceEvent workflowInstance =
-        client
-            .workflowClient()
-            .newCreateInstanceCommand()
-            .bpmnProcessId("process")
-            .latestVersion()
-            .send()
-            .join();
+        client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
 
     client
-        .jobClient()
         .newWorker()
         .jobType("task")
         .handler((c, j) -> c.newCompleteCommand(j.getKey()).send().join())
@@ -72,16 +60,9 @@ public class WorkflowTest {
   @Test
   public void shouldCompleteWorkflowInstanceWithPayload() {
     final WorkflowInstanceEvent workflowInstance =
-        client
-            .workflowClient()
-            .newCreateInstanceCommand()
-            .bpmnProcessId("process")
-            .latestVersion()
-            .send()
-            .join();
+        client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
 
     client
-        .jobClient()
         .newWorker()
         .jobType("task")
         .handler(

@@ -29,6 +29,9 @@ import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.BpmnElementType;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
@@ -37,6 +40,7 @@ import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -56,6 +60,20 @@ public class EventbasedGatewayTest {
           .endEvent("end1")
           .moveToLastGateway()
           .intermediateCatchEvent("timer-2", c -> c.timerWithDuration("PT10S"))
+          .sequenceFlowId("to-end2")
+          .endEvent("end2")
+          .done();
+
+  private static final BpmnModelInstance WORKFLOW_WITH_EQUAL_TIMERS =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent("start")
+          .eventBasedGateway()
+          .id("gateway")
+          .intermediateCatchEvent("timer-1", c -> c.timerWithDuration("PT2S"))
+          .sequenceFlowId("to-end1")
+          .endEvent("end1")
+          .moveToLastGateway()
+          .intermediateCatchEvent("timer-2", c -> c.timerWithDuration("PT2S"))
           .sequenceFlowId("to-end2")
           .endEvent("end2")
           .done();
@@ -109,7 +127,7 @@ public class EventbasedGatewayTest {
     testClient.deploy(WORKFLOW_WITH_TIMERS);
     testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "123"));
 
-    assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(2).exists());
+    assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(2).exists()).isTrue();
 
     // when
     brokerRule.getClock().addTime(Duration.ofSeconds(1));
@@ -118,15 +136,26 @@ public class EventbasedGatewayTest {
     assertThat(
             RecordingExporter.workflowInstanceRecords()
                 .skipUntil(
-                    r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.GATEWAY_ACTIVATED)
+                    r ->
+                        r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED
+                            && r.getValue().getBpmnElementType()
+                                == BpmnElementType.EVENT_BASED_GATEWAY)
                 .limitToWorkflowInstanceCompleted())
         .extracting(r -> tuple(r.getValue().getElementId(), r.getMetadata().getIntent()))
         .containsExactly(
-            tuple("gateway", WorkflowInstanceIntent.GATEWAY_ACTIVATED),
-            tuple("timer-1", WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING),
-            tuple("timer-1", WorkflowInstanceIntent.CATCH_EVENT_TRIGGERED),
+            tuple("gateway", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("gateway", WorkflowInstanceIntent.EVENT_OCCURRED),
+            tuple("gateway", WorkflowInstanceIntent.ELEMENT_COMPLETING),
+            tuple("gateway", WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple("timer-1", WorkflowInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("timer-1", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("timer-1", WorkflowInstanceIntent.ELEMENT_COMPLETING),
+            tuple("timer-1", WorkflowInstanceIntent.ELEMENT_COMPLETED),
             tuple("to-end1", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple("end1", WorkflowInstanceIntent.END_EVENT_OCCURRED),
+            tuple("end1", WorkflowInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("end1", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("end1", WorkflowInstanceIntent.ELEMENT_COMPLETING),
+            tuple("end1", WorkflowInstanceIntent.ELEMENT_COMPLETED),
             tuple(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETING),
             tuple(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED));
   }
@@ -141,7 +170,8 @@ public class EventbasedGatewayTest {
 
     // then
     final Record<WorkflowInstanceRecordValue> gatewayEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.GATEWAY_ACTIVATED)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.EVENT_BASED_GATEWAY)
             .getFirst();
 
     final List<Record<TimerRecordValue>> timerEvents =
@@ -164,7 +194,8 @@ public class EventbasedGatewayTest {
 
     // then
     final Record<WorkflowInstanceRecordValue> gatewayEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.GATEWAY_ACTIVATED)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.EVENT_BASED_GATEWAY)
             .getFirst();
 
     final List<Record<WorkflowInstanceSubscriptionRecordValue>> subscriptionEvents =
@@ -186,10 +217,11 @@ public class EventbasedGatewayTest {
     testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "123"));
 
     final Record<WorkflowInstanceRecordValue> gatewayEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.GATEWAY_ACTIVATED)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.EVENT_BASED_GATEWAY)
             .getFirst();
 
-    assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(2).exists());
+    assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(2).exists()).isTrue();
 
     // when
     brokerRule.getClock().addTime(Duration.ofSeconds(1));
@@ -202,15 +234,55 @@ public class EventbasedGatewayTest {
         .hasHandlerFlowNodeId("timer-1");
 
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.END_EVENT_OCCURRED)
-                .withElementId("end1")
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN)
+                .withElementId("to-end1")
                 .exists())
         .isTrue();
 
     assertThat(
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withElementId(PROCESS_ID)
-            .exists());
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+                .withElementId(PROCESS_ID)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldOnlyExecuteOneBranchWithEqualTimers() {
+    // given
+    testClient.deploy(WORKFLOW_WITH_EQUAL_TIMERS);
+    testClient.createWorkflowInstance(PROCESS_ID);
+
+    // when
+    assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(2).count()).isEqualTo(2);
+    brokerRule.getClock().addTime(Duration.ofSeconds(2));
+
+    // then
+    assertThat(
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+                .withElementType(BpmnElementType.EVENT_BASED_GATEWAY)
+                .exists())
+        .isTrue();
+
+    final List<String> timers =
+        RecordingExporter.timerRecords(TimerIntent.CREATE)
+            .limit(2)
+            .map(r -> r.getValue().getHandlerFlowNodeId())
+            .collect(Collectors.toList());
+
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+                .withHandlerNodeId(timers.get(0))
+                .exists())
+        .isTrue();
+
+    Assertions.assertThat(
+            RecordingExporter.timerRecords(TimerIntent.TRIGGER)
+                .withHandlerNodeId(timers.get(1))
+                .onlyCommandRejections()
+                .getFirst()
+                .getMetadata())
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRecordType(RecordType.COMMAND_REJECTION);
   }
 
   @Test
@@ -220,7 +292,8 @@ public class EventbasedGatewayTest {
     testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "123"));
 
     final Record<WorkflowInstanceRecordValue> gatewayEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.GATEWAY_ACTIVATED)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.EVENT_BASED_GATEWAY)
             .getFirst();
 
     // when
@@ -236,15 +309,16 @@ public class EventbasedGatewayTest {
         .hasMessageName("msg-1");
 
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.END_EVENT_OCCURRED)
-                .withElementId("end1")
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN)
+                .withElementId("to-end1")
                 .exists())
         .isTrue();
 
     assertThat(
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withElementId(PROCESS_ID)
-            .exists());
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+                .withElementId(PROCESS_ID)
+                .exists())
+        .isTrue();
   }
 
   @Test
@@ -253,7 +327,7 @@ public class EventbasedGatewayTest {
     testClient.deploy(WORKFLOW_WITH_TIMERS);
     testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "123"));
 
-    assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(2).exists());
+    assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(2).exists()).isTrue();
 
     // when
     brokerRule.getClock().addTime(Duration.ofSeconds(1));
@@ -272,10 +346,11 @@ public class EventbasedGatewayTest {
     testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "123"));
 
     assertThat(
-        RecordingExporter.workflowInstanceSubscriptionRecords(
-                WorkflowInstanceSubscriptionIntent.OPENED)
-            .limit(2)
-            .exists());
+            RecordingExporter.workflowInstanceSubscriptionRecords(
+                    WorkflowInstanceSubscriptionIntent.OPENED)
+                .limit(2)
+                .exists())
+        .isTrue();
 
     // when
     testClient.publishMessage("msg-1", "123");
@@ -298,12 +373,13 @@ public class EventbasedGatewayTest {
     final long workflowInstanceKey =
         testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "123"));
 
-    assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(1).exists());
+    assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).limit(1).exists()).isTrue();
     assertThat(
-        RecordingExporter.workflowInstanceSubscriptionRecords(
-                WorkflowInstanceSubscriptionIntent.OPENED)
-            .limit(1)
-            .exists());
+            RecordingExporter.workflowInstanceSubscriptionRecords(
+                    WorkflowInstanceSubscriptionIntent.OPENED)
+                .limit(1)
+                .exists())
+        .isTrue();
 
     // when
     testClient.cancelWorkflowInstance(workflowInstanceKey);
@@ -321,5 +397,40 @@ public class EventbasedGatewayTest {
         .extracting(r -> r.getValue().getMessageName())
         .hasSize(1)
         .contains("msg");
+  }
+
+  @Test
+  public void shouldOnlyExecuteOneBranchWithSimultaneousMessages() {
+    // given
+    testClient.deploy(WORKFLOW_WITH_MESSAGES);
+
+    // when
+    testClient.publishMessage("msg-1", "123");
+    testClient.publishMessage("msg-2", "123");
+    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "123"));
+
+    final List<String> messageNames =
+        RecordingExporter.workflowInstanceSubscriptionRecords(
+                WorkflowInstanceSubscriptionIntent.CORRELATE)
+            .limit(2)
+            .map(r -> r.getValue().getMessageName())
+            .collect(Collectors.toList());
+
+    assertThat(
+            RecordingExporter.workflowInstanceSubscriptionRecords(
+                    WorkflowInstanceSubscriptionIntent.CORRELATED)
+                .withMessageName(messageNames.get(0))
+                .exists())
+        .isTrue();
+
+    Assertions.assertThat(
+            RecordingExporter.workflowInstanceSubscriptionRecords(
+                    WorkflowInstanceSubscriptionIntent.CORRELATE)
+                .withMessageName(messageNames.get(1))
+                .onlyCommandRejections()
+                .getFirst()
+                .getMetadata())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasRejectionType(RejectionType.INVALID_STATE);
   }
 }

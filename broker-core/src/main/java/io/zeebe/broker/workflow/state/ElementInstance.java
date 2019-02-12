@@ -17,21 +17,20 @@
  */
 package io.zeebe.broker.workflow.state;
 
-import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
+import static io.zeebe.db.impl.ZeebeDbConstants.ZB_DB_BYTE_ORDER;
 import static io.zeebe.util.buffer.BufferUtil.readIntoBuffer;
 import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
 
 import io.zeebe.broker.workflow.processor.WorkflowInstanceLifecycle;
+import io.zeebe.db.DbValue;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class ElementInstance implements Persistable {
+public class ElementInstance implements DbValue {
 
   private final IndexedRecord elementRecord;
-
-  private final EventTrigger interruptingEventTrigger = new EventTrigger();
 
   private long parentKey = -1;
   private int childCount;
@@ -92,6 +91,14 @@ public class ElementInstance implements Persistable {
     return WorkflowInstanceLifecycle.canTerminate(getState());
   }
 
+  public boolean isActive() {
+    return WorkflowInstanceLifecycle.isActive(getState());
+  }
+
+  public boolean isTerminating() {
+    return WorkflowInstanceLifecycle.isTerminating(getState());
+  }
+
   public void spawnToken() {
     this.activeTokens += 1;
   }
@@ -112,30 +119,21 @@ public class ElementInstance implements Persistable {
     return activeTokens + getNumberOfActiveElementInstances();
   }
 
-  public EventTrigger getInterruptingEventTrigger() {
-    return interruptingEventTrigger;
-  }
-
-  public boolean isInterrupted() {
-    return interruptingEventTrigger.isValid();
-  }
-
   @Override
   public void wrap(DirectBuffer buffer, int offset, int length) {
     final int startOffset = offset;
-    childCount = buffer.getInt(offset, STATE_BYTE_ORDER);
+    childCount = buffer.getInt(offset, ZB_DB_BYTE_ORDER);
     offset += Integer.BYTES;
 
-    jobKey = buffer.getLong(offset, STATE_BYTE_ORDER);
+    jobKey = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
-    activeTokens = buffer.getInt(offset, STATE_BYTE_ORDER);
+    activeTokens = buffer.getInt(offset, ZB_DB_BYTE_ORDER);
     offset += Integer.BYTES;
 
-    parentKey = buffer.getLong(offset, STATE_BYTE_ORDER);
+    parentKey = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
-    offset = readIntoBuffer(buffer, offset, interruptingEventTrigger);
     offset = readIntoBuffer(buffer, offset, elementRecord);
 
     assert (offset - startOffset) == length : "End offset differs from length";
@@ -143,59 +141,28 @@ public class ElementInstance implements Persistable {
 
   @Override
   public int getLength() {
-    return 2 * Long.BYTES
-        + 4 * Integer.BYTES
-        + elementRecord.getLength()
-        + interruptingEventTrigger.getLength();
+    return 2 * Long.BYTES + 3 * Integer.BYTES + elementRecord.getLength();
   }
 
   @Override
   public void write(MutableDirectBuffer buffer, int offset) {
     final int startOffset = offset;
 
-    buffer.putInt(offset, childCount, STATE_BYTE_ORDER);
+    buffer.putInt(offset, childCount, ZB_DB_BYTE_ORDER);
     offset += Integer.BYTES;
 
-    buffer.putLong(offset, jobKey, STATE_BYTE_ORDER);
+    buffer.putLong(offset, jobKey, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
-    buffer.putInt(offset, activeTokens, STATE_BYTE_ORDER);
+    buffer.putInt(offset, activeTokens, ZB_DB_BYTE_ORDER);
     offset += Integer.BYTES;
 
-    buffer.putLong(offset, parentKey, STATE_BYTE_ORDER);
+    buffer.putLong(offset, parentKey, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
-    offset = writeIntoBuffer(buffer, offset, interruptingEventTrigger);
     offset = writeIntoBuffer(buffer, offset, elementRecord);
 
     assert (offset - startOffset) == getLength() : "End offset differs from getLength()";
-  }
-
-  @Override
-  public void writeKey(MutableDirectBuffer keyBuffer, int offset) {
-    int keyOffset = offset;
-    keyBuffer.putLong(keyOffset, getKey(), STATE_BYTE_ORDER);
-    keyOffset += Long.BYTES;
-
-    assert (keyOffset - offset) == getKeyLength()
-        : "Offset problem: end length is not equal to expected key length";
-  }
-
-  @Override
-  public int getKeyLength() {
-    return Long.BYTES;
-  }
-
-  public void writeParentKey(MutableDirectBuffer keyBuffer, int offset) {
-    int keyOffset = offset;
-    keyBuffer.putLong(keyOffset, parentKey, STATE_BYTE_ORDER);
-    keyOffset += Long.BYTES;
-    assert (keyOffset - offset) == getParentKeyLength()
-        : "Offset problem: end length is not equal to expected key length";
-  }
-
-  public int getParentKeyLength() {
-    return Long.BYTES;
   }
 
   public long getParentKey() {

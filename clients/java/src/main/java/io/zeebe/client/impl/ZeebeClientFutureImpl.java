@@ -21,6 +21,7 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.cmd.ClientException;
+import io.zeebe.client.cmd.ClientStatusException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -46,15 +47,9 @@ public class ZeebeClientFutureImpl<ClientResponse, BrokerResponse>
     try {
       return get();
     } catch (final ExecutionException e) {
-      final Throwable cause = e.getCause();
-      if (cause instanceof StatusRuntimeException) {
-        final Status status = ((StatusRuntimeException) cause).getStatus();
-        throw new ClientException(status.getDescription(), e);
-      } else {
-        throw new ClientException(cause.getMessage(), e);
-      }
+      throw transformExecutionException(e);
     } catch (final InterruptedException e) {
-      throw new ClientException("Failed to receive response", e);
+      throw new ClientException("Unexpectedly interrupted awaiting client response", e);
     }
   }
 
@@ -62,8 +57,12 @@ public class ZeebeClientFutureImpl<ClientResponse, BrokerResponse>
   public ClientResponse join(final long timeout, final TimeUnit unit) {
     try {
       return get(timeout, unit);
-    } catch (final InterruptedException | ExecutionException | TimeoutException e) {
-      throw new RuntimeException(e);
+    } catch (final ExecutionException e) {
+      throw transformExecutionException(e);
+    } catch (final InterruptedException e) {
+      throw new ClientException("Unexpectedly interrupted awaiting client response", e);
+    } catch (final TimeoutException e) {
+      throw new ClientException("Timed out waiting on client response", e);
     }
   }
 
@@ -84,5 +83,16 @@ public class ZeebeClientFutureImpl<ClientResponse, BrokerResponse>
   @Override
   public void onCompleted() {
     // do nothing as we don't support streaming
+  }
+
+  private RuntimeException transformExecutionException(ExecutionException e) {
+    final Throwable cause = e.getCause();
+
+    if (cause instanceof StatusRuntimeException) {
+      final Status status = ((StatusRuntimeException) cause).getStatus();
+      throw new ClientStatusException(status, e);
+    } else {
+      throw new ClientException(e);
+    }
   }
 }

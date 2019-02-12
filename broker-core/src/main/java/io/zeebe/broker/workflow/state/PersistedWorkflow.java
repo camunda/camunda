@@ -17,37 +17,32 @@
  */
 package io.zeebe.broker.workflow.state;
 
-import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
+import static io.zeebe.db.impl.ZeebeDbConstants.ZB_DB_BYTE_ORDER;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
-import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 import static io.zeebe.util.buffer.BufferUtil.readIntoBuffer;
 import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
 
+import io.zeebe.db.DbValue;
+import io.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
+import io.zeebe.protocol.impl.record.value.deployment.Workflow;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class PersistedWorkflow implements Persistable {
+public class PersistedWorkflow implements DbValue {
   int version = -1;
   long key = -1;
   final UnsafeBuffer bpmnProcessId = new UnsafeBuffer(0, 0);
   final UnsafeBuffer resourceName = new UnsafeBuffer(0, 0);
   final UnsafeBuffer resource = new UnsafeBuffer(0, 0);
 
-  public PersistedWorkflow() {}
+  public void wrap(DeploymentResource resource, Workflow workflow, long workflowKey) {
+    this.resource.wrap(resource.getResource());
+    this.resourceName.wrap(resource.getResourceName());
+    this.bpmnProcessId.wrap(workflow.getBpmnProcessId());
 
-  public PersistedWorkflow(
-      DirectBuffer processId,
-      DirectBuffer resourceName,
-      DirectBuffer resource,
-      int version,
-      long key) {
-    this.bpmnProcessId.wrap(cloneBuffer(processId));
-    this.resourceName.wrap(cloneBuffer(resourceName));
-    this.resource.wrap(cloneBuffer(resource));
-
-    this.version = version;
-    this.key = key;
+    this.version = workflow.getVersion();
+    this.key = workflowKey;
   }
 
   public int getVersion() {
@@ -73,9 +68,9 @@ public class PersistedWorkflow implements Persistable {
   @Override
   public void wrap(DirectBuffer buffer, int offset, int length) {
     int valueOffset = offset;
-    version = buffer.getInt(offset, STATE_BYTE_ORDER);
+    version = buffer.getInt(offset, ZB_DB_BYTE_ORDER);
     valueOffset += Integer.BYTES;
-    key = buffer.getLong(valueOffset, STATE_BYTE_ORDER);
+    key = buffer.getLong(valueOffset, ZB_DB_BYTE_ORDER);
     valueOffset += Long.BYTES;
     valueOffset = readIntoBuffer(buffer, valueOffset, bpmnProcessId);
     valueOffset = readIntoBuffer(buffer, valueOffset, resourceName);
@@ -95,38 +90,14 @@ public class PersistedWorkflow implements Persistable {
   @Override
   public void write(MutableDirectBuffer buffer, int offset) {
     int valueOffset = offset;
-    buffer.putInt(offset, version, STATE_BYTE_ORDER);
+    buffer.putInt(offset, version, ZB_DB_BYTE_ORDER);
     valueOffset += Integer.BYTES;
-    buffer.putLong(valueOffset, key, STATE_BYTE_ORDER);
+    buffer.putLong(valueOffset, key, ZB_DB_BYTE_ORDER);
     valueOffset += Long.BYTES;
     valueOffset = writeIntoBuffer(buffer, valueOffset, bpmnProcessId);
     valueOffset = writeIntoBuffer(buffer, valueOffset, resourceName);
     valueOffset = writeIntoBuffer(buffer, valueOffset, resource);
     assert (valueOffset - offset) == getLength() : "End offset differs with getLength()";
-  }
-
-  public int writeKeyToBuffer(MutableDirectBuffer buffer, int offset) {
-    final int keyOffset = writeWorkflowKey(buffer, offset, bpmnProcessId, version);
-    assert (keyOffset - offset) == getKeyLength() : "End offset differs with getKeyLength()";
-    return keyOffset;
-  }
-
-  @Override
-  public void writeKey(MutableDirectBuffer keyBuffer, int offset) {
-    writeKeyToBuffer(keyBuffer, offset);
-  }
-
-  public static int writeWorkflowKey(
-      MutableDirectBuffer buffer, int offset, DirectBuffer bpmnProcessId, int version) {
-    int keyOffset = offset;
-    keyOffset = writeIntoBuffer(buffer, keyOffset, bpmnProcessId);
-    buffer.putInt(keyOffset, version, STATE_BYTE_ORDER);
-    keyOffset += Integer.BYTES;
-    return keyOffset;
-  }
-
-  public int getKeyLength() {
-    return bpmnProcessId.capacity() + Long.BYTES;
   }
 
   @Override

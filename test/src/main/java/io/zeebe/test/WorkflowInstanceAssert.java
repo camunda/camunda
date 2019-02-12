@@ -37,11 +37,7 @@ public class WorkflowInstanceAssert
 
   private static final List<WorkflowInstanceIntent> ELEMENT_PASSED_INTENTS =
       Arrays.asList(
-          WorkflowInstanceIntent.ELEMENT_COMPLETED,
-          WorkflowInstanceIntent.START_EVENT_OCCURRED,
-          WorkflowInstanceIntent.END_EVENT_OCCURRED,
-          WorkflowInstanceIntent.GATEWAY_ACTIVATED,
-          WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN);
+          WorkflowInstanceIntent.ELEMENT_COMPLETED, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN);
 
   private static final List<WorkflowInstanceIntent> INSTANCE_ENDED_INTENTS =
       Arrays.asList(

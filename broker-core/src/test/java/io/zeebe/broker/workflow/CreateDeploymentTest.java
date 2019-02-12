@@ -27,6 +27,8 @@ import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.DeploymentRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.model.bpmn.builder.ProcessBuilder;
+import io.zeebe.model.bpmn.instance.Message;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.clientapi.RecordType;
@@ -44,7 +46,12 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -194,6 +201,65 @@ public class CreateDeploymentTest {
   }
 
   @Test
+  public void shouldCreateDeploymentIfUnusedInvalidMessage() throws IOException {
+    // given
+    final BpmnModelInstance process = Bpmn.createExecutableProcess().startEvent().done();
+    process.getDefinitions().addChildElement(process.newInstance(Message.class));
+
+    // when
+    final ExecuteCommandResponse resp = apiRule.partitionClient().deployWithResponse(process);
+
+    // then
+    assertThat(resp.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATED);
+  }
+
+  @Test
+  public void shouldCreateDeploymentWithMessageStartEvent() throws IOException {
+    // given
+    final ProcessBuilder processBuilder = Bpmn.createExecutableProcess();
+    final BpmnModelInstance process =
+        processBuilder.startEvent().message(m -> m.name("startMessage")).endEvent().done();
+
+    // when
+    final ExecuteCommandResponse resp = apiRule.partitionClient().deployWithResponse(process);
+
+    // then
+    assertThat(resp.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATED);
+  }
+
+  @Test
+  public void shouldCreateDeploymentWithMultipleMessageStartEvent() throws IOException {
+    // given
+    final ProcessBuilder processBuilder =
+        Bpmn.createExecutableProcess("processWithMulitpleMsgStartEvent");
+    processBuilder.startEvent().message(m -> m.name("startMessage1")).endEvent().done();
+    final BpmnModelInstance process =
+        processBuilder.startEvent().message(m -> m.name("startMessage2")).endEvent().done();
+
+    // when
+    final ExecuteCommandResponse resp = apiRule.partitionClient().deployWithResponse(process);
+
+    // then
+    assertThat(resp.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATED);
+  }
+
+  @Test
+  public void shouldRejectDeploymentIfUsedInvalidMessage() throws IOException {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess().startEvent().intermediateCatchEvent("invalidmessage").done();
+
+    // when
+    final ExecuteCommandResponse resp = apiRule.partitionClient().deployWithResponse(process);
+
+    // then
+    assertThat(resp.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+  }
+
+  @Test
   public void shouldRejectDeploymentIfNotValidDesignTimeAspect() throws Exception {
     // given
     final Path path = Paths.get(getClass().getResource("/workflows/invalid_process.bpmn").toURI());
@@ -206,8 +272,8 @@ public class CreateDeploymentTest {
     assertThat(resp.getKey()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
     assertThat(resp.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATE);
-    assertThat(resp.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(resp.getRejectionReason()).contains("ERROR: Must have exactly one start event");
+    assertThat(resp.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(resp.getRejectionReason()).contains("ERROR: Must have at least one start event");
   }
 
   @Test
@@ -224,7 +290,7 @@ public class CreateDeploymentTest {
     assertThat(resp.getKey()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
     assertThat(resp.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATE);
-    assertThat(resp.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+    assertThat(resp.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
     assertThat(resp.getRejectionReason())
         .contains("Element: flow2 > conditionExpression")
         .contains("ERROR: Condition expression is invalid");
@@ -233,11 +299,15 @@ public class CreateDeploymentTest {
   @Test
   public void shouldRejectDeploymentIfOneResourceIsNotValid() throws Exception {
     // given
-    final Path path = Paths.get(getClass().getResource("/workflows/invalid_process.bpmn").toURI());
-    final byte[] resource = Files.readAllBytes(path);
+    final Path path1 = Paths.get(getClass().getResource("/workflows/invalid_process.bpmn").toURI());
+    final Path path2 = Paths.get(getClass().getResource("/workflows/collaboration.bpmn").toURI());
+    final byte[] resource1 = Files.readAllBytes(path1);
+    final byte[] resource2 = Files.readAllBytes(path2);
 
     final List<Map<String, Object>> resources =
-        Arrays.asList(deploymentResource(resource, "process2.bpmn"));
+        Arrays.asList(
+            deploymentResource(resource1, "process1.bpmn"),
+            deploymentResource(resource2, "process2.bpmn"));
 
     // when
     final ExecuteCommandResponse resp =
@@ -253,10 +323,7 @@ public class CreateDeploymentTest {
     // then
     assertThat(resp.getKey()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
     assertThat(resp.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(resp.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(resp.getRejectionReason())
-        .contains("Resource 'process2.bpmn':")
-        .contains("ERROR: Must have exactly one start event");
+    assertThat(resp.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
     assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATE);
   }
 
@@ -277,9 +344,7 @@ public class CreateDeploymentTest {
     assertThat(resp.getKey()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
     assertThat(resp.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATE);
-    assertThat(resp.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(resp.getRejectionReason())
-        .isEqualTo("Deployment doesn't contain a resource to deploy");
+    assertThat(resp.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
   }
 
   @Test
@@ -295,10 +360,7 @@ public class CreateDeploymentTest {
     assertThat(resp.getKey()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
     assertThat(resp.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATE);
-    assertThat(resp.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(resp.getRejectionReason())
-        .contains("Failed to deploy resource 'invalid.bpmn':")
-        .contains("SAXException while parsing input stream");
+    assertThat(resp.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
   }
 
   @Test

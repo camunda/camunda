@@ -20,6 +20,7 @@ package io.zeebe.broker.workflow.model.transformation.transformer;
 import io.zeebe.broker.workflow.model.element.ExecutableMessage;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
+import io.zeebe.model.bpmn.instance.ExtensionElements;
 import io.zeebe.model.bpmn.instance.Message;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 import io.zeebe.msgpack.jsonpath.JsonPathQuery;
@@ -39,19 +40,21 @@ public class MessageTransformer implements ModelElementTransformer<Message> {
     final String id = element.getId();
     final ExecutableMessage executableElement = new ExecutableMessage(id);
 
-    final ZeebeSubscription subscription =
-        element
-            .getExtensionElements()
-            .getElementsQuery()
-            .filterByType(ZeebeSubscription.class)
-            .singleResult();
+    final ExtensionElements extensionElements = element.getExtensionElements();
 
-    final JsonPathQueryCompiler queryCompiler = context.getJsonPathQueryCompiler();
-    final JsonPathQuery query = queryCompiler.compile(subscription.getCorrelationKey());
+    if (extensionElements != null) {
+      final ZeebeSubscription subscription =
+          extensionElements.getElementsQuery().filterByType(ZeebeSubscription.class).singleResult();
 
-    executableElement.setCorrelationKey(query);
-    executableElement.setMessageName(BufferUtil.wrapString(element.getName()));
+      final JsonPathQueryCompiler queryCompiler = context.getJsonPathQueryCompiler();
+      final JsonPathQuery query = queryCompiler.compile(subscription.getCorrelationKey());
 
-    context.addMessage(executableElement);
+      executableElement.setCorrelationKey(query);
+    }
+
+    if (element.getName() != null) {
+      executableElement.setMessageName(BufferUtil.wrapString(element.getName()));
+      context.addMessage(executableElement);
+    }
   }
 }

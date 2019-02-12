@@ -73,7 +73,7 @@ public class MessageIncidentTest {
     final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
 
     final Record<WorkflowInstanceRecordValue> failureEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .withElementId("catch")
             .getFirst();
 
@@ -88,7 +88,8 @@ public class MessageIncidentTest {
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasElementId("catch")
         .hasElementInstanceKey(failureEvent.getKey())
-        .hasJobKey(-1L);
+        .hasJobKey(-1L)
+        .hasVariableScopeKey(failureEvent.getKey());
   }
 
   @Test
@@ -98,7 +99,7 @@ public class MessageIncidentTest {
         testClient.createWorkflowInstance(PROCESS_ID, MsgPackUtil.asMsgPack("orderId", true));
 
     final Record<WorkflowInstanceRecordValue> failureEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .withElementId("catch")
             .getFirst();
 
@@ -114,7 +115,8 @@ public class MessageIncidentTest {
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasElementId("catch")
         .hasElementInstanceKey(failureEvent.getKey())
-        .hasJobKey(-1L);
+        .hasJobKey(-1L)
+        .hasVariableScopeKey(failureEvent.getKey());
   }
 
   @Test
@@ -133,11 +135,12 @@ public class MessageIncidentTest {
 
     // then
     assertThat(
-        RecordingExporter.workflowInstanceSubscriptionRecords(
-                WorkflowInstanceSubscriptionIntent.OPENED)
-            .exists());
+            RecordingExporter.workflowInstanceSubscriptionRecords(
+                    WorkflowInstanceSubscriptionIntent.OPENED)
+                .exists())
+        .isTrue();
 
-    final Record incidentResolvedEvent =
+    final Record<IncidentRecordValue> incidentResolvedEvent =
         testClient.receiveFirstIncidentEvent(workflowInstance, RESOLVED);
     assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentCreatedRecord.getKey());
   }

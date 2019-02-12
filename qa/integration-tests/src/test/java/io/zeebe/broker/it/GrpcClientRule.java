@@ -21,8 +21,6 @@ import io.zeebe.broker.it.clustering.ClusteringRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
-import io.zeebe.client.api.clients.JobClient;
-import io.zeebe.client.api.clients.WorkflowClient;
 import io.zeebe.client.api.commands.PartitionInfo;
 import io.zeebe.client.api.commands.Topology;
 import io.zeebe.client.api.events.DeploymentEvent;
@@ -92,21 +90,11 @@ public class GrpcClientRule extends ExternalResource {
   public List<Integer> getPartitions() {
     final Topology topology = client.newTopologyRequest().send().join();
 
-    return topology
-        .getBrokers()
-        .stream()
+    return topology.getBrokers().stream()
         .flatMap(i -> i.getPartitions().stream())
         .filter(PartitionInfo::isLeader)
         .map(PartitionInfo::getPartitionId)
         .collect(Collectors.toList());
-  }
-
-  public WorkflowClient getWorkflowClient() {
-    return getClient().workflowClient();
-  }
-
-  public JobClient getJobClient() {
-    return getClient().jobClient();
   }
 
   public long createSingleJob(String type) {
@@ -131,7 +119,7 @@ public class GrpcClientRule extends ExternalResource {
             .done();
 
     final DeploymentEvent deploymentEvent =
-        getWorkflowClient()
+        getClient()
             .newDeployCommand()
             .addWorkflowModel(modelInstance, "workflow.bpmn")
             .send()
@@ -140,7 +128,7 @@ public class GrpcClientRule extends ExternalResource {
 
     // when
     final long workflowInstanceKey =
-        getWorkflowClient()
+        getClient()
             .newCreateInstanceCommand()
             .bpmnProcessId("process")
             .latestVersion()

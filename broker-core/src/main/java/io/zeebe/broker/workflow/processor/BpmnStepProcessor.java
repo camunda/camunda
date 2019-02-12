@@ -40,21 +40,19 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
 
   private final WorkflowEngineState state;
   private final BpmnStepHandlers stepHandlers;
-  private final BpmnStepGuards stepGuards;
   private final WorkflowState workflowState;
   private final BpmnStepContext context;
 
   private ElementInstanceState elementInstanceState;
 
   public BpmnStepProcessor(
-      WorkflowEngineState state, ZeebeState zeebeState, CatchEventOutput catchEventOutput) {
+      WorkflowEngineState state, ZeebeState zeebeState, CatchEventBehavior catchEventBehavior) {
     this.state = state;
     this.workflowState = state.getWorkflowState();
-    this.stepHandlers = new BpmnStepHandlers(workflowState, zeebeState);
-    this.stepGuards = new BpmnStepGuards();
+    this.stepHandlers = new BpmnStepHandlers(zeebeState);
 
     final EventOutput eventOutput = new EventOutput(state);
-    this.context = new BpmnStepContext<>(eventOutput, catchEventOutput);
+    this.context = new BpmnStepContext<>(workflowState, eventOutput, catchEventBehavior);
   }
 
   @Override
@@ -75,12 +73,8 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
       Consumer<SideEffectProducer> sideEffect) {
 
     populateEventContext(record, streamWriter, sideEffect);
-
-    if (stepGuards.shouldHandle(context)) {
-      state.onEventConsumed(record);
-      stepHandlers.handle(context);
-      elementInstanceState.flushDirtyState();
-    }
+    stepHandlers.handle(context);
+    elementInstanceState.flushDirtyState();
   }
 
   private void populateEventContext(
@@ -121,7 +115,7 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
     final ElementInstance elementInstance =
         elementInstanceState.getInstance(context.getRecord().getKey());
     final ElementInstance flowScopeInstance =
-        elementInstanceState.getInstance(value.getScopeInstanceKey());
+        elementInstanceState.getInstance(value.getFlowScopeKey());
 
     context.setElementInstance(elementInstance);
     context.setFlowScopeInstance(flowScopeInstance);

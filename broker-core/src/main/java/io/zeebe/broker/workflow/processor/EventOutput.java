@@ -19,6 +19,7 @@ package io.zeebe.broker.workflow.processor;
 
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
 import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
 import io.zeebe.broker.workflow.state.WorkflowEngineState;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -41,8 +42,20 @@ public class EventOutput {
 
   public long appendNewEvent(
       final WorkflowInstanceIntent state, final WorkflowInstanceRecord value) {
-    final long key;
-    key = streamWriter.appendNewEvent(state, value);
+    return appendNewEvent(state, value, null);
+  }
+
+  public long appendNewEvent(
+      final WorkflowInstanceIntent state,
+      final WorkflowInstanceRecord value,
+      final ExecutableFlowElement element) {
+
+    if (element != null) {
+      value.setElementId(element.getId());
+      value.setBpmnElementType(element.getElementType());
+    }
+
+    final long key = streamWriter.appendNewEvent(state, value);
 
     materializedState.onEventProduced(key, state, value);
 
@@ -51,6 +64,18 @@ public class EventOutput {
 
   public void appendFollowUpEvent(
       final long key, final WorkflowInstanceIntent state, final WorkflowInstanceRecord value) {
+    appendFollowUpEvent(key, state, value, null);
+  }
+
+  public void appendFollowUpEvent(
+      final long key,
+      final WorkflowInstanceIntent state,
+      final WorkflowInstanceRecord value,
+      final ExecutableFlowElement element) {
+    if (element != null) {
+      value.setElementId(element.getId());
+      value.setBpmnElementType(element.getElementType());
+    }
 
     streamWriter.appendFollowUpEvent(key, state, value);
 
@@ -62,16 +87,27 @@ public class EventOutput {
     streamWriter.appendFollowUpEvent(incidentKey, IncidentIntent.RESOLVED, incidentRecord);
   }
 
-  public void deferEvent(final TypedRecord<WorkflowInstanceRecord> event) {
-    materializedState.deferTokenEvent(event);
+  public long deferEvent(final TypedRecord<WorkflowInstanceRecord> event) {
+    final WorkflowInstanceRecord value = event.getValue();
+    final WorkflowInstanceIntent intent = (WorkflowInstanceIntent) event.getMetadata().getIntent();
+
+    return deferRecord(value.getFlowScopeKey(), value, intent);
   }
 
-  public void storeFailedToken(final TypedRecord<WorkflowInstanceRecord> event) {
-    materializedState.storeFailedToken(event);
+  public long deferRecord(
+      long scopeKey, WorkflowInstanceRecord value, WorkflowInstanceIntent intent) {
+    final long elementInstanceKey = getStreamWriter().getKeyGenerator().nextKey();
+    materializedState.deferRecord(elementInstanceKey, scopeKey, value, intent);
+
+    return elementInstanceKey;
   }
 
-  public void consumeDeferredEvent(final long scopeKey, final long key) {
-    materializedState.consumeStoredRecord(scopeKey, key, Purpose.DEFERRED_TOKEN);
+  public void storeFailedRecord(final TypedRecord<WorkflowInstanceRecord> event) {
+    materializedState.storeFailedRecord(event);
+  }
+
+  public void removeDeferredEvent(final long scopeKey, final long key) {
+    materializedState.removeStoredRecord(scopeKey, key, Purpose.DEFERRED);
   }
 
   public TypedStreamWriter getStreamWriter() {

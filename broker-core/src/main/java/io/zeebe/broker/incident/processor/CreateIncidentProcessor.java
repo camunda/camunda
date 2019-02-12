@@ -29,11 +29,12 @@ import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.intent.IncidentIntent;
 
 public final class CreateIncidentProcessor implements CommandProcessor<IncidentRecord> {
-
-  public static final String CORRUPTED_STATE_EXCEPTION =
-      "Expected to have an failed token, but no entry with key %d found.";
-  public static final String NOT_FAILED_JOB_MSG =
-      "Expected to have an job with key %d in failed state.";
+  public static final String NO_FAILED_RECORD_MESSAGE =
+      "Expected to create incident for failed record with key '%d', but no such record was found";
+  public static final String JOB_NOT_FAILED_MESSAGE =
+      "Expected to create incident for failed job with key '%d', but it is not failed";
+  public static final String NO_FAILED_JOB_MESSAGE =
+      "Expected to create incident for failed job with key '%d', but no such job was found";
 
   private final ZeebeState zeebeState;
 
@@ -68,13 +69,17 @@ public final class CreateIncidentProcessor implements CommandProcessor<IncidentR
   }
 
   private boolean rejectJobIncident(long jobKey, CommandControl<IncidentRecord> commandControl) {
-    final JobState jobState = zeebeState.getJobState();
-    final boolean isNotFailed = !jobState.isInState(jobKey, State.FAILED);
-    if (isNotFailed) {
+    final JobState state = zeebeState.getJobState();
+    final JobState.State jobState = state.getState(jobKey);
+
+    if (jobState == State.NOT_FOUND) {
+      commandControl.reject(RejectionType.NOT_FOUND, String.format(NO_FAILED_JOB_MESSAGE, jobKey));
+    } else if (jobState != State.FAILED) {
       commandControl.reject(
-          RejectionType.NOT_APPLICABLE, String.format(NOT_FAILED_JOB_MSG, jobKey));
+          RejectionType.INVALID_STATE, String.format(JOB_NOT_FAILED_MESSAGE, jobKey));
     }
-    return isNotFailed;
+
+    return jobState != State.FAILED;
   }
 
   private boolean rejectWorkflowInstanceIncident(
@@ -82,13 +87,12 @@ public final class CreateIncidentProcessor implements CommandProcessor<IncidentR
     final ElementInstanceState elementInstanceState =
         zeebeState.getWorkflowState().getElementInstanceState();
 
-    final IndexedRecord failedToken = elementInstanceState.getFailedToken(elementInstanceKey);
-    final boolean noFailedToken = failedToken == null;
-    if (noFailedToken) {
+    final IndexedRecord failedRecord = elementInstanceState.getFailedRecord(elementInstanceKey);
+    final boolean noFailedRecord = failedRecord == null;
+    if (noFailedRecord) {
       commandControl.reject(
-          RejectionType.NOT_APPLICABLE,
-          String.format(CORRUPTED_STATE_EXCEPTION, elementInstanceKey));
+          RejectionType.NOT_FOUND, String.format(NO_FAILED_RECORD_MESSAGE, elementInstanceKey));
     }
-    return noFailedToken;
+    return noFailedRecord;
   }
 }

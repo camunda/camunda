@@ -17,15 +17,22 @@
  */
 package io.zeebe.broker.workflow.model.element;
 
-import java.time.Duration;
+import io.zeebe.model.bpmn.util.time.Timer;
 
 public interface ExecutableCatchEvent extends ExecutableFlowElement {
-
   boolean isTimer();
 
   boolean isMessage();
 
+  default boolean isNone() {
+    return !isTimer() && !isMessage();
+  }
+
   ExecutableMessage getMessage();
 
-  Duration getDuration();
+  default boolean shouldCloseMessageSubscriptionOnCorrelate() {
+    return true;
+  }
+
+  Timer getTimer();
 }

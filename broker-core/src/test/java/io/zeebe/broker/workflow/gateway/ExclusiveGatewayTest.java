@@ -19,12 +19,14 @@ package io.zeebe.broker.workflow.gateway;
 
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
@@ -52,7 +54,7 @@ public class ExclusiveGatewayTest {
   }
 
   @Test
-  public void shouldSpitOnExclusiveGateway() {
+  public void shouldSplitOnExclusiveGateway() {
     final BpmnModelInstance workflowDefinition =
         Bpmn.createExecutableProcess("workflow")
             .startEvent()
@@ -79,20 +81,16 @@ public class ExclusiveGatewayTest {
     final long workflowInstance3 =
         testClient.createWorkflowInstance("workflow", asMsgPack("foo", 12));
 
-    Record<WorkflowInstanceRecordValue> endEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(
-            workflowInstance1, WorkflowInstanceIntent.END_EVENT_OCCURRED);
-    assertThat(endEvent.getValue().getElementId()).isEqualTo("a");
-
-    endEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(
-            workflowInstance2, WorkflowInstanceIntent.END_EVENT_OCCURRED);
-    assertThat(endEvent.getValue().getElementId()).isEqualTo("b");
-
-    endEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(
-            workflowInstance3, WorkflowInstanceIntent.END_EVENT_OCCURRED);
-    assertThat(endEvent.getValue().getElementId()).isEqualTo("c");
+    assertThat(
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+                .withElementType(BpmnElementType.END_EVENT)
+                .limit(3))
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getWorkflowInstanceKey(), v.getElementId()))
+        .contains(
+            tuple(workflowInstance1, "a"),
+            tuple(workflowInstance2, "b"),
+            tuple(workflowInstance3, "c"));
   }
 
   @Test
@@ -181,7 +179,8 @@ public class ExclusiveGatewayTest {
     List<Record<WorkflowInstanceRecordValue>> gateWays =
         testClient
             .receiveWorkflowInstances()
-            .withIntent(WorkflowInstanceIntent.GATEWAY_ACTIVATED)
+            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementType(BpmnElementType.EXCLUSIVE_GATEWAY)
             .limit(2)
             .collect(Collectors.toList());
 
@@ -197,7 +196,7 @@ public class ExclusiveGatewayTest {
 
     // then
     testClient.receiveElementInState(
-        workflowInstance2, "workflow", WorkflowInstanceIntent.ELEMENT_COMPLETED);
+        workflowInstance2, "workflow", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
 
     sequenceFlows =
         testClient
@@ -210,7 +209,8 @@ public class ExclusiveGatewayTest {
     gateWays =
         testClient
             .receiveWorkflowInstances()
-            .withIntent(WorkflowInstanceIntent.GATEWAY_ACTIVATED)
+            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementType(BpmnElementType.EXCLUSIVE_GATEWAY)
             .withWorkflowInstanceKey(workflowInstance2)
             .limit(2)
             .collect(Collectors.toList());
@@ -244,26 +244,30 @@ public class ExclusiveGatewayTest {
     testClient.createWorkflowInstance("workflow", asMsgPack("foo", 4));
 
     // then
-    final List<Record> workflowEvents =
-        testClient.receiveWorkflowInstances().limit(10).collect(Collectors.toList());
+    final List<Record<WorkflowInstanceRecordValue>> workflowEvents =
+        testClient
+            .receiveWorkflowInstances()
+            .skipUntil(r -> r.getValue().getElementId().equals("xor"))
+            .limitToWorkflowInstanceCompleted()
+            .collect(Collectors.toList());
 
     assertThat(workflowEvents)
         .extracting(Record::getMetadata)
         .extracting(e -> e.getIntent())
         .containsExactly(
-            WorkflowInstanceIntent.CREATE,
-            WorkflowInstanceIntent.ELEMENT_READY,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-            WorkflowInstanceIntent.START_EVENT_OCCURRED,
+            WorkflowInstanceIntent.ELEMENT_COMPLETING,
+            WorkflowInstanceIntent.ELEMENT_COMPLETED,
             WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
-            WorkflowInstanceIntent.GATEWAY_ACTIVATED,
-            WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
-            WorkflowInstanceIntent.END_EVENT_OCCURRED,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+            WorkflowInstanceIntent.ELEMENT_COMPLETING,
+            WorkflowInstanceIntent.ELEMENT_COMPLETED,
             WorkflowInstanceIntent.ELEMENT_COMPLETING,
             WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
 
-  /** https://github.com/zeebe-io/zeebe/issues/1540 */
   @Test
   public void shouldSplitIfDefaultFlowIsDeclaredFirst() {
     final BpmnModelInstance workflowDefinition =
@@ -286,7 +290,8 @@ public class ExclusiveGatewayTest {
     final List<Record<WorkflowInstanceRecordValue>> completedEvents =
         RecordingExporter.workflowInstanceRecords()
             .limitToWorkflowInstanceCompleted()
-            .withIntent(WorkflowInstanceIntent.END_EVENT_OCCURRED)
+            .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .withElementType(BpmnElementType.END_EVENT)
             .collect(Collectors.toList());
 
     assertThat(completedEvents).extracting(r -> r.getValue().getElementId()).containsExactly("a");
@@ -295,7 +300,7 @@ public class ExclusiveGatewayTest {
   @Test
   public void shouldEndScopeIfGatewayHasNoOutgoingFlows() {
     final BpmnModelInstance workflowDefinition =
-        Bpmn.createExecutableProcess("workflow").startEvent().exclusiveGateway().done();
+        Bpmn.createExecutableProcess("workflow").startEvent().exclusiveGateway("xor").done();
 
     testClient.deploy(workflowDefinition);
 
@@ -306,17 +311,17 @@ public class ExclusiveGatewayTest {
     final List<Record<WorkflowInstanceRecordValue>> completedEvents =
         RecordingExporter.workflowInstanceRecords()
             .onlyEvents()
+            .skipUntil(r -> r.getValue().getElementId().equals("xor"))
             .limitToWorkflowInstanceCompleted()
             .collect(Collectors.toList());
 
     assertThat(completedEvents)
         .extracting(r -> r.getMetadata().getIntent())
         .containsExactly(
-            WorkflowInstanceIntent.ELEMENT_READY,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-            WorkflowInstanceIntent.START_EVENT_OCCURRED,
-            WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
-            WorkflowInstanceIntent.GATEWAY_ACTIVATED,
+            WorkflowInstanceIntent.ELEMENT_COMPLETING,
+            WorkflowInstanceIntent.ELEMENT_COMPLETED,
             WorkflowInstanceIntent.ELEMENT_COMPLETING,
             WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }

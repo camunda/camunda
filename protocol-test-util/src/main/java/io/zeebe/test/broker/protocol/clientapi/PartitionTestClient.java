@@ -30,6 +30,7 @@ import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -144,13 +145,13 @@ public class PartitionTestClient {
     final ExecuteCommandResponse response = createWorkflowInstanceWithResponse(bpmnProcessId);
 
     assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_READY);
+    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
 
     return response.getKey();
   }
 
   public long createWorkflowInstance(final String bpmnProcessId, final String jsonPayload) {
-    return createWorkflowInstance(bpmnProcessId, MsgPackUtil.asMsgPack(jsonPayload));
+    return createWorkflowInstance(bpmnProcessId, MsgPackUtil.asMsgPackReturnArray(jsonPayload));
   }
 
   public long createWorkflowInstance(final String bpmnProcessId, final DirectBuffer payload) {
@@ -170,7 +171,7 @@ public class PartitionTestClient {
             .sendAndAwait();
 
     assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_READY);
+    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
 
     return response.getKey();
   }
@@ -187,7 +188,7 @@ public class PartitionTestClient {
   }
 
   public void updatePayload(final long elementInstanceKey, final String jsonPayload) {
-    updatePayload(elementInstanceKey, MsgPackUtil.asMsgPack(jsonPayload));
+    updatePayload(elementInstanceKey, MsgPackUtil.asMsgPackReturnArray(jsonPayload));
   }
 
   public void updatePayload(final long elementInstanceKey, final byte[] payload) {
@@ -239,7 +240,7 @@ public class PartitionTestClient {
   }
 
   public void completeJobOfType(final String jobType, final String jsonPayload) {
-    completeJob(jobType, MsgPackUtil.asMsgPack(jsonPayload), e -> true);
+    completeJob(jobType, MsgPackUtil.asMsgPackReturnArray(jsonPayload), e -> true);
   }
 
   public void completeJobOfWorkflowInstance(
@@ -251,7 +252,7 @@ public class PartitionTestClient {
   }
 
   public ExecuteCommandResponse completeJob(long key, String payload) {
-    return completeJob(key, MsgPackUtil.asMsgPack(payload));
+    return completeJob(key, MsgPackUtil.asMsgPackReturnArray(payload));
   }
 
   public ExecuteCommandResponse completeJob(long key, byte[] payload) {
@@ -332,6 +333,11 @@ public class PartitionTestClient {
   public ExecuteCommandResponse publishMessage(
       final String messageName, final String correlationKey, final DirectBuffer payload) {
     return publishMessage(messageName, correlationKey, BufferUtil.bufferAsArray(payload));
+  }
+
+  public ExecuteCommandResponse publishMessage(
+      final String messageName, final String correlationKey, final String payload) {
+    return publishMessage(messageName, correlationKey, MsgPackUtil.asMsgPackReturnArray(payload));
   }
 
   public ExecuteCommandResponse publishMessage(
@@ -427,6 +433,11 @@ public class PartitionTestClient {
   }
 
   public Record<WorkflowInstanceRecordValue> receiveFirstWorkflowInstanceEvent(
+      final WorkflowInstanceIntent intent, final BpmnElementType elementType) {
+    return receiveWorkflowInstances().withIntent(intent).withElementType(elementType).getFirst();
+  }
+
+  public Record<WorkflowInstanceRecordValue> receiveFirstWorkflowInstanceEvent(
       final long wfInstanceKey, final String elementId, final Intent intent) {
     return receiveWorkflowInstances()
         .withIntent(intent)
@@ -440,6 +451,15 @@ public class PartitionTestClient {
     return receiveWorkflowInstances()
         .withIntent(intent)
         .withWorkflowInstanceKey(wfInstanceKey)
+        .getFirst();
+  }
+
+  public Record<WorkflowInstanceRecordValue> receiveFirstWorkflowInstanceEvent(
+      final long wfInstanceKey, final Intent intent, BpmnElementType elementType) {
+    return receiveWorkflowInstances()
+        .withIntent(intent)
+        .withWorkflowInstanceKey(wfInstanceKey)
+        .withElementType(elementType)
         .getFirst();
   }
 
@@ -457,6 +477,15 @@ public class PartitionTestClient {
       Intent intent, int expectedNumber) {
     return receiveWorkflowInstances()
         .withIntent(intent)
+        .limit(expectedNumber)
+        .collect(Collectors.toList());
+  }
+
+  public List<Record<WorkflowInstanceRecordValue>> receiveElementInstancesInState(
+      Intent intent, BpmnElementType elementType, int expectedNumber) {
+    return receiveWorkflowInstances()
+        .withIntent(intent)
+        .withElementType(elementType)
         .limit(expectedNumber)
         .collect(Collectors.toList());
   }

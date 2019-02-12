@@ -91,8 +91,7 @@ public class JobUpdateRetriesTest {
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(response.getIntent()).isEqualTo(JobIntent.UPDATE_RETRIES);
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.getRejectionReason()).isEqualTo("Job is not failed");
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
   }
 
   @Test
@@ -110,27 +109,51 @@ public class JobUpdateRetriesTest {
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(response.getIntent()).isEqualTo(JobIntent.UPDATE_RETRIES);
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.getRejectionReason()).isEqualTo("Job is not failed");
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
   }
 
   @Test
-  public void shouldRejectUpdateRetriesIfJobActivated() {
+  public void shouldUpdateRetriesIfJobActivated() {
     // given
     client.createJob(JOB_TYPE);
 
     apiRule.activateJobs(JOB_TYPE).await();
 
-    final Record jobEvent = client.receiveFirstJobEvent(JobIntent.ACTIVATED);
+    final Record<JobRecordValue> jobEvent = client.receiveFirstJobEvent(JobIntent.ACTIVATED);
 
     // when
     final ExecuteCommandResponse response = client.updateJobRetries(jobEvent.getKey(), NEW_RETRIES);
 
     // then
-    assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(response.getIntent()).isEqualTo(JobIntent.UPDATE_RETRIES);
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.getRejectionReason()).isEqualTo("Job is not failed");
+    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.getIntent()).isEqualTo(JobIntent.RETRIES_UPDATED);
+
+    assertThat(response.getKey()).isEqualTo(jobEvent.getKey());
+
+    final Record<JobRecordValue> loggedEvent =
+        client.receiveJobs().withIntent(JobIntent.RETRIES_UPDATED).withType(JOB_TYPE).getFirst();
+
+    assertThat(loggedEvent.getValue().getRetries()).isEqualTo(NEW_RETRIES);
+  }
+
+  @Test
+  public void shouldUpdateRetriesIfJobCreated() {
+    // given
+    final long jobKey = client.createJob(JOB_TYPE);
+
+    // when
+    final ExecuteCommandResponse response = client.updateJobRetries(jobKey, NEW_RETRIES);
+
+    // then
+    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.getIntent()).isEqualTo(JobIntent.RETRIES_UPDATED);
+
+    assertThat(response.getKey()).isEqualTo(jobKey);
+
+    final Record<JobRecordValue> updatedRetries =
+        client.receiveJobs().withIntent(JobIntent.RETRIES_UPDATED).withType(JOB_TYPE).getFirst();
+
+    assertThat(updatedRetries.getValue().getRetries()).isEqualTo(NEW_RETRIES);
   }
 
   @Test
@@ -150,8 +173,7 @@ public class JobUpdateRetriesTest {
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(response.getIntent()).isEqualTo(JobIntent.UPDATE_RETRIES);
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(response.getRejectionReason()).isEqualTo("Job retries must be positive");
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
   }
 
   @Test
@@ -171,7 +193,6 @@ public class JobUpdateRetriesTest {
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(response.getIntent()).isEqualTo(JobIntent.UPDATE_RETRIES);
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(response.getRejectionReason()).isEqualTo("Job retries must be positive");
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
   }
 }

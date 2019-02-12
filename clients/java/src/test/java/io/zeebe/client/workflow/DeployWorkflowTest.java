@@ -58,7 +58,7 @@ public class DeployWorkflowTest extends ClientTest {
 
     // when
     final DeploymentEvent response =
-        client.workflowClient().newDeployCommand().addResourceFile(filename).send().join();
+        client.newDeployCommand().addResourceFile(filename).send().join();
 
     // then
     assertThat(response.getKey()).isEqualTo(key);
@@ -79,7 +79,7 @@ public class DeployWorkflowTest extends ClientTest {
     final String filename = BPMN_1_FILENAME.substring(1);
 
     // when
-    client.workflowClient().newDeployCommand().addResourceFromClasspath(filename).send().join();
+    client.newDeployCommand().addResourceFromClasspath(filename).send().join();
 
     // then
     final DeployWorkflowRequest request = gatewayService.getLastRequest();
@@ -96,12 +96,7 @@ public class DeployWorkflowTest extends ClientTest {
     final InputStream resourceAsStream = DeployWorkflowTest.class.getResourceAsStream(filename);
 
     // when
-    client
-        .workflowClient()
-        .newDeployCommand()
-        .addResourceStream(resourceAsStream, filename)
-        .send()
-        .join();
+    client.newDeployCommand().addResourceStream(resourceAsStream, filename).send().join();
 
     // then
     final DeployWorkflowRequest request = gatewayService.getLastRequest();
@@ -118,7 +113,7 @@ public class DeployWorkflowTest extends ClientTest {
     final byte[] bytes = getBytes(filename);
 
     // when
-    client.workflowClient().newDeployCommand().addResourceBytes(bytes, filename).send().join();
+    client.newDeployCommand().addResourceBytes(bytes, filename).send().join();
 
     // then
     final DeployWorkflowRequest request = gatewayService.getLastRequest();
@@ -135,12 +130,7 @@ public class DeployWorkflowTest extends ClientTest {
     final String xml = new String(getBytes(filename));
 
     // when
-    client
-        .workflowClient()
-        .newDeployCommand()
-        .addResourceString(xml, Charsets.UTF_8, filename)
-        .send()
-        .join();
+    client.newDeployCommand().addResourceString(xml, Charsets.UTF_8, filename).send().join();
 
     // then
     final DeployWorkflowRequest request = gatewayService.getLastRequest();
@@ -157,7 +147,7 @@ public class DeployWorkflowTest extends ClientTest {
     final String xml = new String(getBytes(filename), Charsets.UTF_8);
 
     // when
-    client.workflowClient().newDeployCommand().addResourceStringUtf8(xml, filename).send().join();
+    client.newDeployCommand().addResourceStringUtf8(xml, filename).send().join();
 
     // then
     final DeployWorkflowRequest request = gatewayService.getLastRequest();
@@ -179,12 +169,7 @@ public class DeployWorkflowTest extends ClientTest {
     final byte[] expectedBytes = outStream.toByteArray();
 
     // when
-    client
-        .workflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(workflowModel, filename)
-        .send()
-        .join();
+    client.newDeployCommand().addWorkflowModel(workflowModel, filename).send().join();
 
     // then
     final DeployWorkflowRequest request = gatewayService.getLastRequest();
@@ -216,7 +201,6 @@ public class DeployWorkflowTest extends ClientTest {
     // when
     final DeploymentEvent response =
         client
-            .workflowClient()
             .newDeployCommand()
             .addResourceFromClasspath(filename1)
             .addResourceFromClasspath(filename2)
@@ -257,13 +241,7 @@ public class DeployWorkflowTest extends ClientTest {
 
     // when
     assertThatThrownBy(
-            () ->
-                client
-                    .workflowClient()
-                    .newDeployCommand()
-                    .addResourceStringUtf8("", "test.bpmn")
-                    .send()
-                    .join())
+            () -> client.newDeployCommand().addResourceStringUtf8("", "test.bpmn").send().join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("Invalid request");
   }

@@ -53,6 +53,9 @@ public interface LoggedEvent {
   /** @return the length of the event's metadata */
   short getMetadataLength();
 
+  /** @return the maximum possible length of the event's value */
+  int getMaxValueLength();
+
   /**
    * Wraps the given buffer to read the event's metadata
    *

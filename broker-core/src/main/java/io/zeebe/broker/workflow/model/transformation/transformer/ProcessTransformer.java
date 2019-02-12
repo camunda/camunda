@@ -22,6 +22,7 @@ import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.Process;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class ProcessTransformer implements ModelElementTransformer<Process> {
@@ -36,15 +37,22 @@ public class ProcessTransformer implements ModelElementTransformer<Process> {
 
     final String id = element.getId();
     final ExecutableWorkflow workflow = new ExecutableWorkflow(id);
+    workflow.setElementType(
+        BpmnElementType.bpmnElementTypeFor(element.getElementType().getTypeName()));
     context.addWorkflow(workflow);
     context.setCurrentWorkflow(workflow);
 
-    workflow.bindLifecycleState(WorkflowInstanceIntent.ELEMENT_READY, BpmnStep.ACTIVATE_FLOW_NODE);
     workflow.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.TRIGGER_START_EVENT);
+        WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnStep.ELEMENT_ACTIVATING);
     workflow.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.COMPLETE_PROCESS);
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.CONTAINER_ELEMENT_ACTIVATED);
     workflow.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.TERMINATE_CONTAINED_INSTANCES);
+        WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.ELEMENT_COMPLETING);
+    workflow.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnStep.ELEMENT_COMPLETED);
+    workflow.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.CONTAINER_ELEMENT_TERMINATING);
+    workflow.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.ELEMENT_TERMINATED);
   }
 }

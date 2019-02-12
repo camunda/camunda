@@ -34,7 +34,7 @@ public class ZeebeValidationTest extends AbstractZeebeValidationTest {
     return new Object[][] {
       {
         Bpmn.createExecutableProcess("process").done(),
-        singletonList(expect("process", "Must have exactly one start event"))
+        singletonList(expect("process", "Must have at least one start event"))
       },
       {
         Bpmn.createExecutableProcess("process").startEvent().userTask("task").endEvent().done(),
@@ -70,10 +70,6 @@ public class ZeebeValidationTest extends AbstractZeebeValidationTest {
             expect(
                 CompensateEventDefinition.class, "Event definition of this type is not supported"),
             expect(IntermediateCatchEvent.class, "Event definition must be one of: message, timer"))
-      },
-      {
-        "no-start-event-sub-process.bpmn",
-        singletonList(expect("subProcess", "Must have exactly one start event"))
       },
       {
         Bpmn.createExecutableProcess("process")

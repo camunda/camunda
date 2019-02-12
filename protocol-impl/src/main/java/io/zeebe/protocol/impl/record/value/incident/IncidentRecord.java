@@ -32,6 +32,7 @@ public class IncidentRecord extends UnpackedObject {
   private final StringProperty elementIdProp = new StringProperty("elementId", "");
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
   private final LongProperty jobKeyProp = new LongProperty("jobKey", -1L);
+  private final LongProperty variableScopeKeyProp = new LongProperty("variableScopeKey", -1L);
 
   public IncidentRecord() {
     this.declareProperty(errorTypeProp)
@@ -40,7 +41,8 @@ public class IncidentRecord extends UnpackedObject {
         .declareProperty(workflowInstanceKeyProp)
         .declareProperty(elementIdProp)
         .declareProperty(elementInstanceKeyProp)
-        .declareProperty(jobKeyProp);
+        .declareProperty(jobKeyProp)
+        .declareProperty(variableScopeKeyProp);
   }
 
   public ErrorType getErrorType() {
@@ -111,6 +113,15 @@ public class IncidentRecord extends UnpackedObject {
     return this;
   }
 
+  public IncidentRecord setVariableScopeKey(long variableScopeKey) {
+    this.variableScopeKeyProp.setValue(variableScopeKey);
+    return this;
+  }
+
+  public long getVariableScopeKey() {
+    return variableScopeKeyProp.getValue();
+  }
+
   public IncidentRecord initFromWorkflowInstanceFailure(
       long key, WorkflowInstanceRecord workflowInstanceEvent) {
 
@@ -118,6 +129,7 @@ public class IncidentRecord extends UnpackedObject {
     setBpmnProcessId(workflowInstanceEvent.getBpmnProcessId());
     setWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey());
     setElementId(workflowInstanceEvent.getElementId());
+    setVariableScopeKey(key);
 
     return this;
   }

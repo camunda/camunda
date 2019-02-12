@@ -15,8 +15,6 @@
  */
 package io.zeebe.broker.it.workflow.message;
 
-import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertElementActivated;
-import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertElementCompleted;
 import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertWorkflowInstanceCompleted;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -27,8 +25,15 @@ import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.cmd.ClientException;
+import io.zeebe.exporter.record.Assertions;
+import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.VariableRecordValue;
+import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Collections;
 import org.junit.Before;
@@ -57,7 +62,7 @@ public class MessageCorrelationTest {
   public void init() {
     final DeploymentEvent deploymentEvent =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newDeployCommand()
             .addWorkflowModel(WORKFLOW, "wf.bpmn")
             .send()
@@ -70,7 +75,7 @@ public class MessageCorrelationTest {
   public void shouldCorrelateMessage() {
     // given
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId(PROCESS_ID)
         .latestVersion()
@@ -80,7 +85,7 @@ public class MessageCorrelationTest {
 
     // when
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newPublishMessageCommand()
         .messageName("order canceled")
         .correlationKey("order-123")
@@ -91,19 +96,23 @@ public class MessageCorrelationTest {
     // then
     assertWorkflowInstanceCompleted(PROCESS_ID);
 
-    assertElementCompleted(
-        PROCESS_ID,
-        "catch-event",
-        (catchEventOccurredEvent) ->
-            assertThat(catchEventOccurredEvent.getPayloadAsMap())
-                .containsExactly(entry("orderId", "order-123"), entry("foo", "bar")));
+    final Record<WorkflowInstanceRecordValue> workflowInstanceEvent =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .withElementId("catch-event")
+            .getFirst();
+
+    final Record<VariableRecordValue> variableEvent =
+        RecordingExporter.variableRecords().withName("foo").getFirst();
+    Assertions.assertThat(variableEvent.getValue())
+        .hasValue("\"bar\"")
+        .hasScopeKey(workflowInstanceEvent.getValue().getWorkflowInstanceKey());
   }
 
   @Test
   public void shouldCorrelateMessageWithZeroTTL() {
     // given
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId(PROCESS_ID)
         .latestVersion()
@@ -111,11 +120,16 @@ public class MessageCorrelationTest {
         .send()
         .join();
 
-    assertElementActivated("catch-event");
+    assertThat(
+            RecordingExporter.workflowInstanceSubscriptionRecords(
+                    WorkflowInstanceSubscriptionIntent.OPENED)
+                .withMessageName("order canceled")
+                .exists())
+        .isTrue();
 
     // when
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newPublishMessageCommand()
         .messageName("order canceled")
         .correlationKey("order-123")
@@ -124,14 +138,18 @@ public class MessageCorrelationTest {
         .join();
 
     // then
-    assertElementCompleted(PROCESS_ID, "catch-event");
+    assertThat(
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+                .withElementId("catch-event")
+                .exists())
+        .isTrue();
   }
 
   @Test
   public void shouldNotCorrelateMessageAfterTTL() {
     // given
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newPublishMessageCommand()
         .messageName("order canceled")
         .correlationKey("order-123")
@@ -141,7 +159,7 @@ public class MessageCorrelationTest {
         .join();
 
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newPublishMessageCommand()
         .messageName("order canceled")
         .correlationKey("order-123")
@@ -152,7 +170,7 @@ public class MessageCorrelationTest {
 
     // when
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId(PROCESS_ID)
         .latestVersion()
@@ -161,18 +179,19 @@ public class MessageCorrelationTest {
         .join();
 
     // then
-    assertElementCompleted(
-        PROCESS_ID,
-        "catch-event",
-        (catchEventOccurred) ->
-            assertThat(catchEventOccurred.getPayloadAsMap()).contains(entry("msg", "expected")));
+    final Record<WorkflowInstanceRecordValue> record =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .withElementId("catch-event")
+            .getFirst();
+
+    assertThat(record.getValue().getPayloadAsMap()).contains(entry("msg", "expected"));
   }
 
   @Test
   public void shouldRejectMessageWithSameId() {
     // given
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newPublishMessageCommand()
         .messageName("order canceled")
         .correlationKey("order-123")
@@ -183,7 +202,7 @@ public class MessageCorrelationTest {
     // when
     final ZeebeFuture<Void> future =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newPublishMessageCommand()
             .messageName("order canceled")
             .correlationKey("order-123")
@@ -193,6 +212,7 @@ public class MessageCorrelationTest {
     // then
     assertThatThrownBy(future::join)
         .isInstanceOf(ClientException.class)
-        .hasMessageContaining("message with id 'foo' is already published");
+        .hasMessageContaining(
+            "Expected to publish a new message with id 'foo', but a message with that id was already published");
   }
 }

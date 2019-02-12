@@ -30,6 +30,7 @@ import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
@@ -39,6 +40,7 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
+import io.zeebe.test.util.record.RecordingExporter;
 import java.io.File;
 import java.net.URISyntaxException;
 import java.util.Collections;
@@ -79,7 +81,8 @@ public class WorkflowInstanceFunctionalTest {
     final Record<WorkflowInstanceRecordValue> workflowCreateCmd =
         testClient.receiveFirstWorkflowInstanceCommand(WorkflowInstanceIntent.CREATE);
     final Record<WorkflowInstanceRecordValue> startEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.START_EVENT_OCCURRED);
+        testClient.receiveFirstWorkflowInstanceEvent(
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnElementType.START_EVENT);
     final long workflowInstanceKey = response.getKey();
 
     assertThat(startEvent.getKey()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
@@ -101,18 +104,15 @@ public class WorkflowInstanceFunctionalTest {
     final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
 
     // then
-    final Record<WorkflowInstanceRecordValue> startEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.START_EVENT_OCCURRED);
     final Record<WorkflowInstanceRecordValue> sequenceFlow =
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN);
 
     assertThat(sequenceFlow.getKey()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
-    assertThat(sequenceFlow.getSourceRecordPosition()).isEqualTo(startEvent.getPosition());
     assertWorkflowInstanceRecord(workflowInstanceKey, "foo", sequenceFlow);
   }
 
   @Test
-  public void shouldOccureEndEvent() {
+  public void shouldOccurEndEvent() {
     // given
     testClient.deploy(Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent("foo").done());
 
@@ -120,77 +120,22 @@ public class WorkflowInstanceFunctionalTest {
     final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
 
     // then
-    final Record<WorkflowInstanceRecordValue> sequenceFlow =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN);
-    final Record<WorkflowInstanceRecordValue> event =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.END_EVENT_OCCURRED);
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .limitToWorkflowInstanceCompleted()
+                .withElementId("foo"))
+        .extracting(r -> r.getMetadata().getIntent())
+        .containsExactly(
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+            WorkflowInstanceIntent.ELEMENT_COMPLETING,
+            WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
-    assertThat(event.getKey()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
-    assertThat(event.getSourceRecordPosition()).isEqualTo(sequenceFlow.getPosition());
-    assertWorkflowInstanceRecord(workflowInstanceKey, "foo", event);
-  }
-
-  @Test
-  public void shouldCompleteWorkflowInstance() {
-    // given
-    testClient.deploy(Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done());
-
-    // when
-    final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
-
-    // then
-    final Record<WorkflowInstanceRecordValue> endEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.END_EVENT_OCCURRED);
-    final Record<WorkflowInstanceRecordValue> completedEvent =
-        testClient.receiveElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED);
-
-    assertThat(completedEvent.getKey()).isEqualTo(workflowInstanceKey);
-    assertThat(completedEvent.getPosition()).isGreaterThan(endEvent.getPosition());
-    assertWorkflowInstanceRecord(workflowInstanceKey, PROCESS_ID, completedEvent);
-  }
-
-  @Test
-  public void shouldConsumeTokenIfEventHasNoOutgoingSequenceflow() {
-    // given
-    testClient.deploy(Bpmn.createExecutableProcess(PROCESS_ID).startEvent().done());
-
-    // when
-    final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
-
-    // then
-    final Record<WorkflowInstanceRecordValue> startEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.START_EVENT_OCCURRED);
-    final Record<WorkflowInstanceRecordValue> completedEvent =
-        testClient.receiveElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED);
-
-    assertThat(completedEvent.getKey()).isEqualTo(workflowInstanceKey);
-    assertThat(completedEvent.getPosition()).isGreaterThan(startEvent.getPosition());
-    assertWorkflowInstanceRecord(workflowInstanceKey, PROCESS_ID, completedEvent);
-  }
-
-  @Test
-  public void shouldConsumeTokenIfActivityHasNoOutgoingSequenceflow() {
-    // given
-    final BpmnModelInstance definition =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .serviceTask("foo", t -> t.zeebeTaskType("bar"))
-            .done();
-    testClient.deploy(definition);
-    final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
-
-    // when
-    testClient.completeJobOfType("bar");
-
-    // then
-    final Record<WorkflowInstanceRecordValue> activityCompleted =
-        testClient.receiveElementInState("foo", WorkflowInstanceIntent.ELEMENT_COMPLETED);
-    final Record<WorkflowInstanceRecordValue> completedEvent =
-        testClient.receiveElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED);
-
-    assertThat(completedEvent.getKey()).isEqualTo(workflowInstanceKey);
-    assertThat(completedEvent.getPosition()).isGreaterThan(activityCompleted.getPosition());
-    assertWorkflowInstanceRecord(workflowInstanceKey, PROCESS_ID, completedEvent);
+    assertWorkflowInstanceRecord(
+        workflowInstanceKey,
+        "foo",
+        testClient.receiveFirstWorkflowInstanceEvent(
+            WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.END_EVENT));
   }
 
   @Test
@@ -210,7 +155,7 @@ public class WorkflowInstanceFunctionalTest {
 
     // then
     final Record<WorkflowInstanceRecordValue> activityReady =
-        testClient.receiveElementInState("foo", WorkflowInstanceIntent.ELEMENT_READY);
+        testClient.receiveElementInState("foo", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     final Record<WorkflowInstanceRecordValue> activatedEvent =
         testClient.receiveElementInState("foo", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
@@ -242,7 +187,6 @@ public class WorkflowInstanceFunctionalTest {
     assertJobRecord(createJobCmd);
   }
 
-  @SuppressWarnings("unchecked")
   @Test
   public void shouldCreateJobWithWorkflowInstanceAndCustomHeaders() {
     // given
@@ -318,24 +262,33 @@ public class WorkflowInstanceFunctionalTest {
     testClient.completeJobOfType("foo");
 
     // then
-    final List<Record> workflowEvents =
-        testClient.receiveWorkflowInstances().limit(13).collect(Collectors.toList());
+    final List<Record<WorkflowInstanceRecordValue>> workflowEvents =
+        testClient
+            .receiveWorkflowInstances()
+            .limitToWorkflowInstanceCompleted()
+            .collect(Collectors.toList());
 
     assertThat(workflowEvents)
         .extracting(Record::getMetadata)
         .extracting(e -> e.getIntent())
         .containsExactly(
             WorkflowInstanceIntent.CREATE,
-            WorkflowInstanceIntent.ELEMENT_READY,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-            WorkflowInstanceIntent.START_EVENT_OCCURRED,
-            WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
-            WorkflowInstanceIntent.ELEMENT_READY,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
             WorkflowInstanceIntent.ELEMENT_COMPLETING,
             WorkflowInstanceIntent.ELEMENT_COMPLETED,
             WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
-            WorkflowInstanceIntent.END_EVENT_OCCURRED,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+            WorkflowInstanceIntent.ELEMENT_COMPLETING,
+            WorkflowInstanceIntent.ELEMENT_COMPLETED,
+            WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+            WorkflowInstanceIntent.ELEMENT_COMPLETING,
+            WorkflowInstanceIntent.ELEMENT_COMPLETED,
             WorkflowInstanceIntent.ELEMENT_COMPLETING,
             WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
@@ -405,7 +358,7 @@ public class WorkflowInstanceFunctionalTest {
     brokerRule.startBroker();
 
     // then I can still start workflow instance (i.e. stream processor did not crash
-    final long newWorkflowInstancekey = testClient.createWorkflowInstance(PROCESS_ID);
-    assertThat(newWorkflowInstancekey).isGreaterThan(0);
+    final long newWorkflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
+    assertThat(newWorkflowInstanceKey).isGreaterThan(0);
   }
 }

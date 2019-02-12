@@ -163,6 +163,15 @@ public class ZeebeRuntimeValidationTest {
                 ZeebeSubscription.class,
                 "JSON path query is invalid: Unexpected json-path token LITERAL"))
       },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .receiveTask("catch")
+            .message(b -> b.name("message").zeebeCorrelationKey(null))
+            .endEvent()
+            .done(),
+        Arrays.asList(expect(ZeebeSubscription.class, "JSON path query is empty"))
+      },
     };
   }
 
@@ -197,10 +206,7 @@ public class ZeebeRuntimeValidationTest {
     // then
     final List<ExpectedValidationResult> unmatchedExpectations = new ArrayList<>(expectedResults);
     final List<ValidationResult> unmatchedResults =
-        results
-            .getResults()
-            .values()
-            .stream()
+        results.getResults().values().stream()
             .flatMap(l -> l.stream())
             .collect(Collectors.toList());
 

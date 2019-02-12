@@ -39,6 +39,7 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.clientapi.VarDataEncodingEncoder;
 import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.JobBatchIntent;
@@ -47,6 +48,7 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.util.MsgPackUtil;
+import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.io.ByteArrayOutputStream;
 import java.time.Duration;
@@ -59,6 +61,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import one.util.streamex.StreamEx;
+import org.assertj.core.internal.bytebuddy.utility.RandomString;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -67,8 +70,9 @@ public class ActivateJobsTest {
 
   public static final String JOB_TYPE = "theJobType";
   public static final String JSON_PAYLOAD = "{\"foo\": \"bar\"}";
-  public static final byte[] PAYLOAD_MSG_PACK = MsgPackUtil.asMsgPack(JSON_PAYLOAD);
+  public static final byte[] PAYLOAD_MSG_PACK = MsgPackUtil.asMsgPackReturnArray(JSON_PAYLOAD);
   public static final String PROCESS_ID = "testProcess";
+  public static final String LONG_CUSTOM_HEADER_VALUE = RandomString.make(128);
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
@@ -94,9 +98,10 @@ public class ActivateJobsTest {
             .sendAndAwait();
 
     // then
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
     assertThat(response.getRejectionReason())
-        .isEqualTo("Job batch amount must be greater than zero, got 0");
+        .isEqualTo(
+            "Expected to activate job batch with amount to be greater than zero, but it was '0'");
   }
 
   @Test
@@ -117,9 +122,10 @@ public class ActivateJobsTest {
             .sendAndAwait();
 
     // then
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
     assertThat(response.getRejectionReason())
-        .isEqualTo("Job batch timeout must be greater than zero, got 0");
+        .isEqualTo(
+            "Expected to activate job batch with timeout to be greater than zero, but it was '0'");
   }
 
   @Test
@@ -140,8 +146,9 @@ public class ActivateJobsTest {
             .sendAndAwait();
 
     // then
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(response.getRejectionReason()).isEqualTo("Job batch type must not be empty");
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(response.getRejectionReason())
+        .isEqualTo("Expected to activate job batch with type to be present, but it was blank");
   }
 
   @Test
@@ -162,8 +169,9 @@ public class ActivateJobsTest {
             .sendAndAwait();
 
     // then
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(response.getRejectionReason()).isEqualTo("Job batch worker must not be empty");
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(response.getRejectionReason())
+        .isEqualTo("Expected to activate job batch with worker to be present, but it was blank");
   }
 
   @Test
@@ -206,8 +214,9 @@ public class ActivateJobsTest {
             entry("retries", 3L),
             entry("worker", worker),
             entry("deadline", deadline.toEpochMilli()),
-            entry("type", JOB_TYPE),
-            entry("payload", PAYLOAD_MSG_PACK));
+            entry("type", JOB_TYPE));
+
+    MsgPackUtil.assertEquality((byte[]) jobs.get(0).get("payload"), JSON_PAYLOAD);
 
     final Record<JobRecordValue> jobRecord = jobRecords(JobIntent.ACTIVATED).getFirst();
     assertThat(jobRecord).hasKey(expectedJobKey);
@@ -337,6 +346,32 @@ public class ActivateJobsTest {
   }
 
   @Test
+  public void shouldActivateJobsWithLongCustomHeaders() {
+    // given
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("processId")
+            .startEvent()
+            .serviceTask(
+                "task",
+                b -> {
+                  b.zeebeTaskType("taskType").zeebeTaskHeader("foo", LONG_CUSTOM_HEADER_VALUE);
+                })
+            .endEvent()
+            .done();
+
+    apiRule.partitionClient().deployWithResponse(Bpmn.convertToString(modelInstance).getBytes());
+    apiRule.partitionClient().createWorkflowInstance("processId");
+
+    // when
+    apiRule.partitionClient().completeJobOfType("taskType");
+
+    // then
+    final JobRecordValue jobRecord =
+        RecordingExporter.jobRecords(JobIntent.ACTIVATED).limit(1).getFirst().getValue();
+    assertThat(jobRecord.getCustomHeaders().get("foo")).isEqualTo(LONG_CUSTOM_HEADER_VALUE);
+  }
+
+  @Test
   @SuppressWarnings("unchecked")
   public void shouldFetchFullJobRecordFromWorkflow() {
     // given
@@ -356,6 +391,7 @@ public class ActivateJobsTest {
 
     // when
     final Job job = activateJobs(jobType, worker, timeout, 1).get(0);
+
     // then
     final Map<String, Object> value = job.getValue();
     assertThat(value)
@@ -363,8 +399,9 @@ public class ActivateJobsTest {
             entry("type", jobType),
             entry("worker", worker),
             entry("retries", 3L),
-            entry("deadline", deadline.toEpochMilli()),
-            entry("payload", PAYLOAD_MSG_PACK));
+            entry("deadline", deadline.toEpochMilli()));
+
+    MsgPackUtil.assertEquality((byte[]) value.get("payload"), "{'foo': 'bar'}");
 
     final Map<String, Object> headers = (Map<String, Object>) value.get("headers");
     final Headers jobRecordHeaders = jobRecord.getValue().getHeaders();
@@ -383,19 +420,39 @@ public class ActivateJobsTest {
     assertThat(customHeaders).isEqualTo(jobRecord.getValue().getCustomHeaders());
   }
 
+  @Test
+  public void shouldLimitJobsInBatch() {
+    // given
+    final int payloadSize = VarDataEncodingEncoder.lengthMaxValue() / 3;
+    final String payload = "{\"key\": \"" + RandomString.make(payloadSize) + "\"}";
+
+    // when
+    createJobs(JOB_TYPE, 3, payload);
+    final List<Job> jobs = activateJobs(JOB_TYPE, 3);
+
+    // then
+    assertThat(jobs).hasSize(2);
+    final List<Job> remainingJobs = activateJobs(JOB_TYPE, 1);
+    assertThat(remainingJobs).hasSize(1);
+  }
+
   private List<Long> createJobs(int amount) {
     return createJobs(JOB_TYPE, amount);
   }
 
   private List<Long> createJobs(String jobType, int amount) {
+    return createJobs(jobType, amount, JSON_PAYLOAD);
+  }
+
+  private List<Long> createJobs(String jobType, int amount, String payload) {
     return IntStream.range(0, amount)
         .boxed()
-        .map(i -> createJob(jobType))
+        .map(i -> createJob(jobType, payload))
         .collect(Collectors.toList());
   }
 
-  private long createJob(String jobType) {
-    return apiRule.partitionClient().createJob(jobType, b -> b.zeebeTaskRetries(3), JSON_PAYLOAD);
+  private long createJob(String jobType, String payload) {
+    return apiRule.partitionClient().createJob(jobType, b -> b.zeebeTaskRetries(3), payload);
   }
 
   private List<Job> activateJobs(int amount) {

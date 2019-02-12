@@ -115,8 +115,7 @@ public class ObjectValue extends BaseValue {
       try {
         prop.read(reader);
       } catch (Exception e) {
-        throw new RuntimeException(
-            String.format("Could not read property '%s'.", prop.getKey()), e);
+        throw new RuntimeException(String.format("Could not read property '%s'", prop.getKey()), e);
       }
     }
 

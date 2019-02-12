@@ -15,6 +15,7 @@
  */
 package io.zeebe.logstreams.processor;
 
+import io.zeebe.db.ZeebeDb;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
@@ -48,7 +49,8 @@ public class StreamProcessorController extends Actor {
   private static final String ERROR_MESSAGE_PROCESSING_FAILED =
       "Stream processor '{}' failed to process event. It stop processing further events.";
 
-  private final StreamProcessor streamProcessor;
+  private final StreamProcessorFactory streamProcessorFactory;
+  private StreamProcessor streamProcessor;
   private final StreamProcessorContext streamProcessorContext;
   private final SnapshotController snapshotController;
 
@@ -88,10 +90,12 @@ public class StreamProcessorController extends Actor {
     this.streamProcessorContext.setResumeRunnable(this::resume);
 
     this.actorScheduler = context.getActorScheduler();
-    this.streamProcessor = context.getStreamProcessor();
+
+    this.streamProcessorFactory = context.getStreamProcessorFactory();
+    this.snapshotController = context.getSnapshotController();
+
     this.logStreamReader = context.getLogStreamReader();
     this.logStreamWriter = context.getLogStreamWriter();
-    this.snapshotController = context.getSnapshotController();
     this.snapshotPeriod = context.getSnapshotPeriod();
     this.eventFilter = context.getEventFilter();
     this.isReadOnlyProcessor = context.isReadOnlyProcessor();
@@ -124,8 +128,12 @@ public class StreamProcessorController extends Actor {
     logStreamWriter.wrap(logStream);
 
     try {
+
       snapshotPosition = recoverFromSnapshot(logStream.getCommitPosition(), logStream.getTerm());
       lastSourceEventPosition = seekFromSnapshotPositionToLastSourceEvent();
+
+      final ZeebeDb zeebeDb = snapshotController.openDb();
+      streamProcessor = streamProcessorFactory.createProcessor(zeebeDb);
       streamProcessor.onOpen(streamProcessorContext);
     } catch (final Exception e) {
       onFailure();
@@ -388,7 +396,6 @@ public class StreamProcessorController extends Actor {
 
   private void doCreateSnapshot() {
     if (currentEvent != null) {
-      final long commitPosition = streamProcessorContext.getLogStream().getCommitPosition();
       final long lastWrittenPosition =
           lastWrittenEventPosition > lastSuccessfulProcessedEventPosition
               ? lastWrittenEventPosition
@@ -401,14 +408,14 @@ public class StreamProcessorController extends Actor {
               streamProcessorContext.getLogStream().getTerm(),
               false);
 
-      writeSnapshot(metadata, commitPosition);
+      writeSnapshot(metadata);
     }
 
     // reset to cpu bound
     actor.setSchedulingHints(SchedulingHints.cpuBound(ActorPriority.REGULAR));
   }
 
-  private void writeSnapshot(final StateSnapshotMetadata metadata, final long commitPosition) {
+  private void writeSnapshot(final StateSnapshotMetadata metadata) {
     final long start = System.currentTimeMillis();
     final String name = streamProcessorContext.getName();
     LOG.info(
@@ -438,12 +445,26 @@ public class StreamProcessorController extends Actor {
   }
 
   @Override
+  protected void onActorCloseRequested() {
+    if (!isFailed()) {
+      streamProcessor.onClose();
+    }
+  }
+
+  @Override
   protected void onActorClosing() {
     metrics.close();
 
     if (!isFailed()) {
-      createSnapshot();
-      streamProcessor.onClose();
+      actor.run(
+          () -> {
+            createSnapshot();
+            try {
+              snapshotController.close();
+            } catch (Exception e) {
+              LOG.error("Error on closing snapshotController.", e);
+            }
+          });
     }
 
     streamProcessorContext.getLogStreamReader().close();

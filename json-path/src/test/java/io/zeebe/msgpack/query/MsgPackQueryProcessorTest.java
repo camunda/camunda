@@ -24,9 +24,7 @@ import io.zeebe.msgpack.jsonpath.JsonPathQuery;
 import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResult;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResults;
-import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
 
 public class MsgPackQueryProcessorTest {
@@ -62,7 +60,7 @@ public class MsgPackQueryProcessorTest {
   }
 
   @Test
-  public void shouldGetSingleResultLongAsBuffer() {
+  public void shouldGetSingleResultLongAsString() {
     final QueryResults results =
         processor.process(
             path("$.foo"),
@@ -78,9 +76,7 @@ public class MsgPackQueryProcessorTest {
     assertThat(result).isNotNull();
     assertThat(result.isLong()).isTrue();
 
-    final UnsafeBuffer buffer = new UnsafeBuffer(new byte[BitUtil.SIZE_OF_LONG]);
-    buffer.putLong(0, 1L);
-    assertThat(result.getLongAsBuffer()).isEqualTo(buffer);
+    assertThat(result.getLongAsString()).isEqualTo(wrapString(String.valueOf(1L)));
   }
 
   @Test
@@ -140,7 +136,7 @@ public class MsgPackQueryProcessorTest {
 
     assertThat(results.size()).isEqualTo(1);
 
-    assertThatThrownBy(() -> results.getSingleResult().getLongAsBuffer())
+    assertThatThrownBy(() -> results.getSingleResult().getLongAsString())
         .isInstanceOf(RuntimeException.class)
         .hasMessage("expected Long but found 'BOOLEAN'");
   }

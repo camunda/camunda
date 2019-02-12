@@ -15,10 +15,11 @@
  */
 package io.zeebe.logstreams.spi;
 
+import io.zeebe.db.ZeebeDb;
 import io.zeebe.logstreams.state.StateSnapshotMetadata;
 import java.util.function.Predicate;
 
-public interface SnapshotController {
+public interface SnapshotController extends AutoCloseable {
   /**
    * Takes a snapshot based on the given metadata: - last successful processed event - last written
    * event (regardless of whether or not it is committed) - term of the last written event
@@ -37,6 +38,8 @@ public interface SnapshotController {
    */
   StateSnapshotMetadata recover(
       long commitPosition, int term, Predicate<StateSnapshotMetadata> filter) throws Exception;
+
+  ZeebeDb openDb();
 
   /**
    * Purges all snapshots which return true for the given matcher.

@@ -15,13 +15,16 @@
  */
 package io.zeebe.broker.it.clustering;
 
+import static io.zeebe.broker.it.util.StatusCodeMatcher.hasStatusCode;
+import static io.zeebe.broker.it.util.StatusDescriptionMatcher.descriptionContains;
 import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertWorkflowInstanceCreated;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.grpc.Status.Code;
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.events.DeploymentEvent;
-import io.zeebe.client.cmd.ClientException;
+import io.zeebe.client.cmd.ClientStatusException;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import org.junit.Before;
@@ -61,12 +64,7 @@ public class DeploymentClusteredTest {
 
     // when
     final DeploymentEvent deploymentEvent =
-        client
-            .workflowClient()
-            .newDeployCommand()
-            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-            .send()
-            .join();
+        client.newDeployCommand().addWorkflowModel(WORKFLOW, "workflow.bpmn").send().join();
 
     // then
     assertThat(deploymentEvent.getWorkflows().size()).isEqualTo(1);
@@ -78,12 +76,7 @@ public class DeploymentClusteredTest {
 
     // when
     final DeploymentEvent deploymentEvent =
-        client
-            .workflowClient()
-            .newDeployCommand()
-            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-            .send()
-            .join();
+        client.newDeployCommand().addWorkflowModel(WORKFLOW, "workflow.bpmn").send().join();
 
     clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
 
@@ -91,7 +84,6 @@ public class DeploymentClusteredTest {
     for (int p = 0; p < PARTITION_COUNT; p++) {
       final long workflowInstanceKey =
           client
-              .workflowClient()
               .newCreateInstanceCommand()
               .bpmnProcessId("process")
               .latestVersion()
@@ -113,12 +105,7 @@ public class DeploymentClusteredTest {
 
     // then
     final DeploymentEvent deploymentEvent =
-        client
-            .workflowClient()
-            .newDeployCommand()
-            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-            .send()
-            .join();
+        client.newDeployCommand().addWorkflowModel(WORKFLOW, "workflow.bpmn").send().join();
 
     assertThat(deploymentEvent.getWorkflows().size()).isEqualTo(1);
     clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
@@ -131,12 +118,7 @@ public class DeploymentClusteredTest {
 
     clusteringRule.stopBroker(2);
     final DeploymentEvent deploymentEvent =
-        client
-            .workflowClient()
-            .newDeployCommand()
-            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-            .send()
-            .join();
+        client.newDeployCommand().addWorkflowModel(WORKFLOW, "workflow.bpmn").send().join();
 
     clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
 
@@ -144,9 +126,7 @@ public class DeploymentClusteredTest {
     clusteringRule.restartBroker(2);
 
     // then create wf instance on each partition
-    clusteringRule
-        .getPartitionIds()
-        .stream()
+    clusteringRule.getPartitionIds().stream()
         .forEach(
             partitionId -> {
               final long instanceKey =
@@ -165,31 +145,21 @@ public class DeploymentClusteredTest {
 
     // then
     final DeploymentEvent deploymentEvent =
-        client
-            .workflowClient()
-            .newDeployCommand()
-            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-            .send()
-            .join();
+        client.newDeployCommand().addWorkflowModel(WORKFLOW, "workflow.bpmn").send().join();
 
     assertThat(deploymentEvent.getWorkflows().size()).isEqualTo(1);
     clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
   }
 
   @Test
-  public void shouldNotDeployUnparsable() {
+  public void shouldNotDeployUnparseable() {
     // expect
-    expectedException.expect(ClientException.class);
-    expectedException.expectMessage("Command (CREATE) was rejected");
-    expectedException.expectMessage("Failed to deploy resource 'invalid.bpmn'");
-    expectedException.expectMessage("SAXException while parsing input stream");
+    expectedException.expect(ClientStatusException.class);
+    expectedException.expect(hasStatusCode(Code.INVALID_ARGUMENT));
+    expectedException.expect(
+        descriptionContains("'invalid.bpmn': SAXException while parsing input stream"));
 
     // when
-    client
-        .workflowClient()
-        .newDeployCommand()
-        .addResourceStringUtf8("invalid", "invalid.bpmn")
-        .send()
-        .join();
+    client.newDeployCommand().addResourceStringUtf8("invalid", "invalid.bpmn").send().join();
   }
 }

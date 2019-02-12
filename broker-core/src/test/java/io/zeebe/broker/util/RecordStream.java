@@ -17,13 +17,14 @@
  */
 package io.zeebe.broker.util;
 
+import io.zeebe.broker.subscription.message.data.MessageStartEventSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
-import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -80,6 +81,13 @@ public class RecordStream extends StreamWrapper<LoggedEvent, RecordStream> {
     return new TypedRecordStream<>(
         filter(Records::isMessageSubscriptionRecord)
             .map(e -> CopiedTypedEvent.toTypedEvent(e, MessageSubscriptionRecord.class)));
+  }
+
+  public TypedRecordStream<MessageStartEventSubscriptionRecord>
+      onlyMessageStartEventSubscriptionRecords() {
+    return new TypedRecordStream<>(
+        filter(Records::isMessageStartEventSubscriptionRecord)
+            .map(e -> CopiedTypedEvent.toTypedEvent(e, MessageStartEventSubscriptionRecord.class)));
   }
 
   public TypedRecordStream<WorkflowInstanceSubscriptionRecord>

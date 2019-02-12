@@ -506,8 +506,7 @@ public class ConfigurationTest {
   private void assertDirectories(final String configFileName, final List<String> directories) {
     final DataCfg cfg = readConfig(configFileName).getData();
     final List<String> expected =
-        directories
-            .stream()
+        directories.stream()
             .map(d -> Paths.get(BROKER_BASE, d).toString())
             .collect(Collectors.toList());
     assertThat(cfg.getDirectories()).containsExactlyElementsOf(expected);

@@ -17,27 +17,38 @@
  */
 package io.zeebe.broker.workflow.boundary;
 
+import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.exporter.record.Assertions;
 import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.IncidentRecordValue;
+import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.exporter.record.value.TimerRecordValue;
+import io.zeebe.exporter.record.value.VariableRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
+import io.zeebe.protocol.BpmnElementType;
+import io.zeebe.protocol.impl.record.value.incident.ErrorType;
+import io.zeebe.protocol.intent.IncidentIntent;
+import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
+import io.zeebe.test.util.MsgPackUtil;
+import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -56,6 +67,16 @@ public class BoundaryEventTest {
           .moveToNode("timer")
           .endEvent("end2")
           .moveToActivity("task")
+          .endEvent()
+          .done();
+
+  private static final BpmnModelInstance NON_INTERRUPTING_WORKFLOW =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent()
+          .serviceTask("task", b -> b.zeebeTaskType("type"))
+          .boundaryEvent("event")
+          .cancelActivity(false)
+          .timerWithCycle("R/PT1S")
           .endEvent()
           .done();
 
@@ -83,32 +104,17 @@ public class BoundaryEventTest {
     awaitProcessCompleted();
 
     // then
-    assertThat(testClient.receiveElementInState("end1", WorkflowInstanceIntent.END_EVENT_OCCURRED))
-        .isNotNull();
-    assertThat(testClient.receiveElementInState("end2", WorkflowInstanceIntent.END_EVENT_OCCURRED))
-        .isNotNull();
+    assertThat(
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+                .withElementType(BpmnElementType.END_EVENT)
+                .limit(2))
+        .extracting(Record::getValue)
+        .extracting(WorkflowInstanceRecordValue::getElementId)
+        .contains("end1", "end2");
   }
 
   @Test
-  public void shouldCreateTimerWhenActivityReady() {
-    // given
-    testClient.deploy(MULTIPLE_SEQUENCE_FLOWS);
-    testClient.createWorkflowInstance(PROCESS_ID);
-
-    // when
-    final Record<WorkflowInstanceRecordValue> activityReady =
-        testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_READY);
-    final Record<TimerRecordValue> timerTriggered =
-        testClient.receiveTimerRecord("timer", TimerIntent.CREATE);
-    final Record<WorkflowInstanceRecordValue> activityActivated =
-        testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-
-    // then
-    assertRecordsPublishedInOrder(activityReady, timerTriggered, activityActivated);
-  }
-
-  @Test
-  public void shouldTriggerBoundaryEventWhenTimerTriggered() {
+  public void shouldActivateBoundaryEventWhenEventTriggered() {
     // given
     testClient.deploy(MULTIPLE_SEQUENCE_FLOWS);
     testClient.createWorkflowInstance(PROCESS_ID);
@@ -119,30 +125,29 @@ public class BoundaryEventTest {
 
     final Record<TimerRecordValue> timerTriggered =
         testClient.receiveTimerRecord("timer", TimerIntent.TRIGGERED);
+    final Record<WorkflowInstanceRecordValue> activityEventOccurred =
+        testClient.receiveElementInState("task", WorkflowInstanceIntent.EVENT_OCCURRED);
     final Record<WorkflowInstanceRecordValue> activityTerminating =
-        testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_TERMINATING);
+        testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_TERMINATED);
     final Record<WorkflowInstanceRecordValue> boundaryTriggering =
-        testClient.receiveElementInState("timer", WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING);
-    final Record<WorkflowInstanceRecordValue> boundaryTriggered =
-        testClient.receiveElementInState("timer", WorkflowInstanceIntent.CATCH_EVENT_TRIGGERED);
+        testClient.receiveElementInState("timer", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
 
     awaitProcessCompleted();
 
     // then
     assertRecordsPublishedInOrder(
-        timerTriggered, activityTerminating, boundaryTriggering, boundaryTriggered);
+        timerTriggered, activityEventOccurred, activityTerminating, boundaryTriggering);
   }
 
   @Test
-  @Ignore // since timers have no payload, ignore this for now, but will be reenabled with messages
   public void shouldApplyOutputMappingOnTriggering() {
     // given
     final BpmnModelInstance workflow =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .serviceTask("task", b -> b.zeebeTaskType("type"))
-            .boundaryEvent("timer")
-            .timerWithDuration("PT1S")
+            .boundaryEvent("event")
+            .message(m -> m.name("message").zeebeCorrelationKey("$.key"))
             .zeebeOutput("$.foo", "$.bar")
             .zeebeOutputBehavior(ZeebeOutputBehavior.merge)
             .endEvent("endTimer")
@@ -150,18 +155,23 @@ public class BoundaryEventTest {
             .endEvent()
             .done();
     testClient.deploy(workflow);
-    testClient.createWorkflowInstance(PROCESS_ID, "{\"foo\": 1, \"oof\": 2}");
+    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "123"));
 
     // when
-    testClient.receiveTimerRecord("timer", TimerIntent.CREATED);
-    brokerRule.getClock().addTime(Duration.ofMinutes(1));
+    assertThat(
+            testClient
+                .receiveWorkflowInstanceSubscriptions()
+                .withMessageName("message")
+                .withIntent(WorkflowInstanceSubscriptionIntent.OPENED)
+                .exists())
+        .isTrue();
+    testClient.publishMessage("message", "123", asMsgPack("foo", 3));
     awaitProcessCompleted();
 
     // then
-    final Record<WorkflowInstanceRecordValue> boundaryTriggered =
-        testClient.receiveElementInState("timer", WorkflowInstanceIntent.CATCH_EVENT_TRIGGERED);
-    assertThat(boundaryTriggered.getValue().getPayloadAsMap())
-        .contains(entry("bar", 1), entry("oof", 2));
+    final Record<VariableRecordValue> variableEvent =
+        RecordingExporter.variableRecords().withName("bar").getFirst();
+    Assertions.assertThat(variableEvent.getValue()).hasValue("3");
   }
 
   @Test
@@ -189,7 +199,7 @@ public class BoundaryEventTest {
 
     // then
     final Record<WorkflowInstanceRecordValue> boundaryTriggered =
-        testClient.receiveElementInState("timer", WorkflowInstanceIntent.CATCH_EVENT_TRIGGERED);
+        testClient.receiveElementInState("timer", WorkflowInstanceIntent.ELEMENT_COMPLETED);
     assertThat(boundaryTriggered.getValue().getPayloadAsMap())
         .contains(entry("foo", 1), entry("oof", 2));
   }
@@ -219,6 +229,7 @@ public class BoundaryEventTest {
     // when
     testClient.receiveTimerRecord("timer", TimerIntent.CREATED);
     brokerRule.getClock().addTime(Duration.ofMinutes(1));
+
     awaitProcessCompleted();
 
     // then
@@ -229,16 +240,105 @@ public class BoundaryEventTest {
     final Record<WorkflowInstanceRecordValue> subProcessTerminated =
         testClient.receiveElementInState("sub", WorkflowInstanceIntent.ELEMENT_TERMINATED);
     final Record<WorkflowInstanceRecordValue> boundaryTriggering =
-        testClient.receiveElementInState("timer", WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING);
+        testClient.receiveElementInState("timer", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     final Record<WorkflowInstanceRecordValue> boundaryTriggered =
-        testClient.receiveElementInState("timer", WorkflowInstanceIntent.CATCH_EVENT_TRIGGERED);
+        testClient.receiveElementInState("timer", WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     assertRecordsPublishedInOrder(
         timerTriggered,
         subProcessTerminating,
-        boundaryTriggering,
         subProcessTerminated,
+        boundaryTriggering,
         boundaryTriggered);
+  }
+
+  @Test
+  public void shouldNotTerminateActivityForNonInterruptingBoundaryEvents() {
+    // given
+    testClient.deploy(NON_INTERRUPTING_WORKFLOW);
+    brokerRule.getClock().pinCurrentTime();
+    testClient.createWorkflowInstance(PROCESS_ID);
+
+    // when
+    testClient.receiveTimerRecord("event", TimerIntent.CREATED);
+    brokerRule.getClock().addTime(Duration.ofSeconds(1));
+    testClient.completeJobOfType("type");
+    awaitProcessCompleted();
+
+    // then
+    final Record<TimerRecordValue> timerTriggered =
+        testClient.receiveTimerRecord("event", TimerIntent.TRIGGERED);
+    final Record<JobRecordValue> jobCompleted =
+        testClient.receiveFirstJobEvent(JobIntent.COMPLETED);
+    final Record<WorkflowInstanceRecordValue> activityCompleted =
+        testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_COMPLETED);
+
+    assertRecordsPublishedInOrder(timerTriggered, jobCompleted, activityCompleted);
+  }
+
+  @Test
+  public void shouldUseScopeToExtractCorrelationKeys() {
+    // given
+    final String processId = "shouldHaveScopeKeyIfBoundaryEvent";
+    final BpmnModelInstance workflow =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .serviceTask("task", c -> c.zeebeTaskType("type").zeebeInput("$.bar", "$.foo"))
+            .boundaryEvent(
+                "event", b -> b.message(m -> m.zeebeCorrelationKey("$.foo").name("message")))
+            .endEvent()
+            .moveToActivity("task")
+            .endEvent()
+            .done();
+    testClient.deploy(workflow);
+
+    // when
+    testClient.createWorkflowInstance(
+        processId, MsgPackUtil.asMsgPack(m -> m.put("foo", 1).put("bar", 2)));
+    testClient.publishMessage("message", "1");
+
+    // then
+    // if correlation key was extracted from the task, then foo in the task scope would be 2 and
+    // no event occurred would be published
+    assertThat(testClient.receiveElementInState("task", WorkflowInstanceIntent.EVENT_OCCURRED))
+        .isNotNull();
+  }
+
+  @Test
+  public void shouldHaveScopeKeyIfBoundaryEvent() {
+    // given
+    final String processId = "shouldHaveScopeKeyIfBoundaryEvent";
+    final BpmnModelInstance workflow =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .serviceTask("task", c -> c.zeebeTaskType("type"))
+            .boundaryEvent(
+                "event", b -> b.message(m -> m.zeebeCorrelationKey("$.orderId").name("message")))
+            .endEvent()
+            .moveToActivity("task")
+            .endEvent()
+            .done();
+    testClient.deploy(workflow);
+
+    // when
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(processId, MsgPackUtil.asMsgPack("orderId", true));
+    final Record<WorkflowInstanceRecordValue> failureEvent =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementId("task")
+            .getFirst();
+
+    // then
+    final Record<IncidentRecordValue> incidentRecord =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();
+
+    Assertions.assertThat(incidentRecord.getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR.name())
+        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasElementId("task")
+        .hasElementInstanceKey(failureEvent.getKey())
+        .hasJobKey(-1L)
+        .hasVariableScopeKey(workflowInstanceKey);
   }
 
   private void awaitProcessCompleted() {

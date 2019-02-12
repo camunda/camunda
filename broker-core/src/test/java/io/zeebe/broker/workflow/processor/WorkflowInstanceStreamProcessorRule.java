@@ -21,6 +21,7 @@ import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -35,7 +36,6 @@ import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRec
 import io.zeebe.broker.util.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.broker.util.TypedRecordStream;
-import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.broker.workflow.processor.timer.DueDateTimerChecker;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.model.bpmn.Bpmn;
@@ -44,6 +44,7 @@ import io.zeebe.model.bpmn.instance.Process;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.JobIntent;
@@ -60,12 +61,15 @@ import org.junit.rules.TemporaryFolder;
 
 public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
 
+  public static final int VERSION = 1;
+  public static final int WORKFLOW_KEY = 123;
+  public static final int DEPLOYMENT_KEY = 1;
   @Rule public TemporaryFolder folder = new TemporaryFolder();
+
   private final StreamProcessorRule environmentRule;
 
   private SubscriptionCommandSender mockSubscriptionCommandSender;
   private TopologyManager mockTopologyManager;
-  private DueDateTimerChecker mockTimerEventScheduler;
 
   private StreamProcessorControl streamProcessor;
   private WorkflowState workflowState;
@@ -81,15 +85,12 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
 
   @Override
   protected void before() {
-    zeebeState = new ZeebeState();
-    workflowState = zeebeState.getWorkflowState();
-
     mockSubscriptionCommandSender = mock(SubscriptionCommandSender.class);
     mockTopologyManager = mock(TopologyManager.class);
-    mockTimerEventScheduler = mock(DueDateTimerChecker.class);
 
     when(mockSubscriptionCommandSender.hasPartitionIds()).thenReturn(true);
-    when(mockSubscriptionCommandSender.openMessageSubscription(anyLong(), anyLong(), any(), any()))
+    when(mockSubscriptionCommandSender.openMessageSubscription(
+            anyLong(), anyLong(), any(), any(), anyBoolean()))
         .thenReturn(true);
     when(mockSubscriptionCommandSender.correlateMessageSubscription(
             anyInt(), anyLong(), anyLong(), any()))
@@ -100,14 +101,15 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
 
     streamProcessor =
         environmentRule.runStreamProcessor(
-            (typedEventStreamProcessorBuilder, zeebeState) -> {
+            (typedEventStreamProcessorBuilder, zeebeDb) -> {
+              zeebeState = new ZeebeState(zeebeDb);
               workflowState = zeebeState.getWorkflowState();
               WorkflowEventProcessors.addWorkflowProcessors(
                   typedEventStreamProcessorBuilder,
                   zeebeState,
                   mockSubscriptionCommandSender,
                   mockTopologyManager,
-                  mockTimerEventScheduler);
+                  new DueDateTimerChecker(workflowState));
 
               JobEventProcessors.addJobProcessors(typedEventStreamProcessorBuilder, zeebeState);
 
@@ -119,7 +121,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
     return streamProcessor;
   }
 
-  public void deploy(final BpmnModelInstance modelInstance) {
+  public void deploy(final BpmnModelInstance modelInstance, int deploymentKey, int version) {
     final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
     Bpmn.writeModelToStream(outStream, modelInstance);
     final DirectBuffer xmlBuffer = new UnsafeBuffer(outStream.toByteArray());
@@ -139,12 +141,16 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
     record
         .workflows()
         .add()
-        .setKey(1)
+        .setKey(WORKFLOW_KEY)
         .setResourceName(resourceName)
         .setBpmnProcessId(BufferUtil.wrapString(process.getId()))
-        .setVersion(1);
+        .setVersion(version);
 
-    workflowState.putDeployment(1, record);
+    workflowState.putDeployment(deploymentKey, record);
+  }
+
+  public void deploy(final BpmnModelInstance modelInstance) {
+    deploy(modelInstance, DEPLOYMENT_KEY, VERSION);
   }
 
   public TypedRecord<WorkflowInstanceRecord> createWorkflowInstance(final String processId) {
@@ -157,7 +163,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
         WorkflowInstanceIntent.CREATE,
         workflowInstanceRecord(BufferUtil.wrapString(processId), payload));
     final TypedRecord<WorkflowInstanceRecord> createdEvent =
-        awaitAndGetFirstRecordInState(WorkflowInstanceIntent.ELEMENT_READY);
+        awaitAndGetFirstRecordInState(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     return createdEvent;
   }
 

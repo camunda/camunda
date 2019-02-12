@@ -136,6 +136,27 @@ public class CancelWorkflowInstanceTest {
   }
 
   @Test
+  public void shouldNotCancelElementInstance() {
+    // given
+    testClient.deploy(WORKFLOW);
+    testClient.createWorkflowInstance(PROCESS_ID);
+    final Record<WorkflowInstanceRecordValue> task =
+        testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+
+    // when
+    final ExecuteCommandResponse response = cancelWorkflowInstance(task.getKey());
+
+    // then
+    assertThat(response.getIntent()).isEqualTo(CANCEL);
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(response.getRejectionReason())
+        .isEqualTo(
+            "Expected to cancel a workflow instance with key '"
+                + task.getKey()
+                + "', but no such workflow was found");
+  }
+
+  @Test
   public void shouldCancelWorkflowInstanceWithEmbeddedSubProcess() {
     // given
     testClient.deploy(SUB_PROCESS_WORKFLOW);
@@ -211,8 +232,7 @@ public class CancelWorkflowInstanceTest {
             .collect(Collectors.toList());
 
     final List<Record<WorkflowInstanceRecordValue>> terminatedElements =
-        workflowEvents
-            .stream()
+        workflowEvents.stream()
             .filter(r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_TERMINATED)
             .collect(Collectors.toList());
 
@@ -238,23 +258,17 @@ public class CancelWorkflowInstanceTest {
     final long workflowInstanceKey =
         testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("id", "123"));
 
-    final Record<WorkflowInstanceRecordValue> catchEventEntered =
-        testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+    testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     final ExecuteCommandResponse response = cancelWorkflowInstance(workflowInstanceKey);
 
     // then
     assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_TERMINATING);
 
-    final Record<WorkflowInstanceRecordValue> activityTerminatingEvent =
-        testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_TERMINATING);
-    final Record<WorkflowInstanceRecordValue> activityTerminatedEvent =
-        testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_TERMINATED);
+    final Record<WorkflowInstanceRecordValue> terminatedEvent =
+        testClient.receiveElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_TERMINATED);
 
-    assertThat(activityTerminatedEvent.getKey()).isEqualTo(catchEventEntered.getKey());
-    assertThat(activityTerminatedEvent.getSourceRecordPosition())
-        .isEqualTo(activityTerminatingEvent.getPosition());
-    assertWorkflowInstanceRecord(workflowInstanceKey, "catch-event", activityTerminatedEvent);
+    assertWorkflowInstanceRecord(workflowInstanceKey, PROCESS_ID, terminatedEvent);
   }
 
   @Test
@@ -291,8 +305,10 @@ public class CancelWorkflowInstanceTest {
 
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.getRejectionReason()).isEqualTo("Workflow instance is not running");
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(response.getRejectionReason())
+        .isEqualTo(
+            "Expected to cancel a workflow instance with key '-1', but no such workflow was found");
 
     final Record<WorkflowInstanceRecordValue> cancelCommand =
         testClient.receiveFirstWorkflowInstanceCommand(CANCEL);
@@ -321,8 +337,12 @@ public class CancelWorkflowInstanceTest {
 
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.getRejectionReason()).isEqualTo("Workflow instance is not running");
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(response.getRejectionReason())
+        .isEqualTo(
+            "Expected to cancel a workflow instance with key '"
+                + workflowInstanceKey
+                + "', but no such workflow was found");
 
     final Record<WorkflowInstanceRecordValue> cancelCommand =
         testClient.receiveFirstWorkflowInstanceCommand(CANCEL);
@@ -350,8 +370,12 @@ public class CancelWorkflowInstanceTest {
 
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.getRejectionReason()).isEqualTo("Workflow instance is not running");
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(response.getRejectionReason())
+        .isEqualTo(
+            "Expected to cancel a workflow instance with key '"
+                + workflowInstanceKey
+                + "', but no such workflow was found");
   }
 
   @Test

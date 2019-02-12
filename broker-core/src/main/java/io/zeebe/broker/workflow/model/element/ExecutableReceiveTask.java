@@ -17,17 +17,15 @@
  */
 package io.zeebe.broker.workflow.model.element;
 
-import java.time.Duration;
-import java.util.Collections;
-import java.util.List;
+import io.zeebe.model.bpmn.util.time.RepeatingInterval;
 
-public class ExecutableReceiveTask extends ExecutableActivity
-    implements ExecutableCatchEvent, ExecutableCatchEventSupplier {
-
-  private final List<ExecutableCatchEvent> events = Collections.singletonList(this);
+public class ExecutableReceiveTask extends ExecutableActivity implements ExecutableCatchEvent {
 
   public ExecutableReceiveTask(String id) {
     super(id);
+
+    getEvents().add(this);
+    getInterruptingElementIds().add(this.getId());
   }
 
   private ExecutableMessage message;
@@ -52,12 +50,7 @@ public class ExecutableReceiveTask extends ExecutableActivity
   }
 
   @Override
-  public Duration getDuration() {
+  public RepeatingInterval getTimer() {
     return null;
-  }
-
-  @Override
-  public List<ExecutableCatchEvent> getEvents() {
-    return events;
   }
 }

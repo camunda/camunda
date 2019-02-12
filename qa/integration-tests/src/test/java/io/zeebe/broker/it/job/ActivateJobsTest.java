@@ -24,16 +24,23 @@ import io.zeebe.broker.it.clustering.ClusteringRule;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.response.ActivateJobsResponse;
 import io.zeebe.client.api.response.ActivatedJob;
+import io.zeebe.exporter.record.Assertions;
 import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.util.TestUtil;
+import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.util.StreamUtil;
 import io.zeebe.util.collection.Tuple;
+import java.io.IOException;
+import java.nio.charset.Charset;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.After;
@@ -79,7 +86,6 @@ public class ActivateJobsTest {
     // when
     final ActivateJobsResponse response =
         client
-            .jobClient()
             .newActivateJobsCommand()
             .jobType(JOB_TYPE)
             .amount(amount)
@@ -133,7 +139,7 @@ public class ActivateJobsTest {
 
     // when
     final ActivateJobsResponse response =
-        client.jobClient().newActivateJobsCommand().jobType(jobType).amount(amount).send().join();
+        client.newActivateJobsCommand().jobType(jobType).amount(amount).send().join();
 
     // then
     assertThat(response.getJobs()).hasSize(expectedJobsCount);
@@ -151,17 +157,8 @@ public class ActivateJobsTest {
             .boxed()
             .flatMap(
                 i ->
-                    client
-                        .jobClient()
-                        .newActivateJobsCommand()
-                        .jobType(JOB_TYPE)
-                        .amount(1)
-                        .workerName("worker")
-                        .timeout(1000)
-                        .send()
-                        .join()
-                        .getJobs()
-                        .stream())
+                    client.newActivateJobsCommand().jobType(JOB_TYPE).amount(1).workerName("worker")
+                        .timeout(1000).send().join().getJobs().stream())
             .map(ActivatedJob::getKey)
             .map(Protocol::decodePartitionId)
             .collect(Collectors.toList());
@@ -170,19 +167,58 @@ public class ActivateJobsTest {
     assertThat(activatedPartitionIds).containsOnlyElementsOf(partitionIds);
   }
 
+  @Test
+  public void shouldCompleteJobsIfBatchRecordIsTruncated()
+      throws IOException, InterruptedException {
+    // given
+    final int numJobs = 15;
+    final byte[] payloadBytes =
+        StreamUtil.read(
+            ActivateJobsTest.class.getResourceAsStream("/payloads/large_random_payload.json"));
+    final String payload = new String(payloadBytes, Charset.forName("UTF-8"));
+
+    createJobs(JOB_TYPE, numJobs, payload);
+
+    // when
+    final CountDownLatch latch = new CountDownLatch(numJobs);
+    client
+        .newWorker()
+        .jobType(JOB_TYPE)
+        .handler(
+            (client, job) -> {
+              client.newCompleteCommand(job.getKey()).send().join();
+              latch.countDown();
+            })
+        .name("worker")
+        .timeout(Duration.ofMinutes(2))
+        .bufferSize(10)
+        .open();
+    latch.await();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATED).getFirst().getValue())
+        .isTruncated();
+    assertThat(RecordingExporter.jobRecords(JobIntent.COMPLETED).limit(numJobs).count())
+        .isEqualTo(numJobs);
+  }
+
   private List<Long> createJobs(int amount) {
     return createJobs(JOB_TYPE, amount);
   }
 
   private List<Long> createJobs(String type, int amount) {
+    return createJobs(type, amount, "{\"hello\":\"world\"}");
+  }
+
+  private List<Long> createJobs(String type, int amount, String payload) {
     return IntStream.range(0, amount)
-        .mapToLong(i -> createJob(type))
+        .mapToLong(i -> createJob(type, payload))
         .boxed()
         .collect(Collectors.toList());
   }
 
-  private long createJob(String type) {
-    return clientRule.createSingleJob(
-        type, b -> b.zeebeTaskHeader("foo", "bar"), "{\"hello\":\"world\"}");
+  private long createJob(String type, String payload) {
+    return clientRule.createSingleJob(type, b -> b.zeebeTaskHeader("foo", "bar"), payload);
   }
 }

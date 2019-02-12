@@ -17,6 +17,7 @@ package io.zeebe.test.util.record;
 
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.stream.Stream;
 
@@ -54,8 +55,8 @@ public class WorkflowInstanceRecordStream
     return valueFilter(v -> elementId.equals(v.getElementId()));
   }
 
-  public WorkflowInstanceRecordStream withScopeInstanceKey(final long scopeInstanceKey) {
-    return valueFilter(v -> v.getScopeInstanceKey() == scopeInstanceKey);
+  public WorkflowInstanceRecordStream withFlowScopeKey(final long flowScopeKey) {
+    return valueFilter(v -> v.getFlowScopeKey() == flowScopeKey);
   }
 
   public WorkflowInstanceRecordStream limitToWorkflowInstanceCompleted() {
@@ -63,6 +64,10 @@ public class WorkflowInstanceRecordStream
         r ->
             r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_COMPLETED
                 && r.getKey() == r.getValue().getWorkflowInstanceKey());
+  }
+
+  public WorkflowInstanceRecordStream withElementType(BpmnElementType elementType) {
+    return valueFilter(v -> v.getBpmnElementType() == elementType);
   }
 
   /**

@@ -20,9 +20,19 @@ import java.util.concurrent.TimeUnit;
 
 public interface ZeebeFuture<T> extends Future<T> {
 
-  /** Like {@link #get()} but throws runtime exceptions. */
+  /**
+   * Like {@link #get()} but throws runtime exceptions.
+   *
+   * @throws io.zeebe.client.cmd.ClientStatusException on gRPC errors
+   * @throws io.zeebe.client.cmd.ClientException on unexpected errors
+   */
   T join();
 
-  /** Like {@link #get(long, TimeUnit)} but throws runtime exceptions. */
+  /**
+   * Like {@link #get(long, TimeUnit)} but throws runtime exceptions.
+   *
+   * @throws io.zeebe.client.cmd.ClientStatusException on gRPC errors
+   * @throws io.zeebe.client.cmd.ClientException on unexpected errors
+   */
   T join(long timeout, TimeUnit unit);
 }

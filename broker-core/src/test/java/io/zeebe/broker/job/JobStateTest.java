@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.broker.job.JobState.State;
 import io.zeebe.broker.logstreams.state.ZeebeState;
+import io.zeebe.broker.util.ZeebeStateRule;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
@@ -31,28 +32,20 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 public class JobStateTest {
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
+  @Rule public ZeebeStateRule stateRule = new ZeebeStateRule();
 
-  private JobState stateController;
+  private JobState jobState;
   private ZeebeState zeebeState;
 
   @Before
-  public void setUp() throws Exception {
-    zeebeState = new ZeebeState();
-    zeebeState.open(folder.newFolder("db"), false);
-    stateController = zeebeState.getJobState();
-  }
-
-  @After
-  public void tearDown() {
-    zeebeState.close();
+  public void setUp() {
+    zeebeState = stateRule.getZeebeState();
+    jobState = zeebeState.getJobState();
   }
 
   @Test
@@ -62,12 +55,12 @@ public class JobStateTest {
     final JobRecord jobRecord = newJobRecord();
 
     // when
-    stateController.create(key, jobRecord);
+    jobState.create(key, jobRecord);
 
     // then
-    assertThat(stateController.exists(key)).isTrue();
+    assertThat(jobState.exists(key)).isTrue();
     assertJobState(key, State.ACTIVATABLE);
-    assertJobRecordIsEqualTo(stateController.getJob(key), jobRecord);
+    assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
     assertListedAsActivatable(key, jobRecord.getType());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
   }
@@ -79,13 +72,13 @@ public class JobStateTest {
     final JobRecord jobRecord = newJobRecord();
 
     // when
-    stateController.create(key, jobRecord);
-    stateController.activate(key, jobRecord);
+    jobState.create(key, jobRecord);
+    jobState.activate(key, jobRecord);
 
     // then
-    assertThat(stateController.exists(key)).isTrue();
+    assertThat(jobState.exists(key)).isTrue();
     assertJobState(key, State.ACTIVATED);
-    assertJobRecordIsEqualTo(stateController.getJob(key), jobRecord);
+    assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
     refuteListedAsActivatable(key, jobRecord.getType());
     assertListedAsTimedOut(key, jobRecord.getDeadline() + 1);
   }
@@ -97,14 +90,14 @@ public class JobStateTest {
     final JobRecord jobRecord = newJobRecord();
 
     // when
-    stateController.create(key, jobRecord);
-    stateController.activate(key, jobRecord);
-    stateController.timeout(key, jobRecord);
+    jobState.create(key, jobRecord);
+    jobState.activate(key, jobRecord);
+    jobState.timeout(key, jobRecord);
 
     // then
-    assertThat(stateController.exists(key)).isTrue();
+    assertThat(jobState.exists(key)).isTrue();
     assertJobState(key, State.ACTIVATABLE);
-    assertJobRecordIsEqualTo(stateController.getJob(key), jobRecord);
+    assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
     assertListedAsActivatable(key, jobRecord.getType());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
   }
@@ -116,13 +109,13 @@ public class JobStateTest {
     final JobRecord jobRecord = newJobRecord();
 
     // when
-    stateController.create(key, jobRecord);
-    stateController.delete(key, jobRecord);
+    jobState.create(key, jobRecord);
+    jobState.delete(key, jobRecord);
 
     // then
-    assertThat(stateController.exists(key)).isFalse();
-    assertThat(State.values()).noneMatch(state -> stateController.isInState(key, state));
-    assertThat(stateController.getJob(key)).isNull();
+    assertThat(jobState.exists(key)).isFalse();
+    assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
+    assertThat(jobState.getJob(key)).isNull();
     refuteListedAsActivatable(key, jobRecord.getType());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
   }
@@ -134,14 +127,14 @@ public class JobStateTest {
     final JobRecord jobRecord = newJobRecord();
 
     // when
-    stateController.create(key, jobRecord);
-    stateController.activate(key, jobRecord);
-    stateController.delete(key, jobRecord);
+    jobState.create(key, jobRecord);
+    jobState.activate(key, jobRecord);
+    jobState.delete(key, jobRecord);
 
     // then
-    assertThat(stateController.exists(key)).isFalse();
-    assertThat(State.values()).noneMatch(state -> stateController.isInState(key, state));
-    assertThat(stateController.getJob(key)).isNull();
+    assertThat(jobState.exists(key)).isFalse();
+    assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
+    assertThat(jobState.getJob(key)).isNull();
     refuteListedAsActivatable(key, jobRecord.getType());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
   }
@@ -153,15 +146,15 @@ public class JobStateTest {
     final JobRecord jobRecord = newJobRecord();
 
     // when
-    stateController.create(key, jobRecord);
-    stateController.activate(key, jobRecord);
-    stateController.fail(key, jobRecord.setRetries(0));
-    stateController.delete(key, jobRecord);
+    jobState.create(key, jobRecord);
+    jobState.activate(key, jobRecord);
+    jobState.fail(key, jobRecord.setRetries(0));
+    jobState.delete(key, jobRecord);
 
     // then
-    assertThat(stateController.exists(key)).isFalse();
-    assertThat(State.values()).noneMatch(state -> stateController.isInState(key, state));
-    assertThat(stateController.getJob(key)).isNull();
+    assertThat(jobState.exists(key)).isFalse();
+    assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
+    assertThat(jobState.getJob(key)).isNull();
     refuteListedAsActivatable(key, jobRecord.getType());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
   }
@@ -173,14 +166,14 @@ public class JobStateTest {
     final JobRecord jobRecord = newJobRecord().setRetries(1);
 
     // when
-    stateController.create(key, jobRecord);
-    stateController.activate(key, jobRecord);
-    stateController.fail(key, jobRecord);
+    jobState.create(key, jobRecord);
+    jobState.activate(key, jobRecord);
+    jobState.fail(key, jobRecord);
 
     // then
-    assertThat(stateController.exists(key)).isTrue();
+    assertThat(jobState.exists(key)).isTrue();
     assertJobState(key, State.ACTIVATABLE);
-    assertJobRecordIsEqualTo(stateController.getJob(key), jobRecord);
+    assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
     assertListedAsActivatable(key, jobRecord.getType());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
   }
@@ -192,14 +185,14 @@ public class JobStateTest {
     final JobRecord jobRecord = newJobRecord().setRetries(0);
 
     // when
-    stateController.create(key, jobRecord);
-    stateController.activate(key, jobRecord);
-    stateController.fail(key, jobRecord);
+    jobState.create(key, jobRecord);
+    jobState.activate(key, jobRecord);
+    jobState.fail(key, jobRecord);
 
     // then
-    assertThat(stateController.exists(key)).isTrue();
+    assertThat(jobState.exists(key)).isTrue();
     assertJobState(key, State.FAILED);
-    assertJobRecordIsEqualTo(stateController.getJob(key), jobRecord);
+    assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
     refuteListedAsActivatable(key, jobRecord.getType());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
   }
@@ -211,15 +204,15 @@ public class JobStateTest {
     final JobRecord jobRecord = newJobRecord();
 
     // when
-    stateController.create(key, jobRecord);
-    stateController.activate(key, jobRecord);
-    stateController.fail(key, jobRecord.setRetries(0));
-    stateController.resolve(key, jobRecord);
+    jobState.create(key, jobRecord);
+    jobState.activate(key, jobRecord);
+    jobState.fail(key, jobRecord.setRetries(0));
+    jobState.resolve(key, jobRecord);
 
     // then
-    assertThat(stateController.exists(key)).isTrue();
+    assertThat(jobState.exists(key)).isTrue();
     assertJobState(key, State.ACTIVATABLE);
-    assertJobRecordIsEqualTo(stateController.getJob(key), jobRecord);
+    assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
     assertListedAsActivatable(key, jobRecord.getType());
     refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
   }
@@ -229,7 +222,7 @@ public class JobStateTest {
     // given
     createAndActivateJobRecord(1, newJobRecord().setDeadline(1L));
     createAndActivateJobRecord(2, newJobRecord().setDeadline(256L));
-    stateController.create(5, newJobRecord().setDeadline(512L));
+    jobState.create(5, newJobRecord().setDeadline(512L));
     createAndActivateJobRecord(3, newJobRecord().setDeadline(65536L));
     createAndActivateJobRecord(4, newJobRecord().setDeadline(4294967296L));
 
@@ -244,7 +237,7 @@ public class JobStateTest {
   @Test
   public void shouldDoNothingIfNotTimedOutJobs() {
     // given
-    stateController.create(5, newJobRecord().setDeadline(512L));
+    jobState.create(5, newJobRecord().setDeadline(512L));
     createAndActivateJobRecord(4, newJobRecord().setDeadline(4294967296L));
 
     // when
@@ -261,22 +254,22 @@ public class JobStateTest {
     final JobRecord jobRecord = newJobRecord();
 
     // when
-    stateController.create(key, jobRecord);
+    jobState.create(key, jobRecord);
 
     // then
-    assertThat(stateController.exists(key)).isTrue();
-    assertThat(stateController.exists(key + 1)).isFalse();
+    assertThat(jobState.exists(key)).isTrue();
+    assertThat(jobState.exists(key + 1)).isFalse();
   }
 
   @Test
   public void shouldListActivatableJobsForTypeInOrder() {
     // given
     final DirectBuffer type = wrapString("test");
-    stateController.create(1, newJobRecord().setType("tes"));
-    stateController.create(256L, newJobRecord().setType(type));
+    jobState.create(1, newJobRecord().setType("tes"));
+    jobState.create(256L, newJobRecord().setType(type));
     createAndActivateJobRecord(512, newJobRecord().setType(type));
-    stateController.create(65536L, newJobRecord().setType(type));
-    stateController.create(4294967296L, newJobRecord().setType("test-other"));
+    jobState.create(65536L, newJobRecord().setType(type));
+    jobState.create(4294967296L, newJobRecord().setType("test-other"));
 
     // when
     final List<Long> jobKeys = getActivatableKeys(type);
@@ -291,7 +284,7 @@ public class JobStateTest {
     // given
     final DirectBuffer type = wrapString("test");
     createAndActivateJobRecord(1, newJobRecord().setType(type));
-    stateController.create(256L, newJobRecord().setType("other"));
+    jobState.create(256L, newJobRecord().setType("other"));
 
     // when
     final List<Long> jobKeys = getActivatableKeys(type);
@@ -306,7 +299,7 @@ public class JobStateTest {
     final long key = 1L;
 
     // then
-    assertThat(stateController.getJob(key)).isNull();
+    assertThat(jobState.getJob(key)).isNull();
   }
 
   @Test
@@ -316,11 +309,11 @@ public class JobStateTest {
     final JobRecord jobRecord = newJobRecord().setType("test");
 
     // when
-    stateController.create(key, jobRecord);
-    stateController.create(key + 1, newJobRecord().setType("other"));
+    jobState.create(key, jobRecord);
+    jobState.create(key + 1, newJobRecord().setType("other"));
 
     // then
-    final JobRecord savedJob = stateController.getJob(key);
+    final JobRecord savedJob = jobState.getJob(key);
     assertJobRecordIsEqualTo(savedJob, jobRecord);
     assertThat(BufferUtil.bufferAsString(savedJob.getType())).isEqualTo("test");
   }
@@ -331,45 +324,60 @@ public class JobStateTest {
     final JobRecord jobWithoutDeadline = newJobRecord().setDeadline(0L);
 
     // create
-    assertThatThrownBy(() -> stateController.create(1L, jobWithoutType))
+    assertThatThrownBy(() -> jobState.create(1L, jobWithoutType))
         .hasMessage("type must not be empty");
 
     // activate
-    assertThatThrownBy(() -> stateController.activate(1L, jobWithoutType))
+    assertThatThrownBy(() -> jobState.activate(1L, jobWithoutType))
         .hasMessage("type must not be empty");
-    assertThatThrownBy(() -> stateController.activate(1L, jobWithoutDeadline))
+    assertThatThrownBy(() -> jobState.activate(1L, jobWithoutDeadline))
         .hasMessage("deadline must be greater than 0");
 
     // fail
-    assertThatThrownBy(() -> stateController.fail(1L, jobWithoutType))
+    assertThatThrownBy(() -> jobState.fail(1L, jobWithoutType))
         .hasMessage("type must not be empty");
-    assertThatThrownBy(() -> stateController.fail(1L, jobWithoutDeadline))
+    assertThatThrownBy(() -> jobState.fail(1L, jobWithoutDeadline))
         .hasMessage("deadline must be greater than 0");
 
     // resolve
-    assertThatThrownBy(() -> stateController.resolve(1L, jobWithoutType))
+    assertThatThrownBy(() -> jobState.resolve(1L, jobWithoutType))
         .hasMessage("type must not be empty");
 
     // timeout
-    assertThatThrownBy(() -> stateController.timeout(1L, jobWithoutType))
+    assertThatThrownBy(() -> jobState.timeout(1L, jobWithoutType))
         .hasMessage("type must not be empty");
-    assertThatThrownBy(() -> stateController.timeout(1L, jobWithoutDeadline))
+    assertThatThrownBy(() -> jobState.timeout(1L, jobWithoutDeadline))
         .hasMessage("deadline must be greater than 0");
 
     // delete
-    assertThatThrownBy(() -> stateController.delete(1L, jobWithoutType))
+    assertThatThrownBy(() -> jobState.delete(1L, jobWithoutType))
         .hasMessage("type must not be empty");
-    assertThatThrownBy(
-            () -> {
-              stateController.activate(1L, newJobRecord());
-              stateController.delete(1L, jobWithoutDeadline);
-            })
-        .hasMessage("deadline must be greater than 0");
+
+    // should not throw any exception
+    jobState.activate(1L, newJobRecord());
+    jobState.delete(1L, jobWithoutDeadline);
+  }
+
+  @Test
+  public void shouldNotOverwritePreviousRecord() {
+    // given
+    final long key = 1L;
+    final JobRecord writtenRecord = newJobRecord();
+
+    // when
+    jobState.create(key, writtenRecord);
+    writtenRecord.setType("foo");
+
+    // then
+    final JobRecord readRecord = jobState.getJob(key);
+    assertThat(readRecord.getType()).isNotEqualTo(writtenRecord.getType());
+    assertThat(readRecord.getType()).isEqualTo(BufferUtil.wrapString("test"));
+    assertThat(writtenRecord.getType()).isEqualTo(BufferUtil.wrapString("foo"));
   }
 
   private void createAndActivateJobRecord(final long key, final JobRecord record) {
-    stateController.create(key, record);
-    stateController.activate(key, record);
+    jobState.create(key, record);
+    jobState.activate(key, record);
   }
 
   private JobRecord newJobRecord() {
@@ -386,8 +394,8 @@ public class JobStateTest {
     final List<State> others =
         Arrays.stream(State.values()).filter(s -> s != state).collect(Collectors.toList());
 
-    assertThat(stateController.isInState(key, state)).isTrue();
-    assertThat(others).noneMatch(other -> stateController.isInState(key, other));
+    assertThat(jobState.isInState(key, state)).isTrue();
+    assertThat(others).noneMatch(other -> jobState.isInState(key, other));
   }
 
   private void assertJobRecordIsEqualTo(final JobRecord jobRecord, final JobRecord expected) {
@@ -422,14 +430,14 @@ public class JobStateTest {
   private List<Long> getActivatableKeys(final DirectBuffer type) {
     final List<Long> activatableKeys = new ArrayList<>();
 
-    stateController.forEachActivatableJobs(type, (k, e, c) -> activatableKeys.add(k));
+    jobState.forEachActivatableJobs(type, (k, e) -> activatableKeys.add(k));
     return activatableKeys;
   }
 
   private List<Long> getTimedOutKeys(final long since) {
     final List<Long> timedOutKeys = new ArrayList<>();
 
-    stateController.forEachTimedOutEntry(since, (k, e, c) -> timedOutKeys.add(k));
+    jobState.forEachTimedOutEntry(since, (k, e) -> timedOutKeys.add(k));
     return timedOutKeys;
   }
 }

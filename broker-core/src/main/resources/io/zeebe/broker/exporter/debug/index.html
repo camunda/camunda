@@ -77,7 +77,7 @@
       <th scope="col">BPMN Process Id</th>
       <th scope="col">Element Id</th>
       <th scope="col">Workflow Instance Key</th>
-      <th scope="col">Scope Instance Key</th>
+      <th scope="col">Flow Scope Key</th>
       <th scope="col">Element Instance Key</th>
     </tr>
   </thead>
@@ -89,7 +89,7 @@
       <td>{{_bpmnProcessId}}</td>
       <td>{{_elementId}}</td>
       <td>{{_workflowInstanceKey}}</td>
-      <td>{{_scopeInstanceKey}}</td>
+      <td>{{_flowScopeKey}}</td>
       <td>{{_elementInstanceKey}}</td>
     </tr>
     <tr class="collapse" id="collapse-{{_id}}">
@@ -98,6 +98,7 @@
   {{ /. }}
   </tbody>
 </table>
+
 </script>
 
 <script src="/jquery-3.3.1.slim.min.js"></script>
@@ -161,14 +162,14 @@
             r._bpmnProcessId = r.value.bpmnProcessId;
             r._elementId = r.value.elementId;
             r._workflowInstanceKey = r.value.workflowInstanceKey;
-            r._scopeInstanceKey = r.value.scopeInstanceKey;
+            r._flowScopeKey = r.value.flowScopeKey;
             r._elementInstanceKey = r.value.elementInstanceKey;
             break;
           case 'JOB':
             r._bpmnProcessId = r.value.headers.bpmnProcessId;
             r._elementId = r.value.headers.elementId;
             r._workflowInstanceKey = r.value.headers.workflowInstanceKey;
-            r._scopeInstanceKey = r.value.headers.scopeInstanceKey;
+            r._flowScopeKey = r.value.headers.flowScopeKey;
             r._elementInstanceKey = r.value.headers.elementInstanceKey;
             break;
       }
@@ -189,6 +190,7 @@
     var rendered = Mustache.render(recordTemplate, records);
     $('#content').html(rendered);
   }
+
 </script>
 </body>
 </html>

@@ -22,6 +22,7 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.BitUtil.SIZE_OF_SHORT;
 
+import io.zeebe.protocol.Protocol;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
@@ -121,7 +122,7 @@ public class LogEntryDescriptor {
   }
 
   public static int getFragmentLength(final DirectBuffer buffer, final int offset) {
-    return alignedLength(buffer.getInt(lengthOffset(offset)));
+    return alignedLength(buffer.getInt(lengthOffset(offset), Protocol.ENDIANNESS));
   }
 
   public static int headerLength(final int metadataLength) {
@@ -137,21 +138,21 @@ public class LogEntryDescriptor {
   }
 
   public static long getPosition(final DirectBuffer buffer, final int offset) {
-    return buffer.getLong(positionOffset(messageOffset(offset)));
+    return buffer.getLong(positionOffset(messageOffset(offset)), Protocol.ENDIANNESS);
   }
 
   public static void setPosition(
       final MutableDirectBuffer buffer, final int offset, final long position) {
-    buffer.putLong(positionOffset(offset), position);
+    buffer.putLong(positionOffset(offset), position, Protocol.ENDIANNESS);
   }
 
   public static int getRaftTerm(final DirectBuffer buffer, final int offset) {
-    return buffer.getInt(raftTermOffset(offset));
+    return buffer.getInt(raftTermOffset(offset), Protocol.ENDIANNESS);
   }
 
   public static void setRaftTerm(
       final MutableDirectBuffer buffer, final int offset, final int raftTerm) {
-    buffer.putInt(raftTermOffset(offset), raftTerm);
+    buffer.putInt(raftTermOffset(offset), raftTerm, Protocol.ENDIANNESS);
   }
 
   public static int producerIdOffset(final int offset) {
@@ -159,12 +160,12 @@ public class LogEntryDescriptor {
   }
 
   public static int getProducerId(final DirectBuffer buffer, final int offset) {
-    return buffer.getInt(producerIdOffset(offset));
+    return buffer.getInt(producerIdOffset(offset), Protocol.ENDIANNESS);
   }
 
   public static void setProducerId(
       final MutableDirectBuffer buffer, final int offset, final int producerId) {
-    buffer.putInt(producerIdOffset(offset), producerId);
+    buffer.putInt(producerIdOffset(offset), producerId, Protocol.ENDIANNESS);
   }
 
   public static int sourceEventPositionOffset(final int offset) {
@@ -172,12 +173,12 @@ public class LogEntryDescriptor {
   }
 
   public static long getSourceEventPosition(final DirectBuffer buffer, final int offset) {
-    return buffer.getLong(sourceEventPositionOffset(offset));
+    return buffer.getLong(sourceEventPositionOffset(offset), Protocol.ENDIANNESS);
   }
 
   public static void setSourceEventPosition(
       final MutableDirectBuffer buffer, final int offset, final long sourceEventPosition) {
-    buffer.putLong(sourceEventPositionOffset(offset), sourceEventPosition);
+    buffer.putLong(sourceEventPositionOffset(offset), sourceEventPosition, Protocol.ENDIANNESS);
   }
 
   public static int keyOffset(final int offset) {
@@ -185,11 +186,11 @@ public class LogEntryDescriptor {
   }
 
   public static long getKey(final DirectBuffer buffer, final int offset) {
-    return buffer.getLong(keyOffset(offset));
+    return buffer.getLong(keyOffset(offset), Protocol.ENDIANNESS);
   }
 
   public static void setKey(final MutableDirectBuffer buffer, final int offset, final long key) {
-    buffer.putLong(keyOffset(offset), key);
+    buffer.putLong(keyOffset(offset), key, Protocol.ENDIANNESS);
   }
 
   public static int timestampOffset(final int offset) {
@@ -197,12 +198,12 @@ public class LogEntryDescriptor {
   }
 
   public static long getTimestamp(final DirectBuffer buffer, final int offset) {
-    return buffer.getLong(timestampOffset(offset));
+    return buffer.getLong(timestampOffset(offset), Protocol.ENDIANNESS);
   }
 
   public static void setTimestamp(
       final MutableDirectBuffer buffer, final int offset, final long timestamp) {
-    buffer.putLong(timestampOffset(offset), timestamp);
+    buffer.putLong(timestampOffset(offset), timestamp, Protocol.ENDIANNESS);
   }
 
   public static int metadataLengthOffset(final int offset) {
@@ -210,12 +211,12 @@ public class LogEntryDescriptor {
   }
 
   public static short getMetadataLength(final DirectBuffer buffer, final int offset) {
-    return buffer.getShort(metadataLengthOffset(offset));
+    return buffer.getShort(metadataLengthOffset(offset), Protocol.ENDIANNESS);
   }
 
   public static void setMetadataLength(
       final MutableDirectBuffer buffer, final int offset, final short metadataLength) {
-    buffer.putShort(metadataLengthOffset(offset), metadataLength);
+    buffer.putShort(metadataLengthOffset(offset), metadataLength, Protocol.ENDIANNESS);
   }
 
   public static int metadataOffset(final int offset) {

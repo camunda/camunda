@@ -22,7 +22,10 @@ import static io.zeebe.broker.workflow.WorkflowAssert.assertWorkflowInstanceReco
 import static io.zeebe.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
 import static io.zeebe.msgpack.spec.MsgPackHelper.NIL;
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
-import static io.zeebe.test.broker.protocol.clientapi.PartitionTestClient.*;
+import static io.zeebe.test.broker.protocol.clientapi.PartitionTestClient.PROP_WORKFLOW_INSTANCE_KEY;
+import static io.zeebe.test.broker.protocol.clientapi.PartitionTestClient.PROP_WORKFLOW_KEY;
+import static io.zeebe.test.broker.protocol.clientapi.PartitionTestClient.PROP_WORKFLOW_PAYLOAD;
+import static io.zeebe.test.broker.protocol.clientapi.PartitionTestClient.PROP_WORKFLOW_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
@@ -85,8 +88,7 @@ public class CreateWorkflowInstanceTest {
     assertThat(resp.getKey()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
     assertThat(resp.getPartitionId()).isEqualTo(apiRule.getDefaultPartitionId());
     assertThat(resp.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(resp.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(resp.getRejectionReason()).isEqualTo("Workflow is not deployed");
+    assertThat(resp.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
     assertThat(resp.getValue()).containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process");
   }
 
@@ -149,7 +151,7 @@ public class CreateWorkflowInstanceTest {
     // then
     assertThat(resp.getKey()).isGreaterThanOrEqualTo(0L);
     assertThat(resp.getPartitionId()).isEqualTo(apiRule.getDefaultPartitionId());
-    assertThat(resp.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_READY);
+    assertThat(resp.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     assertThat(resp.getValue())
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
         .containsEntry(PROP_WORKFLOW_VERSION, 1L)
@@ -183,10 +185,10 @@ public class CreateWorkflowInstanceTest {
     final Record<WorkflowInstanceRecordValue> event =
         testClient
             .receiveWorkflowInstances()
-            .withIntent(WorkflowInstanceIntent.START_EVENT_OCCURRED)
+            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .getFirst();
 
-    assertWorkflowInstanceRecord(workflowKey, 2, resp.getKey(), "bar", event);
+    assertWorkflowInstanceRecord(workflowKey, 2, resp.getKey(), "process", event);
   }
 
   @Test
@@ -216,10 +218,10 @@ public class CreateWorkflowInstanceTest {
     final Record<WorkflowInstanceRecordValue> event =
         testClient
             .receiveWorkflowInstances()
-            .withIntent(WorkflowInstanceIntent.START_EVENT_OCCURRED)
+            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .getFirst();
 
-    assertWorkflowInstanceRecord(workflowKey, 1, resp.getKey(), "foo", event);
+    assertWorkflowInstanceRecord(workflowKey, 1, resp.getKey(), "process", event);
   }
 
   @Test
@@ -246,7 +248,7 @@ public class CreateWorkflowInstanceTest {
     // then
     assertThat(resp.getKey()).isGreaterThanOrEqualTo(0L);
     assertThat(resp.getPartitionId()).isEqualTo(apiRule.getDefaultPartitionId());
-    assertThat(resp.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_READY);
+    assertThat(resp.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     assertThat(resp.getValue())
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
         .containsEntry(PROP_WORKFLOW_VERSION, 2L)
@@ -278,7 +280,7 @@ public class CreateWorkflowInstanceTest {
     // then
     assertThat(resp.getKey()).isGreaterThanOrEqualTo(0L);
     assertThat(resp.getPartitionId()).isEqualTo(apiRule.getDefaultPartitionId());
-    assertThat(resp.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_READY);
+    assertThat(resp.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     assertThat(resp.getValue())
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
         .containsEntry(PROP_WORKFLOW_VERSION, 1L)
@@ -305,7 +307,7 @@ public class CreateWorkflowInstanceTest {
     // then
     assertThat(resp.getKey()).isGreaterThanOrEqualTo(0L);
     assertThat(resp.getPartitionId()).isEqualTo(apiRule.getDefaultPartitionId());
-    assertThat(resp.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_READY);
+    assertThat(resp.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     assertThat(resp.getValue())
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
         .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, resp.getKey())
@@ -378,7 +380,7 @@ public class CreateWorkflowInstanceTest {
     testClient.deploy(Bpmn.createExecutableProcess("process").startEvent().endEvent().done());
 
     // when
-    final byte[] invalidPayload = MsgPackUtil.asMsgPack("'foo'");
+    final byte[] invalidPayload = MsgPackUtil.asMsgPackReturnArray("'foo'");
 
     final Throwable throwable =
         catchThrowable(
@@ -394,9 +396,9 @@ public class CreateWorkflowInstanceTest {
 
     // then
     assertThat(throwable).isInstanceOf(RuntimeException.class);
-    assertThat(throwable.getMessage()).contains("Could not read property 'payload'.");
+    assertThat(throwable.getMessage()).contains("Could not read property 'payload'");
     assertThat(throwable.getMessage())
-        .contains("Document has invalid format. On root level an object is only allowed.");
+        .contains("Expected document to be a root level object, but was 'STRING'");
   }
 
   @Test
@@ -414,7 +416,7 @@ public class CreateWorkflowInstanceTest {
         testClient
             .receiveWorkflowInstances()
             .filterRootScope()
-            .withIntent(WorkflowInstanceIntent.ELEMENT_READY)
+            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .limit(2)
             .collect(Collectors.toList());
 
@@ -444,7 +446,7 @@ public class CreateWorkflowInstanceTest {
     final Record<WorkflowInstanceRecordValue> workflowInstanceEvent =
         testClient
             .receiveWorkflowInstances()
-            .withIntent(WorkflowInstanceIntent.ELEMENT_READY)
+            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .getFirst();
 
     assertWorkflowInstanceRecord(
@@ -497,13 +499,13 @@ public class CreateWorkflowInstanceTest {
     // then
     final Record<WorkflowInstanceRecordValue> event1 =
         testClient.receiveFirstWorkflowInstanceEvent(
-            wfInstance1, WorkflowInstanceIntent.ELEMENT_READY);
+            wfInstance1, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
 
     assertThat(event1.getValue().getBpmnProcessId()).isEqualTo("process1");
 
     final Record<WorkflowInstanceRecordValue> event2 =
         testClient.receiveFirstWorkflowInstanceEvent(
-            wfInstance2, WorkflowInstanceIntent.ELEMENT_READY);
+            wfInstance2, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
 
     assertThat(event2.getValue().getBpmnProcessId()).isEqualTo("process2");
   }
@@ -513,5 +515,29 @@ public class CreateWorkflowInstanceTest {
     final List<Map<String, Object>> deployedWorkflows =
         (List<Map<String, Object>>) deployment1.getValue().get("workflows");
     return (long) deployedWorkflows.get(0).get(PROP_WORKFLOW_KEY);
+  }
+
+  @Test
+  public void shouldNotCreateWorkflowInstanceWithNoNoneStartEvent() {
+    final BpmnModelInstance definition =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .message(m -> m.id("msgId").name("msgname"))
+            .endEvent()
+            .done();
+
+    final ExecuteCommandResponse deployed =
+        apiRule.partitionClient().deployWithResponse(definition);
+    final long workflowKey = extractWorkflowKey(deployed);
+
+    final ExecuteCommandResponse response =
+        testClient.createWorkflowInstanceWithResponse("process");
+
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(response.getRejectionReason())
+        .isEqualTo(
+            String.format(
+                "Expected to create an instance of workflow with key '%d', but no none start event was found",
+                workflowKey));
   }
 }

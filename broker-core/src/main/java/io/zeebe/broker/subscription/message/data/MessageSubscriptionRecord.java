@@ -18,6 +18,7 @@
 package io.zeebe.broker.subscription.message.data;
 
 import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.msgpack.property.BooleanProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
@@ -28,12 +29,15 @@ public class MessageSubscriptionRecord extends UnpackedObject {
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
   private final StringProperty messageNameProp = new StringProperty("messageName", "");
   private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
+  private final BooleanProperty closeOnCorrelateProp =
+      new BooleanProperty("closeOnCorrelate", true);
 
   public MessageSubscriptionRecord() {
     this.declareProperty(workflowInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(messageNameProp)
-        .declareProperty(correlationKeyProp);
+        .declareProperty(correlationKeyProp)
+        .declareProperty(closeOnCorrelateProp);
   }
 
   public long getWorkflowInstanceKey() {
@@ -69,6 +73,15 @@ public class MessageSubscriptionRecord extends UnpackedObject {
 
   public MessageSubscriptionRecord setCorrelationKey(DirectBuffer correlationKey) {
     correlationKeyProp.setValue(correlationKey);
+    return this;
+  }
+
+  public boolean shouldCloseOnCorrelate() {
+    return closeOnCorrelateProp.getValue();
+  }
+
+  public MessageSubscriptionRecord setCloseOnCorrelate(boolean closeOnCorrelate) {
+    this.closeOnCorrelateProp.setValue(closeOnCorrelate);
     return this;
   }
 }

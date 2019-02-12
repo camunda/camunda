@@ -27,6 +27,7 @@ import io.zeebe.exporter.record.value.TimerRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -118,7 +119,7 @@ public class ActivityTest {
 
     // when
     final Record<WorkflowInstanceRecordValue> readyRecord =
-        testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_READY);
+        testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     final Record<WorkflowInstanceRecordValue> activatedRecord =
         testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
     final List<Record<TimerRecordValue>> subscriptions =
@@ -165,6 +166,53 @@ public class ActivityTest {
     // then
     shouldUnsubscribeFromBoundaryEventTrigger(
         WorkflowInstanceIntent.ELEMENT_TERMINATING, WorkflowInstanceIntent.ELEMENT_TERMINATED);
+  }
+
+  @Test
+  public void shouldIgnoreTaskHeadersIfEmpty() {
+    createWorkflowAndAssertIgnoredHeaders("");
+  }
+
+  @Test
+  public void shouldIgnoreTaskHeadersIfNull() {
+    createWorkflowAndAssertIgnoredHeaders(null);
+  }
+
+  private void createWorkflowAndAssertIgnoredHeaders(String testValue) {
+    // given
+    final BpmnModelInstance model =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .serviceTask("task1", b -> b.zeebeTaskType("type1").zeebeTaskHeader("key", testValue))
+            .endEvent("end")
+            .moveToActivity("task1")
+            .serviceTask("task2", b -> b.zeebeTaskType("type2").zeebeTaskHeader(testValue, "value"))
+            .connectTo("end")
+            .moveToActivity("task1")
+            .serviceTask(
+                "task3", b -> b.zeebeTaskType("type3").zeebeTaskHeader(testValue, testValue))
+            .connectTo("end")
+            .done();
+
+    // when
+    final long deploymentKey = testClient.deploy(model);
+    testClient.receiveFirstDeploymentEvent(DeploymentIntent.CREATED, deploymentKey);
+    testClient.createWorkflowInstance("process");
+
+    // then
+    final JobRecordValue firstJob =
+        testClient.receiveJobs().withType("type1").getFirst().getValue();
+    assertThat(firstJob.getCustomHeaders()).isEmpty();
+    testClient.completeJobOfType("type1");
+
+    final JobRecordValue secondJob =
+        testClient.receiveJobs().withType("type2").getFirst().getValue();
+    assertThat(secondJob.getCustomHeaders()).isEmpty();
+    testClient.completeJobOfType("type2");
+
+    final JobRecordValue thirdJob =
+        testClient.receiveJobs().withType("type3").getFirst().getValue();
+    assertThat(thirdJob.getCustomHeaders()).isEmpty();
   }
 
   private void shouldUnsubscribeFromBoundaryEventTrigger(

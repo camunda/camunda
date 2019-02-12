@@ -17,8 +17,9 @@
  */
 package io.zeebe.broker.workflow.model.transformation.transformer;
 
+import io.zeebe.broker.workflow.model.BpmnStep;
+import io.zeebe.broker.workflow.model.element.ExecutableCatchEventElement;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElementContainer;
-import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
@@ -36,25 +37,25 @@ public class StartEventTransformer implements ModelElementTransformer<StartEvent
   @Override
   public void transform(StartEvent element, TransformContext context) {
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
-    final ExecutableFlowNode startEvent =
-        workflow.getElementById(element.getId(), ExecutableFlowNode.class);
+    final ExecutableCatchEventElement startEvent =
+        workflow.getElementById(element.getId(), ExecutableCatchEventElement.class);
 
     if (element.getScope() instanceof FlowNode) {
       final FlowNode scope = (FlowNode) element.getScope();
 
       final ExecutableFlowElementContainer subprocess =
           workflow.getElementById(scope.getId(), ExecutableFlowElementContainer.class);
-      subprocess.setStartEvent(startEvent);
+      subprocess.addStartEvent(startEvent);
     } else {
       // top-level start event
-      workflow.setStartEvent(startEvent);
+      workflow.addStartEvent(startEvent);
     }
 
-    bindLifecycle(context, startEvent);
+    bindLifecycle(startEvent);
   }
 
-  private void bindLifecycle(TransformContext context, final ExecutableFlowNode startEvent) {
+  private void bindLifecycle(final ExecutableCatchEventElement startEvent) {
     startEvent.bindLifecycleState(
-        WorkflowInstanceIntent.START_EVENT_OCCURRED, context.getCurrentFlowNodeOutgoingStep());
+        WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.START_EVENT_EVENT_OCCURRED);
   }
 }

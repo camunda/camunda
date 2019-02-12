@@ -71,9 +71,9 @@ public class DocumentPropertyTest {
     final Throwable throwable = catchThrowable(() -> document.setDocument(documentBytes));
 
     // then
-    assertThat(throwable).isExactlyInstanceOf(IllegalArgumentException.class);
+    assertThat(throwable).isExactlyInstanceOf(MsgpackPropertyException.class);
     assertThat(throwable)
-        .hasMessage("Document has invalid format. On root level an object is only allowed.");
+        .hasMessageContaining("Expected document to be a root level object, but was 'INTEGER'");
   }
 
   @Test
@@ -203,12 +203,12 @@ public class DocumentPropertyTest {
 
     final Throwable cause = throwable.getCause();
     assertThat(cause).isExactlyInstanceOf(RuntimeException.class);
-    assertThat(cause).hasMessageContaining("Could not read property 'documentProp'.");
+    assertThat(cause).hasMessageContaining("Could not read property 'documentProp'");
 
     final Throwable rootCause = cause.getCause();
     assertThat(rootCause).isExactlyInstanceOf(IllegalArgumentException.class);
     assertThat(rootCause)
-        .hasMessage("Document has invalid format. On root level an object is only allowed.");
+        .hasMessageContaining("Expected document to be a root level object, but was 'INTEGER'");
   }
 
   @Test

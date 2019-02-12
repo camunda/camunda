@@ -30,6 +30,7 @@ import io.zeebe.broker.exporter.record.value.JobBatchRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.JobRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.MessageSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.RaftRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.VariableRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.WorkflowInstanceSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.deployment.DeployedWorkflowImpl;
 import io.zeebe.broker.exporter.record.value.deployment.DeploymentResourceImpl;
@@ -40,10 +41,12 @@ import io.zeebe.broker.exporter.stream.ExporterRecord.ExporterPosition;
 import io.zeebe.broker.exporter.util.ControlledTestExporter;
 import io.zeebe.broker.exporter.util.PojoConfigurationExporter;
 import io.zeebe.broker.exporter.util.PojoConfigurationExporter.PojoExporterConfiguration;
+import io.zeebe.broker.logstreams.state.DefaultZeebeDbFactory;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.util.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
+import io.zeebe.db.ZeebeDb;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.RecordValue;
 import io.zeebe.exporter.record.value.DeploymentRecordValue;
@@ -52,10 +55,12 @@ import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.exporter.record.value.MessageRecordValue;
 import io.zeebe.exporter.record.value.MessageSubscriptionRecordValue;
 import io.zeebe.exporter.record.value.RaftRecordValue;
+import io.zeebe.exporter.record.value.VariableRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
@@ -64,6 +69,7 @@ import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.ExporterIntent;
@@ -74,9 +80,11 @@ import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.intent.RaftIntent;
+import io.zeebe.protocol.intent.VariableIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.raft.event.RaftConfigurationEvent;
+import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
@@ -109,17 +117,19 @@ public class ExporterStreamProcessorTest {
   private static final DirectBuffer CUSTOM_HEADERS_MSGPACK =
       new UnsafeBuffer(OBJECT_MAPPER.toMsgpack(CUSTOM_HEADERS));
 
-  @Rule public StreamProcessorRule rule = new StreamProcessorRule();
+  @Rule
+  public StreamProcessorRule rule =
+      new StreamProcessorRule(
+          PARTITION_ID, DefaultZeebeDbFactory.defaultFactory(ExporterColumnFamilies.class));
 
   private List<ControlledTestExporter> exporters;
+  private ExporterStreamProcessorState state;
 
   @Test
   public void shouldConfigureAllExportersProperlyOnStart() throws InterruptedException {
     // given
     final Map[] arguments = new Map[] {newConfig("foo", "bar"), newConfig("bar", "foo")};
     final List<ExporterDescriptor> descriptors = createMockedExporters(arguments);
-    final ExporterStreamProcessor processor =
-        new ExporterStreamProcessor(PARTITION_ID, descriptors);
 
     final CountDownLatch latch = new CountDownLatch(exporters.size());
     for (ControlledTestExporter exporter : exporters) {
@@ -128,7 +138,8 @@ public class ExporterStreamProcessorTest {
 
     // when
     final StreamProcessorControl control =
-        rule.initStreamProcessor(() -> processor.getState(), e -> processor);
+        rule.initStreamProcessor(
+            (db) -> new ExporterStreamProcessor(db, PARTITION_ID, descriptors));
     control.start();
     assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
 
@@ -164,10 +175,9 @@ public class ExporterStreamProcessorTest {
         new ExporterDescriptor(
             "instantiateConfiguration", PojoConfigurationExporter.class, arguments);
 
-    final ExporterStreamProcessor processor =
-        new ExporterStreamProcessor(PARTITION_ID, Collections.singletonList(descriptor));
-
-    rule.runStreamProcessor(() -> processor.getState(), e -> processor);
+    rule.runStreamProcessor(
+        (db) ->
+            new ExporterStreamProcessor(db, PARTITION_ID, Collections.singletonList(descriptor)));
 
     // then
     final PojoExporterConfiguration configuration = PojoConfigurationExporter.configuration;
@@ -182,15 +192,12 @@ public class ExporterStreamProcessorTest {
   public void shouldCloseAllExportersOnClose() {
     // given
     final boolean[] closedExporters = new boolean[] {false, false};
-    final ExporterStreamProcessor processor = createStreamProcessor(closedExporters.length);
-
-    exporters.get(0).onClose(() -> closedExporters[0] = true);
-    exporters.get(1).onClose(() -> closedExporters[1] = true);
 
     // when
     final StreamProcessorControl control =
-        rule.initStreamProcessor(() -> processor.getState(), e -> processor);
-    control.start();
+        rule.runStreamProcessor((db) -> createStreamProcessor(db, closedExporters.length));
+    exporters.get(0).onClose(() -> closedExporters[0] = true);
+    exporters.get(1).onClose(() -> closedExporters[1] = true);
 
     // then
     for (int i = 0; i < exporters.size(); i++) {
@@ -209,16 +216,14 @@ public class ExporterStreamProcessorTest {
   @Test
   public void shouldRestartEachExporterFromCorrectPosition() {
     // given
-    final ExporterStreamProcessor processor = createStreamProcessor(2);
+    final StreamProcessorControl control =
+        rule.runStreamProcessor((db) -> createStreamProcessor(db, 2));
+    final AtomicLong atomicLong = new AtomicLong();
+    control.blockAfterEvent(e -> atomicLong.incrementAndGet() == 2);
 
     // when
-    final StreamProcessorControl control =
-        rule.initStreamProcessor(() -> processor.getState(), e -> processor);
     final long lowestPosition = writeEvent();
     final long highestPosition = writeEvent();
-
-    control.blockAfterEvent(e -> e.getPosition() == highestPosition);
-    control.start();
     TestUtil.waitUntil(control::isBlocked);
     control.unblock();
 
@@ -236,19 +241,11 @@ public class ExporterStreamProcessorTest {
 
     // then
     // should have reprocessed no events
-    assertThat(exporters.get(0).getExportedRecords()).hasSize(2);
-    assertThat(exporters.get(0).getExportedRecords().get(0).getPosition())
-        .isEqualTo(lowestPosition);
-    assertThat(exporters.get(0).getExportedRecords().get(1).getPosition())
-        .isEqualTo(highestPosition);
+    assertThat(exporters.get(0).getExportedRecords()).hasSize(0);
 
     // should have reprocessed the last event twice
-    assertThat(exporters.get(1).getExportedRecords()).hasSize(3);
+    assertThat(exporters.get(1).getExportedRecords()).hasSize(1);
     assertThat(exporters.get(1).getExportedRecords().get(0).getPosition())
-        .isEqualTo(lowestPosition);
-    assertThat(exporters.get(1).getExportedRecords().get(1).getPosition())
-        .isEqualTo(highestPosition);
-    assertThat(exporters.get(1).getExportedRecords().get(2).getPosition())
         .isEqualTo(highestPosition);
   }
 
@@ -256,13 +253,17 @@ public class ExporterStreamProcessorTest {
   public void shouldRecoverPositionsFromLogStream() {
     // given
     final List<ExporterDescriptor> descriptors = createMockedExporters(1);
-    final ExporterStreamProcessor processor =
-        new ExporterStreamProcessor(PARTITION_ID, descriptors);
-    final ExporterStreamProcessorState state = processor.getState();
 
     // when
     final StreamProcessorControl control =
-        rule.initStreamProcessor(() -> processor.getState(), e -> processor);
+        rule.initStreamProcessor(
+            (db) -> {
+              final ExporterStreamProcessor processor =
+                  new ExporterStreamProcessor(db, PARTITION_ID, descriptors);
+              state = processor.getState();
+              return processor;
+            });
+
     final long lowestPosition = writeEvent();
     final long latestPosition = writeExporterEvent(descriptors.get(0).getId(), lowestPosition);
 
@@ -276,7 +277,8 @@ public class ExporterStreamProcessorTest {
 
   @Test
   public void shouldRetryExportingOnException() {
-    final ExporterStreamProcessor processor = createStreamProcessor(3);
+    final StreamProcessorControl control =
+        rule.runStreamProcessor((db) -> createStreamProcessor(db, 3));
 
     final AtomicLong failCount = new AtomicLong(3);
     exporters
@@ -289,13 +291,10 @@ public class ExporterStreamProcessorTest {
             });
 
     // when
-    final StreamProcessorControl control =
-        rule.initStreamProcessor(() -> processor.getState(), e -> processor);
     final long lowestPosition = writeEvent();
     final long highestPosition = writeEvent();
 
     control.blockAfterEvent(e -> e.getPosition() == highestPosition);
-    control.start();
     TestUtil.waitUntil(control::isBlocked);
 
     // then
@@ -309,7 +308,8 @@ public class ExporterStreamProcessorTest {
   @Test
   public void shouldExecuteScheduledTask() throws InterruptedException {
     // given
-    final ExporterStreamProcessor processor = createStreamProcessor(1);
+    final StreamProcessorControl control =
+        rule.runStreamProcessor((db) -> createStreamProcessor(db, 1));
 
     final CountDownLatch latch = new CountDownLatch(1);
     final Duration delay = Duration.ofSeconds(10);
@@ -318,16 +318,12 @@ public class ExporterStreamProcessorTest {
     controlledTestExporter.onExport(
         r -> controlledTestExporter.getController().scheduleTask(delay, latch::countDown));
 
-    final long position = writeEvent();
-
-    final StreamProcessorControl control =
-        rule.initStreamProcessor(() -> processor.getState(), e -> processor);
-    control.blockAfterEvent(e -> e.getPosition() == position);
-    control.start();
+    control.blockAfterEvent(e -> true);
+    writeEvent();
     TestUtil.waitUntil(control::isBlocked);
 
     // when
-    rule.getClock().addTime(delay.plusSeconds(10));
+    rule.getClock().addTime(delay.plusSeconds(20));
     final boolean wasExecuted = latch.await(1, TimeUnit.SECONDS);
 
     // then
@@ -338,12 +334,11 @@ public class ExporterStreamProcessorTest {
   public void shouldNotExportExporterRecords() {
     // given
     final List<ExporterDescriptor> descriptors = createMockedExporters(1);
-    final ExporterStreamProcessor processor =
-        new ExporterStreamProcessor(PARTITION_ID, descriptors);
 
     // when
     final StreamProcessorControl control =
-        rule.initStreamProcessor(() -> processor.getState(), e -> processor);
+        rule.initStreamProcessor(
+            (db) -> new ExporterStreamProcessor(db, PARTITION_ID, descriptors));
     final long lowestPosition = writeEvent();
     final long latestPosition = writeExporterEvent(descriptors.get(0).getId(), lowestPosition);
 
@@ -417,7 +412,8 @@ public class ExporterStreamProcessorTest {
             .setBpmnProcessId(wrapString(bpmnProcessId))
             .setErrorMessage(errorMessage)
             .setErrorType(errorType)
-            .setJobKey(jobKey);
+            .setJobKey(jobKey)
+            .setVariableScopeKey(elementInstanceKey);
 
     final IncidentRecordValue recordValue =
         new IncidentRecordValueImpl(
@@ -428,7 +424,8 @@ public class ExporterStreamProcessorTest {
             elementId,
             workflowInstanceKey,
             elementInstanceKey,
-            jobKey);
+            jobKey,
+            elementInstanceKey);
 
     // then
     assertRecordExported(IncidentIntent.CREATED, record, recordValue);
@@ -561,17 +558,19 @@ public class ExporterStreamProcessorTest {
     final int version = 12;
     final int workflowInstanceKey = 1234;
     final String elementId = "activity";
-    final int scopeInstanceKey = 123;
+    final int flowScopeKey = 123;
+    final BpmnElementType bpmnElementType = BpmnElementType.SERVICE_TASK;
 
     final WorkflowInstanceRecord record =
         new WorkflowInstanceRecord()
             .setElementId(elementId)
+            .setBpmnElementType(bpmnElementType)
             .setPayload(PAYLOAD_MSGPACK)
             .setBpmnProcessId(wrapString(bpmnProcessId))
             .setVersion(version)
             .setWorkflowKey(workflowKey)
             .setWorkflowInstanceKey(workflowInstanceKey)
-            .setScopeInstanceKey(scopeInstanceKey);
+            .setFlowScopeKey(flowScopeKey);
 
     final WorkflowInstanceRecordValue recordValue =
         new io.zeebe.broker.exporter.record.value.WorkflowInstanceRecordValueImpl(
@@ -582,10 +581,11 @@ public class ExporterStreamProcessorTest {
             version,
             workflowKey,
             workflowInstanceKey,
-            scopeInstanceKey);
+            flowScopeKey,
+            bpmnElementType);
 
     // then
-    assertRecordExported(WorkflowInstanceIntent.ELEMENT_READY, record, recordValue);
+    assertRecordExported(WorkflowInstanceIntent.ELEMENT_ACTIVATING, record, recordValue);
   }
 
   @Test
@@ -621,7 +621,12 @@ public class ExporterStreamProcessorTest {
     final String worker = "worker";
 
     final JobBatchRecord record =
-        new JobBatchRecord().setAmount(amount).setTimeout(timeout).setType(type).setWorker(worker);
+        new JobBatchRecord()
+            .setAmount(amount)
+            .setTimeout(timeout)
+            .setType(type)
+            .setWorker(worker)
+            .setTruncated(true);
 
     record.jobKeys().add().setValue(3L);
     final JobRecord jobRecord = record.jobs().add();
@@ -676,14 +681,70 @@ public class ExporterStreamProcessorTest {
             Duration.ofMillis(timeout),
             amount,
             Arrays.asList(3L),
-            Arrays.asList(jobRecordValue));
+            Arrays.asList(jobRecordValue),
+            record.getTruncated());
 
     // then
     assertRecordExported(JobBatchIntent.ACTIVATED, record, recordValue);
   }
 
-  private ExporterStreamProcessor createStreamProcessor(final int count) {
-    return new ExporterStreamProcessor(PARTITION_ID, createMockedExporters(count));
+  @Test
+  public void shouldExportVariableRecord() {
+    // given
+    final String name = "x";
+    final String value = "1";
+    final long scopeKey = 3;
+    final long workflowInstanceKey = 2;
+
+    final VariableRecord record =
+        new VariableRecord()
+            .setName(wrapString(name))
+            .setValue(MsgPackUtil.asMsgPack(value))
+            .setScopeKey(scopeKey)
+            .setWorkflowInstanceKey(workflowInstanceKey);
+
+    final VariableRecordValue recordValue =
+        new VariableRecordValueImpl(OBJECT_MAPPER, name, value, scopeKey, workflowInstanceKey);
+
+    // then
+    assertRecordExported(VariableIntent.CREATED, record, recordValue);
+  }
+
+  @Test
+  public void shouldUpdateLastExportedPositionOnClose() {
+    // given
+    final StreamProcessorControl control =
+        rule.initStreamProcessor((db) -> createStreamProcessor(db, 1));
+    control.start();
+
+    final long firstPosition = writeEvent();
+    final ControlledTestExporter firstExporter = exporters.get(0);
+    TestUtil.waitUntil(() -> firstExporter.getExportedRecords().size() == 1);
+    firstExporter.onClose(
+        () -> firstExporter.getController().updateLastExportedRecordPosition(firstPosition));
+    control.close();
+
+    // when
+    final long secondPosition = writeEvent();
+    control.blockAfterEvent(e -> e.getPosition() == secondPosition);
+    control.start();
+    TestUtil.waitUntil(control::isBlocked);
+
+    // then
+    final List<Record> records = firstExporter.getExportedRecords();
+    assertThat(records).hasSize(1);
+    assertThat(records.get(0).getPosition()).isEqualTo(firstPosition);
+
+    final ControlledTestExporter secondExporter = exporters.get(0);
+    assertThat(firstExporter).isNotEqualTo(secondExporter);
+
+    final List<Record> secondRecords = secondExporter.getExportedRecords();
+    assertThat(secondRecords).hasSize(1);
+    assertThat(secondRecords.get(0).getPosition()).isEqualTo(secondPosition);
+  }
+
+  private ExporterStreamProcessor createStreamProcessor(ZeebeDb db, final int count) {
+    return new ExporterStreamProcessor(db, PARTITION_ID, createMockedExporters(count));
   }
 
   private List<ExporterDescriptor> createMockedExporters(final int count) {
@@ -740,9 +801,8 @@ public class ExporterStreamProcessorTest {
   private void assertRecordExported(
       final Intent intent, final UnpackedObject record, final RecordValue expectedRecordValue) {
     // setup stream processor
-    final ExporterStreamProcessor processor = createStreamProcessor(1);
     final StreamProcessorControl control =
-        rule.initStreamProcessor(() -> processor.getState(), e -> processor);
+        rule.initStreamProcessor((db) -> createStreamProcessor(db, 1));
 
     // write event
     final long position = rule.writeEvent(intent, record);

@@ -124,7 +124,7 @@ func completeJob(jobClient worker.JobClient, job entities.Job, payload string) {
 
 func failJob(jobClient worker.JobClient, job entities.Job, error string) {
 	log.Println("Command failed to handle job", job.Key, error)
-	_, err := jobClient.NewFailJobCommand().JobKey(job.Key).Retries(job.Retries - 1).Send()
+	_, err := jobClient.NewFailJobCommand().JobKey(job.Key).Retries(job.Retries - 1).ErrorMessage(error).Send()
 	if err != nil {
 		log.Println("Unable to fail job", err)
 	}

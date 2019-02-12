@@ -22,7 +22,6 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.zeebe.model.bpmn.instance.TimerEventDefinition;
-import java.util.Arrays;
 import org.junit.runners.Parameterized.Parameters;
 
 public class ZeebeTimerValidationTest extends AbstractZeebeValidationTest {
@@ -41,13 +40,21 @@ public class ZeebeTimerValidationTest extends AbstractZeebeValidationTest {
       {
         Bpmn.createExecutableProcess("process")
             .startEvent()
+            .intermediateCatchEvent("catch", c -> c.timerWithDuration("R/PT01S"))
+            .endEvent()
+            .done(),
+        singletonList(expect(TimerEventDefinition.class, "Time duration is invalid"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
             .intermediateCatchEvent("catch", c -> c.timerWithCycle("R5/PT05S"))
             .endEvent()
             .done(),
         singletonList(
             expect(
                 IntermediateCatchEvent.class,
-                "Intermediate timer catch event must have a time duration."))
+                "Intermediate timer catch event must have either a time duration or a time date."))
       },
       {
         Bpmn.createExecutableProcess("process")
@@ -82,17 +89,19 @@ public class ZeebeTimerValidationTest extends AbstractZeebeValidationTest {
       {
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .intermediateCatchEvent("catch", b -> b.timerWithDate("2017-01-01"))
+            .timerWithDate("03-20")
             .endEvent()
             .done(),
-        Arrays.asList(
-            expect(
-                IntermediateCatchEvent.class,
-                "Intermediate timer catch event must have a time duration."),
-            expect(
-                TimerEventDefinition.class,
-                "Timer event definitions with timeDate are not supported"))
+        singletonList(expect(TimerEventDefinition.class, "Time date is invalid"))
       },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .timerWithCycle("R5/2008-03-01T13:00:00Z/P1Y2M10DT2H30M")
+            .endEvent()
+            .done(),
+        singletonList(expect(TimerEventDefinition.class, "Time cycle is invalid"))
+      }
     };
   }
 }

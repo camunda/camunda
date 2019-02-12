@@ -28,17 +28,23 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class CancelWorkflowInstanceHandler implements WorkflowInstanceCommandHandler {
 
+  private static final String WORKFLOW_NOT_FOUND_MESSAGE =
+      "Expected to cancel a workflow instance with key '%d', but no such workflow was found";
+
   @Override
   public void handle(WorkflowInstanceCommandContext commandContext) {
 
     final TypedRecord<WorkflowInstanceRecord> command = commandContext.getRecord();
-    final ElementInstance workflowInstance = commandContext.getElementInstance();
+    final ElementInstance elementInstance = commandContext.getElementInstance();
 
-    final boolean canCancel = workflowInstance != null && workflowInstance.canTerminate();
+    final boolean canCancel =
+        elementInstance != null
+            && elementInstance.canTerminate()
+            && elementInstance.getParentKey() < 0;
 
     if (canCancel) {
       final EventOutput output = commandContext.getOutput();
-      final WorkflowInstanceRecord value = workflowInstance.getValue();
+      final WorkflowInstanceRecord value = elementInstance.getValue();
 
       output.appendFollowUpEvent(
           command.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING, value);
@@ -48,7 +54,8 @@ public class CancelWorkflowInstanceHandler implements WorkflowInstanceCommandHan
           .writeEventOnCommand(
               command.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING, value, command);
     } else {
-      commandContext.reject(RejectionType.NOT_APPLICABLE, "Workflow instance is not running");
+      commandContext.reject(
+          RejectionType.NOT_FOUND, String.format(WORKFLOW_NOT_FOUND_MESSAGE, command.getKey()));
     }
   }
 }

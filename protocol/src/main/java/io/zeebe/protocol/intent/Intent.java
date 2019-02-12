@@ -31,7 +31,8 @@ public interface Intent {
           WorkflowInstanceSubscriptionIntent.class,
           ExporterIntent.class,
           JobBatchIntent.class,
-          TimerIntent.class);
+          TimerIntent.class,
+          VariableIntent.class);
 
   Intent UNKNOWN =
       new Intent() {
@@ -70,6 +71,8 @@ public interface Intent {
         return MessageIntent.from(intent);
       case MESSAGE_SUBSCRIPTION:
         return MessageSubscriptionIntent.from(intent);
+      case MESSAGE_START_EVENT_SUBSCRIPTION:
+        return MessageStartEventSubscriptionIntent.from(intent);
       case WORKFLOW_INSTANCE_SUBSCRIPTION:
         return WorkflowInstanceSubscriptionIntent.from(intent);
       case EXPORTER:
@@ -78,11 +81,16 @@ public interface Intent {
         return JobBatchIntent.from(intent);
       case TIMER:
         return TimerIntent.from(intent);
+      case VARIABLE:
+        return VariableIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
       default:
-        throw new RuntimeException("unknown type");
+        throw new RuntimeException(
+            String.format(
+                "Expected to map value type %s to intent type, but did not recognize the value type",
+                valueType.name()));
     }
   }
 
@@ -104,6 +112,8 @@ public interface Intent {
         return WorkflowInstanceIntent.valueOf(intent);
       case MESSAGE_SUBSCRIPTION:
         return MessageSubscriptionIntent.valueOf(intent);
+      case MESSAGE_START_EVENT_SUBSCRIPTION:
+        return MessageStartEventSubscriptionIntent.valueOf(intent);
       case WORKFLOW_INSTANCE_SUBSCRIPTION:
         return WorkflowInstanceSubscriptionIntent.valueOf(intent);
       case EXPORTER:
@@ -112,17 +122,21 @@ public interface Intent {
         return JobBatchIntent.valueOf(intent);
       case TIMER:
         return TimerIntent.valueOf(intent);
+      case VARIABLE:
+        return VariableIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
       default:
-        throw new RuntimeException("unknown type");
+        throw new RuntimeException(
+            String.format(
+                "Expected to map value type %s to intent type, but did not recognize the value type",
+                valueType.name()));
     }
   }
 
   static int maxCardinality() {
-    return INTENT_CLASSES
-        .stream()
+    return INTENT_CLASSES.stream()
         .mapToInt(clazz -> clazz.getEnumConstants().length)
         .max()
         .getAsInt();

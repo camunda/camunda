@@ -17,7 +17,9 @@ package io.zeebe.gateway.broker;
 
 import static io.zeebe.protocol.clientapi.ControlMessageType.REQUEST_TOPOLOGY;
 import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.fail;
 import static org.hamcrest.CoreMatchers.containsString;
 
 import io.zeebe.gateway.impl.broker.BrokerClient;
@@ -133,7 +135,7 @@ public class BrokerClientTest {
     broker
         .onExecuteCommandRequest(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
         .respondWithError()
-        .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
+        .errorCode(ErrorCode.INTERNAL_ERROR)
         .errorData("test")
         .register();
 
@@ -142,7 +144,7 @@ public class BrokerClientTest {
 
     assertThat(response.isError()).isTrue();
     final BrokerError error = response.getError();
-    assertThat(error.getCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
+    assertThat(error.getCode()).isEqualTo(ErrorCode.INTERNAL_ERROR);
     assertThat(error.getMessage()).isEqualTo("test");
 
     // then
@@ -173,7 +175,7 @@ public class BrokerClientTest {
 
     // then
     exception.expect(ExecutionException.class);
-    exception.expectMessage("Failed to read response: Catch Me");
+    exception.expectMessage("Catch Me");
 
     // when
     client.sendRequest(request).join();
@@ -185,7 +187,7 @@ public class BrokerClientTest {
     broker
         .onExecuteCommandRequest(ValueType.WORKFLOW_INSTANCE, JobIntent.CREATE)
         .respondWithError()
-        .errorCode(ErrorCode.PARTITION_NOT_FOUND)
+        .errorCode(ErrorCode.PARTITION_LEADER_MISMATCH)
         .errorData("")
         .register();
 
@@ -361,9 +363,7 @@ public class BrokerClientTest {
 
     // then
     final long actualTopologyRequests =
-        broker
-            .getReceivedControlMessageRequests()
-            .stream()
+        broker.getReceivedControlMessageRequests().stream()
             .filter(r -> r.messageType() == ControlMessageType.REQUEST_TOPOLOGY)
             .count();
 
@@ -388,9 +388,7 @@ public class BrokerClientTest {
 
     // then
     final long actualTopologyRequests =
-        broker
-            .getReceivedControlMessageRequests()
-            .stream()
+        broker.getReceivedControlMessageRequests().stream()
             .filter(r -> r.messageType() == ControlMessageType.REQUEST_TOPOLOGY)
             .count();
 
@@ -401,10 +399,12 @@ public class BrokerClientTest {
     assertThat(actualTopologyRequests).isLessThanOrEqualTo(expectedMaximumTopologyRequests);
   }
 
+  // TODO: revise the tests below
+
   @Test
-  public void shouldReturnRejectionWithBadValue() {
+  public void shouldReturnRejectionWithCorrectTypeAndReason() {
     // given
-    broker.jobs().registerCompleteCommand(b -> b.rejection(RejectionType.BAD_VALUE, "foo"));
+    broker.jobs().registerCompleteCommand(b -> b.rejection(RejectionType.INVALID_ARGUMENT, "foo"));
 
     // when
     final BrokerResponse<JobRecord> response =
@@ -413,50 +413,8 @@ public class BrokerClientTest {
     // then
     assertThat(response.isRejection()).isTrue();
     final BrokerRejection rejection = response.getRejection();
-    assertThat(rejection.getType()).isEqualTo(RejectionType.BAD_VALUE);
+    assertThat(rejection.getType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
     assertThat(rejection.getReason()).isEqualTo("foo");
-    assertThat(rejection.getMessage())
-        .isEqualTo(
-            "Command (COMPLETE) for event with key 79 was rejected. It has an invalid value. foo");
-  }
-
-  @Test
-  public void shouldReturnRejectionWhenNotApplicable() {
-    // given
-    broker.jobs().registerCompleteCommand(b -> b.rejection(RejectionType.NOT_APPLICABLE, "foo"));
-
-    // when
-    final BrokerResponse<JobRecord> response =
-        client.sendRequest(new BrokerCompleteJobRequest(79, EMPTY_PAYLOAD)).join();
-
-    // then
-    assertThat(response.isRejection()).isTrue();
-    final BrokerRejection rejection = response.getRejection();
-    assertThat(rejection.getType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(rejection.getReason()).isEqualTo("foo");
-    assertThat(rejection.getMessage())
-        .isEqualTo(
-            "Command (COMPLETE) for event with key 79 was rejected. It is not applicable in the current state. foo");
-  }
-
-  @Test
-  public void shouldReturnRejectionOnProcessingError() {
-    // given
-    broker.jobs().registerCompleteCommand(b -> b.rejection(RejectionType.PROCESSING_ERROR, "foo"));
-
-    // when
-    final BrokerResponse<JobRecord> response =
-        client.sendRequest(new BrokerCompleteJobRequest(79, EMPTY_PAYLOAD)).join();
-
-    // then
-    assertThat(response.isRejection()).isTrue();
-    final BrokerRejection rejection = response.getRejection();
-    assertThat(rejection.getType()).isEqualTo(RejectionType.PROCESSING_ERROR);
-    assertThat(rejection.getReason()).isEqualTo("foo");
-    assertThat(rejection.getMessage())
-        .isEqualTo(
-            "Command (COMPLETE) for event with key 79 was rejected. "
-                + "The broker could not process it for internal reasons. foo");
   }
 
   @Test
@@ -484,9 +442,7 @@ public class BrokerClientTest {
     // wait for a hanging topology request
     waitUntil(
         () ->
-            broker
-                    .getReceivedControlMessageRequests()
-                    .stream()
+            broker.getReceivedControlMessageRequests().stream()
                     .filter(r -> r.messageType() == ControlMessageType.REQUEST_TOPOLOGY)
                     .count()
                 == 1);
@@ -554,7 +510,7 @@ public class BrokerClientTest {
             .onExecuteCommandRequest(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
             .respondWith()
             .event()
-            .intent(WorkflowInstanceIntent.ELEMENT_READY)
+            .intent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .key(r -> r.key())
             .value()
             .allOf((r) -> r.getCommand())

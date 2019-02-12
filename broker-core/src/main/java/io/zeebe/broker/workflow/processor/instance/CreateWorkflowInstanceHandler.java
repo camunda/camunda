@@ -19,6 +19,7 @@ package io.zeebe.broker.workflow.processor.instance;
 
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
+import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.processor.EventOutput;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceCommandContext;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceCommandHandler;
@@ -30,6 +31,11 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import org.agrona.DirectBuffer;
 
 public class CreateWorkflowInstanceHandler implements WorkflowInstanceCommandHandler {
+
+  public static final String NO_WORKFLOW_FOUND_MESSAGE =
+      "Expected to create an instance of workflow with key '%d', but no such workflow was found";
+  public static final String NO_START_EVENT_FOUND_MESSAGE =
+      "Expected to create an instance of workflow with key '%d', but no none start event was found";
 
   private final WorkflowState workflowState;
 
@@ -46,23 +52,36 @@ public class CreateWorkflowInstanceHandler implements WorkflowInstanceCommandHan
     final DeployedWorkflow workflowDefinition = getWorkflowDefinition(command);
 
     if (workflowDefinition != null) {
-      final long workflowInstanceKey = commandContext.getKeyGenerator().nextKey();
-      command.setWorkflowInstanceKey(workflowInstanceKey);
-      final DirectBuffer bpmnId = workflowDefinition.getWorkflow().getId();
-      command
-          .setBpmnProcessId(bpmnId)
-          .setWorkflowKey(workflowDefinition.getKey())
-          .setVersion(workflowDefinition.getVersion())
-          .setElementId(bpmnId);
+      if (workflowDefinition.getWorkflow().getNoneStartEvent() != null) {
+        final long workflowInstanceKey = commandContext.getKeyGenerator().nextKey();
+        command.setWorkflowInstanceKey(workflowInstanceKey);
+        final ExecutableWorkflow workflow = workflowDefinition.getWorkflow();
+        final DirectBuffer bpmnId = workflow.getId();
+        command
+            .setBpmnProcessId(bpmnId)
+            .setWorkflowKey(workflowDefinition.getKey())
+            .setVersion(workflowDefinition.getVersion());
 
-      final EventOutput eventOutput = commandContext.getOutput();
-      eventOutput.appendFollowUpEvent(
-          workflowInstanceKey, WorkflowInstanceIntent.ELEMENT_READY, command);
+        final EventOutput eventOutput = commandContext.getOutput();
+        eventOutput.appendFollowUpEvent(
+            workflowInstanceKey, WorkflowInstanceIntent.ELEMENT_ACTIVATING, command, workflow);
 
-      responseWriter.writeEventOnCommand(
-          workflowInstanceKey, WorkflowInstanceIntent.ELEMENT_READY, command, record);
+        workflowState
+            .getElementInstanceState()
+            .getVariablesState()
+            .setVariablesLocalFromDocument(workflowInstanceKey, command.getPayload());
+
+        responseWriter.writeEventOnCommand(
+            workflowInstanceKey, WorkflowInstanceIntent.ELEMENT_ACTIVATING, command, record);
+      } else {
+        commandContext.reject(
+            RejectionType.INVALID_STATE,
+            String.format(NO_START_EVENT_FOUND_MESSAGE, workflowDefinition.getKey()));
+      }
     } else {
-      commandContext.reject(RejectionType.BAD_VALUE, "Workflow is not deployed");
+      commandContext.reject(
+          RejectionType.NOT_FOUND,
+          String.format(NO_WORKFLOW_FOUND_MESSAGE, command.getWorkflowKey()));
     }
   }
 

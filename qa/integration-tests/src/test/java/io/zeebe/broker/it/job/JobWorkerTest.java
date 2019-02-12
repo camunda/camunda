@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.client.api.clients.JobClient;
+import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.subscription.JobWorker;
 import io.zeebe.exporter.record.Record;
@@ -34,8 +34,13 @@ import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.util.TestUtil;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -54,11 +59,11 @@ public class JobWorkerTest {
 
   @Rule public Timeout timeout = Timeout.seconds(20);
 
-  private JobClient jobClient;
+  private ZeebeClient client;
 
   @Before
   public void setUp() {
-    jobClient = clientRule.getClient().jobClient();
+    client = clientRule.getClient();
   }
 
   @Test
@@ -69,7 +74,7 @@ public class JobWorkerTest {
     // when
     final RecordingJobHandler jobHandler = new RecordingJobHandler();
 
-    jobClient
+    client
         .newWorker()
         .jobType("foo")
         .handler(jobHandler)
@@ -92,7 +97,7 @@ public class JobWorkerTest {
 
     final RecordingJobHandler jobHandler = new RecordingJobHandler();
 
-    jobClient
+    client
         .newWorker()
         .jobType("foo")
         .handler(jobHandler)
@@ -104,7 +109,7 @@ public class JobWorkerTest {
     final ActivatedJob lockedJob = jobHandler.getHandledJobs().get(0);
 
     // when
-    jobClient.newCompleteCommand(lockedJob.getKey()).send().join();
+    client.newCompleteCommand(lockedJob.getKey()).send().join();
 
     // then
     waitUntil(() -> jobRecords(JobIntent.COMPLETED).exists());
@@ -131,7 +136,7 @@ public class JobWorkerTest {
         new RecordingJobHandler(
             (c, t) -> c.newCompleteCommand(t.getKey()).payload("{\"a\":3}").send());
 
-    jobClient
+    client
         .newWorker()
         .jobType("foo")
         .handler(jobHandler)
@@ -162,7 +167,7 @@ public class JobWorkerTest {
     final RecordingJobHandler jobHandler = new RecordingJobHandler();
 
     final JobWorker subscription =
-        jobClient
+        client
             .newWorker()
             .jobType("foo")
             .handler(jobHandler)
@@ -198,7 +203,7 @@ public class JobWorkerTest {
               c.newCompleteCommand(j.getKey()).send().join();
             });
 
-    jobClient
+    client
         .newWorker()
         .jobType("foo")
         .handler(handler)
@@ -225,7 +230,7 @@ public class JobWorkerTest {
             (c, j) -> c.newCompleteCommand(j.getKey()).send().join());
 
     // when
-    jobClient.newWorker().jobType("foo").handler(jobHandler).name("myWorker").open();
+    client.newWorker().jobType("foo").handler(jobHandler).name("myWorker").open();
 
     // then
     waitUntil(() -> jobHandler.getHandledJobs().size() == 2);
@@ -245,7 +250,7 @@ public class JobWorkerTest {
             (c, j) -> c.newFailCommand(j.getKey()).retries(0).errorMessage("this failed").send());
 
     // when
-    jobClient.newWorker().jobType("foo").handler(jobHandler).name("myWorker").open();
+    client.newWorker().jobType("foo").handler(jobHandler).name("myWorker").open();
 
     // then
     waitUntil(() -> jobHandler.getHandledJobs().size() == 1);
@@ -261,16 +266,17 @@ public class JobWorkerTest {
   public void shouldMarkJobAsFailedAndRetryIfHandlerThrowsException() {
     // given
     final long jobKey = createJobOfType("foo");
+    final String failureMessage = "expected failure";
 
     final RecordingJobHandler jobHandler =
         new RecordingJobHandler(
             (c, j) -> {
-              throw new RuntimeException("expected failure");
+              throw new RuntimeException(failureMessage);
             },
             (c, j) -> c.newCompleteCommand(j.getKey()).send().join());
 
     // when
-    jobClient
+    client
         .newWorker()
         .jobType("foo")
         .handler(jobHandler)
@@ -284,7 +290,10 @@ public class JobWorkerTest {
     assertThat(jobHandler.getHandledJobs())
         .extracting(ActivatedJob::getKey)
         .containsExactly(jobKey, jobKey);
-    assertThat(jobRecords(JobIntent.FAILED).exists()).isTrue();
+
+    final Record<JobRecordValue> failedJob = jobRecords(JobIntent.FAILED).getFirst();
+    assertThat(failedJob.getValue()).hasErrorMessage(failureMessage);
+
     waitUntil(() -> jobRecords(JobIntent.COMPLETED).exists());
   }
 
@@ -300,7 +309,7 @@ public class JobWorkerTest {
             });
 
     // when
-    jobClient
+    client
         .newWorker()
         .jobType("foo")
         .handler(jobHandler)
@@ -324,7 +333,7 @@ public class JobWorkerTest {
               // don't complete the job - just wait for lock expiration
             });
 
-    jobClient
+    client
         .newWorker()
         .jobType("foo")
         .handler(jobHandler)
@@ -352,7 +361,7 @@ public class JobWorkerTest {
     final RecordingJobHandler jobHandler =
         new RecordingJobHandler((c, t) -> c.newCompleteCommand(t.getKey()).send().join());
 
-    jobClient
+    client
         .newWorker()
         .jobType("foo")
         .handler(jobHandler)
@@ -360,7 +369,7 @@ public class JobWorkerTest {
         .name("test")
         .open();
 
-    jobClient
+    client
         .newWorker()
         .jobType("foo")
         .handler(jobHandler)
@@ -385,7 +394,7 @@ public class JobWorkerTest {
 
     final RecordingJobHandler jobHandler = new RecordingJobHandler();
 
-    jobClient
+    client
         .newWorker()
         .jobType("foo")
         .handler(jobHandler)
@@ -393,7 +402,7 @@ public class JobWorkerTest {
         .name("test")
         .open();
 
-    jobClient
+    client
         .newWorker()
         .jobType("bar")
         .handler(jobHandler)
@@ -415,7 +424,7 @@ public class JobWorkerTest {
     final RecordingJobHandler jobHandler = new RecordingJobHandler();
 
     // when
-    jobClient
+    client
         .newWorker()
         .jobType("foo")
         .handler(jobHandler)
@@ -425,6 +434,62 @@ public class JobWorkerTest {
 
     // then
     TestUtil.waitUntil(() -> jobHandler.getHandledJobs().size() > subscriptionCapacity);
+  }
+
+  @Test
+  public void shouldOnlyFetchVariablesSpecified() throws InterruptedException {
+    // given
+    final String jobType = "test";
+    final List<String> fetchVariables = Arrays.asList("foo", "bar", "baz");
+    final Set<String> capturedVariables = new HashSet<>();
+    final CountDownLatch latch = new CountDownLatch(1);
+
+    client
+        .newWorker()
+        .jobType(jobType)
+        .handler(
+            (c, job) -> {
+              final Map<String, Object> payload = job.getPayloadAsMap();
+              capturedVariables.addAll(payload.keySet());
+              latch.countDown();
+            })
+        .fetchVariables(fetchVariables)
+        .open();
+
+    // when
+    clientRule.createSingleJob(jobType, b -> {}, "{\"foo\":1,\"baz\":2,\"hello\":\"world\"}");
+
+    // then
+    latch.await();
+    assertThat(capturedVariables).isSubsetOf(fetchVariables);
+  }
+
+  @Test
+  public void shouldOnlyFetchVariablesSpecifiedAsVargs() throws InterruptedException {
+    // given
+    final String jobType = "test";
+    final String[] fetchVariables = new String[] {"foo", "bar", "baz"};
+    final Set<String> capturedVariables = new HashSet<>();
+    final CountDownLatch latch = new CountDownLatch(1);
+
+    client
+        .newWorker()
+        .jobType(jobType)
+        .handler(
+            (c, job) -> {
+              final Map<String, Object> payload = job.getPayloadAsMap();
+              capturedVariables.addAll(payload.keySet());
+              latch.countDown();
+            })
+        .fetchVariables(fetchVariables)
+        .open();
+
+    // when
+    clientRule.createSingleJob(jobType, b -> {}, "{\"foo\":1,\"baz\":2,\"hello\":\"world\"}");
+
+    // then
+    latch.await();
+    assertThat(capturedVariables).isSubsetOf(fetchVariables);
   }
 
   private long createJobOfType(final String type) {

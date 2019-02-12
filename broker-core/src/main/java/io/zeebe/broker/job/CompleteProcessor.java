@@ -25,6 +25,11 @@ import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.intent.JobIntent;
 
 public class CompleteProcessor implements CommandProcessor<JobRecord> {
+  public static final String NO_JOB_FOUND_MESSAGE =
+      "Expected to complete job with key '%d', but no such job was found";
+  public static final String FAILED_JOB_MESSAGE =
+      "Expected to complete job with key '%d', but the job is marked as failed";
+
   private final JobState state;
 
   public CompleteProcessor(JobState state) {
@@ -33,22 +38,19 @@ public class CompleteProcessor implements CommandProcessor<JobRecord> {
 
   @Override
   public void onCommand(TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
-
     final long jobKey = command.getKey();
+    final JobState.State jobState = state.getState(jobKey);
 
-    if (state.exists(jobKey)) {
-      if (!state.isInState(jobKey, State.FAILED)) {
-        final JobRecord job = state.getJob(jobKey);
-        job.setPayload(command.getValue().getPayload());
-
-        state.delete(jobKey, job);
-        commandControl.accept(JobIntent.COMPLETED, job);
-      } else {
-        commandControl.reject(
-            RejectionType.NOT_APPLICABLE, "Job is failed and must be resolved first");
-      }
+    if (jobState == State.NOT_FOUND) {
+      commandControl.reject(RejectionType.NOT_FOUND, String.format(NO_JOB_FOUND_MESSAGE, jobKey));
+    } else if (jobState == State.FAILED) {
+      commandControl.reject(RejectionType.INVALID_STATE, String.format(FAILED_JOB_MESSAGE, jobKey));
     } else {
-      commandControl.reject(RejectionType.NOT_APPLICABLE, "Job does not exist");
+      final JobRecord job = state.getJob(jobKey);
+      job.setPayload(command.getValue().getPayload());
+
+      state.delete(jobKey, job);
+      commandControl.accept(JobIntent.COMPLETED, job);
     }
   }
 }

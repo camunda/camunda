@@ -21,6 +21,7 @@ import io.zeebe.model.bpmn.instance.Message;
 import io.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.zeebe.model.bpmn.instance.Process;
 import io.zeebe.model.bpmn.instance.ReceiveTask;
+import io.zeebe.model.bpmn.instance.StartEvent;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 import java.util.Collection;
 import java.util.stream.Collectors;
@@ -36,11 +37,11 @@ public class MessageValidator implements ModelElementValidator<Message> {
 
   @Override
   public void validate(Message element, ValidationResultCollector validationResultCollector) {
-    if (element.getName() == null || element.getName().isEmpty()) {
-      validationResultCollector.addError(0, "Name must be present and not empty");
-    }
-
     if (isReferedByCatchEvent(element) || isReferedByReceiveTask(element)) {
+      if (element.getName() == null || element.getName().isEmpty()) {
+        validationResultCollector.addError(0, "Name must be present and not empty");
+      }
+
       final ExtensionElements extensionElements = element.getExtensionElements();
 
       if (extensionElements == null
@@ -48,20 +49,43 @@ public class MessageValidator implements ModelElementValidator<Message> {
         validationResultCollector.addError(
             0, "Must have exactly one zeebe:subscription extension element");
       }
+    } else {
+      validateIfReferredByStartEvent(element, validationResultCollector);
+    }
+  }
+
+  private void validateIfReferredByStartEvent(
+      Message element, ValidationResultCollector validationResultCollector) {
+    final Collection<StartEvent> startEvents =
+        element.getParentElement().getChildElementsByType(Process.class).stream()
+            .flatMap(p -> p.getChildElementsByType(StartEvent.class).stream())
+            .collect(Collectors.toList());
+    final long numReferredStartEvents =
+        startEvents.stream()
+            .flatMap(i -> i.getEventDefinitions().stream())
+            .filter(
+                e ->
+                    e instanceof MessageEventDefinition
+                        && ((MessageEventDefinition) e).getMessage() == element)
+            .count();
+
+    if (numReferredStartEvents > 1) {
+      validationResultCollector.addError(
+          0, "A message cannot be referred by more than one start event");
+    } else if (numReferredStartEvents == 1) {
+      if (element.getName() == null || element.getName().isEmpty()) {
+        validationResultCollector.addError(0, "Name must be present and not empty");
+      }
     }
   }
 
   private boolean isReferedByCatchEvent(Message element) {
     final Collection<IntermediateCatchEvent> intermediateCatchEvents =
-        element
-            .getParentElement()
-            .getChildElementsByType(Process.class)
-            .stream()
+        element.getParentElement().getChildElementsByType(Process.class).stream()
             .flatMap(p -> p.getChildElementsByType(IntermediateCatchEvent.class).stream())
             .collect(Collectors.toList());
 
-    return intermediateCatchEvents
-        .stream()
+    return intermediateCatchEvents.stream()
         .flatMap(i -> i.getEventDefinitions().stream())
         .anyMatch(
             e ->
@@ -71,10 +95,7 @@ public class MessageValidator implements ModelElementValidator<Message> {
 
   private boolean isReferedByReceiveTask(Message element) {
     final Collection<ReceiveTask> receiveTasks =
-        element
-            .getParentElement()
-            .getChildElementsByType(Process.class)
-            .stream()
+        element.getParentElement().getChildElementsByType(Process.class).stream()
             .flatMap(p -> p.getChildElementsByType(ReceiveTask.class).stream())
             .collect(Collectors.toList());
 

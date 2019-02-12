@@ -29,4 +29,5 @@ public class Loggers {
   public static final Logger WORKFLOW_REPOSITORY_LOGGER =
       new ZbLogger("io.zeebe.broker.workflow.repository");
   public static final Logger EXPORTER_LOGGER = new ZbLogger("io.zeebe.broker.exporter");
+  public static final Logger WORKFLOW_PROCESSOR_LOGGER = new ZbLogger("io.zeebe.broker.workflow");
 }

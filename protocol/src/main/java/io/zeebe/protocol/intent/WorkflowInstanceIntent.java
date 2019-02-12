@@ -17,28 +17,21 @@ package io.zeebe.protocol.intent;
 
 public enum WorkflowInstanceIntent implements Intent {
   CREATE((short) 0),
+  CANCEL((short) 1),
 
-  START_EVENT_OCCURRED((short) 1),
-  END_EVENT_OCCURRED((short) 2),
+  UPDATE_PAYLOAD((short) 2),
+  PAYLOAD_UPDATED((short) 3),
 
-  SEQUENCE_FLOW_TAKEN((short) 3),
+  SEQUENCE_FLOW_TAKEN((short) 4),
 
-  GATEWAY_ACTIVATED((short) 4),
-
-  ELEMENT_READY((short) 5),
+  ELEMENT_ACTIVATING((short) 5),
   ELEMENT_ACTIVATED((short) 6),
   ELEMENT_COMPLETING((short) 7),
   ELEMENT_COMPLETED((short) 8),
   ELEMENT_TERMINATING((short) 9),
   ELEMENT_TERMINATED((short) 10),
 
-  CANCEL((short) 11),
-
-  UPDATE_PAYLOAD((short) 12),
-  PAYLOAD_UPDATED((short) 13),
-
-  CATCH_EVENT_TRIGGERING((short) 14),
-  CATCH_EVENT_TRIGGERED((short) 15);
+  EVENT_OCCURRED((short) 11);
 
   private final short value;
 
@@ -55,15 +48,15 @@ public enum WorkflowInstanceIntent implements Intent {
       case 0:
         return CREATE;
       case 1:
-        return START_EVENT_OCCURRED;
+        return CANCEL;
       case 2:
-        return END_EVENT_OCCURRED;
+        return UPDATE_PAYLOAD;
       case 3:
-        return SEQUENCE_FLOW_TAKEN;
+        return PAYLOAD_UPDATED;
       case 4:
-        return GATEWAY_ACTIVATED;
+        return SEQUENCE_FLOW_TAKEN;
       case 5:
-        return ELEMENT_READY;
+        return ELEMENT_ACTIVATING;
       case 6:
         return ELEMENT_ACTIVATED;
       case 7:
@@ -75,15 +68,7 @@ public enum WorkflowInstanceIntent implements Intent {
       case 10:
         return ELEMENT_TERMINATED;
       case 11:
-        return CANCEL;
-      case 12:
-        return UPDATE_PAYLOAD;
-      case 13:
-        return PAYLOAD_UPDATED;
-      case 14:
-        return CATCH_EVENT_TRIGGERING;
-      case 15:
-        return CATCH_EVENT_TRIGGERED;
+        return EVENT_OCCURRED;
       default:
         return Intent.UNKNOWN;
     }

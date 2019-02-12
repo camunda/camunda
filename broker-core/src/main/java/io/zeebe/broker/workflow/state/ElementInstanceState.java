@@ -17,11 +17,15 @@
  */
 package io.zeebe.broker.workflow.state;
 
-import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
-
 import io.zeebe.broker.logstreams.processor.TypedRecord;
+import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
 import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
-import io.zeebe.logstreams.state.StateController;
+import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.ZeebeDb;
+import io.zeebe.db.impl.DbByte;
+import io.zeebe.db.impl.DbCompositeKey;
+import io.zeebe.db.impl.DbLong;
+import io.zeebe.db.impl.DbNil;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.ArrayList;
@@ -29,65 +33,65 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import org.agrona.BitUtil;
 import org.agrona.ExpandableArrayBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.rocksdb.ColumnFamilyHandle;
 
 public class ElementInstanceState {
-
-  private static final byte[] ELEMENT_PARENT_CHILD_KEY_FAMILY_NAME =
-      "elementInstanceStateElementParentChild".getBytes();
-  private static final byte[] ELEMENT_INSTANCE_KEY_FAMILY_NAME =
-      "elementInstanceStateElementInstanceKey".getBytes();
-  private static final byte[] TOKEN_EVENTS_KEY_FAMILY_NAME =
-      "elementInstanceStateTokenEvents".getBytes();
-  private static final byte[] TOKEN_PARENT_CHILD_KEY_FAMILY_NAME =
-      "elementInstanceStateTokenParentChild".getBytes();
-  private static final byte[] EMPTY_VALUE = new byte[1];
-
-  public static final byte[][] COLUMN_FAMILY_NAMES = {
-    ELEMENT_PARENT_CHILD_KEY_FAMILY_NAME,
-    ELEMENT_INSTANCE_KEY_FAMILY_NAME,
-    TOKEN_EVENTS_KEY_FAMILY_NAME,
-    TOKEN_PARENT_CHILD_KEY_FAMILY_NAME
-  };
-
-  private final StateController rocksDbWrapper;
-  private final PersistenceHelper helper;
-
-  private final ExpandableArrayBuffer keyBuffer;
-  private final ExpandableArrayBuffer valueBuffer;
-
-  private final UnsafeBuffer longKeyBuffer = new UnsafeBuffer(new byte[Long.BYTES]);
-  private final UnsafeBuffer longKeyPurposeBuffer =
-      new UnsafeBuffer(new byte[Long.BYTES + BitUtil.SIZE_OF_BYTE]);
-  private final UnsafeBuffer iterateKeyBuffer = new UnsafeBuffer(0, 0);
-
-  private final ColumnFamilyHandle elementParentChildHandle;
-  private final ColumnFamilyHandle elementInstanceHandle;
-
-  // key => record
-  private final ColumnFamilyHandle tokenEventHandle;
-  // (element instance key, purpose) => token event key
-  private final ColumnFamilyHandle tokenParentChildHandle;
-
   private final Map<Long, ElementInstance> cachedInstances = new HashMap<>();
 
-  public ElementInstanceState(StateController rocksDbWrapper) {
-    this.rocksDbWrapper = rocksDbWrapper;
-    this.helper = new PersistenceHelper(rocksDbWrapper);
+  private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil> parentChildColumnFamily;
+  private final DbCompositeKey<DbLong, DbLong> parentChildKey;
+  private final DbLong parentKey;
 
-    this.keyBuffer = new ExpandableArrayBuffer();
-    this.valueBuffer = new ExpandableArrayBuffer();
+  private final DbLong elementInstanceKey;
+  private final ElementInstance elementInstance;
+  private final ColumnFamily<DbLong, ElementInstance> elementInstanceColumnFamily;
 
-    elementParentChildHandle =
-        rocksDbWrapper.getColumnFamilyHandle(ELEMENT_PARENT_CHILD_KEY_FAMILY_NAME);
-    elementInstanceHandle = rocksDbWrapper.getColumnFamilyHandle(ELEMENT_INSTANCE_KEY_FAMILY_NAME);
-    tokenEventHandle = rocksDbWrapper.getColumnFamilyHandle(TOKEN_EVENTS_KEY_FAMILY_NAME);
-    tokenParentChildHandle =
-        rocksDbWrapper.getColumnFamilyHandle(TOKEN_PARENT_CHILD_KEY_FAMILY_NAME);
+  private final DbLong recordKey;
+  private final StoredRecord storedRecord;
+  private final ColumnFamily<DbLong, StoredRecord> recordColumnFamily;
+
+  private final DbLong recordParentKey;
+  private final DbCompositeKey<DbCompositeKey<DbLong, DbByte>, DbLong> recordParentStateRecordKey;
+  private final DbByte stateKey;
+  private final DbCompositeKey<DbLong, DbByte> recordParentStateKey;
+  private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbLong, DbByte>, DbLong>, DbNil>
+      recordParentChildColumnFamily;
+
+  private final ExpandableArrayBuffer copyBuffer = new ExpandableArrayBuffer();
+
+  private final VariablesState variablesState;
+
+  public ElementInstanceState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
+
+    elementInstanceKey = new DbLong();
+    parentKey = new DbLong();
+    parentChildKey = new DbCompositeKey<>(parentKey, elementInstanceKey);
+    parentChildColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.ELEMENT_INSTANCE_PARENT_CHILD, parentChildKey, DbNil.INSTANCE);
+
+    elementInstance = new ElementInstance();
+    elementInstanceColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.ELEMENT_INSTANCE_KEY, elementInstanceKey, elementInstance);
+
+    recordKey = new DbLong();
+    storedRecord = new StoredRecord();
+    recordColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.STORED_INSTANCE_EVENTS, recordKey, storedRecord);
+
+    recordParentKey = new DbLong();
+    stateKey = new DbByte();
+    recordParentStateKey = new DbCompositeKey<>(recordParentKey, stateKey);
+    recordParentStateRecordKey = new DbCompositeKey<>(recordParentStateKey, recordKey);
+    recordParentChildColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.STORED_INSTANCE_EVENTS_PARENT_CHILD,
+            recordParentStateRecordKey,
+            DbNil.INSTANCE);
+
+    variablesState = new VariablesState(zeebeDb);
   }
 
   public ElementInstance newInstance(
@@ -113,40 +117,24 @@ public class ElementInstanceState {
   }
 
   private void writeElementInstance(ElementInstance instance) {
-    final int parentKeyOffset = 0;
-    instance.writeParentKey(keyBuffer, parentKeyOffset);
-    final int instanceKeyOffset = instance.getParentKeyLength();
-    instance.writeKey(keyBuffer, instanceKeyOffset);
-    instance.write(valueBuffer, 0);
+    elementInstanceKey.wrapLong(instance.getKey());
+    parentKey.wrapLong(instance.getParentKey());
 
-    final int keyLength = instance.getKeyLength();
-    rocksDbWrapper.put(
-        elementInstanceHandle,
-        keyBuffer.byteArray(),
-        instanceKeyOffset,
-        keyLength,
-        valueBuffer.byteArray(),
-        0,
-        instance.getLength());
-
-    final int compositeKeyLength = keyLength + instance.getParentKeyLength();
-    rocksDbWrapper.put(
-        elementParentChildHandle,
-        keyBuffer.byteArray(),
-        parentKeyOffset,
-        compositeKeyLength,
-        PersistenceHelper.EXISTENCE,
-        0,
-        PersistenceHelper.EXISTENCE.length);
+    elementInstanceColumnFamily.put(elementInstanceKey, instance);
+    parentChildColumnFamily.put(parentChildKey, DbNil.INSTANCE);
+    variablesState.createScope(elementInstanceKey.getValue(), parentKey.getValue());
   }
 
   public ElementInstance getInstance(long key) {
     return cachedInstances.computeIfAbsent(
         key,
         k -> {
-          keyBuffer.putLong(0, key, STATE_BYTE_ORDER);
-          return helper.getValueInstance(
-              ElementInstance.class, elementInstanceHandle, keyBuffer, 0, Long.BYTES);
+          elementInstanceKey.wrapLong(key);
+          final ElementInstance elementInstance =
+              elementInstanceColumnFamily.get(elementInstanceKey);
+
+          final ElementInstance copiedElementInstance = copyElementInstance(elementInstance);
+          return copiedElementInstance != null ? copiedElementInstance : null;
         });
   }
 
@@ -154,26 +142,21 @@ public class ElementInstanceState {
     final ElementInstance instance = getInstance(key);
 
     if (instance != null) {
-      final int parentKeyOffset = 0;
-      instance.writeParentKey(keyBuffer, parentKeyOffset);
-      final int instanceKeyOffset = instance.getParentKeyLength();
-      instance.writeKey(keyBuffer, instanceKeyOffset);
-      final int compositeKeyLength = instance.getParentKeyLength() + instance.getKeyLength();
+      elementInstanceKey.wrapLong(key);
+      parentKey.wrapLong(instance.getParentKey());
 
-      rocksDbWrapper.remove(
-          elementParentChildHandle, keyBuffer.byteArray(), parentKeyOffset, compositeKeyLength);
-      rocksDbWrapper.remove(
-          elementInstanceHandle, keyBuffer.byteArray(), instanceKeyOffset, instance.getKeyLength());
+      parentChildColumnFamily.delete(parentChildKey);
+      elementInstanceColumnFamily.delete(elementInstanceKey);
       cachedInstances.remove(key);
 
-      longKeyBuffer.putLong(0, key, STATE_BYTE_ORDER);
-
-      rocksDbWrapper.removeEntriesWithPrefix(
-          tokenParentChildHandle,
-          longKeyBuffer.byteArray(),
-          (k, v) -> {
-            rocksDbWrapper.remove(tokenEventHandle, getLong(k, Long.BYTES + BitUtil.SIZE_OF_BYTE));
+      recordParentChildColumnFamily.whileEqualPrefix(
+          elementInstanceKey,
+          (compositeKey, nil) -> {
+            recordParentChildColumnFamily.delete(compositeKey);
+            recordColumnFamily.delete(compositeKey.getSecond());
           });
+
+      variablesState.removeScope(key);
 
       final long parentKey = instance.getParentKey();
       if (parentKey > 0) {
@@ -183,9 +166,9 @@ public class ElementInstanceState {
     }
   }
 
-  public StoredRecord getTokenEvent(long key) {
-    keyBuffer.putLong(0, key, STATE_BYTE_ORDER);
-    return helper.getValueInstance(StoredRecord.class, tokenEventHandle, keyBuffer, 0, Long.BYTES);
+  public StoredRecord getStoredRecord(long recordKey) {
+    this.recordKey.wrapLong(recordKey);
+    return recordColumnFamily.get(this.recordKey);
   }
 
   void updateInstance(ElementInstance scopeInstance) {
@@ -196,18 +179,16 @@ public class ElementInstanceState {
     final List<ElementInstance> children = new ArrayList<>();
     final ElementInstance parentInstance = getInstance(parentKey);
     if (parentInstance != null) {
-      longKeyBuffer.putLong(0, parentKey, STATE_BYTE_ORDER);
+      this.parentKey.wrapLong(parentKey);
 
-      rocksDbWrapper.whileEqualPrefix(
-          elementParentChildHandle,
-          longKeyBuffer.byteArray(),
+      parentChildColumnFamily.whileEqualPrefix(
+          this.parentKey,
           (key, value) -> {
-            iterateKeyBuffer.wrap(key);
-            final long childKey =
-                iterateKeyBuffer.getLong(parentInstance.getParentKeyLength(), STATE_BYTE_ORDER);
+            final DbLong childKey = key.getSecond();
+            final ElementInstance childInstance = getInstance(childKey.getValue());
 
-            final ElementInstance instance = getInstance(childKey);
-            children.add(instance);
+            final ElementInstance copiedElementInstance = copyElementInstance(childInstance);
+            children.add(copiedElementInstance);
           });
     }
     return children;
@@ -227,123 +208,115 @@ public class ElementInstanceState {
     }
   }
 
-  private int writeStoreRecordKeyIntoBuffer(
-      MutableDirectBuffer buffer, int offset, long scopeKey, long recordKey, Purpose purpose) {
-    buffer.putLong(offset, scopeKey, STATE_BYTE_ORDER);
-    offset += Long.BYTES;
-    buffer.putByte(offset, (byte) purpose.ordinal());
-    offset += BitUtil.SIZE_OF_BYTE;
-    buffer.putLong(offset, recordKey, STATE_BYTE_ORDER);
-    offset += Long.BYTES;
-    return offset;
-  }
-
-  public void storeTokenEvent(
-      long scopeKey, TypedRecord<WorkflowInstanceRecord> record, Purpose purpose) {
-    final IndexedRecord indexedRecord =
-        new IndexedRecord(
-            record.getKey(),
-            (WorkflowInstanceIntent) record.getMetadata().getIntent(),
-            record.getValue());
+  public void storeRecord(
+      long key,
+      long scopeKey,
+      WorkflowInstanceRecord value,
+      WorkflowInstanceIntent intent,
+      Purpose purpose) {
+    final IndexedRecord indexedRecord = new IndexedRecord(key, intent, value);
     final StoredRecord storedRecord = new StoredRecord(indexedRecord, purpose);
 
-    final int keyLength =
-        writeStoreRecordKeyIntoBuffer(keyBuffer, 0, scopeKey, record.getKey(), purpose);
-    storedRecord.write(valueBuffer, 0);
+    setRecordKeys(scopeKey, key, purpose);
 
-    rocksDbWrapper.put(
-        tokenEventHandle,
-        keyBuffer.byteArray(),
-        Long.BYTES + BitUtil.SIZE_OF_BYTE,
-        Long.BYTES,
-        valueBuffer.byteArray(),
-        0,
-        storedRecord.getLength());
+    recordColumnFamily.put(recordKey, storedRecord);
+    recordParentChildColumnFamily.put(recordParentStateRecordKey, DbNil.INSTANCE);
+  }
 
-    rocksDbWrapper.put(
-        tokenParentChildHandle,
-        keyBuffer.byteArray(),
-        0,
-        keyLength,
-        EMPTY_VALUE,
-        0,
-        EMPTY_VALUE.length);
+  public void storeRecord(
+      long scopeKey, TypedRecord<WorkflowInstanceRecord> record, Purpose purpose) {
+    final WorkflowInstanceIntent intent = (WorkflowInstanceIntent) record.getMetadata().getIntent();
+    storeRecord(record.getKey(), scopeKey, record.getValue(), intent, purpose);
   }
 
   public void removeStoredRecord(long scopeKey, long recordKey, Purpose purpose) {
-    final int keyLength = writeStoreRecordKeyIntoBuffer(keyBuffer, 0, scopeKey, recordKey, purpose);
+    setRecordKeys(scopeKey, recordKey, purpose);
 
-    rocksDbWrapper.remove(tokenParentChildHandle, keyBuffer.byteArray(), 0, keyLength);
-    rocksDbWrapper.remove(
-        tokenEventHandle, keyBuffer.byteArray(), Long.BYTES + BitUtil.SIZE_OF_BYTE, Long.BYTES);
+    recordColumnFamily.delete(this.recordKey);
+    recordParentChildColumnFamily.delete(recordParentStateRecordKey);
   }
 
-  public List<IndexedRecord> getDeferredTokens(long scopeKey) {
-    return collectTokenEvents(scopeKey, Purpose.DEFERRED_TOKEN);
+  private void setRecordKeys(long scopeKey, long recordKey, Purpose purpose) {
+    recordParentKey.wrapLong(scopeKey);
+    stateKey.wrapByte((byte) purpose.ordinal());
+    this.recordKey.wrapLong(recordKey);
   }
 
-  public IndexedRecord getFailedToken(long key) {
-    final StoredRecord tokenEvent = getTokenEvent(key);
-    if (tokenEvent != null && tokenEvent.getPurpose() == Purpose.FAILED_TOKEN) {
-      return tokenEvent.getRecord();
+  public List<IndexedRecord> getDeferredRecords(long scopeKey) {
+    return collectRecords(scopeKey, Purpose.DEFERRED);
+  }
+
+  public IndexedRecord getFailedRecord(long key) {
+    final StoredRecord storedRecord = getStoredRecord(key);
+    if (storedRecord != null && storedRecord.getPurpose() == Purpose.FAILED) {
+      return storedRecord.getRecord();
     } else {
       return null;
     }
   }
 
-  public void updateFailedToken(IndexedRecord indexedRecord) {
-    final StoredRecord storedRecord = new StoredRecord(indexedRecord, Purpose.FAILED_TOKEN);
-
-    keyBuffer.putLong(0, indexedRecord.getKey(), STATE_BYTE_ORDER);
-    storedRecord.write(valueBuffer, 0);
-
-    rocksDbWrapper.put(
-        tokenEventHandle,
-        keyBuffer.byteArray(),
-        0,
-        Long.BYTES,
-        valueBuffer.byteArray(),
-        0,
-        storedRecord.getLength());
+  public void updateFailedRecord(IndexedRecord indexedRecord) {
+    final StoredRecord storedRecord = new StoredRecord(indexedRecord, Purpose.FAILED);
+    recordKey.wrapLong(indexedRecord.getKey());
+    recordColumnFamily.put(recordKey, storedRecord);
   }
 
-  public List<IndexedRecord> getFinishedTokens(long scopeKey) {
-    return collectTokenEvents(scopeKey, Purpose.FINISHED_TOKEN);
-  }
-
-  private List<IndexedRecord> collectTokenEvents(long scopeKey, Purpose purpose) {
+  private List<IndexedRecord> collectRecords(long scopeKey, Purpose purpose) {
     final List<IndexedRecord> records = new ArrayList<>();
-    visitTokens(scopeKey, purpose, records::add);
+    visitRecords(
+        scopeKey,
+        purpose,
+        (indexedRecord) -> {
+          // the visited elements are only transient
+          // they will change on next iteration we have to copy them
+          // if we need to store the values
+
+          // for now we simply copy them into buffer and wrap the buffer
+          // which does another copy
+          // this could be improve if UnpackedObject has a clone method
+          indexedRecord.write(copyBuffer, 0);
+          final IndexedRecord copiedRecord = new IndexedRecord();
+          copiedRecord.wrap(copyBuffer, 0, indexedRecord.getLength());
+
+          records.add(copiedRecord);
+        });
     return records;
   }
 
+  public boolean isEmpty() {
+    return elementInstanceColumnFamily.isEmpty()
+        && parentChildColumnFamily.isEmpty()
+        && recordColumnFamily.isEmpty()
+        && recordParentChildColumnFamily.isEmpty()
+        && variablesState.isEmpty();
+  }
+
   @FunctionalInterface
-  public interface TokenVisitor {
-    void visitToken(IndexedRecord indexedRecord);
+  public interface RecordVisitor {
+    void visitRecord(IndexedRecord indexedRecord);
   }
 
-  public void visitFailedTokens(long scopeKey, TokenVisitor visitor) {
-    visitTokens(scopeKey, Purpose.FAILED_TOKEN, visitor);
+  public void visitFailedRecords(long scopeKey, RecordVisitor visitor) {
+    visitRecords(scopeKey, Purpose.FAILED, visitor);
   }
 
-  private void visitTokens(long scopeKey, Purpose purpose, TokenVisitor visitor) {
-    longKeyPurposeBuffer.putLong(0, scopeKey, STATE_BYTE_ORDER);
-    longKeyPurposeBuffer.putByte(Long.BYTES, (byte) purpose.ordinal());
+  private void visitRecords(long scopeKey, Purpose purpose, RecordVisitor visitor) {
+    recordParentKey.wrapLong(scopeKey);
+    stateKey.wrapByte((byte) purpose.ordinal());
 
-    rocksDbWrapper.whileEqualPrefix(
-        tokenParentChildHandle,
-        longKeyPurposeBuffer.byteArray(),
-        (key, value) -> {
-          final StoredRecord tokenEvent =
-              getTokenEvent(getLong(key, Long.BYTES + BitUtil.SIZE_OF_BYTE));
-          if (tokenEvent != null) {
-            visitor.visitToken(tokenEvent.getRecord());
+    recordParentChildColumnFamily.whileEqualPrefix(
+        recordParentStateKey,
+        (compositeKey, value) -> {
+          final DbLong recordKey = compositeKey.getSecond();
+          final StoredRecord storedRecord = recordColumnFamily.get(recordKey);
+          if (storedRecord != null) {
+            visitor.visitRecord(storedRecord.getRecord());
           }
         });
   }
 
-  private static long getLong(byte[] array, int offset) {
-    return new UnsafeBuffer(array, offset, Long.BYTES).getLong(0, STATE_BYTE_ORDER);
+  public VariablesState getVariablesState() {
+    return variablesState;
   }
 
   public void flushDirtyState() {
@@ -351,5 +324,16 @@ public class ElementInstanceState {
       updateInstance(entry.getValue());
     }
     cachedInstances.clear();
+  }
+
+  private ElementInstance copyElementInstance(ElementInstance elementInstance) {
+    if (elementInstance != null) {
+      elementInstance.write(copyBuffer, 0);
+
+      final ElementInstance copiedElementInstance = new ElementInstance();
+      copiedElementInstance.wrap(copyBuffer, 0, elementInstance.getLength());
+      return copiedElementInstance;
+    }
+    return null;
   }
 }

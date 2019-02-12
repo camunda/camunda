@@ -1,3 +1,17 @@
+// Copyright © 2018 Camunda Services GmbH (info@camunda.com)
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package commands
 
 import (
@@ -35,11 +49,11 @@ func TestActivateJobsCommand(t *testing.T) {
 				Deadline: 123123,
 				Worker:   DefaultJobWorkerName,
 				JobHeaders: &pb.JobHeaders{
-					ElementInstanceKey:       123,
+					ElementInstanceKey:        123,
 					WorkflowKey:               124,
 					BpmnProcessId:             "fooProcess",
 					WorkflowInstanceKey:       1233,
-					ElementId:                "foobar",
+					ElementId:                 "foobar",
 					WorkflowDefinitionVersion: 12345,
 				},
 				CustomHeaders: "{\"foo\": \"bar\"}",
@@ -59,11 +73,11 @@ func TestActivateJobsCommand(t *testing.T) {
 				Deadline: 123123,
 				Worker:   DefaultJobWorkerName,
 				JobHeaders: &pb.JobHeaders{
-					ElementInstanceKey:       123,
+					ElementInstanceKey:        123,
 					WorkflowKey:               124,
 					BpmnProcessId:             "fooProcess",
 					WorkflowInstanceKey:       1233,
-					ElementId:                "foobar",
+					ElementId:                 "foobar",
 					WorkflowDefinitionVersion: 12345,
 				},
 				CustomHeaders: "{\"foo\": \"bar\"}",
@@ -165,6 +179,37 @@ func TestActivateJobsCommandWithWorkerName(t *testing.T) {
 	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stream, nil)
 
 	jobs, err := NewActivateJobsCommand(client, utils.DefaultTestTimeout).JobType("foo").Amount(5).WorkerName("bar").Send()
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if len(jobs) != 0 {
+		t.Errorf("Failed to receive response")
+	}
+}
+
+func TestActivateJobsCommandWithFetchVariables(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+	stream := mock_pb.NewMockGateway_ActivateJobsClient(ctrl)
+
+	fetchVariables := []string{"foo", "bar", "baz"}
+
+	request := &pb.ActivateJobsRequest{
+		Type:          "foo",
+		Amount:        5,
+		Worker:        DefaultJobWorkerName,
+		Timeout:       DefaultJobTimeoutInMs,
+		FetchVariable: fetchVariables,
+	}
+
+	stream.EXPECT().Recv().Return(nil, io.EOF)
+	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stream, nil)
+
+	jobs, err := NewActivateJobsCommand(client, utils.DefaultTestTimeout).JobType("foo").Amount(5).FetchVariables(fetchVariables...).Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")

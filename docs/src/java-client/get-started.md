@@ -121,8 +121,7 @@ public class Application
     {
         // after the client is connected
 
-        final DeploymentEvent deployment = client.workflowClient()
-            .newDeployCommand()
+        final DeploymentEvent deployment = client.newDeployCommand()
             .addResourceFromClasspath("order-process.bpmn")
             .send()
             .join();
@@ -160,8 +159,7 @@ public class Application
     {
         // after the workflow is deployed
 
-        final WorkflowInstanceEvent wfInstance = client.workflowClient()
-            .newCreateInstanceCommand()
+        final WorkflowInstanceEvent wfInstance = client.newCreateInstanceCommand()
             .bpmnProcessId("order-process")
             .latestVersion()
             .send()
@@ -225,8 +223,7 @@ public class Application
     {
         // after the workflow instance is created
 
-        final JobWorker jobWorker = client.jobClient()
-            .newWorker()
+        final JobWorker jobWorker = client.newWorker()
             .jobType("payment-service")
             .handler((jobClient, job) ->
             {
@@ -303,8 +300,7 @@ public class Application
         data.put("orderId", 31243);
         data.put("orderItems", Arrays.asList(435, 182, 376));
 
-        final WorkflowInstanceEvent wfInstance = client.workflowClient()
-            .newCreateInstanceCommand()
+        final WorkflowInstanceEvent wfInstance = client.newCreateInstanceCommand()
             .bpmnProcessId("order-process")
             .latestVersion()
             .payload(data)
@@ -313,8 +309,7 @@ public class Application
 
         // ...
 
-        final JobWorker jobWorker = client.jobClient()
-            .newWorker()
+        final JobWorker jobWorker = client.newWorker()
             .jobType("payment-service")
             .handler((jobClient, job) ->
             {

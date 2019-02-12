@@ -16,7 +16,6 @@
 package io.zeebe.logstreams.processor;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
-import static io.zeebe.util.StringUtil.getBytes;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -31,12 +30,16 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.ZeebeDb;
+import io.zeebe.db.impl.DbString;
+import io.zeebe.db.impl.DefaultColumnFamily;
+import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.SnapshotController;
-import io.zeebe.logstreams.state.StateController;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateSnapshotMetadata;
 import io.zeebe.logstreams.state.StateStorage;
@@ -48,6 +51,7 @@ import io.zeebe.util.sched.future.ActorFuture;
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.DirectBuffer;
@@ -59,7 +63,6 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
-import org.rocksdb.RocksDBException;
 
 public class StreamProcessorControllerTest {
 
@@ -67,7 +70,7 @@ public class StreamProcessorControllerTest {
   private static final int PROCESSOR_ID = 1;
   private static final Duration SNAPSHOT_INTERVAL = Duration.ofMinutes(1);
 
-  private static final byte[] STATE_KEY = getBytes("stateValue");
+  private static final String STATE_KEY = "stateValue";
   private static final DirectBuffer EVENT_1 = wrapString("FOO");
   private static final DirectBuffer EVENT_2 = wrapString("BAR");
 
@@ -86,14 +89,20 @@ public class StreamProcessorControllerTest {
   private SnapshotController snapshotController;
   private EventProcessor eventProcessor;
   private EventFilter eventFilter;
-  private StateController stateController;
+
+  private ZeebeDb db;
+  private DbString value;
+  private DbString key;
+  private ColumnFamily<DbString, DbString> columnFamily;
 
   @Before
   public void setup() throws Exception {
-    streamProcessor = RecordingStreamProcessor.createSpy();
-    eventProcessor = streamProcessor.getEventProcessorSpy();
     eventFilter = mock(EventFilter.class);
     when(eventFilter.applies(any())).thenReturn(true);
+
+    key = new DbString();
+    key.wrapString(STATE_KEY);
+    value = new DbString();
 
     installStreamProcessorService();
   }
@@ -115,8 +124,9 @@ public class StreamProcessorControllerTest {
     inOrder.verify(eventProcessor, times(1)).writeEvent(any());
     inOrder.verify(eventProcessor, times(1)).updateState();
 
-    inOrder.verify(snapshotController, times(1)).takeSnapshot(any());
     inOrder.verify(streamProcessor, times(1)).onClose();
+    inOrder.verify(snapshotController, times(1)).takeSnapshot(any());
+    inOrder.verify(snapshotController, times(1)).close();
 
     inOrder.verifyNoMoreInteractions();
   }
@@ -364,23 +374,6 @@ public class StreamProcessorControllerTest {
   }
 
   @Test
-  public void shouldRecoverStateFromLatestValidSnapshot() throws RocksDBException {
-    // when
-    writeEventAndWaitUntilProcessed(EVENT_1);
-    setState("foo");
-    streamProcessorController.closeAsync().join();
-    streamProcessorController.openAsync().join();
-    writeEventAndWaitUntilProcessed(EVENT_2);
-    setState("bar");
-    streamProcessorController.closeAsync().join();
-    setState("unexpected");
-    streamProcessorController.openAsync().join();
-
-    // then
-    assertThat(getState()).isEqualTo("bar");
-  }
-
-  @Test
   public void shouldNotRecoverFromSnapshotWithInvalidLastWrittenTerm() throws Exception {
     // given
     final long lastProcessedEventPosition = writeEventAndWaitUntilProcessed(EVENT_1);
@@ -446,18 +439,25 @@ public class StreamProcessorControllerTest {
 
   @Test
   public void shouldRecoverLastPositionFromSnapshot() {
-    // when
+    // given
     final long firstEventPosition = writeEventAndWaitUntilProcessed(EVENT_1);
     streamProcessorController.closeAsync().join();
+    final List<LoggedEvent> seenEventsBefore = streamProcessor.getEvents();
 
+    // when
     streamProcessorController.openAsync().join();
     final long secondEventPosition = writeEventAndWaitUntilProcessed(EVENT_2);
 
     // then
-    assertThat(streamProcessor.getEvents())
-        .hasSize(2)
+    assertThat(seenEventsBefore)
+        .hasSize(1)
         .extracting(LoggedEvent::getPosition)
-        .containsExactly(firstEventPosition, secondEventPosition);
+        .containsExactly(firstEventPosition);
+
+    assertThat(streamProcessor.getEvents())
+        .hasSize(1)
+        .extracting(LoggedEvent::getPosition)
+        .containsExactly(secondEventPosition);
   }
 
   @Test
@@ -532,11 +532,12 @@ public class StreamProcessorControllerTest {
     streamProcessorController.closeAsync().join();
 
     streamProcessorController =
-        LogStreams.createStreamProcessor("read-only", PROCESSOR_ID, streamProcessor)
+        LogStreams.createStreamProcessor("read-only", PROCESSOR_ID)
             .logStream(logStreamRule.getLogStream())
             .actorScheduler(logStreamRule.getActorScheduler())
             .serviceContainer(logStreamRule.getServiceContainer())
             .snapshotController(snapshotController)
+            .streamProcessorFactory((zeebeDb -> streamProcessor))
             .readOnly(true)
             .build()
             .join()
@@ -595,17 +596,26 @@ public class StreamProcessorControllerTest {
   }
 
   private void installStreamProcessorService() throws IOException {
-    stateController = spy(new StateController());
-    streamProcessor.setStateController(stateController);
-    snapshotController = spy(new StateSnapshotController(stateController, createStateStorage()));
+    snapshotController =
+        spy(
+            new StateSnapshotController(
+                ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class), createStateStorage()));
 
     streamProcessorService =
-        LogStreams.createStreamProcessor(PROCESSOR_NAME, PROCESSOR_ID, streamProcessor)
+        LogStreams.createStreamProcessor(PROCESSOR_NAME, PROCESSOR_ID)
             .logStream(logStreamRule.getLogStream())
             .actorScheduler(logStreamRule.getActorScheduler())
             .eventFilter(eventFilter)
             .serviceContainer(logStreamRule.getServiceContainer())
             .snapshotController(snapshotController)
+            .streamProcessorFactory(
+                (db) -> {
+                  streamProcessor = RecordingStreamProcessor.createSpy(db);
+                  eventProcessor = streamProcessor.getEventProcessorSpy();
+                  this.db = db;
+                  columnFamily = db.createColumnFamily(DefaultColumnFamily.DEFAULT, key, value);
+                  return streamProcessor;
+                })
             .snapshotPeriod(SNAPSHOT_INTERVAL)
             .build()
             .join();
@@ -633,15 +643,13 @@ public class StreamProcessorControllerTest {
     return eventPosition;
   }
 
-  private void setState(final String value) throws RocksDBException {
-    stateController.getDb().put(STATE_KEY, getBytes(value));
+  private void setState(final String value) {
+    this.value.wrapString(value);
+    columnFamily.put(key, this.value);
   }
 
-  private String getState() throws RocksDBException {
-    final String state;
-
-    state = new String(stateController.getDb().get(STATE_KEY));
-
-    return state;
+  private String getState() {
+    final DbString zbString = columnFamily.get(key);
+    return zbString != null ? zbString.toString() : null;
   }
 }

@@ -83,7 +83,7 @@ public class PublishMessageTest {
     final Record<MessageRecordValue> publishedEvent =
         testClient.receiveFirstMessageEvent(MessageIntent.PUBLISHED);
     assertThat(publishedEvent.getKey()).isEqualTo(response.getKey());
-    assertThat(MsgPackUtil.asMsgPack(publishedEvent.getValue().getPayload()))
+    assertThat(MsgPackUtil.asMsgPackReturnArray(publishedEvent.getValue().getPayload()))
         .isEqualTo(EMTPY_OBJECT);
 
     Assertions.assertThat(publishedEvent.getValue())
@@ -242,16 +242,12 @@ public class PublishMessageTest {
     final ExecuteCommandResponse response = publishMessage("order canceled", "order-123", "msg-1");
 
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(response.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(response.getRejectionReason())
-        .isEqualTo("message with id 'msg-1' is already published");
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.ALREADY_EXISTS);
 
     final Record<MessageRecordValue> rejection =
         testClient.receiveMessages().onlyCommandRejections().withIntent(PUBLISH).getFirst();
 
-    assertThat(rejection.getMetadata().getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(rejection.getMetadata().getRejectionReason())
-        .isEqualTo("message with id 'msg-1' is already published");
+    assertThat(rejection.getMetadata().getRejectionType()).isEqualTo(RejectionType.ALREADY_EXISTS);
   }
 
   @Test
@@ -281,7 +277,8 @@ public class PublishMessageTest {
     final Record<MessageRecordValue> deletedEvent =
         testClient.receiveFirstMessageEvent(MessageIntent.DELETED);
     assertThat(deletedEvent.getKey()).isEqualTo(response.getKey());
-    assertThat(MsgPackUtil.asMsgPack(deletedEvent.getValue().getPayload())).isEqualTo(EMTPY_OBJECT);
+    assertThat(MsgPackUtil.asMsgPackReturnArray(deletedEvent.getValue().getPayload()))
+        .isEqualTo(EMTPY_OBJECT);
 
     Assertions.assertThat(deletedEvent.getValue())
         .hasName("order canceled")
@@ -312,7 +309,8 @@ public class PublishMessageTest {
         testClient.receiveFirstMessageEvent(MessageIntent.DELETED);
 
     assertThat(deletedEvent.getKey()).isEqualTo(response.getKey());
-    assertThat(MsgPackUtil.asMsgPack(deletedEvent.getValue().getPayload())).isEqualTo(EMTPY_OBJECT);
+    assertThat(MsgPackUtil.asMsgPackReturnArray(deletedEvent.getValue().getPayload()))
+        .isEqualTo(EMTPY_OBJECT);
 
     Assertions.assertThat(deletedEvent.getValue())
         .hasName("order canceled")

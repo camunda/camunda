@@ -36,9 +36,6 @@ public class ReceiveTaskTransformer implements ModelElementTransformer<ReceiveTa
 
   @Override
   public void transform(ReceiveTask element, TransformContext context) {
-
-    // only message supported at this point
-
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
     final ExecutableReceiveTask executableElement =
         workflow.getElementById(element.getId(), ExecutableReceiveTask.class);
@@ -48,12 +45,13 @@ public class ReceiveTaskTransformer implements ModelElementTransformer<ReceiveTa
     final ExecutableMessage executableMessage = context.getMessage(message.getId());
     executableElement.setMessage(executableMessage);
 
-    bindLifecycle(context, executableElement);
+    bindLifecycle(executableElement);
   }
 
-  private void bindLifecycle(
-      TransformContext context, final ExecutableReceiveTask executableElement) {
+  private void bindLifecycle(final ExecutableReceiveTask executableElement) {
     executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.SUBSCRIBE_TO_EVENTS);
+        WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.RECEIVE_TASK_EVENT_OCCURRED);
+    executableElement.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.RECEIVE_TASK_ELEMENT_ACTIVATED);
   }
 }

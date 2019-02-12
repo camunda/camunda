@@ -23,8 +23,11 @@ import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.ActorControl;
 import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
 
 public class RequestTopologyHandler extends AbstractControlMessageHandler {
+  private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
+
   protected final TopologyManager topologyManager;
 
   public RequestTopologyHandler(final ServerOutput output, final TopologyManager topologyManager) {
@@ -51,9 +54,8 @@ public class RequestTopologyHandler extends AbstractControlMessageHandler {
           if (throwable == null) {
             sendResponse(actor, requestStreamId, requestId, topology);
           } else {
-            Loggers.CLUSTERING_LOGGER.debug(
-                "Problem on requesting topology. Exception {}", throwable);
-            sendErrorResponse(actor, requestStreamId, requestId, "Cannot request topology");
+            LOG.error("Expected to fetch topology, but failed unexpectedly", throwable);
+            sendErrorResponse(actor, requestStreamId, requestId, throwable.getMessage());
           }
         }));
   }

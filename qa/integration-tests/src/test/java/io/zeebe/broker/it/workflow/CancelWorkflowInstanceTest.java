@@ -26,10 +26,13 @@ import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.cmd.ClientException;
+import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import java.util.ArrayList;
-import java.util.List;
+import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.test.util.TestUtil;
+import io.zeebe.test.util.record.RecordingExporter;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -55,7 +58,7 @@ public class CancelWorkflowInstanceTest {
   public void init() {
     final DeploymentEvent deploymentEvent =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newDeployCommand()
             .addWorkflowModel(WORKFLOW, "workflow.bpmn")
             .send()
@@ -69,7 +72,7 @@ public class CancelWorkflowInstanceTest {
     // given
     final WorkflowInstanceEvent workflowInstance =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newCreateInstanceCommand()
             .bpmnProcessId("process")
             .latestVersion()
@@ -78,7 +81,7 @@ public class CancelWorkflowInstanceTest {
 
     // when
     clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCancelInstanceCommand(workflowInstance.getWorkflowInstanceKey())
         .send()
         .join();
@@ -92,39 +95,71 @@ public class CancelWorkflowInstanceTest {
     // given
     final WorkflowInstanceEvent workflowInstance =
         clientRule
-            .getWorkflowClient()
+            .getClient()
             .newCreateInstanceCommand()
             .bpmnProcessId("process")
             .latestVersion()
             .send()
             .join();
 
-    final List<ActivatedJob> jobEvents = new ArrayList<>();
+    final ActivatedJob job =
+        TestUtil.doRepeatedly(
+                () ->
+                    clientRule
+                        .getClient()
+                        .newActivateJobsCommand()
+                        .jobType("test")
+                        .amount(1)
+                        .send()
+                        .join())
+            .until(response -> !response.getJobs().isEmpty())
+            .getJobs()
+            .get(0);
 
     clientRule
-        .getJobClient()
-        .newWorker()
-        .jobType("test")
-        .handler((c, job) -> jobEvents.add(job))
-        .open();
-
-    waitUntil(() -> jobEvents.size() > 0);
-
-    clientRule
-        .getWorkflowClient()
+        .getClient()
         .newCancelInstanceCommand(workflowInstance.getWorkflowInstanceKey())
         .send()
         .join();
 
+    waitUntil(() -> RecordingExporter.jobRecords(JobIntent.CANCEL).exists());
+
     // when
     assertThatThrownBy(
             () -> {
-              clientRule.getJobClient().newCompleteCommand(jobEvents.get(0).getKey()).send().join();
+              clientRule.getClient().newCompleteCommand(job.getKey()).send().join();
             })
         .isInstanceOf(ClientException.class);
 
     // then
     assertJobCanceled();
     assertWorkflowInstanceCanceled("process");
+  }
+
+  @Test
+  public void shouldNotCancelElementInstance() {
+    // given
+    clientRule
+        .getClient()
+        .newCreateInstanceCommand()
+        .bpmnProcessId("process")
+        .latestVersion()
+        .send()
+        .join();
+
+    final Record<JobRecordValue> record =
+        RecordingExporter.jobRecords().withType("test").getFirst();
+
+    // when - then
+    final long elementInstanceKey = record.getValue().getHeaders().getElementInstanceKey();
+    assertThatThrownBy(
+            () -> {
+              clientRule.getClient().newCancelInstanceCommand(elementInstanceKey).send().join();
+            })
+        .isInstanceOf(ClientException.class)
+        .hasMessageContaining(
+            "Expected to cancel a workflow instance with key '"
+                + elementInstanceKey
+                + "', but no such workflow was found");
   }
 }

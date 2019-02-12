@@ -26,7 +26,6 @@ public class BrokerRejection {
   private final long key;
   private final RejectionType type;
   private final String reason;
-  private final String message;
 
   public BrokerRejection(Intent intent, long key, RejectionType type, DirectBuffer reason) {
     this(intent, key, type, BufferUtil.bufferAsString(reason));
@@ -37,7 +36,6 @@ public class BrokerRejection {
     this.key = key;
     this.type = type;
     this.reason = reason;
-    this.message = buildRejectionMessage();
   }
 
   public RejectionType getType() {
@@ -48,46 +46,11 @@ public class BrokerRejection {
     return reason;
   }
 
-  public String getMessage() {
-    return message;
+  public Intent getIntent() {
+    return intent;
   }
 
-  private String buildRejectionMessage() {
-    final StringBuilder sb = new StringBuilder();
-    sb.append("Command (");
-    sb.append(intent);
-    sb.append(") ");
-
-    if (key >= 0) {
-      sb.append("for event with key ");
-      sb.append(key);
-      sb.append(" ");
-    }
-
-    sb.append("was rejected. ");
-    sb.append(describeRejectionType());
-    sb.append(" ");
-    sb.append(reason);
-
-    return sb.toString();
-  }
-
-  private String describeRejectionType() {
-    switch (type) {
-      case BAD_VALUE:
-        return "It has an invalid value.";
-      case NOT_APPLICABLE:
-        return "It is not applicable in the current state.";
-      case PROCESSING_ERROR:
-        return "The broker could not process it for internal reasons.";
-      default:
-        // Nothing
-        return "";
-    }
-  }
-
-  @Override
-  public String toString() {
-    return message;
+  public long getKey() {
+    return key;
   }
 }

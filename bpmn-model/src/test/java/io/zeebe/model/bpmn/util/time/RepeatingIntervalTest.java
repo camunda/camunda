@@ -122,4 +122,9 @@ public class RepeatingIntervalTest {
     assertThatThrownBy(() -> RepeatingInterval.parse(text))
         .isInstanceOf(DateTimeParseException.class);
   }
+
+  @Test
+  public void shouldFailToParseEmptyString() {
+    assertThatThrownBy(() -> Interval.parse("")).isInstanceOf(DateTimeParseException.class);
+  }
 }

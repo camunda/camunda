@@ -1,3 +1,17 @@
+// Copyright © 2018 Camunda Services GmbH (info@camunda.com)
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package commands
 
 import (
@@ -23,6 +37,7 @@ type CompleteJobCommandStep2 interface {
 	PayloadFromStringer(fmt.Stringer) (DispatchCompleteJobCommand, error)
 	PayloadFromMap(map[string]interface{}) (DispatchCompleteJobCommand, error)
 	PayloadFromObject(interface{}) (DispatchCompleteJobCommand, error)
+	PayloadFromObjectIgnoreOmitempty(interface{}) (DispatchCompleteJobCommand, error)
 }
 
 type CompleteJobCommand struct {
@@ -53,7 +68,17 @@ func (cmd *CompleteJobCommand) PayloadFromStringer(payload fmt.Stringer) (Dispat
 }
 
 func (cmd *CompleteJobCommand) PayloadFromObject(payload interface{}) (DispatchCompleteJobCommand, error) {
-	value, err := cmd.AsJson("payload", payload)
+	value, err := cmd.AsJson("payload", payload, false)
+	if err != nil {
+		return nil, err
+	}
+
+	cmd.request.Payload = value
+	return cmd, nil
+}
+
+func (cmd *CompleteJobCommand) PayloadFromObjectIgnoreOmitempty(payload interface{}) (DispatchCompleteJobCommand, error) {
+	value, err := cmd.AsJson("payload", payload, true)
 	if err != nil {
 		return nil, err
 	}

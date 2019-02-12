@@ -25,6 +25,7 @@ import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setGatewayApiPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setManagementApiPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setReplicationApiPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setSubscriptionApiPort;
+import static io.zeebe.broker.workflow.WorkflowServiceNames.WORKFLOW_REPOSITORY_SERVICE;
 
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.TestLoggers;
@@ -35,6 +36,7 @@ import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceBuilder;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
@@ -54,6 +56,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.assertj.core.util.Files;
 import org.junit.rules.ExternalResource;
@@ -71,7 +74,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
   public static final String DEFAULT_CONFIG_FILE = "zeebe.test.cfg.toml";
 
   protected static final Logger LOG = TestLoggers.TEST_LOGGER;
-  public static final int INSTALL_TIMEOUT = 5;
+  public static final int INSTALL_TIMEOUT = 15;
   public static final TimeUnit INSTALL_TIMEOUT_UNIT = TimeUnit.SECONDS;
   public static final String INSTALL_TIMEOUT_ERROR_MSG =
       "Deployment partition not installed into the container within %d %s.";
@@ -220,6 +223,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
       serviceContainer
           .createService(TestService.NAME, new TestService())
           .dependency(ClusterBaseLayerServiceNames.leaderPartitionServiceName(partitionName))
+          .dependency(WORKFLOW_REPOSITORY_SERVICE)
           .dependency(
               TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME))
           .install()
@@ -311,6 +315,18 @@ public class EmbeddedBrokerRule extends ExternalResource {
     serviceContainer.removeService(accessorServiceName);
 
     return injector.getValue();
+  }
+
+  public <T> void installService(
+      Function<ServiceContainer, ServiceBuilder<T>> serviceBuilderFactory) {
+    final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();
+    final ServiceBuilder<T> serviceBuilder = serviceBuilderFactory.apply(serviceContainer);
+
+    try {
+      serviceBuilder.install().get(10, TimeUnit.SECONDS);
+    } catch (InterruptedException | ExecutionException | TimeoutException e) {
+      throw new RuntimeException("Could not install service: " + serviceBuilder.getName(), e);
+    }
   }
 
   public <T> void removeService(final ServiceName<T> name) {

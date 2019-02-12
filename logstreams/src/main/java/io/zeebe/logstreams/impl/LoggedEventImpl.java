@@ -24,11 +24,14 @@ import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.versionOffset;
 import static io.zeebe.logstreams.impl.LogEntryDescriptor.headerLength;
 
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.clientapi.VarDataEncodingEncoder;
 import io.zeebe.util.buffer.BufferReader;
 import org.agrona.DirectBuffer;
 
 /** Represents the implementation of the logged event. */
 public class LoggedEventImpl implements ReadableFragment, LoggedEvent {
+
   protected int fragmentOffset = -1;
   protected int messageOffset = -1;
   protected DirectBuffer buffer;
@@ -41,17 +44,17 @@ public class LoggedEventImpl implements ReadableFragment, LoggedEvent {
 
   @Override
   public int getType() {
-    return buffer.getShort(typeOffset(fragmentOffset));
+    return buffer.getShort(typeOffset(fragmentOffset), Protocol.ENDIANNESS);
   }
 
   @Override
   public int getVersion() {
-    return buffer.getShort(versionOffset(fragmentOffset));
+    return buffer.getShort(versionOffset(fragmentOffset), Protocol.ENDIANNESS);
   }
 
   @Override
   public int getMessageLength() {
-    return messageLength(buffer.getInt(lengthOffset(fragmentOffset)));
+    return messageLength(buffer.getInt(lengthOffset(fragmentOffset), Protocol.ENDIANNESS));
   }
 
   @Override
@@ -61,7 +64,7 @@ public class LoggedEventImpl implements ReadableFragment, LoggedEvent {
 
   @Override
   public int getStreamId() {
-    return buffer.getInt(streamIdOffset(fragmentOffset));
+    return buffer.getInt(streamIdOffset(fragmentOffset), Protocol.ENDIANNESS);
   }
 
   @Override
@@ -105,6 +108,12 @@ public class LoggedEventImpl implements ReadableFragment, LoggedEvent {
   @Override
   public short getMetadataLength() {
     return LogEntryDescriptor.getMetadataLength(buffer, messageOffset);
+  }
+
+  @Override
+  public int getMaxValueLength() {
+    return VarDataEncodingEncoder.lengthMaxValue()
+        - LogEntryDescriptor.headerLength(getMetadataLength());
   }
 
   @Override

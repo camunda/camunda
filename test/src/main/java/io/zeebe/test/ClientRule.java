@@ -16,8 +16,6 @@
 package io.zeebe.test;
 
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.clients.JobClient;
-import io.zeebe.client.api.clients.WorkflowClient;
 import io.zeebe.client.api.commands.BrokerInfo;
 import io.zeebe.client.api.commands.PartitionInfo;
 import io.zeebe.client.api.commands.Topology;
@@ -46,20 +44,16 @@ public class ClientRule extends ExternalResource {
     return client;
   }
 
-  public JobClient jobClient() {
-    return client.jobClient();
-  }
-
-  public WorkflowClient workflowClient() {
-    return client.workflowClient();
-  }
-
   public int getDefaultPartition() {
     return defaultPartition;
   }
 
   @Override
   protected void before() {
+    createClient();
+  }
+
+  public void createClient() {
     client = ZeebeClient.newClientBuilder().withProperties(properties.get()).build();
     determineDefaultPartition();
   }
@@ -87,6 +81,10 @@ public class ClientRule extends ExternalResource {
 
   @Override
   protected void after() {
+    destroyClient();
+  }
+
+  public void destroyClient() {
     client.close();
     client = null;
   }

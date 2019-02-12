@@ -17,70 +17,79 @@
  */
 package io.zeebe.broker.workflow.state;
 
-import static io.zeebe.util.buffer.BufferUtil.readIntoBuffer;
-import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
-
-import io.zeebe.util.buffer.BufferReader;
-import io.zeebe.util.buffer.BufferWriter;
+import io.zeebe.db.DbValue;
+import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.msgpack.property.BinaryProperty;
+import io.zeebe.msgpack.property.LongProperty;
+import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.util.buffer.BufferUtil;
+import java.util.Objects;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class EventTrigger implements BufferReader, BufferWriter {
-  private final DirectBuffer handlerNodeId = new UnsafeBuffer(0, 0);
-  private final DirectBuffer payload = new UnsafeBuffer(0, 0);
+public class EventTrigger extends UnpackedObject implements DbValue {
 
-  public EventTrigger reset() {
-    handlerNodeId.wrap(0, 0);
-    payload.wrap(0, 0);
+  private final StringProperty elementIdProp = new StringProperty("elementId");
+  private final BinaryProperty payloadProp = new BinaryProperty("payload");
+  private final LongProperty eventKeyProp = new LongProperty("eventKey");
 
-    return this;
+  public EventTrigger() {
+    this.declareProperty(elementIdProp).declareProperty(payloadProp).declareProperty(eventKeyProp);
   }
 
-  public boolean isValid() {
-    return handlerNodeId.capacity() > 0;
+  // Copies over the previous event
+  public EventTrigger(EventTrigger other) {
+    this();
+
+    final int length = other.getLength();
+    final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[length]);
+    other.write(buffer, 0);
+    this.wrap(buffer, 0, length);
   }
 
-  public DirectBuffer getHandlerNodeId() {
-    return handlerNodeId;
+  public DirectBuffer getElementId() {
+    return elementIdProp.getValue();
   }
 
-  public EventTrigger setHandlerNodeId(DirectBuffer handlerNodeId) {
-    this.handlerNodeId.wrap(handlerNodeId);
+  public EventTrigger setElementId(DirectBuffer elementId) {
+    this.elementIdProp.setValue(elementId);
     return this;
   }
 
   public DirectBuffer getPayload() {
-    return payload;
+    return payloadProp.getValue();
   }
 
   public EventTrigger setPayload(DirectBuffer payload) {
-    this.payload.wrap(payload);
+    this.payloadProp.setValue(payload);
+    return this;
+  }
+
+  public long getEventKey() {
+    return eventKeyProp.getValue();
+  }
+
+  public EventTrigger setEventKey(long eventKey) {
+    this.eventKeyProp.setValue(eventKey);
     return this;
   }
 
   @Override
-  public void wrap(DirectBuffer buffer, int offset, int length) {
-    final int startOffset = offset;
-
-    offset = readIntoBuffer(buffer, offset, handlerNodeId);
-    offset = readIntoBuffer(buffer, offset, payload);
-
-    assert (offset - startOffset) == length : "End offset differs from length";
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final EventTrigger that = (EventTrigger) o;
+    return BufferUtil.equals(getElementId(), that.getElementId())
+        && BufferUtil.equals(getPayload(), that.getPayload());
   }
 
   @Override
-  public int getLength() {
-    return 2 * Integer.BYTES + handlerNodeId.capacity() + payload.capacity();
-  }
-
-  @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
-    final int startOffset = offset;
-
-    offset = writeIntoBuffer(buffer, offset, handlerNodeId);
-    offset = writeIntoBuffer(buffer, offset, payload);
-
-    assert (offset - startOffset) == getLength() : "End offset differs from getLength()";
+  public int hashCode() {
+    return Objects.hash(getElementId(), getPayload());
   }
 }

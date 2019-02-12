@@ -61,16 +61,19 @@ public class EventBasedGatewayValidator implements ModelElementValidator<EventBa
       validationResultCollector.addError(0, ERROR_UNSUPPORTED_TARGET_NODE);
     }
 
-    getMessageEventDefinitions(outgoingSequenceFlows)
-        .map(MessageEventDefinition::getMessage)
-        .collect(Collectors.groupingBy(Message::getName, Collectors.counting()))
-        .entrySet()
-        .stream()
+    getMessageEventDefinitions(outgoingSequenceFlows).map(MessageEventDefinition::getMessage)
+        .collect(Collectors.groupingBy(Message::getName, Collectors.counting())).entrySet().stream()
         .filter(e -> e.getValue() > 1)
         .forEach(
             e ->
                 validationResultCollector.addError(
                     0, "Multiple message catch events with the same name are not allowed."));
+
+    if (!succeedingNodesOnlyHaveEventBasedGatewayAsIncomingFlows(element)) {
+      validationResultCollector.addError(
+          0,
+          "Target elements of an event gateway must not have any additional incoming sequence flows other than that from the event gateway.");
+    }
   }
 
   private boolean isValidOutgoingSequenceFlow(SequenceFlow flow) {
@@ -91,21 +94,26 @@ public class EventBasedGatewayValidator implements ModelElementValidator<EventBa
 
     } else {
       final EventDefinition eventDefinition = eventDefinitions.iterator().next();
-      return SUPPORTED_EVENTS
-          .stream()
+      return SUPPORTED_EVENTS.stream()
           .anyMatch(e -> e.isAssignableFrom(eventDefinition.getClass()));
     }
   }
 
   private Stream<MessageEventDefinition> getMessageEventDefinitions(
       Collection<SequenceFlow> outgoingSequenceFlows) {
-    return outgoingSequenceFlows
-        .stream()
+    return outgoingSequenceFlows.stream()
         .map(SequenceFlow::getTarget)
         .filter(t -> t instanceof IntermediateCatchEvent)
         .map(IntermediateCatchEvent.class::cast)
         .flatMap(e -> e.getEventDefinitions().stream())
         .filter(e -> e instanceof MessageEventDefinition)
         .map(MessageEventDefinition.class::cast);
+  }
+
+  private boolean succeedingNodesOnlyHaveEventBasedGatewayAsIncomingFlows(
+      EventBasedGateway element) {
+    return element.getSucceedingNodes().stream()
+        .flatMap(flowNode -> flowNode.getPreviousNodes().stream())
+        .allMatch(element::equals);
   }
 }

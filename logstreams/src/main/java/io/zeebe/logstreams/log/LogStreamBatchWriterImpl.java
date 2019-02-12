@@ -36,6 +36,7 @@ import io.zeebe.dispatcher.ClaimedFragmentBatch;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.logstreams.impl.LogEntryDescriptor;
 import io.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.sched.clock.ActorClock;
@@ -175,13 +176,14 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
     final int metadataLength = metadataWriter.getLength();
     final int valueLength = valueWriter.getLength();
 
-    eventBuffer.putLong(eventBufferOffset, positionAsKey ? POSITION_AS_KEY : key);
+    eventBuffer.putLong(
+        eventBufferOffset, positionAsKey ? POSITION_AS_KEY : key, Protocol.ENDIANNESS);
     eventBufferOffset += SIZE_OF_LONG;
 
-    eventBuffer.putInt(eventBufferOffset, metadataLength);
+    eventBuffer.putInt(eventBufferOffset, metadataLength, Protocol.ENDIANNESS);
     eventBufferOffset += SIZE_OF_INT;
 
-    eventBuffer.putInt(eventBufferOffset, valueLength);
+    eventBuffer.putInt(eventBufferOffset, valueLength, Protocol.ENDIANNESS);
     eventBufferOffset += SIZE_OF_INT;
 
     if (metadataLength > 0) {
@@ -239,13 +241,13 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
     eventBufferOffset = 0;
 
     for (int i = 0; i < eventCount; i++) {
-      final long key = eventBuffer.getLong(eventBufferOffset);
+      final long key = eventBuffer.getLong(eventBufferOffset, Protocol.ENDIANNESS);
       eventBufferOffset += SIZE_OF_LONG;
 
-      final int metadataLength = eventBuffer.getInt(eventBufferOffset);
+      final int metadataLength = eventBuffer.getInt(eventBufferOffset, Protocol.ENDIANNESS);
       eventBufferOffset += SIZE_OF_INT;
 
-      final int valueLength = eventBuffer.getInt(eventBufferOffset);
+      final int valueLength = eventBuffer.getInt(eventBufferOffset, Protocol.ENDIANNESS);
       eventBufferOffset += SIZE_OF_INT;
 
       final int fragmentLength = headerLength(metadataLength) + valueLength;

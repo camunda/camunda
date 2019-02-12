@@ -17,148 +17,122 @@
  */
 package io.zeebe.broker.incident.processor;
 
-import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
-
-import io.zeebe.broker.workflow.state.PersistenceHelper;
-import io.zeebe.logstreams.rocksdb.ZbRocksDb;
-import io.zeebe.logstreams.state.StateController;
-import io.zeebe.logstreams.state.StateLifecycleListener;
+import io.zeebe.broker.logstreams.state.UnpackedObjectValue;
+import io.zeebe.broker.logstreams.state.ZbColumnFamilies;
+import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.ZeebeDb;
+import io.zeebe.db.impl.DbLong;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
-import java.util.List;
 import java.util.function.ObjLongConsumer;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import org.agrona.ExpandableArrayBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.rocksdb.ColumnFamilyHandle;
 
-public class IncidentState implements StateLifecycleListener {
-
-  private static final byte[] INCIDENT_COLUMN_FAMILY_NAME = "incidentStateIncident".getBytes();
-  private static final byte[] WORKFLOW_INSTANCE_INCIDENT_COLUMN_FAMILY_NAME =
-      "incidentStateWorkflowInstanceIncident".getBytes();
-  private static final byte[] JOB_INCIDENT_COLUMN_FAMILY_NAME =
-      "incidentStateJobIncident".getBytes();
-
-  private static final byte[][] COLUMN_FAMILY_NAMES = {
-    INCIDENT_COLUMN_FAMILY_NAME,
-    WORKFLOW_INSTANCE_INCIDENT_COLUMN_FAMILY_NAME,
-    JOB_INCIDENT_COLUMN_FAMILY_NAME
-  };
+public class IncidentState {
   public static final int MISSING_INCIDENT = -1;
 
-  private ColumnFamilyHandle incidentColumnFamily;
-  private ColumnFamilyHandle workflowInstanceIncidentColumnFamily;
+  private final ZeebeDb zeebeDb;
 
-  private ColumnFamilyHandle jobIncidentColumnFamily;
-  private ZbRocksDb db;
+  /** incident key -> incident record */
+  private final DbLong incidentKey;
 
-  private final MutableDirectBuffer keyBuffer = new UnsafeBuffer(new byte[Long.BYTES]);
-  private final MutableDirectBuffer valueBuffer = new ExpandableArrayBuffer();
+  // we need two separate wrapper to not interfere with get and put
+  // see https://github.com/zeebe-io/zeebe/issues/1916
+  private final UnpackedObjectValue incidenRecordToRead;
+  private final UnpackedObjectValue incidentRecordToWrite;
+  private final ColumnFamily<DbLong, UnpackedObjectValue> incidentColumnFamily;
 
-  private final IncidentRecord incidentRecord = new IncidentRecord();
-  private PersistenceHelper persistenceHelper;
+  /** element instance key -> incident key */
+  private final DbLong elementInstanceKey;
 
-  public static List<byte[]> getColumnFamilyNames() {
-    return Stream.of(COLUMN_FAMILY_NAMES).flatMap(Stream::of).collect(Collectors.toList());
-  }
+  private final ColumnFamily<DbLong, DbLong> workflowInstanceIncidentColumnFamily;
 
-  @Override
-  public void onOpened(StateController stateController) {
-    db = stateController.getDb();
+  /** job key -> incident key */
+  private final DbLong jobKey;
 
-    persistenceHelper = new PersistenceHelper(stateController);
-    incidentColumnFamily = stateController.getColumnFamilyHandle(INCIDENT_COLUMN_FAMILY_NAME);
+  private final ColumnFamily<DbLong, DbLong> jobIncidentColumnFamily;
+
+  public IncidentState(ZeebeDb<ZbColumnFamilies> zeebeDb) {
+    this.zeebeDb = zeebeDb;
+
+    incidentKey = new DbLong();
+    incidenRecordToRead = new UnpackedObjectValue();
+    incidenRecordToRead.wrapObject(new IncidentRecord());
+    incidentRecordToWrite = new UnpackedObjectValue();
+    incidentColumnFamily =
+        zeebeDb.createColumnFamily(ZbColumnFamilies.INCIDENTS, incidentKey, incidenRecordToRead);
+
+    elementInstanceKey = new DbLong();
     workflowInstanceIncidentColumnFamily =
-        stateController.getColumnFamilyHandle(WORKFLOW_INSTANCE_INCIDENT_COLUMN_FAMILY_NAME);
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.INCIDENT_WORKFLOW_INSTANCES, elementInstanceKey, incidentKey);
+
+    jobKey = new DbLong();
     jobIncidentColumnFamily =
-        stateController.getColumnFamilyHandle(JOB_INCIDENT_COLUMN_FAMILY_NAME);
+        zeebeDb.createColumnFamily(ZbColumnFamilies.INCIDENT_JOBS, jobKey, incidentKey);
   }
 
   public void createIncident(long incidentKey, IncidentRecord incident) {
-    keyBuffer.putLong(0, incidentKey, STATE_BYTE_ORDER);
+    zeebeDb.batch(
+        () -> {
+          this.incidentKey.wrapLong(incidentKey);
+          this.incidentRecordToWrite.wrapObject(incident);
+          incidentColumnFamily.put(this.incidentKey, this.incidentRecordToWrite);
 
-    final int length = incident.getLength();
-    incident.write(valueBuffer, 0);
-
-    db.batch(
-        batchWriter -> {
-          batchWriter.put(
-              incidentColumnFamily,
-              keyBuffer.byteArray(),
-              Long.BYTES,
-              valueBuffer.byteArray(),
-              length);
-
-          valueBuffer.putLong(0, incidentKey, STATE_BYTE_ORDER);
           if (isJobIncident(incident)) {
-            keyBuffer.putLong(0, incident.getJobKey(), STATE_BYTE_ORDER);
-            batchWriter.put(
-                jobIncidentColumnFamily,
-                keyBuffer.byteArray(),
-                Long.BYTES,
-                valueBuffer.byteArray(),
-                Long.BYTES);
+            jobKey.wrapLong(incident.getJobKey());
+            jobIncidentColumnFamily.put(jobKey, this.incidentKey);
           } else {
-            keyBuffer.putLong(0, incident.getElementInstanceKey(), STATE_BYTE_ORDER);
-            batchWriter.put(
-                workflowInstanceIncidentColumnFamily,
-                keyBuffer.byteArray(),
-                Long.BYTES,
-                valueBuffer.byteArray(),
-                Long.BYTES);
+            elementInstanceKey.wrapLong(incident.getElementInstanceKey());
+            workflowInstanceIncidentColumnFamily.put(elementInstanceKey, this.incidentKey);
           }
         });
   }
 
   public IncidentRecord getIncidentRecord(long incidentKey) {
-    final boolean successfulRead =
-        persistenceHelper.readInto(incidentRecord, incidentColumnFamily, incidentKey);
+    this.incidentKey.wrapLong(incidentKey);
 
-    return successfulRead ? incidentRecord : null;
+    final UnpackedObjectValue unpackedObjectValue = incidentColumnFamily.get(this.incidentKey);
+    if (unpackedObjectValue != null) {
+      return (IncidentRecord) unpackedObjectValue.getObject();
+    }
+    return null;
   }
 
   public void deleteIncident(long key) {
-
     final IncidentRecord incidentRecord = getIncidentRecord(key);
 
-    db.batch(
-        batchWriter -> {
-          if (incidentRecord != null) {
-            keyBuffer.putLong(0, key, STATE_BYTE_ORDER);
-            batchWriter.delete(incidentColumnFamily, keyBuffer.byteArray(), Long.BYTES);
+    if (incidentRecord != null) {
+      zeebeDb.batch(
+          () -> {
+            incidentColumnFamily.delete(incidentKey);
 
             if (isJobIncident(incidentRecord)) {
-              keyBuffer.putLong(0, incidentRecord.getJobKey(), STATE_BYTE_ORDER);
-              batchWriter.delete(jobIncidentColumnFamily, keyBuffer.byteArray(), Long.BYTES);
+              jobKey.wrapLong(incidentRecord.getJobKey());
+              jobIncidentColumnFamily.delete(jobKey);
             } else {
-              final long elementInstanceKey = incidentRecord.getElementInstanceKey();
-              keyBuffer.putLong(0, elementInstanceKey, STATE_BYTE_ORDER);
-
-              batchWriter.delete(
-                  workflowInstanceIncidentColumnFamily, keyBuffer.byteArray(), Long.BYTES);
+              elementInstanceKey.wrapLong(incidentRecord.getElementInstanceKey());
+              workflowInstanceIncidentColumnFamily.delete(elementInstanceKey);
             }
-          }
-        });
+          });
+    }
   }
 
   public long getWorkflowInstanceIncidentKey(long instanceKey) {
-    final int readBytes = db.get(workflowInstanceIncidentColumnFamily, instanceKey, valueBuffer);
+    elementInstanceKey.wrapLong(instanceKey);
 
-    if (readBytes > 0) {
-      final long incidentKey = valueBuffer.getLong(0, STATE_BYTE_ORDER);
-      return incidentKey;
+    final DbLong incidentKey = workflowInstanceIncidentColumnFamily.get(elementInstanceKey);
+
+    if (incidentKey != null) {
+      return incidentKey.getValue();
     }
+
     return MISSING_INCIDENT;
   }
 
   public long getJobIncidentKey(long jobKey) {
-    final int readBytes = db.get(jobIncidentColumnFamily, jobKey, valueBuffer);
+    this.jobKey.wrapLong(jobKey);
+    final DbLong incidentKey = jobIncidentColumnFamily.get(this.jobKey);
 
-    if (readBytes > 0) {
-      final long incidentKey = valueBuffer.getLong(0, STATE_BYTE_ORDER);
-      return incidentKey;
+    if (incidentKey != null) {
+      return incidentKey.getValue();
     }
     return MISSING_INCIDENT;
   }

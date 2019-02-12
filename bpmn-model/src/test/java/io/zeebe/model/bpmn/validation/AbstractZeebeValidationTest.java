@@ -77,10 +77,7 @@ public abstract class AbstractZeebeValidationTest {
     // then
     final List<ExpectedValidationResult> unmatchedExpectations = new ArrayList<>(expectedResults);
     final List<ValidationResult> unmatchedResults =
-        results
-            .getResults()
-            .values()
-            .stream()
+        results.getResults().values().stream()
             .flatMap(Collection::stream)
             .collect(Collectors.toList());
 
@@ -116,7 +113,7 @@ public abstract class AbstractZeebeValidationTest {
       final List<ExpectedValidationResult> unmatchedExpectations,
       final List<ValidationResult> unmatchedResults) {
     final StringBuilder sb = new StringBuilder();
-    sb.append("Not all expecations were matched by results (or vice versa)\n\n");
+    sb.append("Not all expectations were matched by results (or vice versa)\n\n");
     describeUnmatchedExpectations(sb, unmatchedExpectations);
     sb.append("\n");
     describeUnmatchedResults(sb, unmatchedResults);

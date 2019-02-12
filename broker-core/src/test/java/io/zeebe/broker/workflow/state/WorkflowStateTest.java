@@ -20,38 +20,32 @@ package io.zeebe.broker.workflow.state;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.state.ZeebeState;
-import io.zeebe.broker.workflow.deployment.transform.DeploymentTransformer;
+import io.zeebe.broker.util.ZeebeStateRule;
 import io.zeebe.broker.workflow.model.element.AbstractFlowElement;
 import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
+import io.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 public class WorkflowStateTest {
 
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
+  @Rule public ZeebeStateRule stateRule = new ZeebeStateRule();
 
   private WorkflowState workflowState;
   private ZeebeState zeebeState;
 
   @Before
-  public void setUp() throws Exception {
-    zeebeState = new ZeebeState();
-    zeebeState.open(folder.newFolder("rocksdb"), false);
+  public void setUp() {
+    zeebeState = stateRule.getZeebeState();
     workflowState = zeebeState.getWorkflowState();
-  }
-
-  @After
-  public void tearDown() {
-    zeebeState.close();
   }
 
   @Test
@@ -160,6 +154,26 @@ public class WorkflowStateTest {
         workflowState.getWorkflowByProcessIdAndVersion(wrapString("processId"), 1);
 
     assertThat(deployedWorkflow).isNotNull();
+  }
+
+  @Test
+  public void shouldNotOverwritePreviousRecord() {
+    // given
+    final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
+
+    // when
+    workflowState.putDeployment(1, deploymentRecord);
+    deploymentRecord.workflows().iterator().next().setKey(212).setBpmnProcessId("other");
+
+    // then
+    final DeployedWorkflow deployedWorkflow =
+        workflowState.getWorkflowByProcessIdAndVersion(wrapString("processId"), 1);
+
+    assertThat(deployedWorkflow.getKey())
+        .isNotEqualTo(deploymentRecord.workflows().iterator().next().getKey());
+    assertThat(deploymentRecord.workflows().iterator().next().getBpmnProcessId())
+        .isEqualTo(BufferUtil.wrapString("other"));
+    assertThat(deployedWorkflow.getBpmnProcessId()).isEqualTo(BufferUtil.wrapString("processId"));
   }
 
   @Test
@@ -401,16 +415,28 @@ public class WorkflowStateTest {
             .done();
 
     final DeploymentRecord deploymentRecord = new DeploymentRecord();
+    final String resourceName = "process.bpmn";
     deploymentRecord
         .resources()
         .add()
-        .setResourceName(wrapString("process.bpmn"))
+        .setResourceName(wrapString(resourceName))
         .setResource(wrapString(Bpmn.convertToString(modelInstance)))
         .setResourceType(ResourceType.BPMN_XML);
 
-    final DeploymentTransformer deploymentTransformer = new DeploymentTransformer(zeebeState);
+    final KeyGenerator keyGenerator = zeebeState.getKeyGenerator();
+    final long key = keyGenerator.nextKey();
 
-    deploymentTransformer.transform(deploymentRecord);
+    final WorkflowState workflowState = zeebeState.getWorkflowState();
+    final int version = workflowState.getNextWorkflowVersion(processId);
+
+    deploymentRecord
+        .workflows()
+        .add()
+        .setBpmnProcessId(BufferUtil.wrapString(processId))
+        .setVersion(version)
+        .setKey(key)
+        .setResourceName(resourceName);
+
     return deploymentRecord;
   }
 }

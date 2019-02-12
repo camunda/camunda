@@ -61,8 +61,7 @@ public class JsonConditionFactory {
 
     final AtomicInteger nextId = new AtomicInteger(1);
 
-    pathExpressions
-        .stream()
+    pathExpressions.stream()
         .collect(Collectors.groupingBy(JsonPath::value))
         .values()
         .stream()

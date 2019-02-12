@@ -85,6 +85,17 @@ public class MessageCatchElementTest {
           .endEvent()
           .done();
 
+  private static final BpmnModelInstance NON_INT_BOUNDARY_EVENT_WORKFLOW =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent()
+          .serviceTask("receive-message", b -> b.zeebeTaskType("type"))
+          .boundaryEvent("event")
+          .cancelActivity(false)
+          .message(m -> m.name("order canceled").zeebeCorrelationKey("$.orderId"))
+          .sequenceFlowId("to-end")
+          .endEvent()
+          .done();
+
   @Parameter(0)
   public String elementType;
 
@@ -92,7 +103,13 @@ public class MessageCatchElementTest {
   public BpmnModelInstance workflow;
 
   @Parameter(2)
-  public WorkflowInstanceIntent leftState;
+  public WorkflowInstanceIntent enteredState;
+
+  @Parameter(3)
+  public WorkflowInstanceIntent continueState;
+
+  @Parameter(4)
+  public String continuedElementId;
 
   @Parameters(name = "{0}")
   public static Object[][] parameters() {
@@ -100,10 +117,31 @@ public class MessageCatchElementTest {
       {
         "intermediate message catch event",
         CATCH_EVENT_WORKFLOW,
-        WorkflowInstanceIntent.ELEMENT_COMPLETED
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+        WorkflowInstanceIntent.ELEMENT_COMPLETED,
+        "receive-message"
       },
-      {"receive task", RECEIVE_TASK_WORKFLOW, WorkflowInstanceIntent.ELEMENT_COMPLETED},
-      {"boundary event", BOUNDARY_EVENT_WORKFLOW, WorkflowInstanceIntent.ELEMENT_TERMINATED}
+      {
+        "receive task",
+        RECEIVE_TASK_WORKFLOW,
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+        WorkflowInstanceIntent.ELEMENT_COMPLETED,
+        "receive-message"
+      },
+      {
+        "int boundary event",
+        BOUNDARY_EVENT_WORKFLOW,
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+        WorkflowInstanceIntent.ELEMENT_TERMINATED,
+        "receive-message"
+      },
+      {
+        "non int boundary event",
+        NON_INT_BOUNDARY_EVENT_WORKFLOW,
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+        WorkflowInstanceIntent.ELEMENT_COMPLETED,
+        "event"
+      }
     };
   }
 
@@ -126,8 +164,7 @@ public class MessageCatchElementTest {
         testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
     final Record<WorkflowInstanceRecordValue> catchEventEntered =
-        testClient.receiveElementInState(
-            "receive-message", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        testClient.receiveElementInState("receive-message", enteredState);
 
     final Record<MessageSubscriptionRecordValue> messageSubscription =
         RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED).getFirst();
@@ -145,8 +182,7 @@ public class MessageCatchElementTest {
         testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
     final Record<WorkflowInstanceRecordValue> catchEventEntered =
-        testClient.receiveElementInState(
-            "receive-message", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        testClient.receiveElementInState("receive-message", enteredState);
 
     final Record<WorkflowInstanceSubscriptionRecordValue> workflowInstanceSubscription =
         testClient
@@ -170,8 +206,7 @@ public class MessageCatchElementTest {
         testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
     final Record<WorkflowInstanceRecordValue> catchEventEntered =
-        testClient.receiveElementInState(
-            "receive-message", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        testClient.receiveElementInState("receive-message", enteredState);
 
     // when
     final DirectBuffer messagePayload = asMsgPack("foo", "bar");
@@ -199,8 +234,7 @@ public class MessageCatchElementTest {
         testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
     final Record<WorkflowInstanceRecordValue> catchEventEntered =
-        testClient.receiveElementInState(
-            "receive-message", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        testClient.receiveElementInState("receive-message", enteredState);
 
     // when
     testClient.publishMessage("order canceled", "order-123", asMsgPack("foo", "bar"));
@@ -220,16 +254,17 @@ public class MessageCatchElementTest {
 
   @Test
   public void shouldCloseMessageSubscription() {
-
+    // given
     final long workflowInstanceKey =
         testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
     final Record<WorkflowInstanceRecordValue> catchEventEntered =
-        testClient.receiveElementInState(
-            "receive-message", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        testClient.receiveElementInState("receive-message", enteredState);
 
+    // when
     testClient.cancelWorkflowInstance(workflowInstanceKey);
 
+    // then
     final Record<MessageSubscriptionRecordValue> messageSubscription =
         RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CLOSED).getFirst();
 
@@ -249,8 +284,7 @@ public class MessageCatchElementTest {
         testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
     final Record<WorkflowInstanceRecordValue> catchEventEntered =
-        testClient.receiveElementInState(
-            "receive-message", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        testClient.receiveElementInState("receive-message", enteredState);
 
     testClient.cancelWorkflowInstance(workflowInstanceKey);
 
@@ -273,12 +307,20 @@ public class MessageCatchElementTest {
     testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
     // when
+    assertThat(
+            testClient
+                .receiveWorkflowInstanceSubscriptions()
+                .withMessageName("order canceled")
+                .withIntent(WorkflowInstanceSubscriptionIntent.OPENED)
+                .limit(1)
+                .getFirst())
+        .isNotNull();
     testClient.publishMessage("order canceled", "order-123");
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(leftState)
-                .withElementId("receive-message")
+            RecordingExporter.workflowInstanceRecords(continueState)
+                .withElementId(continuedElementId)
                 .exists())
         .isTrue();
 
