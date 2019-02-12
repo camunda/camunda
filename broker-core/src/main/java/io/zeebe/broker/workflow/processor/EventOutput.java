@@ -91,7 +91,7 @@ public class EventOutput {
     final WorkflowInstanceRecord value = event.getValue();
     final WorkflowInstanceIntent intent = (WorkflowInstanceIntent) event.getMetadata().getIntent();
 
-    return deferRecord(value.getScopeInstanceKey(), value, intent);
+    return deferRecord(value.getFlowScopeKey(), value, intent);
   }
 
   public long deferRecord(

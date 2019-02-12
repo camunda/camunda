@@ -59,7 +59,7 @@ public class CreateWorkflowInstanceStub
     response.setElementId(PROCESS_ID);
     response.setBpmnProcessId(PROCESS_ID);
     response.setPayload(request.getRequestWriter().getPayload());
-    response.setScopeInstanceKey(-1);
+    response.setFlowScopeKey(-1);
     response.setVersion(PROCESS_VERSION);
     response.setWorkflowKey(WORKFLOW_KEY);
 

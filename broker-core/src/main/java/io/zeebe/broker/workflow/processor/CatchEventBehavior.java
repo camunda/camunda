@@ -75,7 +75,7 @@ public class CatchEventBehavior {
         new MessageCorrelationKeyContext(variablesSupplier, context.getRecord().getKey());
     final MessageCorrelationKeyContext scopeContext =
         new MessageCorrelationKeyContext(
-            variablesSupplier, context.getRecord().getValue().getScopeInstanceKey());
+            variablesSupplier, context.getRecord().getValue().getFlowScopeKey());
 
     // collect all message correlation keys from their respective payload, as this might fail and
     // we might need to raise an incident

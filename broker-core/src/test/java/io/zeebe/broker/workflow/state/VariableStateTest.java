@@ -693,7 +693,7 @@ public class VariableStateTest {
     final WorkflowInstanceRecord workflowInstanceRecord = new WorkflowInstanceRecord();
 
     if (parentKey >= 0) {
-      workflowInstanceRecord.setScopeInstanceKey(parentKey);
+      workflowInstanceRecord.setFlowScopeKey(parentKey);
     }
 
     return workflowInstanceRecord;

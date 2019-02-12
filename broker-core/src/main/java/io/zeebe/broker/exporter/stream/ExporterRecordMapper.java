@@ -294,7 +294,7 @@ public class ExporterRecordMapper {
         record.getVersion(),
         record.getWorkflowKey(),
         record.getWorkflowInstanceKey(),
-        record.getScopeInstanceKey(),
+        record.getFlowScopeKey(),
         record.getBpmnElementType());
   }
 

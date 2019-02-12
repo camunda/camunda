@@ -27,7 +27,7 @@
             "elementId": {
               "type": "keyword"
             },
-            "scopeInstanceKey": {
+            "flowScopeKey": {
               "type": "long"
             },
             "payload": {

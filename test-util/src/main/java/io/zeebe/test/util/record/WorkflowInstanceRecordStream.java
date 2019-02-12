@@ -55,8 +55,8 @@ public class WorkflowInstanceRecordStream
     return valueFilter(v -> elementId.equals(v.getElementId()));
   }
 
-  public WorkflowInstanceRecordStream withScopeInstanceKey(final long scopeInstanceKey) {
-    return valueFilter(v -> v.getScopeInstanceKey() == scopeInstanceKey);
+  public WorkflowInstanceRecordStream withFlowScopeKey(final long flowScopeKey) {
+    return valueFilter(v -> v.getFlowScopeKey() == flowScopeKey);
   }
 
   public WorkflowInstanceRecordStream limitToWorkflowInstanceCompleted() {

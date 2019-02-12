@@ -558,7 +558,7 @@ public class ExporterStreamProcessorTest {
     final int version = 12;
     final int workflowInstanceKey = 1234;
     final String elementId = "activity";
-    final int scopeInstanceKey = 123;
+    final int flowScopeKey = 123;
     final BpmnElementType bpmnElementType = BpmnElementType.SERVICE_TASK;
 
     final WorkflowInstanceRecord record =
@@ -570,7 +570,7 @@ public class ExporterStreamProcessorTest {
             .setVersion(version)
             .setWorkflowKey(workflowKey)
             .setWorkflowInstanceKey(workflowInstanceKey)
-            .setScopeInstanceKey(scopeInstanceKey);
+            .setFlowScopeKey(flowScopeKey);
 
     final WorkflowInstanceRecordValue recordValue =
         new io.zeebe.broker.exporter.record.value.WorkflowInstanceRecordValueImpl(
@@ -581,7 +581,7 @@ public class ExporterStreamProcessorTest {
             version,
             workflowKey,
             workflowInstanceKey,
-            scopeInstanceKey,
+            flowScopeKey,
             bpmnElementType);
 
     // then

@@ -43,7 +43,7 @@ public interface WorkflowInstanceRecordValue extends RecordValueWithPayload {
    * @return the key of the activity instance that is the flow scope of this flow element instance;
    *     -1 for records of the workflow instance itself.
    */
-  long getScopeInstanceKey();
+  long getFlowScopeKey();
 
   /** @return the BPMN type of the current workflow element. */
   BpmnElementType getBpmnElementType();

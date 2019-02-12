@@ -121,7 +121,7 @@ public class ActivityOutputMappingTest {
             .done());
 
     // when
-    final long scopeInstanceKey = testClient.createWorkflowInstance(PROCESS_ID, initialPayload);
+    final long flowScopeKey = testClient.createWorkflowInstance(PROCESS_ID, initialPayload);
 
     testClient.completeJobOfType("test");
 
@@ -134,7 +134,7 @@ public class ActivityOutputMappingTest {
     assertThat(
             RecordingExporter.variableRecords()
                 .skipUntil(r -> r.getPosition() > taskCompleted.getPosition())
-                .withScopeKey(scopeInstanceKey)
+                .withScopeKey(flowScopeKey)
                 .limit(expectedScopeVariables.size()))
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getName(), v.getValue()))

@@ -115,7 +115,7 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
     final ElementInstance elementInstance =
         elementInstanceState.getInstance(context.getRecord().getKey());
     final ElementInstance flowScopeInstance =
-        elementInstanceState.getInstance(value.getScopeInstanceKey());
+        elementInstanceState.getInstance(value.getFlowScopeKey());
 
     context.setElementInstance(elementInstance);
     context.setFlowScopeInstance(flowScopeInstance);

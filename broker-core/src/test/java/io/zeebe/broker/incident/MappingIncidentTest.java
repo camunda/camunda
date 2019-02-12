@@ -190,7 +190,7 @@ public class MappingIncidentTest {
         testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     // when
-    testClient.updatePayload(failureEvent.getValue().getScopeInstanceKey(), PAYLOAD);
+    testClient.updatePayload(failureEvent.getValue().getFlowScopeKey(), PAYLOAD);
     testClient.resolveIncident(incidentEvent.getKey());
 
     // then
@@ -285,7 +285,7 @@ public class MappingIncidentTest {
 
     // when
     testClient.updatePayload(
-        failureEvent.getValue().getScopeInstanceKey(), "{'string':{'obj':'test'}}");
+        failureEvent.getValue().getFlowScopeKey(), "{'string':{'obj':'test'}}");
     testClient.resolveIncident(incidentEvent.getKey());
 
     // then

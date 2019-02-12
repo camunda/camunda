@@ -76,7 +76,7 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
   }
 
   public void storeFailedRecord(TypedRecord<WorkflowInstanceRecord> event) {
-    final long scopeKey = event.getValue().getScopeInstanceKey();
+    final long scopeKey = event.getValue().getFlowScopeKey();
     elementInstanceState.storeRecord(scopeKey, event, Purpose.FAILED);
   }
 
@@ -115,10 +115,10 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
 
   private void createNewElementInstance(
       long key, WorkflowInstanceIntent state, WorkflowInstanceRecord value) {
-    final long scopeInstanceKey = value.getScopeInstanceKey();
+    final long flowScopeKey = value.getFlowScopeKey();
 
-    if (scopeInstanceKey >= 0) {
-      final ElementInstance flowScopeInstance = elementInstanceState.getInstance(scopeInstanceKey);
+    if (flowScopeKey >= 0) {
+      final ElementInstance flowScopeInstance = elementInstanceState.getInstance(flowScopeKey);
       elementInstanceState.newInstance(flowScopeInstance, key, value, state);
     } else {
       elementInstanceState.newInstance(key, value, state);

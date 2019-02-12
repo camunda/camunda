@@ -148,7 +148,7 @@ public class MessageOutputMappingTest {
             .done());
 
     // when
-    final long scopeInstanceKey =
+    final long flowScopeKey =
         testClient.createWorkflowInstance(PROCESS_ID, "{'i': 0, 'key': 'msg-key'}");
 
     testClient.publishMessage("msg", "msg-key", messagePayload);
@@ -176,7 +176,7 @@ public class MessageOutputMappingTest {
     assertThat(
             RecordingExporter.variableRecords()
                 .skipUntil(r -> r.getPosition() > initialVariable.getPosition())
-                .withScopeKey(scopeInstanceKey)
+                .withScopeKey(flowScopeKey)
                 .limit(expectedScopeVariables.size()))
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getName(), v.getValue()))

@@ -35,7 +35,7 @@ public class IOMappingHelper {
     final T element = context.getElement();
     final WorkflowInstanceRecord record = context.getValue();
     final long elementInstanceKey = context.getRecord().getKey();
-    final long scopeInstanceKey = record.getScopeInstanceKey();
+    final long flowScopeKey = record.getFlowScopeKey();
     final boolean hasOutputMappings = element.getOutputMappings().length > 0;
 
     final DirectBuffer payload = variablesState.getPayload(elementInstanceKey);
@@ -57,12 +57,12 @@ public class IOMappingHelper {
       mergeTool.mergeDocumentStrictly(variables, element.getOutputMappings());
       final DirectBuffer mergedPayload = mergeTool.writeResultToBuffer();
 
-      variablesState.setVariablesFromDocument(scopeInstanceKey, mergedPayload);
+      variablesState.setVariablesFromDocument(flowScopeKey, mergedPayload);
     }
 
     // TODO (saig0) #1852: temporary way to calculate the right payload
-    if (scopeInstanceKey >= 0) {
-      record.setPayload(variablesState.getVariablesAsDocument(scopeInstanceKey));
+    if (flowScopeKey >= 0) {
+      record.setPayload(variablesState.getVariablesAsDocument(flowScopeKey));
     }
   }
 
