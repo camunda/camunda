@@ -251,6 +251,22 @@ public class BpmnElementTypeTest {
                   .done();
             }
           },
+          new BpmnElementTypeScenario(
+              "Sequence Flow After Exclusive Gateway", BpmnElementType.SEQUENCE_FLOW) {
+            @Override
+            BpmnModelInstance modelInstance() {
+              return Bpmn.createExecutableProcess(processId())
+                  .startEvent()
+                  .exclusiveGateway()
+                  .condition("5 > 1")
+                  .sequenceFlowId(elementId())
+                  .endEvent()
+                  .moveToLastExclusiveGateway()
+                  .defaultFlow()
+                  .endEvent()
+                  .done();
+            }
+          },
           new BpmnElementTypeScenario("Event Based Gateway", BpmnElementType.EVENT_BASED_GATEWAY) {
             @Override
             BpmnModelInstance modelInstance() {
