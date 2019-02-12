@@ -25,6 +25,7 @@ import io.zeebe.broker.workflow.processor.handlers.element.ElementActivatingHand
 import io.zeebe.msgpack.el.CompiledJsonCondition;
 import io.zeebe.msgpack.el.JsonConditionException;
 import io.zeebe.msgpack.el.JsonConditionInterpreter;
+import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.impl.record.value.incident.ErrorType;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -97,7 +98,7 @@ public class ExclusiveGatewayElementActivatingHandler<T extends ExecutableExclus
       ExecutableSequenceFlow sequenceFlow) {
     record.wrap(value);
     record.setElementId(sequenceFlow.getId());
-    record.setBpmnElementType(sequenceFlow.getTarget().getElementType());
+    record.setBpmnElementType(BpmnElementType.SEQUENCE_FLOW);
 
     context
         .getOutput()
