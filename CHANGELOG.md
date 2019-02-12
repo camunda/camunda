@@ -1,3 +1,21 @@
+<a name="0.15.0"></a>
+## 0.15.0 (2019-02-12)
+
+
+#### Bug Fixes
+
+* **broker:**
+  *  reject deployment which contains at least one invalid resource ([fd478adc](https://github.com/zeebe-io/zeebe/commit/fd478adc2691b427c54389461c6f4bdd685d7267))
+  *  ensure YAML transformation does not break the msgpack serialization ([575178cf](https://github.com/zeebe-io/zeebe/commit/575178cf87a05fff1db6ecc8eb31d89a94a547b5))
+
+#### Features
+
+* **broker:**
+  *  add workflowInstanceKey to variable records ([35b2f1e4](https://github.com/zeebe-io/zeebe/commit/35b2f1e45351d29109a2fef0810116ca6661f72f))
+  *  unify lifecycle of flow elements ([7c2589ab](https://github.com/zeebe-io/zeebe/commit/7c2589abf5ca310e8fc3909cc2b8c042e45db55a))
+
+
+
 <a name="0.14.0"></a>
 ## 0.14.0 (2018-12-04)
 
