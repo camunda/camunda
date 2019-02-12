@@ -166,7 +166,7 @@ public class MessageOutputMappingTest {
     assertThat(
             RecordingExporter.variableRecords()
                 .skipUntil(r -> r.getPosition() > initialVariable.getPosition())
-                .withScopeInstanceKey(elementInstanceKey)
+                .withScopeKey(elementInstanceKey)
                 .limit(expectedActivtyVariables.size()))
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getName(), v.getValue()))
@@ -176,7 +176,7 @@ public class MessageOutputMappingTest {
     assertThat(
             RecordingExporter.variableRecords()
                 .skipUntil(r -> r.getPosition() > initialVariable.getPosition())
-                .withScopeInstanceKey(scopeInstanceKey)
+                .withScopeKey(scopeInstanceKey)
                 .limit(expectedScopeVariables.size()))
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getName(), v.getValue()))

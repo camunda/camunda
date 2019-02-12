@@ -545,8 +545,8 @@ public class VariablesState {
   }
 
   public interface VariableListener {
-    void onCreate(DirectBuffer name, DirectBuffer value, long scopeInstanceKey, long rootScopeKey);
+    void onCreate(DirectBuffer name, DirectBuffer value, long variableScopeKey, long rootScopeKey);
 
-    void onUpdate(DirectBuffer name, DirectBuffer value, long scopeInstanceKey, long rootScopeKey);
+    void onUpdate(DirectBuffer name, DirectBuffer value, long variableScopeKey, long rootScopeKey);
   }
 }

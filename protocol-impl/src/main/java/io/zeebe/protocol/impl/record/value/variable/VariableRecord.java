@@ -25,13 +25,13 @@ public class VariableRecord extends UnpackedObject {
 
   private final StringProperty nameProp = new StringProperty("name");
   private final BinaryProperty valueProp = new BinaryProperty("value");
-  private final LongProperty scopeInstanceKeyProp = new LongProperty("scopeInstanceKey");
+  private final LongProperty scopeKeyProp = new LongProperty("scopeKey");
   private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey");
 
   public VariableRecord() {
     this.declareProperty(nameProp)
         .declareProperty(valueProp)
-        .declareProperty(scopeInstanceKeyProp)
+        .declareProperty(scopeKeyProp)
         .declareProperty(workflowInstanceKeyProp);
   }
 
@@ -53,12 +53,12 @@ public class VariableRecord extends UnpackedObject {
     return this;
   }
 
-  public long getScopeInstanceKey() {
-    return scopeInstanceKeyProp.getValue();
+  public long getScopeKey() {
+    return scopeKeyProp.getValue();
   }
 
-  public VariableRecord setScopeInstanceKey(long scopeInstanceKey) {
-    this.scopeInstanceKeyProp.setValue(scopeInstanceKey);
+  public VariableRecord setScopeKey(long scopeKey) {
+    this.scopeKeyProp.setValue(scopeKey);
     return this;
   }
 

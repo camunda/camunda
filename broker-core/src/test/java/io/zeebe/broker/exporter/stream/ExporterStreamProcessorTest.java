@@ -693,19 +693,18 @@ public class ExporterStreamProcessorTest {
     // given
     final String name = "x";
     final String value = "1";
-    final long scopeInstanceKey = 3;
+    final long scopeKey = 3;
     final long workflowInstanceKey = 2;
 
     final VariableRecord record =
         new VariableRecord()
             .setName(wrapString(name))
             .setValue(MsgPackUtil.asMsgPack(value))
-            .setScopeInstanceKey(scopeInstanceKey)
+            .setScopeKey(scopeKey)
             .setWorkflowInstanceKey(workflowInstanceKey);
 
     final VariableRecordValue recordValue =
-        new VariableRecordValueImpl(
-            OBJECT_MAPPER, name, value, scopeInstanceKey, workflowInstanceKey);
+        new VariableRecordValueImpl(OBJECT_MAPPER, name, value, scopeKey, workflowInstanceKey);
 
     // then
     assertRecordExported(VariableIntent.CREATED, record, recordValue);

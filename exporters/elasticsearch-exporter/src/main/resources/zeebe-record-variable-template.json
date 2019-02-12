@@ -18,7 +18,7 @@
             "value": {
               "type": "text"
             },
-            "scopeInstanceKey": {
+            "scopeKey": {
               "type": "long"
             },
             "workflowInstanceKey": {

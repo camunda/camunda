@@ -134,7 +134,7 @@ public class ActivityOutputMappingTest {
     assertThat(
             RecordingExporter.variableRecords()
                 .skipUntil(r -> r.getPosition() > taskCompleted.getPosition())
-                .withScopeInstanceKey(scopeInstanceKey)
+                .withScopeKey(scopeInstanceKey)
                 .limit(expectedScopeVariables.size()))
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getName(), v.getValue()))

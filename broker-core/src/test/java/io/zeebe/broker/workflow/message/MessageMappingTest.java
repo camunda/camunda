@@ -142,7 +142,7 @@ public class MessageMappingTest {
 
     Assertions.assertThat(variableEvent.getValue())
         .hasValue("\"bar\"")
-        .hasScopeInstanceKey(workflowInstanceKey);
+        .hasScopeKey(workflowInstanceKey);
   }
 
   @Test
@@ -162,7 +162,7 @@ public class MessageMappingTest {
 
     Assertions.assertThat(variableEvent.getValue())
         .hasValue("\"bar\"")
-        .hasScopeInstanceKey(workflowInstanceKey);
+        .hasScopeKey(workflowInstanceKey);
   }
 
   @Test
@@ -182,7 +182,7 @@ public class MessageMappingTest {
 
     Assertions.assertThat(variableEvent.getValue())
         .hasValue("\"bar\"")
-        .hasScopeInstanceKey(workflowInstanceKey);
+        .hasScopeKey(workflowInstanceKey);
   }
 
   private void deployWorkflowWithMapping(Consumer<ZeebePayloadMappingBuilder<?>> c) {

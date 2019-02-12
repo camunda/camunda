@@ -188,7 +188,7 @@ public class JobOutputMappingTest {
     assertThat(
             RecordingExporter.variableRecords()
                 .skipUntil(r -> r.getPosition() > initialVariable.getPosition())
-                .withScopeInstanceKey(elementInstanceKey)
+                .withScopeKey(elementInstanceKey)
                 .limit(expectedActivityVariables.size()))
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getName(), v.getValue()))
@@ -198,7 +198,7 @@ public class JobOutputMappingTest {
     assertThat(
             RecordingExporter.variableRecords()
                 .skipUntil(r -> r.getPosition() > initialVariable.getPosition())
-                .withScopeInstanceKey(scopeInstanceKey)
+                .withScopeKey(scopeInstanceKey)
                 .limit(expectedScopeVariables.size()))
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getName(), v.getValue()))

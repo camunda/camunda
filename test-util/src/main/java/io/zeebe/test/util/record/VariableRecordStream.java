@@ -35,8 +35,8 @@ public class VariableRecordStream
     return valueFilter(v -> v.getName().equals(name));
   }
 
-  public VariableRecordStream withScopeInstanceKey(final long scopeInstanceKey) {
-    return valueFilter(v -> v.getScopeInstanceKey() == scopeInstanceKey);
+  public VariableRecordStream withScopeKey(final long scopeKey) {
+    return valueFilter(v -> v.getScopeKey() == scopeKey);
   }
 
   public VariableRecordStream withValue(final String value) {

@@ -535,7 +535,7 @@ public class VariableStateTest {
     assertThat(listener.created).hasSize(1);
     assertThat(listener.created.get(0).name).isEqualTo("x");
     assertThat(listener.created.get(0).value).isEqualTo("foo".getBytes());
-    assertThat(listener.created.get(0).scopeInstanceKey).isEqualTo(1L);
+    assertThat(listener.created.get(0).variableScopeKey).isEqualTo(1L);
     assertThat(listener.created.get(0).rootScopeKey).isEqualTo(1L);
 
     assertThat(listener.updated).isEmpty();
@@ -557,7 +557,7 @@ public class VariableStateTest {
     assertThat(listener.updated).hasSize(1);
     assertThat(listener.updated.get(0).name).isEqualTo("x");
     assertThat(listener.updated.get(0).value).isEqualTo("bar".getBytes());
-    assertThat(listener.updated.get(0).scopeInstanceKey).isEqualTo(1L);
+    assertThat(listener.updated.get(0).variableScopeKey).isEqualTo(1L);
     assertThat(listener.updated.get(0).rootScopeKey).isEqualTo(1L);
   }
 
@@ -591,12 +591,12 @@ public class VariableStateTest {
     assertThat(listener.created).hasSize(2);
     assertThat(listener.created.get(0).name).isEqualTo("x");
     assertThat(listener.created.get(0).value).isEqualTo(stringToMsgpack("foo"));
-    assertThat(listener.created.get(0).scopeInstanceKey).isEqualTo(1L);
+    assertThat(listener.created.get(0).variableScopeKey).isEqualTo(1L);
     assertThat(listener.created.get(0).rootScopeKey).isEqualTo(1L);
 
     assertThat(listener.created.get(1).name).isEqualTo("y");
     assertThat(listener.created.get(1).value).isEqualTo(stringToMsgpack("bar"));
-    assertThat(listener.created.get(1).scopeInstanceKey).isEqualTo(1L);
+    assertThat(listener.created.get(1).variableScopeKey).isEqualTo(1L);
     assertThat(listener.created.get(0).rootScopeKey).isEqualTo(1L);
 
     assertThat(listener.updated).isEmpty();
@@ -624,13 +624,13 @@ public class VariableStateTest {
     assertThat(listener.created).hasSize(2);
     assertThat(listener.created.get(1).name).isEqualTo("y");
     assertThat(listener.created.get(1).value).isEqualTo(stringToMsgpack("bar"));
-    assertThat(listener.created.get(1).scopeInstanceKey).isEqualTo(parentScope);
+    assertThat(listener.created.get(1).variableScopeKey).isEqualTo(parentScope);
     assertThat(listener.created.get(1).rootScopeKey).isEqualTo(parentScope);
 
     assertThat(listener.updated).hasSize(1);
     assertThat(listener.updated.get(0).name).isEqualTo("x");
     assertThat(listener.updated.get(0).value).isEqualTo(stringToMsgpack("bar"));
-    assertThat(listener.updated.get(0).scopeInstanceKey).isEqualTo(childScope);
+    assertThat(listener.updated.get(0).variableScopeKey).isEqualTo(childScope);
     assertThat(listener.updated.get(0).rootScopeKey).isEqualTo(parentScope);
   }
 
@@ -704,13 +704,13 @@ public class VariableStateTest {
     private class VariableChange {
       private final String name;
       private final byte[] value;
-      private final long scopeInstanceKey;
+      private final long variableScopeKey;
       private final long rootScopeKey;
 
-      VariableChange(String name, byte[] value, long scopeInstanceKey, long rootScopeKey) {
+      VariableChange(String name, byte[] value, long variableScopeKey, long rootScopeKey) {
         this.name = name;
         this.value = value;
-        this.scopeInstanceKey = scopeInstanceKey;
+        this.variableScopeKey = variableScopeKey;
         this.rootScopeKey = rootScopeKey;
       }
     }
@@ -720,24 +720,24 @@ public class VariableStateTest {
 
     @Override
     public void onCreate(
-        DirectBuffer name, DirectBuffer value, long scopeInstanceKey, long rootScopeKey) {
+        DirectBuffer name, DirectBuffer value, long variableScopeKey, long rootScopeKey) {
       final VariableChange change =
           new VariableChange(
               bufferAsString(name),
               BufferUtil.bufferAsArray(value),
-              scopeInstanceKey,
+              variableScopeKey,
               rootScopeKey);
       created.add(change);
     }
 
     @Override
     public void onUpdate(
-        DirectBuffer name, DirectBuffer value, long scopeInstanceKey, long rootScopeKey) {
+        DirectBuffer name, DirectBuffer value, long variableScopeKey, long rootScopeKey) {
       final VariableChange change =
           new VariableChange(
               bufferAsString(name),
               BufferUtil.bufferAsArray(value),
-              scopeInstanceKey,
+              variableScopeKey,
               rootScopeKey);
       updated.add(change);
     }
