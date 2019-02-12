@@ -24,8 +24,6 @@ public class WorkflowInstanceDto {
 
   private List<IncidentDto> incidents = new ArrayList<>();
 
-  private List<ActivityInstanceDto> activities = new ArrayList<>();
-
   private List<OperationDto> operations = new ArrayList<>();
 
   private List<SequenceFlowDto> sequenceFlows = new ArrayList<>();
@@ -102,14 +100,6 @@ public class WorkflowInstanceDto {
     this.incidents = incidents;
   }
 
-  public List<ActivityInstanceDto> getActivities() {
-    return activities;
-  }
-
-  public void setActivities(List<ActivityInstanceDto> activities) {
-    this.activities = activities;
-  }
-
   public List<OperationDto> getOperations() {
     return operations;
   }
@@ -140,7 +130,6 @@ public class WorkflowInstanceDto {
     workflowInstance.setWorkflowName(workflowInstanceEntity.getWorkflowName());
     workflowInstance.setWorkflowVersion(workflowInstanceEntity.getWorkflowVersion());
     workflowInstance.setIncidents(IncidentDto.createFrom(workflowInstanceEntity.getIncidents()));
-    workflowInstance.setActivities(ActivityInstanceDto.createFrom(workflowInstanceEntity.getActivities()));
     workflowInstance.setOperations(OperationDto.createFrom(workflowInstanceEntity.getOperations()));
     workflowInstance.setSequenceFlows(SequenceFlowDto.createFrom(workflowInstanceEntity.getSequenceFlows()));
     return workflowInstance;
@@ -173,8 +162,6 @@ public class WorkflowInstanceDto {
       return false;
     if (incidents != null ? !incidents.equals(that.incidents) : that.incidents != null)
       return false;
-    if (activities != null ? !activities.equals(that.activities) : that.activities != null)
-      return false;
     if (operations != null ? !operations.equals(that.operations) : that.operations != null)
       return false;
     return sequenceFlows != null ? sequenceFlows.equals(that.sequenceFlows) : that.sequenceFlows == null;
@@ -191,7 +178,6 @@ public class WorkflowInstanceDto {
     result = 31 * result + (state != null ? state.hashCode() : 0);
     result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
     result = 31 * result + (incidents != null ? incidents.hashCode() : 0);
-    result = 31 * result + (activities != null ? activities.hashCode() : 0);
     result = 31 * result + (operations != null ? operations.hashCode() : 0);
     result = 31 * result + (sequenceFlows != null ? sequenceFlows.hashCode() : 0);
     return result;

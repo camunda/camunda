@@ -15,12 +15,13 @@ package org.camunda.operate.util;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
+import org.camunda.operate.entities.detailview.ActivityInstanceForDetailViewEntity;
+import org.camunda.operate.es.reader.DetailViewReader;
 import org.camunda.operate.es.reader.ListViewReader;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.reader.WorkflowReader;
@@ -44,6 +45,9 @@ public class ElasticsearchChecks {
 
   @Autowired
   private WorkflowInstanceReader workflowInstanceReader;
+
+  @Autowired
+  private DetailViewReader detailViewReader;
 
   @Autowired
   private ListViewReader listViewReader;
@@ -72,8 +76,8 @@ public class ElasticsearchChecks {
       String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
       String activityId = (String)objects[1];
       try {
-        final WorkflowInstanceEntity instance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
-        final List<ActivityInstanceEntity> activities = instance.getActivities().stream().filter(a -> a.getActivityId().equals(activityId))
+        List<ActivityInstanceForDetailViewEntity> activityInstances = detailViewReader.getAllActivityInstances(workflowInstanceId);
+        final List<ActivityInstanceForDetailViewEntity> activities = activityInstances.stream().filter(a -> a.getActivityId().equals(activityId))
           .collect(Collectors.toList());
         if (activities.size() == 0) {
           return false;
@@ -95,8 +99,8 @@ public class ElasticsearchChecks {
       String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
       String activityId = (String)objects[1];
       try {
-        final WorkflowInstanceEntity instance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
-        final List<ActivityInstanceEntity> activities = instance.getActivities().stream().filter(a -> a.getActivityId().equals(activityId))
+        List<ActivityInstanceForDetailViewEntity> activityInstances = detailViewReader.getAllActivityInstances(workflowInstanceId);
+        final List<ActivityInstanceForDetailViewEntity> activities = activityInstances.stream().filter(a -> a.getActivityId().equals(activityId))
           .collect(Collectors.toList());
         if (activities.size() == 0) {
           return false;
@@ -118,8 +122,8 @@ public class ElasticsearchChecks {
       String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
       String activityId = (String)objects[1];
       try {
-        final WorkflowInstanceEntity instance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
-        final List<ActivityInstanceEntity> activities = instance.getActivities().stream().filter(a -> a.getActivityId().equals(activityId))
+        List<ActivityInstanceForDetailViewEntity> activityInstances = detailViewReader.getAllActivityInstances(workflowInstanceId);
+        final List<ActivityInstanceForDetailViewEntity> activities = activityInstances.stream().filter(a -> a.getActivityId().equals(activityId))
           .collect(Collectors.toList());
         if (activities.size() == 0) {
           return false;

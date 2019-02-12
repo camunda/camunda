@@ -86,7 +86,7 @@ public class DetailViewReader {
     }
   }
 
-  private List<ActivityInstanceForDetailViewEntity> getAllActivityInstances(String workflowInstanceId) {
+  public List<ActivityInstanceForDetailViewEntity> getAllActivityInstances(String workflowInstanceId) {
 
     final TermQueryBuilder workflowInstanceIdQ = termQuery(ActivityInstanceTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId);
 

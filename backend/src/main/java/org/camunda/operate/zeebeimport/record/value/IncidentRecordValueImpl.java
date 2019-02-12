@@ -30,6 +30,7 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
   private long workflowInstanceKey;
   private long elementInstanceKey;
   private long jobKey;
+  private long variableScopeKey;
 
   public IncidentRecordValueImpl() {
   }
@@ -69,6 +70,11 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
     return jobKey;
   }
 
+  @Override
+  public long getVariableScopeKey() {
+    return variableScopeKey;
+  }
+
   public void setErrorType(String errorType) {
     this.errorType = errorType;
   }
@@ -97,62 +103,56 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
     this.jobKey = jobKey;
   }
 
+  public void setVariableScopeKey(long variableScopeKey) {
+    this.variableScopeKey = variableScopeKey;
+  }
+
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(Object o) {
+    if (this == o)
       return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
+    if (o == null || getClass() != o.getClass())
       return false;
-    }
-    if (!super.equals(o)) {
+    if (!super.equals(o))
       return false;
-    }
-    final IncidentRecordValueImpl that = (IncidentRecordValueImpl) o;
-    return workflowInstanceKey == that.workflowInstanceKey
-        && elementInstanceKey == that.elementInstanceKey
-        && jobKey == that.jobKey
-        && Objects.equals(errorType, that.errorType)
-        && Objects.equals(errorMessage, that.errorMessage)
-        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
-        && Objects.equals(elementId, that.elementId);
+
+    IncidentRecordValueImpl that = (IncidentRecordValueImpl) o;
+
+    if (workflowInstanceKey != that.workflowInstanceKey)
+      return false;
+    if (elementInstanceKey != that.elementInstanceKey)
+      return false;
+    if (jobKey != that.jobKey)
+      return false;
+    if (variableScopeKey != that.variableScopeKey)
+      return false;
+    if (errorType != null ? !errorType.equals(that.errorType) : that.errorType != null)
+      return false;
+    if (errorMessage != null ? !errorMessage.equals(that.errorMessage) : that.errorMessage != null)
+      return false;
+    if (bpmnProcessId != null ? !bpmnProcessId.equals(that.bpmnProcessId) : that.bpmnProcessId != null)
+      return false;
+    return elementId != null ? elementId.equals(that.elementId) : that.elementId == null;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(
-        super.hashCode(),
-        errorType,
-        errorMessage,
-        bpmnProcessId, elementId,
-        workflowInstanceKey, elementInstanceKey,
-        jobKey);
+    int result = super.hashCode();
+    result = 31 * result + (errorType != null ? errorType.hashCode() : 0);
+    result = 31 * result + (errorMessage != null ? errorMessage.hashCode() : 0);
+    result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
+    result = 31 * result + (elementId != null ? elementId.hashCode() : 0);
+    result = 31 * result + (int) (workflowInstanceKey ^ (workflowInstanceKey >>> 32));
+    result = 31 * result + (int) (elementInstanceKey ^ (elementInstanceKey >>> 32));
+    result = 31 * result + (int) (jobKey ^ (jobKey >>> 32));
+    result = 31 * result + (int) (variableScopeKey ^ (variableScopeKey >>> 32));
+    return result;
   }
 
   @Override
   public String toString() {
-    return "IncidentRecordValueImpl{"
-        + "errorType='"
-        + errorType
-        + '\''
-        + ", errorMessage='"
-        + errorMessage
-        + '\''
-        + ", bpmnProcessId='"
-        + bpmnProcessId
-        + '\''
-        + ", elementId='"
-        + elementId
-        + '\''
-        + ", workflowInstanceKey="
-        + workflowInstanceKey
-        + ", elementInstanceKey="
-        + elementInstanceKey
-        + ", jobKey="
-        + jobKey
-        + ", payload='"
-        + getPayload()
-        + '\''
-        + '}';
+    return "IncidentRecordValueImpl{" + "errorType='" + errorType + '\'' + ", errorMessage='" + errorMessage + '\'' + ", bpmnProcessId='" + bpmnProcessId + '\''
+      + ", elementId='" + elementId + '\'' + ", workflowInstanceKey=" + workflowInstanceKey + ", elementInstanceKey=" + elementInstanceKey + ", jobKey="
+      + jobKey + ", variableScopeKey=" + variableScopeKey + "} " + super.toString();
   }
 }

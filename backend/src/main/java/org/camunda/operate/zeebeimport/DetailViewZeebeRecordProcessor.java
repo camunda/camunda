@@ -29,14 +29,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.IncidentIntent;
+import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_READY;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.EVENT_ACTIVATED;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.EVENT_ACTIVATING;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.EVENT_TRIGGERED;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.EVENT_TRIGGERING;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.GATEWAY_ACTIVATED;
 
 @Component
 public class DetailViewZeebeRecordProcessor {
@@ -49,10 +44,8 @@ public class DetailViewZeebeRecordProcessor {
   static {
     AI_FINISH_STATES.add(ELEMENT_COMPLETED.name());
     AI_FINISH_STATES.add(ELEMENT_TERMINATED.name());
-    AI_FINISH_STATES.add(EVENT_TRIGGERED.name());
 
-    AI_START_STATES.add(ELEMENT_READY.name());
-    AI_START_STATES.add(EVENT_ACTIVATING.name());
+    AI_START_STATES.add(ELEMENT_ACTIVATING.name());
   }
 
   @Autowired
@@ -81,7 +74,7 @@ public class DetailViewZeebeRecordProcessor {
     final String intentStr = record.getMetadata().getIntent().name();
     WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
 
-    if (!isProcessEvent(recordValue) && !isOfType(recordValue, BpmnElementType.SEQUENCE_FLOW) && !intentStr.equals(Intent.UNKNOWN.name())){
+    if (!isProcessEvent(recordValue) && !intentStr.equals(Intent.SEQUENCE_FLOW_TAKEN.name()) && !intentStr.equals(Intent.UNKNOWN.name())){
       bulkRequestBuilder.add(persistActivityInstance(record, intentStr, recordValue));
     }
   }
@@ -111,13 +104,9 @@ public class DetailViewZeebeRecordProcessor {
     entity.setPartitionId(record.getMetadata().getPartitionId());
     entity.setActivityId(recordValue.getElementId());
     entity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
-    entity.setScopeId(IdUtil.getId(recordValue.getScopeInstanceKey(), record));
+    entity.setScopeId(IdUtil.getId(recordValue.getFlowScopeKey(), record));
 
-    boolean activityFinished = AI_FINISH_STATES.contains(intentStr);
-    if (!activityFinished && intentStr.equals(EVENT_ACTIVATED.name()) && isEndEvent(recordValue)) {
-      activityFinished = true;
-    }
-    if (activityFinished) {
+    if (AI_FINISH_STATES.contains(intentStr)) {
       if (intentStr.equals(ELEMENT_TERMINATED.name())) {
         entity.setState(ActivityState.TERMINATED);
       } else {
@@ -126,10 +115,7 @@ public class DetailViewZeebeRecordProcessor {
       entity.setEndDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
     } else {
       entity.setState(ActivityState.ACTIVE);
-      //TODO fix this for gateways and start events, when new event flow is ready
-      if (AI_START_STATES.contains(intentStr)
-        || (intentStr.equals(EVENT_TRIGGERING.name()) && isOfType(recordValue, BpmnElementType.START_EVENT))
-        || intentStr.equals(GATEWAY_ACTIVATED.name())) {
+      if (AI_START_STATES.contains(intentStr)) {
         entity.setStartDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
         entity.setPosition(record.getPosition());
       }
@@ -201,10 +187,6 @@ public class DetailViewZeebeRecordProcessor {
 
   private boolean isProcessEvent(WorkflowInstanceRecordValueImpl recordValue) {
     return isOfType(recordValue, BpmnElementType.PROCESS);
-  }
-
-  private boolean isEndEvent(WorkflowInstanceRecordValueImpl recordValue) {
-    return isOfType(recordValue, BpmnElementType.END_EVENT);
   }
 
   private boolean isOfType(WorkflowInstanceRecordValueImpl recordValue, BpmnElementType type) {

@@ -18,7 +18,6 @@ import java.util.function.Predicate;
 import org.apache.http.HttpStatus;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.OperationDto;

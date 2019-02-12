@@ -23,8 +23,6 @@ public class WorkflowInstanceEntity extends OperateZeebeEntity {
 
   private List<IncidentEntity> incidents = new ArrayList<>();
 
-  private List<ActivityInstanceEntity> activities = new ArrayList<>();
-
   @JsonIgnore
   private List<OperationEntity> operations = new ArrayList<>();
 
@@ -100,14 +98,6 @@ public class WorkflowInstanceEntity extends OperateZeebeEntity {
 
   public void setIncidents(List<IncidentEntity> incidents) {
     this.incidents = incidents;
-  }
-
-  public List<ActivityInstanceEntity> getActivities() {
-    return activities;
-  }
-
-  public void setActivities(List<ActivityInstanceEntity> activityInstances) {
-    this.activities = activityInstances;
   }
 
   public List<OperationEntity> getOperations() {
@@ -190,8 +180,6 @@ public class WorkflowInstanceEntity extends OperateZeebeEntity {
       return false;
     if (incidents != null ? !incidents.equals(that.incidents) : that.incidents != null)
       return false;
-    if (activities != null ? !activities.equals(that.activities) : that.activities != null)
-      return false;
     if (operations != null ? !operations.equals(that.operations) : that.operations != null)
       return false;
     if (stringVariables != null ? !stringVariables.equals(that.stringVariables) : that.stringVariables != null)
@@ -216,7 +204,6 @@ public class WorkflowInstanceEntity extends OperateZeebeEntity {
     result = 31 * result + (state != null ? state.hashCode() : 0);
     result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
     result = 31 * result + (incidents != null ? incidents.hashCode() : 0);
-    result = 31 * result + (activities != null ? activities.hashCode() : 0);
     result = 31 * result + (operations != null ? operations.hashCode() : 0);
     result = 31 * result + (stringVariables != null ? stringVariables.hashCode() : 0);
     result = 31 * result + (longVariables != null ? longVariables.hashCode() : 0);

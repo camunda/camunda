@@ -4,19 +4,14 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.camunda.operate.entities.ActivityInstanceEntity;
-import org.camunda.operate.entities.ActivityState;
-import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.EventSourceType;
 import org.camunda.operate.entities.IncidentEntity;
-import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.SequenceFlowEntity;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
-import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.schema.indices.AbstractIndexCreator;
 import org.camunda.operate.es.schema.indices.WorkflowIndex;
@@ -139,39 +134,6 @@ public class ElasticsearchRequestCreatorsHolder {
             "if (!f) {" +
               //add incident if not found
               "ctx._source.incidents.add(params.incident);" +
-            "}" +
-
-            //search for activity instance
-            "for (int j = 0; j < ctx._source.activities.size(); j++) {" +
-              "if (ctx._source.activities[j].id == params.incident.activityInstanceId) {" +
-              //incident is ACTIVE
-                "if (params.incident.state == '" + IncidentState.ACTIVE.toString() + "') {" +
-                  "if (ctx._source.activities[j].type == '" + ActivityType.EXCLUSIVE_GATEWAY.toString() + "') {" +    //TODO other dateway types
-        "ctx._source.activities[j].state = '" + ActivityState.INCIDENT.toString() + "';" +
-//                    "ctx._source.activities[j].endDate = null;" +   //TODO should be set by workflow instance event -> we need test case for this
-                  "} else if (ctx._source.activities[j].state != '" + ActivityState.COMPLETED.toString() + "') {" +
-                    "ctx._source.activities[j].state = '" + ActivityState.INCIDENT.toString() + "';" +
-//                    "ctx._source.activities[j].endDate = null;" +   //TODO should be set by workflow instance event -> we need test case for this
-                  "}" +
-              //incident is not ACTIVE and activity is GATEWAY
-                "} else if (ctx._source.activities[j].type == '" + ActivityType.EXCLUSIVE_GATEWAY.toString() + "') {" +  //TODO other dateway types
-                  "ctx._source.activities[j].state = '" + ActivityState.COMPLETED.toString() + "';" +
-              //incident is not ACTIVE and activity is not finished
-                "} else if (ctx._source.activities[j].state != '" + ActivityState.COMPLETED.toString() + "'" +
-                  "&& ctx._source.activities[j].state != '" + ActivityState.TERMINATED.toString() + "') {" +
-                  //incident is resolved and activity does not have end date set -> activity must become active
-                  "if (ctx._source.activities[j].endDate == null) {" +
-                    "ctx._source.activities[j].state = '" + ActivityState.ACTIVE.toString() + "';" +
-                  //else activity is completed or even terminated, depending on the state of the instance
-                  "} else { " +
-                    "if (ctx._source.state == '" + WorkflowInstanceState.CANCELED + "') {" +
-                      "ctx._source.activities[j].state = '" + ActivityState.TERMINATED.toString() + "';" +
-                    "} else {" +
-                      "ctx._source.activities[j].state = '" + ActivityState.COMPLETED.toString() + "';" +
-                    "} " +
-                  "}" +
-                "}" +
-              "}" +
             "}";
 
         Script updateScript = new Script(
@@ -202,65 +164,6 @@ public class ElasticsearchRequestCreatorsHolder {
     workflowInstanceEntity.setPartitionId(incident.getPartitionId());
     workflowInstanceEntity.getIncidents().add(incident);
     return workflowInstanceEntity;
-  }
-
-  /**
-   * Inserting or updating an activity instance always mean UPDATE for workflow instance index.
-   * In case the workflow instance is not there yet, we don't want to insert it (this is an exceptional situation,
-   * as we process all events in one thread in ordered manner at the moment).
-   *
-   * @return
-   */
-  public ElasticsearchRequestCreator<ActivityInstanceEntity> activityInstanceEsRequestCreator() {
-    return (bulkRequestBuilder, entity) -> {
-      try {
-
-        logger.debug("Activity instance: id {}, workflowInstanceId {}", entity.getId(), entity.getWorkflowInstanceId());
-
-        Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(entity), HashMap.class);
-        Map<String, Object> params = new HashMap<>();
-        params.put("activity", jsonMap);
-
-        String script =
-            "boolean f = false;" +
-            //search for active incident
-            "for (int j = 0; j < ctx._source.incidents.size(); j++) {" +
-              "if (ctx._source.incidents[j].activityInstanceId == params.activity.id && " +
-                  "ctx._source.incidents[j].state == '" + IncidentState.ACTIVE.toString() + "') {" +
-                "params.activity.state = '" + ActivityState.INCIDENT.toString() + "'; " +
-              "} " +
-            "} " +
-            "for (int j = 0; j < ctx._source.activities.size(); j++) {" +
-              "if (ctx._source.activities[j].id == params.activity.id) {" +
-                "if (params.activity.endDate != null) {" +
-                  "ctx._source.activities[j].endDate = params.activity.endDate;" +
-                  "ctx._source.activities[j].state = params.activity.state;" +
-                "}" +
-                "f = true;" +
-                "break;" +
-              "}" +
-            "}" +
-            "if (!f) {" +
-              "ctx._source.activities.add(params.activity);" +
-            "}"
-
-          ;
-
-        Script updateScript = new Script(
-          ScriptType.INLINE,
-          Script.DEFAULT_SCRIPT_LANG,
-          script,
-          params
-        );
-        return bulkRequestBuilder.add(
-          esClient
-            .prepareUpdate(workflowInstanceTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getWorkflowInstanceId())
-            .setScript(updateScript));
-      } catch (IOException e) {
-        logger.error("Error preparing the query to update activity instance", e);
-        throw new PersistenceException(String.format("Error preparing the query to update activity instance [%s]", entity.getId()), e);
-      }
-    };
   }
 
   /**
@@ -376,7 +279,6 @@ public class ElasticsearchRequestCreatorsHolder {
     Map<Class<? extends OperateEntity>, ElasticsearchRequestCreator> map = new HashMap<>();
     map.put(WorkflowInstanceEntity.class, workflowInstanceEsRequestCreator());
     map.put(IncidentEntity.class, incidentEsRequestCreator());
-    map.put(ActivityInstanceEntity.class, activityInstanceEsRequestCreator());
     map.put(WorkflowEntity.class, workflowEsRequestCreator());
     map.put(EventEntity.class, eventEsRequestCreator());
     map.put(SequenceFlowEntity.class, sequenceFlowEsRequestCreator());

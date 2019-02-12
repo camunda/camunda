@@ -18,9 +18,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.camunda.operate.entities.ActivityInstanceEntity;
-import org.camunda.operate.entities.ActivityState;
-import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.OperateZeebeEntity;
 import org.camunda.operate.entities.SequenceFlowEntity;
@@ -39,14 +36,8 @@ import io.zeebe.exporter.record.Record;
 import io.zeebe.protocol.BpmnElementType;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETING;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_READY;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.EVENT_ACTIVATED;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.EVENT_ACTIVATING;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.EVENT_TRIGGERED;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.EVENT_TRIGGERING;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.GATEWAY_ACTIVATED;
+import static io.zeebe.protocol.intent.WorkflowInstanceIntent.PAYLOAD_UPDATED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN;
 
 @Component
@@ -55,42 +46,21 @@ public class WorkflowInstanceRecordTransformer implements AbstractRecordTransfor
   private static final Logger logger = LoggerFactory.getLogger(WorkflowInstanceRecordTransformer.class);
 
   //these event states end up in changes in workflow instance entity
-  private static final Set<String> WI_STATES = new HashSet<>();
-  private static final String WI_START_STATE;
-  private static final Set<String> WI_FINISH_STATES = new HashSet<>();
-
-  //these event states end up in changes in activity instance entity
-  private static final Set<String> AI_STATES = new HashSet<>();
-  private static final Set<String> AI_FINISH_STATES = new HashSet<>();
-  //these event states mean that activities startDate and endDate should be recorded at once
-  private static final Set<String> PASS_THROUGH_STATES = new HashSet<>();
+  private static final Set<String> STATES_TO_LOAD = new HashSet<>();
+  private static final String START_STATES;
+  private static final Set<String> FINISH_STATES = new HashSet<>();
 
   static {
-    WI_START_STATE = ELEMENT_ACTIVATED.name();
+    START_STATES = ELEMENT_ACTIVATED.name();
 
-    WI_FINISH_STATES.add(ELEMENT_COMPLETED.name());
-    WI_FINISH_STATES.add(ELEMENT_TERMINATED.name());
+    FINISH_STATES.add(ELEMENT_COMPLETED.name());
+    FINISH_STATES.add(ELEMENT_TERMINATED.name());
 
-    //    WI_STATES.add(PAYLOAD_UPDATED);        //to record changed payload
+    //    STATES_TO_LOAD.add(PAYLOAD_UPDATED);        //to record changed payload
 
-    WI_STATES.add(WI_START_STATE);
-    WI_STATES.addAll(WI_FINISH_STATES);
-
-    AI_FINISH_STATES.add(ELEMENT_COMPLETED.name());
-    AI_FINISH_STATES.add(ELEMENT_TERMINATED.name());
-    AI_FINISH_STATES.add(EVENT_TRIGGERED.name());
-
-    PASS_THROUGH_STATES.add(GATEWAY_ACTIVATED.name());
-
-    AI_STATES.add(ELEMENT_READY.name());
-    AI_STATES.add(ELEMENT_ACTIVATED.name());
-    AI_STATES.add(ELEMENT_COMPLETING.name());
-    AI_STATES.add(EVENT_TRIGGERING.name());
-    AI_STATES.add(EVENT_ACTIVATING.name());
-    AI_STATES.add(EVENT_ACTIVATED.name());
-
-    AI_STATES.addAll(AI_FINISH_STATES);
-    AI_STATES.addAll(PASS_THROUGH_STATES);
+    STATES_TO_LOAD.add(START_STATES);
+    STATES_TO_LOAD.addAll(FINISH_STATES);
+    STATES_TO_LOAD.add(PAYLOAD_UPDATED.name());
   }
 
   @Autowired
@@ -108,7 +78,7 @@ public class WorkflowInstanceRecordTransformer implements AbstractRecordTransfor
 
     final String intentStr = record.getMetadata().getIntent().name();
 
-    if (WI_STATES.contains(intentStr) || AI_STATES.contains(intentStr)) {
+    if (STATES_TO_LOAD.contains(intentStr)) {
       final OperateZeebeEntity event = convertEvent(record);
       if (event != null) {
         entitiesToPersist.add(event);
@@ -117,13 +87,10 @@ public class WorkflowInstanceRecordTransformer implements AbstractRecordTransfor
 
     WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
 
-    if (WI_STATES.contains(intentStr) && isProcessEvent(recordValue.getBpmnElementType())
+    if (STATES_TO_LOAD.contains(intentStr) && isProcessEvent(recordValue.getBpmnElementType())
       //we also need 2 activity events to record payload
       || intentStr.equals(ELEMENT_ACTIVATED.name()) || intentStr.equals(ELEMENT_COMPLETED.name())) {
       entitiesToPersist.add(convertWorkflowInstanceRecord(record));
-    }
-    if (AI_STATES.contains(intentStr) && !isProcessEvent(recordValue.getBpmnElementType())) {
-      entitiesToPersist.add(convertActivityInstanceEvent(record));
     }
 
     if (intentStr.equals(SEQUENCE_FLOW_TAKEN.name())) {
@@ -139,13 +106,6 @@ public class WorkflowInstanceRecordTransformer implements AbstractRecordTransfor
       return false;
     }
     return bpmnElementType.equals(BpmnElementType.PROCESS);
-  }
-
-  private boolean isEndEvent(BpmnElementType bpmnElementType) {
-    if (bpmnElementType == null) {
-      return false;
-    }
-    return bpmnElementType.equals(BpmnElementType.END_EVENT);
   }
 
   private OperateZeebeEntity convertSequenceFlowTakenEvent(Record record) {
@@ -189,46 +149,6 @@ public class WorkflowInstanceRecordTransformer implements AbstractRecordTransfor
     return null;
   }
 
-  private OperateZeebeEntity convertActivityInstanceEvent(Record record) {
-//TODO    logger.debug(event.toJson());
-
-    WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
-
-    ActivityInstanceEntity activityInstanceEntity = new ActivityInstanceEntity();
-    activityInstanceEntity.setId(IdUtil.getId(record));
-    activityInstanceEntity.setKey(record.getKey());
-    activityInstanceEntity.setPartitionId(record.getMetadata().getPartitionId());
-    activityInstanceEntity.setActivityId(recordValue.getElementId());
-    activityInstanceEntity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
-    final String intentStr = record.getMetadata().getIntent().name();
-
-    boolean activityFinished = AI_FINISH_STATES.contains(intentStr);
-    if (!activityFinished && intentStr.equals(EVENT_ACTIVATED.name()) && isEndEvent(recordValue.getBpmnElementType())) {
-      activityFinished = true;
-    }
-    if (activityFinished) {
-      activityInstanceEntity.setEndDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
-      if (intentStr.equals(ELEMENT_TERMINATED.name())) {
-        activityInstanceEntity.setState(ActivityState.TERMINATED);
-      } else {
-        activityInstanceEntity.setState(ActivityState.COMPLETED);
-      }
-    } else if (PASS_THROUGH_STATES.contains(intentStr)) {
-      activityInstanceEntity.setStartDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
-      activityInstanceEntity.setEndDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
-      activityInstanceEntity.setState(ActivityState.COMPLETED);
-    } else {
-      //we can set start date without checking, which specific event it is, because when persisting to ELS, we do not UPDATE start date field, only INSERT
-      //-> 1st event to come will persist start date for the activity
-      activityInstanceEntity.setStartDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
-      activityInstanceEntity.setState(ActivityState.ACTIVE);
-    }
-
-    activityInstanceEntity.setType(ActivityType.fromZeebeBpmnElementType(recordValue.getBpmnElementType()));
-
-    return activityInstanceEntity;
-  }
-
   private OperateZeebeEntity convertWorkflowInstanceRecord(Record record) {
 //TODO    logger.debug(record.toJson());
 
@@ -242,14 +162,14 @@ public class WorkflowInstanceRecordTransformer implements AbstractRecordTransfor
     entity.setBpmnProcessId(recordValue.getBpmnProcessId());
 
     final String intentStr = record.getMetadata().getIntent().name();
-    if (WI_FINISH_STATES.contains(intentStr) && isProcessEvent(recordValue.getBpmnElementType())) {
+    if (FINISH_STATES.contains(intentStr) && isProcessEvent(recordValue.getBpmnElementType())) {
       entity.setEndDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
       if (intentStr.equals(ELEMENT_TERMINATED.name())) {
         entity.setState(WorkflowInstanceState.CANCELED);
       } else {
         entity.setState(WorkflowInstanceState.COMPLETED);
       }
-    } else if (WI_START_STATE.equals(intentStr) && isProcessEvent(recordValue.getBpmnElementType())){
+    } else if (START_STATES.equals(intentStr) && isProcessEvent(recordValue.getBpmnElementType())){
       entity.setState(WorkflowInstanceState.ACTIVE);
       entity.setStartDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
     } else {

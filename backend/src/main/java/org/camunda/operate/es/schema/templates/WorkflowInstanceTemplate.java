@@ -26,7 +26,6 @@ public class WorkflowInstanceTemplate extends AbstractTemplateCreator {
   public static final String STATE = "state";
   public static final String TYPE = "type";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
-  public static final String ACTIVITIES = "activities";
   public static final String STRING_VARIABLES = "stringVariables";
   public static final String LONG_VARIABLES = "longVariables";
   public static final String DOUBLE_VARIABLES = "doubleVariables";
@@ -77,12 +76,6 @@ public class WorkflowInstanceTemplate extends AbstractTemplateCreator {
         .field("type", "nested")
         .startObject("properties");
           addNestedIncidentsField(newBuilder)
-        .endObject()
-      .endObject()
-      .startObject(ACTIVITIES)
-        .field("type", "nested")
-        .startObject("properties");
-          addNestedActivitiesField(newBuilder)
         .endObject()
       .endObject()
       .startObject(STRING_VARIABLES)
@@ -155,37 +148,6 @@ public class WorkflowInstanceTemplate extends AbstractTemplateCreator {
       .endObject()
       .startObject(WORKFLOW_INSTANCE_ID)
         .field("type", "keyword")
-      .endObject();
-    return builder;
-  }
-
-  private XContentBuilder addNestedActivitiesField(XContentBuilder builder) throws IOException {
-    builder
-      .startObject(ID)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(PARTITION_ID)
-        .field("type", "integer")
-      .endObject()
-      .startObject(KEY)
-        .field("type", "long")
-      .endObject()
-      .startObject(STATE)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(TYPE)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(ACTIVITY_ID)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(START_DATE)
-        .field("type", "date")
-        .field("format", operateProperties.getElasticsearch().getDateFormat())
-      .endObject()
-      .startObject(END_DATE)
-        .field("type", "date")
-        .field("format", operateProperties.getElasticsearch().getDateFormat())
       .endObject();
     return builder;
   }

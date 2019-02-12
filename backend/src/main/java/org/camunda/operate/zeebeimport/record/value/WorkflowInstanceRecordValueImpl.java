@@ -17,7 +17,6 @@
  */
 package org.camunda.operate.zeebeimport.record.value;
 
-import java.util.Objects;
 import org.camunda.operate.zeebeimport.record.RecordValueWithPayloadImpl;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.protocol.BpmnElementType;
@@ -29,7 +28,7 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
   private int version;
   private long workflowKey;
   private long workflowInstanceKey;
-  private long scopeInstanceKey;
+  private long flowScopeKey;
   private BpmnElementType bpmnElementType;
 
   public WorkflowInstanceRecordValueImpl() {
@@ -61,8 +60,8 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
   }
 
   @Override
-  public long getScopeInstanceKey() {
-    return scopeInstanceKey;
+  public long getFlowScopeKey() {
+    return flowScopeKey;
   }
 
   @Override
@@ -87,7 +86,7 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
       return false;
     if (workflowInstanceKey != that.workflowInstanceKey)
       return false;
-    if (scopeInstanceKey != that.scopeInstanceKey)
+    if (flowScopeKey != that.flowScopeKey)
       return false;
     if (bpmnProcessId != null ? !bpmnProcessId.equals(that.bpmnProcessId) : that.bpmnProcessId != null)
       return false;
@@ -104,7 +103,7 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
     result = 31 * result + version;
     result = 31 * result + (int) (workflowKey ^ (workflowKey >>> 32));
     result = 31 * result + (int) (workflowInstanceKey ^ (workflowInstanceKey >>> 32));
-    result = 31 * result + (int) (scopeInstanceKey ^ (scopeInstanceKey >>> 32));
+    result = 31 * result + (int) (flowScopeKey ^ (flowScopeKey >>> 32));
     result = 31 * result + (bpmnElementType != null ? bpmnElementType.hashCode() : 0);
     return result;
   }
@@ -112,7 +111,7 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
   @Override
   public String toString() {
     return "WorkflowInstanceRecordValueImpl{" + "bpmnProcessId='" + bpmnProcessId + '\'' + ", elementId='" + elementId + '\'' + ", version=" + version
-      + ", workflowKey=" + workflowKey + ", workflowInstanceKey=" + workflowInstanceKey + ", scopeInstanceKey=" + scopeInstanceKey + ", bpmnElementType="
+      + ", workflowKey=" + workflowKey + ", workflowInstanceKey=" + workflowInstanceKey + ", flowScopeKey=" + flowScopeKey + ", bpmnElementType="
       + bpmnElementType + "} " + super.toString();
   }
 }

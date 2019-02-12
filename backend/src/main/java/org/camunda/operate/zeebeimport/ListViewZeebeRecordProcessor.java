@@ -33,8 +33,7 @@ import io.zeebe.protocol.intent.IncidentIntent;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.EVENT_ACTIVATED;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.EVENT_TRIGGERED;
+import static io.zeebe.protocol.intent.WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN;
 
 @Component
 public class ListViewZeebeRecordProcessor {
@@ -46,7 +45,6 @@ public class ListViewZeebeRecordProcessor {
   static {
     AI_FINISH_STATES.add(ELEMENT_COMPLETED.name());
     AI_FINISH_STATES.add(ELEMENT_TERMINATED.name());
-    AI_FINISH_STATES.add(EVENT_TRIGGERED.name());
   }
 
   @Autowired
@@ -77,7 +75,7 @@ public class ListViewZeebeRecordProcessor {
 
     if (isProcessEvent(recordValue)) {
       bulkRequestBuilder.add(persistWorkflowInstance(record, intentStr, recordValue));
-    } else if (!isOfType(recordValue, BpmnElementType.SEQUENCE_FLOW)){
+    } else if (!intentStr.equals(SEQUENCE_FLOW_TAKEN.name())){
       bulkRequestBuilder.add(persistActivityInstance(record, intentStr, recordValue));
     }
   }
@@ -113,11 +111,7 @@ public class ListViewZeebeRecordProcessor {
     entity.setActivityId(recordValue.getElementId());
     entity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
 
-    boolean activityFinished = AI_FINISH_STATES.contains(intentStr);
-    if (!activityFinished && intentStr.equals(EVENT_ACTIVATED.name()) && isEndEvent(recordValue)) {
-      activityFinished = true;
-    }
-    if (activityFinished) {
+    if (AI_FINISH_STATES.contains(intentStr)) {
       if (intentStr.equals(ELEMENT_TERMINATED.name())) {
         entity.setActivityState(ActivityState.TERMINATED);
       } else {
@@ -243,10 +237,6 @@ public class ListViewZeebeRecordProcessor {
 
   private boolean isProcessEvent(WorkflowInstanceRecordValueImpl recordValue) {
     return isOfType(recordValue, BpmnElementType.PROCESS);
-  }
-
-  private boolean isEndEvent(WorkflowInstanceRecordValueImpl recordValue) {
-    return isOfType(recordValue, BpmnElementType.END_EVENT);
   }
 
   private boolean isOfType(WorkflowInstanceRecordValueImpl recordValue, BpmnElementType type) {
