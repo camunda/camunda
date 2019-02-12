@@ -18,8 +18,8 @@
 package io.zeebe.broker.workflow.processor;
 
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
-import io.zeebe.broker.workflow.data.VariableRecord;
 import io.zeebe.broker.workflow.state.VariablesState.VariableListener;
+import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.zeebe.protocol.intent.VariableIntent;
 import org.agrona.DirectBuffer;
 

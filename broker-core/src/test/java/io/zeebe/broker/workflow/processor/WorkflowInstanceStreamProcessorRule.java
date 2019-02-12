@@ -36,7 +36,6 @@ import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRec
 import io.zeebe.broker.util.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.broker.util.TypedRecordStream;
-import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.broker.workflow.processor.timer.DueDateTimerChecker;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.model.bpmn.Bpmn;
@@ -45,6 +44,7 @@ import io.zeebe.model.bpmn.instance.Process;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.JobIntent;
