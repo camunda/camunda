@@ -503,6 +503,18 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetDecisionInputVariableValuesRequest() {
+    this.path = "decision-variables/inputs/values";
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetDecisionOutputVariableValuesRequest() {
+    this.path = "decision-variables/outputs/values";
+    this.requestType = GET;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildGetFlowNodeNames(FlowNodeIdsToNamesRequestDto entity) {
     this.path = "flow-node/flowNodeNames";
     this.requestType = POST;

@@ -53,6 +53,8 @@ public class DecisionInstanceType extends StrictTypeMappingCreator {
   public static final String MULTIVALUE_FIELD_DATE = "date";
   public static final String MULTIVALUE_FIELD_LONG = "long";
   public static final String MULTIVALUE_FIELD_DOUBLE = "double";
+  public static final String N_GRAM_FIELD = "nGramField";
+  public static final String LOWERCASE_FIELD = "lowercaseField";
 
   @Override
   public String getType() {
@@ -147,7 +149,7 @@ public class DecisionInstanceType extends StrictTypeMappingCreator {
       .startObject(VARIABLE_VALUE)
         .field("type", "keyword")
         .startObject("fields");
-          addTypedValueFields(builder)
+          addValueMultifields(builder)
         .endObject()
       .endObject();
     return builder;
@@ -172,7 +174,7 @@ public class DecisionInstanceType extends StrictTypeMappingCreator {
       .startObject(VARIABLE_VALUE)
         .field("type", "keyword")
         .startObject("fields");
-          addTypedValueFields(builder)
+          addValueMultifields(builder)
         .endObject()
       .endObject()
       .startObject(OUTPUT_VARIABLE_RULE_ID)
@@ -188,9 +190,19 @@ public class DecisionInstanceType extends StrictTypeMappingCreator {
     // @formatter:on
   }
 
-  private XContentBuilder addTypedValueFields(XContentBuilder builder) throws IOException {
+  private XContentBuilder addValueMultifields(XContentBuilder builder) throws IOException {
     // @formatter:off
     return builder
+      // search relevant fields
+      .startObject(N_GRAM_FIELD)
+        .field("type", "text")
+        .field("analyzer", "lowercase_ngram")
+      .endObject()
+      .startObject(LOWERCASE_FIELD)
+        .field("type", "keyword")
+        .field("normalizer", "lowercase_normalizer")
+      .endObject()
+      // multi type fields
       .startObject(MULTIVALUE_FIELD_DATE)
         .field("type", "date")
         .field("format", OPTIMIZE_DATE_FORMAT)

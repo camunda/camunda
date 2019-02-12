@@ -23,7 +23,7 @@ public class DecisionVariableHelper {
   private DecisionVariableHelper() {
   }
 
-  private static String getVariableValueField(final String variablePath) {
+  public static String getVariableValueField(final String variablePath) {
     return variablePath + "." + VARIABLE_VALUE;
   }
 
