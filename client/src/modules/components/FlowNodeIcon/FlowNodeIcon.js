@@ -10,6 +10,9 @@ function getFlowNodeTypeIcon(type) {
     // workflow
     case 'WORKFLOW':
       return Styled.Workflow;
+    // tasks
+    case 'SERVICE_TASK':
+      return Styled.TaskService;
     // events
     case 'END_EVENT':
       return Styled.EndEvent;
