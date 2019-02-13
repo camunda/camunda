@@ -9,7 +9,17 @@ export const NodeStateIcon = styled(
 )`
   top: 6px;
   left: ${({positionMultiplier}) =>
-    positionMultiplier ? -positionMultiplier * 33 + 'px' : '5px'};
+    positionMultiplier ? -positionMultiplier * 32 + 'px' : '5px'};
+`;
+
+const connectionDotStyles = css`
+  height: 5px;
+  width: 5px;
+  border-radius: 50%;
+  background: ${themeStyle({
+    dark: '#65666D',
+    light: Colors.uiLight05
+  })};
 `;
 
 const connectionLineStyles = css`
@@ -21,25 +31,18 @@ const connectionLineStyles = css`
     width: 1px;
     left: -17px;
     background: ${themeStyle({
-      dark: Colors.uiDark04,
+      dark: '#65666D',
       light: Colors.uiLight05
     })};
   }
-`;
 
-const connectionDotStyles = css`
-  &:before {
+  /* show a final dot at the end of each connection line */
+  &:after {
     content: '';
     position: absolute;
-    left: -51px;
-    top: 12px;
-    height: 6px;
-    width: 6px;
-    border-radius: 50%;
-    background: ${themeStyle({
-      dark: Colors.uiDark04,
-      light: Colors.uiLight05
-    })};
+    bottom: 10px;
+    left: -19px;
+    ${connectionDotStyles};
   }
 `;
 
@@ -52,12 +55,17 @@ export const NodeDetails = themed(styled.div`
       ? 'rgba(255, 255, 255, 0.9)'
       : 'rgba(69, 70, 78, 0.9)'};
 
-  ${({showConnectionDot}) => showConnectionDot && connectionDotStyles};
+  &:before {
+    content: '';
+    position: absolute;
+    left: -51px;
+    top: 13px;
+    ${({showConnectionDot}) => showConnectionDot && connectionDotStyles};
+  }
 `);
 
 export const Ul = themed(styled.ul`
   position: relative;
-
   ${({showConnectionLine}) => showConnectionLine && connectionLineStyles};
 `);
 
