@@ -46,7 +46,12 @@ const INCIDENT = createIncident({
 
 const INSTANCE = createInstance({
   id: '4294980768',
-  state: STATE.ACTIVE,
+  state: STATE.ACTIVE
+});
+
+const INSTANCE_WITH_INCIDENTS = createInstance({
+  id: '4294980768',
+  state: STATE.INCIDENT,
   incidents: [INCIDENT]
 });
 
@@ -220,6 +225,7 @@ describe('Instance', () => {
       eventsApi.fetchEvents = mockResolvedAsyncFn(mockEvents);
       jest.useFakeTimers();
     });
+
     afterEach(() => {
       jest.clearAllTimers();
     });
@@ -259,8 +265,42 @@ describe('Instance', () => {
       instancesApi.fetchWorkflowInstance.mockClear();
     });
 
-    it('should start a polling for changes', async () => {
+    it('should start a polling for changes if instancef is ACTIVE', async () => {
       // given
+      const node = mountRenderComponent();
+      await flushPromises();
+      node.update();
+
+      // when first setTimeout is ran
+      jest.runOnlyPendingTimers();
+      await flushPromises();
+      node.update();
+
+      // expect another one setTimeout to have been started
+      expect(setTimeout).toBeCalledTimes(2);
+      expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 5000);
+      // expect setTimeout's executed function to fetch the instance
+      // 1st time on render, 2nd on first setTimeout
+      expect(instancesApi.fetchWorkflowInstance).toHaveBeenCalledTimes(2);
+
+      // when 2nd setTimeout is ran
+      jest.runOnlyPendingTimers();
+      await flushPromises();
+      node.update();
+
+      expect(setTimeout).toBeCalledTimes(3);
+      expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 5000);
+
+      // expect setTimeout's executed function to fetch the instance
+      // 1st time on render, 2nd on first setTimeout, 3rd on 2nd setTimeout
+      expect(instancesApi.fetchWorkflowInstance).toHaveBeenCalledTimes(3);
+    });
+
+    it('should start a polling for changes if instancef is INCIDENT', async () => {
+      // given
+      instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
+        INSTANCE_WITH_INCIDENTS
+      );
       const node = mountRenderComponent();
       await flushPromises();
       node.update();

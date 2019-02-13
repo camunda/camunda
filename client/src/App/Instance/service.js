@@ -32,7 +32,7 @@ export function getFlowNodeStateOverlays(activityIdToActivityInstanceMap) {
 }
 
 export function isRunningInstance(state) {
-  return state === 'ACTIVE' || state === 'INCIDENTS';
+  return state === STATE.ACTIVE || state === STATE.INCIDENT;
 }
 
 export function beautifyMetadataKey(key) {
