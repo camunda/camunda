@@ -68,6 +68,10 @@ public class WorkflowInstanceImportIT extends OperateZeebeIntegrationTest {
   private Predicate<Object[]> incidentIsActiveCheck;
 
   @Autowired
+  @Qualifier("incidentIsResolvedCheck")
+  private Predicate<Object[]> incidentIsResolvedCheck;
+
+  @Autowired
   @Qualifier("workflowInstanceIsCompletedCheck")
   private Predicate<Object[]> workflowInstanceIsCompletedCheck;
 
@@ -537,6 +541,7 @@ public class WorkflowInstanceImportIT extends OperateZeebeIntegrationTest {
     //when I cancel workflow instance
     ZeebeTestUtil.cancelWorkflowInstance(zeebeClient, workflowInstanceKey);
     elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCanceledCheck, workflowInstanceKey);
+    elasticsearchTestRule.processAllEventsAndWait(incidentIsResolvedCheck, workflowInstanceKey);
 
     //then incident is deleted
     workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
@@ -725,6 +730,25 @@ public class WorkflowInstanceImportIT extends OperateZeebeIntegrationTest {
 
     final WorkflowInstanceEntity workflowInstanceById = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
     assertThat(workflowInstanceById).isNotNull();
+    assertThat(workflowInstanceById.getState()).isEqualTo(WorkflowInstanceState.ACTIVE);
+  }
+
+  @Test
+  public void testWorkflowInstanceWithIncidentById() {
+    String activityId = "taskA";
+    final String errorMessage = "Error occurred when working on the job";
+    String processId = "demoProcess";
+    final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
+    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCreatedCheck, workflowInstanceKey);
+
+    //create an incident
+    failTaskWithNoRetriesLeft(activityId, workflowInstanceKey, errorMessage);
+    elasticsearchTestRule.processAllEventsAndWait(incidentIsActiveCheck, workflowInstanceKey);
+
+    final WorkflowInstanceEntity workflowInstanceById = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
+    assertThat(workflowInstanceById).isNotNull();
+    assertThat(workflowInstanceById.getState()).isEqualTo(WorkflowInstanceState.INCIDENT);
   }
 
   @Test(expected = NotFoundException.class)

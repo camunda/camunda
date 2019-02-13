@@ -3,7 +3,10 @@ package org.camunda.operate.es.reader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.camunda.operate.entities.IncidentEntity;
+import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
+import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate;
 import org.camunda.operate.rest.exception.NotFoundException;
 import org.camunda.operate.util.ElasticsearchUtil;
@@ -103,6 +106,15 @@ public class WorkflowInstanceReader {
       final WorkflowInstanceEntity workflowInstance = ElasticsearchUtil
         .fromSearchHit(response.getHits().getHits()[0].getSourceAsString(), objectMapper, WorkflowInstanceEntity.class);
       workflowInstance.setOperations(operationReader.getOperations(workflowInstance.getId()));
+      //OPE-400
+      if (workflowInstance.getIncidents() != null) {
+        for (IncidentEntity incident: workflowInstance.getIncidents()) {
+          if (incident.getState().equals(IncidentState.ACTIVE)) {
+            workflowInstance.setState(WorkflowInstanceState.INCIDENT);
+            break;
+          }
+        }
+      }
       return workflowInstance;
     } else if (response.getHits().totalHits > 1) {
       throw new NotFoundException(String.format("Could not find unique workflow instance with id '%s'.", workflowInstanceId));
