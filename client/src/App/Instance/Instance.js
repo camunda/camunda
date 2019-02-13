@@ -124,10 +124,10 @@ export default class Instance extends Component {
     );
 
     this.setState({
-      selection: {
-        flowNodeId: rowIsSelected ? null : flowNodeId,
-        treeRowIds: rowIsSelected && !hasSiblings ? [instance.id] : [node.id]
-      }
+      selection:
+        rowIsSelected && !hasSiblings
+          ? {flowNodeId: null, treeRowIds: [instance.id]}
+          : {flowNodeId, treeRowIds: [node.id]}
     });
   };
 
