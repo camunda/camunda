@@ -333,7 +333,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(workflowInstances.getWorkflowInstances().get(0).getOperations()).hasSize(1);
     OperationDto operation = workflowInstances.getWorkflowInstances().get(0).getOperations().get(0);
     assertThat(operation.getState()).isEqualTo(OperationState.FAILED);
-    assertThat(operation.getErrorMessage()).isEqualTo("Unable to cancel CANCELED workflow instance. Instance must be in ACTIVE state.");
+    assertThat(operation.getErrorMessage()).isEqualTo("Unable to cancel CANCELED workflow instance. Instance must be in ACTIVE or INCIDENT state.");
     assertThat(operation.getEndDate()).isNotNull();
     assertThat(operation.getStartDate()).isNotNull();
   }
@@ -369,7 +369,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(workflowInstances.getWorkflowInstances().get(0).getOperations()).hasSize(1);
     OperationDto operation = workflowInstances.getWorkflowInstances().get(0).getOperations().get(0);
     assertThat(operation.getState()).isEqualTo(OperationState.FAILED);
-    assertThat(operation.getErrorMessage()).isEqualTo("Unable to cancel COMPLETED workflow instance. Instance must be in ACTIVE state.");
+    assertThat(operation.getErrorMessage()).isEqualTo("Unable to cancel COMPLETED workflow instance. Instance must be in ACTIVE or INCIDENT state.");
     assertThat(operation.getEndDate()).isNotNull();
     assertThat(operation.getStartDate()).isNotNull();
   }
