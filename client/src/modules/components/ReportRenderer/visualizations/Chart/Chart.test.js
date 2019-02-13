@@ -1,9 +1,15 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import ThemedChart from './Chart';
-import ChartRenderer from 'chart.js';
-const {WrappedComponent: Chart} = ThemedChart;
+import Chart from './Chart';
+
+import createDefaultChartConfig from './defaultChart';
+import createCombinedChartConfig from './combinedChart';
+import createTargetLineConfig from './targetLineChart';
+
+jest.mock('./targetLineChart', () => jest.fn());
+jest.mock('./combinedChart', () => jest.fn());
+jest.mock('./defaultChart', () => jest.fn());
 
 const report = {
   data: {
@@ -16,12 +22,6 @@ const report = {
   }
 };
 
-it('should construct a Chart', () => {
-  shallow(<Chart report={{...report, result: {}}} />);
-
-  expect(ChartRenderer).toHaveBeenCalled();
-});
-
 it('should display an error message for a non-object result (single number)', () => {
   const node = shallow(<Chart report={{...report, result: 7}} errorMessage="Error" />);
 
@@ -32,64 +32,6 @@ it('should display an error message if no data is provided', () => {
   const node = shallow(<Chart report={report} errorMessage="Error" />);
 
   expect(node.find('ReportBlankSlate').prop('errorMessage')).toBe('Error');
-});
-
-it('should use the provided type for the ChartRenderer', () => {
-  ChartRenderer.mockClear();
-
-  shallow(
-    <Chart
-      report={{
-        ...report,
-        result: {foo: 123},
-        data: {...report.data, visualization: 'visualization_type'}
-      }}
-    />
-  );
-
-  expect(ChartRenderer.mock.calls[0][1].type).toBe('visualization_type');
-});
-
-it('should use the special targetLine type when target values are enabled on a line chart', () => {
-  ChartRenderer.mockClear();
-
-  const targetValue = {targetValue: {active: true, countChart: {isBelow: true, value: 1}}};
-
-  shallow(
-    <Chart
-      report={{
-        ...report,
-        result: {foo: 123},
-        data: {...report.data, visualization: 'line', configuration: targetValue}
-      }}
-    />
-  );
-
-  expect(ChartRenderer.mock.calls[0][1].type).toBe('targetLine');
-});
-
-it('should change type for the ChartRenderer if props were updated', () => {
-  ChartRenderer.mockClear();
-
-  const chart = shallow(
-    <Chart
-      report={{
-        ...report,
-        result: {foo: 123},
-        data: {...report.data, visualization: 'visualization_type'}
-      }}
-    />
-  );
-
-  chart.setProps({
-    report: {
-      ...report,
-      result: {foo: 123},
-      data: {...report.data, visualization: 'new_visualization_type'}
-    }
-  });
-
-  expect(ChartRenderer.mock.calls[1][1].type).toBe('new_visualization_type');
 });
 
 it('should not display an error message if data is valid', () => {
@@ -104,33 +46,53 @@ it('should destroy chart if no data is provided', () => {
   expect(node.chart).toBe(undefined);
 });
 
-it('should render chart even if type does not change', () => {
-  ChartRenderer.mockClear();
+it('should display an error message if there was data and the second time no data is provided', () => {
+  const node = shallow(<Chart report={{...report, result: {foo: 123}}} errorMessage="Error" />);
 
-  const chart = shallow(
+  node.setProps({report: {...report, result: null}});
+
+  expect(node.find('ReportBlankSlate').prop('errorMessage')).toBe('Error');
+});
+
+it('should use the special targetLine type when target values are enabled on a line chart', () => {
+  const targetValue = {targetValue: {active: true, countChart: {isBelow: true, value: 1}}};
+
+  shallow(
     <Chart
       report={{
         ...report,
         result: {foo: 123},
-        data: {...report.data, visualization: 'visualization_type'}
+        data: {...report.data, visualization: 'line', configuration: targetValue}
       }}
     />
   );
-  chart.setProps({
-    report: {
-      ...report,
-      result: {foo: 123},
-      data: {...report.data, visualization: 'visualization_type'}
-    }
-  });
 
-  expect(ChartRenderer.mock.calls[1][1].type).toBe('visualization_type');
+  expect(createTargetLineConfig).toHaveBeenCalled();
 });
 
-it('should display an error message if there was data and the second time no data is provided', () => {
-  const node = shallow(<Chart report={{...report, data: {foo: 123}}} errorMessage="Error" />);
+it('should render combined chart if report is combined', () => {
+  shallow(
+    <Chart
+      report={{
+        ...report,
+        result: {},
+        combined: true
+      }}
+    />
+  );
 
-  node.setProps({report: {...report, data: null}});
+  expect(createCombinedChartConfig).toHaveBeenCalled();
+});
 
-  expect(node.find('ReportBlankSlate').prop('errorMessage')).toBe('Error');
+it('should render default normal chart if report is a single report', () => {
+  shallow(
+    <Chart
+      report={{
+        ...report,
+        result: {}
+      }}
+    />
+  );
+
+  expect(createDefaultChartConfig).toHaveBeenCalled();
 });

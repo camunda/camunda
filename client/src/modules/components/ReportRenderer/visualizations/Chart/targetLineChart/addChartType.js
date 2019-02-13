@@ -1,5 +1,5 @@
 import ChartRenderer from 'chart.js';
-import {calculateLinePosition} from './service';
+import {calculateLinePosition} from '../service';
 
 // add a new chart type "targetLine" to the ChartRenderer library
 // see https://www.chartjs.org/docs/latest/developers/charts.html#extending-existing-chart-types for documentation

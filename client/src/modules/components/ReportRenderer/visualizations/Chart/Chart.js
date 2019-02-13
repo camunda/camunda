@@ -1,91 +1,37 @@
 import React from 'react';
-import ChartRenderer from 'chart.js';
+import ChartRenderer from './ChartRenderer';
+import createDefaultChartConfig from './defaultChart';
+import createCombinedChartConfig from './combinedChart';
+import createTargetLineConfig from './targetLineChart';
 import ReportBlankSlate from '../../ReportBlankSlate';
 
-import {drawHorizentalLine} from './service';
+export default function Chart(props) {
+  const {
+    report: {
+      combined,
+      result,
+      data: {configuration, visualization, view}
+    },
+    errorMessage
+  } = props;
 
-import {themed} from 'theme';
-
-import './Chart.scss';
-import createChartData from './createChartData';
-import createChartOptions from './createChartOptions';
-
-import './TargetValueChart';
-
-export default themed(
-  class Chart extends React.Component {
-    storeContainer = container => {
-      this.container = container;
-    };
-
-    render() {
-      const {
-        report: {result},
-        errorMessage
-      } = this.props;
-
-      let errorMessageFragment = null;
-      if (!result || typeof result !== 'object') {
-        this.destroyChart();
-        errorMessageFragment = <ReportBlankSlate errorMessage={errorMessage} />;
-      }
-
-      return (
-        <div className="Chart">
-          {errorMessageFragment}
-          <canvas ref={this.storeContainer} />
-        </div>
-      );
-    }
-
-    destroyChart = () => {
-      if (this.chart) {
-        this.chart.destroy();
-      }
-    };
-
-    createNewChart = () => {
-      const {
-        report: {result}
-      } = this.props;
-      let {
-        report: {data}
-      } = this.props;
-
-      if (!result || typeof result !== 'object') {
-        return;
-      }
-
-      const {visualization, configuration} = data;
-      const view = data.view || Object.values(result)[0].data.view;
-
-      this.destroyChart();
-
-      const chartType = view.operation === 'count' ? 'countChart' : 'durationChart';
-      const targetValue = configuration.targetValue.active && configuration.targetValue[chartType];
-
-      const isTargetLine = targetValue && visualization === 'line';
-      const chartVisualization = visualization === 'number' ? 'bar' : visualization;
-
-      this.chart = new ChartRenderer(this.container, {
-        type: isTargetLine ? 'targetLine' : chartVisualization,
-        data: createChartData({
-          ...this.props,
-          targetValue
-        }),
-        options: createChartOptions({
-          ...this.props,
-          targetValue
-        }),
-        plugins: [
-          {
-            afterDatasetsDraw: drawHorizentalLine
-          }
-        ]
-      });
-    };
-
-    componentDidMount = this.createNewChart;
-    componentDidUpdate = this.createNewChart;
+  if (!result || typeof result !== 'object') {
+    return <ReportBlankSlate errorMessage={errorMessage} />;
   }
-);
+
+  const reportView = view || Object.values(result)[0].data.view;
+  const targetValueType = reportView.operation === 'count' ? 'countChart' : 'durationChart';
+  const targetValue =
+    configuration.targetValue.active && configuration.targetValue[targetValueType];
+
+  let createConfig;
+  if (targetValue && visualization === 'line') {
+    createConfig = createTargetLineConfig;
+  } else if (combined) {
+    createConfig = createCombinedChartConfig;
+  } else {
+    createConfig = createDefaultChartConfig;
+  }
+
+  return <ChartRenderer config={createConfig({...props, targetValue})} />;
+}
