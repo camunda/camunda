@@ -18,7 +18,7 @@ export function getActivityIdToNameMap(elements) {
 export function getFlowNodeStateOverlays(activityIdToActivityInstanceMap) {
   return [...activityIdToActivityInstanceMap.entries()].reduce(
     (overlays, [id, activityInstancesMap]) => {
-      const {state, type} = activityInstancesMap.values().next().value;
+      const {state, type} = [...activityInstancesMap.values()].reverse()[0];
 
       // If the activity is completed, only push an overlay
       // if the activity is an end event.

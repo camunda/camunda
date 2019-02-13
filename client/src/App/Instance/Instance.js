@@ -123,6 +123,7 @@ export default class Instance extends Component {
     const rowIsSelected = !!selection.treeRowIds.find(
       selectedId => selectedId === node.id
     );
+
     this.setState({
       selection: {
         flowNodeId: rowIsSelected ? null : flowNodeId,
