@@ -115,10 +115,9 @@ export default class Instance extends Component {
    */
   handleTreeRowSelection = node => {
     const {selection, instance} = this.state;
-
+    const isRootNode = node.id === instance.id;
     // get the first flow node id (i.e. activity id) corresponding to the flowNodeId
-    const flowNodeId = node.id === instance.id ? null : node.activityId;
-
+    const flowNodeId = isRootNode ? null : node.activityId;
     const hasSiblings = selection.treeRowIds.length > 1;
     const rowIsSelected = !!selection.treeRowIds.find(
       selectedId => selectedId === node.id
