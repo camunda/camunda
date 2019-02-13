@@ -140,7 +140,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     assertThat(workflowInstanceEntity.getWorkflowVersion()).isEqualTo(1);
     assertThat(workflowInstanceEntity.getId()).isEqualTo(IdTestUtil.getId(workflowInstanceKey));
     assertThat(workflowInstanceEntity.getKey()).isEqualTo(workflowInstanceKey);
-    assertThat(workflowInstanceEntity.getState()).isEqualTo(WorkflowInstanceState.ACTIVE);
+    assertThat(workflowInstanceEntity.getState()).isEqualTo(WorkflowInstanceState.INCIDENT);
     assertThat(workflowInstanceEntity.getEndDate()).isNull();
     assertThat(workflowInstanceEntity.getStartDate()).isAfterOrEqualTo(testStartTime);
     assertThat(workflowInstanceEntity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());

@@ -42,9 +42,9 @@ public class CancelWorkflowInstanceHandler extends AbstractOperationHandler impl
   public void handle(String workflowInstanceId) throws PersistenceException {
     final WorkflowInstanceEntity workflowInstance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
 
-    if (!workflowInstance.getState().equals(WorkflowInstanceState.ACTIVE)) {
+    if (!workflowInstance.getState().equals(WorkflowInstanceState.ACTIVE) && !workflowInstance.getState().equals(WorkflowInstanceState.INCIDENT)) {
       //fail operation
-      failOperationsOfCurrentType(workflowInstance, String.format("Unable to cancel %s workflow instance. Instance must be in ACTIVE state.", workflowInstance.getState()));
+      failOperationsOfCurrentType(workflowInstance, String.format("Unable to cancel %s workflow instance. Instance must be in ACTIVE or INCIDENT state.", workflowInstance.getState()));
       return;
     }
 
