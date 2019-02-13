@@ -6,7 +6,6 @@ import TimeStampLabel from '../TimeStampLabel';
 import * as Styled from './styled';
 
 const BarComponent = ({node, isSelected}) => {
-  // console.log('render Bar');
   return (
     <Styled.Bar isSelected={isSelected}>
       <Styled.NodeIcon
