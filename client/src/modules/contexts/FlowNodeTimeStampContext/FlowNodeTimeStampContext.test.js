@@ -33,9 +33,11 @@ describe('FlowNodeTimeStampContext', () => {
 
       //when
       node.instance().handleTimeStampToggle();
+      node.update();
 
       //then
       expect(node.state('showTimeStamp')).toBe(true);
+      expect(node.find(Foo).find('[showTimeStamp=true]')).toExist();
     });
   });
 });
