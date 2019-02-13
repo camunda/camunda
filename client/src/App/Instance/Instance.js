@@ -5,6 +5,7 @@ import SplitPane from 'modules/components/SplitPane';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 import Diagram from 'modules/components/Diagram';
 import {PAGE_TITLE} from 'modules/constants';
+import {compactObject} from 'modules/utils';
 import {getWorkflowName} from 'modules/utils/instance';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {formatDate} from 'modules/utils/date';
@@ -201,8 +202,16 @@ export default class Instance extends Component {
       activityIdToActivityInstanceMap
     } = this.state;
 
+    const activityInstancesMap = activityIdToActivityInstanceMap.get(
+      flowNodeId
+    );
+
+    // Peter case with more than 1 tree row selected
     if (treeRowIds.length > 1) {
-      return {};
+      return {
+        isMultiRowPeterCase: true,
+        instancesCount: activityInstancesMap.size
+      };
     }
 
     // get the last event corresponding to the given flowNodeId (= activityId)
@@ -217,24 +226,29 @@ export default class Instance extends Component {
       .get(flowNodeId)
       .get(activityInstanceId);
 
-    // return a cleaned-up and beautified metadata object
-    return Object.entries({
-      ...metadata,
-      activityInstanceId,
-      startDate,
-      endDate
-    }).reduce((cleanMetadata, [key, value]) => {
-      if (['startDate', 'endDate'].includes(key)) {
-        return {...cleanMetadata, [key]: formatDate(value)};
-      }
+    // return a cleaned-up  metadata object
+    return {
+      ...compactObject({
+        isSingleRowPeterCase: activityInstancesMap.size > 1 ? true : null
+      }),
+      data: Object.entries({
+        ...metadata,
+        activityInstanceId,
+        startDate,
+        endDate
+      }).reduce((cleanMetadata, [key, value]) => {
+        if (['startDate', 'endDate'].includes(key)) {
+          return {...cleanMetadata, [key]: formatDate(value)};
+        }
 
-      // ignore other empty values
-      if (!value) {
-        return cleanMetadata;
-      }
+        // ignore other empty values
+        if (!value) {
+          return cleanMetadata;
+        }
 
-      return {...cleanMetadata, [key]: value};
-    }, {});
+        return {...cleanMetadata, [key]: value};
+      }, {})
+    };
   };
 
   getNodeWithName = node => {

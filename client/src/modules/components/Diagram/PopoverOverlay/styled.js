@@ -59,27 +59,45 @@ export const Popover = styled.div`
     })};
 
   padding: 11px;
-  position: relative;
 `;
 
-export const Metadata = styled.table`
+export const PeterCaseSummaryHeader = styled.div`
+  font-weight: bold;
+  text-align: center;
+  white-space: nowrap;
+`;
+
+export const PeterCaseSummaryBody = styled.div`
+  margin-top: 3px;
+  text-align: center;
+  width: 293px;
+`;
+
+export const SummaryHeader = styled.div`
+  margin-bottom: 12px;
+`;
+
+export const SummaryDataCell = styled.div`
+  white-space: nowrap;
+`;
+
+export const SummaryData = styled.div`
   margin: 0;
   padding: 0;
   font-weight: 600;
-`;
+  display: flex;
+  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-column-gap: 6px;
 
-export const MetadataRow = styled.tr`
-  & td {
-    white-space: nowrap;
-  }
-  & td:first-child {
+  ${SummaryDataCell}:nth-child(odd) {
     text-align: right;
     font-weight: normal;
-    margin-right: 6px;
   }
 `;
 
-export const MoreButton = themed(styled.button`
+export const Button = themed(styled.button`
   padding: 0;
   margin: 0;
   background: transparent;

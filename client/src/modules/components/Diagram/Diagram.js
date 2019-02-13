@@ -277,18 +277,18 @@ class Diagram extends React.PureComponent {
           handleZoomOut={this.handleZoomOut}
           handleZoomReset={this.handleZoomReset}
         />
-        {this.props.selectedFlowNodeId &&
-          this.props.metadata && (
-            <PopoverOverlay
-              key={this.props.selectedFlowNodeId}
-              selectedFlowNode={{
-                id: this.props.selectedFlowNodeId,
-                name: this.getFlownNodeName(this.props.selectedFlowNodeId)
-              }}
-              metadata={this.props.metadata}
-              {...overlayProps}
-            />
-          )}
+        {this.props.selectedFlowNodeId && this.props.metadata && (
+          <PopoverOverlay
+            key={this.props.selectedFlowNodeId}
+            selectedFlowNode={{
+              id: this.props.selectedFlowNodeId,
+              name: this.getFlownNodeName(this.props.selectedFlowNodeId)
+            }}
+            metadata={this.props.metadata}
+            onFlowNodeSelection={this.props.onFlowNodeSelection}
+            {...overlayProps}
+          />
+        )}
         {this.renderFlowNodeStateOverlays(overlayProps)}
         {this.renderStatisticsOverlays(overlayProps)}
       </Styled.Diagram>

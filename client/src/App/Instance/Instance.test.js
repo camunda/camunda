@@ -444,26 +444,31 @@ describe('Instance', () => {
 
         // then
         expect(node.find('Diagram').prop('metadata')).toEqual({
-          endDate: '12 Dec 2018 00:00:00',
-          activityInstanceId: 'activityInstanceOfTask123',
-          jobId: '66',
-          startDate: '12 Dec 2018 00:00:00',
-          jobCustomHeaders: {},
-          jobRetries: 3,
-          jobType: 'shipArticles',
-          workflowId: '1',
-          workflowInstanceId: '53'
+          data: {
+            endDate: '12 Dec 2018 00:00:00',
+            activityInstanceId: 'activityInstanceOfTask123',
+            jobId: '66',
+            startDate: '12 Dec 2018 00:00:00',
+            jobCustomHeaders: {},
+            jobRetries: 3,
+            jobType: 'shipArticles',
+            workflowId: '1',
+            workflowInstanceId: '53'
+          }
         });
       });
 
-      it('should not pass metadata for a flow node with multiple related instances', async () => {
+      it("should pass the right metadata if it's a peter case with multiple rows selected", async () => {
         // Demo Data
         activityId = 'Task123';
         const matchingTreeRowIds = [
           'firstActivityInstanceOfTask123',
           'secondActivityInstanceOfTask123'
         ];
-        const emptyMetaData = {};
+        const expectedMetadata = {
+          isMultiRowPeterCase: true,
+          instancesCount: 2
+        };
 
         mockEvents = [
           createEvent({activityId, activityInstanceId: matchingTreeRowIds[0]}),
@@ -499,8 +504,71 @@ describe('Instance', () => {
         node.update();
 
         // then
-        expect(node.find('Diagram').prop('metadata')).toEqual(emptyMetaData);
+        expect(node.find('Diagram').prop('metadata')).toEqual(expectedMetadata);
       });
+
+      it.only("should pass the right metadata if it's a peter case with a single row selected", async () => {
+        // Demo Data
+        activityId = 'Task123';
+        const matchingTreeRowIds = [
+          'firstActivityInstanceOfTask123',
+          'secondActivityInstanceOfTask123'
+        ];
+        mockEvents = [
+          createEvent({activityId, activityInstanceId: matchingTreeRowIds[0]}),
+          createEvent({activityId, activityInstanceId: matchingTreeRowIds[1]})
+        ];
+        const expectedMetadata = {
+          isSingleRowPeterCase: true,
+          data: {
+            endDate: '12 Dec 2018 00:00:00',
+            activityInstanceId: 'firstActivityInstanceOfTask123',
+            jobId: '66',
+            startDate: '12 Dec 2018 00:00:00',
+            jobCustomHeaders: {},
+            jobRetries: 3,
+            jobType: 'shipArticles',
+            workflowId: '1',
+            workflowInstanceId: '53'
+          }
+        };
+
+        mockTree = {
+          children: [
+            createRawTreeNode({
+              id: matchingTreeRowIds[0],
+              activityId
+            }),
+            createRawTreeNode({
+              id: matchingTreeRowIds[1],
+              activityId
+            })
+          ]
+        };
+
+        // given api response
+        eventsApi.fetchEvents = mockResolvedAsyncFn(mockEvents);
+        activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
+          mockTree
+        );
+
+        // given
+        const node = mountRenderComponent();
+        await flushPromises();
+        node.update();
+
+        // when
+        node.find(FlowNodeInstancesTree).prop('onTreeRowSelection')({
+          id: matchingTreeRowIds[0],
+          activityId
+        });
+        node.update();
+
+        // then
+        expect(node.find('Diagram').prop('metadata')).toEqual(expectedMetadata);
+      });
+
+      // it('should not pass metadata for a flow node with multiple related instances', async () => {});
     });
   });
 

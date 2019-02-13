@@ -25,6 +25,84 @@ export default class PopoverOverlay extends React.Component {
     this.setState({isModalVisibile: true});
   };
 
+  renderModal = () => {
+    const {metadata, selectedFlowNode} = this.props;
+
+    return (
+      <Modal onModalClose={this.handleModalClose}>
+        <Modal.Header>{`Flow Node Instance "${selectedFlowNode.name ||
+          metadata.data['activityInstanceId']}" Metadata`}</Modal.Header>
+        <Styled.ModalBody>
+          <pre>
+            <Styled.LinesSeparator />
+            <code className="language-json">
+              {JSON.stringify(metadata.data, null, '\t')
+                .split('\n')
+                .map((line, idx) => (
+                  <Styled.CodeLine key={idx}>{line}</Styled.CodeLine>
+                ))}
+            </code>
+          </pre>
+        </Styled.ModalBody>
+        <Modal.Footer>
+          <Modal.PrimaryButton
+            title="Close Modal"
+            onClick={this.handleModalClose}
+          >
+            Close
+          </Modal.PrimaryButton>
+        </Modal.Footer>
+      </Modal>
+    );
+  };
+
+  renderSummary = () => {
+    const {metadata, selectedFlowNode, onFlowNodeSelection} = this.props;
+
+    if (metadata.isMultiRowPeterCase) {
+      return (
+        <>
+          <Styled.PeterCaseSummaryHeader>
+            {`There are ${metadata.instancesCount} instances`}
+          </Styled.PeterCaseSummaryHeader>
+          <Styled.PeterCaseSummaryBody>
+            To view metadata for any of these, select on instance in the
+            Instance History.
+          </Styled.PeterCaseSummaryBody>
+        </>
+      );
+    }
+
+    const summaryKeys = ['activityInstanceId', 'jobId', 'startDate', 'endDate'];
+    const summary = compactObject(pickFromObject(metadata.data, summaryKeys));
+    return (
+      <>
+        {metadata.isSingleRowPeterCase && (
+          <Styled.SummaryHeader>
+            <Styled.Button
+              onClick={() => onFlowNodeSelection(selectedFlowNode.id)}
+            >
+              {selectedFlowNode.name}
+            </Styled.Button>
+            <span> > {metadata.data.activityInstanceId}</span>
+          </Styled.SummaryHeader>
+        )}
+        <Styled.SummaryData>
+          {Object.entries(summary).map(([key, value]) => {
+            return (
+              <React.Fragment key={key}>
+                <Styled.SummaryDataCell>{key}:</Styled.SummaryDataCell>
+                <Styled.SummaryDataCell>
+                  {typeof value === 'string' ? value : JSON.stringify(value)}
+                </Styled.SummaryDataCell>
+              </React.Fragment>
+            );
+          })}
+        </Styled.SummaryData>
+      </>
+    );
+  };
+
   render() {
     const {
       metadata,
@@ -34,9 +112,6 @@ export default class PopoverOverlay extends React.Component {
       selectedFlowNode,
       theme
     } = this.props;
-
-    const summaryKeys = ['activityInstanceId', 'jobId', 'startDate', 'endDate'];
-    const summary = compactObject(pickFromObject(metadata, summaryKeys));
 
     return (
       <Overlay
@@ -48,55 +123,17 @@ export default class PopoverOverlay extends React.Component {
         position={position}
       >
         <Styled.Popover theme={theme}>
-          <Styled.Metadata>
-            <tbody>
-              {Object.entries(summary).map(([key, value]) => {
-                return (
-                  <Styled.MetadataRow key={key}>
-                    <td>{key}:</td>
-                    <td>
-                      {typeof value === 'string'
-                        ? value
-                        : JSON.stringify(value)}
-                    </td>
-                  </Styled.MetadataRow>
-                );
-              })}
-            </tbody>
-          </Styled.Metadata>
-          <Styled.MoreButton
-            onClick={this.handleModalOpen}
-            title="Show more metadata"
-            data-test="more-metadata"
-          >
-            More...
-          </Styled.MoreButton>
-          {this.state.isModalVisibile && (
-            <Modal onModalClose={this.handleModalClose}>
-              <Modal.Header>{`Flow Node Instance "${selectedFlowNode.name ||
-                metadata['activityInstanceId']}" Metadata`}</Modal.Header>
-              <Styled.ModalBody>
-                <pre>
-                  <Styled.LinesSeparator />
-                  <code className="language-json">
-                    {JSON.stringify(metadata, null, '\t')
-                      .split('\n')
-                      .map((line, idx) => (
-                        <Styled.CodeLine key={idx}>{line}</Styled.CodeLine>
-                      ))}
-                  </code>
-                </pre>
-              </Styled.ModalBody>
-              <Modal.Footer>
-                <Modal.PrimaryButton
-                  title="Close Modal"
-                  onClick={this.handleModalClose}
-                >
-                  Close
-                </Modal.PrimaryButton>
-              </Modal.Footer>
-            </Modal>
+          {this.renderSummary()}
+          {Boolean(metadata.data) && (
+            <Styled.Button
+              onClick={this.handleModalOpen}
+              title="Show more metadata"
+              data-test="more-metadata"
+            >
+              More...
+            </Styled.Button>
           )}
+          {this.state.isModalVisibile && this.renderModal()}
         </Styled.Popover>
       </Overlay>
     );
@@ -111,6 +148,7 @@ PopoverOverlay.propTypes = {
   }),
   onOverlayAdd: PropTypes.func.isRequired,
   onOverlayClear: PropTypes.func.isRequired,
+  onFlowNodeSelection: PropTypes.func.isRequired,
   isViewerLoaded: PropTypes.bool.isRequired,
   theme: PropTypes.oneOf(['dark', 'light']).isRequired
 };

@@ -15,7 +15,8 @@ import DiagramControls from './DiagramControls';
 import * as Styled from './styled';
 
 const mockProps = {
-  definitions: parsedDiagram.definitions
+  definitions: parsedDiagram.definitions,
+  onFlowNodeSelection: jest.fn()
 };
 
 function mountNode(customProps = {}) {
@@ -326,19 +327,19 @@ describe('Diagram', () => {
 
   describe('metadata popover', () => {
     const {activityId} = createActivity();
-    const mockBeautifiedMetadata = createMetadata(activityId);
+    const mockMetadata = {data: createMetadata(activityId)};
     const summary = {
-      jobId: mockBeautifiedMetadata['jobId'],
-      activityInstanceId: mockBeautifiedMetadata['activityInstanceId'],
-      startDate: mockBeautifiedMetadata['startDate'],
-      endDate: mockBeautifiedMetadata['endDate']
+      jobId: mockMetadata.data['jobId'],
+      activityInstanceId: mockMetadata.data['activityInstanceId'],
+      startDate: mockMetadata.data['startDate'],
+      endDate: mockMetadata.data['endDate']
     };
 
     it('should render a popover containing the summary of the metadata', () => {
       // given
       const node = mountNode({
         selectedFlowNodeId: activityId,
-        metadata: mockBeautifiedMetadata
+        metadata: mockMetadata
       });
 
       // then
@@ -355,7 +356,7 @@ describe('Diagram', () => {
       // given
       const node = mountNode({
         selectedFlowNodeId: activityId,
-        metadata: mockBeautifiedMetadata
+        metadata: mockMetadata
       });
       const overlayNode = node.find('Overlay');
       const moreButton = overlayNode.find('button[data-test="more-metadata"]');
@@ -368,7 +369,7 @@ describe('Diagram', () => {
       const modalNode = node.find('Modal');
       expect(modalNode).toHaveLength(1);
       const modalNodeText = modalNode.text();
-      Object.entries(mockBeautifiedMetadata).forEach(([key, value]) => {
+      Object.entries(mockMetadata.data).forEach(([key, value]) => {
         expect(modalNodeText.includes(key)).toBe(true);
         expect(modalNodeText.includes(value)).toBe(true);
       });
