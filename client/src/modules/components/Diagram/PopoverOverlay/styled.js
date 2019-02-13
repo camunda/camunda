@@ -114,6 +114,8 @@ export const ModalBody = themed(styled(Modal.Body)`
 export const CodeLine = themed(styled.p`
   margin: 3px;
   line-height: 14px;
+  font-family: IBMPlexMono;
+
   &:before {
     counter-increment: line;
     content: counter(line);

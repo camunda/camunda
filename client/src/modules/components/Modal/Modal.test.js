@@ -10,6 +10,7 @@ const HeaderContent = () => <div>Header Content</div>;
 const BodyContent = () => <div>Body Content</div>;
 const FooterContent = () => <div>Footer Content</div>;
 const onModalClose = jest.fn();
+const primaryButtonClickHandler = jest.fn();
 
 const mountNode = (props = {}) => {
   return mount(
@@ -22,7 +23,9 @@ const mountNode = (props = {}) => {
           <BodyContent />
         </Modal.Body>
         <Modal.Footer>
-          <FooterContent />
+          <Modal.PrimaryButton onClick={primaryButtonClickHandler}>
+            Some Primary Button
+          </Modal.PrimaryButton>
         </Modal.Footer>
       </Modal>
     </ThemeProvider>
@@ -54,7 +57,7 @@ describe('Modal', () => {
     expect(node.find(Modal.Body).find(BodyContent)).toHaveLength(1);
 
     // Footer
-    expect(node.find(Modal.Footer).find(FooterContent)).toHaveLength(1);
+    expect(node.find(Modal.Footer).find(Modal.PrimaryButton)).toHaveLength(1);
   });
 
   it('should render a cross close button in the header', () => {
@@ -69,5 +72,24 @@ describe('Modal', () => {
 
     // then
     expect(onModalClose).toBeCalled();
+  });
+
+  it('should respond to key presses', () => {
+    // given
+    mountNode();
+    const espcapeKeKeyPressEvent = new KeyboardEvent('keydown', {keyCode: 27});
+    const enterkeKeyPressEvent = new KeyboardEvent('keydown', {keyCode: 13});
+
+    // Pressing <ESC>
+    // when
+    document.dispatchEvent(espcapeKeKeyPressEvent);
+    // then
+    expect(onModalClose).toBeCalled();
+
+    // Pressing <Enter>
+    // when
+    document.dispatchEvent(enterkeKeyPressEvent);
+    // then
+    expect(primaryButtonClickHandler).toBeCalled();
   });
 });

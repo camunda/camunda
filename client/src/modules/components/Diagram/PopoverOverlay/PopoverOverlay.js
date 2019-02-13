@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 
 import {compactObject, pickFromObject} from 'modules/utils';
 import Modal from 'modules/components/Modal';
-import Button from 'modules/components/Button';
 
 import Overlay from '../Overlay';
 import * as Styled from './styled';
@@ -18,7 +17,13 @@ export default class PopoverOverlay extends React.Component {
     isModalVisibile: false
   };
 
-  handleModalClose = () => this.setState({isModalVisibile: false});
+  handleModalClose = () => {
+    this.setState({isModalVisibile: false});
+  };
+
+  handleModalOpen = () => {
+    this.setState({isModalVisibile: true});
+  };
 
   render() {
     const {
@@ -60,7 +65,7 @@ export default class PopoverOverlay extends React.Component {
             </tbody>
           </Styled.Metadata>
           <Styled.MoreButton
-            onClick={() => this.setState({isModalVisibile: true})}
+            onClick={this.handleModalOpen}
             title="Show more metadata"
             data-test="more-metadata"
           >
@@ -83,14 +88,12 @@ export default class PopoverOverlay extends React.Component {
                 </pre>
               </Styled.ModalBody>
               <Modal.Footer>
-                <Button
-                  color="primary"
-                  size="medium"
+                <Modal.PrimaryButton
+                  title="Close Modal"
                   onClick={this.handleModalClose}
-                  title="close the metadata modal"
                 >
                   Close
-                </Button>
+                </Modal.PrimaryButton>
               </Modal.Footer>
             </Modal>
           )}

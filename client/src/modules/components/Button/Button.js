@@ -3,9 +3,9 @@ import PropTypes from 'prop-types';
 
 import * as Styled from './styled';
 
-export default function Button(props) {
-  return <Styled.Button {...props} />;
-}
+const Button = React.forwardRef(function Button(props, ref) {
+  return <Styled.Button {...props} ref={ref} />;
+});
 
 Button.propTypes = {
   size: PropTypes.oneOf(['medium', 'large']),
@@ -16,3 +16,5 @@ Button.defaultProps = {
   size: 'medium',
   color: 'main'
 };
+
+export default Button;

@@ -2,20 +2,26 @@
 
 exports[`DiagramControls should render diagram controls 1`] = `
 <styled.div>
-  <Styled(Styled(Button))
+  <Styled(Styled(Component))
+    color="main"
     onClick={[MockFunction]}
+    size="medium"
   >
     <ReactComponent />
-  </Styled(Styled(Button))>
-  <Styled(Styled(Button))
+  </Styled(Styled(Component))>
+  <Styled(Styled(Component))
+    color="main"
     onClick={[MockFunction]}
+    size="medium"
   >
     <ReactComponent />
-  </Styled(Styled(Button))>
-  <Styled(Styled(Button))
+  </Styled(Styled(Component))>
+  <Styled(Styled(Component))
+    color="main"
     onClick={[MockFunction]}
+    size="medium"
   >
     <ReactComponent />
-  </Styled(Styled(Button))>
+  </Styled(Styled(Component))>
 </styled.div>
 `;

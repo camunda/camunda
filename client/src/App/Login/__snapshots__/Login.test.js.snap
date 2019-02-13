@@ -44,14 +44,14 @@ exports[`Login should display an error if any field is empty 1`] = `
       type="password"
       value=""
     />
-    <Button
+    <ForwardRef(Button)
       color="main"
       size="large"
       title="Log in"
       type="submit"
     >
       Log in
-    </Button>
+    </ForwardRef(Button)>
   </styled.form>
 </styled.div>
 `;
@@ -86,14 +86,14 @@ exports[`Login should display an error on unsuccessful login 1`] = `
       type="password"
       value="bar"
     />
-    <Button
+    <ForwardRef(Button)
       color="main"
       size="large"
       title="Log in"
       type="submit"
     >
       Log in
-    </Button>
+    </ForwardRef(Button)>
   </styled.form>
 </styled.div>
 `;
@@ -126,14 +126,14 @@ exports[`Login should render login form by default 1`] = `
       type="password"
       value=""
     />
-    <Button
+    <ForwardRef(Button)
       color="main"
       size="large"
       title="Log in"
       type="submit"
     >
       Log in
-    </Button>
+    </ForwardRef(Button)>
   </styled.form>
 </styled.div>
 `;

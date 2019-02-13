@@ -27,6 +27,11 @@
   font-weight: 600;
 }
 
+@font-face {
+  font-family: 'IBMPlexMono';
+  src: local('IBMPlexMono-Regular'), url('./fonts/IBMPlexMono-Regular.woff2');
+}
+
 * {
   box-sizing: border-box;
 }
