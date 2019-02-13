@@ -18,13 +18,14 @@ export const Bar = themed(styled.div`
   })};
   border-width: 0px 1px 1px 1px;
   border-style: solid;
+  color: ${({isSelected}) => isSelected && '#fff'};
 
   border-color: ${({isSelected}) => isSelected && Colors.primaryButton01};
   background: ${({isSelected}) => isSelected && Colors.selections};
   color: ${({isSelected}) => isSelected && '#fff'};
 
   > svg {
-    fill: ${({isSelected}) => isSelected && 'white'};
+    fill: ${({isSelected}) => isSelected && '#fff'};
   }
 
   /* Border between Icon and Name */

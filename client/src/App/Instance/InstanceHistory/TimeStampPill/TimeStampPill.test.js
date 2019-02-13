@@ -4,11 +4,10 @@ import {mount} from 'enzyme';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import {FlowNodeTimeStampProvider} from 'modules/contexts/FlowNodeTimeStampContext';
 
+import Pill from 'modules/components/Pill';
 import {PILL_TYPE} from 'modules/constants';
 
 import TimeStampPill from './TimeStampPill';
-
-import * as Styled from './styled';
 
 const renderNode = node => {
   return mount(
@@ -35,7 +34,7 @@ describe('TimeStampPill', () => {
   });
 
   it('should render a pill element with a type property', () => {
-    const PillNode = node.find(Styled.TimeStampPill);
+    const PillNode = node.find(Pill);
     expect(PillNode.prop('type')).toBe(PILL_TYPE.TIMESTAMP);
   });
 
@@ -48,7 +47,7 @@ describe('TimeStampPill', () => {
       expect(PillNode.prop('showTimeStamp')).toBe(false);
 
       //then
-      expect(PillNode.text()).toContain('Show Timestamps');
+      expect(PillNode.text()).toContain('Show End Time');
     });
 
     it('should render "Hide" label, when timestamps are visible', () => {
@@ -60,7 +59,7 @@ describe('TimeStampPill', () => {
       expect(PillNode.prop('showTimeStamp')).toBe(true);
 
       //then
-      expect(PillNode.text()).toContain('Hide Timestamps');
+      expect(PillNode.text()).toContain('Hide End Time');
     });
   });
 });

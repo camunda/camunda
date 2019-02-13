@@ -5,8 +5,6 @@ import {Colors, themed, themeStyle} from 'modules/theme';
 import {ReactComponent as ClockIcon} from 'modules/components/Icon/clock.svg';
 
 const iconStyles = css`
-  position: relative;
-  top: 1px;
   margin-right: 4px;
 `;
 

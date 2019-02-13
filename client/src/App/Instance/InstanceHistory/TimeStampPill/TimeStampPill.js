@@ -1,11 +1,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import Pill from 'modules/components/Pill';
 
 import {PILL_TYPE} from 'modules/constants';
 
 import {withFlowNodeTimeStampContext} from 'modules/contexts/FlowNodeTimeStampContext';
-
-import * as Styled from './styled';
 
 class TimeStampPill extends React.Component {
   static propTypes = {
@@ -16,13 +15,13 @@ class TimeStampPill extends React.Component {
   render() {
     const {showTimeStamp, onTimeStampToggle} = this.props;
     return (
-      <Styled.TimeStampPill
+      <Pill
         isActive={showTimeStamp}
         onClick={onTimeStampToggle}
         type={PILL_TYPE.TIMESTAMP}
       >
-        {`${showTimeStamp ? 'Hide' : 'Show'} Timestamps`}
-      </Styled.TimeStampPill>
+        {`${showTimeStamp ? 'Hide' : 'Show'} End Time`}
+      </Pill>
     );
   }
 }
