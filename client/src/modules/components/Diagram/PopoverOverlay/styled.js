@@ -75,6 +75,7 @@ export const PeterCaseSummaryBody = styled.div`
 
 export const SummaryHeader = styled.div`
   margin-bottom: 12px;
+  white-space: nowrap;
 `;
 
 export const SummaryDataCell = styled.div`
