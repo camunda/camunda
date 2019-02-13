@@ -7,7 +7,7 @@ export const NodeIcon = styled(BasicFlowNodeIcon)``;
 
 export const Bar = themed(styled.div`
   display: flex;
-  height: 28px;
+  height: 27px;
   font-size: 13px;
   min-width: 200px;
   align-items: center;

@@ -53,7 +53,7 @@ export const RightIcon = themed(styled(
 
 export const Summary = themed(styled.div`
   position: relative;
-  height: 28px;
+  height: 27px;
 `);
 
 const selectionStyles = css`

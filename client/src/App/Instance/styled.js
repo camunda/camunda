@@ -3,6 +3,9 @@ import styled from 'styled-components';
 import {HEADER_HEIGHT} from './../Header/styled';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
+import bgBlack from 'modules/components/ZeebraStripe/tree-view-bg-dark.png';
+import bgLight from 'modules/components/ZeebraStripe/tree-view-bg-light.png';
+
 import SplitPane from 'modules/components/SplitPane';
 
 export const Instance = styled.main`
@@ -51,7 +54,12 @@ export const FlowNodeInstanceLog = themed(styled.div`
   })};
 `);
 
-export const NodeContainer = styled.div`
+export const NodeContainer = themed(styled.div`
+  background-image: ${themeStyle({
+    dark: `url(${bgBlack})`,
+    light: `url(${bgLight})`
+  })};
+
   position: absolute;
   height: 100%;
   width: inherit;
@@ -60,4 +68,4 @@ export const NodeContainer = styled.div`
   margin: 0;
   padding: 0;
   padding-left: 8px;
-`;
+`);
