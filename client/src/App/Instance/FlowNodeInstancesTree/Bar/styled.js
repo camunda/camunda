@@ -16,12 +16,8 @@ export const Bar = themed(styled.div`
     dark: Colors.uiDark04,
     light: Colors.uiLight05
   })};
-  border-width: 0px 1px 1px 1px;
+  border-width: 0px 0px 1px 1px;
   border-style: solid;
-  color: ${({isSelected}) => isSelected && '#fff'};
-
-  border-color: ${({isSelected}) => isSelected && Colors.primaryButton01};
-  background: ${({isSelected}) => isSelected && Colors.selections};
   color: ${({isSelected}) => isSelected && '#fff'};
 
   > svg {

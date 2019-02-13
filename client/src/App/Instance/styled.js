@@ -43,6 +43,7 @@ export const FlowNodeInstanceLog = themed(styled.div`
       light: Colors.uiLight05
     })};
   border-top: none;
+  border-left: none;
   border-bottom: none;
   color: ${themeStyle({
     dark: 'rgba(255, 255, 255, 0.9)',
