@@ -305,7 +305,7 @@ export default class Instance extends Component {
                   />
                 </Styled.NodeContainer>
               </Styled.FlowNodeInstanceLog>
-              <div style={{color: 'white'}}>Payload</div>
+              <div style={{height: '100%', width: '50%'}} />
             </InstanceHistory>
           </SplitPane>
         </Styled.Instance>
