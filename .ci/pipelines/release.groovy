@@ -44,7 +44,7 @@ void runRelease(params) {
   """)
 }
 
-static String mavenNodeJSAgent(env) {
+static String mavenAgent(env) {
   return """
 apiVersion: v1
 kind: Pod
@@ -87,7 +87,7 @@ pipeline {
       cloud 'operate-ci'
       label "operate-ci-build_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
       defaultContainer 'jnlp'
-      yaml mavenNodeJSAgent(env)
+      yaml mavenAgent(env)
     }
   }
 
