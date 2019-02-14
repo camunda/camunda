@@ -27,6 +27,23 @@ void buildNotification(String buildStatus) {
   emailext subject: subject, body: body, recipientProviders: recipients
 }
 
+void runRelease(params) {
+  def pushChanges = 'true'
+  def skipDeploy = 'false'
+
+  if (!params.PUSH_CHANGES) {
+    pushChanges = 'false'
+    skipDeploy='true'
+  }
+
+  sh ("""
+    mvn release:prepare release:perform -P -docker -DpushChanges=${pushChanges} -DskipTests=true -B -T\$LIMITS_CPU --fail-at-end \
+      -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --settings=settings.xml \
+      -Dtag=${params.RELEASE_VERSION} -DreleaseVersion=${params.RELEASE_VERSION} -DdevelopmentVersion=${params.DEVELOPMENT_VERSION} \
+      '-Darguments=--settings=settings.xml -P -docker -DskipTests=true -DskipNexusStagingDeployMojo=${skipDeploy} -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'
+  """)
+}
+
 static String mavenNodeJSAgent(env) {
   return """
 apiVersion: v1
@@ -77,6 +94,7 @@ pipeline {
   parameters {
     string(name: 'RELEASE_VERSION', defaultValue: '1.0.0', description: 'Version to release. Applied to pom.xml and Git tag.')
     string(name: 'DEVELOPMENT_VERSION', defaultValue: '1.1.0-SNAPSHOT', description: 'Next development version.')
+    booleanParam(name: 'PUSH_CHANGES', defaultValue: false, description: 'Should the changes be pushed to remote locations.')
   }
 
   environment {
@@ -117,12 +135,7 @@ pipeline {
       steps {
         container('maven') {
           sshagent(['camunda-jenkins-github-ssh']) {
-            sh ("""
-              mvn release:prepare release:perform -P -docker -DskipTests=true -B -T\$LIMITS_CPU --fail-at-end \
-                -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --settings=settings.xml \
-                -Dtag=${params.RELEASE_VERSION} -DreleaseVersion=${params.RELEASE_VERSION} -DdevelopmentVersion=${params.DEVELOPMENT_VERSION} \
-                '-Darguments=--settings=settings.xml -P -docker -DskipTests=true -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'
-            """)
+            runRelease(params)
           }
         }
       }
