@@ -2,7 +2,12 @@
 
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
-def static PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
+// general properties for CI execution
+static String NODE_POOL() { return "slaves-stable" }
+static String MAVEN_DOCKER_IMAGE() { return "maven:3.5.3-jdk-8-slim" }
+static String DIND_DOCKER_IMAGE() { return "docker:18.06-dind" }
+
+static String PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
 
 String calculatePreviousVersion(releaseVersion) {
   def version = releaseVersion.tokenize('.')
@@ -18,6 +23,57 @@ String calculatePreviousVersion(releaseVersion) {
     println 'Not auto-updating previousVersion property as release version is not a valid major/minor version.'
     return ""
   }
+}
+
+static String mavenDindAgent(env) {
+  return """---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    agent: optimize-ci-build
+spec:
+  nodeSelector:
+    cloud.google.com/gke-nodepool: ${NODE_POOL()}
+  containers:
+  - name: maven
+    image: ${MAVEN_DOCKER_IMAGE()}
+    command: ["cat"]
+    tty: true
+    env:
+      - name: LIMITS_CPU
+        valueFrom:
+          resourceFieldRef:
+            resource: limits.cpu
+      # every JVM process will get a 1/2 of HEAP from total memory
+      - name: JAVA_TOOL_OPTIONS
+        value: |
+          -XX:+UnlockExperimentalVMOptions
+          -XX:+UseCGroupMemoryLimitForHeap
+          -XX:MaxRAMFraction=\$(LIMITS_CPU)
+      - name: TZ
+        value: Europe/Berlin
+    resources:
+      limits:
+        cpu: 4
+        memory: 3Gi
+      requests:
+        cpu: 2
+        memory: 3Gi
+  - name: docker
+    image: ${DIND_DOCKER_IMAGE()}
+    args: ["--storage-driver=overlay2"]
+    securityContext:
+      privileged: true
+    tty: true
+    resources:
+      limits:
+        cpu: 2
+        memory: 1Gi
+      requests:
+        cpu: 1
+        memory: 1Gi
+"""
 }
 
 void buildNotification(String buildStatus) {
@@ -81,7 +137,7 @@ pipeline {
       cloud 'optimize-ci'
       label "optimize-ci-build_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
       defaultContainer 'jnlp'
-      yamlFile '.ci/podSpecs/builderAgent.yml'
+      yaml mavenDindAgent(env)
     }
   }
 
