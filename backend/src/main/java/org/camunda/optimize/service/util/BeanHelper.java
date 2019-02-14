@@ -1,6 +1,5 @@
 package org.camunda.optimize.service.util;
 
-import org.camunda.optimize.rest.engine.EngineContext;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -12,8 +11,8 @@ public class BeanHelper {
   @Autowired
   private BeanFactory beanFactory;
 
-  public <R, C extends Class<R>> R getInstance(C requiredType, EngineContext engineContext) {
-    return requiredType.cast(beanFactory.getBean(BeanHelper.getBeanName(requiredType), engineContext));
+  public <R, C extends Class<R>> R getInstance(C requiredType, Object... args) {
+    return requiredType.cast(beanFactory.getBean(BeanHelper.getBeanName(requiredType), args));
   }
 
   /**

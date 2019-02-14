@@ -58,48 +58,22 @@ public class DecisionDefinitionReader {
     this.esClient = esClient;
   }
 
-  public List<DecisionDefinitionOptimizeDto> getDecisionDefinitionsAsService() {
-    return getDecisionDefinitionsAsService(false);
+  public List<DecisionDefinitionOptimizeDto> fetchFullyImportedDecisionDefinitionsAsService() {
+    return fetchFullyImportedDecisionDefinitionsAsService(false);
   }
 
-  public List<DecisionDefinitionOptimizeDto> getDecisionDefinitionsAsService(final boolean withXml) {
-    return getFullyImportedDecisionDefinitions(null, withXml);
+  public List<DecisionDefinitionOptimizeDto> fetchFullyImportedDecisionDefinitionsAsService(final boolean withXml) {
+    return fetchFullyImportedDecisionDefinitions(null, withXml);
   }
 
-  public List<DecisionDefinitionOptimizeDto> getFullyImportedDecisionDefinitions(final String userId,
-                                                                                 final boolean withXml) {
+  public List<DecisionDefinitionOptimizeDto> fetchFullyImportedDecisionDefinitions(final String userId,
+                                                                                   final boolean withXml) {
     logger.debug("Fetching decision definitions");
     // the front-end needs the xml to work properly. Therefore, we only want to expose definitions
     // where the import is complete including the xml
     final QueryBuilder query = QueryBuilders.existsQuery(DecisionDefinitionType.DECISION_DEFINITION_XML);
 
-    String[] fieldsToExclude = withXml ? null : new String[]{DecisionDefinitionType.DECISION_DEFINITION_XML};
-
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(query)
-      .size(LIST_FETCH_LIMIT)
-      .fetchSource(null, fieldsToExclude);
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(DECISION_DEFINITION_TYPE))
-        .types(DECISION_DEFINITION_TYPE)
-        .source(searchSourceBuilder)
-        .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
-
-    SearchResponse scrollResp;
-    try {
-      scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      logger.error("Was not able to retrieve decision definitions!", e);
-      throw new OptimizeRuntimeException("Was not able to retrieve decision definitions!", e);
-    }
-
-    List<DecisionDefinitionOptimizeDto> definitionsResult = ElasticsearchHelper.retrieveAllScrollResults(
-      scrollResp,
-      DecisionDefinitionOptimizeDto.class,
-      objectMapper,
-      esClient,
-      configurationService.getElasticsearchScrollTimeout()
-    );
+    List<DecisionDefinitionOptimizeDto> definitionsResult = fetchDecisionDefinitions(withXml, query);
 
     if (userId != null) {
       definitionsResult = filterAuthorizedDecisionDefinitions(userId, definitionsResult);
@@ -109,40 +83,12 @@ public class DecisionDefinitionReader {
   }
 
   /**
-   * This function retrieves all decision definitions independent of if
-   * the respective xml was already imported or not.
+   * This function retrieves all decision definitions independent of if the respective xml was already imported or not.
    */
-  public List<DecisionDefinitionOptimizeDto> getAllDecisionDefinitionWithoutXml() {
+  public List<DecisionDefinitionOptimizeDto> fetchAllDecisionDefinitionWithoutXmlAsService() {
     logger.debug("Fetching all decision definitions including those where the xml hasn't been fetched yet.");
     final QueryBuilder query = QueryBuilders.matchAllQuery();
-
-    String[] fieldsToExclude = new String[]{DecisionDefinitionType.DECISION_DEFINITION_XML};
-
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(query)
-      .size(LIST_FETCH_LIMIT)
-      .fetchSource(null, fieldsToExclude);
-    SearchRequest searchRequest =
-      new SearchRequest(getOptimizeIndexAliasForType(DECISION_DEFINITION_TYPE))
-        .types(DECISION_DEFINITION_TYPE)
-        .source(searchSourceBuilder)
-        .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
-
-    SearchResponse scrollResp;
-    try {
-      scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      logger.error("Was not able to retrieve decision definitions!", e);
-      throw new OptimizeRuntimeException("Was not able to retrieve decision definitions!", e);
-    }
-
-    return ElasticsearchHelper.retrieveAllScrollResults(
-      scrollResp,
-      DecisionDefinitionOptimizeDto.class,
-      objectMapper,
-      esClient,
-      configurationService.getElasticsearchScrollTimeout()
-    );
+    return fetchDecisionDefinitions(false, query);
   }
 
   public Optional<String> getDecisionDefinitionXml(final String userId,
@@ -163,6 +109,37 @@ public class DecisionDefinitionReader {
     return new ArrayList<>(resultMap.values());
   }
 
+  private List<DecisionDefinitionOptimizeDto> fetchDecisionDefinitions(final boolean withXml,
+                                                                       final QueryBuilder query) {
+    final String[] fieldsToExclude = withXml ? null : new String[]{DecisionDefinitionType.DECISION_DEFINITION_XML};
+
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(query)
+      .size(LIST_FETCH_LIMIT)
+      .fetchSource(null, fieldsToExclude);
+    final SearchRequest searchRequest =
+      new SearchRequest(getOptimizeIndexAliasForType(DECISION_DEFINITION_TYPE))
+        .types(DECISION_DEFINITION_TYPE)
+        .source(searchSourceBuilder)
+        .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+
+    final SearchResponse scrollResp;
+    try {
+      scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      logger.error("Was not able to retrieve decision definitions!", e);
+      throw new OptimizeRuntimeException("Was not able to retrieve decision definitions!", e);
+    }
+
+    return ElasticsearchHelper.retrieveAllScrollResults(
+      scrollResp,
+      DecisionDefinitionOptimizeDto.class,
+      objectMapper,
+      esClient,
+      configurationService.getElasticsearchScrollTimeout()
+    );
+  }
+
   private DecisionDefinitionOptimizeDto parseDecisionDefinition(final String responseAsString) {
     final DecisionDefinitionOptimizeDto definitionOptimizeDto;
     try {
@@ -174,8 +151,8 @@ public class DecisionDefinitionReader {
     return definitionOptimizeDto;
   }
 
-  private List<DecisionDefinitionOptimizeDto> getFullyImportedDecisionDefinitions(String userId) {
-    return this.getFullyImportedDecisionDefinitions(userId, false);
+  private List<DecisionDefinitionOptimizeDto> fetchFullyImportedDecisionDefinitions(String userId) {
+    return this.fetchFullyImportedDecisionDefinitions(userId, false);
   }
 
   private List<DecisionDefinitionOptimizeDto> filterAuthorizedDecisionDefinitions(final String userId,
@@ -268,7 +245,7 @@ public class DecisionDefinitionReader {
 
   private Map<String, DecisionDefinitionGroupOptimizeDto> getKeyToDecisionDefinitionMap(String userId) {
     Map<String, DecisionDefinitionGroupOptimizeDto> resultMap = new HashMap<>();
-    List<DecisionDefinitionOptimizeDto> allDefinitions = getFullyImportedDecisionDefinitions(userId);
+    List<DecisionDefinitionOptimizeDto> allDefinitions = fetchFullyImportedDecisionDefinitions(userId);
     for (DecisionDefinitionOptimizeDto decisionDefinition : allDefinitions) {
       String key = decisionDefinition.getKey();
       if (!resultMap.containsKey(key)) {

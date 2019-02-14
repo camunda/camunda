@@ -106,6 +106,9 @@ import:
     variable:
       # Determines the page size for historic variable instance fetching.
       maxPageSize: 10000
+    user-task-instance:
+      # Determines the page size for user task instance fetching.
+      maxPageSize: 10000
     decision-definition-xml:
       # Determines the page size for decision definition xml model
       # fetching. Should be a low value, as large models will lead to

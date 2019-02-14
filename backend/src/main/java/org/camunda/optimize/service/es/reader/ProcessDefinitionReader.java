@@ -58,33 +58,52 @@ public class ProcessDefinitionReader {
     this.authorizationService = authorizationService;
   }
 
-  public List<ProcessDefinitionOptimizeDto> getProcessDefinitionsAsService() {
-    return this.getProcessDefinitions(null, false);
+  public List<ProcessDefinitionOptimizeDto> fetchFullyImportedProcessDefinitionsAsService() {
+    return this.fetchFullyImportedProcessDefinitions(null);
   }
 
-  private List<ProcessDefinitionOptimizeDto> getProcessDefinitions(String userId) {
-    return this.getProcessDefinitions(userId, false);
+  private List<ProcessDefinitionOptimizeDto> fetchFullyImportedProcessDefinitions(final String userId) {
+    return this.fetchFullyImportedProcessDefinitions(userId, false);
   }
 
-  public List<ProcessDefinitionOptimizeDto> getProcessDefinitions(String userId, boolean withXml) {
+  public List<ProcessDefinitionOptimizeDto> fetchFullyImportedProcessDefinitions(final String userId, boolean withXml) {
     logger.debug("Fetching process definitions");
     // the front-end needs the xml to work properly. Therefore, we only want to expose definitions
     // where the import is complete including the xml
     QueryBuilder query = QueryBuilders.existsQuery(ProcessDefinitionType.PROCESS_DEFINITION_XML);
 
-    String[] fieldsToExclude = withXml ? null : new String[]{ProcessDefinitionType.PROCESS_DEFINITION_XML};
+    List<ProcessDefinitionOptimizeDto> definitionsResult = fetchProcessDefinitions(withXml, query);
 
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+    if (userId != null) {
+      definitionsResult = filterAuthorizedProcessDefinitions(userId, definitionsResult);
+    }
+
+    return definitionsResult;
+  }
+
+  /**
+   * This function retrieves all process definitions independent of if the respective xml was already imported or not.
+   */
+  public List<ProcessDefinitionOptimizeDto> fetchAllProcessDefinitionsWithoutXmlAsService() {
+    logger.debug("Fetching all process definitions including those where the xml hasn't been fetched yet.");
+    final QueryBuilder query = QueryBuilders.matchAllQuery();
+    return fetchProcessDefinitions(false, query);
+  }
+
+  public List<ProcessDefinitionOptimizeDto> fetchProcessDefinitions(final boolean withXml, final QueryBuilder query) {
+    final String[] fieldsToExclude = withXml ? null : new String[]{ProcessDefinitionType.PROCESS_DEFINITION_XML};
+
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
       .size(LIST_FETCH_LIMIT)
       .fetchSource(null, fieldsToExclude);
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
       new SearchRequest(getOptimizeIndexAliasForType(PROC_DEF_TYPE))
         .types(PROC_DEF_TYPE)
         .source(searchSourceBuilder)
         .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 
-    SearchResponse scrollResp;
+    final SearchResponse scrollResp;
     try {
       scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
@@ -92,19 +111,13 @@ public class ProcessDefinitionReader {
       throw new OptimizeRuntimeException("Was not able to retrieve process definitions!", e);
     }
 
-    List<ProcessDefinitionOptimizeDto> definitionsResult = ElasticsearchHelper.retrieveAllScrollResults(
+    return ElasticsearchHelper.retrieveAllScrollResults(
       scrollResp,
       ProcessDefinitionOptimizeDto.class,
       objectMapper,
       esClient,
       configurationService.getElasticsearchScrollTimeout()
     );
-
-    if (userId != null) {
-      definitionsResult = filterAuthorizedProcessDefinitions(userId, definitionsResult);
-    }
-
-    return definitionsResult;
   }
 
   public Optional<String> getProcessDefinitionXml(String userId, String definitionKey, String definitionVersion) {
@@ -254,7 +267,7 @@ public class ProcessDefinitionReader {
 
   private Map<String, ProcessDefinitionGroupOptimizeDto> getKeyToProcessDefinitionMap(String userId) {
     Map<String, ProcessDefinitionGroupOptimizeDto> resultMap = new HashMap<>();
-    List<ProcessDefinitionOptimizeDto> allDefinitions = getProcessDefinitions(userId);
+    List<ProcessDefinitionOptimizeDto> allDefinitions = fetchFullyImportedProcessDefinitions(userId);
     for (ProcessDefinitionOptimizeDto process : allDefinitions) {
       String key = process.getKey();
       if (!resultMap.containsKey(key)) {

@@ -48,7 +48,7 @@ public class DecisionDefinitionRestService {
                                                                           @QueryParam("includeXml") boolean includeXml) {
 
     String userId = getRequestUserOrFailNotAuthorized(requestContext);
-    return decisionDefinitionReader.getFullyImportedDecisionDefinitions(userId, includeXml);
+    return decisionDefinitionReader.fetchFullyImportedDecisionDefinitions(userId, includeXml);
   }
 
   /**

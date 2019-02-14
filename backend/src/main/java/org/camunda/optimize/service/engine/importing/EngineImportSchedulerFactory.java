@@ -5,6 +5,7 @@ import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
 import org.camunda.optimize.service.engine.importing.service.mediator.CompletedActivityInstanceEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.CompletedProcessInstanceEngineImportMediator;
+import org.camunda.optimize.service.engine.importing.service.mediator.CompletedUserTaskEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.DecisionDefinitionEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.DecisionDefinitionXmlEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.DecisionInstanceEngineImportMediator;
@@ -96,20 +97,30 @@ public class EngineImportSchedulerFactory implements ConfigurationReloadable {
 
     // so potential dependencies by the instance and activity import on existing definition data are likely satisfied
     mediators.add(
-      beanHelper.getInstance(CompletedActivityInstanceEngineImportMediator.class, engineContext));
+      beanHelper.getInstance(CompletedActivityInstanceEngineImportMediator.class, engineContext)
+    );
     mediators.add(
-      beanHelper.getInstance(RunningActivityInstanceEngineImportMediator.class, engineContext));
+      beanHelper.getInstance(RunningActivityInstanceEngineImportMediator.class, engineContext)
+    );
     mediators.add(
-      beanHelper.getInstance(CompletedProcessInstanceEngineImportMediator.class, engineContext));
+      beanHelper.getInstance(CompletedProcessInstanceEngineImportMediator.class, engineContext)
+    );
     mediators.add(
-      beanHelper.getInstance(StoreIndexesEngineImportMediator.class, engineContext));
+      beanHelper.getInstance(StoreIndexesEngineImportMediator.class, engineContext)
+    );
     mediators.add(
-      beanHelper.getInstance(RunningProcessInstanceEngineImportMediator.class, engineContext));
+      beanHelper.getInstance(RunningProcessInstanceEngineImportMediator.class, engineContext)
+    );
     mediators.add(
-      beanHelper.getInstance(VariableUpdateEngineImportMediator.class, engineContext));
+      beanHelper.getInstance(VariableUpdateEngineImportMediator.class, engineContext)
+    );
+    mediators.add(
+      beanHelper.getInstance(CompletedUserTaskEngineImportMediator.class, engineContext)
+    );
     if (configurationService.getImportDmnDataEnabled()) {
       mediators.add(
-        beanHelper.getInstance(DecisionInstanceEngineImportMediator.class, engineContext));
+        beanHelper.getInstance(DecisionInstanceEngineImportMediator.class, engineContext)
+      );
     }
 
     return mediators;

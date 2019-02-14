@@ -45,7 +45,7 @@ public class ProcessDefinitionRestService {
       @QueryParam("includeXml") boolean includeXml) {
 
     String userId = getRequestUserOrFailNotAuthorized(requestContext);
-    return processDefinitionReader.getProcessDefinitions(userId, includeXml);
+    return processDefinitionReader.fetchFullyImportedProcessDefinitions(userId, includeXml);
   }
 
   /**

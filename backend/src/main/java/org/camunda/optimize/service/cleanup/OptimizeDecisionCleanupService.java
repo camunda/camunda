@@ -74,7 +74,7 @@ public class OptimizeDecisionCleanupService implements OptimizeCleanupService {
   }
 
   private Set<String> getAllOptimizeDecisionDefinitionKeys() {
-    return decisionDefinitionReader.getDecisionDefinitionsAsService()
+    return decisionDefinitionReader.fetchFullyImportedDecisionDefinitionsAsService()
       .stream()
       .map(DecisionDefinitionOptimizeDto::getKey)
       .collect(Collectors.toSet());

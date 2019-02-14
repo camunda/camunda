@@ -41,7 +41,7 @@ public class DecisionDefinitionVersionResolverService {
   }
 
   private void syncCache() {
-    decisionDefinitionReader.getAllDecisionDefinitionWithoutXml()
+    decisionDefinitionReader.fetchAllDecisionDefinitionWithoutXmlAsService()
       .forEach(decisionDefinitionOptimizeDto -> idToVersionMap.putIfAbsent(
         decisionDefinitionOptimizeDto.getId(), decisionDefinitionOptimizeDto.getVersion()
       ));

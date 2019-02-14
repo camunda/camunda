@@ -112,7 +112,7 @@ public class SchemaInitializerIT {
 
     // then
     final List<TypeMappingCreator> mappings = embeddedOptimizeRule.getElasticSearchSchemaManager().getMappings();
-    assertThat(mappings.size(), is(16));
+    assertThat(mappings.size(), is(17));
     for (TypeMappingCreator mapping : mappings) {
       assertTypeExists(mapping.getType());
     }

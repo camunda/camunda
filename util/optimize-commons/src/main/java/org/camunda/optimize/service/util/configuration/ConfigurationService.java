@@ -103,6 +103,8 @@ public class ConfigurationService {
   private Integer engineImportProcessInstanceMaxPageSize;
   private Integer engineImportVariableInstanceMaxPageSize;
   private Integer engineImportProcessDefinitionXmlMaxPageSize;
+  private Integer engineImportActivityInstanceMaxPageSize;
+  private Integer engineImportUserTaskInstanceMaxPageSize;
   private Integer engineImportDecisionDefinitionXmlMaxPageSize;
   private Integer engineImportDecisionInstanceMaxPageSize;
   private Integer importIndexAutoStorageIntervalInSec;
@@ -115,7 +117,7 @@ public class ConfigurationService {
   private List<String> DecisionOutputImportPluginBasePackages;
   private List<String> DecisionInputImportPluginBasePackages;
 
-  private Long engineImportActivityInstanceMaxPageSize;
+
   private String containerHost;
   private String containerKeystorePassword;
   private String containerKeystoreLocation;
@@ -580,6 +582,28 @@ public class ConfigurationService {
     return engineImportDecisionInstanceMaxPageSize;
   }
 
+  public int getEngineImportActivityInstanceMaxPageSize() {
+    if (engineImportActivityInstanceMaxPageSize == null) {
+      engineImportActivityInstanceMaxPageSize = configJsonContext.read(
+        ConfigurationServiceConstants.ENGINE_IMPORT_ACTIVITY_INSTANCE_MAX_PAGE_SIZE,
+        Integer.class
+      );
+    }
+    ensureGreaterThanZero(engineImportActivityInstanceMaxPageSize);
+    return engineImportActivityInstanceMaxPageSize;
+  }
+
+  public int getEngineImportUserTaskInstanceMaxPageSize() {
+    if (engineImportUserTaskInstanceMaxPageSize == null) {
+      engineImportUserTaskInstanceMaxPageSize = configJsonContext.read(
+        ConfigurationServiceConstants.ENGINE_IMPORT_USER_TASK_INSTANCE_MAX_PAGE_SIZE,
+        Integer.class
+      );
+    }
+    ensureGreaterThanZero(engineImportUserTaskInstanceMaxPageSize);
+    return engineImportUserTaskInstanceMaxPageSize;
+  }
+
   public long getSamplerInterval() {
     if (samplerInterval == null) {
       samplerInterval = configJsonContext.read(ConfigurationServiceConstants.SAMPLER_INTERVAL, Long.class);
@@ -615,17 +639,6 @@ public class ConfigurationService {
         configJsonContext.read(ConfigurationServiceConstants.AUTHENTICATION_EXTRACTOR_BASE_PACKAGES, typeRef);
     }
     return authenticationExtractorPluginBasePackages;
-  }
-
-  public long getEngineImportActivityInstanceMaxPageSize() {
-    if (engineImportActivityInstanceMaxPageSize == null) {
-      engineImportActivityInstanceMaxPageSize = configJsonContext.read(
-        ConfigurationServiceConstants.ENGINE_IMPORT_ACTIVITY_INSTANCE_MAX_PAGE_SIZE,
-        Long.class
-      );
-    }
-    ensureGreaterThanZero(engineImportActivityInstanceMaxPageSize);
-    return engineImportActivityInstanceMaxPageSize;
   }
 
   public String getContainerHost() {
@@ -715,7 +728,7 @@ public class ConfigurationService {
   /**
    * This method is mostly for internal usage. All API invocations
    * should rely on
-   * {@link org.camunda.optimize.service.util.configuration.ConfigurationService#getEngineRestApiEndpointOfCustomEngine(java.lang.String)}
+   * {@link #getEngineRestApiEndpointOfCustomEngine(String)}
    *
    * @param engineAlias - an alias of configured engine
    * @return <b>raw</b> REST endpoint, without engine suffix
@@ -998,6 +1011,14 @@ public class ConfigurationService {
     this.engineImportVariableInstanceMaxPageSize = engineImportVariableInstanceMaxPageSize;
   }
 
+  public void setEngineImportActivityInstanceMaxPageSize(Integer engineImportActivityInstanceMaxPageSize) {
+    this.engineImportActivityInstanceMaxPageSize = engineImportActivityInstanceMaxPageSize;
+  }
+
+  public void setEngineImportUserTaskInstanceMaxPageSize(Integer engineImportUserTaskInstanceMaxPageSize) {
+    this.engineImportUserTaskInstanceMaxPageSize = engineImportUserTaskInstanceMaxPageSize;
+  }
+
   public void setEsRefreshInterval(String esRefreshInterval) {
     this.esRefreshInterval = esRefreshInterval;
   }
@@ -1024,10 +1045,6 @@ public class ConfigurationService {
 
   public void setSamplerInterval(Long samplerInterval) {
     this.samplerInterval = samplerInterval;
-  }
-
-  public void setEngineImportActivityInstanceMaxPageSize(Long engineImportActivityInstanceMaxPageSize) {
-    this.engineImportActivityInstanceMaxPageSize = engineImportActivityInstanceMaxPageSize;
   }
 
   public void setCleanupServiceConfiguration(OptimizeCleanupConfiguration cleanupServiceConfiguration) {
