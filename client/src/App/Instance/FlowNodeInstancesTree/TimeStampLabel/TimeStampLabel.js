@@ -16,7 +16,7 @@ class TimeStampLabel extends React.PureComponent {
   render() {
     const {showTimeStamp, timeStamp, isSelected} = this.props;
     return showTimeStamp && timeStamp ? (
-      <Styled.TimeStamp {...isSelected}>
+      <Styled.TimeStamp isSelected={isSelected}>
         {formatDate(timeStamp)}
       </Styled.TimeStamp>
     ) : null;
