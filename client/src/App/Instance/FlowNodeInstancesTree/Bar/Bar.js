@@ -7,12 +7,12 @@ import * as Styled from './styled';
 
 const BarComponent = ({node, isSelected}) => {
   return (
-    <Styled.Bar isSelected={isSelected}>
+    <Styled.Bar showSelectionStyle={isSelected}>
       <Styled.NodeIcon
         type={node.type}
         data-test={`flowNodeIcon-${node.type}`}
       />
-      <Styled.NodeName isBold={!!node.children.length}>
+      <Styled.NodeName isWhite={isSelected} isBold={!!node.children.length}>
         {node.name}
       </Styled.NodeName>
       <TimeStampLabel timeStamp={node.endDate} isSelected={isSelected} />
@@ -30,5 +30,6 @@ BarComponent.propTypes = {
     type: PropTypes.string.isRequired,
     endDate: PropTypes.string
   }),
-  isSelected: PropTypes.bool
+  isSelected: PropTypes.bool,
+  treeDepth: PropTypes.number
 };

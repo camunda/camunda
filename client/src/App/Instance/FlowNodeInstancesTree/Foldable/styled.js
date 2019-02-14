@@ -56,10 +56,22 @@ export const Summary = themed(styled.div`
   height: 27px;
 `);
 
-const selectionStyles = css`
-  border-color: ${Colors.primaryButton01};
-  background: ${Colors.selections};
-  color: '#fff';
+const partialBorder = css`
+  &:before {
+    content: '';
+    position: absolute;
+    height: 1px;
+    width: 32px;
+    bottom: -1px;
+    z-index: 1;
+    background: ${({isSelected}) =>
+      isSelected
+        ? 'none'
+        : themeStyle({
+            dark: Colors.uiDark04,
+            light: Colors.uiLight05
+          })};
+  }
 `;
 
 export const SummaryLabel = themed(styled.div`
@@ -72,12 +84,7 @@ export const SummaryLabel = themed(styled.div`
   border: none;
   font-size: 14px;
   text-align: left;
-  background: ${themeStyle({
-    dark: Colors.darkItemEven,
-    light: Colors.lightItemEven
-  })};
-
-  ${({isSelected}) => isSelected && selectionStyles};
+  ${({showPartialBorder}) => showPartialBorder && partialBorder};
 `);
 
 export const FocusButton = themed(styled.button`
@@ -85,14 +92,14 @@ export const FocusButton = themed(styled.button`
   background: transparent;
   left: 1px;
   top: 1px;
-  height: calc(100% - 4px);
-  z-index: 1;
+  height: calc(100% - 2px);
   width: calc(100% - 5px);
+  z-index: 2;
 
-  /* Apply hover styles to sibling (SummaryLabel)*/
-  &:hover + div {
-    background: ${({isSelected}) =>
-      !isSelected &&
+  /* Apply hover style to <Bar/>*/
+  &:hover + div > div {
+    background: ${({showHoverState}) =>
+      showHoverState &&
       themeStyle({
         dark: Colors.uiDark04,
         light: Colors.lightButton05
@@ -101,5 +108,5 @@ export const FocusButton = themed(styled.button`
 `);
 
 export const Details = themed(styled.div`
-  display: ${({isFolded}) => (isFolded ? 'none' : 'block')};
+  display: ${({showChildScope}) => (showChildScope ? 'block' : 'none')};
 `);

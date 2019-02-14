@@ -9,11 +9,13 @@ export default class Foldable extends React.Component {
       PropTypes.arrayOf(PropTypes.node),
       PropTypes.node
     ]),
-    isFoldable: PropTypes.bool
+    isFoldable: PropTypes.bool,
+    isFolded: PropTypes.bool
   };
 
   state = {
-    isFolded: this.props.isFoldable
+    isFolded: this.props.isFolded,
+    isFoldable: this.props.isFoldable
   };
 
   toggleFold = () => {
@@ -54,8 +56,11 @@ Foldable.Summary = function Summary({
           {!isFolded ? <Styled.DownIcon /> : <Styled.RightIcon />}
         </Styled.FoldButton>
       ) : null}
-      <Styled.FocusButton isSelected={isSelected} onClick={onSelection} />
-      <Styled.SummaryLabel isSelected={isSelected}>
+      <Styled.FocusButton showHoverState={!isSelected} onClick={onSelection} />
+      <Styled.SummaryLabel
+        isSelected={isSelected}
+        showPartialBorder={!isFolded}
+      >
         {children}
       </Styled.SummaryLabel>
     </Styled.Summary>
@@ -78,6 +83,6 @@ Foldable.Summary.defaultProps = {
   isFoldable: true
 };
 
-Foldable.Details = function Details(props) {
-  return <Styled.Details {...props} />;
+Foldable.Details = function Details({isFolded, ...props}) {
+  return <Styled.Details {...props} showChildScope={!isFolded} />;
 };

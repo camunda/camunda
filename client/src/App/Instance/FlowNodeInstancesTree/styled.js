@@ -40,7 +40,7 @@ const connectionLineStyles = css`
   &:after {
     content: '';
     position: absolute;
-    bottom: 10px;
+    bottom: 9px;
     left: -19px;
     ${connectionDotStyles};
   }
@@ -69,6 +69,21 @@ export const Ul = themed(styled.ul`
   ${({showConnectionLine}) => showConnectionLine && connectionLineStyles};
 `);
 
-export const Li = styled.li`
+export const Li = themed(styled.li`
   margin-left: 32px;
-`;
+
+  /* adjust focus position for first tree elements */
+  &:first-child > div:nth-child(2) > button {
+    ${({treeDepth}) =>
+      treeDepth === 1 &&
+      css`
+        height: calc(100% - 5px);
+        top: 4px;
+      `};
+  }
+
+  /* don't show work flode nodes top border, overlaps headerborder */
+  &:first-child > div:nth-child(2) > div > div {
+    border-top-width: ${({treeDepth}) => treeDepth === 1 && '0px'};
+  }
+`);

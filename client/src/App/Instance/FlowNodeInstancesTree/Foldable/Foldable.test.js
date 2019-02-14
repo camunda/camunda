@@ -11,7 +11,7 @@ describe('Foldable', () => {
     const fooDetailsText = 'Foo Details';
     const fooSummaryText = 'foo summary';
     const node = shallow(
-      <Foldable isFoldable={true}>
+      <Foldable isFoldable={true} isFolded={true}>
         <Foldable.Summary onSelection={mockOnSelection} isSelected={true}>
           {fooSummaryText}
         </Foldable.Summary>
@@ -52,7 +52,7 @@ describe('Foldable', () => {
     const fooDetailsText = 'Foo Details';
     const fooSummaryText = 'foo summary';
     const node = shallow(
-      <Foldable isFoldable={true}>
+      <Foldable isFoldable={true} isFolded={true}>
         <Foldable.Summary>{fooSummaryText}</Foldable.Summary>
         <Foldable.Details>{fooDetailsText}</Foldable.Details>
       </Foldable>
