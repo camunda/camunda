@@ -33,7 +33,7 @@ spec:
         cpu: 2
         memory: 3Gi
   - name: docker
-    image: docker:18.03.1-ce-dind
+    image: docker:18.06-dind
     args: ["--storage-driver=overlay2"]
     securityContext:
       privileged: true
