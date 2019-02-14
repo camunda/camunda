@@ -121,7 +121,7 @@ pipeline {
             # setup ssh for github
             mkdir -p ~/.ssh
             ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
-            
+
             # git config
             git config --global user.email "ci@camunda.com"
             git config --global user.name "camunda-jenkins"
@@ -178,7 +178,7 @@ pipeline {
         container('docker') {
           sh ("""
             echo '${GCR_REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
-            
+
             docker build -t ${PROJECT_DOCKER_IMAGE()}:${VERSION} \
               --build-arg=VERSION=${VERSION} \
               --build-arg=SNAPSHOT=false \

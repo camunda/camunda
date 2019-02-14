@@ -43,7 +43,7 @@ void runRelease(params) {
     ### adjust the readme and add the new version to the version overview
     # find line where the version overview starts
     first_line=\$(grep -n "Optimize Version" README.md | head -n 1 | cut -d: -f1)
-    
+
     if [ -z "\$first_line" ]; then
       echo "Could not find start of the version overview. Aborting instead!"
       exit 1
@@ -51,21 +51,21 @@ void runRelease(params) {
 
     # find line where the version overview ends
     last_line=\$(sed -n "\$first_line,/^\$/=" README.md | tail -n 1)
-    
+
     if [ -z "last_line" ]; then
       echo "Could not find end of the version overview. Aborting instead!"
       exit 1
     fi
-    
+
     # find lastest line of the version overview
     line_to_insert=\$(sed -n "\$first_line,/^| Latest/=" README.md | tail -n 1)
-    
+
     if [ -z "line_to_insert" ] || [ "\$line_to_insert" -le "\$((\$first_line+1))" ] || \\
         [ "\$line_to_insert" -ge "\$((last_line+1))" ]; then
       echo "Could not find line to insert the Optimize version to overview. Aborting instead!"
       exit 1
     fi
-    
+
     # add the new entry for the released version to the version overview
     version=${params.RELEASE_VERSION}
     sed "\$line_to_insert a\\
@@ -73,7 +73,7 @@ void runRelease(params) {
 | [\$version tag](https://github.com/camunda/camunda-optimize-examples/tree/\$version) \\
 | \\`git checkout \$version\\`  |" \\
     README.md > RESULT.md
-    
+
     rm README.md
     mv RESULT.md README.md
 
@@ -144,7 +144,7 @@ pipeline {
             # setup ssh for github
             mkdir -p ~/.ssh
             ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
-            
+
             # git config
             git config --global user.email "ci@camunda.com"
             git config --global user.name "camunda-jenkins"
