@@ -1,11 +1,10 @@
 import {get} from 'request';
 
-export function extractProcessDefinitionName(processDefinitionXml) {
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(processDefinitionXml, 'text/xml');
-
-  const processNode = xmlDoc.getElementsByTagNameNS('*', 'process')[0];
-  return processNode ? processNode.getAttribute('name') || '' : '';
+export function extractDefinitionName(key, xml) {
+  return new DOMParser()
+    .parseFromString(xml, 'text/xml')
+    .getElementById(key)
+    .getAttribute('name');
 }
 
 export async function loadProcessDefinitions() {

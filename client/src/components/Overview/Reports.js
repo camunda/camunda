@@ -94,15 +94,13 @@ class Reports extends React.Component {
 
     const loading = this.state.loading && <LoadingIndicator />;
 
-    const empty = !loading &&
-      this.state.entities.length === 0 && (
-        <NoEntities label="Report" createFunction={this.createProcessReport} />
-      );
+    const empty = !loading && this.state.entities.length === 0 && (
+      <NoEntities label="Report" createFunction={this.createProcessReport} />
+    );
 
-    const search = !loading &&
-      !empty && (
-        <Input className="searchInput" placeholder="Filter for name" onChange={this.updateSearch} />
-      );
+    const search = !loading && !empty && (
+      <Input className="searchInput" placeholder="Filter for name" onChange={this.updateSearch} />
+    );
 
     return (
       <div className="Reports">
@@ -145,8 +143,9 @@ class Reports extends React.Component {
                       <div className="data dataTitle">
                         <h3>{formatters.getHighlightedText(itemData.name, this.state.search)}</h3>
                         {itemData.combined && <span>Combined</span>}
-                        {itemData.reportType &&
-                          itemData.reportType === 'decision' && <span>Decision</span>}
+                        {itemData.reportType && itemData.reportType === 'decision' && (
+                          <span>Decision</span>
+                        )}
                       </div>
                       <div className="extraInfo">
                         <span className="data custom">{getReportInfo(itemData)}</span>

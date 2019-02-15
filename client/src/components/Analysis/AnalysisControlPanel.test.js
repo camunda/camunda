@@ -1,7 +1,7 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
-import {extractProcessDefinitionName, getFlowNodeNames} from 'services';
+import {extractDefinitionName, getFlowNodeNames} from 'services';
 
 import AnalysisControlPanel from './AnalysisControlPanel';
 
@@ -35,7 +35,7 @@ jest.mock('components', () => {
 
 jest.mock('services', () => {
   return {
-    extractProcessDefinitionName: jest.fn(),
+    extractDefinitionName: jest.fn(),
     getFlowNodeNames: jest.fn().mockReturnValue({
       a: 'foo',
       b: 'bar'
@@ -59,7 +59,7 @@ const emptyData = {
   xml: null
 };
 
-extractProcessDefinitionName.mockReturnValue('foo');
+extractDefinitionName.mockReturnValue('foo');
 const spy = jest.fn();
 
 it('should contain a gateway and end Event field', () => {
@@ -108,7 +108,7 @@ it('should show the element id if an element has no name', () => {
 });
 
 it('should show initially show process definition name if xml is available', async () => {
-  extractProcessDefinitionName.mockReturnValue('aName');
+  extractDefinitionName.mockReturnValue('aName');
 
   const node = await mount(<AnalysisControlPanel {...data} />);
 
@@ -118,7 +118,7 @@ it('should show initially show process definition name if xml is available', asy
 it('should change process definition name if process definition xml is updated', async () => {
   const node = await mount(<AnalysisControlPanel {...data} />);
 
-  extractProcessDefinitionName.mockReturnValue('aName');
+  extractDefinitionName.mockReturnValue('aName');
   await node.setProps({xml: 'barXml'});
 
   expect(node.find('.AnalysisControlPanel__popover')).toIncludeText('aName');

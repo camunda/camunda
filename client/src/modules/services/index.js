@@ -10,12 +10,12 @@ export {default as reportConfig} from './reportConfig';
 export {getDiagramElementsBetween} from './diagramServices';
 export {default as getDataKeys} from './getDataKeys';
 export {
-  extractProcessDefinitionName,
+  extractDefinitionName,
   loadProcessDefinitions,
   loadDecisionDefinitions,
   loadProcessDefinitionXml,
   loadDecisionDefinitionXml
-} from './defintionService';
+} from './definitionService';
 
 // unfortunately, there is no syntax like "export * as formatters from './formatters'"
 export const formatters = formattersImport;

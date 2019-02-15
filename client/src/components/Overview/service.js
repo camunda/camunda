@@ -1,5 +1,5 @@
 import {get, post, put, del} from 'request';
-import {extractProcessDefinitionName} from 'services';
+import {extractDefinitionName} from 'services';
 
 import entityIcons from './entityIcons';
 
@@ -56,7 +56,10 @@ export function getReportInfo(report) {
     }
     // if normal report
     if (report.data.configuration.xml) {
-      return extractProcessDefinitionName(report.data.configuration.xml);
+      return extractDefinitionName(
+        report.data.processDefinitionKey || report.data.decisionDefinitionKey,
+        report.data.configuration.xml
+      );
     }
   }
   return '';

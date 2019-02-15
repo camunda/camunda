@@ -3,7 +3,7 @@ import {Popover, ProcessDefinitionSelection, Button, Dropdown, Input, Labeled} f
 
 import {Filter} from './filter';
 import {
-  extractProcessDefinitionName,
+  extractDefinitionName,
   getFlowNodeNames,
   reportConfig,
   formatters,
@@ -58,10 +58,11 @@ export default class ReportControlPanel extends React.Component {
 
   loadProcessDefinitionName = async () => {
     const {
-      configuration: {xml}
+      configuration: {xml},
+      processDefinitionKey
     } = this.props.report.data;
     if (xml) {
-      const processDefinitionName = await extractProcessDefinitionName(xml);
+      const processDefinitionName = await extractDefinitionName(processDefinitionKey, xml);
       this.setState({
         processDefinitionName
       });

@@ -3,7 +3,7 @@ import update from 'immutability-helper';
 import React from 'react';
 import {ActionItem, Popover, ProcessDefinitionSelection} from 'components';
 
-import {extractProcessDefinitionName, getFlowNodeNames} from 'services';
+import {extractDefinitionName, getFlowNodeNames} from 'services';
 
 import {Filter} from '../Reports';
 
@@ -25,9 +25,9 @@ export default class AnalysisControlPanel extends React.Component {
   }
 
   loadProcessDefinitionName = () => {
-    const {xml} = this.props;
+    const {xml, processDefinitionKey} = this.props;
     if (xml) {
-      const processDefinitionName = extractProcessDefinitionName(xml);
+      const processDefinitionName = extractDefinitionName(processDefinitionKey, xml);
       this.setState({
         processDefinitionName
       });

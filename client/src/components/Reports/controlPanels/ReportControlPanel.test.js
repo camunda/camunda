@@ -5,7 +5,7 @@ import {Dropdown} from 'components';
 
 import ReportControlPanel from './ReportControlPanel';
 import {
-  extractProcessDefinitionName,
+  extractDefinitionName,
   reportConfig,
   getFlowNodeNames,
   loadProcessDefinitionXml
@@ -38,7 +38,7 @@ jest.mock('services', () => {
         update: jest.fn()
       }
     },
-    extractProcessDefinitionName: jest.fn(),
+    extractDefinitionName: jest.fn(),
     formatters: {
       getHighlightedText: text => text
     },
@@ -107,7 +107,7 @@ it('should disable options, which would create wrong combination', () => {
 });
 
 it('should show process definition name', async () => {
-  extractProcessDefinitionName.mockReturnValue('aName');
+  extractDefinitionName.mockReturnValue('aName');
 
   const node = await shallow(<ReportControlPanel report={report} />);
 
@@ -117,7 +117,7 @@ it('should show process definition name', async () => {
 it('should change process definition name if process definition is updated', async () => {
   const node = await shallow(<ReportControlPanel report={report} />);
 
-  extractProcessDefinitionName.mockReturnValue('aName');
+  extractDefinitionName.mockReturnValue('aName');
   node.setProps({processDefinitionKey: 'bar'});
 
   expect(node.find('.processDefinitionPopover').prop('title')).toContain('aName');
