@@ -6,7 +6,7 @@ import {Dropdown} from 'components';
 import ReportControlPanel from './ReportControlPanel';
 import {
   extractProcessDefinitionName,
-  processConfig,
+  reportConfig,
   getFlowNodeNames,
   loadProcessDefinitionXml
 } from 'services';
@@ -22,19 +22,21 @@ jest.mock('services', () => {
   return {
     ...rest,
     loadProcessDefinitionXml: jest.fn().mockReturnValue('I am a process definition xml'),
-    processConfig: {
-      getLabelFor: () => 'foo',
-      options: {
-        view: {foo: {data: 'foo', label: 'viewfoo'}},
-        groupBy: {
-          foo: {data: 'foo', label: 'groupbyfoo'},
-          variable: {data: {value: []}, label: 'Variables'}
+    reportConfig: {
+      process: {
+        getLabelFor: () => 'foo',
+        options: {
+          view: {foo: {data: 'foo', label: 'viewfoo'}},
+          groupBy: {
+            foo: {data: 'foo', label: 'groupbyfoo'},
+            variable: {data: {value: []}, label: 'Variables'}
+          },
+          visualization: {foo: {data: 'foo', label: 'visualizationfoo'}}
         },
-        visualization: {foo: {data: 'foo', label: 'visualizationfoo'}}
-      },
-      isAllowed: jest.fn().mockReturnValue(true),
-      getNext: jest.fn(),
-      update: jest.fn()
+        isAllowed: jest.fn().mockReturnValue(true),
+        getNext: jest.fn(),
+        update: jest.fn()
+      }
     },
     extractProcessDefinitionName: jest.fn(),
     formatters: {
@@ -92,7 +94,7 @@ it('should not disable the groupBy and visualization Selects if view is selected
 
 it('should disable options, which would create wrong combination', () => {
   const spy = jest.fn();
-  processConfig.isAllowed.mockReturnValue(false);
+  reportConfig.process.isAllowed.mockReturnValue(false);
   const node = shallow(<ReportControlPanel report={report} onChange={spy} />);
   node.setProps({view: 'baz'});
 

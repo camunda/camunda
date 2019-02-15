@@ -6,7 +6,7 @@ export {numberParser} from './NumberParser';
 export {isDurationValue} from './isDurationValue';
 export {incompatibleFilters} from './incompatibleFilters';
 export {loadEntity, checkDeleteConflict} from './entityServices';
-export {processConfig, decisionConfig} from './reportConfig';
+export {default as reportConfig} from './reportConfig';
 export {getDiagramElementsBetween} from './diagramServices';
 export {default as getDataKeys} from './getDataKeys';
 export {

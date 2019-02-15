@@ -5,7 +5,7 @@ import {Filter} from './filter';
 import {
   extractProcessDefinitionName,
   getFlowNodeNames,
-  processConfig,
+  reportConfig,
   formatters,
   getDataKeys,
   loadProcessDefinitionXml
@@ -25,7 +25,7 @@ const {
   getLabelFor,
   isAllowed,
   update
-} = processConfig;
+} = reportConfig.process;
 const groupByVariablePageSize = 5;
 
 export default class ReportControlPanel extends React.Component {

@@ -1,11 +1,11 @@
 import {get} from 'request';
 
-import {processConfig, formatters} from 'services';
+import {reportConfig, formatters} from 'services';
 
 const {
   options: {view, groupBy},
   getLabelFor
-} = processConfig;
+} = reportConfig.process;
 
 const {formatReportResult} = formatters;
 

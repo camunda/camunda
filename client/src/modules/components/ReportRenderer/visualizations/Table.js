@@ -2,7 +2,7 @@ import React from 'react';
 import ReportBlankSlate from '../ReportBlankSlate';
 
 import {Table as TableRenderer, LoadingIndicator} from 'components';
-import {processRawData, processConfig, decisionConfig, formatters} from 'services';
+import {processRawData, reportConfig, formatters} from 'services';
 import {withErrorHandling} from 'HOC';
 
 import {
@@ -162,18 +162,12 @@ export default withErrorHandling(
       }
 
       // Normal single Report
-      let labels;
-      if (reportType === 'process') {
-        labels = [
-          processConfig.getLabelFor(processConfig.options.groupBy, groupBy, xml),
-          processConfig.getLabelFor(processConfig.options.view, view, xml)
-        ];
-      } else if (reportType === 'decision') {
-        labels = [
-          decisionConfig.getLabelFor(decisionConfig.options.groupBy, groupBy, xml),
-          decisionConfig.getLabelFor(decisionConfig.options.view, view, xml)
-        ];
-      }
+      const config = reportConfig[reportType];
+      const labels = [
+        config.getLabelFor(config.options.groupBy, groupBy, xml),
+        config.getLabelFor(config.options.view, view, xml)
+      ];
+
       return this.processSingleData(
         labels,
         formattedResult,

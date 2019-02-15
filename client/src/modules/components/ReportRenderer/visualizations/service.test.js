@@ -8,12 +8,14 @@ jest.mock('services', () => {
   const rest = jest.requireActual('services');
   return {
     ...rest,
-    processConfig: {
-      getLabelFor: () => 'foo',
-      options: {
-        view: {foo: {data: 'foo', label: 'viewfoo'}},
-        groupBy: {
-          foo: {data: 'foo', label: 'groupbyfoo'}
+    reportConfig: {
+      process: {
+        getLabelFor: () => 'foo',
+        options: {
+          view: {foo: {data: 'foo', label: 'viewfoo'}},
+          groupBy: {
+            foo: {data: 'foo', label: 'groupbyfoo'}
+          }
         }
       }
     }

@@ -4,7 +4,8 @@ import {Popover, Dropdown, Labeled} from 'components';
 import DecisionDefinitionSelection from './DecisionDefinitionSelection';
 
 import {isChecked} from './service';
-import {getDataKeys, decisionConfig, loadDecisionDefinitionXml} from 'services';
+import {getDataKeys, reportConfig, loadDecisionDefinitionXml} from 'services';
+const {decision: decisionConfig} = reportConfig;
 
 export default class DecisionControlPanel extends React.Component {
   createTitle = () => {

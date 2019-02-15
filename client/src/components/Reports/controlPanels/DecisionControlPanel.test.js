@@ -10,19 +10,22 @@ jest.mock('services', () => {
 
   return {
     ...rest,
-    decisionConfig: {
-      getLabelFor: () => 'foo',
-      options: {
-        view: {foo: {data: 'foo', label: 'viewfoo'}},
-        groupBy: {
-          foo: {data: 'foo', label: 'groupbyfoo'},
-          inputVariable: {data: {value: []}, label: 'Input Variable'}
+    reportConfig: {
+      ...rest.reportConfig,
+      decision: {
+        getLabelFor: () => 'foo',
+        options: {
+          view: {foo: {data: 'foo', label: 'viewfoo'}},
+          groupBy: {
+            foo: {data: 'foo', label: 'groupbyfoo'},
+            inputVariable: {data: {value: []}, label: 'Input Variable'}
+          },
+          visualization: {foo: {data: 'foo', label: 'visualizationfoo'}}
         },
-        visualization: {foo: {data: 'foo', label: 'visualizationfoo'}}
-      },
-      isAllowed: jest.fn().mockReturnValue(true),
-      getNext: jest.fn(),
-      update: jest.fn()
+        isAllowed: jest.fn().mockReturnValue(true),
+        getNext: jest.fn(),
+        update: jest.fn()
+      }
     }
   };
 });
