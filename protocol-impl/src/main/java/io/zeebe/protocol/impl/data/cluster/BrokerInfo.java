@@ -13,13 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.gateway.impl.broker.cluster;
+package io.zeebe.protocol.impl.data.cluster;
 
-import io.zeebe.raft.state.RaftState;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.zeebe.protocol.impl.Loggers;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
-public class TopologyDistributionInfo {
+public class BrokerInfo {
+
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+  public static final String PROPERTY_NAME = "brokerInfo";
+  public static final String CLIENT_API_PROPERTY = "client";
+  public static final String MANAGEMENT_API_PROPERTY = "management";
+  public static final String REPLICATION_API_PROPERTY = "replication";
+  public static final String SUBSCRIPTION_API_PROPERTY = "subscription";
 
   // static configurations
   private int nodeId;
@@ -29,15 +40,30 @@ public class TopologyDistributionInfo {
   private Map<String, String> addresses;
 
   // dynamic topology info
-  private Map<Integer, RaftState> partitionRoles;
+  private Map<Integer, Boolean> partitionRoles;
 
-  public TopologyDistributionInfo() {
+  public static BrokerInfo fromProperties(Properties properties) {
+    BrokerInfo brokerInfo = null;
+
+    final String property = properties.getProperty(PROPERTY_NAME);
+    if (property != null) {
+      try {
+        brokerInfo = OBJECT_MAPPER.readValue(property, BrokerInfo.class);
+      } catch (IOException e) {
+        Loggers.PROTOCOL_LOGGER.warn(
+            "Failed to deserialize broker info from property: {}", property, e);
+      }
+    }
+
+    return brokerInfo;
+  }
+
+  public BrokerInfo() {
     addresses = new HashMap<>();
     partitionRoles = new HashMap<>();
   }
 
-  public TopologyDistributionInfo(
-      int nodeId, int partitionsCount, int clusterSize, int replicationFactor) {
+  public BrokerInfo(int nodeId, int partitionsCount, int clusterSize, int replicationFactor) {
     this();
     this.nodeId = nodeId;
     this.partitionsCount = partitionsCount;
@@ -45,13 +71,13 @@ public class TopologyDistributionInfo {
     this.replicationFactor = replicationFactor;
   }
 
-  public TopologyDistributionInfo setApiAddress(String apiName, String address) {
+  public BrokerInfo setApiAddress(String apiName, String address) {
     addresses.put(apiName, address);
     return this;
   }
 
-  public TopologyDistributionInfo setPartitionRole(int partition, RaftState role) {
-    partitionRoles.put(partition, role);
+  public BrokerInfo setPartitionRole(int partition, boolean isLeader) {
+    partitionRoles.put(partition, isLeader);
     return this;
   }
 
@@ -59,7 +85,7 @@ public class TopologyDistributionInfo {
     return addresses;
   }
 
-  public Map<Integer, RaftState> getPartitionRoles() {
+  public Map<Integer, Boolean> getPartitionRoles() {
     return partitionRoles;
   }
 
@@ -67,7 +93,7 @@ public class TopologyDistributionInfo {
     return addresses.get(apiName);
   }
 
-  public RaftState getPartitionNodeRole(int partition) {
+  public Boolean getPartitionNodeRole(int partition) {
     return partitionRoles.get(partition);
   }
 

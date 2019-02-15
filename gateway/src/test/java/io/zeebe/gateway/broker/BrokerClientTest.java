@@ -23,6 +23,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
+import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import io.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerDeployWorkflowRequest;
@@ -88,10 +89,12 @@ public class BrokerClientTest {
     client = new BrokerClientImpl(configuration, clock);
 
     ((BrokerClientImpl) client).getTransport().registerEndpoint(0, broker.getSocketAddress());
-    final BrokerClusterStateImpl topology =
-        (BrokerClusterStateImpl) client.getTopologyManager().getTopology();
+
+    final BrokerClusterStateImpl topology = new BrokerClusterStateImpl();
     topology.addPartitionIfAbsent(0);
     topology.setPartitionLeader(0, 0);
+
+    ((BrokerTopologyManagerImpl) client.getTopologyManager()).setTopology(topology);
   }
 
   @After

@@ -20,9 +20,11 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.Member;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.utils.net.Address;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.data.cluster.BrokerInfo;
 import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
@@ -32,14 +34,13 @@ import io.zeebe.transport.Transports;
 import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
-import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.junit.rules.ExternalResource;
 
@@ -101,35 +102,19 @@ public class ClientApiRule extends ExternalResource {
     msgPackHelper = new MsgPackHelper();
 
     waitForTopology();
-    atomix.getMembershipService().getMembers().stream()
+    getBrokerInfoStream()
         .forEach(
-            m -> {
-              final String addressProperty = m.properties().getProperty("clientAddress");
-              if (addressProperty != null) {
-                try {
-                  final InetSocketAddress socketAddress =
-                      objectMapper.readValue(addressProperty, InetSocketAddress.class);
-                  clientAddressSupplier =
-                      () ->
-                          SocketAddress.from(
-                              socketAddress.getHostString() + ":" + socketAddress.getPort());
-
-                } catch (IOException e) {
-                  e.printStackTrace();
-                }
-              }
-            });
-    transport.registerEndpoint(nodeId, clientAddressSupplier.get());
+            brokerInfo ->
+                transport.registerEndpoint(
+                    brokerInfo.getNodeId(),
+                    SocketAddress.from(brokerInfo.getApiAddress(BrokerInfo.CLIENT_API_PROPERTY))));
 
     final List<Integer> partitionIds = doRepeatedly(this::getPartitionIds).until(p -> !p.isEmpty());
     defaultPartitionId = partitionIds.get(0);
   }
 
   private void waitForTopology() {
-    waitUntil(
-        () ->
-            atomix.getMembershipService().getMembers().stream()
-                .anyMatch(member -> member.properties().getProperty("clientAddress") != null));
+    waitUntil(() -> getBrokerInfoStream().count() > 0);
   }
 
   @Override
@@ -206,27 +191,22 @@ public class ClientApiRule extends ExternalResource {
     waitUntil(() -> getPartitionIds().size() >= partitions);
   }
 
-  @SuppressWarnings("unchecked")
   public List<Integer> getPartitionIds() {
-    try {
-      final AtomicInteger partitionsCount = new AtomicInteger(0);
+    return getBrokerInfoStream()
+        .findFirst()
+        .map(
+            brokerInfo ->
+                IntStream.range(0, brokerInfo.getPartitionsCount())
+                    .boxed()
+                    .collect(Collectors.toList()))
+        .orElse(Collections.emptyList());
+  }
 
-      atomix.getMembershipService().getMembers().stream()
-          .forEach(
-              m -> {
-                final String countProperty = m.properties().getProperty("partitionsCount");
-                if (countProperty != null) {
-                  final int count = Integer.parseInt(countProperty);
-                  if (count > 0) {
-                    partitionsCount.set(count);
-                  }
-                }
-              });
-
-      return IntStream.range(0, partitionsCount.get()).boxed().collect(Collectors.toList());
-    } catch (final Exception e) {
-      return Collections.EMPTY_LIST;
-    }
+  private Stream<BrokerInfo> getBrokerInfoStream() {
+    return atomix.getMembershipService().getMembers().stream()
+        .map(Member::properties)
+        .map(BrokerInfo::fromProperties)
+        .filter(Objects::nonNull);
   }
 
   public int getDefaultPartitionId() {
