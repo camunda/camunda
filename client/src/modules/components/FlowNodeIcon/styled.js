@@ -59,5 +59,7 @@ export const Workflow = themed(styled(FlowNodeWorkFlow)`
   ${iconStyle};
   top: 0px;
   left: 3px;
-  margin: 0 5px;
+  margin: 0 4px;
+  height: 18px;
+  width: auto;
 `);
