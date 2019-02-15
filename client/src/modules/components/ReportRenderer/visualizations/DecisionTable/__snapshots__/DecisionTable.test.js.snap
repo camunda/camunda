@@ -1,5 +1,42 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`should display meaningful data if there are no evaluations 1`] = `
+<div
+  className="DecisionTable"
+>
+  <DmnJsPortal
+    key="a"
+    renderIn="htmlA"
+  >
+    <i>
+      0
+       (
+      0
+      %)
+    </i>
+  </DmnJsPortal>
+  <DmnJsPortal
+    key="b"
+    renderIn="htmlB"
+  >
+    <i>
+      0
+       (
+      0
+      %)
+    </i>
+  </DmnJsPortal>
+  <DmnJsPortal
+    renderIn="htmlSum"
+  >
+    <b>
+      0
+       Evaluations
+    </b>
+  </DmnJsPortal>
+</div>
+`;
+
 exports[`should render content in DmnJsPortals 1`] = `
 <div
   className="DecisionTable"

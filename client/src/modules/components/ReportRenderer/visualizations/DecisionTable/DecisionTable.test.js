@@ -73,3 +73,21 @@ it('should render content in DmnJsPortals', () => {
 
   expect(node).toMatchSnapshot();
 });
+
+it('should display meaningful data if there are no evaluations', () => {
+  const node = shallow(
+    <DecisionTable report={{data: props.report.data, decisionInstanceCount: 0, result: {}}} />
+  );
+
+  node.setState({
+    entryPoints: {
+      rules: {
+        a: 'htmlA',
+        b: 'htmlB'
+      },
+      summary: 'htmlSum'
+    }
+  });
+
+  expect(node).toMatchSnapshot();
+});

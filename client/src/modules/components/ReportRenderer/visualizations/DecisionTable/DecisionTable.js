@@ -48,7 +48,7 @@ export default class DecisionTable extends React.Component {
     return (
       <DmnJsPortal key={ruleId} renderIn={this.state.entryPoints.rules[ruleId]}>
         <i>
-          {resultNumber} ({percentage}%)
+          {resultNumber} ({percentage || 0}%)
         </i>
       </DmnJsPortal>
     );
