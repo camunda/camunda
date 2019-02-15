@@ -6,21 +6,19 @@ import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 public class ProcessDefinitionElasticsearchImportJob extends ElasticsearchImportJob<ProcessDefinitionOptimizeDto> {
 
   private ProcessDefinitionWriter processDefinitionWriter;
-  private Logger logger = LoggerFactory.getLogger(ProcessDefinitionElasticsearchImportJob.class);
 
   public ProcessDefinitionElasticsearchImportJob(ProcessDefinitionWriter processDefinitionWriter) {
+    super(() -> {});
     this.processDefinitionWriter = processDefinitionWriter;
   }
 
   @Override
-  protected void executeImport() {
-    try {
-      processDefinitionWriter.importProcessDefinitions(newOptimizeEntities);
-    } catch (Exception e) {
-      logger.error("error while writing process definitions to elasticsearch", e);
-    }
+  protected void persistEntities(List<ProcessDefinitionOptimizeDto> newOptimizeEntities) throws Exception {
+    processDefinitionWriter.importProcessDefinitions(newOptimizeEntities);
   }
 }

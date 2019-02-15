@@ -60,11 +60,12 @@ public class DecisionInstanceWriter {
     try {
       BulkResponse bulkResponse = esClient.bulk(processInstanceBulkRequest, RequestOptions.DEFAULT);
       if (bulkResponse.hasFailures()) {
-        logger.warn(
+        String errorMessage = String.format(
           "There were failures while writing decision instances. " +
             "Received error message: {}",
           bulkResponse.buildFailureMessage()
         );
+        throw new OptimizeRuntimeException(errorMessage);
       }
     } catch (IOException e) {
       logger.error("There were failures while writing decision instances.", e);

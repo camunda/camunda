@@ -5,20 +5,28 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.mapper.CustomDeserializer;
 import org.camunda.optimize.service.util.mapper.CustomSerializer;
 import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
+import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
@@ -42,6 +50,8 @@ import java.util.Map;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_ID;
+import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType
+  .TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
@@ -87,19 +97,19 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
       javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomDeserializer(dateTimeFormatter));
 
       objectMapper = Jackson2ObjectMapperBuilder
-          .json()
-          .modules(javaTimeModule)
-          .featuresToDisable(
-              SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
-              DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
-              DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
-              DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES
-          )
-          .featuresToEnable(
-              JsonParser.Feature.ALLOW_COMMENTS,
-              SerializationFeature.INDENT_OUTPUT
-          )
-          .build();
+        .json()
+        .modules(javaTimeModule)
+        .featuresToDisable(
+          SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
+          DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
+          DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+          DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES
+        )
+        .featuresToEnable(
+          JsonParser.Feature.ALLOW_COMMENTS,
+          SerializationFeature.INDENT_OUTPUT
+        )
+        .build();
     }
   }
 
@@ -183,6 +193,35 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     return Long.valueOf(searchResponse.getHits().getTotalHits()).intValue();
   }
 
+  public OffsetDateTime getLastProcessInstanceImportTimestamp() throws IOException {
+    GetRequest getRequest = new GetRequest(
+      getOptimizeIndexAliasForType(TIMESTAMP_BASED_IMPORT_INDEX_TYPE),
+      TIMESTAMP_BASED_IMPORT_INDEX_TYPE,
+      EsHelper.constructKey(ElasticsearchConstants.PROC_INSTANCE_TYPE, "1")
+    ).realtime(false);
+
+    String content = esClient.get(getRequest, RequestOptions.DEFAULT).getSourceAsString();
+    TimestampBasedImportIndexDto timestampBasedImportIndexDto = objectMapper.readValue(
+      content,
+      TimestampBasedImportIndexDto.class
+    );
+    return timestampBasedImportIndexDto.getTimestampOfLastEntity();
+  }
+
+  public void blockProcInstIndex(boolean block) throws IOException {
+    String settingKey = "index.blocks.read_only";
+    Settings settings =
+      Settings.builder()
+        .put(settingKey, block)
+        .build();
+
+    UpdateSettingsRequest request = new UpdateSettingsRequest(OptimizeIndexNameHelper.getOptimizeIndexAliasForType(
+      PROC_INSTANCE_TYPE));
+    request.settings(settings);
+
+    esClient.indices().putSettings(request, RequestOptions.DEFAULT);
+  }
+
   public Integer getActivityCount(ConfigurationService configurationService) {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(QueryBuilders.matchAllQuery())
@@ -256,7 +295,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   }
 
   private void addEntryToTracker(String type, String id) {
-    if(!documentEntriesTracker.containsKey(type)){
+    if (!documentEntriesTracker.containsKey(type)) {
       List<String> idList = new LinkedList<>();
       idList.add(id);
       documentEntriesTracker.put(type, idList);

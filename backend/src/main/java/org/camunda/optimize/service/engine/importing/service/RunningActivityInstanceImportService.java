@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class RunningActivityInstanceImportService {
@@ -30,14 +31,14 @@ public class RunningActivityInstanceImportService {
     this.runningActivityInstanceWriter = runningActivityInstanceWriter;
   }
 
-  public void executeImport(List<HistoricActivityInstanceEngineDto> pageOfEngineEntities) {
+  public void executeImport(List<HistoricActivityInstanceEngineDto> pageOfEngineEntities, Runnable callback) {
     logger.trace("Importing running activity instances from engine...");
 
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
       List<FlowNodeEventDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
       ElasticsearchImportJob<FlowNodeEventDto> elasticsearchImportJob =
-        createElasticsearchImportJob(newOptimizeEntities);
+        createElasticsearchImportJob(newOptimizeEntities, callback);
       addElasticsearchImportJobToQueue(elasticsearchImportJob);
     }
   }
@@ -56,9 +57,9 @@ public class RunningActivityInstanceImportService {
       .collect(Collectors.toList());
   }
 
-  private ElasticsearchImportJob<FlowNodeEventDto> createElasticsearchImportJob(List<FlowNodeEventDto> events) {
+  private ElasticsearchImportJob<FlowNodeEventDto> createElasticsearchImportJob(List<FlowNodeEventDto> events, Runnable callback) {
     RunningActivityInstanceElasticsearchImportJob activityImportJob =
-      new RunningActivityInstanceElasticsearchImportJob(runningActivityInstanceWriter);
+      new RunningActivityInstanceElasticsearchImportJob(runningActivityInstanceWriter, callback);
     activityImportJob.setEntitiesToImport(events);
     return activityImportJob;
   }

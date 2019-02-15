@@ -47,6 +47,7 @@ public class ProcessDefinitionXmlEngineImportMediator
     if (!page.getIds().isEmpty()) {
       List<ProcessDefinitionXmlEngineDto> entities = engineEntityFetcher.fetchXmlsForDefinitions(page);
       if (!entities.isEmpty()) {
+        importIndexHandler.updateIndex(page.getIds().size());
         definitionXmlImportService.executeImport(entities);
       }
       return true;

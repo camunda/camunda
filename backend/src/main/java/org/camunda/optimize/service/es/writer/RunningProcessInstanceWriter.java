@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.exceptions.OptimizeProcessDefinitionFetchException;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -51,10 +53,11 @@ public class RunningProcessInstanceWriter {
     }
     BulkResponse bulkResponse = esClient.bulk(processInstanceBulkRequest, RequestOptions.DEFAULT);
     if (bulkResponse.hasFailures()) {
-      logger.warn(
-        "There were failures while writing running process instances with message: {}",
+      String errorMessage = String.format(
+        "There were failures while writing process instance with message: %s",
         bulkResponse.buildFailureMessage()
       );
+      throw new OptimizeRuntimeException(errorMessage);
     }
   }
 

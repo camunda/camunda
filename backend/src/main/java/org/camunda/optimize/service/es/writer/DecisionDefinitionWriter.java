@@ -3,6 +3,7 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.schema.type.DecisionDefinitionType;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -72,10 +73,11 @@ public class DecisionDefinitionWriter {
         bulkRequest.setRefreshPolicy(IMMEDIATE);
         bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
         if (bulkResponse.hasFailures()) {
-          logger.warn(
+          String errorMessage = String.format(
             "There were failures while writing decision definition information. Received error message: {}",
             bulkResponse.buildFailureMessage()
           );
+          throw new OptimizeRuntimeException(errorMessage);
         }
       } catch (IOException e) {
         logger.error("There were errors while writing decision definition information.", e);

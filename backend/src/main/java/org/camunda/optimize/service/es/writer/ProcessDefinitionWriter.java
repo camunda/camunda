@@ -3,6 +3,7 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -53,11 +54,12 @@ public class ProcessDefinitionWriter {
       try {
         bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
         if (bulkResponse.hasFailures()) {
-          logger.warn(
+          String errorMessage = String.format(
             "There were failures while writing process definition information. " +
               "Received error message: {}",
             bulkResponse.buildFailureMessage()
           );
+          throw new OptimizeRuntimeException(errorMessage);
         }
       } catch (IOException e) {
         logger.error("There were errors while writing process definition information.", e);

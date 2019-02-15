@@ -20,6 +20,7 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.metrics.valuecount.ValueCount;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -140,6 +141,44 @@ public class ImportIT {
 
     //then
     allEntriesInElasticsearchHaveAllData(PROC_INSTANCE_TYPE);
+  }
+
+  @Test
+  public void failingJobDoesNotUpdateImportIndex() throws IOException, InterruptedException {
+    //given
+    ProcessInstanceEngineDto dto1 = deployAndStartSimpleServiceTask();
+    OffsetDateTime endTime = engineRule.getHistoricProcessInstance(dto1.getId()).getEndTime();
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    embeddedOptimizeRule.importAllEngineEntitiesFromLastIndex();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    elasticSearchRule.blockProcInstIndex(true);
+
+    ProcessInstanceEngineDto dto2 = deployAndStartSimpleServiceTask();
+
+    Thread thread = new Thread(() -> {
+      embeddedOptimizeRule.importAllEngineEntitiesFromLastIndex();
+    });
+    thread.start();
+
+    OffsetDateTime lastImportTimestamp = elasticSearchRule.getLastProcessInstanceImportTimestamp();
+    assertThat(lastImportTimestamp, is(endTime));
+
+    elasticSearchRule.blockProcInstIndex(false);
+    endTime = engineRule.getHistoricProcessInstance(dto2.getId()).getEndTime();
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromLastIndex();
+    embeddedOptimizeRule.importAllEngineEntitiesFromLastIndex();
+
+    lastImportTimestamp = elasticSearchRule.getLastProcessInstanceImportTimestamp();
+
+    assertThat(lastImportTimestamp, is(endTime));
+  }
+
+  @After
+  public void unblockIndex() throws IOException {
+    elasticSearchRule.blockProcInstIndex(false);
   }
 
   @Test

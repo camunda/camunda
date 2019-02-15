@@ -49,14 +49,23 @@ public class CompletedProcessInstanceEngineImportMediator
     final List<HistoricProcessInstanceDto> nextPageEntities = engineEntityFetcher
       .fetchCompletedProcessInstances(page);
 
-    if (!nextPageEntities.isEmpty()) {
-      OffsetDateTime timestamp = nextPageEntities.get(nextPageEntities.size() - 1).getEndTime();
-      importIndexHandler.updateTimestampOfLastEntity(timestamp);
+    boolean timestampNeedsToBeSet = !nextPageEntities.isEmpty();
+
+    OffsetDateTime timestamp = timestampNeedsToBeSet ?
+      nextPageEntities.get(nextPageEntities.size() - 1).getEndTime() :
+      null;
+
+    if (timestampNeedsToBeSet) {
+      importIndexHandler.updatePendingTimestampOfLastEntity(timestamp);
     }
 
-    if (!entitiesOfLastTimestamp.isEmpty() || !nextPageEntities.isEmpty()) {
+    if (!entitiesOfLastTimestamp.isEmpty() || timestampNeedsToBeSet) {
       final List<HistoricProcessInstanceDto> allEntities = ListUtils.union(entitiesOfLastTimestamp, nextPageEntities);
-      completedProcessInstanceImportService.executeImport(allEntities);
+      completedProcessInstanceImportService.executeImport(allEntities, () -> {
+        if (timestampNeedsToBeSet) {
+          importIndexHandler.updateTimestampOfLastEntity(timestamp);
+        }
+      });
     }
 
     return nextPageEntities.size() >= configurationService.getEngineImportProcessInstanceMaxPageSize();

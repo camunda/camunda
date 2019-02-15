@@ -6,21 +6,18 @@ import org.camunda.optimize.service.es.writer.RunningProcessInstanceWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 public class RunningProcessInstanceElasticsearchImportJob extends ElasticsearchImportJob<ProcessInstanceDto> {
 
   private RunningProcessInstanceWriter runningProcessInstanceWriter;
-  private Logger logger = LoggerFactory.getLogger(RunningProcessInstanceElasticsearchImportJob.class);
 
-  public RunningProcessInstanceElasticsearchImportJob(RunningProcessInstanceWriter runningProcessInstanceWriter) {
+  public RunningProcessInstanceElasticsearchImportJob(RunningProcessInstanceWriter runningProcessInstanceWriter,
+                                                      Runnable callback) {
+    super(callback);
     this.runningProcessInstanceWriter = runningProcessInstanceWriter;
   }
-
-  @Override
-  protected void executeImport() {
-    try {
-      runningProcessInstanceWriter.importProcessInstances(newOptimizeEntities);
-    } catch (Exception e) {
-      logger.error("error while writing running process instances to elasticsearch", e);
-    }
+  protected void persistEntities(List<ProcessInstanceDto> newOptimizeEntities) throws Exception {
+    runningProcessInstanceWriter.importProcessInstances(newOptimizeEntities);
   }
 }

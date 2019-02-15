@@ -65,10 +65,11 @@ public class CompletedProcessInstanceWriter {
     }
     BulkResponse bulkResponse = esClient.bulk(processInstanceBulkRequest, RequestOptions.DEFAULT);
     if (bulkResponse.hasFailures()) {
-      logger.warn(
+      String errorMessage = String.format(
         "There were failures while writing process instances with message: {}",
         bulkResponse.buildFailureMessage()
       );
+      throw new OptimizeRuntimeException(errorMessage);
     }
   }
 

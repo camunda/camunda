@@ -28,14 +28,15 @@ public class UserOperationLogImportService {
     this.userOperationsLogEntryWriter = userOperationsLogEntryWriter;
   }
 
-  public void executeImport(final List<UserOperationLogEntryEngineDto> pageOfEngineEntities) {
+  public void executeImport(final List<UserOperationLogEntryEngineDto> pageOfEngineEntities, Runnable callback) {
     logger.trace("Importing user operation log entries from engine...");
 
     final boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
-      final List<UserOperationLogEntryDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
+      final List<UserOperationLogEntryDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(
+        pageOfEngineEntities);
       final ElasticsearchImportJob<UserOperationLogEntryDto> elasticsearchImportJob =
-        createElasticsearchImportJob(newOptimizeEntities);
+        createElasticsearchImportJob(newOptimizeEntities, callback);
       addElasticsearchImportJobToQueue(elasticsearchImportJob);
     }
   }
@@ -48,7 +49,9 @@ public class UserOperationLogImportService {
     }
   }
 
-  private List<UserOperationLogEntryDto> mapEngineEntitiesToOptimizeEntities(final List<UserOperationLogEntryEngineDto> engineEntities) {
+  private List<UserOperationLogEntryDto> mapEngineEntitiesToOptimizeEntities(final
+                                                                             List<UserOperationLogEntryEngineDto>
+                                                                               engineEntities) {
     List<UserOperationLogEntryDto> list = new ArrayList<>();
     for (UserOperationLogEntryEngineDto engineEntity : engineEntities) {
       UserOperationLogEntryDto userOperationLogEntry = mapEngineEntityToOptimizeEntity(engineEntity);
@@ -57,9 +60,12 @@ public class UserOperationLogImportService {
     return list;
   }
 
-  private ElasticsearchImportJob<UserOperationLogEntryDto> createElasticsearchImportJob(final List<UserOperationLogEntryDto> userTasks) {
+  private ElasticsearchImportJob<UserOperationLogEntryDto> createElasticsearchImportJob(final
+                                                                                        List<UserOperationLogEntryDto> userTasks,
+                                                                                        Runnable callback) {
     final UserOperationEntryElasticsearchImportJob importJob = new UserOperationEntryElasticsearchImportJob(
-      userOperationsLogEntryWriter
+      userOperationsLogEntryWriter,
+      callback
     );
     importJob.setEntitiesToImport(userTasks);
     return importJob;

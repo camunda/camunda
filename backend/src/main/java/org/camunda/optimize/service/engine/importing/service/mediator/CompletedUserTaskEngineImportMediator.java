@@ -8,6 +8,7 @@ import org.camunda.optimize.service.engine.importing.index.handler.impl.Complete
 import org.camunda.optimize.service.engine.importing.index.page.TimestampBasedImportPage;
 import org.camunda.optimize.service.engine.importing.service.CompletedUserTaskInstanceImportService;
 import org.camunda.optimize.service.es.writer.CompletedUserTaskInstanceWriter;
+import org.camunda.optimize.service.exceptions.OptimizeProcessDefinitionFetchException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -53,17 +54,27 @@ public class CompletedUserTaskEngineImportMediator
     final List<HistoricUserTaskInstanceDto> nextPageUserTaskEntities = engineEntityFetcher
       .fetchCompletedUserTaskInstances(page);
 
-    if (!userTaskEntitiesOfLastTimestamp.isEmpty() || !nextPageUserTaskEntities.isEmpty()) {
+    boolean timestampNeedsToBeSet = !nextPageUserTaskEntities.isEmpty();
+
+    OffsetDateTime timestamp = timestampNeedsToBeSet ?
+      nextPageUserTaskEntities.get(nextPageUserTaskEntities.size() - 1).getStartTime() :
+      null;
+
+    if (timestampNeedsToBeSet) {
+      importIndexHandler.updatePendingTimestampOfLastEntity(timestamp);
+    }
+
+    if (!userTaskEntitiesOfLastTimestamp.isEmpty() || timestampNeedsToBeSet) {
       final List<HistoricUserTaskInstanceDto> allEntities = ImmutableList.<HistoricUserTaskInstanceDto>builder()
         .addAll(userTaskEntitiesOfLastTimestamp)
         .addAll(nextPageUserTaskEntities)
         .build();
 
-      completedUserTaskInstanceImportService.executeImport(allEntities);
-      if (!nextPageUserTaskEntities.isEmpty()) {
-        OffsetDateTime timestamp = nextPageUserTaskEntities.get(nextPageUserTaskEntities.size() - 1).getStartTime();
-        importIndexHandler.updateTimestampOfLastEntity(timestamp);
-      }
+      completedUserTaskInstanceImportService.executeImport(allEntities, () -> {
+        if (timestampNeedsToBeSet) {
+          importIndexHandler.updateTimestampOfLastEntity(timestamp);
+        }
+      });
     }
 
     return nextPageUserTaskEntities.size() >= configurationService.getEngineImportUserTaskInstanceMaxPageSize();

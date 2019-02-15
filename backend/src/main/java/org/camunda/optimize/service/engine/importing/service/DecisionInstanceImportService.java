@@ -55,14 +55,14 @@ public class DecisionInstanceImportService {
     this.decisionOutputImportAdapterProvider = decisionOutputImportAdapterProvider;
   }
 
-  public void executeImport(List<HistoricDecisionInstanceDto> engineDtoList)
+  public void executeImport(List<HistoricDecisionInstanceDto> engineDtoList, Runnable callback)
     throws OptimizeDecisionDefinitionFetchException {
     logger.trace("Importing entities from engine...");
     boolean newDataIsAvailable = !engineDtoList.isEmpty();
     if (newDataIsAvailable) {
       final List<DecisionInstanceDto> optimizeDtos = mapEngineEntitiesToOptimizeEntities(engineDtoList);
       final ElasticsearchImportJob<DecisionInstanceDto> elasticsearchImportJob = createElasticsearchImportJob(
-        optimizeDtos);
+        optimizeDtos, callback);
       addElasticsearchImportJobToQueue(elasticsearchImportJob);
     }
   }
@@ -87,9 +87,11 @@ public class DecisionInstanceImportService {
   }
 
   private ElasticsearchImportJob<DecisionInstanceDto> createElasticsearchImportJob(List<DecisionInstanceDto>
-                                                                                     decisionInstanceDtos) {
+                                                                                     decisionInstanceDtos,
+                                                                                   Runnable callback) {
     final DecisionInstanceElasticsearchImportJob importJob = new DecisionInstanceElasticsearchImportJob(
-      decisionInstanceWriter
+      decisionInstanceWriter,
+      callback
     );
     importJob.setEntitiesToImport(decisionInstanceDtos);
     return importJob;

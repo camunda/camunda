@@ -28,9 +28,9 @@ public class ProcessDefinitionXmlImportService {
   private ProcessDefinitionXmlWriter processDefinitionXmlWriter;
 
   public ProcessDefinitionXmlImportService(
-      ProcessDefinitionXmlWriter processDefinitionXmlWriter,
-      ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-      EngineContext engineContext
+    ProcessDefinitionXmlWriter processDefinitionXmlWriter,
+    ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+    EngineContext engineContext
   ) {
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.engineContext = engineContext;
@@ -59,15 +59,18 @@ public class ProcessDefinitionXmlImportService {
     }
   }
 
-  private List<ProcessDefinitionOptimizeDto> mapEngineEntitiesToOptimizeEntities(List<ProcessDefinitionXmlEngineDto> engineEntities) {
+  private List<ProcessDefinitionOptimizeDto> mapEngineEntitiesToOptimizeEntities(List<ProcessDefinitionXmlEngineDto>
+                                                                                   engineEntities) {
     return engineEntities
       .stream().map(this::mapEngineEntityToOptimizeEntity)
       .collect(Collectors.toList());
   }
 
   private ElasticsearchImportJob<ProcessDefinitionOptimizeDto> createElasticsearchImportJob(
-      List<ProcessDefinitionOptimizeDto> processDefinitions) {
-    ProcessDefinitionXmlElasticsearchImportJob procDefImportJob = new ProcessDefinitionXmlElasticsearchImportJob(processDefinitionXmlWriter);
+    List<ProcessDefinitionOptimizeDto> processDefinitions) {
+    ProcessDefinitionXmlElasticsearchImportJob procDefImportJob = new ProcessDefinitionXmlElasticsearchImportJob(
+      processDefinitionXmlWriter
+    );
     procDefImportJob.setEntitiesToImport(processDefinitions);
     return procDefImportJob;
   }

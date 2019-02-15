@@ -77,8 +77,12 @@ public abstract class ScrollBasedImportIndexHandler
     }
     IdSetBasedImportPage page = new IdSetBasedImportPage();
     page.setIds(ids);
-    importIndex += ids.size();
+    updateIndex(ids.size());
     return page;
+  }
+
+  public void updateIndex(int pageSize) {
+    importIndex += pageSize;
   }
 
   private String getElasticsearchId() {

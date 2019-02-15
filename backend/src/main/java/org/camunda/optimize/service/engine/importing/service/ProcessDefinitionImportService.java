@@ -22,9 +22,9 @@ public class ProcessDefinitionImportService {
   private ProcessDefinitionWriter processDefinitionWriter;
 
   public ProcessDefinitionImportService(
-      ProcessDefinitionWriter processDefinitionWriter,
-      ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-      EngineContext engineContext
+    ProcessDefinitionWriter processDefinitionWriter,
+    ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+    EngineContext engineContext
   ) {
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.engineContext = engineContext;
@@ -37,7 +37,8 @@ public class ProcessDefinitionImportService {
 
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
-      List<ProcessDefinitionOptimizeDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
+      List<ProcessDefinitionOptimizeDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities
+        (pageOfEngineEntities);
       ElasticsearchImportJob<ProcessDefinitionOptimizeDto> elasticsearchImportJob =
         createElasticsearchImportJob(newOptimizeEntities);
       addElasticsearchImportJobToQueue(elasticsearchImportJob);
@@ -52,7 +53,8 @@ public class ProcessDefinitionImportService {
     }
   }
 
-  private List<ProcessDefinitionOptimizeDto> mapEngineEntitiesToOptimizeEntities(List<ProcessDefinitionEngineDto> engineEntities) {
+  private List<ProcessDefinitionOptimizeDto> mapEngineEntitiesToOptimizeEntities(List<ProcessDefinitionEngineDto>
+                                                                                   engineEntities) {
     return engineEntities
       .stream().map(this::mapEngineEntityToOptimizeEntity)
       .collect(Collectors.toList());
@@ -60,7 +62,9 @@ public class ProcessDefinitionImportService {
 
   private ElasticsearchImportJob<ProcessDefinitionOptimizeDto>
   createElasticsearchImportJob(List<ProcessDefinitionOptimizeDto> processDefinitions) {
-    ProcessDefinitionElasticsearchImportJob procDefImportJob = new ProcessDefinitionElasticsearchImportJob(processDefinitionWriter);
+    ProcessDefinitionElasticsearchImportJob procDefImportJob = new ProcessDefinitionElasticsearchImportJob(
+      processDefinitionWriter
+    );
     procDefImportJob.setEntitiesToImport(processDefinitions);
     return procDefImportJob;
   }

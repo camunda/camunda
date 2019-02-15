@@ -111,7 +111,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     for (EngineContext configuredEngine : getConfiguredEngines()) {
       RunningActivityInstanceImportService service =
         new RunningActivityInstanceImportService(writer, getElasticsearchImportJobExecutor(), configuredEngine);
-      service.executeImport(activities);
+      service.executeImport(activities, () -> {});
     }
     makeSureAllScheduledJobsAreFinished();
   }

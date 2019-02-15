@@ -6,21 +6,19 @@ import org.camunda.optimize.service.es.writer.DecisionDefinitionXmlWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 public class DecisionDefinitionXmlElasticsearchImportJob extends ElasticsearchImportJob<DecisionDefinitionOptimizeDto> {
-  private static final Logger logger = LoggerFactory.getLogger(DecisionDefinitionXmlElasticsearchImportJob.class);
 
   private DecisionDefinitionXmlWriter decisionDefinitionXmlWriter;
 
   public DecisionDefinitionXmlElasticsearchImportJob(final DecisionDefinitionXmlWriter decisionDefinitionXmlWriter) {
+    super(() -> {});
     this.decisionDefinitionXmlWriter = decisionDefinitionXmlWriter;
   }
 
   @Override
-  protected void executeImport() {
-    try {
-      decisionDefinitionXmlWriter.importProcessDefinitionXmls(newOptimizeEntities);
-    } catch (Exception e) {
-      logger.error("error while writing decision definitions to elasticsearch", e);
-    }
+  protected void persistEntities(List<DecisionDefinitionOptimizeDto> newOptimizeEntities) throws Exception {
+    decisionDefinitionXmlWriter.importProcessDefinitionXmls(newOptimizeEntities);
   }
 }

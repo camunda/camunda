@@ -6,21 +6,20 @@ import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 public class CompletedActivityInstanceElasticsearchImportJob extends ElasticsearchImportJob<FlowNodeEventDto> {
 
   private CompletedActivityInstanceWriter completedActivityInstanceWriter;
-  private Logger logger = LoggerFactory.getLogger(CompletedActivityInstanceElasticsearchImportJob.class);
 
-  public CompletedActivityInstanceElasticsearchImportJob(CompletedActivityInstanceWriter completedActivityInstanceWriter) {
+  public CompletedActivityInstanceElasticsearchImportJob(CompletedActivityInstanceWriter completedActivityInstanceWriter,
+                                                         Runnable callback) {
+    super(callback);
     this.completedActivityInstanceWriter = completedActivityInstanceWriter;
   }
 
   @Override
-  protected void executeImport() {
-    try {
-      completedActivityInstanceWriter.importActivityInstances(newOptimizeEntities);
-    } catch (Exception e) {
-      logger.error("Error while writing completed activity instances to Elasticsearch", e);
-    }
+  protected void persistEntities(List<FlowNodeEventDto> newOptimizeEntities) throws Exception {
+    completedActivityInstanceWriter.importActivityInstances(newOptimizeEntities);
   }
 }

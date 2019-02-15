@@ -52,15 +52,21 @@ public class CompletedActivityInstanceEngineImportMediator
     final List<HistoricActivityInstanceEngineDto> nextPageEntities = engineEntityFetcher
       .fetchCompletedActivityInstances(page);
 
-    if (!nextPageEntities.isEmpty()) {
-      OffsetDateTime timestamp = nextPageEntities.get(nextPageEntities.size() - 1).getEndTime();
-      importIndexHandler.updateTimestampOfLastEntity(timestamp);
+    boolean timestampNeedsToBeSet = !nextPageEntities.isEmpty();
+
+    OffsetDateTime timestamp = timestampNeedsToBeSet ?
+      nextPageEntities.get(nextPageEntities.size() - 1).getStartTime() :
+      null;
+
+    if (timestampNeedsToBeSet) {
+      importIndexHandler.updatePendingTimestampOfLastEntity(timestamp);
     }
 
-    if (!entitiesOfLastTimestamp.isEmpty() || !nextPageEntities.isEmpty()) {
-      final List<HistoricActivityInstanceEngineDto> allEntities =
-        ListUtils.union(entitiesOfLastTimestamp, nextPageEntities);
-      completedActivityInstanceImportService.executeImport(allEntities);
+    if (!entitiesOfLastTimestamp.isEmpty() || timestampNeedsToBeSet) {
+      final List<HistoricActivityInstanceEngineDto> allEntities = ListUtils.union(entitiesOfLastTimestamp, nextPageEntities);
+      completedActivityInstanceImportService.executeImport(allEntities, () -> {
+        if (timestampNeedsToBeSet) importIndexHandler.updateTimestampOfLastEntity(timestamp);
+      });
     }
 
     return nextPageEntities.size() >= configurationService.getEngineImportActivityInstanceMaxPageSize();

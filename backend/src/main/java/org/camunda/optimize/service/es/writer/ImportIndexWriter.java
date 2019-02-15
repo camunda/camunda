@@ -7,6 +7,7 @@ import org.camunda.optimize.dto.optimize.importing.index.CombinedImportIndexesDt
 import org.camunda.optimize.dto.optimize.importing.index.ImportIndexDto;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.es.schema.type.index.ImportIndexType;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.EsHelper;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -54,11 +55,12 @@ public class ImportIndexWriter {
     try {
       BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
       if (bulkResponse.hasFailures()) {
-        logger.warn(
+        String errorMessage = String.format(
           "There were failures while writing import indexes. " +
             "Received error message: {}",
           bulkResponse.buildFailureMessage()
         );
+        throw new OptimizeRuntimeException(errorMessage);
       }
     } catch (IOException e) {
       logger.error("There were errors while writing import indexes.", e);

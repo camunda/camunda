@@ -65,15 +65,20 @@ public class DecisionInstanceEngineImportMediator extends BackoffImportMediator<
       page
     );
 
-    if (!entitiesOfLastTimestamp.isEmpty() || !nextPageEntities.isEmpty()) {
+    boolean timestampNeedsToBeSet = !nextPageEntities.isEmpty();
+    OffsetDateTime timestamp = timestampNeedsToBeSet ?
+      nextPageEntities.get(nextPageEntities.size() - 1).getEvaluationTime() :
+      null;
+
+    if (!entitiesOfLastTimestamp.isEmpty() || timestampNeedsToBeSet) {
       final List<HistoricDecisionInstanceDto> allEntities = ListUtils.union(entitiesOfLastTimestamp, nextPageEntities);
 
       try {
-        decisionInstanceImportService.executeImport(allEntities);
-        if (!nextPageEntities.isEmpty()) {
-          OffsetDateTime timestamp = nextPageEntities.get(nextPageEntities.size() - 1).getEvaluationTime();
-          importIndexHandler.updateTimestampOfLastEntity(timestamp);
-        }
+        decisionInstanceImportService.executeImport(allEntities, () -> {
+          if (timestampNeedsToBeSet) {
+            importIndexHandler.updateTimestampOfLastEntity(timestamp);
+          }
+        });
       } catch (OptimizeDecisionDefinitionFetchException e) {
         logger.debug(
           "Required Decision Definition not imported yet, skipping current decision instance import cycle.",

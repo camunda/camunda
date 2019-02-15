@@ -6,21 +6,19 @@ import org.camunda.optimize.service.es.writer.CompletedUserTaskInstanceWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CompletedUserTasksElasticsearchImportJob extends ElasticsearchImportJob<UserTaskInstanceDto> {
-  private static final Logger logger = LoggerFactory.getLogger(CompletedUserTasksElasticsearchImportJob.class);
+import java.util.List;
 
+public class CompletedUserTasksElasticsearchImportJob extends ElasticsearchImportJob<UserTaskInstanceDto> {
   private CompletedUserTaskInstanceWriter completedUserTaskInstanceWriter;
 
-  public CompletedUserTasksElasticsearchImportJob(final CompletedUserTaskInstanceWriter completedUserTaskInstanceWriter) {
+  public CompletedUserTasksElasticsearchImportJob(final CompletedUserTaskInstanceWriter completedUserTaskInstanceWriter,
+                                                  Runnable callback) {
+    super(callback);
     this.completedUserTaskInstanceWriter = completedUserTaskInstanceWriter;
   }
 
   @Override
-  protected void executeImport() {
-    try {
-      completedUserTaskInstanceWriter.importUserTaskInstances(newOptimizeEntities);
-    } catch (Exception e) {
-      logger.error("Error while writing completed user task instances to elasticsearch", e);
-    }
+  protected void persistEntities(List<UserTaskInstanceDto> newOptimizeEntities) throws Exception {
+    completedUserTaskInstanceWriter.importUserTaskInstances(newOptimizeEntities);
   }
 }

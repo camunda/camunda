@@ -96,9 +96,11 @@ public class StoreIndexesEngineImportMediator implements EngineImportMediator {
   private List<AllEntitiesBasedImportIndexDto> getAllEntitiesBasedImportIndexes() {
     List<AllEntitiesBasedImportIndexDto> allEntitiesBasedImportIndexes = new ArrayList<>();
 
-    if (provider.getAllEntitiesBasedHandlers(engineContext.getEngineAlias()) != null) {
-      for (AllEntitiesBasedImportIndexHandler importIndexHandler :
-          provider.getAllEntitiesBasedHandlers(engineContext.getEngineAlias())) {
+    List<AllEntitiesBasedImportIndexHandler> allEntitiesBasedHandlers = provider.getAllEntitiesBasedHandlers(
+      engineContext.getEngineAlias());
+
+    if (allEntitiesBasedHandlers != null) {
+      for (AllEntitiesBasedImportIndexHandler importIndexHandler : allEntitiesBasedHandlers) {
         allEntitiesBasedImportIndexes.add(importIndexHandler.createIndexInformationForStoring());
       }
 

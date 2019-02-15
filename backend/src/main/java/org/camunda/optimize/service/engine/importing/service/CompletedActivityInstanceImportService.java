@@ -30,14 +30,14 @@ public class CompletedActivityInstanceImportService {
     this.completedActivityInstanceWriter = completedActivityInstanceWriter;
   }
 
-  public void executeImport(List<HistoricActivityInstanceEngineDto> pageOfEngineEntities) {
+  public void executeImport(List<HistoricActivityInstanceEngineDto> pageOfEngineEntities, Runnable callback) {
     logger.trace("Importing completed activity instances from engine...");
 
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
       List<FlowNodeEventDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
       ElasticsearchImportJob<FlowNodeEventDto> elasticsearchImportJob =
-        createElasticsearchImportJob(newOptimizeEntities);
+        createElasticsearchImportJob(newOptimizeEntities, callback);
       addElasticsearchImportJobToQueue(elasticsearchImportJob);
     }
   }
@@ -50,15 +50,17 @@ public class CompletedActivityInstanceImportService {
     }
   }
 
-  private List<FlowNodeEventDto> mapEngineEntitiesToOptimizeEntities(List<HistoricActivityInstanceEngineDto> engineEntities) {
+  private List<FlowNodeEventDto> mapEngineEntitiesToOptimizeEntities(List<HistoricActivityInstanceEngineDto>
+                                                                       engineEntities) {
     return engineEntities
       .stream().map(this::mapEngineEntityToOptimizeEntity)
       .collect(Collectors.toList());
   }
 
-  private ElasticsearchImportJob<FlowNodeEventDto> createElasticsearchImportJob(List<FlowNodeEventDto> events) {
+  private ElasticsearchImportJob<FlowNodeEventDto> createElasticsearchImportJob(List<FlowNodeEventDto> events,
+                                                                                Runnable callback) {
     CompletedActivityInstanceElasticsearchImportJob activityImportJob =
-      new CompletedActivityInstanceElasticsearchImportJob(completedActivityInstanceWriter);
+      new CompletedActivityInstanceElasticsearchImportJob(completedActivityInstanceWriter, callback);
     activityImportJob.setEntitiesToImport(events);
     return activityImportJob;
   }

@@ -22,23 +22,23 @@ public class RunningProcessInstanceImportService {
   private RunningProcessInstanceWriter runningProcessInstanceWriter;
 
   public RunningProcessInstanceImportService(
-      RunningProcessInstanceWriter runningProcessInstanceWriter,
-      ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-      EngineContext engineContext
+    RunningProcessInstanceWriter runningProcessInstanceWriter,
+    ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+    EngineContext engineContext
   ) {
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.engineContext = engineContext;
     this.runningProcessInstanceWriter = runningProcessInstanceWriter;
   }
 
-  public void executeImport(List<HistoricProcessInstanceDto> pageOfEngineEntities) {
+  public void executeImport(List<HistoricProcessInstanceDto> pageOfEngineEntities, Runnable callback) {
     logger.trace("Importing entities from engine...");
 
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
       List<ProcessInstanceDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
       ElasticsearchImportJob<ProcessInstanceDto> elasticsearchImportJob =
-        createElasticsearchImportJob(newOptimizeEntities);
+        createElasticsearchImportJob(newOptimizeEntities, callback);
       addElasticsearchImportJobToQueue(elasticsearchImportJob);
     }
   }
@@ -51,15 +51,18 @@ public class RunningProcessInstanceImportService {
     }
   }
 
-  private List<ProcessInstanceDto> mapEngineEntitiesToOptimizeEntities(List<HistoricProcessInstanceDto> engineEntities) {
+  private List<ProcessInstanceDto> mapEngineEntitiesToOptimizeEntities(List<HistoricProcessInstanceDto>
+                                                                         engineEntities) {
     return engineEntities
       .stream().map(this::mapEngineEntityToOptimizeEntity)
       .collect(Collectors.toList());
   }
 
-  private ElasticsearchImportJob<ProcessInstanceDto> createElasticsearchImportJob(List<ProcessInstanceDto> processInstances) {
+  private ElasticsearchImportJob<ProcessInstanceDto> createElasticsearchImportJob(List<ProcessInstanceDto>
+                                                                                    processInstances, Runnable
+    callback) {
     RunningProcessInstanceElasticsearchImportJob importJob =
-        new RunningProcessInstanceElasticsearchImportJob(runningProcessInstanceWriter);
+      new RunningProcessInstanceElasticsearchImportJob(runningProcessInstanceWriter, callback);
     importJob.setEntitiesToImport(processInstances);
     return importJob;
   }

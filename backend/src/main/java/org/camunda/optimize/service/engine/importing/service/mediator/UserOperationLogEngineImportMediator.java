@@ -52,17 +52,29 @@ public class UserOperationLogEngineImportMediator
     final List<UserOperationLogEntryEngineDto> nextPageEntities =
       engineEntityFetcher.fetchUserOperationLogEntries(page);
 
-    if (!entitiesOfLastTimestamp.isEmpty() || !nextPageEntities.isEmpty()) {
+
+    boolean timestampNeedsToBeSet = !nextPageEntities.isEmpty();
+
+    OffsetDateTime timestamp = timestampNeedsToBeSet ?
+      nextPageEntities.get(nextPageEntities.size() - 1).getTimestamp() :
+      null;
+
+
+    if (timestampNeedsToBeSet) {
+      importIndexHandler.updatePendingTimestampOfLastEntity(timestamp);
+    }
+
+    if (!entitiesOfLastTimestamp.isEmpty() || timestampNeedsToBeSet) {
       final List<UserOperationLogEntryEngineDto> allEntities = ImmutableList.<UserOperationLogEntryEngineDto>builder()
         .addAll(entitiesOfLastTimestamp)
         .addAll(nextPageEntities)
         .build();
-      userOperationLogImportService.executeImport(allEntities);
-    }
 
-    if (!nextPageEntities.isEmpty()) {
-      OffsetDateTime timestamp = nextPageEntities.get(nextPageEntities.size() - 1).getTimestamp();
-      importIndexHandler.updateTimestampOfLastEntity(timestamp);
+      userOperationLogImportService.executeImport(allEntities, () -> {
+        if (timestampNeedsToBeSet) {
+          importIndexHandler.updateTimestampOfLastEntity(timestamp);
+        }
+      });
     }
 
     return nextPageEntities.size() >= configurationService.getEngineImportUserOperationLogEntryMaxPageSize();

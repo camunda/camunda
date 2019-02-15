@@ -29,8 +29,8 @@ public abstract class TimestampBasedImportIndexHandler
   @Autowired
   protected BeanHelper beanHelper;
 
-  private OffsetDateTime timestampOfLastEntity = getTimestampBeforeEngineExisted();
-
+  private OffsetDateTime persistedTimestampOfLastEntity = getTimestampBeforeEngineExisted();
+  private OffsetDateTime timestampOfLastEntity = persistedTimestampOfLastEntity;
   protected EngineContext engineContext;
 
   public TimestampBasedImportIndexHandler(EngineContext engineContext) {
@@ -56,7 +56,22 @@ public abstract class TimestampBasedImportIndexHandler
         "Timestamp is in the current time backoff window of {}ms, will save begin of backoff window as last timestamp",
         configurationService.getCurrentTimeBackoffMilliseconds()
       );
-      this.timestampOfLastEntity= backOffWindowStart;
+      this.persistedTimestampOfLastEntity = backOffWindowStart;
+    } else {
+      this.persistedTimestampOfLastEntity = timestamp;
+    }
+  }
+
+  public void updatePendingTimestampOfLastEntity(final OffsetDateTime timestamp) {
+    final OffsetDateTime backOffWindowStart = reduceByCurrentTimeBackoff(
+      OffsetDateTime.ofInstant(Instant.now(), ZoneId.systemDefault())
+    );
+    if (timestamp.isAfter(backOffWindowStart)) {
+      logger.info(
+        "Timestamp is in the current time backoff window of {}ms, will save begin of backoff window as last timestamp",
+        configurationService.getCurrentTimeBackoffMilliseconds()
+      );
+      this.timestampOfLastEntity = backOffWindowStart;
     } else {
       this.timestampOfLastEntity = timestamp;
     }
@@ -72,7 +87,8 @@ public abstract class TimestampBasedImportIndexHandler
       importIndexReader.getImportIndex(getElasticsearchDocID(), engineContext.getEngineAlias());
     if (dto.isPresent()) {
       TimestampBasedImportIndexDto loadedImportIndex = dto.get();
-      timestampOfLastEntity = loadedImportIndex.getTimestampOfLastEntity();
+      persistedTimestampOfLastEntity = loadedImportIndex.getTimestampOfLastEntity();
+      timestampOfLastEntity = persistedTimestampOfLastEntity;
     }
   }
 
@@ -86,7 +102,7 @@ public abstract class TimestampBasedImportIndexHandler
   @Override
   public TimestampBasedImportIndexDto createIndexInformationForStoring() {
     TimestampBasedImportIndexDto indexToStore = new TimestampBasedImportIndexDto();
-    indexToStore.setTimestampOfLastEntity(timestampOfLastEntity);
+    indexToStore.setTimestampOfLastEntity(persistedTimestampOfLastEntity);
     indexToStore.setEngine(this.engineContext.getEngineAlias());
     indexToStore.setEsTypeIndexRefersTo(getElasticsearchDocID());
     return indexToStore;
@@ -94,7 +110,8 @@ public abstract class TimestampBasedImportIndexHandler
 
   @Override
   public void resetImportIndex() {
-    timestampOfLastEntity = getTimestampBeforeEngineExisted();
+    persistedTimestampOfLastEntity = getTimestampBeforeEngineExisted();
+    timestampOfLastEntity = persistedTimestampOfLastEntity;
   }
 
   /**

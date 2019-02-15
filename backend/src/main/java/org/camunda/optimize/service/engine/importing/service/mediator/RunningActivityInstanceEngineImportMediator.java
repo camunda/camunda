@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.function.Function;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -52,15 +53,25 @@ public class RunningActivityInstanceEngineImportMediator
     final List<HistoricActivityInstanceEngineDto> nextPageEntities = engineEntityFetcher
       .fetchRunningActivityInstances(page);
 
-    if (!nextPageEntities.isEmpty()) {
-      OffsetDateTime timestamp = nextPageEntities.get(nextPageEntities.size() - 1).getStartTime();
-      importIndexHandler.updateTimestampOfLastEntity(timestamp);
+    boolean timestampNeedsToBeSet = !nextPageEntities.isEmpty();
+
+    OffsetDateTime timestamp = timestampNeedsToBeSet ?
+      nextPageEntities.get(nextPageEntities.size() - 1).getStartTime() :
+      null;
+
+    if (timestampNeedsToBeSet) {
+      importIndexHandler.updatePendingTimestampOfLastEntity(timestamp);
     }
 
-    if (!entitiesOfLastTimestamp.isEmpty() || !nextPageEntities.isEmpty()) {
+    if (!entitiesOfLastTimestamp.isEmpty() || timestampNeedsToBeSet) {
       final List<HistoricActivityInstanceEngineDto> allEntities =
         ListUtils.union(entitiesOfLastTimestamp, nextPageEntities);
-      runningActivityInstanceImportService.executeImport(allEntities);
+
+      runningActivityInstanceImportService.executeImport(allEntities, () -> {
+        if (timestampNeedsToBeSet) {
+          importIndexHandler.updateTimestampOfLastEntity(timestamp);
+        }
+      });
     }
 
     return nextPageEntities.size() >= configurationService.getEngineImportActivityInstanceMaxPageSize();

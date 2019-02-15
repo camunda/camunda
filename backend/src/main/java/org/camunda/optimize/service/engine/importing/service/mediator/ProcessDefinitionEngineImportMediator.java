@@ -45,8 +45,9 @@ public class ProcessDefinitionEngineImportMediator
     AllEntitiesBasedImportPage page = importIndexHandler.getNextPage();
     List<ProcessDefinitionEngineDto> entities = engineEntityFetcher.fetchProcessDefinitions(page);
     List<ProcessDefinitionEngineDto> newEntities = importIndexHandler.filterNewDefinitions(entities);
+    importIndexHandler.addImportedDefinitions(newEntities);
+
     if (!newEntities.isEmpty()) {
-      importIndexHandler.addImportedDefinitions(newEntities);
       definitionImportService.executeImport(newEntities);
     }
     return !newEntities.isEmpty();

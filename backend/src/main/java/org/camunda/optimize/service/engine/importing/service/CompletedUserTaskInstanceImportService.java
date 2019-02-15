@@ -7,6 +7,7 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.CompletedUserTasksElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.CompletedUserTaskInstanceWriter;
+import org.camunda.optimize.service.exceptions.OptimizeProcessDefinitionFetchException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,15 +29,14 @@ public class CompletedUserTaskInstanceImportService {
     this.completedProcessInstanceWriter = completedProcessInstanceWriter;
   }
 
-  public void executeImport(final List<HistoricUserTaskInstanceDto> pageOfEngineEntities) {
+  public void executeImport(final List<HistoricUserTaskInstanceDto> pageOfEngineEntities, Runnable callback) {
     logger.trace("Importing completed user task entities from engine...");
 
     final boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
       final List<UserTaskInstanceDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
       final ElasticsearchImportJob<UserTaskInstanceDto> elasticsearchImportJob = createElasticsearchImportJob(
-        newOptimizeEntities
-      );
+        newOptimizeEntities, callback);
       addElasticsearchImportJobToQueue(elasticsearchImportJob);
     }
   }
@@ -58,9 +58,11 @@ public class CompletedUserTaskInstanceImportService {
     return list;
   }
 
-  private ElasticsearchImportJob<UserTaskInstanceDto> createElasticsearchImportJob(final List<UserTaskInstanceDto> userTasks) {
+  private ElasticsearchImportJob<UserTaskInstanceDto> createElasticsearchImportJob(final List<UserTaskInstanceDto> userTasks,
+                                                                                   Runnable callback) {
     final CompletedUserTasksElasticsearchImportJob importJob = new CompletedUserTasksElasticsearchImportJob(
-      completedProcessInstanceWriter
+      completedProcessInstanceWriter,
+      callback
     );
     importJob.setEntitiesToImport(userTasks);
     return importJob;
