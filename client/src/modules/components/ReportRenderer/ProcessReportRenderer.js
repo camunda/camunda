@@ -79,11 +79,7 @@ export default class ProcessReportRenderer extends React.Component {
     return (
       <>
         <div className="component">
-          {this.props.applyAddons ? (
-            this.props.applyAddons(Component, props)
-          ) : (
-            <Component {...props} />
-          )}
+          <Component {...props} />
         </div>
         {configuration.showInstanceCount && (
           <div className="additionalInfo">

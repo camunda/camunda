@@ -1,18 +1,20 @@
 import React from 'react';
-import ReportBlankSlate from '../ReportBlankSlate';
+import ReportBlankSlate from '../../ReportBlankSlate';
 
 import {Table as TableRenderer, LoadingIndicator} from 'components';
 import {processRawData, reportConfig, formatters} from 'services';
 import {withErrorHandling} from 'HOC';
 
+import ColumnRearrangement from './ColumnRearrangement';
+
 import {
   getCamundaEndpoints,
-  getRelativeValue,
-  uniteResults,
   getFormattedLabels,
   getBodyRows,
   getCombinedTableProps
 } from './service';
+
+import {getRelativeValue, uniteResults} from '../service';
 
 const {formatReportResult} = formatters;
 
@@ -109,13 +111,9 @@ export default withErrorHandling(
     }
 
     render() {
-      const {
-        report: {result},
-        errorMessage,
-        disableReportScrolling
-      } = this.props;
+      const {report, errorMessage, disableReportScrolling, updateReport} = this.props;
 
-      if (!result || typeof result !== 'object') {
+      if (!report.result || typeof report.result !== 'object') {
         return <ReportBlankSlate errorMessage={errorMessage} />;
       }
 
@@ -124,14 +122,20 @@ export default withErrorHandling(
       }
 
       return (
-        <TableRenderer disableReportScrolling={disableReportScrolling} {...this.formatData()} />
+        <ColumnRearrangement report={report} updateReport={updateReport}>
+          <TableRenderer disableReportScrolling={disableReportScrolling} {...this.formatData()} />
+        </ColumnRearrangement>
       );
     }
+
+    updateSorting = (by, order) => {
+      this.props.updateReport({parameters: {sorting: {$set: {by, order}}}}, true);
+    };
 
     formatData = () => {
       const {
         report: {reportType, combined, data, processInstanceCount, decisionInstanceCount, result},
-        updateSorting
+        updateReport
       } = this.props;
 
       const {
@@ -156,7 +160,7 @@ export default withErrorHandling(
             endpoints: this.state.camundaEndpoints,
             reportType
           }),
-          updateSorting,
+          updateSorting: updateReport && this.updateSorting,
           sorting: parameters && parameters.sorting
         };
       }

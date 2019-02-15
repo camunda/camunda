@@ -4,7 +4,8 @@ import {shallow} from 'enzyme';
 import WrappedTable from './Table';
 import {processRawData} from 'services';
 
-import {getCamundaEndpoints, getRelativeValue, getFormattedLabels, getBodyRows} from './service';
+import {getCamundaEndpoints, getFormattedLabels, getBodyRows} from './service';
+import {getRelativeValue} from '../service';
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -20,19 +21,6 @@ jest.mock('./service', () => {
   return {
     ...rest,
     getCamundaEndpoints: jest.fn().mockReturnValue('camundaEndpoint'),
-    getRelativeValue: jest.fn(),
-    uniteResults: jest.fn().mockReturnValue([
-      {
-        a: 1,
-        b: 2,
-        c: 3
-      },
-      {
-        a: 1,
-        b: 2,
-        c: 3
-      }
-    ]),
     getFormattedLabels: jest
       .fn()
       .mockReturnValue([
@@ -48,6 +36,22 @@ jest.mock('./service', () => {
       ])
   };
 });
+
+jest.mock('../service', () => ({
+  getRelativeValue: jest.fn(),
+  uniteResults: jest.fn().mockReturnValue([
+    {
+      a: 1,
+      b: 2,
+      c: 3
+    },
+    {
+      a: 1,
+      b: 2,
+      c: 3
+    }
+  ])
+}));
 
 const report = {
   reportType: 'process',
@@ -362,4 +366,14 @@ it('should not include a column in a combined report if it is hidden in the conf
     ],
     body: [['a', 1, 1], ['b', 2, 2], ['c', 3, 3]]
   });
+});
+
+it('should set the correct parameters when updating sorting', () => {
+  const spy = jest.fn();
+  const node = shallow(<Table {...props} report={{...report, result: {}}} updateReport={spy} />);
+
+  node.instance().updateSorting('columnId', 'desc');
+
+  expect(spy).toHaveBeenCalled();
+  expect(spy.mock.calls[0][0].parameters.sorting).toEqual({$set: {by: 'columnId', order: 'desc'}});
 });

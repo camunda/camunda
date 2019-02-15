@@ -189,23 +189,6 @@ it('should set conflict state when conflict happens on save button click', async
   expect(node.state().conflict.items).toEqual(conflictedItems);
 });
 
-it('should set the correct parameters when updating sorting', () => {
-  const node = shallow(<ReportEdit report={report} />).dive();
-
-  evaluateReport.mockClear();
-
-  node
-    .find('ReportRenderer')
-    .prop('customProps')
-    .table.updateSorting('columnId', 'desc');
-
-  expect(evaluateReport).toHaveBeenCalled();
-  expect(evaluateReport.mock.calls[0][0].data.parameters.sorting).toEqual({
-    by: 'columnId',
-    order: 'desc'
-  });
-});
-
 it('should invok updateOverview when saving the report', async () => {
   saveReport.mockClear();
   saveReport.mockReturnValue({});

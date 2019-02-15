@@ -187,16 +187,6 @@ const exampleDurationReport = {
   }
 };
 
-it('should call the applyAddons function if provided', () => {
-  const spy = jest.fn();
-  const node = shallow(<ProcessReportRenderer report={exampleDurationReport} applyAddons={spy} />);
-  node.setState({
-    loaded: true
-  });
-
-  expect(spy).toHaveBeenCalled();
-});
-
 it('should include the instance count if indicated in the config', () => {
   const report = {
     combined: false,

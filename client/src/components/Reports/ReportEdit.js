@@ -18,8 +18,6 @@ import ReportControlPanel from './controlPanels/ReportControlPanel';
 import DecisionControlPanel from './controlPanels/DecisionControlPanel';
 import CombinedReportPanel from './controlPanels/CombinedReportPanel';
 
-import ColumnRearrangement from './ColumnRearrangement';
-
 export default withErrorHandling(
   class ReportEdit extends Component {
     state = {
@@ -140,35 +138,6 @@ export default withErrorHandling(
       );
     };
 
-    applyAddons = (...addons) => (Component, props) =>
-      this.renderWrapperAddons(addons, Component, props);
-
-    renderWrapperAddons = ([{Wrapper}, ...rest], Component, props) => {
-      const renderedRest = rest.length ? (
-        this.renderWrapperAddons(rest, Component, props)
-      ) : (
-        <Component {...props} />
-      );
-
-      if (Wrapper) {
-        return (
-          <Wrapper
-            report={this.state.report}
-            data={this.state.report.data}
-            updateReport={this.updateReport}
-          >
-            {renderedRest}
-          </Wrapper>
-        );
-      } else {
-        return renderedRest;
-      }
-    };
-
-    updateSorting = (by, order) => {
-      this.updateReport({parameters: {sorting: {$set: {by, order}}}}, true);
-    };
-
     closeConfirmModal = () => {
       this.setState({
         confirmModalVisible: false,
@@ -233,15 +202,7 @@ export default withErrorHandling(
                 {loadingReportData ? (
                   <LoadingIndicator />
                 ) : (
-                  <ReportRenderer
-                    report={report}
-                    applyAddons={this.applyAddons(ColumnRearrangement)}
-                    customProps={{
-                      table: {
-                        updateSorting: this.updateSorting
-                      }
-                    }}
-                  />
+                  <ReportRenderer report={report} updateReport={this.updateReport} />
                 )}
               </div>
               {combined && <CombinedReportPanel report={report} updateReport={this.updateReport} />}
