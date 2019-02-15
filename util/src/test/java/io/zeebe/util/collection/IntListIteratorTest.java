@@ -37,7 +37,7 @@ public class IntListIteratorTest {
     final IntListIterator iterator = new IntListIterator(NUMBERS);
 
     // then
-    assertThat(iterator).containsExactly(1, 2, 3);
+    assertThat(iterator).toIterable().containsExactly(1, 2, 3);
   }
 
   @Test
