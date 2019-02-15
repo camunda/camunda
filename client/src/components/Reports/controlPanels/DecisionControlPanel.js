@@ -2,6 +2,7 @@ import React from 'react';
 import {Popover, Dropdown, Labeled} from 'components';
 
 import DecisionDefinitionSelection from './DecisionDefinitionSelection';
+import {Configuration} from './Configuration';
 
 import {isChecked} from './service';
 import {getDataKeys, reportConfig, loadDecisionDefinitionXml} from 'services';
@@ -32,7 +33,7 @@ export default class DecisionControlPanel extends React.Component {
 
   render() {
     const {
-      data: {decisionDefinitionKey, decisionDefinitionVersion}
+      data: {decisionDefinitionKey, decisionDefinitionVersion, visualization}
     } = this.props.report;
     return (
       <div className="DecisionControlPanel ReportControlPanel">
@@ -63,6 +64,11 @@ export default class DecisionControlPanel extends React.Component {
               {this.renderDropdown('visualization', decisionConfig.options.visualization)}
             </Labeled>
           </li>
+          <Configuration
+            type={visualization}
+            onChange={this.props.updateReport}
+            report={this.props.report}
+          />
         </ul>
       </div>
     );

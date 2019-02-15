@@ -9,10 +9,7 @@ exports[`should display meaningful data if there are no evaluations 1`] = `
     renderIn="htmlA"
   >
     <i>
-      0
-       (
-      0
-      %)
+      0 (0%)
     </i>
   </DmnJsPortal>
   <DmnJsPortal
@@ -20,10 +17,7 @@ exports[`should display meaningful data if there are no evaluations 1`] = `
     renderIn="htmlB"
   >
     <i>
-      0
-       (
-      0
-      %)
+      0 (0%)
     </i>
   </DmnJsPortal>
   <DmnJsPortal
@@ -46,10 +40,7 @@ exports[`should render content in DmnJsPortals 1`] = `
     renderIn="htmlA"
   >
     <i>
-      1
-       (
-      33.3
-      %)
+      1 (33.3%)
     </i>
   </DmnJsPortal>
   <DmnJsPortal
@@ -57,10 +48,7 @@ exports[`should render content in DmnJsPortals 1`] = `
     renderIn="htmlB"
   >
     <i>
-      2
-       (
-      66.7
-      %)
+      2 (66.7%)
     </i>
   </DmnJsPortal>
   <DmnJsPortal

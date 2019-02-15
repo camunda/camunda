@@ -8,39 +8,25 @@ import './ColumnSelection.scss';
 
 const {convertCamelToSpaces} = formatters;
 
-const VARIABLE_PREFIX = 'var__';
+const labels = {
+  var: 'Variable: ',
+  inp: 'Input Variable: ',
+  out: 'Output Variable: '
+};
 
 export default function ColumnSelection({report, onChange}) {
   const {data} = report;
   const columns = report.result[0];
   const excludedColumns = data.configuration.excludedColumns || [];
-  const normalColumns = Object.keys(columns).filter(entry => entry !== 'variables');
-  const variableColumns = Object.keys(columns.variables);
-  const allColumns = [
-    ...normalColumns,
-    ...variableColumns.map(variable => VARIABLE_PREFIX + variable)
-  ];
+  const allColumns = Object.keys(columns).reduce((prev, curr) => {
+    const value = columns[curr];
+    if (typeof value !== 'object' || value === null) {
+      return [...prev, curr];
+    } else {
+      return [...prev, ...Object.keys(value).map(key => `${curr.substring(0, 3)}__${key}`)];
+    }
+  }, []);
   const excludedColumnsCount = excludedColumns.length;
-
-  const renderEntry = (prefix = '', label = '') => column => (
-    <div key={column} className="ColumnSelection__entry">
-      <Switch
-        className="ColumnSelection__Switch"
-        checked={!excludedColumns.includes(prefix + column)}
-        onChange={({target: {checked}}) => {
-          if (checked) {
-            onChange({
-              excludedColumns: {$set: excludedColumns.filter(entry => prefix + column !== entry)}
-            });
-          } else {
-            onChange({excludedColumns: {$set: excludedColumns.concat(prefix + column)}});
-          }
-        }}
-      />
-      <b>{label}</b>
-      {prefix === 'var__' ? column : convertCamelToSpaces(column)}
-    </div>
-  );
 
   return (
     <fieldset className="ColumnSelection">
@@ -51,8 +37,42 @@ export default function ColumnSelection({report, onChange}) {
         enableAll={() => onChange({excludedColumns: {$set: []}})}
         disableAll={() => onChange({excludedColumns: {$set: allColumns}})}
       />
-      {normalColumns.map(renderEntry())}
-      {variableColumns.map(renderEntry(VARIABLE_PREFIX, 'Variable: '))}
+      {allColumns.map(column => {
+        let prefix, name;
+
+        if (column.includes('__')) {
+          [prefix, name] = column.split('__');
+          if (prefix === 'inp') {
+            name = columns.inputVariables[name].name;
+          } else if (prefix === 'out') {
+            name = columns.outputVariables[name].name;
+          }
+          prefix = labels[prefix];
+        } else {
+          prefix = '';
+          name = convertCamelToSpaces(column);
+        }
+
+        return (
+          <div key={column} className="ColumnSelection__entry">
+            <Switch
+              className="ColumnSelection__Switch"
+              checked={!excludedColumns.includes(column)}
+              onChange={({target: {checked}}) => {
+                if (checked) {
+                  onChange({
+                    excludedColumns: {$set: excludedColumns.filter(entry => column !== entry)}
+                  });
+                } else {
+                  onChange({excludedColumns: {$set: excludedColumns.concat(column)}});
+                }
+              }}
+            />
+            <b>{prefix}</b>
+            {name}
+          </div>
+        );
+      })}
     </fieldset>
   );
 }

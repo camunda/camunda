@@ -40,16 +40,29 @@ export default class DecisionTable extends React.Component {
   }
 
   renderRuleCell = ruleId => {
-    const {result, decisionInstanceCount} = this.props.report;
+    const {
+      result,
+      decisionInstanceCount,
+      data: {
+        configuration: {hideAbsoluteValue, hideRelativeValue}
+      }
+    } = this.props.report;
 
     const resultNumber = result[ruleId] || 0;
-    const percentage = Math.round((resultNumber / decisionInstanceCount) * 1000) / 10;
+    const percentage = Math.round((resultNumber / decisionInstanceCount) * 1000) / 10 || 0;
+
+    let outputString = `${resultNumber} (${percentage}%)`;
+    if (hideAbsoluteValue && hideRelativeValue) {
+      outputString = '';
+    } else if (hideAbsoluteValue) {
+      outputString = percentage + '%';
+    } else if (hideRelativeValue) {
+      outputString = resultNumber;
+    }
 
     return (
       <DmnJsPortal key={ruleId} renderIn={this.state.entryPoints.rules[ruleId]}>
-        <i>
-          {resultNumber} ({percentage || 0}%)
-        </i>
+        <i>{outputString}</i>
       </DmnJsPortal>
     );
   };

@@ -1,7 +1,7 @@
 import React from 'react';
 
 import {LoadingIndicator} from 'components';
-import {getFlowNodeNames, formatters} from 'services';
+import {getFlowNodeNames} from 'services';
 import ReportBlankSlate from './ReportBlankSlate';
 
 import {isEmpty, getFormatter} from './service';
@@ -59,8 +59,7 @@ export default class ProcessReportRenderer extends React.Component {
 
     const {
       report: {
-        data: {configuration, view},
-        processInstanceCount
+        data: {view}
       }
     } = this.props;
 
@@ -77,19 +76,9 @@ export default class ProcessReportRenderer extends React.Component {
     };
 
     return (
-      <>
-        <div className="component">
-          <Component {...props} />
-        </div>
-        {configuration.showInstanceCount && (
-          <div className="additionalInfo">
-            Total Instance
-            <br />
-            Count:
-            <b>{formatters.frequency(processInstanceCount)}</b>
-          </div>
-        )}
-      </>
+      <div className="component">
+        <Component {...props} />
+      </div>
     );
   }
 

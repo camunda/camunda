@@ -46,3 +46,27 @@ it('should call change with an empty array when all columns switch is enabled', 
 
   expect(spy).toHaveBeenCalledWith({excludedColumns: {$set: []}});
 });
+
+it('should provde a sane interface for decision tables', () => {
+  const node = shallow(
+    <ColumnSelection
+      report={{
+        data: {configuration: {}},
+        result: [
+          {
+            decisionDefinitionId: 'foo',
+            decisionDefinitionKey: 'bar',
+            inputVariables: {
+              crypticId: {name: 'Cool Name'}
+            },
+            outputVariables: {
+              clause7: {name: 'Klaus Seven'}
+            }
+          }
+        ]
+      }}
+    />
+  );
+
+  expect(node).toMatchSnapshot();
+});

@@ -187,35 +187,6 @@ const exampleDurationReport = {
   }
 };
 
-it('should include the instance count if indicated in the config', () => {
-  const report = {
-    combined: false,
-    reportType: 'process',
-    data: {
-      processDefinitionKey: 'aKey',
-      processDefinitionVersion: '1',
-      configuration: {showInstanceCount: true},
-      view: {
-        operation: 'rawData'
-      },
-      groupBy: {
-        type: ''
-      },
-      visualization: 'table'
-    },
-    processInstanceCount: 723,
-    result: []
-  };
-
-  const node = shallow(<ProcessReportRenderer report={report} />);
-  node.setState({
-    loaded: true
-  });
-
-  expect(node.find('.additionalInfo')).toBePresent();
-  expect(node.find('.additionalInfo').text()).toContain('723');
-});
-
 it('should pass the report to the visualization component', () => {
   const node = shallow(<ProcessReportRenderer report={exampleDurationReport} type="process" />);
   node.setState({

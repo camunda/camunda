@@ -1,0 +1,69 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should provde a sane interface for decision tables 1`] = `
+<fieldset
+  className="ColumnSelection"
+>
+  <legend>
+    Table columns to include
+  </legend>
+  <AllColumnsButtons
+    allDisabled={false}
+    allEnabled={true}
+    disableAll={[Function]}
+    enableAll={[Function]}
+  />
+  <div
+    className="ColumnSelection__entry"
+    key="decisionDefinitionId"
+  >
+    <Switch
+      checked={true}
+      className="ColumnSelection__Switch"
+      onChange={[Function]}
+    />
+    <b />
+    Decision Definition Id
+  </div>
+  <div
+    className="ColumnSelection__entry"
+    key="decisionDefinitionKey"
+  >
+    <Switch
+      checked={true}
+      className="ColumnSelection__Switch"
+      onChange={[Function]}
+    />
+    <b />
+    Decision Definition Key
+  </div>
+  <div
+    className="ColumnSelection__entry"
+    key="inp__crypticId"
+  >
+    <Switch
+      checked={true}
+      className="ColumnSelection__Switch"
+      onChange={[Function]}
+    />
+    <b>
+      Input Variable: 
+    </b>
+    Cool Name
+  </div>
+  <div
+    className="ColumnSelection__entry"
+    key="out__clause7"
+  >
+    <Switch
+      checked={true}
+      className="ColumnSelection__Switch"
+      onChange={[Function]}
+    />
+    <b>
+      Output Variable: 
+    </b>
+    Klaus Seven
+  </div>
+</fieldset>
+`;

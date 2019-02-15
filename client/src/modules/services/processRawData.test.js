@@ -130,6 +130,31 @@ it('should show no data message when all column are excluded', () => {
   });
 });
 
+it('should show no data message when all column are excluded for decision tables', () => {
+  const data = [
+    {
+      decisionInstanceId: 'foo',
+      prop2: 'bar',
+      inputVariables: {
+        var1: {id: 'var1', value: 12, name: 'Var 1'}
+      },
+      outputVariables: {
+        result: {id: 'result', values: [1], name: 'Result'}
+      }
+    }
+  ];
+  expect(
+    processRawData({
+      data,
+      excludedColumns: ['decisionInstanceId', 'prop2', 'inp__var1', 'out__result'],
+      reportType: 'decision'
+    })
+  ).toEqual({
+    head: ['No Data'],
+    body: [['You need to enable at least one table column']]
+  });
+});
+
 it('should work for decision tables', () => {
   const data = [
     {

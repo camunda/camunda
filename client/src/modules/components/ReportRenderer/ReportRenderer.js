@@ -6,6 +6,8 @@ import DecisionReportRenderer from './DecisionReportRenderer';
 
 import {ErrorBoundary, Message} from 'components';
 
+import {formatters} from 'services';
+
 import './ReportRenderer.scss';
 
 const errorMessage =
@@ -23,6 +25,18 @@ export default function ReportRenderer(props) {
       <ErrorBoundary>
         <div className="ReportRenderer">
           <View {...props} errorMessage={errorMessage} />
+          {report.data.configuration.showInstanceCount && (
+            <div className="additionalInfo">
+              Total Instance
+              <br />
+              Count:
+              <b>
+                {formatters.frequency(
+                  report.processInstanceCount || report.decisionInstanceCount || 0
+                )}
+              </b>
+            </div>
+          )}
         </div>
       </ErrorBoundary>
     );

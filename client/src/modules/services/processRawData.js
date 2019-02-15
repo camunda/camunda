@@ -1,12 +1,22 @@
 import React from 'react';
 import {convertCamelToSpaces} from './formatters';
 
-function processDecisionRawData(data, columnOrder, endpoints) {
+function processDecisionRawData(data, columnOrder, endpoints, excludedColumns) {
   const instanceProps = Object.keys(data[0]).filter(
-    entry => entry !== 'inputVariables' && entry !== 'outputVariables'
+    entry =>
+      entry !== 'inputVariables' && entry !== 'outputVariables' && !excludedColumns.includes(entry)
   );
-  const inputVariables = Object.keys(data[0].inputVariables);
-  const outputVariables = Object.keys(data[0].outputVariables);
+
+  const inputVariables = Object.keys(data[0].inputVariables).filter(
+    entry => !excludedColumns.includes('inp__' + entry)
+  );
+  const outputVariables = Object.keys(data[0].outputVariables).filter(
+    entry => !excludedColumns.includes('out__' + entry)
+  );
+
+  if (instanceProps.length + inputVariables.length + outputVariables.length === 0) {
+    return {head: ['No Data'], body: [['You need to enable at least one table column']]};
+  }
 
   function applyBehavior(type, instance) {
     const content = instance[type];
@@ -71,7 +81,7 @@ export default function processRawData({
   reportType
 }) {
   if (reportType === 'decision') {
-    return processDecisionRawData(data, columnOrder, endpoints);
+    return processDecisionRawData(data, columnOrder, endpoints, excludedColumns);
   }
 
   const allColumnsLength = Object.keys(data[0]).length - 1 + Object.keys(data[0].variables).length;
@@ -161,12 +171,14 @@ function sortHead(head, columnOrder) {
 }
 
 function sortNested(head, columnOrder, label, accessor) {
-  return head.filter(entry => entry.label === label).map(entry => {
-    return {
-      ...entry,
-      columns: [...entry.columns].sort(byOrder(columnOrder[accessor]))
-    };
-  });
+  return head
+    .filter(entry => entry.label === label)
+    .map(entry => {
+      return {
+        ...entry,
+        columns: [...entry.columns].sort(byOrder(columnOrder[accessor]))
+      };
+    });
 }
 
 function onlyNonNestedColumns(entry) {
