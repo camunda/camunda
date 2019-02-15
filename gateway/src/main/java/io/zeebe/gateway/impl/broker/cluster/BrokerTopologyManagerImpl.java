@@ -17,17 +17,15 @@ package io.zeebe.gateway.impl.broker.cluster;
 
 import static io.zeebe.gateway.impl.broker.BrokerClientImpl.LOG;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.Member;
-import io.zeebe.raft.state.RaftState;
+import io.zeebe.protocol.impl.data.cluster.BrokerInfo;
 import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
-import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
@@ -36,7 +34,6 @@ public class BrokerTopologyManagerImpl extends Actor
   protected final ClientOutput output;
   protected final BiConsumer<Integer, SocketAddress> registerEndpoint;
   protected final AtomicReference<BrokerClusterStateImpl> topology;
-  private final ObjectMapper objectMapper;
   private String atomixMemberId;
 
   public BrokerTopologyManagerImpl(
@@ -46,9 +43,7 @@ public class BrokerTopologyManagerImpl extends Actor
     this.output = output;
     this.registerEndpoint = registerEndpoint;
     this.atomixMemberId = atomixMemberId;
-
-    this.objectMapper = new ObjectMapper();
-    this.topology = new AtomicReference<>(new BrokerClusterStateImpl());
+    this.topology = new AtomicReference<>(null);
   }
 
   public ActorFuture<Void> close() {
@@ -61,45 +56,45 @@ public class BrokerTopologyManagerImpl extends Actor
     return topology.get();
   }
 
+  public void setTopology(BrokerClusterStateImpl topology) {
+    this.topology.set(topology);
+  }
+
   @Override
   public void event(ClusterMembershipEvent event) {
-    actor.call(
-        () -> {
-          LOG.debug("{}: Received event: {}", atomixMemberId, event);
-          final Member subject = event.subject();
-          final Type eventType = event.type();
+    LOG.debug("{}: Received event: {}", atomixMemberId, event);
+    final Member subject = event.subject();
+    final Type eventType = event.type();
+    final BrokerInfo brokerInfo = BrokerInfo.fromProperties(subject.properties());
 
-          final BrokerClusterStateImpl newTopology = new BrokerClusterStateImpl(topology.get());
-          final TopologyDistributionInfo remoteTopology = extractTopologyFromProperties(subject);
+    if (brokerInfo != null) {
+      actor.call(
+          () -> {
+            final BrokerClusterStateImpl newTopology = new BrokerClusterStateImpl(topology.get());
 
-          if (remoteTopology == null) {
-            LOG.debug("{}: Ignoring event from {}", atomixMemberId, subject.id());
-            return;
-          }
+            switch (eventType) {
+              case MEMBER_ADDED:
+                newTopology.addBrokerIfAbsent(brokerInfo.getNodeId());
+                processProperties(brokerInfo, newTopology);
+                break;
 
-          switch (eventType) {
-            case MEMBER_ADDED:
-              newTopology.addBrokerIfAbsent(remoteTopology.getNodeId());
-              processProperties(remoteTopology, newTopology);
-              break;
+              case METADATA_CHANGED:
+                processProperties(brokerInfo, newTopology);
+                break;
 
-            case METADATA_CHANGED:
-              processProperties(remoteTopology, newTopology);
-              break;
+              case MEMBER_REMOVED:
+                newTopology.removeBroker(brokerInfo.getNodeId());
+                processProperties(brokerInfo, newTopology);
+                break;
+            }
 
-            case MEMBER_REMOVED:
-              newTopology.removeBroker(remoteTopology.getNodeId());
-              processProperties(remoteTopology, newTopology);
-              break;
-          }
-
-          topology.set(newTopology);
-        });
+            topology.set(newTopology);
+          });
+    }
   }
 
   // Update topology information based on the distributed event
-  private void processProperties(
-      TopologyDistributionInfo remoteTopology, BrokerClusterStateImpl newTopology) {
+  private void processProperties(BrokerInfo remoteTopology, BrokerClusterStateImpl newTopology) {
 
     newTopology.setClusterSize(remoteTopology.getClusterSize());
     newTopology.setPartitionsCount(remoteTopology.getPartitionsCount());
@@ -108,32 +103,13 @@ public class BrokerTopologyManagerImpl extends Actor
     for (Integer partitionId : remoteTopology.getPartitionRoles().keySet()) {
       newTopology.addPartitionIfAbsent(partitionId);
 
-      if (remoteTopology.getPartitionNodeRole(partitionId) == RaftState.LEADER) {
+      if (remoteTopology.getPartitionNodeRole(partitionId)) {
         newTopology.setPartitionLeader(partitionId, remoteTopology.getNodeId());
       }
     }
 
-    final String clientAddress = remoteTopology.getApiAddress("client");
+    final String clientAddress = remoteTopology.getApiAddress(BrokerInfo.CLIENT_API_PROPERTY);
     newTopology.setBrokerAddressIfPresent(remoteTopology.getNodeId(), clientAddress);
     registerEndpoint.accept(remoteTopology.getNodeId(), SocketAddress.from(clientAddress));
-  }
-
-  // Try to extract a topology from the node's properties
-  private TopologyDistributionInfo extractTopologyFromProperties(Member eventSource) {
-    final String jsonTopology = eventSource.properties().getProperty("topology");
-    if (jsonTopology == null) {
-      LOG.debug("Node {} has no topology information", eventSource.id());
-      return null;
-    }
-
-    final TopologyDistributionInfo distInfo;
-    try {
-      distInfo = objectMapper.readValue(jsonTopology, TopologyDistributionInfo.class);
-    } catch (IOException e) {
-      LOG.error("Error reading topology {} of node {}", e.getMessage(), eventSource.id());
-      return null;
-    }
-
-    return distInfo;
   }
 }
