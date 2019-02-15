@@ -40,10 +40,10 @@ export function createColors(amount, isDark) {
   return colors;
 }
 
-export function determineBarColor({unit, value, isBelow}, data, datasetColor, isCombined, isDark) {
+export function determineBarColor({unit, value, isBelow}, data, datasetColor, isStriped, isDark) {
   const barValue = unit ? convertToMilliseconds(value, unit) : value;
 
-  const targetColor = isCombined ? getStripedColor(datasetColor) : getColorFor('targetBar', isDark);
+  const targetColor = isStriped ? getStripedColor(datasetColor) : getColorFor('targetBar', isDark);
 
   return Object.values(data).map(height => {
     if (isBelow) return height < barValue ? datasetColor : targetColor;

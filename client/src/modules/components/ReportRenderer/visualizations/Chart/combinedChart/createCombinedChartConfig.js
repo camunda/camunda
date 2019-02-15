@@ -1,6 +1,6 @@
 import {drawHorizentalLine} from '../service';
-import createChartData from '../createChartData';
-import createChartOptions from '../createChartOptions';
+import createCombinedChartData from './createCombinedChartData';
+import createCombinedChartOptions from './createCombinedChartOptions';
 
 export default function createCombinedChartConfig(props) {
   const {visualization} = props.report.data;
@@ -8,8 +8,8 @@ export default function createCombinedChartConfig(props) {
 
   return {
     type: chartVisualization,
-    data: createChartData(props),
-    options: createChartOptions(props),
+    data: createCombinedChartData(props),
+    options: createCombinedChartOptions(props),
     plugins: [
       {
         afterDatasetsDraw: drawHorizentalLine

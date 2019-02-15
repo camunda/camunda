@@ -1,27 +1,19 @@
-import {getColorFor, createColors, determineBarColor} from './colorsUtils';
-import {
-  createDurationFormattingOptions,
-  getFormattedTargetValue,
-  generateLegendLabels,
-  formatTooltip,
-  getTooltipLabelColor
-} from './service';
+import {createDurationFormattingOptions, getFormattedTargetValue} from './service';
+import {formatTooltip, getTooltipLabelColor} from '../service';
 
-export default function createChartOptions({report, targetValue, theme, formatter}) {
+import {getColorFor, createColors, determineBarColor} from '../colorsUtils';
+
+export default function createDefaultChartOptions({report, targetValue, theme, formatter}) {
   const {
     data: {visualization, view, configuration},
     result,
     processInstanceCount,
-    decisionInstanceCount,
-    combined
+    decisionInstanceCount
   } = report;
 
   const isDark = theme === 'dark';
-  const stacked = visualization === 'number';
-  const property = combined ? Object.values(result)[0].data.view.property : view.property;
-  const instanceCountArr = combined
-    ? Object.values(result).map(report => report.processInstanceCount)
-    : [processInstanceCount || decisionInstanceCount || 0];
+  const instanceCountArr = [processInstanceCount || decisionInstanceCount || 0];
+  const maxValue = view.property === 'duration' ? Math.max(...Object.values(result)) : 0;
 
   let options;
   switch (visualization) {
@@ -30,16 +22,7 @@ export default function createChartOptions({report, targetValue, theme, formatte
       break;
     case 'line':
     case 'bar':
-    case 'number':
-      options = createBarOptions(
-        result,
-        targetValue,
-        configuration,
-        property,
-        stacked,
-        combined,
-        isDark
-      );
+      options = createBarOptions(targetValue, configuration, false, maxValue, isDark);
       break;
     default:
       options = {};
@@ -62,7 +45,7 @@ export default function createChartOptions({report, targetValue, theme, formatte
             configuration,
             formatter,
             instanceCountArr,
-            property,
+            view.property,
             visualization
           );
         },
@@ -72,26 +55,11 @@ export default function createChartOptions({report, targetValue, theme, formatte
   };
 }
 
-function createBarOptions(
-  result,
-  targetValue,
-  configuration,
-  property,
-  stacked,
-  isCombined,
-  isDark
-) {
+export function createBarOptions(targetValue, configuration, stacked, maxDuration, isDark) {
   const targetLine = targetValue && getFormattedTargetValue(targetValue);
   return {
     ...(configuration.pointMarkers === false ? {elements: {point: {radius: 0}}} : {}),
-    legend: {
-      display: isCombined,
-      labels: {
-        generateLabels: generateLegendLabels
-      },
-      // prevent hiding datasets when clicking on their legends
-      onClick: e => e.stopPropagation()
-    },
+    legend: {display: false},
     scales: {
       yAxes: [
         {
@@ -103,9 +71,7 @@ function createBarOptions(
             labelString: configuration.yLabel
           },
           ticks: {
-            ...(property === 'duration'
-              ? createDurationFormattingOptions(result, targetLine, isCombined)
-              : {}),
+            ...(maxDuration ? createDurationFormattingOptions(targetLine, maxDuration) : {}),
             beginAtZero: true,
             fontColor: getColorFor('label', isDark),
             suggestedMax: targetLine
@@ -142,7 +108,7 @@ function createPieOptions(isDark) {
   };
 }
 
-export function createDatasetOptions(type, data, targetValue, datasetColor, isCombined, isDark) {
+export function createDatasetOptions(type, data, targetValue, datasetColor, isStriped, isDark) {
   switch (type) {
     case 'pie':
       return {
@@ -160,7 +126,7 @@ export function createDatasetOptions(type, data, targetValue, datasetColor, isCo
     case 'bar':
     case 'number':
       const barColor = targetValue
-        ? determineBarColor(targetValue, data, datasetColor, isCombined, isDark)
+        ? determineBarColor(targetValue, data, datasetColor, isStriped, isDark)
         : datasetColor;
       return {
         borderColor: barColor,
@@ -175,24 +141,4 @@ export function createDatasetOptions(type, data, targetValue, datasetColor, isCo
         borderWidth: undefined
       };
   }
-}
-
-export function getTargetLineOptions(color, isBelowTarget, isCombined, isDark) {
-  return {
-    targetOptions: {
-      borderColor: isCombined ? color : getColorFor('targetBar', isDark),
-      pointBorderColor: getColorFor('targetBar', isDark),
-      backgroundColor: 'transparent',
-      legendColor: color,
-      borderWidth: 2,
-      renderArea: isBelowTarget ? 'bottom' : 'top'
-    },
-    normalLineOptions: {
-      borderColor: color,
-      backgroundColor: 'transparent',
-      legendColor: color,
-      borderWidth: 2,
-      renderArea: isBelowTarget ? 'top' : 'bottom'
-    }
-  };
 }

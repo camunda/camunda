@@ -1,6 +1,6 @@
 import {drawHorizentalLine} from '../service';
-import createChartData from '../createChartData';
-import createChartOptions from '../createChartOptions';
+import createDefaultChartData from './createDefaultChartData';
+import createDefaultChartOptions from './createDefaultChartOptions';
 
 export default function createDefaultChartConfig(props) {
   const {
@@ -9,8 +9,8 @@ export default function createDefaultChartConfig(props) {
 
   return {
     type: visualization,
-    data: createChartData(props),
-    options: createChartOptions(props),
+    data: createDefaultChartData(props),
+    options: createDefaultChartOptions(props),
     plugins: [
       {
         afterDatasetsDraw: drawHorizentalLine
