@@ -58,7 +58,7 @@ public class MessageOutputMappingTest {
   private static final String CORRELATION_VARIABLE_PATH = "$." + CORRELATION_VARIABLE;
 
   public static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public static ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomixAddress);
+  public static ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
 
   @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 

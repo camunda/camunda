@@ -65,18 +65,21 @@ import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.junit.rules.ExternalResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ClientApiRule extends ExternalResource {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ClientApiRule.class);
 
   public static final long DEFAULT_LOCK_DURATION = 10000L;
   private static final String DEFAULT_WORKER = "defaultWorker";
   private static final String DEFAULT_CLUSTER_NAME = "zeebe-cluster";
 
   protected final int nodeId;
-  protected final Supplier<SocketAddress> atomixAddressSupplier;
+  protected final Supplier<AtomixCluster> atomixSupplier;
   protected final int partitionCount;
   protected int nextPartitionId = 0;
-
   protected MsgPackHelper msgPackHelper;
 
   private final Int2ObjectHashMap<PartitionTestClient> testPartitionClients =
@@ -89,34 +92,20 @@ public class ClientApiRule extends ExternalResource {
   private ActorScheduler scheduler;
   private ObjectMapper objectMapper;
 
-  public ClientApiRule(final Supplier<SocketAddress> atomixAddressSupplier) {
-    this(0, 1, atomixAddressSupplier);
+  public ClientApiRule(final Supplier<AtomixCluster> atomixSupplier) {
+    this(0, 1, atomixSupplier);
   }
 
-  public ClientApiRule(final int nodeId, final int partitionCount, final Supplier<SocketAddress> atomixAddressSupplier) {
+  public ClientApiRule(final int nodeId, final int partitionCount, final Supplier<AtomixCluster> atomixSupplier) {
     this.nodeId = nodeId;
     this.partitionCount = partitionCount;
-    this.atomixAddressSupplier = atomixAddressSupplier;
+    this.atomixSupplier = atomixSupplier;
     objectMapper = new ObjectMapper();
   }
 
   @Override
   protected void before() throws Throwable {
-    this.atomix =
-        AtomixCluster.builder()
-            .withMemberId("clientApiRule")
-            .withClusterId(DEFAULT_CLUSTER_NAME)
-            .withAddress(
-                Address.from(
-                    atomixAddressSupplier.get().host(), SocketUtil.getNextAddress().port()))
-            .withMembershipProvider(
-                BootstrapDiscoveryProvider.builder()
-                    .withNodes(
-                        Address.from(
-                            atomixAddressSupplier.get().host(), atomixAddressSupplier.get().port()))
-                    .build())
-            .build();
-    atomix.start().join();
+    this.atomix = atomixSupplier.get();
 
     scheduler =
         ActorScheduler.newActorScheduler()
@@ -146,8 +135,6 @@ public class ClientApiRule extends ExternalResource {
 
   @Override
   protected void after() {
-    atomix.stop().join();
-
     if (transport != null) {
       transport.close();
     }
@@ -230,6 +217,11 @@ public class ClientApiRule extends ExternalResource {
 
   private Stream<BrokerInfo> getBrokerInfoStream() {
     return atomix.getMembershipService().getMembers().stream()
+        .map(
+            m -> {
+              LOG.debug("Atomix member: {}", m);
+              return m;
+            })
         .map(Member::properties)
         .map(BrokerInfo::fromProperties)
         .filter(Objects::nonNull);

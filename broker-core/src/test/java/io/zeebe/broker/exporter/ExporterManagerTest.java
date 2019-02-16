@@ -52,7 +52,7 @@ public class ExporterManagerTest {
             brokerCfg.getExporters().add(exporterCfg);
           });
 
-  public ClientApiRule clientRule = new ClientApiRule(brokerRule::getAtomixAddress);
+  public ClientApiRule clientRule = new ClientApiRule(brokerRule::getAtomix);
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   @Test
