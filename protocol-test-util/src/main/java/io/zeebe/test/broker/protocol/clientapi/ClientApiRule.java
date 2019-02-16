@@ -21,8 +21,6 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.Member;
-import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
-import io.atomix.utils.net.Address;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.data.cluster.BrokerInfo;
 import io.zeebe.protocol.intent.JobBatchIntent;
@@ -31,7 +29,6 @@ import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transports;
-import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.util.Collections;
@@ -43,15 +40,19 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.junit.rules.ExternalResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ClientApiRule extends ExternalResource {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ClientApiRule.class);
 
   public static final long DEFAULT_LOCK_DURATION = 10000L;
   private static final String DEFAULT_WORKER = "defaultWorker";
   private static final String DEFAULT_CLUSTER_NAME = "zeebe-cluster";
 
   protected final int nodeId;
-  protected final Supplier<SocketAddress> atomixAddressSupplier;
+  protected final Supplier<AtomixCluster> atomixSupplier;
   private final Int2ObjectHashMap<PartitionTestClient> testPartitionClients =
       new Int2ObjectHashMap<>();
   private final ControlledActorClock controlledActorClock = new ControlledActorClock();
@@ -63,33 +64,19 @@ public class ClientApiRule extends ExternalResource {
   private ActorScheduler scheduler;
   private ObjectMapper objectMapper;
 
-  public ClientApiRule(final Supplier<SocketAddress> atomixAddressSupplier) {
-    this(0, atomixAddressSupplier);
+  public ClientApiRule(final Supplier<AtomixCluster> atomixSupplier) {
+    this(0, atomixSupplier);
   }
 
-  public ClientApiRule(final int nodeId, final Supplier<SocketAddress> atomixAddressSupplier) {
+  public ClientApiRule(final int nodeId, final Supplier<AtomixCluster> atomixSupplier) {
     this.nodeId = nodeId;
-    this.atomixAddressSupplier = atomixAddressSupplier;
+    this.atomixSupplier = atomixSupplier;
     objectMapper = new ObjectMapper();
   }
 
   @Override
   protected void before() throws Throwable {
-    this.atomix =
-        AtomixCluster.builder()
-            .withMemberId("clientApiRule")
-            .withClusterId(DEFAULT_CLUSTER_NAME)
-            .withAddress(
-                Address.from(
-                    atomixAddressSupplier.get().host(), SocketUtil.getNextAddress().port()))
-            .withMembershipProvider(
-                BootstrapDiscoveryProvider.builder()
-                    .withNodes(
-                        Address.from(
-                            atomixAddressSupplier.get().host(), atomixAddressSupplier.get().port()))
-                    .build())
-            .build();
-    atomix.start().join();
+    this.atomix = atomixSupplier.get();
 
     scheduler =
         ActorScheduler.newActorScheduler()
@@ -119,8 +106,6 @@ public class ClientApiRule extends ExternalResource {
 
   @Override
   protected void after() {
-    atomix.stop().join();
-
     if (transport != null) {
       transport.close();
     }
@@ -204,6 +189,11 @@ public class ClientApiRule extends ExternalResource {
 
   private Stream<BrokerInfo> getBrokerInfoStream() {
     return atomix.getMembershipService().getMembers().stream()
+        .map(
+            m -> {
+              LOG.debug("Atomix member: {}", m);
+              return m;
+            })
         .map(Member::properties)
         .map(BrokerInfo::fromProperties)
         .filter(Objects::nonNull);

@@ -50,7 +50,7 @@ public class JobOutputMappingTest {
   private static final String PROCESS_ID = "process";
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomixAddress);
+  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 

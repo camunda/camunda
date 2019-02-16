@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.test;
 
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_SERVICE;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.DEBUG_EXPORTER;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.HTTP_EXPORTER;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.TEST_RECORDER;
@@ -29,6 +30,7 @@ import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setReplicationApiP
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setSubscriptionApiPort;
 import static io.zeebe.broker.workflow.WorkflowServiceNames.WORKFLOW_REPOSITORY_SERVICE;
 
+import io.atomix.core.Atomix;
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.TestLoggers;
 import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
@@ -179,8 +181,8 @@ public class EmbeddedBrokerRule extends ExternalResource {
     return brokerCfg;
   }
 
-  public SocketAddress getAtomixAddress() {
-    return brokerCfg.getNetwork().getAtomix().toSocketAddress();
+  public Atomix getAtomix() {
+    return getService(ATOMIX_SERVICE);
   }
 
   public SocketAddress getClientAddress() {

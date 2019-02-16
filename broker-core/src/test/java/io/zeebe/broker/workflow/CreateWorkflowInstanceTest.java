@@ -62,7 +62,7 @@ public class CreateWorkflowInstanceTest {
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(setPartitionCount(3));
 
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomixAddress);
+  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
   private PartitionTestClient testClient;
 
   @Before
