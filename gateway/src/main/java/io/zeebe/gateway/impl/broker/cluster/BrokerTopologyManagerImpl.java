@@ -19,6 +19,7 @@ import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.Member;
+import io.zeebe.gateway.Loggers;
 import io.zeebe.protocol.impl.data.cluster.BrokerInfo;
 import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.SocketAddress;
@@ -63,6 +64,7 @@ public class BrokerTopologyManagerImpl extends Actor
     if (brokerInfo != null) {
       actor.call(
           () -> {
+            Loggers.GATEWAY_LOGGER.debug("Received membership event: {}", event);
             final BrokerClusterStateImpl newTopology = new BrokerClusterStateImpl(topology.get());
 
             switch (eventType) {
@@ -77,7 +79,6 @@ public class BrokerTopologyManagerImpl extends Actor
 
               case MEMBER_REMOVED:
                 newTopology.removeBroker(brokerInfo.getNodeId());
-                processProperties(brokerInfo, newTopology);
                 break;
             }
 

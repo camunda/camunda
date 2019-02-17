@@ -326,14 +326,6 @@ public class ClusteringRule extends ExternalResource {
             hasPartitionsWithReplicationFactor(topology, partitionCount, replicationFactor));
   }
 
-  /**
-   * TopologyImpl{brokers=[ BrokerInfoImpl{nodeId=0, host='0.0.0.0', port=25602, partitions=[
-   * PartitionInfoImpl{partitionId=0, role=LEADER}, PartitionInfoImpl{partitionId=1, role=FOLLOWER},
-   * PartitionInfoImpl{partitionId=2, role=FOLLOWER} ]}, BrokerInfoImpl{nodeId=1, host='0.0.0.0',
-   * port=25609, partitions=[ PartitionInfoImpl{partitionId=0, role=FOLLOWER},
-   * PartitionInfoImpl{partitionId=1, role=LEADER}, PartitionInfoImpl{partitionId=2, role=FOLLOWER}]
-   * }], clusterSize=3, partitionsCount=3, replicationFactor=3}
-   */
   private boolean hasPartitionsWithReplicationFactor(
       final List<BrokerInfo> brokers, final int partitionCount, final int replicationFactor) {
     final AtomicLong leaders = new AtomicLong();
@@ -444,8 +436,8 @@ public class ClusteringRule extends ExternalResource {
       final List<Integer> brokersLeadingPartitions = getBrokersLeadingPartitions(socketAddress);
       broker.close();
 
-      waitForNewLeaderOfPartitions(brokersLeadingPartitions, socketAddress);
       waitUntilBrokerIsRemovedFromTopology(socketAddress);
+      waitForNewLeaderOfPartitions(brokersLeadingPartitions, socketAddress);
     }
   }
 
@@ -467,7 +459,7 @@ public class ClusteringRule extends ExternalResource {
                 .filter(
                     b -> !(b.getHost().equals(oldLeader.host()) && b.getPort() == oldLeader.port()))
                 .flatMap(broker -> broker.getPartitions().stream())
-                .filter(p -> p.isLeader())
+                .filter(PartitionInfo::isLeader)
                 .map(PartitionInfo::getPartitionId)
                 .collect(Collectors.toSet())
                 .containsAll(partitions));
@@ -475,10 +467,7 @@ public class ClusteringRule extends ExternalResource {
 
   public void waitForTopology(final Function<List<BrokerInfo>, Boolean> topologyPredicate) {
     waitUntil(
-        () ->
-            brokers.values().stream()
-                .allMatch(b -> topologyPredicate.apply(getTopologyFromClient().getBrokers())),
-        TOPOLOGY_RETRIES);
+        () -> topologyPredicate.apply(getTopologyFromClient().getBrokers()), TOPOLOGY_RETRIES);
   }
 
   public long createWorkflowInstanceOnPartition(int partitionId, String bpmnProcessId) {

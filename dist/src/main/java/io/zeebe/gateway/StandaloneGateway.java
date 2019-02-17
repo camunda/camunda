@@ -26,12 +26,10 @@ import java.nio.file.Paths;
 
 public class StandaloneGateway {
 
-  private final GatewayCfg gatewayCfg;
   private final AtomixCluster atomixCluster;
   private final Gateway gateway;
 
   public StandaloneGateway(GatewayCfg gatewayCfg) {
-    this.gatewayCfg = gatewayCfg;
     atomixCluster = createAtomixCluster(gatewayCfg.getCluster());
     gateway = new Gateway(gatewayCfg, atomixCluster.getMembershipService()::addListener);
   }
