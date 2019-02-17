@@ -43,7 +43,7 @@ public class Gateway {
   }
 
   private final Function<GatewayCfg, ServerBuilder> serverBuilderFactory;
-  private final Consumer<ClusterMembershipEventListener> eventListenerConsumer;
+  private final Function<GatewayCfg, BrokerClient> brokerClientFactory;
   private final GatewayCfg gatewayCfg;
 
   private Server server;
@@ -52,20 +52,23 @@ public class Gateway {
 
   public Gateway(
       GatewayCfg gatewayCfg, Consumer<ClusterMembershipEventListener> eventListenerConsumer) {
-    this(gatewayCfg, eventListenerConsumer, DEFAULT_SERVER_BUILDER_FACTORY);
+    this(
+        gatewayCfg,
+        cfg -> new BrokerClientImpl(cfg, eventListenerConsumer),
+        DEFAULT_SERVER_BUILDER_FACTORY);
+  }
+
+  public Gateway(GatewayCfg gatewayCfg, Function<GatewayCfg, BrokerClient> brokerClientFactory) {
+    this(gatewayCfg, brokerClientFactory, DEFAULT_SERVER_BUILDER_FACTORY);
   }
 
   public Gateway(
       GatewayCfg gatewayCfg,
-      Consumer<ClusterMembershipEventListener> eventListenerConsumer,
+      Function<GatewayCfg, BrokerClient> brokerClientFactory,
       Function<GatewayCfg, ServerBuilder> serverBuilderFactory) {
     this.gatewayCfg = gatewayCfg;
-    this.eventListenerConsumer = eventListenerConsumer;
+    this.brokerClientFactory = brokerClientFactory;
     this.serverBuilderFactory = serverBuilderFactory;
-  }
-
-  public EndpointManager getEndpointManager() {
-    return endpointManager;
   }
 
   public GatewayCfg getGatewayCfg() {
@@ -89,7 +92,7 @@ public class Gateway {
   }
 
   protected BrokerClient buildBrokerClient() {
-    return new BrokerClientImpl(gatewayCfg, eventListenerConsumer);
+    return brokerClientFactory.apply(gatewayCfg);
   }
 
   public void listenAndServe() throws InterruptedException, IOException {

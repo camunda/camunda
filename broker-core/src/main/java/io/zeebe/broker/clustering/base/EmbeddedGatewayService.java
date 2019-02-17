@@ -20,11 +20,15 @@ package io.zeebe.broker.clustering.base;
 import io.atomix.cluster.AtomixCluster;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.gateway.Gateway;
+import io.zeebe.gateway.impl.broker.BrokerClient;
+import io.zeebe.gateway.impl.broker.BrokerClientImpl;
+import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import java.io.IOException;
+import java.util.function.Function;
 
 public class EmbeddedGatewayService implements Service<Gateway> {
 
@@ -40,7 +44,14 @@ public class EmbeddedGatewayService implements Service<Gateway> {
   @Override
   public void start(ServiceStartContext startContext) {
     final AtomixCluster atomix = atomixClusterInjector.getValue();
-    gateway = new Gateway(configuration.getGateway(), atomix.getMembershipService()::addListener);
+    final Function<GatewayCfg, BrokerClient> brokerClientFactory =
+        cfg ->
+            new BrokerClientImpl(
+                cfg,
+                atomix.getMembershipService()::addListener,
+                startContext.getScheduler(),
+                false);
+    gateway = new Gateway(configuration.getGateway(), brokerClientFactory);
     startContext.run(this::startGateway);
   }
 
