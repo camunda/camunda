@@ -16,17 +16,11 @@
 package io.zeebe.test;
 
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.commands.BrokerInfo;
-import io.zeebe.client.api.commands.PartitionInfo;
-import io.zeebe.client.api.commands.Topology;
-import java.util.List;
 import java.util.Properties;
 import java.util.function.Supplier;
 import org.junit.rules.ExternalResource;
 
 public class ClientRule extends ExternalResource {
-
-  protected int defaultPartition;
 
   protected ZeebeClient client;
 
@@ -44,10 +38,6 @@ public class ClientRule extends ExternalResource {
     return client;
   }
 
-  public int getDefaultPartition() {
-    return defaultPartition;
-  }
-
   @Override
   protected void before() {
     createClient();
@@ -55,28 +45,6 @@ public class ClientRule extends ExternalResource {
 
   public void createClient() {
     client = ZeebeClient.newClientBuilder().withProperties(properties.get()).build();
-    determineDefaultPartition();
-  }
-
-  private void determineDefaultPartition() {
-    final Topology topology = client.newTopologyRequest().send().join();
-
-    defaultPartition = -1;
-    final List<BrokerInfo> topologyBrokers = topology.getBrokers();
-
-    for (final BrokerInfo leader : topologyBrokers) {
-      final List<PartitionInfo> partitions = leader.getPartitions();
-      for (final PartitionInfo brokerPartitionState : partitions) {
-        if (brokerPartitionState.isLeader()) {
-          defaultPartition = brokerPartitionState.getPartitionId();
-          break;
-        }
-      }
-    }
-
-    if (defaultPartition < 0) {
-      throw new RuntimeException("Could not detect leader for default partition");
-    }
   }
 
   @Override
