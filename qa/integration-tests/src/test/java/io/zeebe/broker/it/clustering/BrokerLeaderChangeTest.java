@@ -36,7 +36,7 @@ public class BrokerLeaderChangeTest {
   public static final String NULL_PAYLOAD = null;
   public static final String JOB_TYPE = "testTask";
 
-  public Timeout testTimeout = Timeout.seconds(60);
+  public Timeout testTimeout = Timeout.seconds(120);
   public ClusteringRule clusteringRule = new ClusteringRule();
   public GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
