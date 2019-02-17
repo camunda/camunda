@@ -185,13 +185,12 @@ public class BrokerRequestManager extends Actor {
         determinePartitionIdForPublishMessageRequest((BrokerPublishMessageRequest) request);
       } else {
         // select next partition id for request
-        final int partitionId = dispatchStrategy.determinePartition();
+        int partitionId = dispatchStrategy.determinePartition();
         if (partitionId == BrokerClusterState.PARTITION_ID_NULL) {
-          // should not happen as the request manager fetches the topology before starting the
-          // request
-          throw new NoTopologyAvailableException(
-              "Expected to pick next broker against which to request from, "
-                  + "but no partitions available");
+          // could happen if the topology is not set yet, let's just try with partition 0 but we
+          // should find a better solution
+          // https://github.com/zeebe-io/zeebe/issues/2013
+          partitionId = 0;
         }
         request.setPartitionId(partitionId);
       }

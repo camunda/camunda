@@ -15,6 +15,7 @@
  */
 package io.zeebe.gateway;
 
+import io.atomix.cluster.ClusterMembershipEventListener;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.netty.NettyServerBuilder;
@@ -23,6 +24,7 @@ import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import org.slf4j.Logger;
 
@@ -41,18 +43,24 @@ public class Gateway {
   }
 
   private final Function<GatewayCfg, ServerBuilder> serverBuilderFactory;
+  private final Consumer<ClusterMembershipEventListener> eventListenerConsumer;
   private final GatewayCfg gatewayCfg;
 
   private Server server;
   private BrokerClient brokerClient;
   private EndpointManager endpointManager;
 
-  public Gateway(GatewayCfg gatewayCfg) {
-    this(gatewayCfg, DEFAULT_SERVER_BUILDER_FACTORY);
+  public Gateway(
+      GatewayCfg gatewayCfg, Consumer<ClusterMembershipEventListener> eventListenerConsumer) {
+    this(gatewayCfg, eventListenerConsumer, DEFAULT_SERVER_BUILDER_FACTORY);
   }
 
-  public Gateway(GatewayCfg gatewayCfg, Function<GatewayCfg, ServerBuilder> serverBuilderFactory) {
+  public Gateway(
+      GatewayCfg gatewayCfg,
+      Consumer<ClusterMembershipEventListener> eventListenerConsumer,
+      Function<GatewayCfg, ServerBuilder> serverBuilderFactory) {
     this.gatewayCfg = gatewayCfg;
+    this.eventListenerConsumer = eventListenerConsumer;
     this.serverBuilderFactory = serverBuilderFactory;
   }
 
@@ -81,7 +89,7 @@ public class Gateway {
   }
 
   protected BrokerClient buildBrokerClient() {
-    return new BrokerClientImpl(gatewayCfg);
+    return new BrokerClientImpl(gatewayCfg, eventListenerConsumer);
   }
 
   public void listenAndServe() throws InterruptedException, IOException {

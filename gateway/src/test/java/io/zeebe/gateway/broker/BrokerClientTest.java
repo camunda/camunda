@@ -86,7 +86,7 @@ public class BrokerClientTest {
         .setRequestTimeout("3s");
     clock = new ControlledActorClock();
 
-    client = new BrokerClientImpl(configuration, clock);
+    client = new BrokerClientImpl(configuration, l -> {}, clock);
 
     ((BrokerClientImpl) client).getTransport().registerEndpoint(0, broker.getSocketAddress());
 

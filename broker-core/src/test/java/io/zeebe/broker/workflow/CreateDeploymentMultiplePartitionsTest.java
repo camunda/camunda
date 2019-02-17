@@ -234,6 +234,7 @@ public class CreateDeploymentMultiplePartitionsTest {
 
     // when
     brokerRule.restartBroker();
+    apiRule.restart();
     doRepeatedly(apiRule::getPartitionIds).until(p -> !p.isEmpty());
 
     // then

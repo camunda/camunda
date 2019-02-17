@@ -18,7 +18,6 @@ package io.zeebe.test.broker.protocol.clientapi;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.Member;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -40,29 +39,22 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.junit.rules.ExternalResource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ClientApiRule extends ExternalResource {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ClientApiRule.class);
-
   public static final long DEFAULT_LOCK_DURATION = 10000L;
   private static final String DEFAULT_WORKER = "defaultWorker";
-  private static final String DEFAULT_CLUSTER_NAME = "zeebe-cluster";
 
   protected final int nodeId;
   protected final Supplier<AtomixCluster> atomixSupplier;
   private final Int2ObjectHashMap<PartitionTestClient> testPartitionClients =
       new Int2ObjectHashMap<>();
   private final ControlledActorClock controlledActorClock = new ControlledActorClock();
-  protected Supplier<SocketAddress> clientAddressSupplier;
   protected ClientTransport transport;
   protected MsgPackHelper msgPackHelper;
   protected int defaultPartitionId = -1;
   private AtomixCluster atomix;
   private ActorScheduler scheduler;
-  private ObjectMapper objectMapper;
 
   public ClientApiRule(final Supplier<AtomixCluster> atomixSupplier) {
     this(0, atomixSupplier);
@@ -71,11 +63,10 @@ public class ClientApiRule extends ExternalResource {
   public ClientApiRule(final int nodeId, final Supplier<AtomixCluster> atomixSupplier) {
     this.nodeId = nodeId;
     this.atomixSupplier = atomixSupplier;
-    objectMapper = new ObjectMapper();
   }
 
   @Override
-  protected void before() throws Throwable {
+  protected void before() {
     this.atomix = atomixSupplier.get();
 
     scheduler =
@@ -98,6 +89,10 @@ public class ClientApiRule extends ExternalResource {
 
     final List<Integer> partitionIds = doRepeatedly(this::getPartitionIds).until(p -> !p.isEmpty());
     defaultPartitionId = partitionIds.get(0);
+  }
+
+  public void restart() {
+    this.atomix = atomixSupplier.get();
   }
 
   private void waitForTopology() {
@@ -189,11 +184,6 @@ public class ClientApiRule extends ExternalResource {
 
   private Stream<BrokerInfo> getBrokerInfoStream() {
     return atomix.getMembershipService().getMembers().stream()
-        .map(
-            m -> {
-              LOG.debug("Atomix member: {}", m);
-              return m;
-            })
         .map(Member::properties)
         .map(BrokerInfo::fromProperties)
         .filter(Objects::nonNull);

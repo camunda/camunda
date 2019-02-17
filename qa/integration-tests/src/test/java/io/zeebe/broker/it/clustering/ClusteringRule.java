@@ -25,6 +25,9 @@ import static io.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddresses;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 
+import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
+import io.atomix.utils.net.Address;
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.client.ZeebeClient;
@@ -34,6 +37,7 @@ import io.zeebe.client.api.commands.Topology;
 import io.zeebe.gateway.Gateway;
 import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
+import io.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.test.util.AutoCloseableRule;
@@ -47,6 +51,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -186,8 +191,9 @@ public class ClusteringRule extends ExternalResource {
     setCluster(nodeId, partitionCount, replicationFactor, clusterSize, clusterName)
         .accept(brokerCfg);
     if (nodeId > 0) {
-      setInitialContactPoints(
-              getBrokerCfg(nodeId - 1).getNetwork().getAtomix().toSocketAddress().toString())
+      // all nodes have to join the same broker
+      // https://github.com/zeebe-io/zeebe/issues/2012
+      setInitialContactPoints(getBrokerCfg(0).getNetwork().getAtomix().toSocketAddress().toString())
           .accept(brokerCfg);
     }
 
@@ -220,8 +226,26 @@ public class ClusteringRule extends ExternalResource {
     gatewayCfg.getCluster().setPort(SocketUtil.getNextAddress().port());
     gatewayCfg.init();
 
-    final Gateway gateway = new Gateway(gatewayCfg);
+    final ClusterCfg clusterCfg = gatewayCfg.getCluster();
+
+    // copied from StandaloneGateway
+    final AtomixCluster atomixCluster =
+        AtomixCluster.builder()
+            .withMemberId(clusterCfg.getMemberId())
+            .withAddress(Address.from(clusterCfg.getHost(), clusterCfg.getPort()))
+            .withClusterId(clusterCfg.getClusterName())
+            .withMembershipProvider(
+                BootstrapDiscoveryProvider.builder()
+                    .withNodes(Address.from(clusterCfg.getContactPoint()))
+                    .build())
+            .build();
+
+    atomixCluster.start();
+
+    final Gateway gateway =
+        new Gateway(gatewayCfg, atomixCluster.getMembershipService()::addListener);
     closables.manage(gateway::stop);
+    closables.manage(atomixCluster::stop);
     return gateway;
   }
 
@@ -257,7 +281,15 @@ public class ClusteringRule extends ExternalResource {
   }
 
   public Topology getTopologyFromClient() {
-    return client.newTopologyRequest().send().join();
+    return doRepeatedly(
+            () -> {
+              try {
+                return client.newTopologyRequest().send().join();
+              } catch (Exception e) {
+                return null;
+              }
+            })
+        .until(Objects::nonNull);
   }
 
   /**
@@ -294,6 +326,14 @@ public class ClusteringRule extends ExternalResource {
             hasPartitionsWithReplicationFactor(topology, partitionCount, replicationFactor));
   }
 
+  /**
+   * TopologyImpl{brokers=[ BrokerInfoImpl{nodeId=0, host='0.0.0.0', port=25602, partitions=[
+   * PartitionInfoImpl{partitionId=0, role=LEADER}, PartitionInfoImpl{partitionId=1, role=FOLLOWER},
+   * PartitionInfoImpl{partitionId=2, role=FOLLOWER} ]}, BrokerInfoImpl{nodeId=1, host='0.0.0.0',
+   * port=25609, partitions=[ PartitionInfoImpl{partitionId=0, role=FOLLOWER},
+   * PartitionInfoImpl{partitionId=1, role=LEADER}, PartitionInfoImpl{partitionId=2, role=FOLLOWER}]
+   * }], clusterSize=3, partitionsCount=3, replicationFactor=3}
+   */
   private boolean hasPartitionsWithReplicationFactor(
       final List<BrokerInfo> brokers, final int partitionCount, final int replicationFactor) {
     final AtomicLong leaders = new AtomicLong();
