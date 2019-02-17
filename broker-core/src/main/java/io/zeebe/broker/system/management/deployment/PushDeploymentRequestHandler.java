@@ -99,16 +99,14 @@ public class PushDeploymentRequestHandler implements Function<byte[], Completabl
     final int partitionId = pushDeploymentRequest.partitionId();
     final DirectBuffer deployment = pushDeploymentRequest.deployment();
 
-    LOG.debug("Got deployment push request for deployment {}.", deploymentKey);
-
     final Partition partition = leaderPartitions.get(partitionId);
     if (partition != null) {
-      LOG.trace("Leader for partition {}, handle deployment.", partitionId);
+      LOG.debug("Handling deployment {} for partition {} as leader", deploymentKey, partitionId);
       handlePushDeploymentRequest(responseFuture, deployment, deploymentKey, partitionId);
     } else {
-      LOG.debug("Not leader for partition {}", partitionId);
-      final String errorMsg = String.format("Expected to be leader for partition %d.", partitionId);
-      responseFuture.completeExceptionally(new RuntimeException(errorMsg));
+      LOG.debug(
+          "Rejecting deployment {} for partition {} as not leader", deploymentKey, partitionId);
+      sendNotLeaderRejection(responseFuture);
     }
   }
 
@@ -153,6 +151,11 @@ public class PushDeploymentRequestHandler implements Function<byte[], Completabl
     pushResponse.partitionId(partitionId);
 
     responseFuture.complete(pushResponse.toBytes());
+  }
+
+  private void sendNotLeaderRejection(final CompletableFuture<byte[]> responseFuture) {
+    final NotLeaderResponse notLeaderResponse = new NotLeaderResponse();
+    responseFuture.complete(notLeaderResponse.toBytes());
   }
 
   private boolean writeCreatingDeployment(

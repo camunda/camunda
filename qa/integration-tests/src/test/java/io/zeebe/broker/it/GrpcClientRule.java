@@ -106,18 +106,32 @@ public class GrpcClientRule extends ExternalResource {
   }
 
   public long createSingleJob(String type, Consumer<ServiceTaskBuilder> consumer, String payload) {
-    final BpmnModelInstance modelInstance =
-        Bpmn.createExecutableProcess("process")
-            .startEvent("start")
-            .serviceTask(
-                "task",
-                t -> {
-                  t.zeebeTaskType(type);
-                  consumer.accept(t);
-                })
-            .endEvent("end")
-            .done();
+    final BpmnModelInstance modelInstance = createSingleJobModelInstance(type, consumer);
+    final long workflowKey = deployWorkflow(modelInstance);
+    final long workflowInstanceKey = createWorkflowInstance(workflowKey, payload);
 
+    return RecordingExporter.jobRecords(JobIntent.CREATED)
+        .filter(j -> j.getValue().getHeaders().getWorkflowInstanceKey() == workflowInstanceKey)
+        .withType(type)
+        .getFirst()
+        .getKey();
+  }
+
+  public BpmnModelInstance createSingleJobModelInstance(
+      String jobType, Consumer<ServiceTaskBuilder> taskBuilderConsumer) {
+    return Bpmn.createExecutableProcess("process")
+        .startEvent("start")
+        .serviceTask(
+            "task",
+            t -> {
+              t.zeebeTaskType(jobType);
+              taskBuilderConsumer.accept(t);
+            })
+        .endEvent("end")
+        .done();
+  }
+
+  public long deployWorkflow(BpmnModelInstance modelInstance) {
     final DeploymentEvent deploymentEvent =
         getClient()
             .newDeployCommand()
@@ -125,22 +139,16 @@ public class GrpcClientRule extends ExternalResource {
             .send()
             .join();
     waitUntilDeploymentIsDone(deploymentEvent.getKey());
+    return deploymentEvent.getWorkflows().get(0).getWorkflowKey();
+  }
 
-    // when
-    final long workflowInstanceKey =
-        getClient()
-            .newCreateInstanceCommand()
-            .bpmnProcessId("process")
-            .latestVersion()
-            .payload(payload)
-            .send()
-            .join()
-            .getWorkflowInstanceKey();
-
-    return RecordingExporter.jobRecords(JobIntent.CREATED)
-        .filter(j -> j.getValue().getHeaders().getWorkflowInstanceKey() == workflowInstanceKey)
-        .withType(type)
-        .getFirst()
-        .getKey();
+  public long createWorkflowInstance(long workflowKey, String payload) {
+    return getClient()
+        .newCreateInstanceCommand()
+        .workflowKey(workflowKey)
+        .payload(payload)
+        .send()
+        .join()
+        .getWorkflowInstanceKey();
   }
 }

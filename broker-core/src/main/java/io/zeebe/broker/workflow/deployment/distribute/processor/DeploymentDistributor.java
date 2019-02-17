@@ -23,6 +23,7 @@ import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.TopologyPartitionListenerImpl;
 import io.zeebe.broker.system.configuration.ClusterCfg;
+import io.zeebe.broker.system.management.deployment.NotLeaderResponse;
 import io.zeebe.broker.system.management.deployment.PushDeploymentRequest;
 import io.zeebe.broker.system.management.deployment.PushDeploymentResponse;
 import io.zeebe.broker.workflow.deployment.distribute.processor.state.DeploymentsState;
@@ -44,10 +45,12 @@ public class DeploymentDistributor {
 
   private static final Logger LOG = Loggers.WORKFLOW_REPOSITORY_LOGGER;
   public static final Duration PUSH_REQUEST_TIMEOUT = Duration.ofSeconds(15);
-  public static final Duration PARTITION_LEADER_RESOLVE_RETRY = Duration.ofMillis(100);
+  public static final Duration RETRY_DELAY = Duration.ofMillis(100);
 
   private final PushDeploymentRequest pushDeploymentRequest = new PushDeploymentRequest();
   private final PushDeploymentResponse pushDeploymentResponse = new PushDeploymentResponse();
+
+  private final NotLeaderResponse notLeaderResponse = new NotLeaderResponse();
 
   private final TopologyPartitionListenerImpl partitionListener;
   private final ActorControl actor;
@@ -135,11 +138,7 @@ public class DeploymentDistributor {
       return;
     }
 
-    actor.runDelayed(
-        PARTITION_LEADER_RESOLVE_RETRY,
-        () -> {
-          distributeDeployment(remainingPartitions);
-        });
+    actor.runDelayed(RETRY_DELAY, () -> distributeDeployment(remainingPartitions));
   }
 
   private IntArrayList distributeDeploymentToPartitions(final IntArrayList remainingPartitions) {
@@ -171,25 +170,54 @@ public class DeploymentDistributor {
             actor.call(
                 () -> {
                   if (throwable == null) {
-                    final DirectBuffer responseBuffer = new UnsafeBuffer(response);
-                    pushDeploymentResponse.wrap(responseBuffer);
-                    handlePushResponse();
+                    handleResponse(response, partitionLeaderId, partition);
                   } else {
-                    handleErrorResponse(partitionLeaderId, partition, throwable);
+                    LOG.warn(
+                        "Failed to push deployment to node {} for partition {}",
+                        partitionLeaderId,
+                        partition,
+                        throwable);
+                    handleRetry(partitionLeaderId, partition);
                   }
                 }));
   }
 
-  private void handleErrorResponse(int partitionLeaderId, int partition, Throwable throwable) {
-    LOG.error("Error on pushing deployment to partition {}. Retry request. ", partition, throwable);
+  private void handleResponse(byte[] response, int partitionLeaderId, int partition) {
+    final DirectBuffer responseBuffer = new UnsafeBuffer(response);
 
-    final Int2ObjectHashMap<NodeInfo> partitionLeaders = partitionListener.getPartitionLeaders();
-    final NodeInfo currentLeader = partitionLeaders.get(partition);
-    if (currentLeader != null) {
-      pushDeploymentToPartition(currentLeader.getNodeId(), partition);
+    if (pushDeploymentResponse.tryWrap(responseBuffer)) {
+      pushDeploymentResponse.wrap(responseBuffer);
+      handlePushResponse();
+    } else if (notLeaderResponse.tryWrap(responseBuffer)) {
+      LOG.warn(
+          "Node {} rejected deployment on partition {} as not leader",
+          partitionLeaderId,
+          partition);
+      handleRetry(partitionLeaderId, partition);
     } else {
-      pushDeploymentToPartition(partitionLeaderId, partition);
+      LOG.warn(
+          "Received unknown deployment response from node {} for partition {}",
+          partitionLeaderId,
+          partition);
+      handleRetry(partitionLeaderId, partition);
     }
+  }
+
+  private void handleRetry(int partitionLeaderId, int partition) {
+    LOG.debug(
+        "Retry deployment to push to partition {} after {}ms", partition, RETRY_DELAY.toMillis());
+    actor.runDelayed(
+        RETRY_DELAY,
+        () -> {
+          final Int2ObjectHashMap<NodeInfo> partitionLeaders =
+              partitionListener.getPartitionLeaders();
+          final NodeInfo currentLeader = partitionLeaders.get(partition);
+          if (currentLeader != null) {
+            pushDeploymentToPartition(currentLeader.getNodeId(), partition);
+          } else {
+            pushDeploymentToPartition(partitionLeaderId, partition);
+          }
+        });
   }
 
   private void handlePushResponse() {
