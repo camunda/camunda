@@ -51,7 +51,7 @@ public class StubbedGateway extends Gateway {
   private List<BrokerRequest> brokerRequests = new ArrayList<>();
 
   public StubbedGateway() {
-    super(new GatewayCfg(), cfg -> InProcessServerBuilder.forName(SERVER_NAME));
+    super(new GatewayCfg(), l -> {}, cfg -> InProcessServerBuilder.forName(SERVER_NAME));
   }
 
   public <RequestT extends BrokerRequest<?>, ResponseT extends BrokerResponse<?>>

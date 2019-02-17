@@ -85,28 +85,35 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
     final TopologyResponse.Builder topologyResponseBuilder = TopologyResponse.newBuilder();
     final BrokerClusterState topology = topologyManager.getTopology();
 
-    topologyResponseBuilder
-        .setClusterSize(topology.getClusterSize())
-        .setPartitionsCount(topology.getPartitionsCount())
-        .setReplicationFactor(topology.getReplicationFactor());
+    if (topology != null) {
 
-    final ArrayList<BrokerInfo> brokers = new ArrayList<>();
+      topologyResponseBuilder
+          .setClusterSize(topology.getClusterSize())
+          .setPartitionsCount(topology.getPartitionsCount())
+          .setReplicationFactor(topology.getReplicationFactor());
 
-    topology
-        .getBrokers()
-        .forEach(
-            brokerId -> {
-              final Builder brokerInfo = BrokerInfo.newBuilder();
-              addBrokerInfo(brokerInfo, brokerId, topology);
-              addPartitionInfoToBrokerInfo(brokerInfo, brokerId, topology);
+      final ArrayList<BrokerInfo> brokers = new ArrayList<>();
 
-              brokers.add(brokerInfo.build());
-            });
+      topology
+          .getBrokers()
+          .forEach(
+              brokerId -> {
+                final Builder brokerInfo = BrokerInfo.newBuilder();
+                addBrokerInfo(brokerInfo, brokerId, topology);
+                addPartitionInfoToBrokerInfo(brokerInfo, brokerId, topology);
 
-    topologyResponseBuilder.addAllBrokers(brokers);
-    final TopologyResponse response = topologyResponseBuilder.build();
-    responseObserver.onNext(response);
-    responseObserver.onCompleted();
+                brokers.add(brokerInfo.build());
+              });
+
+      topologyResponseBuilder.addAllBrokers(brokers);
+      final TopologyResponse response = topologyResponseBuilder.build();
+      responseObserver.onNext(response);
+      responseObserver.onCompleted();
+    } else {
+      final StatusRuntimeException error =
+          Status.UNAVAILABLE.augmentDescription("No brokers available").asRuntimeException();
+      responseObserver.onError(error);
+    }
   }
 
   private void addBrokerInfo(Builder brokerInfo, Integer brokerId, BrokerClusterState topology) {

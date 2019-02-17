@@ -20,6 +20,7 @@ package io.zeebe.broker.clustering;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_JOIN_SERVICE;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_SERVICE;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.CLUSTERING_BASE_LAYER;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.GATEWAY_SERVICE;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.RAFT_BOOTSTRAP_SERVICE;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.RAFT_CONFIGURATION_MANAGER;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.RAFT_SERVICE_GROUP;
@@ -29,6 +30,7 @@ import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_CLI
 import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_CLIENT_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.clientTransport;
 
+import io.zeebe.broker.clustering.base.EmbeddedGatewayService;
 import io.zeebe.broker.clustering.base.connections.RemoteAddressManager;
 import io.zeebe.broker.clustering.base.gossip.AtomixJoinService;
 import io.zeebe.broker.clustering.base.gossip.AtomixService;
@@ -89,10 +91,22 @@ public class ClusterComponent implements Component {
             remoteAddressManager.getReplicationClientTransportInjector())
         .install();
 
+    if (brokerConfig.getGateway().isEnable()) {
+      initGateway(baseLayerInstall, brokerConfig);
+    }
+
     initGossip(baseLayerInstall, context, localMember);
     initPartitions(baseLayerInstall, context);
 
     context.addRequiredStartAction(baseLayerInstall.install());
+  }
+
+  private void initGateway(CompositeServiceBuilder baseLayerInstall, BrokerCfg brokerConfig) {
+    final EmbeddedGatewayService gatewayService = new EmbeddedGatewayService(brokerConfig);
+    baseLayerInstall
+        .createService(GATEWAY_SERVICE, gatewayService)
+        .dependency(ATOMIX_SERVICE, gatewayService.getAtomixClusterInjector())
+        .install();
   }
 
   private void initGossip(

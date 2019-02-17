@@ -15,8 +15,6 @@
  */
 package io.zeebe.gateway.impl.broker.cluster;
 
-import static io.zeebe.gateway.impl.broker.BrokerClientImpl.LOG;
-
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipEventListener;
@@ -34,15 +32,11 @@ public class BrokerTopologyManagerImpl extends Actor
   protected final ClientOutput output;
   protected final BiConsumer<Integer, SocketAddress> registerEndpoint;
   protected final AtomicReference<BrokerClusterStateImpl> topology;
-  private String atomixMemberId;
 
   public BrokerTopologyManagerImpl(
-      final ClientOutput output,
-      final BiConsumer<Integer, SocketAddress> registerEndpoint,
-      String atomixMemberId) {
+      final ClientOutput output, final BiConsumer<Integer, SocketAddress> registerEndpoint) {
     this.output = output;
     this.registerEndpoint = registerEndpoint;
-    this.atomixMemberId = atomixMemberId;
     this.topology = new AtomicReference<>(null);
   }
 
@@ -62,7 +56,6 @@ public class BrokerTopologyManagerImpl extends Actor
 
   @Override
   public void event(ClusterMembershipEvent event) {
-    LOG.debug("{}: Received event: {}", atomixMemberId, event);
     final Member subject = event.subject();
     final Type eventType = event.type();
     final BrokerInfo brokerInfo = BrokerInfo.fromProperties(subject.properties());
