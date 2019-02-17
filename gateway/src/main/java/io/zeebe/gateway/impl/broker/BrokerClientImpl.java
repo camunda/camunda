@@ -45,6 +45,7 @@ import org.slf4j.Logger;
 public class BrokerClientImpl implements BrokerClient {
   public static final Logger LOG = Loggers.GATEWAY_LOGGER;
   protected final ActorScheduler actorScheduler;
+  private final boolean ownsActorScheduler;
   protected final ClientTransport transport;
   protected final BrokerTopologyManagerImpl topologyManager;
   private final Dispatcher dataFrameReceiveBuffer;
@@ -61,16 +62,31 @@ public class BrokerClientImpl implements BrokerClient {
       final GatewayCfg configuration,
       final Consumer<ClusterMembershipEventListener> eventListenerConsumer,
       final ActorClock actorClock) {
-    final ClusterCfg clusterCfg = configuration.getCluster();
-
-    this.actorScheduler =
+    this(
+        configuration,
+        eventListenerConsumer,
         ActorScheduler.newActorScheduler()
             .setCpuBoundActorThreadCount(configuration.getThreads().getManagementThreads())
             .setIoBoundActorThreadCount(0)
             .setActorClock(actorClock)
-            .setSchedulerName("gateway")
-            .build();
-    this.actorScheduler.start();
+            .setSchedulerName("gateway-scheduler")
+            .build(),
+        true);
+  }
+
+  public BrokerClientImpl(
+      final GatewayCfg configuration,
+      final Consumer<ClusterMembershipEventListener> eventListenerConsumer,
+      final ActorScheduler actorScheduler,
+      final boolean ownsActorScheduler) {
+    this.actorScheduler = actorScheduler;
+    this.ownsActorScheduler = ownsActorScheduler;
+
+    if (ownsActorScheduler) {
+      actorScheduler.start();
+    }
+
+    final ClusterCfg clusterCfg = configuration.getCluster();
 
     final ByteValue transportBufferSize = clusterCfg.getTransportBuffer();
 
@@ -83,7 +99,7 @@ public class BrokerClientImpl implements BrokerClient {
             .build();
 
     final ClientTransportBuilder transportBuilder =
-        Transports.newClientTransport("broker-client")
+        Transports.newClientTransport("gateway-broker-client")
             .messageMaxLength(1024 * 1024)
             .messageReceiveBuffer(dataFrameReceiveBuffer)
             .messageMemoryPool(
@@ -126,7 +142,7 @@ public class BrokerClientImpl implements BrokerClient {
 
     isClosed = true;
 
-    LOG.debug("Closing client ...");
+    LOG.debug("Closing gateway broker client ...");
 
     doAndLogException(() -> topologyManager.close().join());
     LOG.debug("topology manager closed");
@@ -135,13 +151,15 @@ public class BrokerClientImpl implements BrokerClient {
     doAndLogException(dataFrameReceiveBuffer::close);
     LOG.debug("data frame receive buffer closed");
 
-    try {
-      actorScheduler.stop().get(15, TimeUnit.SECONDS);
-
-      LOG.debug("Client closed.");
-    } catch (final InterruptedException | ExecutionException | TimeoutException e) {
-      throw new RuntimeException("Failed to gracefully shutdown client", e);
+    if (ownsActorScheduler) {
+      try {
+        actorScheduler.stop().get(15, TimeUnit.SECONDS);
+      } catch (final InterruptedException | ExecutionException | TimeoutException e) {
+        throw new RuntimeException("Failed to gracefully shutdown gateway broker client", e);
+      }
     }
+
+    LOG.debug("Gateway broker client closed.");
   }
 
   protected void doAndLogException(final Runnable r) {
