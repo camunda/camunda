@@ -83,10 +83,10 @@ public class BrokerClusterStateImpl implements BrokerClusterState {
   public void removeBroker(int brokerId) {
     brokerAddresses.remove(brokerId);
     brokers.removeInt(brokerId);
-    partitions.forEach(
-        key -> {
-          if (partitionLeaders.get(key) != null) {
-            partitionLeaders.remove(key);
+    partitions.forEachOrderedInt(
+        partitionId -> {
+          if (partitionLeaders.get(partitionId) == brokerId) {
+            partitionLeaders.remove(partitionId);
           }
         });
   }
