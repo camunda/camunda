@@ -21,7 +21,6 @@ import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.Member;
 import io.zeebe.gateway.Loggers;
 import io.zeebe.protocol.impl.data.cluster.BrokerInfo;
-import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -30,13 +29,10 @@ import java.util.function.BiConsumer;
 
 public class BrokerTopologyManagerImpl extends Actor
     implements BrokerTopologyManager, ClusterMembershipEventListener {
-  protected final ClientOutput output;
   protected final BiConsumer<Integer, SocketAddress> registerEndpoint;
   protected final AtomicReference<BrokerClusterStateImpl> topology;
 
-  public BrokerTopologyManagerImpl(
-      final ClientOutput output, final BiConsumer<Integer, SocketAddress> registerEndpoint) {
-    this.output = output;
+  public BrokerTopologyManagerImpl(final BiConsumer<Integer, SocketAddress> registerEndpoint) {
     this.registerEndpoint = registerEndpoint;
     this.topology = new AtomicReference<>(null);
   }
