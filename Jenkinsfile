@@ -73,7 +73,7 @@ pipeline {
                     }
                     post {
                         failure {
-                            archiveArtifacts artifacts: '**/target/*-reports/**/*-output.txt,**/**/*.dumpstream,**/**/hs_err_*.log', allowEmptyArchive: true
+                            archiveArtifacts artifacts: '**/target/*-reports/**/*-output.txt,**/target/*-reports/**/TEST-*.xml,,**/**/*.dumpstream,**/**/hs_err_*.log', allowEmptyArchive: true
                         }
                     }
                 }
