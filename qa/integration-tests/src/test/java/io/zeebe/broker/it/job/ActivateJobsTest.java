@@ -25,6 +25,8 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.response.ActivateJobsResponse;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.exporter.record.Assertions;
+import io.zeebe.exporter.record.Record;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
@@ -212,13 +214,24 @@ public class ActivateJobsTest {
   }
 
   private List<Long> createJobs(String type, int amount, String payload) {
-    return IntStream.range(0, amount)
-        .mapToLong(i -> createJob(type, payload))
-        .boxed()
-        .collect(Collectors.toList());
-  }
+    final BpmnModelInstance modelInstance =
+        clientRule.createSingleJobModelInstance(type, b -> b.zeebeTaskHeader("foo", "bar"));
+    final long workflowKey = clientRule.deployWorkflow(modelInstance);
 
-  private long createJob(String type, String payload) {
-    return clientRule.createSingleJob(type, b -> b.zeebeTaskHeader("foo", "bar"), payload);
+    for (int i = 0; i < amount; i++) {
+      clientRule.createWorkflowInstance(workflowKey, payload);
+    }
+
+    final List<Long> jobKeys =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withType(type)
+            .filter(r -> r.getValue().getHeaders().getWorkflowKey() == workflowKey)
+            .limit(amount)
+            .map(Record::getKey)
+            .collect(Collectors.toList());
+
+    assertThat(jobKeys).hasSize(amount);
+
+    return jobKeys;
   }
 }
