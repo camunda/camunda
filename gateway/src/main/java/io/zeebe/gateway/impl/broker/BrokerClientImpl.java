@@ -48,7 +48,6 @@ public class BrokerClientImpl implements BrokerClient {
   protected final ClientTransport transport;
   protected final BrokerTopologyManagerImpl topologyManager;
   private final Dispatcher dataFrameReceiveBuffer;
-  private final ClientTransport internalTransport;
   private final BrokerRequestManager requestManager;
   protected boolean isClosed;
 
@@ -92,21 +91,10 @@ public class BrokerClientImpl implements BrokerClient {
             .requestMemoryPool(new NonBlockingMemoryPool(transportBufferSize))
             .scheduler(actorScheduler);
 
-    // internal transport is used for topology request
-    final ClientTransportBuilder internalTransportBuilder =
-        Transports.newClientTransport("broker-client-internal")
-            .messageMaxLength(1024 * 1024)
-            .messageMemoryPool(new UnboundedMemoryPool())
-            .requestMemoryPool(new UnboundedMemoryPool())
-            .scheduler(actorScheduler);
-
     transport = transportBuilder.build();
-    internalTransport = internalTransportBuilder.build();
 
-    topologyManager =
-        new BrokerTopologyManagerImpl(internalTransport.getOutput(), this::registerEndpoint);
+    topologyManager = new BrokerTopologyManagerImpl(this::registerEndpoint);
     eventListenerConsumer.accept(topologyManager);
-
     actorScheduler.submitActor(topologyManager);
 
     requestManager =
@@ -120,7 +108,6 @@ public class BrokerClientImpl implements BrokerClient {
 
   private void registerEndpoint(final int nodeId, final SocketAddress socketAddress) {
     registerEndpoint(transport, nodeId, socketAddress);
-    registerEndpoint(internalTransport, nodeId, socketAddress);
   }
 
   private void registerEndpoint(
@@ -145,8 +132,6 @@ public class BrokerClientImpl implements BrokerClient {
     LOG.debug("topology manager closed");
     doAndLogException(transport::close);
     LOG.debug("transport closed");
-    doAndLogException(internalTransport::close);
-    LOG.debug("internal transport closed");
     doAndLogException(dataFrameReceiveBuffer::close);
     LOG.debug("data frame receive buffer closed");
 
