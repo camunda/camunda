@@ -53,6 +53,7 @@ Foldable.Summary = function Summary({
   isSelected,
   onSelection,
   children,
+  isLastChild,
   ...props
 }) {
   return (
@@ -66,6 +67,7 @@ Foldable.Summary = function Summary({
       <Styled.SummaryLabel
         isSelected={isSelected}
         showPartialBorder={!isFolded}
+        showFullBorder={isLastChild}
       >
         {children}
       </Styled.SummaryLabel>
@@ -77,6 +79,7 @@ Foldable.Summary.propTypes = {
   toggleFold: PropTypes.func,
   isFoldable: PropTypes.bool,
   isFolded: PropTypes.bool,
+  isLastChild: PropTypes.bool,
   isSelected: PropTypes.bool,
   onSelection: PropTypes.func,
   children: PropTypes.oneOfType([

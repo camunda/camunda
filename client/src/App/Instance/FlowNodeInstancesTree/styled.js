@@ -92,9 +92,4 @@ export const Li = themed(styled.li`
   &:first-child > div:nth-child(2) > div > div {
     border-top-width: ${({treeDepth}) => treeDepth === 1 && '0px'};
   }
-
-  /* show work flode nodes bottom border */
-  &:last-child > div:nth-child(2) > div > div {
-    border-bottom-width: ${({treeDepth}) => treeDepth === 2 && '1px'};
-  }
 `);

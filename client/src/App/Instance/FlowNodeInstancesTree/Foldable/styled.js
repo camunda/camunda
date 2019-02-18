@@ -80,6 +80,15 @@ const partialBorder = css`
   }
 `;
 
+const fullBorder = css`
+  border-bottom-color: ${themeStyle({
+    dark: Colors.uiDark04,
+    light: Colors.uiLight05
+  })};
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+`;
+
 export const SummaryLabel = themed(styled.div`
   position: absolute;
   left: 0;
@@ -90,6 +99,8 @@ export const SummaryLabel = themed(styled.div`
   border: none;
   font-size: 14px;
   text-align: left;
+  ${({showFullBorder, isSelected}) =>
+    showFullBorder && !isSelected && fullBorder};
   ${({showPartialBorder}) => showPartialBorder && partialBorder};
 `);
 

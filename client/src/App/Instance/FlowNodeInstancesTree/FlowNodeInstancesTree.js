@@ -51,6 +51,7 @@ export default class FlowNodeInstancesTree extends React.Component {
             data-test={node.id}
             onSelection={() => this.props.onTreeRowSelection(node)}
             isSelected={isSelected}
+            isLastChild={node.isLastChild}
           >
             <Bar
               node={this.props.getNodeWithName(node)}
@@ -76,7 +77,10 @@ export default class FlowNodeInstancesTree extends React.Component {
             return (
               <FlowNodeInstancesTree
                 key={index}
-                node={childNode}
+                node={{
+                  ...childNode,
+                  isLastChild: node.children.length === index + 1
+                }}
                 treeDepth={treeDepth + 1}
                 selectedTreeRowIds={this.props.selectedTreeRowIds}
                 onTreeRowSelection={this.props.onTreeRowSelection}

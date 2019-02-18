@@ -37,6 +37,5 @@ BarComponent.propTypes = {
     type: PropTypes.string.isRequired,
     endDate: PropTypes.string
   }),
-  isSelected: PropTypes.bool,
-  treeDepth: PropTypes.number
+  isSelected: PropTypes.bool
 };
