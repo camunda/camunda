@@ -1724,21 +1724,21 @@ bpmn-font@^0.8.0:
   version "0.8.0"
   resolved "https://registry.yarnpkg.com/bpmn-font/-/bpmn-font-0.8.0.tgz#85b18715faede345cd33c8a48f50bbe557ff76c2"
 
-bpmn-js@^2.5.2:
-  version "2.5.2"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-2.5.2.tgz#11112a0d101d2170101aa732f1940b1e99c85c1d"
+bpmn-js@^3.2.1:
+  version "3.2.1"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-3.2.1.tgz#1323df8f3258b467f0590cae8ad12f2d9ae2774d"
   dependencies:
     bpmn-font "^0.8.0"
     bpmn-moddle "^5.1.5"
     css.escape "^1.5.1"
-    diagram-js "^2.6.1"
-    diagram-js-direct-editing "^1.3.0"
+    diagram-js "^3.1.3"
+    diagram-js-direct-editing "^1.4.0"
     ids "^0.2.0"
     inherits "^2.0.1"
-    min-dash "^3.0.0"
+    min-dash "^3.2.0"
     min-dom "^3.0.0"
     object-refs "^0.3.0"
-    tiny-svg "^2.0.0"
+    tiny-svg "^2.2.1"
 
 bpmn-moddle@^5.1.5:
   version "5.1.5"
@@ -3062,26 +3062,26 @@ detect-port-alt@1.1.6:
     address "^1.0.1"
     debug "^2.6.0"
 
-diagram-js-direct-editing@^1.3.0:
-  version "1.3.0"
-  resolved "https://registry.yarnpkg.com/diagram-js-direct-editing/-/diagram-js-direct-editing-1.3.0.tgz#b99c1e45135660e362b7b34073632fbf20352c14"
+diagram-js-direct-editing@^1.4.0:
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/diagram-js-direct-editing/-/diagram-js-direct-editing-1.4.0.tgz#93c6c1798dcff790ba842262f3176d5722f9d6d4"
   dependencies:
     min-dash "^3.0.0"
     min-dom "^3.0.0"
 
-diagram-js@^2.6.1:
-  version "2.6.1"
-  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-2.6.1.tgz#85d09571a0f3c01b51c2dd3e73a5776c0c47af0c"
+diagram-js@^3.1.3:
+  version "3.1.3"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-3.1.3.tgz#8f953a771e019de5eaee54a4842ff34f35363c94"
   dependencies:
     css.escape "^1.5.1"
     didi "^4.0.0"
     hammerjs "^2.0.1"
     inherits "^2.0.1"
-    min-dash "^3.0.0"
+    min-dash "^3.2.0"
     min-dom "^3.0.0"
     object-refs "^0.3.0"
     path-intersection "^1.0.2"
-    tiny-svg "^2.0.0"
+    tiny-svg "^2.2.1"
 
 didi@^4.0.0:
   version "4.0.0"
@@ -6600,9 +6600,9 @@ mimic-fn@^1.0.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/mimic-fn/-/mimic-fn-1.2.0.tgz#820c86a39334640e99516928bd03fca88057d022"
 
-min-dash@^3.0.0:
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/min-dash/-/min-dash-3.1.0.tgz#ba1d0f06dd233f163ac8041f115e3bb08ba7fda9"
+min-dash@^3.0.0, min-dash@^3.2.0:
+  version "3.4.0"
+  resolved "https://registry.yarnpkg.com/min-dash/-/min-dash-3.4.0.tgz#994346eb1fe831516f47467b72cca78bdf8a961c"
 
 min-dom@^3.0.0:
   version "3.1.0"
@@ -9958,9 +9958,9 @@ tiny-stack@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/tiny-stack/-/tiny-stack-1.0.0.tgz#e058ed1daff2e733da2dcc8879d6b01d26e2c1f6"
 
-tiny-svg@^2.0.0:
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/tiny-svg/-/tiny-svg-2.1.0.tgz#2323a150874c6702c6927a62ab17198402aeb886"
+tiny-svg@^2.2.1:
+  version "2.2.1"
+  resolved "https://registry.yarnpkg.com/tiny-svg/-/tiny-svg-2.2.1.tgz#76da261fba736a139a1ef89fa3b50ff4742df232"
 
 tmp@^0.0.33:
   version "0.0.33"
