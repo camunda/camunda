@@ -311,7 +311,10 @@ export default class Instance extends Component {
               <Styled.FlowNodeInstanceLog>
                 <Styled.NodeContainer>
                   <FlowNodeInstancesTree
-                    node={this.state.activityInstancesTree}
+                    node={{
+                      ...this.state.activityInstancesTree,
+                      endDate: instance.endDate
+                    }}
                     getNodeWithName={this.getNodeWithName}
                     treeDepth={1}
                     selectedTreeRowIds={this.state.selection.treeRowIds}
