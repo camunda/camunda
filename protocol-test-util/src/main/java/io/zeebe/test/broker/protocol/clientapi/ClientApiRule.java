@@ -17,6 +17,7 @@ package io.zeebe.test.broker.protocol.clientapi;
 
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.Member;
@@ -67,7 +68,7 @@ public class ClientApiRule extends ExternalResource {
 
   @Override
   protected void before() {
-    this.atomix = atomixSupplier.get();
+    fetchAtomix();
 
     scheduler =
         ActorScheduler.newActorScheduler()
@@ -92,7 +93,12 @@ public class ClientApiRule extends ExternalResource {
   }
 
   public void restart() {
-    this.atomix = atomixSupplier.get();
+    fetchAtomix();
+  }
+
+  private void fetchAtomix() {
+    atomix = atomixSupplier.get();
+    assertThat(atomix).isNotNull();
   }
 
   private void waitForTopology() {
