@@ -143,8 +143,7 @@ public class TimerStartEventTest {
         .hasWorkflowKey(workflow.getWorkflowKey());
 
     final Record startEventOccured =
-        RecordingExporter.getRecords()
-            .stream()
+        RecordingExporter.getRecords().stream()
             .filter(r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.EVENT_OCCURRED)
             .findFirst()
             .get();
@@ -155,8 +154,7 @@ public class TimerStartEventTest {
         RecordingExporter.timerRecords(TimerIntent.TRIGGER).getFirst().getPosition();
 
     assertThat(
-            RecordingExporter.getRecords()
-                .stream()
+            RecordingExporter.getRecords().stream()
                 .filter(r -> r.getPosition() >= triggerRecordPosition)
                 .limit(6)
                 .map(r -> r.getMetadata().getIntent()))
