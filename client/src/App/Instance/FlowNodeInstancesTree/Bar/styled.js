@@ -3,7 +3,20 @@ import {Colors, themed, themeStyle} from 'modules/theme';
 
 import BasicFlowNodeIcon from 'modules/components/FlowNodeIcon';
 
-export const NodeIcon = styled(BasicFlowNodeIcon)``;
+export const NodeIcon = themed(styled(BasicFlowNodeIcon)`
+  color: ${({isSelected}) =>
+    !isSelected &&
+    themeStyle({
+      dark: '#fff',
+      light: Colors.uiLight06
+    })};
+  opacity: ${({isSelected}) =>
+    !isSelected &&
+    themeStyle({
+      dark: 0.75,
+      light: 0.6
+    })};
+`);
 
 const selectionStyle = css`
   border-color: ${Colors.primaryButton01};

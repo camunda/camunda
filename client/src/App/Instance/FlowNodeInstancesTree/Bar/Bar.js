@@ -10,6 +10,7 @@ const BarComponent = ({node, isSelected}) => {
     <Styled.Bar showSelectionStyle={isSelected}>
       <Styled.NodeIcon
         type={node.type}
+        isSelected={isSelected}
         data-test={`flowNodeIcon-${node.type}`}
       />
       <Styled.NodeName isWhite={isSelected} isBold={!!node.children.length}>
