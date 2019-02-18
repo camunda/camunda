@@ -57,7 +57,7 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   );
 
   public static final String DEFAULT_USERNAME = "demo";
-  private static final String DEFAULT_PASSWORD = "demo";
+  public static final String DEFAULT_PASSWORD = "demo";
   private static final String DEFAULT_CONTEXT_LOCATION = "classpath:embeddedOptimizeContext.xml";
   private static final int MAX_LOGGED_BODY_SIZE = 10_000;
   private static final String PROPERTIES_LOCATION = "integration-rules.properties";

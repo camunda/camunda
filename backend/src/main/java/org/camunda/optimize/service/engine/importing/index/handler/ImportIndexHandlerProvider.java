@@ -11,6 +11,7 @@ import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessD
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessDefinitionXmlImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.RunningActivityInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.RunningProcessInstanceImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.index.handler.impl.UserOperationLogInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.VariableUpdateInstanceImportIndexHandler;
 import org.camunda.optimize.service.util.BeanHelper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -113,6 +114,15 @@ public class ImportIndexHandlerProvider {
     return result;
   }
 
+  public ProcessDefinitionImportIndexHandler getProcessDefinitionImportIndexHandler(String engineAlias) {
+    ProcessDefinitionImportIndexHandler result = null;
+    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(engineAlias);
+    if (engineImportIndexHandlerProvider != null) {
+      result = engineImportIndexHandlerProvider.getProcessDefinitionImportIndexHandler();
+    }
+    return result;
+  }
+
   public CompletedUserTaskInstanceImportIndexHandler getCompletedUserTaskInstanceImportIndexHandler(String engineAlias) {
     CompletedUserTaskInstanceImportIndexHandler result = null;
     EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(engineAlias);
@@ -122,11 +132,11 @@ public class ImportIndexHandlerProvider {
     return result;
   }
 
-  public ProcessDefinitionImportIndexHandler getProcessDefinitionImportIndexHandler(String engineAlias) {
-    ProcessDefinitionImportIndexHandler result = null;
+  public UserOperationLogInstanceImportIndexHandler getUserOperationLogImportIndexHandler(String engineAlias) {
+    UserOperationLogInstanceImportIndexHandler result = null;
     EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(engineAlias);
     if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getProcessDefinitionImportIndexHandler();
+      result = engineImportIndexHandlerProvider.getUserOperationLogImportIndexHandler();
     }
     return result;
   }

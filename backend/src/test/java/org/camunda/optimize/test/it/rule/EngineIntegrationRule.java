@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.http.HttpEntity;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
@@ -17,6 +19,7 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
@@ -67,6 +70,8 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.OPTIMIZE_APPLICATION_RESOURCE_ID;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_APPLICATION;
+import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
+import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -159,72 +164,99 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public void finishAllUserTasks() {
-    CloseableHttpClient client = getHttpClient();
-    HttpGet get = new HttpGet(getTaskListUri());
-    executeFinishAllUserTasks(client, get);
+    finishAllUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
 
-  public void finishAllUserTasks(String processInstanceId) {
-    CloseableHttpClient client = getHttpClient();
-    HttpGet get = new HttpGet(getTaskListUri());
-    URI uri = null;
-    try {
-      uri = new URIBuilder(get.getURI())
-        .addParameter("processInstanceId", processInstanceId)
-        .build();
-    } catch (URISyntaxException e) {
-      logger.error("Could not build uri!", e);
-    }
-    get.setURI(uri);
-    executeFinishAllUserTasks(client, get);
+  public void finishAllUserTasks(final String user, final String password) {
+    finishAllUserTasks(user, password, null);
   }
 
-  private void executeFinishAllUserTasks(CloseableHttpClient client, HttpGet get) {
-    try {
-      CloseableHttpResponse response = client.execute(get);
-      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-      List<TaskDto> tasks = objectMapper.readValue(responseString, new TypeReference<List<TaskDto>>() {
-      });
-      response.close();
+  public void finishAllUserTasks(final String processInstanceId) {
+    finishAllUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceId);
+  }
+
+  public void finishAllUserTasks(final String user, final String password, final String processInstanceId) {
+    final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+    credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(user, password));
+    try (final CloseableHttpClient httpClient = HttpClientBuilder.create()
+      .setDefaultCredentialsProvider(credentialsProvider).build()
+    ) {
+      final List<TaskDto> tasks = getUserTasks(httpClient, processInstanceId);
       for (TaskDto task : tasks) {
-        claimAndCompleteUserTask(client, task);
+        claimAndCompleteUserTask(httpClient, task);
       }
     } catch (IOException e) {
-      logger.error("Error while trying to finish the user task!!", e);
+      logger.error("Error while trying to create http client auth authentication!", e);
     }
   }
 
+  private List<TaskDto> getUserTasks(final CloseableHttpClient authenticatingClient,
+                                     final String processInstanceIdFilter) {
+    final List<TaskDto> tasks;
+    try {
+      final URIBuilder uriBuilder = new URIBuilder(getTaskListUri());
+      if (processInstanceIdFilter != null) {
+        uriBuilder.addParameter("processInstanceId", processInstanceIdFilter);
+      }
+      final HttpGet get = new HttpGet(uriBuilder.build());
+      try (CloseableHttpResponse response = authenticatingClient.execute(get)) {
+        String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+        // @formatter:off
+        tasks = objectMapper.readValue(responseString, new TypeReference<List<TaskDto>>() {});
+        // @formatter:on
+      } catch (IOException e) {
+        throw new RuntimeException("Error while trying to finish the user task!!");
+      }
+    } catch (URISyntaxException e) {
+      throw new RuntimeException("Error while trying to create task list url !!");
+    }
+    return tasks;
+  }
 
   private String getTaskListUri() {
     return getEngineUrl() + "/task";
   }
 
-  private void claimAndCompleteUserTask(CloseableHttpClient client, TaskDto task) throws IOException {
-    HttpPost claimPost = new HttpPost(getClaimTaskUri(task.getId()));
-    claimPost.setEntity(new StringEntity("{ \"userId\" : " + "\"admin\"" + "}"));
-    claimPost.addHeader("Content-Type", "application/json");
-    CloseableHttpResponse response = client.execute(claimPost);
-    if (response.getStatusLine().getStatusCode() != 204) {
-      throw new RuntimeException("Could not claim user task!");
-    }
+  private void claimAndCompleteUserTask(final CloseableHttpClient authenticatingClient, final TaskDto task)
+    throws IOException {
+    claimUserTaskAsDefaultUser(authenticatingClient, task);
+    completeUserTask(authenticatingClient, task);
+  }
 
-    HttpPost completePost = new HttpPost(getCompleteTaskUri(task.getId()));
+  private void claimUserTaskAsDefaultUser(final CloseableHttpClient authenticatingClient, final TaskDto task)
+    throws IOException {
+    HttpPost claimPost = new HttpPost(getSecuredClaimTaskUri(task.getId()));
+    claimPost.setEntity(new StringEntity("{ \"userId\" : \"" + DEFAULT_USERNAME + "\" }"));
+    claimPost.addHeader("Content-Type", "application/json");
+    try (CloseableHttpResponse response = authenticatingClient.execute(claimPost)) {
+      if (response.getStatusLine().getStatusCode() != 204) {
+        throw new RuntimeException(
+          "Could not claim user task! Status-code: " + response.getStatusLine().getStatusCode()
+        );
+      }
+    }
+  }
+
+  private void completeUserTask(final CloseableHttpClient authenticatingClient, final TaskDto task)
+    throws IOException {
+    HttpPost completePost = new HttpPost(getSecuredCompleteTaskUri(task.getId()));
     completePost.setEntity(new StringEntity("{}"));
     completePost.addHeader("Content-Type", "application/json");
-    response.close();
-    response = client.execute(completePost);
-    if (response.getStatusLine().getStatusCode() != 204) {
-      throw new RuntimeException("Could not complete user task!");
+    try (CloseableHttpResponse response = authenticatingClient.execute(completePost)) {
+      if (response.getStatusLine().getStatusCode() != 204) {
+        throw new RuntimeException(
+          "Could not complete user task! Status-code: " + response.getStatusLine().getStatusCode()
+        );
+      }
     }
-    response.close();
   }
 
-  private String getClaimTaskUri(String taskId) {
-    return getEngineUrl() + "/task/" + taskId + "/claim";
+  private String getSecuredClaimTaskUri(final String taskId) {
+    return getSecuredEngineUrl() + "/task/" + taskId + "/claim";
   }
 
-  private String getCompleteTaskUri(String taskId) {
-    return getEngineUrl() + "/task/" + taskId + "/complete";
+  private String getSecuredCompleteTaskUri(final String taskId) {
+    return getSecuredEngineUrl() + "/task/" + taskId + "/complete";
   }
 
   public String getProcessDefinitionId() {
@@ -540,6 +572,10 @@ public class EngineIntegrationRule extends TestWatcher {
       properties.get("camunda.optimize.engine.name").toString();
   }
 
+  private String getSecuredEngineUrl() {
+    return getEngineUrl().replace("/engine-rest", "/engine-rest-secure");
+  }
+
   private ProcessDefinitionEngineDto getProcessDefinitionEngineDto(DeploymentDto deployment,
                                                                    CloseableHttpClient client) {
     List<ProcessDefinitionEngineDto> processDefinitions = getAllProcessDefinitions(deployment, client);
@@ -849,7 +885,9 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public DecisionDefinitionEngineDto deployAndStartDecisionDefinition() {
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = deployDecisionDefinition(DEFAULT_DMN_DEFINITION_PATH);
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = deployDecisionDefinition(
+      DEFAULT_DMN_DEFINITION_PATH
+    );
     startDecisionInstance(
       decisionDefinitionEngineDto.getId(),
       new HashMap<String, Object>() {{

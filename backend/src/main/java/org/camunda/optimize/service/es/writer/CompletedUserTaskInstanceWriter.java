@@ -2,6 +2,8 @@ package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
+import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.dto.optimize.importing.UserTaskInstanceDto;
 import org.camunda.optimize.service.es.schema.type.UserTaskInstanceType;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -23,10 +25,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.USER_TASK_INSTANCE_TYPE;
 
 @Component
@@ -92,8 +96,7 @@ public class CompletedUserTaskInstanceWriter {
     params.put(UserTaskInstanceType.ACTIVITY_ID, userTask.getActivityId());
     params.put(UserTaskInstanceType.ACTIVITY_INSTANCE_ID, userTask.getActivityInstanceId());
 
-    params.put(UserTaskInstanceType.DURATION, userTask.getDurationInMs());
-
+    params.put(UserTaskInstanceType.TOTAL_DURATION, userTask.getTotalDurationInMs());
     params.put(UserTaskInstanceType.START_DATE, dateTimeFormatter.format(userTask.getStartDate()));
     params.put(UserTaskInstanceType.END_DATE, dateTimeFormatter.format(userTask.getEndDate()));
 
@@ -107,12 +110,52 @@ public class CompletedUserTaskInstanceWriter {
     return new Script(
       ScriptType.INLINE,
       Script.DEFAULT_SCRIPT_LANG,
-      params.keySet()
-        .stream()
-        .map(fieldKey -> String.format("ctx._source.%s = params.%s;\n", fieldKey, fieldKey))
-        .collect(Collectors.joining()),
+      createUpdateFieldsScript(params.keySet())
+        + createUpdateUserTaskMetricsScript(),
       params
     );
+  }
+
+  private String createUpdateFieldsScript(final Set<String> fieldKeys) {
+    return fieldKeys
+      .stream()
+      .map(fieldKey -> String.format("ctx._source.%s = params.%s;\n", fieldKey, fieldKey))
+      .collect(Collectors.joining());
+  }
+
+  public static String createUpdateUserTaskMetricsScript() {
+    // @formatter:off
+    final StringSubstitutor substitutor = new StringSubstitutor(
+      ImmutableMap.<String, String>builder()
+      .put("userOperationsField", UserTaskInstanceType.USER_OPERATIONS)
+      .put("startDateField", UserTaskInstanceType.START_DATE)
+      .put("endDateField", UserTaskInstanceType.END_DATE)
+      .put("claimTypeValue", "Claim")
+      .put("dateFormatPattern", OPTIMIZE_DATE_FORMAT)
+      .build()
+    );
+    return substitutor.replace(
+      "if (ctx._source.${userOperationsField} != null) {\n" +
+        "def dateFormatter = new SimpleDateFormat(\"${dateFormatPattern}\");\n" +
+        "def optionalFirstClaimDate = ctx._source.${userOperationsField}.stream()\n" +
+            ".filter(userOperation -> \"${claimTypeValue}\".equals(userOperation.type))\n" +
+            ".map(userOperation -> userOperation.timestamp)\n" +
+            ".map(dateFormatter::parse)\n" +
+            ".min(Date::compareTo);\n" +
+        "optionalFirstClaimDate.ifPresent(claimDate -> {\n" +
+          "def claimDateInMs = claimDate.getTime();\n" +
+          "def optionalStartDate = Optional.ofNullable(ctx._source.${startDateField}).map(dateFormatter::parse);\n" +
+          "def optionalEndDate = Optional.ofNullable(ctx._source.${endDateField}).map(dateFormatter::parse);\n" +
+          "optionalStartDate.ifPresent(startDate -> {\n" +
+              "ctx._source.idleDurationInMs = claimDateInMs - startDate.getTime();\n" +
+          "});\n" +
+          "optionalEndDate.ifPresent(endDate -> {\n" +
+              "ctx._source.workDurationInMs = endDate.getTime() - claimDateInMs;\n" +
+          "});\n" +
+        "});\n" +
+      "}\n"
+    );
+    // @formatter:on
   }
 
 }

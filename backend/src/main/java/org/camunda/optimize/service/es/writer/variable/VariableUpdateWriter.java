@@ -2,7 +2,7 @@ package org.camunda.optimize.service.es.writer.variable;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.text.StrSubstitutor;
+import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableDto;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -29,7 +29,7 @@ public class VariableUpdateWriter extends VariableWriter {
     Map<String, String> valuesMap = new HashMap<>();
     for (Map.Entry<String, List<VariableDto>> typedVarsEntry : typeMappedVars.entrySet()) {
       valuesMap.put("typeName", typedVarsEntry.getKey());
-      StrSubstitutor sub = new StrSubstitutor(valuesMap);
+      final StringSubstitutor sub = new StringSubstitutor(valuesMap);
       // @formatter:off
       String variableScript =
         "HashMap ${typeName}Entries = new HashMap();" +

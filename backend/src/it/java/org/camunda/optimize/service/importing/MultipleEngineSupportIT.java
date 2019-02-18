@@ -34,6 +34,7 @@ import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.get
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.STRING_VARIABLES;
+import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.ES_TYPE_INDEX_REFERS_TO;
 import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
 import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_OF_LAST_ENTITY;
 import static org.camunda.optimize.service.security.EngineAuthenticationProvider.CONNECTION_WAS_REFUSED_ERROR;
@@ -62,7 +63,7 @@ public class MultipleEngineSupportIT {
 
   @Rule
   public RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule).around(defaultEngineRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchRule).around(defaultEngineRule).around(embeddedOptimizeRule);
 
   @Before
   public void init() {
@@ -214,16 +215,16 @@ public class MultipleEngineSupportIT {
     Response response = embeddedOptimizeRule.authenticateUserRequest("kermit", "kermit");
 
     // then
-    assertThat(response.getStatus(),is(200));
+    assertThat(response.getStatus(), is(200));
     String responseEntity = response.readEntity(String.class);
-    assertThat(responseEntity,is(notNullValue()));
+    assertThat(responseEntity, is(notNullValue()));
 
     response = embeddedOptimizeRule.authenticateUserRequest("gonzo", "gonzo");
 
     // then
-    assertThat(response.getStatus(),is(200));
+    assertThat(response.getStatus(), is(200));
     responseEntity = response.readEntity(String.class);
-    assertThat(responseEntity,is(notNullValue()));
+    assertThat(responseEntity, is(notNullValue()));
   }
 
   @Test
@@ -274,23 +275,29 @@ public class MultipleEngineSupportIT {
     Response response = embeddedOptimizeRule.authenticateUserRequest("kermit", "kermit");
 
     // then
-    assertThat(response.getStatus(),is(200));
+    assertThat(response.getStatus(), is(200));
     String responseEntity = response.readEntity(String.class);
-    assertThat(responseEntity,is(notNullValue()));
+    assertThat(responseEntity, is(notNullValue()));
 
     response = embeddedOptimizeRule.authenticateUserRequest("gonzo", "gonzo");
 
     // then
-    assertThat(response.getStatus(),is(200));
+    assertThat(response.getStatus(), is(200));
     responseEntity = response.readEntity(String.class);
-    assertThat(responseEntity,is(notNullValue()));
+    assertThat(responseEntity, is(notNullValue()));
   }
 
   @Test
   public void afterRestartOfOptimizeRightImportIndexIsUsed() throws Exception {
     // given
+    secondEngineRule.addUser("demo", "demo");
+    secondEngineRule.grantAllAuthorizations("demo");
     addSecondEngineToConfiguration();
     deployAndStartSimpleProcessDefinitionForAllEngines();
+    // we need finished user tasks
+    deployAndStartUserTaskProcessForAllEngines();
+    finishAllUserTasksForAllEngines();
+    // as well as running activities
     deployAndStartUserTaskProcessForAllEngines();
     deployAndStartDecisionDefinitionForAllEngines();
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -304,12 +311,25 @@ public class MultipleEngineSupportIT {
     // then
     SearchResponse searchResponse = performProcessDefinitionSearchRequest(TIMESTAMP_BASED_IMPORT_INDEX_TYPE);
 
-    assertThat(searchResponse.getHits().getTotalHits(), is(12L));
+    assertThat(searchResponse.getHits().getTotalHits(), is(16L));
     for (SearchHit searchHit : searchResponse.getHits().getHits()) {
+      String typeName = searchHit.getSourceAsMap().get(ES_TYPE_INDEX_REFERS_TO).toString();
       String timestampOfLastEntity = searchHit.getSourceAsMap().get(TIMESTAMP_OF_LAST_ENTITY).toString();
-      OffsetDateTime timestamp = OffsetDateTime.parse(timestampOfLastEntity, embeddedOptimizeRule.getDateTimeFormatter());
-      assertThat(timestamp, greaterThan(OffsetDateTime.now().minusHours(1)));
+      OffsetDateTime timestamp = OffsetDateTime.parse(
+        timestampOfLastEntity,
+        embeddedOptimizeRule.getDateTimeFormatter()
+      );
+      assertThat(
+        "Timestamp for " + typeName + " should be recent",
+        timestamp,
+        greaterThan(OffsetDateTime.now().minusHours(1))
+      );
     }
+  }
+
+  public void finishAllUserTasksForAllEngines() {
+    defaultEngineRule.finishAllUserTasks();
+    secondEngineRule.finishAllUserTasks();
   }
 
   private void deployAndStartDecisionDefinitionForAllEngines() {
@@ -372,8 +392,13 @@ public class MultipleEngineSupportIT {
     addEngineToConfiguration("anotherEngine", SECURE_REST_ENDPOINT, true, "admin", "admin");
   }
 
-  private void addEngineToConfiguration(String engineName, String restEndpoint, boolean withAuthentication, String username, String password) {
-    EngineAuthenticationConfiguration engineAuthenticationConfiguration = constructEngineAuthenticationConfiguration(withAuthentication, username, password);
+  private void addEngineToConfiguration(String engineName, String restEndpoint, boolean withAuthentication,
+                                        String username, String password) {
+    EngineAuthenticationConfiguration engineAuthenticationConfiguration = constructEngineAuthenticationConfiguration(
+      withAuthentication,
+      username,
+      password
+    );
 
     EngineConfiguration anotherEngineConfig = new EngineConfiguration();
     anotherEngineConfig.setName(engineName);
@@ -384,7 +409,9 @@ public class MultipleEngineSupportIT {
       .put(SECOND_ENGINE_ALIAS, anotherEngineConfig);
   }
 
-  private EngineAuthenticationConfiguration constructEngineAuthenticationConfiguration(boolean withAuthentication, String username, String password) {
+  private EngineAuthenticationConfiguration constructEngineAuthenticationConfiguration(boolean withAuthentication,
+                                                                                       String username,
+                                                                                       String password) {
     EngineAuthenticationConfiguration engineAuthenticationConfiguration = new EngineAuthenticationConfiguration();
     engineAuthenticationConfiguration.setEnabled(withAuthentication);
     engineAuthenticationConfiguration.setPassword(password);

@@ -11,6 +11,7 @@ import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessD
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessDefinitionXmlImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.RunningActivityInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.RunningProcessInstanceImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.index.handler.impl.UserOperationLogInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.VariableUpdateInstanceImportIndexHandler;
 import org.camunda.optimize.service.util.BeanHelper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,6 +60,8 @@ public class EngineImportIndexHandlerProvider {
     timestampBasedHandlers.add(getVariableUpdateInstanceImportIndexHandler());
     timestampBasedHandlers.add(getDecisionInstanceImportIndexHandler());
     timestampBasedHandlers.add(getRunningActivityImportIndexHandler());
+    timestampBasedHandlers.add(getCompletedUserTaskInstanceImportIndexHandler());
+    timestampBasedHandlers.add(getUserOperationLogImportIndexHandler());
 
     allEntitiesBasedHandlers.add(getProcessDefinitionImportIndexHandler());
     allEntitiesBasedHandlers.add(getDecisionDefinitionImportIndexHandler());
@@ -143,6 +146,9 @@ public class EngineImportIndexHandlerProvider {
 
   public CompletedUserTaskInstanceImportIndexHandler getCompletedUserTaskInstanceImportIndexHandler() {
     return getImportIndexHandlerInstance(engineContext, CompletedUserTaskInstanceImportIndexHandler.class);
+  }
+  public UserOperationLogInstanceImportIndexHandler getUserOperationLogImportIndexHandler() {
+    return getImportIndexHandlerInstance(engineContext, UserOperationLogInstanceImportIndexHandler.class);
   }
 
   public DecisionDefinitionImportIndexHandler getDecisionDefinitionImportIndexHandler() {

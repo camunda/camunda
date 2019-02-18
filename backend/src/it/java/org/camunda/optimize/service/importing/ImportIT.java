@@ -384,6 +384,10 @@ public class ImportIT {
   public void latestImportIndexAfterRestartOfOptimize() throws Exception {
     // given
     deployAndStartUserTaskProcess();
+    // we need finished ones
+    engineRule.finishAllUserTasks();
+    // as well as running
+    deployAndStartUserTaskProcess();
     deployAndStartSimpleServiceTask();
     engineRule.deployAndStartDecisionDefinition();
 

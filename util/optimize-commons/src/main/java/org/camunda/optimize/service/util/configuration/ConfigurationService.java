@@ -105,6 +105,7 @@ public class ConfigurationService {
   private Integer engineImportProcessDefinitionXmlMaxPageSize;
   private Integer engineImportActivityInstanceMaxPageSize;
   private Integer engineImportUserTaskInstanceMaxPageSize;
+  private Integer engineImportUserOperationLogEntryMaxPageSize;
   private Integer engineImportDecisionDefinitionXmlMaxPageSize;
   private Integer engineImportDecisionInstanceMaxPageSize;
   private Integer importIndexAutoStorageIntervalInSec;
@@ -602,6 +603,17 @@ public class ConfigurationService {
     }
     ensureGreaterThanZero(engineImportUserTaskInstanceMaxPageSize);
     return engineImportUserTaskInstanceMaxPageSize;
+  }
+
+  public int getEngineImportUserOperationLogEntryMaxPageSize() {
+    if (engineImportUserOperationLogEntryMaxPageSize == null) {
+      engineImportUserOperationLogEntryMaxPageSize = configJsonContext.read(
+        ConfigurationServiceConstants.ENGINE_IMPORT_USER_OPERATION_LOG_ENTRY_MAX_PAGE_SIZE,
+        Integer.class
+      );
+    }
+    ensureGreaterThanZero(engineImportUserOperationLogEntryMaxPageSize);
+    return engineImportUserOperationLogEntryMaxPageSize;
   }
 
   public long getSamplerInterval() {

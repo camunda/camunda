@@ -15,6 +15,7 @@ import org.camunda.optimize.service.engine.importing.service.mediator.ProcessDef
 import org.camunda.optimize.service.engine.importing.service.mediator.RunningActivityInstanceEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.RunningProcessInstanceEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.StoreIndexesEngineImportMediator;
+import org.camunda.optimize.service.engine.importing.service.mediator.UserOperationLogEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.VariableUpdateEngineImportMediator;
 import org.camunda.optimize.service.util.BeanHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
@@ -38,9 +39,10 @@ public class EngineImportSchedulerFactory implements ConfigurationReloadable {
   private ConfigurationService configurationService;
 
   @Autowired
-  public EngineImportSchedulerFactory(ImportIndexHandlerProvider importIndexHandlerProvider, BeanHelper beanHelper,
-                                      EngineContextFactory engineContextFactory,
-                                      ConfigurationService configurationService) {
+  public EngineImportSchedulerFactory(final ImportIndexHandlerProvider importIndexHandlerProvider,
+                                      final BeanHelper beanHelper,
+                                      final EngineContextFactory engineContextFactory,
+                                      final ConfigurationService configurationService) {
     this.importIndexHandlerProvider = importIndexHandlerProvider;
     this.beanHelper = beanHelper;
     this.engineContextFactory = engineContextFactory;
@@ -116,6 +118,9 @@ public class EngineImportSchedulerFactory implements ConfigurationReloadable {
     );
     mediators.add(
       beanHelper.getInstance(CompletedUserTaskEngineImportMediator.class, engineContext)
+    );
+    mediators.add(
+      beanHelper.getInstance(UserOperationLogEngineImportMediator.class, engineContext)
     );
     if (configurationService.getImportDmnDataEnabled()) {
       mediators.add(

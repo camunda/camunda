@@ -25,13 +25,25 @@ public class UserTaskInstanceType extends StrictTypeMappingCreator {
   public static final String ACTIVITY_ID = "activityId";
   public static final String ACTIVITY_INSTANCE_ID = "activityInstanceId";
 
-  public static final String DURATION = "durationInMs";
+  public static final String TOTAL_DURATION = "totalDurationInMs";
+  public static final String IDLE_DURATION = "idleDurationInMs";
+  public static final String WORK_DURATION = "workDurationInMs";
 
   public static final String START_DATE = "startDate";
   public static final String END_DATE = "endDate";
   public static final String DUE_DATE = "dueDate";
 
   public static final String DELETE_REASON = "deleteReason";
+
+  public static final String USER_OPERATIONS = "userOperations";
+  public static final String USER_OPERATION_ID = "id";
+  public static final String USER_OPERATION_USER_ID = "userId";
+  public static final String USER_OPERATION_TIMESTAMP = "timestamp";
+  public static final String USER_OPERATION_TYPE = "type";
+  public static final String USER_OPERATION_PROPERTY = "property";
+  public static final String USER_OPERATION_ORIGINAL_VALUE = "originalValue";
+  public static final String USER_OPERATION_NEW_VALUE = "newValue";
+
 
   public static final String ENGINE = "engine";
 
@@ -70,7 +82,13 @@ public class UserTaskInstanceType extends StrictTypeMappingCreator {
       .startObject(ACTIVITY_INSTANCE_ID)
         .field("type", "keyword")
       .endObject()
-      .startObject(DURATION)
+      .startObject(TOTAL_DURATION)
+        .field("type", "long")
+      .endObject()
+      .startObject(IDLE_DURATION)
+        .field("type", "long")
+      .endObject()
+      .startObject(WORK_DURATION)
         .field("type", "long")
       .endObject()
       .startObject(START_DATE)
@@ -88,11 +106,48 @@ public class UserTaskInstanceType extends StrictTypeMappingCreator {
       .startObject(DELETE_REASON)
         .field("type", "keyword")
       .endObject()
+      .startObject(USER_OPERATIONS)
+        .field("type", "nested")
+        .field("include_in_all", false)
+        .startObject("properties");
+         addNestedUserOperationsField(newBuilder)
+        .endObject()
+      .endObject()
       .startObject(ENGINE)
         .field("type", "keyword")
       .endObject()
       ;
     // @formatter:on
     return newBuilder;
+  }
+
+  private XContentBuilder addNestedUserOperationsField(final XContentBuilder builder) throws IOException {
+    // @formatter:off
+    builder
+      .startObject(USER_OPERATION_ID)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(USER_OPERATION_USER_ID)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(USER_OPERATION_TIMESTAMP)
+        .field("type", "date")
+        .field("format", OPTIMIZE_DATE_FORMAT)
+      .endObject()
+      .startObject(USER_OPERATION_TYPE)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(USER_OPERATION_PROPERTY)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(USER_OPERATION_ORIGINAL_VALUE)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(USER_OPERATION_NEW_VALUE)
+        .field("type", "keyword")
+      .endObject()
+      ;
+    return builder;
+    // @formatter:on
   }
 }

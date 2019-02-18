@@ -5,8 +5,8 @@ import org.camunda.optimize.dto.optimize.importing.index.CombinedImportIndexesDt
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.handler.AllEntitiesBasedImportIndexHandler;
-import org.camunda.optimize.service.engine.importing.index.handler.TimestampBasedImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
+import org.camunda.optimize.service.engine.importing.index.handler.TimestampBasedImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.service.StoreIndexesEngineImportService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.ImportIndexWriter;
@@ -26,10 +26,9 @@ import java.util.List;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class StoreIndexesEngineImportMediator
-    implements EngineImportMediator {
+public class StoreIndexesEngineImportMediator implements EngineImportMediator {
 
-  private Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger logger = LoggerFactory.getLogger(StoreIndexesEngineImportMediator.class);
 
   @Autowired
   private ImportIndexWriter importIndexWriter;
@@ -114,9 +113,11 @@ public class StoreIndexesEngineImportMediator
   private List<TimestampBasedImportIndexDto> getDefinitionBasedImportIndexes() {
     List<TimestampBasedImportIndexDto> allEntitiesBasedImportIndexes = new ArrayList<>();
 
-    if (provider.getDefinitionBasedHandlers(engineContext.getEngineAlias()) != null) {
-      for (TimestampBasedImportIndexHandler importIndexHandler :
-          provider.getDefinitionBasedHandlers(engineContext.getEngineAlias())) {
+    final List<TimestampBasedImportIndexHandler> definitionBasedHandlers = provider.getDefinitionBasedHandlers(
+      engineContext.getEngineAlias()
+    );
+    if (definitionBasedHandlers != null) {
+      for (TimestampBasedImportIndexHandler importIndexHandler : definitionBasedHandlers) {
         allEntitiesBasedImportIndexes.add(importIndexHandler.createIndexInformationForStoring());
       }
     }
