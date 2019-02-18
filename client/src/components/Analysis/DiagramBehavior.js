@@ -118,7 +118,7 @@ export default class DiagramBehavior extends React.Component {
         this.props.updateSelection('gateway', businessObject);
       }
     } else if (businessObject.$instanceOf('bpmn:EndEvent')) {
-      if (this.props.endEvent) {
+      if (this.props.endEvent === businessObject) {
         this.props.updateSelection('endEvent', null);
       } else {
         this.props.updateSelection('endEvent', businessObject);
@@ -131,14 +131,17 @@ export default class DiagramBehavior extends React.Component {
   }
 
   addEndEventOverlay(element) {
-    const {viewer, data: {result: flowNodes, processInstanceCount: piCount}} = this.props;
+    const {
+      viewer,
+      data: {result: flowNodes, processInstanceCount: piCount}
+    } = this.props;
 
     const overlays = viewer.get('overlays');
     const value = flowNodes[element.id] || 0;
 
     // create overlay node from html string
     const container = document.createElement('div');
-    const percentageValue = Math.round(value / piCount * 1000) / 10 || 0;
+    const percentageValue = Math.round((value / piCount) * 1000) / 10 || 0;
 
     container.innerHTML = `<div class="DiagramBehavior__overlay" role="tooltip">
       <table class="DiagramBehavior__end-event-statistics">
