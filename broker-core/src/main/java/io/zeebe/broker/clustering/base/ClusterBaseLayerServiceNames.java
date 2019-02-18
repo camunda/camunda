@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.clustering.base;
 
+import io.atomix.core.Atomix;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
