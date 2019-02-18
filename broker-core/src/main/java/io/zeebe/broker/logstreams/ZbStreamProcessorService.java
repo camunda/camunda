@@ -173,7 +173,8 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
       DeploymentEventProcessors.addTransformingDeploymentProcessor(
           typedProcessorBuilder,
           zeebeState,
-          new CatchEventBehavior(zeebeState, new SubscriptionCommandSender(atomix), clusterCfg.getPartitionsCount()));
+          new CatchEventBehavior(
+              zeebeState, new SubscriptionCommandSender(atomix), clusterCfg.getPartitionsCount()));
     } else {
       DeploymentEventProcessors.addDeploymentCreateProcessor(typedProcessorBuilder, workflowState);
     }

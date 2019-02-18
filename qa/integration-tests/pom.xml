@@ -56,11 +56,6 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-msgpack-value</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
       <artifactId>zb-protocol</artifactId>
     </dependency>
 
@@ -82,11 +77,6 @@
     <dependency>
       <groupId>io.atomix</groupId>
       <artifactId>atomix-utils</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.agrona</groupId>
-      <artifactId>agrona</artifactId>
     </dependency>
 
     <dependency>

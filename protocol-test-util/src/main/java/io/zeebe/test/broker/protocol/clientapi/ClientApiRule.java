@@ -21,8 +21,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.Member;
-import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
-import io.atomix.utils.net.Address;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.DeploymentRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
@@ -46,7 +44,6 @@ import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transports;
-import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
@@ -88,7 +85,8 @@ public class ClientApiRule extends ExternalResource {
     this(0, 1, atomixSupplier);
   }
 
-  public ClientApiRule(final int nodeId, final int partitionCount, final Supplier<AtomixCluster> atomixSupplier) {
+  public ClientApiRule(
+      final int nodeId, final int partitionCount, final Supplier<AtomixCluster> atomixSupplier) {
     this.nodeId = nodeId;
     this.partitionCount = partitionCount;
     this.atomixSupplier = atomixSupplier;
