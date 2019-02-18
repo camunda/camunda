@@ -126,7 +126,7 @@ export default withErrorHandling(
     maxRawDataEntriesExceeded = () => {
       if (!this.state.report) return false;
 
-      const {data, result, processInstanceCount} = this.state.report;
+      const {data, result, processInstanceCount, decisionInstanceCount} = this.state.report;
       return !!(
         result &&
         result.length &&
@@ -134,7 +134,7 @@ export default withErrorHandling(
         data.visualization === 'table' &&
         data.view &&
         data.view.operation === 'rawData' &&
-        processInstanceCount > result.length
+        (processInstanceCount > result.length || decisionInstanceCount > result.length)
       );
     };
 
@@ -186,8 +186,8 @@ export default withErrorHandling(
 
             {this.maxRawDataEntriesExceeded() && (
               <Message type="warning">
-                The raw data table below only shows {report.result.length} process instances out of
-                a total of {report.processInstanceCount}
+                The raw data table below only shows {report.result.length} instances out of a total
+                of {report.processInstanceCount || report.decisionInstanceCount}
               </Message>
             )}
 
