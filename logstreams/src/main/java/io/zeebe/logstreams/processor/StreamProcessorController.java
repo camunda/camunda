@@ -242,7 +242,6 @@ public class StreamProcessorController extends Actor {
         if (eventProcessor != null) {
           // don't execute side effects or write events
           eventProcessor.processEvent();
-          eventProcessor.updateState();
           onRecordReprocessed(currentEvent);
         } else {
           onRecordReprocessed(currentEvent);
@@ -366,8 +365,6 @@ public class StreamProcessorController extends Actor {
 
   private void updateState() {
     try {
-      eventProcessor.updateState();
-
       lastSuccessfulProcessedEventPosition = currentEvent.getPosition();
 
       final boolean hasWrittenEvent = eventPosition > 0;

@@ -436,19 +436,13 @@ public class TestStreams {
 
         @Override
         public long writeEvent(final LogStreamRecordWriter writer) {
-          return actualProcessor != null ? actualProcessor.writeEvent(writer) : 0;
-        }
-
-        @Override
-        public void updateState() {
-          if (actualProcessor != null) {
-            actualProcessor.updateState();
-          }
+          final long result = actualProcessor != null ? actualProcessor.writeEvent(writer) : 0;
 
           if (blockAfterCurrentEvent) {
             blockAfterCurrentEvent = false;
             context.suspendController();
           }
+          return result;
         }
       };
     }

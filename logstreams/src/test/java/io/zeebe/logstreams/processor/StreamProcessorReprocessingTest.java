@@ -156,7 +156,6 @@ public class StreamProcessorReprocessingTest {
     verify(eventProcessor, times(2)).processEvent();
     verify(eventProcessor, times(1)).executeSideEffects();
     verify(eventProcessor, times(1)).writeEvent(any());
-    verify(eventProcessor, times(2)).updateState();
   }
 
   @Test
@@ -179,7 +178,6 @@ public class StreamProcessorReprocessingTest {
     verify(eventProcessor, times(2)).processEvent();
     verify(eventProcessor, times(2)).executeSideEffects();
     verify(eventProcessor, times(2)).writeEvent(any());
-    verify(eventProcessor, times(2)).updateState();
   }
 
   @Test
@@ -204,7 +202,6 @@ public class StreamProcessorReprocessingTest {
     verify(eventProcessor, times(3)).processEvent();
     verify(eventProcessor, times(1)).executeSideEffects();
     verify(eventProcessor, times(1)).writeEvent(any());
-    verify(eventProcessor, times(3)).updateState();
   }
 
   @Test
@@ -228,7 +225,6 @@ public class StreamProcessorReprocessingTest {
     verify(eventProcessor, times(3)).processEvent();
     verify(eventProcessor, times(1)).executeSideEffects();
     verify(eventProcessor, times(1)).writeEvent(any());
-    verify(eventProcessor, times(3)).updateState();
   }
 
   @Test
@@ -253,7 +249,6 @@ public class StreamProcessorReprocessingTest {
     verify(eventProcessor, times(2)).processEvent();
     verify(eventProcessor, times(1)).executeSideEffects();
     verify(eventProcessor, times(1)).writeEvent(any());
-    verify(eventProcessor, times(2)).updateState();
   }
 
   @Test
@@ -279,7 +274,6 @@ public class StreamProcessorReprocessingTest {
     verify(eventProcessor, times(2)).processEvent();
     verify(eventProcessor, times(1)).executeSideEffects();
     verify(eventProcessor, times(1)).writeEvent(any());
-    verify(eventProcessor, times(2)).updateState();
   }
 
   @Test
@@ -332,7 +326,6 @@ public class StreamProcessorReprocessingTest {
     verify(eventProcessor, times(2)).processEvent();
     verify(eventProcessor, times(2)).executeSideEffects();
     verify(eventProcessor, times(2)).writeEvent(any());
-    verify(eventProcessor, times(2)).updateState();
   }
 
   @Test
