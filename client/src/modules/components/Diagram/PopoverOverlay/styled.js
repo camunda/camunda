@@ -59,6 +59,7 @@ export const Popover = styled.div`
     })};
 
   padding: 11px;
+  padding-top: 12px;
 `;
 
 export const PeterCaseSummaryHeader = styled.div`

@@ -222,9 +222,12 @@ export default class Instance extends Component {
     );
 
     // get corresponding start and end dates
-    const {startDate, endDate} = activityIdToActivityInstanceMap
+    const activityInstance = activityIdToActivityInstanceMap
       .get(flowNodeId)
       .get(activityInstanceId);
+
+    const startDate = formatDate(activityInstance.startDate);
+    const endDate = formatDate(activityInstance.endDate);
 
     // return a cleaned-up  metadata object
     return {
@@ -232,15 +235,11 @@ export default class Instance extends Component {
         isSingleRowPeterCase: activityInstancesMap.size > 1 ? true : null
       }),
       data: Object.entries({
-        ...metadata,
         activityInstanceId,
+        ...metadata,
         startDate,
         endDate
       }).reduce((cleanMetadata, [key, value]) => {
-        if (['startDate', 'endDate'].includes(key)) {
-          return {...cleanMetadata, [key]: formatDate(value)};
-        }
-
         // ignore other empty values
         if (!value) {
           return cleanMetadata;
