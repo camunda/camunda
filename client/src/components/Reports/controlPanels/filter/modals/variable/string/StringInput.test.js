@@ -1,7 +1,6 @@
 import React from 'react';
 
 import StringInput from './StringInput';
-import {loadValues} from './service';
 
 import {mount} from 'enzyme';
 
@@ -24,12 +23,6 @@ jest.mock('components', () => {
   };
 });
 
-jest.mock('./service', () => {
-  return {
-    loadValues: jest.fn().mockReturnValue(['val1', 'val2'])
-  };
-});
-
 jest.mock('debounce', () => foo => foo);
 
 const props = {
@@ -37,6 +30,7 @@ const props = {
   processDefinitionVersion: '1',
   variable: {name: 'foo', type: 'String'},
   filter: StringInput.defaultFilter,
+  config: {getValues: jest.fn().mockReturnValue(['val1', 'val2'])},
   setValid: jest.fn()
 };
 
@@ -49,7 +43,7 @@ it('should show a typeahead', () => {
 it('should load 10 values initially', () => {
   mount(<StringInput {...props} />);
 
-  expect(loadValues).toHaveBeenCalledWith('procDefKey', '1', 'foo', 'String', 0, 11, '');
+  expect(props.config.getValues).toHaveBeenCalledWith('foo', 'String', 11, '');
 });
 
 it('should show available values', () => {
@@ -76,7 +70,7 @@ it('should load 10 more values if the user wants more', () => {
     .at(1)
     .simulate('click');
 
-  expect(loadValues).toHaveBeenCalledWith('procDefKey', '1', 'foo', 'String', 0, 21, '');
+  expect(props.config.getValues).toHaveBeenCalledWith('foo', 'String', 21, '');
 });
 
 it('should disable add filter button if no value is selected', () => {

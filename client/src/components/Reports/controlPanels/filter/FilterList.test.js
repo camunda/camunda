@@ -2,7 +2,9 @@ import React from 'react';
 
 import FilterList from './FilterList';
 
-import {mount} from 'enzyme';
+import {ActionItem} from 'components';
+
+import {mount, shallow} from 'enzyme';
 
 jest.mock('components', () => {
   return {
@@ -47,7 +49,7 @@ it('should display a start date filter', () => {
 });
 
 it('should display "and" between filter entries', () => {
-  const data = ['Filter 1', 'Filter 2'];
+  const data = [{type: 'completedInstancesOnly'}, {type: 'canceledInstancesOnly'}];
 
   const node = mount(<FilterList data={data} />);
 
@@ -72,6 +74,32 @@ it('should display a simple variable filter', () => {
   const node = mount(<FilterList data={data} openEditFilterModal={jest.fn()} />);
 
   expect(node).toIncludeText('varName is varValue');
+});
+
+it('should use the variables prop to resolve variable names', () => {
+  const data = [
+    {
+      type: 'inputVariable',
+      data: {
+        name: 'notANameButAnId',
+        type: 'String',
+        data: {
+          operator: 'in',
+          values: ['varValue']
+        }
+      }
+    }
+  ];
+
+  const node = shallow(
+    <FilterList
+      variables={{inputVariable: [{id: 'notANameButAnId', name: 'Resolved Name', type: 'String'}]}}
+      data={data}
+      openEditFilterModal={jest.fn()}
+    />
+  );
+
+  expect(node.find('ActionItem span').first()).toIncludeText('Resolved Name');
 });
 
 it('should display a date variable filter as a range', () => {

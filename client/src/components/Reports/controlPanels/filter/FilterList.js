@@ -11,12 +11,20 @@ export default class FilterList extends React.Component {
     return <span className="FilterList__operator"> {name} </span>;
   };
 
+  getVariableName = (type, nameOrId) => {
+    if (this.props.variables) {
+      return this.props.variables[type].find(({id}) => id === nameOrId).name;
+    }
+
+    return nameOrId;
+  };
+
   render() {
     const list = [];
 
     for (let i = 0; i < this.props.data.length; i++) {
       const filter = this.props.data[i];
-      if (filter.type === 'startDate' || filter.type === 'endDate') {
+      if (filter.type.includes('Date')) {
         const {type} = filter.data;
 
         if (type === 'fixed') {
@@ -39,8 +47,8 @@ export default class FilterList extends React.Component {
                 {this.createOperator('is between')}
                 <span className="FilterList__value">
                   {moment(filter.data.start).format('YYYY-MM-DD')}
-                </span>{' '}
-                {this.createOperator('and')}{' '}
+                </span>
+                {this.createOperator('and')}
                 <span className="FilterList__value">
                   {moment(filter.data.end).format('YYYY-MM-DD')}
                 </span>
@@ -64,20 +72,20 @@ export default class FilterList extends React.Component {
                 className="FilterList__action-item"
               >
                 <span className="FilterList__parameter-name">
-                  {formatters.camelCaseToLabel(filter.type)}{' '}
+                  {formatters.camelCaseToLabel(filter.type)}
                 </span>
-                less than{' '}
+                {this.createOperator('less than')}
                 <span className="FilterList__value">
                   {value.toString()} {unit.slice(0, -1)}
                   {value > 1 && 's'}
-                </span>{' '}
-                ago
+                </span>
+                {this.createOperator('ago')}
               </ActionItem>
             </li>
           );
         }
       } else {
-        if (filter.type === 'variable') {
+        if (filter.type.toLowerCase().includes('variable')) {
           const {name, type, data} = filter.data;
 
           if (type === 'Date') {
@@ -94,7 +102,9 @@ export default class FilterList extends React.Component {
                   }}
                   className="FilterList__action-item"
                 >
-                  <span className="FilterList__parameter-name">{name}</span>
+                  <span className="FilterList__parameter-name">
+                    {this.getVariableName(filter.type, name)}
+                  </span>
                   {this.createOperator('is between')}
                   <span className="FilterList__value">
                     {moment(data.start).format('YYYY-MM-DD')}
@@ -118,7 +128,9 @@ export default class FilterList extends React.Component {
                   }}
                   className="FilterList__action-item"
                 >
-                  <span className="FilterList__parameter-name">{name}</span>
+                  <span className="FilterList__parameter-name">
+                    {this.getVariableName(filter.type, name)}
+                  </span>
                   {this.createOperator('is')}
                   <span className="FilterList__value">{data.value.toString()}</span>
                 </ActionItem>
@@ -139,7 +151,9 @@ export default class FilterList extends React.Component {
                   }}
                   className="FilterList__action-item"
                 >
-                  <span className="FilterList__parameter-name">{name}</span>
+                  <span className="FilterList__parameter-name">
+                    {this.getVariableName(filter.type, name)}
+                  </span>
                   {(operator === 'in' || operator === '=') && this.createOperator('is')}
                   {operator === 'not in' &&
                     (values.length === 1

@@ -4,8 +4,6 @@ import debounce from 'debounce';
 import {ButtonGroup, Button, TypeaheadMultipleSelection, LoadingIndicator} from 'components';
 import classnames from 'classnames';
 
-import {loadValues} from './service';
-
 import './StringInput.scss';
 
 const valuesToLoad = 10;
@@ -43,12 +41,9 @@ export default class StringInput extends React.Component {
         loading: true
       },
       async () => {
-        const values = await loadValues(
-          this.props.processDefinitionKey,
-          this.props.processDefinitionVersion,
-          this.props.variable.name,
+        const values = await this.props.config.getValues(
+          this.props.variable.id || this.props.variable.name,
           this.props.variable.type,
-          0,
           this.state.valuesLoaded + valuesToLoad + this.props.filter.values.length + 1,
           this.state.valueFilter
         );

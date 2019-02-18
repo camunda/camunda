@@ -60,24 +60,14 @@ it('should contain a filter modal when a newFilter should be created', () => {
 it('should contain an edit filter modal when a filter should be edited', () => {
   const node = mount(<Filter data={[{type: 'startDate'}]} />);
 
-  node.instance().openEditFilterModal(
-    {
-      data: {
-        operator: 'bar',
-        type: 'baz',
-        value: 'foo'
-      },
-      type: 'startDate'
+  node.instance().openEditFilterModal({
+    data: {
+      operator: 'bar',
+      type: 'baz',
+      value: 'foo'
     },
-    {
-      data: {
-        operator: 'foo1',
-        type: 'bar1',
-        value: 'baz1'
-      },
-      type: 'startDate'
-    }
-  )();
+    type: 'startDate'
+  })();
 
   expect(node).toIncludeText('DateFilter');
 });
@@ -145,7 +135,7 @@ it('should edit the edited filter', () => {
 
   node.instance().editFilter('bar');
 
-  expect(spy.mock.calls[0][0].filter).toEqual({$set: ['bar', 'foo']});
+  expect(spy.mock.calls[0][0].filter).toEqual({0: {$set: 'bar'}});
 });
 
 it('should remove a filter from the list of filters', () => {

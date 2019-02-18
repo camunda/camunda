@@ -4,8 +4,6 @@ import VariableFilter from './VariableFilter';
 
 import {DateInput} from './date';
 
-import {loadVariables} from './service';
-
 import {mount} from 'enzyme';
 
 jest.mock('components', () => {
@@ -24,18 +22,6 @@ jest.mock('components', () => {
         {props.children}
       </div>
     )
-  };
-});
-
-jest.mock('./service', () => {
-  const variables = [
-    {name: 'boolVar', type: 'Boolean'},
-    {name: 'numberVar', type: 'Float'},
-    {name: 'stringVar', type: 'String'}
-  ];
-
-  return {
-    loadVariables: jest.fn().mockReturnValue(variables)
   };
 });
 
@@ -58,16 +44,29 @@ jest.mock('./date', () => {
   return {DateInput};
 });
 
+const props = {
+  processDefinitionKey: 'procDefKey',
+  processDefinitionVersion: '1',
+  filterType: 'variable',
+  config: {
+    getVariables: jest
+      .fn()
+      .mockReturnValue([
+        {name: 'boolVar', type: 'Boolean'},
+        {name: 'numberVar', type: 'Float'},
+        {name: 'stringVar', type: 'String'}
+      ])
+  }
+};
+
 it('should contain a modal', () => {
-  const node = mount(<VariableFilter />);
+  const node = mount(<VariableFilter {...props} />);
 
   expect(node.find('#modal')).toBePresent();
 });
 
 it('should disable add filter button if no variable is selected', () => {
-  const node = mount(
-    <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
-  );
+  const node = mount(<VariableFilter {...props} />);
 
   const buttons = node.find('#modal_actions button');
   expect(buttons.at(0).prop('disabled')).toBeFalsy(); // abort
@@ -75,9 +74,7 @@ it('should disable add filter button if no variable is selected', () => {
 });
 
 it('should enable add filter button if variable selection is valid', async () => {
-  const node = mount(
-    <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
-  );
+  const node = mount(<VariableFilter {...props} />);
 
   await node.setState({
     valid: true,
@@ -90,13 +87,7 @@ it('should enable add filter button if variable selection is valid', async () =>
 
 it('should create a new filter', () => {
   const spy = jest.fn();
-  const node = mount(
-    <VariableFilter
-      processDefinitionKey="procDefKey"
-      processDefinitionVersion="1"
-      addFilter={spy}
-    />
-  );
+  const node = mount(<VariableFilter {...props} addFilter={spy} />);
 
   node.setState({
     selectedVariable: {name: 'foo', type: 'String'},
@@ -136,20 +127,14 @@ it('should use custom filter parsing logic from input components', () => {
       }
     }
   };
-  mount(<VariableFilter filterData={existingFilter} />);
+  mount(<VariableFilter {...props} filterData={existingFilter} />);
 
   expect(DateInput.parseFilter).toHaveBeenCalledWith(existingFilter);
 });
 
 it('should use custom filter adding logic from input components', () => {
   const spy = jest.fn();
-  const node = mount(
-    <VariableFilter
-      processDefinitionKey="procDefKey"
-      processDefinitionVersion="1"
-      addFilter={spy}
-    />
-  );
+  const node = mount(<VariableFilter {...props} addFilter={spy} />);
 
   const selectedVariable = {name: 'foo', type: 'Date'};
   const filter = {startDate: 'start', endDate: 'end'};
@@ -167,18 +152,15 @@ it('should use custom filter adding logic from input components', () => {
 });
 
 it('should load available variables', () => {
-  loadVariables.mockClear();
-  mount(<VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />);
+  mount(<VariableFilter {...props} />);
 
-  expect(loadVariables).toHaveBeenCalledWith('procDefKey', '1');
+  expect(props.config.getVariables).toHaveBeenCalled();
 });
 
 it('should contain a typeahead with the available variables', async () => {
-  const node = mount(
-    <VariableFilter processDefinitionKey="procDefKey" processDefinitionVersion="1" />
-  );
+  const node = mount(<VariableFilter {...props} />);
 
-  loadVariables.mockReturnValueOnce(['varA', 'varB', 'varC']);
+  props.config.getVariables.mockReturnValueOnce(['varA', 'varB', 'varC']);
   await node.instance().componentDidMount();
 
   expect(node).toIncludeText('Typeahead');

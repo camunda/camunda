@@ -7,15 +7,13 @@ import {DateFilter, VariableFilter, NodeFilter, DurationFilter} from './modals';
 import FilterList from './FilterList';
 import './Filter.scss';
 
-export default class Filter extends React.Component {
-  constructor(props) {
-    super(props);
+import {loadVariables, loadValues, filterIncompatibleExistingFilters} from './service';
 
-    this.state = {
-      newFilterType: null,
-      editFilter: null
-    };
-  }
+export default class Filter extends React.Component {
+  state = {
+    newFilterType: null,
+    editFilter: null
+  };
 
   openNewFilterModal = type => evt => {
     this.setState({newFilterType: type});
@@ -45,40 +43,46 @@ export default class Filter extends React.Component {
     }
   };
 
+  getFilterConfig = type => {
+    if (type === 'variable') {
+      return {
+        getVariables: async () =>
+          await loadVariables(this.props.processDefinitionKey, this.props.processDefinitionVersion),
+        getValues: async (name, type, numResults, valueFilter) =>
+          await loadValues(
+            this.props.processDefinitionKey,
+            this.props.processDefinitionVersion,
+            name,
+            type,
+            0,
+            numResults,
+            valueFilter
+          )
+      };
+    }
+  };
+
   editFilter = newFilter => {
-    const filters = [...this.props.data];
+    const filters = this.props.data;
 
     const index = filters.indexOf(filters.find(v => this.state.editFilter.data === v.data));
 
-    filters.splice(index, 1, newFilter);
-
-    this.props.onChange({filter: {$set: filters}}, true);
+    this.props.onChange({filter: {[index]: {$set: newFilter}}}, true);
     this.closeModal();
   };
 
   addFilter = newFilter => {
     let filters = this.props.data;
-    filters = this.filterIncompatibleExistingFilters(filters, newFilter.type, ['startDate']);
-    filters = this.filterIncompatibleExistingFilters(filters, newFilter.type, ['endDate']);
-    filters = this.filterIncompatibleExistingFilters(filters, newFilter.type, [
+    filters = filterIncompatibleExistingFilters(filters, newFilter.type, ['startDate']);
+    filters = filterIncompatibleExistingFilters(filters, newFilter.type, ['endDate']);
+    filters = filterIncompatibleExistingFilters(filters, newFilter.type, [
       'completedInstancesOnly'
     ]);
-    filters = this.filterIncompatibleExistingFilters(filters, newFilter.type, [
-      'runningInstancesOnly'
-    ]);
-    filters = this.filterIncompatibleExistingFilters(filters, newFilter.type, [
-      'canceledInstancesOnly'
-    ]);
+    filters = filterIncompatibleExistingFilters(filters, newFilter.type, ['runningInstancesOnly']);
+    filters = filterIncompatibleExistingFilters(filters, newFilter.type, ['canceledInstancesOnly']);
 
     this.props.onChange({filter: {$set: [...filters, newFilter]}}, true);
     this.closeModal();
-  };
-
-  filterIncompatibleExistingFilters = (filters, newFilterType, uniqueTypes) => {
-    if (uniqueTypes.includes(newFilterType)) {
-      return filters.filter(({type}) => !uniqueTypes.includes(type));
-    }
-    return filters;
   };
 
   deleteFilter = oldFilter => {
@@ -170,6 +174,7 @@ export default class Filter extends React.Component {
           xml={this.props.xml}
           {...this.definitionConfig()}
           filterType={this.state.newFilterType}
+          config={this.getFilterConfig(this.state.newFilterType)}
         />
         <EditFilterModal
           addFilter={this.editFilter}
@@ -178,6 +183,7 @@ export default class Filter extends React.Component {
           xml={this.props.xml}
           {...this.definitionConfig()}
           filterType={this.state.editFilter && this.state.editFilter.type}
+          config={this.getFilterConfig(this.state.editFilter && this.state.editFilter.type)}
         />
       </div>
     );

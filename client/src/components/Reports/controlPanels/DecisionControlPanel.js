@@ -4,11 +4,50 @@ import {Popover, Dropdown, Labeled} from 'components';
 import DecisionDefinitionSelection from './DecisionDefinitionSelection';
 import {Configuration} from './Configuration';
 
+import {DecisionFilter} from './filter';
+
 import {isChecked} from './service';
 import {getDataKeys, reportConfig, loadDecisionDefinitionXml} from 'services';
 const {decision: decisionConfig} = reportConfig;
 
+function convertToUpperCase(string) {
+  return string.replace(/^\w/, character => character.toUpperCase());
+}
+
 export default class DecisionControlPanel extends React.Component {
+  state = {};
+
+  static getDerivedStateFromProps({
+    report: {
+      data: {
+        configuration: {xml},
+        decisionDefinitionKey
+      }
+    }
+  }) {
+    const definitions = new DOMParser()
+      .parseFromString(xml, 'text/xml')
+      .querySelector(`decision[id="${decisionDefinitionKey}"]`);
+
+    if (definitions) {
+      return {
+        variables: {
+          inputVariable: [...definitions.querySelectorAll('input')].map(node => ({
+            id: node.getAttribute('id'),
+            name: node.getAttribute('label'),
+            type: convertToUpperCase(node.querySelector('inputExpression').getAttribute('typeRef'))
+          })),
+          outputVariable: [...definitions.querySelectorAll('output')].map(node => ({
+            id: node.getAttribute('id'),
+            name: node.getAttribute('label'),
+            type: convertToUpperCase(node.getAttribute('typeRef'))
+          }))
+        }
+      };
+    }
+    return null;
+  }
+
   createTitle = () => {
     const {decisionDefinitionKey, decisionDefinitionVersion} = this.props.report.data;
     if (decisionDefinitionKey && decisionDefinitionVersion) {
@@ -19,13 +58,23 @@ export default class DecisionControlPanel extends React.Component {
   };
 
   changeDefinition = async (key, version) => {
+    const {groupBy, filter} = this.props.report.data;
+
     const change = {
       decisionDefinitionKey: {$set: key},
-      decisionDefinitionVersion: {$set: version}
+      decisionDefinitionVersion: {$set: version},
+      filter: {
+        $set: filter.filter(({type}) => type !== 'inputVariable' && type !== 'outputVariable')
+      }
     };
 
     if (key && version) {
       change.configuration = {xml: {$set: await loadDecisionDefinitionXml(key, version)}};
+    }
+
+    if (groupBy && (groupBy.type === 'inputVariable' || groupBy.type === 'outputVariable')) {
+      change.groupBy = {$set: null};
+      change.visualization = {$set: null};
     }
 
     this.props.updateReport(change, true);
@@ -33,7 +82,8 @@ export default class DecisionControlPanel extends React.Component {
 
   render() {
     const {
-      data: {decisionDefinitionKey, decisionDefinitionVersion, visualization}
+      data: {decisionDefinitionKey, decisionDefinitionVersion, filter, visualization},
+      decisionInstanceCount
     } = this.props.report;
     return (
       <div className="DecisionControlPanel ReportControlPanel">
@@ -63,6 +113,16 @@ export default class DecisionControlPanel extends React.Component {
             <Labeled label="Visualize as">
               {this.renderDropdown('visualization', decisionConfig.options.visualization)}
             </Labeled>
+          </li>
+          <li className="filter">
+            <DecisionFilter
+              data={filter}
+              onChange={this.props.updateReport}
+              instanceCount={decisionInstanceCount}
+              decisionDefinitionKey={decisionDefinitionKey}
+              decisionDefinitionVersion={decisionDefinitionVersion}
+              variables={this.state.variables}
+            />
           </li>
           <Configuration
             type={visualization}
@@ -121,16 +181,10 @@ export default class DecisionControlPanel extends React.Component {
 
     let options = configData[submenu];
 
-    if (type === 'groupBy' && key.includes('Variable')) {
-      options = [
-        ...new DOMParser()
-          .parseFromString(data.configuration.xml, 'text/xml')
-          .querySelectorAll(
-            `decision[id="${data.decisionDefinitionKey}"] ${key.replace('Variable', '')}`
-          )
-      ].map(node => ({
-        data: {id: node.getAttribute('id')},
-        label: node.getAttribute('label')
+    if (data.decisionDefinitionKey && type === 'groupBy' && key.includes('Variable')) {
+      options = this.state.variables[key].map(({id, name}) => ({
+        data: {id},
+        label: name
       }));
     }
 

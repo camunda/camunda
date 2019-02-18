@@ -6,7 +6,7 @@ import {NumberInput} from './number';
 import {StringInput} from './string';
 import {DateInput} from './date';
 
-import {loadVariables} from './service';
+import {formatters} from 'services';
 
 import './VariableFilter.scss';
 
@@ -28,17 +28,14 @@ export default class VariableFilter extends React.Component {
         : filterData.data;
 
       this.setState({
-        selectedVariable: {name: filterData.name, type: filterData.type},
+        selectedVariable: {id: filterData.id, name: filterData.name, type: filterData.type},
         filter,
         valid: true
       });
     }
 
     this.setState({
-      variables: await loadVariables(
-        this.props.processDefinitionKey,
-        this.props.processDefinitionVersion
-      )
+      variables: await this.props.config.getVariables()
     });
   };
 
@@ -77,7 +74,7 @@ export default class VariableFilter extends React.Component {
 
     return (
       <Modal open={true} onClose={this.props.close} className="VariableFilter__modal">
-        <Modal.Header>Add Variable Filter</Modal.Header>
+        <Modal.Header>Add {formatters.camelCaseToLabel(this.props.filterType)} Filter</Modal.Header>
         <Modal.Content>
           <Labeled className="LabeledTypeahead" label="Variable Name">
             <Typeahead
@@ -89,8 +86,7 @@ export default class VariableFilter extends React.Component {
             />
           </Labeled>
           <ValueInput
-            processDefinitionKey={this.props.processDefinitionKey}
-            processDefinitionVersion={this.props.processDefinitionVersion}
+            config={this.props.config}
             variable={selectedVariable}
             setValid={this.setValid}
             changeFilter={this.changeFilter}
@@ -123,9 +119,9 @@ export default class VariableFilter extends React.Component {
     InputComponent.addFilter
       ? InputComponent.addFilter(this.props.addFilter, variable, this.state.filter)
       : this.props.addFilter({
-          type: 'variable',
+          type: this.props.filterType,
           data: {
-            name: variable.name,
+            name: variable.id || variable.name,
             type: variable.type,
             data: this.state.filter
           }
