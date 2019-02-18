@@ -42,7 +42,7 @@ public class MessageStartEventSubscriptionMultiplePartitionsTest {
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(setPartitionCount(3));
 
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomixAddress);
+  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 

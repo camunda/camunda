@@ -15,9 +15,7 @@
  */
 package io.zeebe.gateway.impl.broker;
 
-import io.atomix.cluster.AtomixCluster;
-import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
-import io.atomix.utils.net.Address;
+import io.atomix.cluster.ClusterMembershipEventListener;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.gateway.Loggers;
@@ -38,7 +36,6 @@ import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -48,29 +45,48 @@ import org.slf4j.Logger;
 public class BrokerClientImpl implements BrokerClient {
   public static final Logger LOG = Loggers.GATEWAY_LOGGER;
   protected final ActorScheduler actorScheduler;
+  private final boolean ownsActorScheduler;
   protected final ClientTransport transport;
   protected final BrokerTopologyManagerImpl topologyManager;
   private final Dispatcher dataFrameReceiveBuffer;
-  private final ClientTransport internalTransport;
   private final BrokerRequestManager requestManager;
   protected boolean isClosed;
-  private AtomixCluster atomix;
 
-  public BrokerClientImpl(final GatewayCfg configuration) {
-    this(configuration, null);
+  public BrokerClientImpl(
+      final GatewayCfg configuration,
+      final Consumer<ClusterMembershipEventListener> eventListenerConsumer) {
+    this(configuration, eventListenerConsumer, null);
   }
 
-  public BrokerClientImpl(final GatewayCfg configuration, final ActorClock actorClock) {
-    final ClusterCfg clusterCfg = configuration.getCluster();
-
-    this.actorScheduler =
+  public BrokerClientImpl(
+      final GatewayCfg configuration,
+      final Consumer<ClusterMembershipEventListener> eventListenerConsumer,
+      final ActorClock actorClock) {
+    this(
+        configuration,
+        eventListenerConsumer,
         ActorScheduler.newActorScheduler()
             .setCpuBoundActorThreadCount(configuration.getThreads().getManagementThreads())
             .setIoBoundActorThreadCount(0)
             .setActorClock(actorClock)
-            .setSchedulerName("gateway")
-            .build();
-    this.actorScheduler.start();
+            .setSchedulerName("gateway-scheduler")
+            .build(),
+        true);
+  }
+
+  public BrokerClientImpl(
+      final GatewayCfg configuration,
+      final Consumer<ClusterMembershipEventListener> eventListenerConsumer,
+      final ActorScheduler actorScheduler,
+      final boolean ownsActorScheduler) {
+    this.actorScheduler = actorScheduler;
+    this.ownsActorScheduler = ownsActorScheduler;
+
+    if (ownsActorScheduler) {
+      actorScheduler.start();
+    }
+
+    final ClusterCfg clusterCfg = configuration.getCluster();
 
     final ByteValue transportBufferSize = clusterCfg.getTransportBuffer();
 
@@ -83,7 +99,7 @@ public class BrokerClientImpl implements BrokerClient {
             .build();
 
     final ClientTransportBuilder transportBuilder =
-        Transports.newClientTransport("broker-client")
+        Transports.newClientTransport("gateway-broker-client")
             .messageMaxLength(1024 * 1024)
             .messageReceiveBuffer(dataFrameReceiveBuffer)
             .messageMemoryPool(
@@ -91,51 +107,10 @@ public class BrokerClientImpl implements BrokerClient {
             .requestMemoryPool(new NonBlockingMemoryPool(transportBufferSize))
             .scheduler(actorScheduler);
 
-    // internal transport is used for topology request
-    final ClientTransportBuilder internalTransportBuilder =
-        Transports.newClientTransport("broker-client-internal")
-            .messageMaxLength(1024 * 1024)
-            .messageMemoryPool(new UnboundedMemoryPool())
-            .requestMemoryPool(new UnboundedMemoryPool())
-            .scheduler(actorScheduler);
-
     transport = transportBuilder.build();
-    internalTransport = internalTransportBuilder.build();
 
-    atomix =
-        AtomixCluster.builder()
-            .withHost(clusterCfg.getHost())
-            .withPort(clusterCfg.getPort())
-            .withMemberId(clusterCfg.getMemberId())
-            .withClusterId(clusterCfg.getClusterName())
-            .withMembershipProvider(
-                BootstrapDiscoveryProvider.builder()
-                    .withNodes(Address.from(clusterCfg.getContactPoint()))
-                    .build())
-            .build();
-
-    LOG.debug(
-        "{}: Atomix address {}:{}",
-        clusterCfg.getMemberId(),
-        clusterCfg.getHost(),
-        clusterCfg.getPort());
-
-    topologyManager =
-        new BrokerTopologyManagerImpl(
-            internalTransport.getOutput(), this::registerEndpoint, clusterCfg.getMemberId());
-    atomix.getMembershipService().addListener(topologyManager);
-
-    final CompletableFuture<Void> joinedFuture = atomix.start();
-    joinedFuture.whenComplete(
-        (r, t) -> {
-          if (t != null) {
-            LOG.error("{}: Atomix failed to start '{}' :", clusterCfg.getMemberId(), t.toString());
-          } else {
-            LOG.debug("{}: Atomix started", clusterCfg.getMemberId());
-            topologyManager.addInitialCluster(atomix.getMembershipService().getMembers());
-          }
-        });
-
+    topologyManager = new BrokerTopologyManagerImpl(this::registerEndpoint);
+    eventListenerConsumer.accept(topologyManager);
     actorScheduler.submitActor(topologyManager);
 
     requestManager =
@@ -149,7 +124,6 @@ public class BrokerClientImpl implements BrokerClient {
 
   private void registerEndpoint(final int nodeId, final SocketAddress socketAddress) {
     registerEndpoint(transport, nodeId, socketAddress);
-    registerEndpoint(internalTransport, nodeId, socketAddress);
   }
 
   private void registerEndpoint(
@@ -168,26 +142,24 @@ public class BrokerClientImpl implements BrokerClient {
 
     isClosed = true;
 
-    LOG.debug("Closing client ...");
+    LOG.debug("Closing gateway broker client ...");
 
-    doAndLogException(() -> atomix.stop().join());
-    LOG.debug("Atomix closed");
     doAndLogException(() -> topologyManager.close().join());
     LOG.debug("topology manager closed");
     doAndLogException(transport::close);
     LOG.debug("transport closed");
-    doAndLogException(internalTransport::close);
-    LOG.debug("internal transport closed");
     doAndLogException(dataFrameReceiveBuffer::close);
     LOG.debug("data frame receive buffer closed");
 
-    try {
-      actorScheduler.stop().get(15, TimeUnit.SECONDS);
-
-      LOG.debug("Client closed.");
-    } catch (final InterruptedException | ExecutionException | TimeoutException e) {
-      throw new RuntimeException("Failed to gracefully shutdown client", e);
+    if (ownsActorScheduler) {
+      try {
+        actorScheduler.stop().get(15, TimeUnit.SECONDS);
+      } catch (final InterruptedException | ExecutionException | TimeoutException e) {
+        throw new RuntimeException("Failed to gracefully shutdown gateway broker client", e);
+      }
     }
+
+    LOG.debug("Gateway broker client closed.");
   }
 
   protected void doAndLogException(final Runnable r) {

@@ -15,6 +15,7 @@
  */
 package io.zeebe.gateway;
 
+import io.atomix.cluster.ClusterMembershipEventListener;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.netty.NettyServerBuilder;
@@ -23,6 +24,7 @@ import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import org.slf4j.Logger;
 
@@ -41,23 +43,32 @@ public class Gateway {
   }
 
   private final Function<GatewayCfg, ServerBuilder> serverBuilderFactory;
+  private final Function<GatewayCfg, BrokerClient> brokerClientFactory;
   private final GatewayCfg gatewayCfg;
 
   private Server server;
   private BrokerClient brokerClient;
   private EndpointManager endpointManager;
 
-  public Gateway(GatewayCfg gatewayCfg) {
-    this(gatewayCfg, DEFAULT_SERVER_BUILDER_FACTORY);
+  public Gateway(
+      GatewayCfg gatewayCfg, Consumer<ClusterMembershipEventListener> eventListenerConsumer) {
+    this(
+        gatewayCfg,
+        cfg -> new BrokerClientImpl(cfg, eventListenerConsumer),
+        DEFAULT_SERVER_BUILDER_FACTORY);
   }
 
-  public Gateway(GatewayCfg gatewayCfg, Function<GatewayCfg, ServerBuilder> serverBuilderFactory) {
+  public Gateway(GatewayCfg gatewayCfg, Function<GatewayCfg, BrokerClient> brokerClientFactory) {
+    this(gatewayCfg, brokerClientFactory, DEFAULT_SERVER_BUILDER_FACTORY);
+  }
+
+  public Gateway(
+      GatewayCfg gatewayCfg,
+      Function<GatewayCfg, BrokerClient> brokerClientFactory,
+      Function<GatewayCfg, ServerBuilder> serverBuilderFactory) {
     this.gatewayCfg = gatewayCfg;
+    this.brokerClientFactory = brokerClientFactory;
     this.serverBuilderFactory = serverBuilderFactory;
-  }
-
-  public EndpointManager getEndpointManager() {
-    return endpointManager;
   }
 
   public GatewayCfg getGatewayCfg() {
@@ -81,7 +92,7 @@ public class Gateway {
   }
 
   protected BrokerClient buildBrokerClient() {
-    return new BrokerClientImpl(gatewayCfg);
+    return brokerClientFactory.apply(gatewayCfg);
   }
 
   public void listenAndServe() throws InterruptedException, IOException {

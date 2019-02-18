@@ -49,6 +49,11 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
+      <artifactId>zb-protocol-impl</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
       <artifactId>zb-bpmn-model</artifactId>
     </dependency>
 
@@ -66,9 +71,10 @@
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
     </dependency>
+
     <dependency>
       <groupId>io.atomix</groupId>
-      <artifactId>atomix</artifactId>
+      <artifactId>atomix-cluster</artifactId>
     </dependency>
 
   </dependencies>

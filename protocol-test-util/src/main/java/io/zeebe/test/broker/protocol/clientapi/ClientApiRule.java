@@ -17,29 +17,27 @@ package io.zeebe.test.broker.protocol.clientapi;
 
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.atomix.cluster.AtomixCluster;
-import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
-import io.atomix.utils.net.Address;
+import io.atomix.cluster.Member;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.data.cluster.BrokerInfo;
 import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transports;
-import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
-import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.junit.rules.ExternalResource;
 
@@ -47,48 +45,30 @@ public class ClientApiRule extends ExternalResource {
 
   public static final long DEFAULT_LOCK_DURATION = 10000L;
   private static final String DEFAULT_WORKER = "defaultWorker";
-  private static final String DEFAULT_CLUSTER_NAME = "zeebe-cluster";
 
   protected final int nodeId;
-  protected final Supplier<SocketAddress> atomixAddressSupplier;
+  protected final Supplier<AtomixCluster> atomixSupplier;
   private final Int2ObjectHashMap<PartitionTestClient> testPartitionClients =
       new Int2ObjectHashMap<>();
   private final ControlledActorClock controlledActorClock = new ControlledActorClock();
-  protected Supplier<SocketAddress> clientAddressSupplier;
   protected ClientTransport transport;
   protected MsgPackHelper msgPackHelper;
   protected int defaultPartitionId = -1;
   private AtomixCluster atomix;
   private ActorScheduler scheduler;
-  private ObjectMapper objectMapper;
 
-  public ClientApiRule(final Supplier<SocketAddress> atomixAddressSupplier) {
-    this(0, atomixAddressSupplier);
+  public ClientApiRule(final Supplier<AtomixCluster> atomixSupplier) {
+    this(0, atomixSupplier);
   }
 
-  public ClientApiRule(final int nodeId, final Supplier<SocketAddress> atomixAddressSupplier) {
+  public ClientApiRule(final int nodeId, final Supplier<AtomixCluster> atomixSupplier) {
     this.nodeId = nodeId;
-    this.atomixAddressSupplier = atomixAddressSupplier;
-    objectMapper = new ObjectMapper();
+    this.atomixSupplier = atomixSupplier;
   }
 
   @Override
-  protected void before() throws Throwable {
-    this.atomix =
-        AtomixCluster.builder()
-            .withMemberId("clientApiRule")
-            .withClusterId(DEFAULT_CLUSTER_NAME)
-            .withAddress(
-                Address.from(
-                    atomixAddressSupplier.get().host(), SocketUtil.getNextAddress().port()))
-            .withMembershipProvider(
-                BootstrapDiscoveryProvider.builder()
-                    .withNodes(
-                        Address.from(
-                            atomixAddressSupplier.get().host(), atomixAddressSupplier.get().port()))
-                    .build())
-            .build();
-    atomix.start().join();
+  protected void before() {
+    fetchAtomix();
 
     scheduler =
         ActorScheduler.newActorScheduler()
@@ -101,41 +81,32 @@ public class ClientApiRule extends ExternalResource {
     msgPackHelper = new MsgPackHelper();
 
     waitForTopology();
-    atomix.getMembershipService().getMembers().stream()
+    getBrokerInfoStream()
         .forEach(
-            m -> {
-              final String addressProperty = m.properties().getProperty("clientAddress");
-              if (addressProperty != null) {
-                try {
-                  final InetSocketAddress socketAddress =
-                      objectMapper.readValue(addressProperty, InetSocketAddress.class);
-                  clientAddressSupplier =
-                      () ->
-                          SocketAddress.from(
-                              socketAddress.getHostString() + ":" + socketAddress.getPort());
-
-                } catch (IOException e) {
-                  e.printStackTrace();
-                }
-              }
-            });
-    transport.registerEndpoint(nodeId, clientAddressSupplier.get());
+            brokerInfo ->
+                transport.registerEndpoint(
+                    brokerInfo.getNodeId(),
+                    SocketAddress.from(brokerInfo.getApiAddress(BrokerInfo.CLIENT_API_PROPERTY))));
 
     final List<Integer> partitionIds = doRepeatedly(this::getPartitionIds).until(p -> !p.isEmpty());
     defaultPartitionId = partitionIds.get(0);
   }
 
+  public void restart() {
+    fetchAtomix();
+  }
+
+  private void fetchAtomix() {
+    atomix = atomixSupplier.get();
+    assertThat(atomix).isNotNull();
+  }
+
   private void waitForTopology() {
-    waitUntil(
-        () ->
-            atomix.getMembershipService().getMembers().stream()
-                .anyMatch(member -> member.properties().getProperty("clientAddress") != null));
+    waitUntil(() -> getBrokerInfoStream().count() > 0);
   }
 
   @Override
   protected void after() {
-    atomix.stop().join();
-
     if (transport != null) {
       transport.close();
     }
@@ -206,27 +177,22 @@ public class ClientApiRule extends ExternalResource {
     waitUntil(() -> getPartitionIds().size() >= partitions);
   }
 
-  @SuppressWarnings("unchecked")
   public List<Integer> getPartitionIds() {
-    try {
-      final AtomicInteger partitionsCount = new AtomicInteger(0);
+    return getBrokerInfoStream()
+        .findFirst()
+        .map(
+            brokerInfo ->
+                IntStream.range(0, brokerInfo.getPartitionsCount())
+                    .boxed()
+                    .collect(Collectors.toList()))
+        .orElse(Collections.emptyList());
+  }
 
-      atomix.getMembershipService().getMembers().stream()
-          .forEach(
-              m -> {
-                final String countProperty = m.properties().getProperty("partitionsCount");
-                if (countProperty != null) {
-                  final int count = Integer.parseInt(countProperty);
-                  if (count > 0) {
-                    partitionsCount.set(count);
-                  }
-                }
-              });
-
-      return IntStream.range(0, partitionsCount.get()).boxed().collect(Collectors.toList());
-    } catch (final Exception e) {
-      return Collections.EMPTY_LIST;
-    }
+  private Stream<BrokerInfo> getBrokerInfoStream() {
+    return atomix.getMembershipService().getMembers().stream()
+        .map(Member::properties)
+        .map(BrokerInfo::fromProperties)
+        .filter(Objects::nonNull);
   }
 
   public int getDefaultPartitionId() {

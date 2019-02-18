@@ -67,7 +67,7 @@ public class CreateDeploymentMultiplePartitionsTest {
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(setPartitionCount(3));
 
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomixAddress);
+  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
@@ -234,6 +234,7 @@ public class CreateDeploymentMultiplePartitionsTest {
 
     // when
     brokerRule.restartBroker();
+    apiRule.restart();
     doRepeatedly(apiRule::getPartitionIds).until(p -> !p.isEmpty());
 
     // then

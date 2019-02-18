@@ -23,6 +23,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
+import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import io.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerDeployWorkflowRequest;
@@ -85,13 +86,15 @@ public class BrokerClientTest {
         .setRequestTimeout("3s");
     clock = new ControlledActorClock();
 
-    client = new BrokerClientImpl(configuration, clock);
+    client = new BrokerClientImpl(configuration, l -> {}, clock);
 
     ((BrokerClientImpl) client).getTransport().registerEndpoint(0, broker.getSocketAddress());
-    final BrokerClusterStateImpl topology =
-        (BrokerClusterStateImpl) client.getTopologyManager().getTopology();
+
+    final BrokerClusterStateImpl topology = new BrokerClusterStateImpl();
     topology.addPartitionIfAbsent(0);
     topology.setPartitionLeader(0, 0);
+
+    ((BrokerTopologyManagerImpl) client.getTopologyManager()).setTopology(topology);
   }
 
   @After
@@ -367,7 +370,7 @@ public class BrokerClientTest {
             .onExecuteCommandRequest(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
             .respondWith()
             .event()
-            .intent(WorkflowInstanceIntent.ELEMENT_READY)
+            .intent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .key(r -> r.key())
             .value()
             .allOf((r) -> r.getCommand())
