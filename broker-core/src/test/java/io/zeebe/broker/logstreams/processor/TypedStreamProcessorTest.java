@@ -20,6 +20,9 @@ package io.zeebe.broker.logstreams.processor;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.zeebe.broker.logstreams.state.DefaultZeebeDbFactory;
 import io.zeebe.broker.util.Records;
@@ -35,7 +38,9 @@ import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.ServerOutput;
+import io.zeebe.transport.ServerResponse;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.Before;
 import org.junit.Rule;
@@ -66,6 +71,9 @@ public class TypedStreamProcessorTest {
   protected LogStream stream;
 
   @Mock protected ServerOutput output;
+  private StreamProcessorControl streamProcessorControl;
+  private KeyGenerator keyGenerator;
+  private TypedStreamEnvironment env;
 
   @Before
   public void setUp() {
@@ -76,22 +84,22 @@ public class TypedStreamProcessorTest {
             tempFolder.getRoot(), closeables, serviceContainerRule.get(), actorSchedulerRule.get());
 
     stream = streams.createLogStream(STREAM_NAME);
+    env = new TypedStreamEnvironment(streams.getLogStream(STREAM_NAME), output);
+
+    final AtomicLong key = new AtomicLong();
+    keyGenerator = () -> key.getAndIncrement();
   }
 
   @Test
   public void shouldWriteSourceEventAndProducerOnBatch() {
     // given
-    final TypedStreamEnvironment env =
-        new TypedStreamEnvironment(streams.getLogStream(STREAM_NAME), output);
-
-    final AtomicLong key = new AtomicLong();
     final TypedStreamProcessor streamProcessor =
         env.newStreamProcessor()
-            .keyGenerator(() -> key.getAndIncrement())
+            .keyGenerator(keyGenerator)
             .onCommand(ValueType.DEPLOYMENT, DeploymentIntent.CREATE, new BatchProcessor())
             .build();
 
-    final StreamProcessorControl streamProcessorControl =
+    streamProcessorControl =
         streams.initStreamProcessor(
             STREAM_NAME,
             STREAM_PROCESSOR_ID,
@@ -126,6 +134,80 @@ public class TypedStreamProcessorTest {
     assertThat(writtenEvent.getSourceEventPosition()).isEqualTo(firstEventPosition);
   }
 
+  @Test
+  public void shouldSkipFailingEvent() {
+    // given
+    final TypedStreamProcessor streamProcessor =
+        env.newStreamProcessor()
+            .keyGenerator(keyGenerator)
+            .onCommand(ValueType.DEPLOYMENT, DeploymentIntent.CREATE, new ErrorProneProcessor())
+            .build();
+
+    streamProcessorControl =
+        streams.initStreamProcessor(
+            STREAM_NAME,
+            STREAM_PROCESSOR_ID,
+            DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
+            (db) -> streamProcessor);
+    streamProcessorControl.start();
+    final AtomicLong requestId = new AtomicLong(0);
+    final AtomicInteger requestStreamId = new AtomicInteger(0);
+
+    when(output.sendResponse(any()))
+        .then(
+            (invocationOnMock -> {
+              final ServerResponse serverResponse = invocationOnMock.getArgument(0);
+
+              requestId.set(serverResponse.getRequestId());
+              requestStreamId.set(serverResponse.getRemoteStreamId());
+
+              return invocationOnMock.callRealMethod();
+            }));
+
+    streams
+        .newRecord(STREAM_NAME)
+        .event(deployment("foo", ResourceType.BPMN_XML))
+        .recordType(RecordType.COMMAND)
+        .intent(DeploymentIntent.CREATE)
+        .requestId(255L)
+        .requestStreamId(99)
+        .key(keyGenerator.nextKey())
+        .write();
+    final long secondEventPosition =
+        streams
+            .newRecord(STREAM_NAME)
+            .event(deployment("foo2", ResourceType.BPMN_XML))
+            .recordType(RecordType.COMMAND)
+            .intent(DeploymentIntent.CREATE)
+            .key(keyGenerator.nextKey())
+            .write();
+
+    // when
+    streamProcessorControl.unblock();
+
+    final LoggedEvent writtenEvent =
+        doRepeatedly(
+                () ->
+                    streams
+                        .events(STREAM_NAME)
+                        .filter(
+                            e -> Records.isEvent(e, ValueType.DEPLOYMENT, DeploymentIntent.CREATED))
+                        .findFirst())
+            .until(o -> o.isPresent())
+            .get();
+
+    // then
+    assertThat(writtenEvent.getKey()).isEqualTo(1);
+    assertThat(writtenEvent.getProducerId()).isEqualTo(STREAM_PROCESSOR_ID);
+    assertThat(writtenEvent.getSourceEventPosition()).isEqualTo(secondEventPosition);
+
+    // error response
+    verify(output).sendResponse(any());
+
+    assertThat(requestId.get()).isEqualTo(255L);
+    assertThat(requestStreamId.get()).isEqualTo(99);
+  }
+
   protected DeploymentRecord deployment(final String name, final ResourceType resourceType) {
     final DeploymentRecord event = new DeploymentRecord();
     event
@@ -135,6 +217,22 @@ public class TypedStreamProcessorTest {
         .setResource(wrapString("foo"))
         .setResourceName(wrapString(name));
     return event;
+  }
+
+  protected static class ErrorProneProcessor implements TypedRecordProcessor<DeploymentRecord> {
+
+    @Override
+    public void processRecord(
+        final TypedRecord<DeploymentRecord> record,
+        final TypedResponseWriter responseWriter,
+        final TypedStreamWriter streamWriter) {
+      if (record.getKey() == 0) {
+        throw new RuntimeException("expected");
+      }
+      streamWriter.appendFollowUpEvent(
+          record.getKey(), DeploymentIntent.CREATED, record.getValue());
+      streamWriter.flush();
+    }
   }
 
   protected static class BatchProcessor implements TypedRecordProcessor<DeploymentRecord> {

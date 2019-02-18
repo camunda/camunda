@@ -482,6 +482,16 @@ public class TestStreams {
       return this;
     }
 
+    public FluentLogWriter requestId(final long requestId) {
+      this.metadata.requestId(requestId);
+      return this;
+    }
+
+    public FluentLogWriter requestStreamId(final int requestStreamId) {
+      this.metadata.requestStreamId(requestStreamId);
+      return this;
+    }
+
     public FluentLogWriter recordType(final RecordType recordType) {
       this.metadata.recordType(recordType);
       return this;
