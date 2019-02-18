@@ -70,6 +70,12 @@ public abstract class StreamWrapper<T, S extends StreamWrapper<T, S>> implements
     return wrappedStream.findFirst().isPresent();
   }
 
+  public void await() {
+    if (!exists()) {
+      throw new StreamWrapperException();
+    }
+  }
+
   public T getFirst() {
     return wrappedStream.findFirst().orElseThrow(StreamWrapperException::new);
   }
