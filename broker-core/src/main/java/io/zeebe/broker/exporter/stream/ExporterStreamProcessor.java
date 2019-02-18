@@ -182,7 +182,7 @@ public class ExporterStreamProcessor implements StreamProcessor {
     }
 
     @Override
-    public void updateState() {
+    public void processEvent() {
       for (final ExporterPosition position : record.getPositions()) {
         state.setPositionIfGreater(position.getId(), position.getPosition());
       }

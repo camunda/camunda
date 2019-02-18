@@ -50,9 +50,4 @@ public interface EventProcessor {
   default long writeEvent(LogStreamRecordWriter writer) {
     return 0;
   }
-
-  /** (Optional) Update the internal state of the processor based on the processed event. */
-  default void updateState() {
-    // do nothing
-  }
 }

@@ -366,8 +366,6 @@ public class StreamProcessorController extends Actor {
 
   private void updateState() {
     try {
-      eventProcessor.updateState();
-
       lastSuccessfulProcessedEventPosition = currentEvent.getPosition();
 
       final boolean hasWrittenEvent = eventPosition > 0;

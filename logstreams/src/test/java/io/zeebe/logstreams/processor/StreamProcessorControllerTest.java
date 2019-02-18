@@ -122,7 +122,6 @@ public class StreamProcessorControllerTest {
     inOrder.verify(eventProcessor, times(1)).processEvent();
     inOrder.verify(eventProcessor, times(1)).executeSideEffects();
     inOrder.verify(eventProcessor, times(1)).writeEvent(any());
-    inOrder.verify(eventProcessor, times(1)).updateState();
 
     inOrder.verify(streamProcessor, times(1)).onClose();
     inOrder.verify(snapshotController, times(1)).takeSnapshot(any());
@@ -156,7 +155,6 @@ public class StreamProcessorControllerTest {
     inOrder.verify(eventProcessor, times(1)).processEvent();
     inOrder.verify(eventProcessor, times(3)).executeSideEffects();
     inOrder.verify(eventProcessor, times(1)).writeEvent(any());
-    inOrder.verify(eventProcessor, times(1)).updateState();
     inOrder.verifyNoMoreInteractions();
   }
 
@@ -171,7 +169,6 @@ public class StreamProcessorControllerTest {
     inOrder.verify(eventProcessor, times(1)).processEvent();
     inOrder.verify(eventProcessor, times(1)).executeSideEffects();
     inOrder.verify(eventProcessor, times(3)).writeEvent(any());
-    inOrder.verify(eventProcessor, times(1)).updateState();
     inOrder.verifyNoMoreInteractions();
   }
 
@@ -522,7 +519,6 @@ public class StreamProcessorControllerTest {
     inOrder.verify(eventProcessor, times(1)).processEvent();
     inOrder.verify(eventProcessor, times(1)).executeSideEffects();
     inOrder.verify(eventProcessor, times(1)).writeEvent(any());
-    inOrder.verify(eventProcessor, times(1)).updateState();
     inOrder.verifyNoMoreInteractions();
   }
 
