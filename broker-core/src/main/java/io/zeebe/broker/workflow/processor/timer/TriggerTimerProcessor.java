@@ -78,8 +78,10 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
     boolean isOccurred = true;
 
     eventOccurredRecord.reset();
+    final long eventOccuredKey;
     if (elementInstanceKey == NO_ELEMENT_INSTANCE) {
       // timer start event
+      eventOccuredKey = streamWriter.getKeyGenerator().nextKey();
       eventOccurredRecord
           .setBpmnElementType(BpmnElementType.START_EVENT)
           .setWorkflowKey(timer.getWorkflowKey())
@@ -87,6 +89,7 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
           .setPayload(WorkflowInstanceRecord.EMPTY_PAYLOAD);
     } else {
       final long eventKey = streamWriter.getKeyGenerator().nextKey();
+      eventOccuredKey = elementInstanceKey;
       isOccurred =
           workflowState
               .getEventScopeInstanceState()
@@ -102,7 +105,7 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
     if (isOccurred) {
       streamWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
       streamWriter.appendFollowUpEvent(
-          elementInstanceKey, WorkflowInstanceIntent.EVENT_OCCURRED, eventOccurredRecord);
+          eventOccuredKey, WorkflowInstanceIntent.EVENT_OCCURRED, eventOccurredRecord);
 
       if (shouldReschedule(timer)) {
         final ExecutableCatchEventElement timerEvent = getTimerEvent(elementInstanceKey, timer);

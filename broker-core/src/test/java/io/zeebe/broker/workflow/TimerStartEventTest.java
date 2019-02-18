@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.record.Assertions;
+import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.DeploymentRecordValue;
 import io.zeebe.exporter.record.value.TimerRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
@@ -130,21 +131,32 @@ public class TimerStartEventTest {
     assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).exists()).isTrue();
     brokerRule.getClock().addTime(Duration.ofSeconds(2));
 
-    Assertions.assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
-                .withElementType(BpmnElementType.START_EVENT)
-                .getFirst()
-                .getValue())
+    final WorkflowInstanceRecordValue startEventActivating =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementType(BpmnElementType.START_EVENT)
+            .getFirst()
+            .getValue();
+    Assertions.assertThat(startEventActivating)
         .hasElementId("start_1")
         .hasBpmnProcessId("process")
         .hasVersion(workflow.getVersion())
         .hasWorkflowKey(workflow.getWorkflowKey());
 
+    final Record startEventOccured =
+        RecordingExporter.getRecords()
+            .stream()
+            .filter(r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.EVENT_OCCURRED)
+            .findFirst()
+            .get();
+    assertThat(startEventOccured.getKey())
+        .isLessThan(startEventActivating.getWorkflowInstanceKey());
+
     final long triggerRecordPosition =
         RecordingExporter.timerRecords(TimerIntent.TRIGGER).getFirst().getPosition();
 
     assertThat(
-            RecordingExporter.getRecords().stream()
+            RecordingExporter.getRecords()
+                .stream()
                 .filter(r -> r.getPosition() >= triggerRecordPosition)
                 .limit(6)
                 .map(r -> r.getMetadata().getIntent()))
