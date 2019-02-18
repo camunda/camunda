@@ -75,7 +75,10 @@ const Colors = {
   lightScopeLabel: '#EDEFF3',
 
   // Pill
-  darkPillHover: '#767a80'
+  darkPillHover: '#767a80',
+
+  // Instance History
+  darkTreeHover: '#4E4F55'
 };
 
 export default Colors;

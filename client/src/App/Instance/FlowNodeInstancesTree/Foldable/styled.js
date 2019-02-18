@@ -28,7 +28,7 @@ export const FoldButton = themed(styled.button`
 
   &:hover {
     background: ${themeStyle({
-      dark: 'rgba(255, 255, 255, 0.25)',
+      dark: Colors.darkTreeHover,
       light: 'rgba(216, 220, 227, 0.5)'
     })};
   }

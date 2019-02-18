@@ -22,7 +22,7 @@ const selectionStyle = css`
   border-color: ${Colors.primaryButton01};
   border-width: 1px 1px 0px 1px;
   background: ${Colors.selections};
-
+  color: '#fff';
   > svg {
     fill: ${({showSelectionStyle}) => showSelectionStyle && '#fff'};
   }
