@@ -162,7 +162,7 @@ it('should work for decision tables', () => {
       prop2: 'bar',
       inputVariables: {
         var1: {id: 'var1', value: 12, name: 'Var 1'},
-        var2: {id: 'var2', value: null, name: 'Var 2'}
+        var2: {id: 'var2', value: null, name: null}
       },
       outputVariables: {
         result: {id: 'result', values: [1], name: 'Result'}
@@ -173,11 +173,9 @@ it('should work for decision tables', () => {
       prop2: 'abc',
       inputVariables: {
         var1: {id: 'var1', value: null, name: 'Var 1'},
-        var2: {id: 'var2', value: true, name: 'Var 2'}
+        var2: {id: 'var2', value: true, name: null}
       },
-      outputVariables: {
-        result: {id: 'result', values: [8], name: 'Result'}
-      }
+      outputVariables: {}
     }
   ];
 
@@ -187,10 +185,10 @@ it('should work for decision tables', () => {
       'Prop2',
       {
         label: 'Input Variables',
-        columns: [{id: 'var1', label: 'Var 1'}, {id: 'var2', label: 'Var 2'}]
+        columns: [{id: 'var1', label: 'Var 1'}, {id: 'var2', label: 'var2'}]
       },
       {label: 'Output Variables', columns: [{id: 'result', label: 'Result'}]}
     ],
-    body: [['foo', 'bar', '12', '', '1'], ['xyz', 'abc', '', 'true', '8']]
+    body: [['foo', 'bar', '12', '', '1'], ['xyz', 'abc', '', 'true', '']]
   });
 });

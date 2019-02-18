@@ -42,9 +42,13 @@ function processDecisionRawData(data, columnOrder, endpoints, excludedColumns) {
       }
       return value.toString();
     });
-    const outputVariableValues = outputVariables.map(entry =>
-      instance.outputVariables[entry].values.join(', ')
-    );
+    const outputVariableValues = outputVariables.map(entry => {
+      const output = instance.outputVariables[entry];
+      if (output && output.values) {
+        return output.values.join(', ');
+      }
+      return '';
+    });
 
     return [...propertyValues, ...inputVariableValues, ...outputVariableValues];
   });
@@ -55,7 +59,8 @@ function processDecisionRawData(data, columnOrder, endpoints, excludedColumns) {
     head.push({
       label: 'Input Variables',
       columns: inputVariables.map(key => {
-        return {label: data[0].inputVariables[key].name, id: key};
+        const {name, id} = data[0].inputVariables[key];
+        return {label: name || id, id: key};
       })
     });
   }
@@ -63,7 +68,8 @@ function processDecisionRawData(data, columnOrder, endpoints, excludedColumns) {
     head.push({
       label: 'Output Variables',
       columns: outputVariables.map(key => {
-        return {label: data[0].outputVariables[key].name, id: key};
+        const {name, id} = data[0].outputVariables[key];
+        return {label: name || id, id: key};
       })
     });
   }
