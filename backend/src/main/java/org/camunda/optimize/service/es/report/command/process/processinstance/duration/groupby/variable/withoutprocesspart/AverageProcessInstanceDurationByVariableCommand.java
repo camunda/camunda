@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.variable.withoutprocesspart;
 
 import org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.variable.AbstractProcessInstanceDurationByVariableCommand;
+import org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -14,11 +15,7 @@ public class AverageProcessInstanceDurationByVariableCommand
   @Override
   protected long processAggregationOperation(Aggregations aggs) {
     ParsedAvg aggregation = aggs.get(DURATION_AGGREGATION);
-    if (Double.isInfinite(aggregation.getValue())){
-      return 0L;
-    } else {
-      return Math.round(aggregation.getValue());
-    }
+    return ElasticsearchAggregationResultMappingUtil.mapToLong(aggregation);
   }
 
   @Override

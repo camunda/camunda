@@ -36,7 +36,7 @@ public class RawProcessDataCommand extends ProcessReportCommand<SingleProcessRaw
     new RawProcessDataResultDtoMapper(RAW_DATA_LIMIT);
 
   public SingleProcessRawDataReportResult evaluate() {
-    final ProcessReportDataDto processReportData = getProcessReportData();
+    final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
       "Evaluating raw data report for process definition key [{}] and version [{}]",
       processReportData.getProcessDefinitionKey(),

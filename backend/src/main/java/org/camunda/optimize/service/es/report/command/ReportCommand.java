@@ -12,11 +12,11 @@ import org.slf4j.LoggerFactory;
 
 import java.time.OffsetDateTime;
 
-public abstract class ReportCommand <T extends ReportResult>  implements Command {
+public abstract class ReportCommand <R extends ReportResult, RD extends ReportDataDto>  implements Command<RD> {
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
-  protected ReportDataDto reportData;
+  protected RD reportData;
   protected RestHighLevelClient esClient;
   protected ConfigurationService configurationService;
   protected ObjectMapper objectMapper;
@@ -24,7 +24,7 @@ public abstract class ReportCommand <T extends ReportResult>  implements Command
 
 
   @Override
-  public T evaluate(CommandContext commandContext) throws OptimizeException {
+  public R evaluate(CommandContext<RD> commandContext) throws OptimizeException {
     reportData = commandContext.getReportData();
     esClient = commandContext.getEsClient();
     configurationService = commandContext.getConfigurationService();
@@ -32,17 +32,20 @@ public abstract class ReportCommand <T extends ReportResult>  implements Command
     dateIntervalRange = commandContext.getDateIntervalRange();
     beforeEvaluate(commandContext);
 
-    T evaluationResult = evaluate();
+    R evaluationResult = evaluate();
     evaluationResult.copyReportData(reportData);
-    return filterResultData(evaluationResult);
+    return filterResultData(commandContext, evaluationResult);
   }
 
-  protected abstract void beforeEvaluate(CommandContext commandContext);
+  protected abstract void beforeEvaluate(CommandContext<RD> commandContext);
 
-  protected T filterResultData(T evaluationResult) {
+  protected abstract R evaluate() throws OptimizeException;
+
+  protected R filterResultData(CommandContext<RD> commandContext, R evaluationResult) {
     return evaluationResult;
   }
 
-  protected abstract T evaluate() throws OptimizeException;
-
+  public RD getReportData() {
+    return reportData;
+  }
 }

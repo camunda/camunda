@@ -42,16 +42,16 @@ public class RawDecisionDataCommand extends DecisionReportCommand<SingleDecision
   public SingleDecisionRawDataReportResult evaluate() {
     logger.debug(
       "Evaluating raw data report for decision definition key [{}] and version [{}]",
-      getDecisionReportData().getDecisionDefinitionKey(),
-      getDecisionReportData().getDecisionDefinitionVersion()
+      getReportData().getDecisionDefinitionKey(),
+      getReportData().getDecisionDefinitionVersion()
     );
 
-    final DecisionReportDataDto decisionReportData = getDecisionReportData();
+    final DecisionReportDataDto decisionReportData = getReportData();
     final BoolQueryBuilder query = setupBaseQuery(
-      getDecisionReportData().getDecisionDefinitionKey(),
-      getDecisionReportData().getDecisionDefinitionVersion()
+      getReportData().getDecisionDefinitionKey(),
+      getReportData().getDecisionDefinitionVersion()
     );
-    queryFilterEnhancer.addFilterToQuery(query, getDecisionReportData().getFilter());
+    queryFilterEnhancer.addFilterToQuery(query, getReportData().getFilter());
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
@@ -70,8 +70,8 @@ public class RawDecisionDataCommand extends DecisionReportCommand<SingleDecision
       String reason =
         String.format(
           "Could not evaluate raw data report for decision definition key [%s] and version [%s]",
-          getDecisionReportData().getDecisionDefinitionKey(),
-          getDecisionReportData().getDecisionDefinitionVersion()
+          getReportData().getDecisionDefinitionKey(),
+          getReportData().getDecisionDefinitionVersion()
         );
       logger.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);

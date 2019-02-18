@@ -49,7 +49,7 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
   @Override
   protected SingleProcessMapReportResult evaluate() {
 
-    final ProcessReportDataDto processReportData = getProcessReportData();
+    final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
       "Evaluating average process instance duration grouped by variable report " +
         "for process definition key [{}] and version [{}]",

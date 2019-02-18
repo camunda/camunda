@@ -46,7 +46,7 @@ public abstract class AbstractFlowNodeDurationByFlowNodeCommand<T extends Aggreg
   @Override
   protected SingleProcessMapReportResult evaluate() {
 
-    final ProcessReportDataDto processReportData = getProcessReportData();
+    final ProcessReportDataDto processReportData = getReportData();
     logger.debug("Evaluating flow node duration grouped by flow node report " +
       "for process definition key [{}] and version [{}]",
                  processReportData.getProcessDefinitionKey(),

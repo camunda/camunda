@@ -51,7 +51,7 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessRepo
   @Override
   protected SingleProcessMapReportResult evaluate() throws OptimizeException {
 
-    final ProcessReportDataDto processReportData = getProcessReportData();
+    final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
       "Evaluating count process instance frequency grouped by start date report " +
         "for process definition key [{}] and version [{}]",
@@ -92,6 +92,11 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ProcessRepo
     mapResultDto.setResult(processAggregations(response.getAggregations()));
     mapResultDto.setProcessInstanceCount(response.getHits().getTotalHits());
     return new SingleProcessMapReportResult(mapResultDto);
+  }
+
+  @Override
+  public BoolQueryBuilder setupBaseQuery(final ProcessReportDataDto reportDataDto) {
+    return super.setupBaseQuery(reportDataDto);
   }
 
   private AggregationBuilder createAggregation(GroupByDateUnit unit, QueryBuilder query) throws OptimizeException {

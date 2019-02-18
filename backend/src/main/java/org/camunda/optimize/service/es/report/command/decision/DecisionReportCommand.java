@@ -12,7 +12,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-public abstract class DecisionReportCommand<T extends ReportResult> extends ReportCommand<T> {
+public abstract class DecisionReportCommand<T extends ReportResult> extends ReportCommand<T, DecisionReportDataDto> {
   protected DecisionQueryFilterEnhancer queryFilterEnhancer;
   protected IntervalAggregationService intervalAggregationService;
 
@@ -23,12 +23,8 @@ public abstract class DecisionReportCommand<T extends ReportResult> extends Repo
   }
 
   @Override
-  protected T filterResultData(final T evaluationResult) {
-    return evaluationResult;
-  }
-
-  protected DecisionReportDataDto getDecisionReportData() {
-    return (DecisionReportDataDto) this.reportData;
+  protected T filterResultData(final CommandContext<DecisionReportDataDto> commandContext, final T evaluationResult) {
+    return super.filterResultData(commandContext, evaluationResult);
   }
 
   protected BoolQueryBuilder setupBaseQuery(String decisionDefinitionKey, String decisionDefinitionVersion) {

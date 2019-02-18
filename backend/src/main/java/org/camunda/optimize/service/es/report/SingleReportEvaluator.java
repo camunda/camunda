@@ -47,6 +47,18 @@ import org.camunda.optimize.service.es.report.command.process.processinstance.du
 import org.camunda.optimize.service.es.report.command.process.processinstance.frequency.CountProcessInstanceFrequencyByStartDateCommand;
 import org.camunda.optimize.service.es.report.command.process.processinstance.frequency.CountProcessInstanceFrequencyByVariableCommand;
 import org.camunda.optimize.service.es.report.command.process.processinstance.frequency.CountProcessInstanceFrequencyGroupByNoneCommand;
+import org.camunda.optimize.service.es.report.command.process.user_task.duration.AverageUserTaskIdleDurationByUserTaskCommand;
+import org.camunda.optimize.service.es.report.command.process.user_task.duration.AverageUserTaskTotalDurationByUserTaskCommand;
+import org.camunda.optimize.service.es.report.command.process.user_task.duration.AverageUserTaskWorkDurationByUserTaskCommand;
+import org.camunda.optimize.service.es.report.command.process.user_task.duration.MaxUserTaskIdleDurationByUserTaskCommand;
+import org.camunda.optimize.service.es.report.command.process.user_task.duration.MaxUserTaskTotalDurationByUserTaskCommand;
+import org.camunda.optimize.service.es.report.command.process.user_task.duration.MaxUserTaskWorkDurationByUserTaskCommand;
+import org.camunda.optimize.service.es.report.command.process.user_task.duration.MedianUserTaskIdleDurationByUserTaskCommand;
+import org.camunda.optimize.service.es.report.command.process.user_task.duration.MedianUserTaskTotalDurationByUserTaskCommand;
+import org.camunda.optimize.service.es.report.command.process.user_task.duration.MedianUserTaskWorkDurationByUserTaskCommand;
+import org.camunda.optimize.service.es.report.command.process.user_task.duration.MinUserTaskIdleDurationByUserTaskCommand;
+import org.camunda.optimize.service.es.report.command.process.user_task.duration.MinUserTaskTotalDurationByUserTaskCommand;
+import org.camunda.optimize.service.es.report.command.process.user_task.duration.MinUserTaskWorkDurationByUserTaskCommand;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
 import org.camunda.optimize.service.es.report.result.ReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeException;
@@ -72,6 +84,9 @@ import static org.camunda.optimize.service.es.report.command.process.util.Proces
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createAverageProcessInstanceDurationGroupByStartDateWithProcessPartReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createAverageProcessInstanceDurationGroupByVariableReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createAverageProcessInstanceDurationGroupByVariableWithProcessPartReport;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createAverageUserTaskIdleDurationGroupByUserTaskReport;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createAverageUserTaskTotalDurationGroupByUserTaskReport;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createAverageUserTaskWorkDurationGroupByUserTaskReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createCountFlowNodeFrequencyGroupByFlowNodeReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createCountProcessInstanceFrequencyGroupByNoneReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createCountProcessInstanceFrequencyGroupByStartDateReport;
@@ -83,6 +98,9 @@ import static org.camunda.optimize.service.es.report.command.process.util.Proces
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createMaxProcessInstanceDurationGroupByStartDateWithProcessPartReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createMaxProcessInstanceDurationGroupByVariableReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createMaxProcessInstanceDurationGroupByVariableWithProcessPartReport;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createMaxUserTaskIdleDurationGroupByUserTaskReport;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createMaxUserTaskTotalDurationGroupByUserTaskReport;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createMaxUserTaskWorkDurationGroupByUserTaskReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createMedianFlowNodeDurationGroupByFlowNodeReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createMedianProcessInstanceDurationGroupByNoneReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createMedianProcessInstanceDurationGroupByNoneWithProcessPartReport;
@@ -90,6 +108,9 @@ import static org.camunda.optimize.service.es.report.command.process.util.Proces
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createMedianProcessInstanceDurationGroupByStartDateWithProcessPartReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createMedianProcessInstanceDurationGroupByVariableReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createMedianProcessInstanceDurationGroupByVariableWithProcessPartReport;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createMedianUserTaskIdleDurationGroupByUserTaskReport;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createMedianUserTaskTotalDurationGroupByUserTaskReport;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createMedianUserTaskWorkDurationGroupByUserTaskReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createMinFlowNodeDurationGroupByFlowNodeReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createMinProcessInstanceDurationGroupByNoneReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createMinProcessInstanceDurationGroupByNoneWithProcessPartReport;
@@ -97,6 +118,9 @@ import static org.camunda.optimize.service.es.report.command.process.util.Proces
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createMinProcessInstanceDurationGroupByStartDateWithProcessPartReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createMinProcessInstanceDurationGroupByVariableReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createMinProcessInstanceDurationGroupByVariableWithProcessPartReport;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createMinUserTaskIdleDurationGroupByUserTaskReport;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createMinUserTaskTotalDurationGroupByUserTaskReport;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createMinUserTaskWorkDurationGroupByUserTaskReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createRawDataReport;
 import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.INPUTS;
 import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.OUTPUTS;
@@ -112,6 +136,9 @@ public class SingleReportEvaluator {
 
     addCountProcessInstanceFrequencyReports();
     addCountFlowNodeFrequencyReports();
+    addUserTaskIdleDurationReports();
+    addUserTaskTotalDurationReports();
+    addUserTaskWorkDurationReports();
 
     addAverageProcessInstanceDurationReports();
     addMinProcessInstanceDurationReports();
@@ -144,6 +171,36 @@ public class SingleReportEvaluator {
     this.decisionQueryFilterEnhancer = decisionQueryFilterEnhancer;
     this.esClient = esClient;
     this.intervalAggregationService = intervalAggregationService;
+  }
+
+  ReportResult evaluate(ReportDataDto reportData) throws OptimizeException {
+    CommandContext commandContext = createCommandContext(reportData);
+    Command evaluationCommand = extractCommandWithValidation(reportData);
+    return evaluationCommand.evaluate(commandContext);
+  }
+
+  Command extractCommand(ReportDataDto reportData) {
+    return possibleCommands.getOrDefault(reportData.createCommandKey(), new NotSupportedCommand());
+  }
+
+  protected CommandContext createCommandContext(ReportDataDto reportData) {
+    CommandContext commandContext = new CommandContext();
+    commandContext.setConfigurationService(configurationService);
+    commandContext.setEsClient(esClient);
+    commandContext.setObjectMapper(objectMapper);
+    commandContext.setIntervalAggregationService(intervalAggregationService);
+    if (reportData instanceof ProcessReportDataDto) {
+      commandContext.setQueryFilterEnhancer(processQueryFilterEnhancer);
+    } else if (reportData instanceof DecisionReportDataDto) {
+      commandContext.setQueryFilterEnhancer(decisionQueryFilterEnhancer);
+    }
+    commandContext.setReportData(reportData);
+    return commandContext;
+  }
+
+  private Command extractCommandWithValidation(ReportDataDto reportData) {
+    ValidationHelper.validate(reportData);
+    return extractCommand(reportData);
   }
 
   private static void addCountProcessInstanceFrequencyReports() {
@@ -186,6 +243,64 @@ public class SingleReportEvaluator {
       new MedianFlowNodeDurationByFlowNodeCommand()
     );
   }
+
+  private static void addUserTaskIdleDurationReports() {
+    possibleCommands.put(
+      createAverageUserTaskIdleDurationGroupByUserTaskReport().createCommandKey(),
+      new AverageUserTaskIdleDurationByUserTaskCommand()
+    );
+    possibleCommands.put(
+      createMinUserTaskIdleDurationGroupByUserTaskReport().createCommandKey(),
+      new MinUserTaskIdleDurationByUserTaskCommand()
+    );
+    possibleCommands.put(
+      createMaxUserTaskIdleDurationGroupByUserTaskReport().createCommandKey(),
+      new MaxUserTaskIdleDurationByUserTaskCommand()
+    );
+    possibleCommands.put(
+      createMedianUserTaskIdleDurationGroupByUserTaskReport().createCommandKey(),
+      new MedianUserTaskIdleDurationByUserTaskCommand()
+    );
+  }
+
+  private static void addUserTaskTotalDurationReports() {
+    possibleCommands.put(
+      createAverageUserTaskTotalDurationGroupByUserTaskReport().createCommandKey(),
+      new AverageUserTaskTotalDurationByUserTaskCommand()
+    );
+    possibleCommands.put(
+      createMinUserTaskTotalDurationGroupByUserTaskReport().createCommandKey(),
+      new MinUserTaskTotalDurationByUserTaskCommand()
+    );
+    possibleCommands.put(
+      createMaxUserTaskTotalDurationGroupByUserTaskReport().createCommandKey(),
+      new MaxUserTaskTotalDurationByUserTaskCommand()
+    );
+    possibleCommands.put(
+      createMedianUserTaskTotalDurationGroupByUserTaskReport().createCommandKey(),
+      new MedianUserTaskTotalDurationByUserTaskCommand()
+    );
+  }
+
+  private static void addUserTaskWorkDurationReports() {
+    possibleCommands.put(
+      createAverageUserTaskWorkDurationGroupByUserTaskReport().createCommandKey(),
+      new AverageUserTaskWorkDurationByUserTaskCommand()
+    );
+    possibleCommands.put(
+      createMinUserTaskWorkDurationGroupByUserTaskReport().createCommandKey(),
+      new MinUserTaskWorkDurationByUserTaskCommand()
+    );
+    possibleCommands.put(
+      createMaxUserTaskWorkDurationGroupByUserTaskReport().createCommandKey(),
+      new MaxUserTaskWorkDurationByUserTaskCommand()
+    );
+    possibleCommands.put(
+      createMedianUserTaskWorkDurationGroupByUserTaskReport().createCommandKey(),
+      new MedianUserTaskWorkDurationByUserTaskCommand()
+    );
+  }
+
 
   private static void addAverageProcessInstanceDurationReports() {
     possibleCommands.put(
@@ -316,35 +431,5 @@ public class SingleReportEvaluator {
       createCountFrequencyGroupByMatchedRuleReport().createCommandKey(),
       new CountDecisionFrequencyGroupByMatchedRuleCommand()
     );
-  }
-
-  public ReportResult evaluate(ReportDataDto reportData) throws OptimizeException {
-    CommandContext commandContext = createCommandContext(reportData);
-    Command evaluationCommand = extractCommandWithValidation(reportData);
-    return evaluationCommand.evaluate(commandContext);
-  }
-
-  private Command extractCommandWithValidation(ReportDataDto reportData) {
-    ValidationHelper.validate(reportData);
-    return SingleReportEvaluator.this.extractCommand(reportData);
-  }
-
-  protected Command extractCommand(ReportDataDto reportData) {
-    return possibleCommands.getOrDefault(reportData.createCommandKey(), new NotSupportedCommand());
-  }
-
-  protected CommandContext createCommandContext(ReportDataDto reportData) {
-    CommandContext commandContext = new CommandContext();
-    commandContext.setConfigurationService(configurationService);
-    commandContext.setEsClient(esClient);
-    commandContext.setObjectMapper(objectMapper);
-    commandContext.setIntervalAggregationService(intervalAggregationService);
-    if (reportData instanceof ProcessReportDataDto) {
-      commandContext.setQueryFilterEnhancer(processQueryFilterEnhancer);
-    } else if (reportData instanceof DecisionReportDataDto) {
-      commandContext.setQueryFilterEnhancer(decisionQueryFilterEnhancer);
-    }
-    commandContext.setReportData(reportData);
-    return commandContext;
   }
 }

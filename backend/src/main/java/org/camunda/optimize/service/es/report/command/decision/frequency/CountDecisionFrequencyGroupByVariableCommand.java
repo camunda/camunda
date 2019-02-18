@@ -46,7 +46,7 @@ public class CountDecisionFrequencyGroupByVariableCommand
   @Override
   protected SingleDecisionMapReportResult evaluate() {
 
-    final DecisionReportDataDto reportData = getDecisionReportData();
+    final DecisionReportDataDto reportData = getReportData();
     logger.debug(
       "Evaluating count decision instance frequency grouped by {} report " +
         "for decision definition with key [{}] and version [{}]",

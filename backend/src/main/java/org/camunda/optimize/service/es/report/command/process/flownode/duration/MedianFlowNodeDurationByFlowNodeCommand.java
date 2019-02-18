@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.report.command.process.flownode.duration;
 
+import org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.percentiles.tdigest.ParsedTDigestPercentiles;
 
@@ -16,11 +17,6 @@ public class MedianFlowNodeDurationByFlowNodeCommand extends AbstractFlowNodeDur
 
   @Override
   protected Long processOperationAggregation(ParsedTDigestPercentiles aggregation) {
-    double median = aggregation.percentile(50);
-    if (Double.isNaN(median) || Double.isInfinite(median)){
-      return 0L;
-    } else {
-      return Math.round(median);
-    }
+    return ElasticsearchAggregationResultMappingUtil.mapToLong(aggregation);
   }
 }

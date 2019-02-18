@@ -36,7 +36,7 @@ public class CountFlowNodeFrequencyByFlowNodeCommand extends FlowNodeGroupingCom
   @Override
   protected SingleProcessMapReportResult evaluate() {
 
-    final ProcessReportDataDto processReportData = getProcessReportData();
+    final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
       "Evaluating count flow node frequency grouped by flow node report " +
         "for process definition key [{}] and version [{}]",

@@ -28,7 +28,7 @@ public abstract class AbstractProcessInstanceDurationGroupByNoneCommand
   @Override
   protected SingleProcessNumberReportResult evaluate() {
 
-    final ProcessReportDataDto processReportData = getProcessReportData();
+    final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
       "Evaluating process instance duration grouped by none report " +
         "for process definition key [{}] and version [{}]",

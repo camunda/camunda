@@ -27,7 +27,7 @@ public abstract class AbstractProcessInstanceDurationGroupByNoneWithProcessPartC
 
   @Override
   protected AggregationBuilder createAggregationOperation(String fieldName) {
-    ProcessPartDto processPart = getProcessReportData().getParameters().getProcessPart();
+    ProcessPartDto processPart = getReportData().getParameters().getProcessPart();
     return createProcessPartAggregation(processPart.getStart(), processPart.getEnd());
   }
 }

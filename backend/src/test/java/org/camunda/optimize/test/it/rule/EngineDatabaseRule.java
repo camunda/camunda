@@ -259,6 +259,49 @@ public class EngineDatabaseRule extends TestWatcher {
     connection.commit();
   }
 
+  public void changeUserTaskDuration(final String processInstanceId,
+                                     final long duration) throws SQLException {
+    String sql = "UPDATE ACT_HI_TASKINST " +
+      "SET DURATION_ = ? WHERE " +
+      "PROC_INST_ID_ = ?";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setLong(1, duration);
+    statement.setString(2, processInstanceId);
+    statement.executeUpdate();
+    connection.commit();
+  }
+
+  public void changeUserTaskDuration(final String processInstanceId,
+                                     final String userTaskId,
+                                     final long duration) throws SQLException {
+    String sql = "UPDATE ACT_HI_TASKINST " +
+      "SET DURATION_ = ? WHERE " +
+      "PROC_INST_ID_ = ?" +
+      "AND TASK_DEF_KEY_ = ?";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setLong(1, duration);
+    statement.setString(2, processInstanceId);
+    statement.setString(3, userTaskId);
+    statement.executeUpdate();
+    connection.commit();
+  }
+
+  public void changeUserTaskClaimOperationTimestamp(final String processInstanceId,
+                                                    final String taskId,
+                                                    final OffsetDateTime timestamp) throws SQLException {
+    String sql = "UPDATE ACT_HI_OP_LOG " +
+      "SET TIMESTAMP_ = ? WHERE " +
+      "PROC_INST_ID_ = ?" +
+      "AND TASK_ID_ = ?" +
+      "AND OPERATION_TYPE_ = 'Claim'";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setTimestamp(1, toLocalTimestampWithoutNanos(timestamp));
+    statement.setString(2, processInstanceId);
+    statement.setString(3, taskId);
+    statement.executeUpdate();
+    connection.commit();
+  }
+
   public void changeProcessInstanceState(String processInstanceId, String newState) throws SQLException {
     String sql = "UPDATE ACT_HI_PROCINST " +
       "SET STATE_ = ? WHERE PROC_INST_ID_ = ?";

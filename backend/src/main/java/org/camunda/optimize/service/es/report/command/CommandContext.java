@@ -10,13 +10,13 @@ import org.elasticsearch.client.RestHighLevelClient;
 
 import java.time.OffsetDateTime;
 
-public class CommandContext {
+public class CommandContext<T extends ReportDataDto> {
 
   private RestHighLevelClient esClient;
   private ConfigurationService configurationService;
   private ObjectMapper objectMapper;
   private QueryFilterEnhancer queryFilterEnhancer;
-  private ReportDataDto reportData;
+  private T reportData;
   private Range<OffsetDateTime> dateIntervalRange;
   private IntervalAggregationService intervalAggregationService;
 
@@ -52,11 +52,11 @@ public class CommandContext {
     this.queryFilterEnhancer = queryFilterEnhancer;
   }
 
-  public ReportDataDto getReportData() {
+  public T getReportData() {
     return reportData;
   }
 
-  public void setReportData(ReportDataDto reportData) {
+  public void setReportData(T reportData) {
     this.reportData = reportData;
   }
 

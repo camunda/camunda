@@ -12,6 +12,7 @@ public class ReportConstants {
   public static final String VIEW_MEDIAN_OPERATION = "median";
 
   public static final String VIEW_FLOW_NODE_ENTITY = "flowNode";
+  public static final String VIEW_USER_TASK_ENTITY = "userTask";
   public static final String VIEW_PROCESS_INSTANCE_ENTITY = "processInstance";
 
   public static final String VIEW_DECISION_MATCHED_RULE_ENTITY = "matchedRule";
@@ -19,8 +20,11 @@ public class ReportConstants {
 
   public static final String VIEW_FREQUENCY_PROPERTY = "frequency";
   public static final String VIEW_DURATION_PROPERTY = "duration";
+  public static final String VIEW_IDLE_DURATION_PROPERTY = "idleDuration";
+  public static final String VIEW_WORK_DURATION_PROPERTY = "workDuration";
 
   public static final String GROUP_BY_FLOW_NODES_TYPE = "flowNodes";
+  public static final String GROUP_BY_USER_TASKS_TYPE = "userTasks";
   public static final String GROUP_BY_NONE_TYPE = "none";
   public static final String GROUP_BY_START_DATE_TYPE = "startDate";
   public static final String GROUP_BY_VARIABLE_TYPE = "variable";

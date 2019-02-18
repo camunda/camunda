@@ -20,7 +20,7 @@ public abstract class AbstractProcessInstanceDurationGroupByStartDateWithProcess
 
   @Override
   protected AggregationBuilder createAggregationOperation() {
-    ProcessPartDto processPart = getProcessReportData().getParameters().getProcessPart();
+    ProcessPartDto processPart = getReportData().getParameters().getProcessPart();
     return ProcessPartQueryUtil.createProcessPartAggregation(processPart.getStart(), processPart.getEnd());
   }
 }

@@ -21,7 +21,7 @@ public class CountDecisionFrequencyGroupByNoneCommand extends DecisionReportComm
   @Override
   protected SingleDecisionNumberReportResult evaluate() {
 
-    final DecisionReportDataDto reportData = getDecisionReportData();
+    final DecisionReportDataDto reportData = getReportData();
     logger.debug(
       "Evaluating count decision instance frequency grouped by none report " +
         "for decision definition key [{}] and version [{}]",

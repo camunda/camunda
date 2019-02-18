@@ -92,4 +92,25 @@ public class ProcessViewDtoCreator {
     return view;
   }
 
+  public static ProcessViewDto createUserTaskTotalDurationView(final ProcessViewOperation viewOperation) {
+    return createUserTaskView(viewOperation, ProcessViewProperty.DURATION);
+  }
+
+  public static ProcessViewDto createUserTaskIdleDurationView(final ProcessViewOperation viewOperation) {
+    return createUserTaskView(viewOperation, ProcessViewProperty.IDLE_DURATION);
+  }
+
+  public static ProcessViewDto createUserTaskWorkDurationView(final ProcessViewOperation viewOperation) {
+    return createUserTaskView(viewOperation, ProcessViewProperty.WORK_DURATION);
+  }
+
+  private static ProcessViewDto createUserTaskView(final ProcessViewOperation avg,
+                                                   final ProcessViewProperty durationProperty) {
+    final ProcessViewDto view = new ProcessViewDto();
+    view.setOperation(avg);
+    view.setEntity(ProcessViewEntity.USER_TASK);
+    view.setProperty(durationProperty);
+    return view;
+  }
+
 }

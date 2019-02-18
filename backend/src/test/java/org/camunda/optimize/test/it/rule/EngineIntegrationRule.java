@@ -31,6 +31,7 @@ import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
+import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
@@ -387,6 +388,41 @@ public class EngineIntegrationRule extends TestWatcher {
     }
   }
 
+  public List<HistoricUserTaskInstanceDto> getHistoricTaskInstances(String processInstanceId) {
+    return getHistoricTaskInstances(processInstanceId, null);
+  }
+
+  public List<HistoricUserTaskInstanceDto> getHistoricTaskInstances(String processInstanceId,
+                                                                    String taskDefinitionKey) {
+    try {
+      final URIBuilder historicGetProcessInstanceUriBuilder = new URIBuilder(getHistoricTaskInstanceUri())
+        .addParameter("processInstanceId", processInstanceId);
+
+      if (taskDefinitionKey != null) {
+        historicGetProcessInstanceUriBuilder.addParameter("taskDefinitionKey", taskDefinitionKey);
+      }
+
+      final HttpRequestBase get = new HttpGet(historicGetProcessInstanceUriBuilder.build());
+      try (final CloseableHttpResponse response = getHttpClient().execute(get)) {
+        String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+        // @formatter:off
+        final List<HistoricUserTaskInstanceDto> historicUserTaskInstanceDto = objectMapper.readValue(
+          responseString,
+          new TypeReference<List<HistoricUserTaskInstanceDto>>() {}
+        );
+        return historicUserTaskInstanceDto;
+        // @formatter:on
+      } catch (IOException e) {
+        throw new OptimizeIntegrationTestException(
+          "Could not get process definition for process instance: " + processInstanceId, e
+        );
+      }
+    } catch (URISyntaxException e) {
+      throw new OptimizeIntegrationTestException("Failed building task instance url", e);
+    }
+
+  }
+
   public void externallyTerminateProcessInstance(String processInstanceId) {
     CloseableHttpClient client = getHttpClient();
     HttpDelete delete = new HttpDelete(getGetProcessInstanceUri(processInstanceId));
@@ -536,6 +572,10 @@ public class EngineIntegrationRule extends TestWatcher {
 
   private String getHistoricGetActivityInstanceUri() {
     return getEngineUrl() + "/history/activity-instance/";
+  }
+
+  private String getHistoricTaskInstanceUri() {
+    return getEngineUrl() + "/history/task";
   }
 
   private String getGetProcessInstanceUri(String processInstanceId) {

@@ -43,7 +43,7 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
   @Override
   protected SingleDecisionMapReportResult evaluate() throws OptimizeException {
 
-    final DecisionReportDataDto reportData = getDecisionReportData();
+    final DecisionReportDataDto reportData = getReportData();
     logger.debug(
       "Evaluating count decision instance frequency grouped by evaluation date report " +
         "for decision definition key [{}] and version [{}]",

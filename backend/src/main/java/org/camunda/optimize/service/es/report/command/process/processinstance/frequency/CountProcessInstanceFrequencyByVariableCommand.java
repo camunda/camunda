@@ -45,7 +45,7 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
   @Override
   protected SingleProcessMapReportResult evaluate() {
 
-    final ProcessReportDataDto processReportData = getProcessReportData();
+    final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
       "Evaluating count process instance frequency grouped by variable report " +
         "for process definition key [{}] and version [{}]",

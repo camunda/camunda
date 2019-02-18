@@ -34,7 +34,7 @@ public interface AutomaticGroupByDateCommand {
 
   IntervalAggregationService getIntervalAggregationService();
 
-  void beforeEvaluate(final CommandContext commandContext);
+  void beforeEvaluate(final CommandContext<ProcessReportDataDto> commandContext);
 
   BoolQueryBuilder setupBaseQuery(ProcessReportDataDto reportDataDto);
 }

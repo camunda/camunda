@@ -4,6 +4,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.parameters.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewOperation;
 
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByFlowNode;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByNone;
@@ -20,6 +21,9 @@ import static org.camunda.optimize.service.es.report.command.process.util.Proces
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createMinFlowNodeDurationView;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createMinProcessInstanceDurationView;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createRawDataView;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createUserTaskIdleDurationView;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createUserTaskTotalDurationView;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createUserTaskWorkDurationView;
 
 public class ProcessReportDataCreator {
 
@@ -58,6 +62,63 @@ public class ProcessReportDataCreator {
     ProcessGroupByDto groupByDto = createGroupByFlowNode();
 
     ProcessReportDataDto reportData = new ProcessReportDataDto();
+    reportData.setView(view);
+    reportData.setGroupBy(groupByDto);
+    return reportData;
+  }
+
+  public static ProcessReportDataDto createAverageUserTaskIdleDurationGroupByUserTaskReport() {
+    return createUserTaskReportWithView(createUserTaskIdleDurationView(ProcessViewOperation.AVG));
+  }
+
+  public static ProcessReportDataDto createMinUserTaskIdleDurationGroupByUserTaskReport() {
+    return createUserTaskReportWithView(createUserTaskIdleDurationView(ProcessViewOperation.MIN));
+  }
+
+  public static ProcessReportDataDto createMaxUserTaskIdleDurationGroupByUserTaskReport() {
+    return createUserTaskReportWithView(createUserTaskIdleDurationView(ProcessViewOperation.MAX));
+  }
+
+  public static ProcessReportDataDto createMedianUserTaskIdleDurationGroupByUserTaskReport() {
+    return createUserTaskReportWithView(createUserTaskIdleDurationView(ProcessViewOperation.MEDIAN));
+  }
+
+  public static ProcessReportDataDto createAverageUserTaskTotalDurationGroupByUserTaskReport() {
+    return createUserTaskReportWithView(createUserTaskTotalDurationView(ProcessViewOperation.AVG));
+  }
+
+  public static ProcessReportDataDto createMinUserTaskTotalDurationGroupByUserTaskReport() {
+    return createUserTaskReportWithView(createUserTaskTotalDurationView(ProcessViewOperation.MIN));
+  }
+
+  public static ProcessReportDataDto createMaxUserTaskTotalDurationGroupByUserTaskReport() {
+    return createUserTaskReportWithView(createUserTaskTotalDurationView(ProcessViewOperation.MAX));
+  }
+
+  public static ProcessReportDataDto createMedianUserTaskTotalDurationGroupByUserTaskReport() {
+    return createUserTaskReportWithView(createUserTaskTotalDurationView(ProcessViewOperation.MEDIAN));
+  }
+
+  public static ProcessReportDataDto createAverageUserTaskWorkDurationGroupByUserTaskReport() {
+    return createUserTaskReportWithView(createUserTaskWorkDurationView(ProcessViewOperation.AVG));
+  }
+
+  public static ProcessReportDataDto createMinUserTaskWorkDurationGroupByUserTaskReport() {
+    return createUserTaskReportWithView(createUserTaskWorkDurationView(ProcessViewOperation.MIN));
+  }
+
+  public static ProcessReportDataDto createMaxUserTaskWorkDurationGroupByUserTaskReport() {
+    return createUserTaskReportWithView(createUserTaskWorkDurationView(ProcessViewOperation.MAX));
+  }
+
+  public static ProcessReportDataDto createMedianUserTaskWorkDurationGroupByUserTaskReport() {
+    return createUserTaskReportWithView(createUserTaskWorkDurationView(ProcessViewOperation.MEDIAN));
+  }
+
+  private static ProcessReportDataDto createUserTaskReportWithView(final ProcessViewDto view) {
+    final ProcessGroupByDto groupByDto = createGroupByFlowNode();
+
+    final ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
     return reportData;

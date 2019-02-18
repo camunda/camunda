@@ -28,6 +28,9 @@ import static org.camunda.optimize.service.es.report.command.process.util.Proces
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createMedianProcessInstanceDurationView;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createMinFlowNodeDurationView;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createMinProcessInstanceDurationView;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createUserTaskIdleDurationView;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createUserTaskTotalDurationView;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createUserTaskWorkDurationView;
 
 
 public class ProcessReportDataBuilderHelper {
@@ -537,6 +540,57 @@ public class ProcessReportDataBuilderHelper {
       processDefinitionKey,
       processDefinitionVersion,
       ProcessVisualization.HEAT,
+      view,
+      groupByDto
+    );
+  }
+
+  public static ProcessReportDataDto createUserTaskTotalDurationMapGroupByUserTaskReport(
+    final String processDefinitionKey,
+    final String processDefinitionVersion,
+    final ProcessViewOperation viewOperation
+  ) {
+    final ProcessViewDto view = createUserTaskTotalDurationView(viewOperation);
+    final ProcessGroupByDto groupByDto = createGroupByFlowNode();
+
+    return createReportDataViewRaw(
+      processDefinitionKey,
+      processDefinitionVersion,
+      ProcessVisualization.TABLE,
+      view,
+      groupByDto
+    );
+  }
+
+  public static ProcessReportDataDto createUserTaskIdleDurationMapGroupByUserTaskReport(
+    final String processDefinitionKey,
+    final String processDefinitionVersion,
+    final ProcessViewOperation viewOperation
+  ) {
+    final ProcessViewDto view = createUserTaskIdleDurationView(viewOperation);
+    final ProcessGroupByDto groupByDto = createGroupByFlowNode();
+
+    return createReportDataViewRaw(
+      processDefinitionKey,
+      processDefinitionVersion,
+      ProcessVisualization.TABLE,
+      view,
+      groupByDto
+    );
+  }
+
+  public static ProcessReportDataDto createUserTaskWorkDurationMapGroupByUserTaskReport(
+    final String processDefinitionKey,
+    final String processDefinitionVersion,
+    final ProcessViewOperation viewOperation
+  ) {
+    final ProcessViewDto view = createUserTaskWorkDurationView(viewOperation);
+    final ProcessGroupByDto groupByDto = createGroupByFlowNode();
+
+    return createReportDataViewRaw(
+      processDefinitionKey,
+      processDefinitionVersion,
+      ProcessVisualization.TABLE,
       view,
       groupByDto
     );
