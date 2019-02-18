@@ -374,5 +374,46 @@ describe('Diagram', () => {
         expect(modalNodeText.includes(value)).toBe(true);
       });
     });
+
+    it('should render a modal with the detailed metadata and a button to select the flownode', () => {
+      // given
+      const node = mountNode({
+        selectedFlowNodeId: activityId,
+        metadata: {...mockMetadata, isSingleRowPeterCase: true}
+      });
+      const overlayNode = node.find('Overlay');
+      const moreButton = overlayNode.find('button[data-test="more-metadata"]');
+
+      // when
+      moreButton.simulate('click');
+      node.update();
+
+      // then
+      const modalNodeText = node.find('Modal').text();
+      Object.entries(mockMetadata.data).forEach(([key, value]) => {
+        expect(modalNodeText.includes(key)).toBe(true);
+        expect(modalNodeText.includes(value)).toBe(true);
+      });
+
+      // when
+      node.find('button[data-test="select-flownode"]').simulate('click');
+
+      // then
+      expect(mockProps.onFlowNodeSelection).toBeCalledWith(activityId);
+    });
+
+    it('should not render metadata in case of peter case with multiple selected rows', () => {
+      // given
+      const node = mountNode({
+        selectedFlowNodeId: activityId,
+        metadata: {isMultiRowPeterCase: true, instancesCount: 2}
+      });
+
+      // then
+      const overlayNode = node.find('Overlay');
+      const overlayNodeText = overlayNode.text();
+      expect(overlayNodeText.includes(2)).toBe(true);
+      expect(overlayNode.find('button')).toHaveLength(0);
+    });
   });
 });

@@ -80,6 +80,7 @@ export default class PopoverOverlay extends React.Component {
         {metadata.isSingleRowPeterCase && (
           <Styled.SummaryHeader>
             <Styled.Button
+              data-test="select-flownode"
               onClick={() => onFlowNodeSelection(selectedFlowNode.id)}
             >
               {selectedFlowNode.name}
