@@ -29,7 +29,6 @@ import io.zeebe.transport.impl.ServerSocketBinding;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.net.InetSocketAddress;
 import java.time.Duration;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
