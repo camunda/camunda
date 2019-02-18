@@ -21,6 +21,7 @@ export default class CombinedReportPanel extends React.Component {
     const reports = (await loadEntity('report')).filter(
       report =>
         !report.combined &&
+        report.reportType === 'process' &&
         acceptedVisualizations.includes(report.data.visualization) &&
         report.data.view.operation !== 'rawData'
     );
