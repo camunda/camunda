@@ -2,7 +2,6 @@ package org.camunda.optimize.service.security;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
-import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -12,11 +11,17 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 import java.io.UnsupportedEncodingException;
 import java.time.OffsetDateTime;
 
+import static org.camunda.optimize.rest.util.AuthenticationUtil.OPTIMIZE_AUTHORIZATION;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertThat;
 
 
@@ -81,7 +86,7 @@ public class AuthenticationServiceIT {
         .getRequestExecutor()
         .buildAuthTestRequest()
         .withoutAuthentication()
-        .addSingleCookie(AuthenticationUtil.OPTIMIZE_AUTHORIZATION, "Bearer " + token)
+        .addSingleCookie(OPTIMIZE_AUTHORIZATION, "Bearer " + token)
         .addSingleCookie(HttpHeaders.AUTHORIZATION, "Basic ZGVtbzpkZW1v")
         .execute();
 
@@ -159,14 +164,11 @@ public class AuthenticationServiceIT {
     engineRule.grantUserOptimizeAccess("genzo");
     String firstToken = embeddedOptimizeRule.authenticateUser("genzo", "genzo");
 
-    // when
     Response testAuthenticationResponse = embeddedOptimizeRule
       .getRequestExecutor()
       .buildAuthTestRequest()
       .withGivenAuthCookie("Bearer " + firstToken)
       .execute();
-
-    //then
     assertThat(testAuthenticationResponse.getStatus(), is(200));
 
     // when
@@ -179,6 +181,41 @@ public class AuthenticationServiceIT {
 
     //then
     assertThat(testAuthenticationResponse.getStatus(), is(401));
+  }
+
+  @Test
+  public void authCookieIsExtendedByRequestInLastThirdOfLifeTime() {
+    // given
+    int expiryMinutes = embeddedOptimizeRule.getConfigurationService().getTokenLifeTimeMinutes();
+    engineRule.addUser("genzo", "genzo");
+    engineRule.grantUserOptimizeAccess("genzo");
+    String firstToken = embeddedOptimizeRule.authenticateUser("genzo", "genzo");
+
+    Response testAuthenticationResponse = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildAuthTestRequest()
+      .withGivenAuthCookie("Bearer " + firstToken)
+      .execute();
+    assertThat(testAuthenticationResponse.getStatus(), is(200));
+
+    // when
+    final OffsetDateTime dateTimeBeforeRefresh = LocalDateUtil.getCurrentDateTime();
+    LocalDateUtil.setCurrentTime(LocalDateUtil.getCurrentDateTime().plusMinutes(expiryMinutes * 2 / 3));
+    testAuthenticationResponse = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildAuthTestRequest()
+      .withGivenAuthCookie("Bearer " + firstToken)
+      .execute();
+
+    //then
+    assertThat(testAuthenticationResponse.getStatus(), is(200));
+    assertThat(testAuthenticationResponse.getCookies().keySet(), hasItem(OPTIMIZE_AUTHORIZATION));
+    final NewCookie newAuthCookie = testAuthenticationResponse.getCookies().get(OPTIMIZE_AUTHORIZATION);
+    assertThat(newAuthCookie.getValue(), is(not(equalTo(firstToken))));
+    assertThat(
+      newAuthCookie.getExpiry().toInstant(),
+      is(greaterThan(dateTimeBeforeRefresh.plusMinutes(expiryMinutes).toInstant()))
+    );
 
   }
 
