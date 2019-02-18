@@ -277,10 +277,34 @@ public class StreamProcessorReprocessingTest {
   }
 
   @Test
-  public void shouldFailOnReprocessing() {
+  public void shouldSkipEventOnEventError() {
     // given [1|S:-] --> [2|S:1]
     final long eventPosition1 = writeEvent();
-    writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition1));
+    final long eventPosition2 = writeEvent();
+    final long eventPosition3 =
+        writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition2));
+
+    final ActorFuture<StreamProcessorService> future =
+        openStreamProcessorControllerAsync(
+            () -> {
+              doThrow(new RuntimeException("expected")).when(streamProcessor).onEvent(any());
+            });
+
+    // when
+    waitUntil(() -> future.isDone());
+
+    // then
+    verify(streamProcessor, times(1)).onRecovered();
+  }
+
+  @Test
+  public void shouldSkipEventOnReprocessingError() {
+    // given [1|S:-] --> [2|S:1]
+    final long eventPosition1 = writeEvent();
+    final long eventPosition2 = writeEvent();
+    final long eventPosition3 =
+        writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition2));
+
     final ActorFuture<StreamProcessorService> future =
         openStreamProcessorControllerAsync(
             () -> {
@@ -291,10 +315,12 @@ public class StreamProcessorReprocessingTest {
     waitUntil(() -> future.isDone());
 
     // then
-    verify(streamProcessor, times(0)).onRecovered();
     assertThat(streamProcessor.getEvents())
         .extracting(LoggedEvent::getPosition)
-        .containsExactly(eventPosition1);
+        .containsExactly(eventPosition1, eventPosition2, eventPosition3);
+
+    verify(streamProcessor, times(1)).onRecovered();
+    verify(eventProcessor, times(3)).processEvent();
   }
 
   @Test

@@ -44,10 +44,13 @@ public class StreamProcessorController extends Actor {
       "Stream processor '%s' failed to recover. Cannot find event with the snapshot position in target log stream.";
   private static final String ERROR_MESSAGE_REPROCESSING_NO_SOURCE_EVENT =
       "Stream processor '%s' failed to reprocess. Cannot find source event position: %d";
-  private static final String ERROR_MESSAGE_REPROCESSING_FAILED =
-      "Stream processor '%s' failed to reprocess event: %s";
+
   private static final String ERROR_MESSAGE_PROCESSING_FAILED =
       "Stream processor '{}' failed to process event. It stop processing further events.";
+  private static final String ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT =
+      "Stream processor '{}' failed to process event. Skip this event {}.";
+  private static final String ERROR_MESSAGE_REPROCESSING_FAILED_SKIP_EVENT =
+      "Stream processor '{}' failed to reprocess event. Skip this event {}.";
 
   private final StreamProcessorFactory streamProcessorFactory;
   private StreamProcessor streamProcessor;
@@ -238,22 +241,16 @@ public class StreamProcessorController extends Actor {
     if (eventFilter == null || eventFilter.applies(currentEvent)) {
       try {
         final EventProcessor eventProcessor = streamProcessor.onEvent(currentEvent);
-
         if (eventProcessor != null) {
           // don't execute side effects or write events
           eventProcessor.processEvent();
-          eventProcessor.updateState();
-          onRecordReprocessed(currentEvent);
-        } else {
-          onRecordReprocessed(currentEvent);
         }
       } catch (final Exception e) {
-        throw new RuntimeException(
-            String.format(ERROR_MESSAGE_REPROCESSING_FAILED, getName(), currentEvent), e);
+        LOG.error(ERROR_MESSAGE_REPROCESSING_FAILED_SKIP_EVENT, getName(), currentEvent, e);
       }
-    } else {
-      onRecordReprocessed(currentEvent);
     }
+
+    onRecordReprocessed(currentEvent);
   }
 
   private void onRecordReprocessed(final LoggedEvent currentEvent) {
@@ -286,33 +283,32 @@ public class StreamProcessorController extends Actor {
       if (eventFilter == null || eventFilter.applies(currentEvent)) {
         processEvent(currentEvent);
       } else {
-        // continue with the next event
-        actor.submit(readNextEvent);
-
-        metrics.incrementEventsSkippedCount();
+        skipRecord();
       }
     }
   }
 
   private void processEvent(final LoggedEvent event) {
-    eventProcessor = streamProcessor.onEvent(event);
+    try {
+      eventProcessor = streamProcessor.onEvent(event);
 
-    if (eventProcessor != null) {
-      try {
-        metrics.incrementEventsProcessedCount();
-
+      if (eventProcessor != null) {
         eventProcessor.processEvent();
+        metrics.incrementEventsProcessedCount();
         actor.runUntilDone(this::executeSideEffects);
-      } catch (final Exception e) {
-        LOG.error(ERROR_MESSAGE_PROCESSING_FAILED, getName(), e);
-        onFailure();
+      } else {
+        skipRecord();
       }
-    } else {
-      // continue with the next event
-      actor.submit(readNextEvent);
-
-      metrics.incrementEventsSkippedCount();
+    } catch (final Exception e) {
+      LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_SKIP_EVENT, getName(), event, e);
+      eventProcessor = null;
+      skipRecord();
     }
+  }
+
+  private void skipRecord() {
+    actor.submit(readNextEvent);
+    metrics.incrementEventsSkippedCount();
   }
 
   private void executeSideEffects() {

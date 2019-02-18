@@ -458,17 +458,75 @@ public class StreamProcessorControllerTest {
   }
 
   @Test
-  public void shouldFailOnProcessEvent() {
-    // when
+  public void shouldSkipEventOnEventError() {
+    // given
+    final AtomicLong count = new AtomicLong(0);
     changeMockInActorContext(
-        () -> doThrow(new RuntimeException("expected")).when(eventProcessor).processEvent());
-    writer.writeEvents(2, EVENT_1, true);
+        () ->
+            doAnswer(
+                    (invocationOnMock) -> {
+                      if (count.getAndIncrement() == 1) {
+                        throw new RuntimeException("expected");
+                      }
+                      return invocationOnMock.callRealMethod();
+                    })
+                .when(streamProcessor)
+                .onEvent(any()));
+
+    // when
+    writer.writeEvents(3, EVENT_1, true);
 
     // then
-    waitUntil(() -> streamProcessorController.isFailed());
+    waitUntil(() -> count.get() == 3);
+
+    final InOrder inOrderStreamProcessor = inOrder(streamProcessor);
+    inOrderStreamProcessor.verify(streamProcessor, times(3)).onEvent(any());
+    inOrderStreamProcessor.verifyNoMoreInteractions();
 
     final InOrder inOrder = inOrder(eventProcessor);
-    inOrder.verify(eventProcessor, times(1)).processEvent();
+    inOrder.verify(eventProcessor).processEvent();
+    inOrder.verify(eventProcessor).executeSideEffects();
+    inOrder.verify(eventProcessor).writeEvent(any());
+
+    inOrder.verify(eventProcessor).processEvent();
+    inOrder.verify(eventProcessor).executeSideEffects();
+    inOrder.verify(eventProcessor).writeEvent(any());
+    inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  public void shouldSkipEventOnProcessEventError() {
+    // given
+    final AtomicLong count = new AtomicLong(0);
+    changeMockInActorContext(
+        () ->
+            doAnswer(
+                    (invocationOnMock) -> {
+                      if (count.getAndIncrement() == 1) {
+                        throw new RuntimeException("expected");
+                      } else {
+                        invocationOnMock.callRealMethod();
+                      }
+                      return null;
+                    })
+                .when(eventProcessor)
+                .processEvent());
+
+    // when
+    writer.writeEvents(3, EVENT_1, true);
+
+    // then
+    waitUntil(() -> count.get() == 3);
+
+    final InOrder inOrder = inOrder(eventProcessor);
+    inOrder.verify(eventProcessor).processEvent();
+    inOrder.verify(eventProcessor).executeSideEffects();
+    inOrder.verify(eventProcessor).writeEvent(any());
+    // includes skip
+    inOrder.verify(eventProcessor, times(2)).processEvent();
+
+    inOrder.verify(eventProcessor).executeSideEffects();
+    inOrder.verify(eventProcessor).writeEvent(any());
     inOrder.verifyNoMoreInteractions();
   }
 
@@ -493,23 +551,6 @@ public class StreamProcessorControllerTest {
     // when
     changeMockInActorContext(
         () -> doThrow(new RuntimeException("expected")).when(eventProcessor).writeEvent(any()));
-    writer.writeEvents(2, EVENT_1, true);
-
-    // then
-    waitUntil(() -> streamProcessorController.isFailed());
-
-    final InOrder inOrder = inOrder(eventProcessor);
-    inOrder.verify(eventProcessor, times(1)).processEvent();
-    inOrder.verify(eventProcessor, times(1)).executeSideEffects();
-    inOrder.verify(eventProcessor, times(1)).writeEvent(any());
-    inOrder.verifyNoMoreInteractions();
-  }
-
-  @Test
-  public void shouldFailOnUpdateState() {
-    // when
-    changeMockInActorContext(
-        () -> doThrow(new RuntimeException("expected")).when(eventProcessor).updateState());
     writer.writeEvents(2, EVENT_1, true);
 
     // then
