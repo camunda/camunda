@@ -20,7 +20,6 @@ package io.zeebe.broker.workflow.message;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
 import static io.zeebe.broker.workflow.WorkflowAssert.assertMessageSubscription;
 import static io.zeebe.broker.workflow.WorkflowAssert.assertWorkflowSubscription;
-import static io.zeebe.broker.workflow.gateway.ParallelGatewayStreamProcessorTest.PROCESS_ID;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,10 +38,12 @@ import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.record.RecordingExporter;
-import org.agrona.DirectBuffer;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.UUID;
 import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -53,54 +54,74 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class MessageCatchElementTest {
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(setPartitionCount(3));
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
+  private static final int PARTITION_COUNT = 3;
+
+  private static final String ELEMENT_ID = "receive-message";
+  private static final String CORRELATION_VARIABLE = "orderId";
+  private static final String MESSAGE_NAME = "order canceled";
+  private static final String SEQUENCE_FLOW_ID = "to-end";
+
+  private static final String CATCH_EVENT_WORKFLOW_PROCESS_ID = "catchEventWorkflow";
   private static final BpmnModelInstance CATCH_EVENT_WORKFLOW =
-      Bpmn.createExecutableProcess(PROCESS_ID)
+      Bpmn.createExecutableProcess(CATCH_EVENT_WORKFLOW_PROCESS_ID)
           .startEvent()
-          .intermediateCatchEvent("receive-message")
-          .message(m -> m.name("order canceled").zeebeCorrelationKey("$.orderId"))
-          .sequenceFlowId("to-end")
+          .intermediateCatchEvent(ELEMENT_ID)
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey("$." + CORRELATION_VARIABLE))
+          .sequenceFlowId(SEQUENCE_FLOW_ID)
           .endEvent()
           .done();
 
+  private static final String RECEIVE_TASK_WORKFLOW_PROCESS_ID = "receiveTaskWorkflow";
   private static final BpmnModelInstance RECEIVE_TASK_WORKFLOW =
-      Bpmn.createExecutableProcess(PROCESS_ID)
+      Bpmn.createExecutableProcess(RECEIVE_TASK_WORKFLOW_PROCESS_ID)
           .startEvent()
-          .receiveTask("receive-message")
-          .message(m -> m.name("order canceled").zeebeCorrelationKey("$.orderId"))
-          .sequenceFlowId("to-end")
+          .receiveTask(ELEMENT_ID)
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey("$." + CORRELATION_VARIABLE))
+          .sequenceFlowId(SEQUENCE_FLOW_ID)
           .endEvent()
           .done();
 
+  private static final String BOUNDARY_EVENT_WORKFLOW_PROCESS_ID = "boundaryEventWorkflow";
   private static final BpmnModelInstance BOUNDARY_EVENT_WORKFLOW =
-      Bpmn.createExecutableProcess(PROCESS_ID)
+      Bpmn.createExecutableProcess(BOUNDARY_EVENT_WORKFLOW_PROCESS_ID)
           .startEvent()
-          .serviceTask("receive-message", b -> b.zeebeTaskType("type"))
+          .serviceTask(ELEMENT_ID, b -> b.zeebeTaskType("type"))
           .boundaryEvent()
-          .message(m -> m.name("order canceled").zeebeCorrelationKey("$.orderId"))
-          .sequenceFlowId("to-end")
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey("$." + CORRELATION_VARIABLE))
+          .sequenceFlowId(SEQUENCE_FLOW_ID)
           .endEvent()
           .done();
 
+  private static final String NON_INT_BOUNDARY_EVENT_WORKFLOW_PROCESS_ID =
+      "nonIntBoundaryEventWorkflow";
   private static final BpmnModelInstance NON_INT_BOUNDARY_EVENT_WORKFLOW =
-      Bpmn.createExecutableProcess(PROCESS_ID)
+      Bpmn.createExecutableProcess(NON_INT_BOUNDARY_EVENT_WORKFLOW_PROCESS_ID)
           .startEvent()
-          .serviceTask("receive-message", b -> b.zeebeTaskType("type"))
+          .serviceTask(ELEMENT_ID, b -> b.zeebeTaskType("type"))
           .boundaryEvent("event")
           .cancelActivity(false)
-          .message(m -> m.name("order canceled").zeebeCorrelationKey("$.orderId"))
-          .sequenceFlowId("to-end")
+          .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKey("$." + CORRELATION_VARIABLE))
+          .sequenceFlowId(SEQUENCE_FLOW_ID)
           .endEvent()
           .done();
+
+  public static EmbeddedBrokerRule brokerRule =
+      new EmbeddedBrokerRule(setPartitionCount(PARTITION_COUNT));
+  public static ClientApiRule apiRule =
+      new ClientApiRule(0, PARTITION_COUNT, brokerRule::getClientAddress);
+
+  @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+
+  @Rule
+  public RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   @Parameter(0)
   public String elementType;
 
   @Parameter(1)
-  public BpmnModelInstance workflow;
+  public String bpmnProcessId;
 
   @Parameter(2)
   public WorkflowInstanceIntent enteredState;
@@ -116,28 +137,28 @@ public class MessageCatchElementTest {
     return new Object[][] {
       {
         "intermediate message catch event",
-        CATCH_EVENT_WORKFLOW,
+        CATCH_EVENT_WORKFLOW_PROCESS_ID,
         WorkflowInstanceIntent.ELEMENT_ACTIVATED,
         WorkflowInstanceIntent.ELEMENT_COMPLETED,
-        "receive-message"
+        ELEMENT_ID
       },
       {
         "receive task",
-        RECEIVE_TASK_WORKFLOW,
+        RECEIVE_TASK_WORKFLOW_PROCESS_ID,
         WorkflowInstanceIntent.ELEMENT_ACTIVATED,
         WorkflowInstanceIntent.ELEMENT_COMPLETED,
-        "receive-message"
+        ELEMENT_ID
       },
       {
         "int boundary event",
-        BOUNDARY_EVENT_WORKFLOW,
+        BOUNDARY_EVENT_WORKFLOW_PROCESS_ID,
         WorkflowInstanceIntent.ELEMENT_ACTIVATED,
         WorkflowInstanceIntent.ELEMENT_TERMINATED,
-        "receive-message"
+        ELEMENT_ID
       },
       {
         "non int boundary event",
-        NON_INT_BOUNDARY_EVENT_WORKFLOW,
+        NON_INT_BOUNDARY_EVENT_WORKFLOW_PROCESS_ID,
         WorkflowInstanceIntent.ELEMENT_ACTIVATED,
         WorkflowInstanceIntent.ELEMENT_COMPLETED,
         "event"
@@ -145,50 +166,56 @@ public class MessageCatchElementTest {
     };
   }
 
-  protected PartitionTestClient testClient;
+  private String correlationKey;
+  private long workflowInstanceKey;
+
+  @BeforeClass
+  public static void awaitCluster() {
+    apiRule.waitForPartition(PARTITION_COUNT);
+
+    deploy(CATCH_EVENT_WORKFLOW);
+    deploy(RECEIVE_TASK_WORKFLOW);
+    deploy(BOUNDARY_EVENT_WORKFLOW);
+    deploy(NON_INT_BOUNDARY_EVENT_WORKFLOW);
+  }
+
+  private static void deploy(BpmnModelInstance modelInstance) {
+    final long deploymentKey = apiRule.deployWorkflow(modelInstance);
+    RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
+        .withKey(deploymentKey)
+        .await();
+  }
 
   @Before
   public void init() {
-    apiRule.waitForPartition(3);
-    testClient = apiRule.partitionClient();
-    final long deploymentKey = testClient.deploy(workflow);
-
-    testClient.receiveFirstDeploymentEvent(DeploymentIntent.CREATED, deploymentKey);
-    apiRule.partitionClient(1).receiveFirstDeploymentEvent(DeploymentIntent.CREATED, deploymentKey);
-    apiRule.partitionClient(2).receiveFirstDeploymentEvent(DeploymentIntent.CREATED, deploymentKey);
+    correlationKey = UUID.randomUUID().toString();
+    workflowInstanceKey =
+        apiRule.createWorkflowInstance(bpmnProcessId, asMsgPack("orderId", correlationKey));
   }
 
   @Test
   public void shouldOpenMessageSubscription() {
-    final long workflowInstanceKey =
-        testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
-
     final Record<WorkflowInstanceRecordValue> catchEventEntered =
-        testClient.receiveElementInState("receive-message", enteredState);
+        getFirstElementRecord(enteredState);
 
     final Record<MessageSubscriptionRecordValue> messageSubscription =
-        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED).getFirst();
+        getFirstMessageSubscriptionRecord(MessageSubscriptionIntent.OPENED);
+
     assertThat(messageSubscription.getMetadata().getValueType())
         .isEqualTo(ValueType.MESSAGE_SUBSCRIPTION);
     assertThat(messageSubscription.getMetadata().getRecordType()).isEqualTo(RecordType.EVENT);
 
     assertMessageSubscription(
-        workflowInstanceKey, "order-123", catchEventEntered, messageSubscription);
+        workflowInstanceKey, correlationKey, catchEventEntered, messageSubscription);
   }
 
   @Test
   public void shouldOpenWorkflowInstanceSubscription() {
-    final long workflowInstanceKey =
-        testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
-
     final Record<WorkflowInstanceRecordValue> catchEventEntered =
-        testClient.receiveElementInState("receive-message", enteredState);
+        getFirstElementRecord(enteredState);
 
     final Record<WorkflowInstanceSubscriptionRecordValue> workflowInstanceSubscription =
-        testClient
-            .receiveWorkflowInstanceSubscriptions()
-            .withIntent(WorkflowInstanceSubscriptionIntent.OPENED)
-            .getFirst();
+        getFirstWorkflowInstanceSubscriptionRecord(WorkflowInstanceSubscriptionIntent.OPENED);
 
     assertThat(workflowInstanceSubscription.getMetadata().getValueType())
         .isEqualTo(ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
@@ -202,22 +229,15 @@ public class MessageCatchElementTest {
   @Test
   public void shouldCorrelateWorkflowInstanceSubscription() {
     // given
-    final long workflowInstanceKey =
-        testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
-
     final Record<WorkflowInstanceRecordValue> catchEventEntered =
-        testClient.receiveElementInState("receive-message", enteredState);
+        getFirstElementRecord(enteredState);
 
     // when
-    final DirectBuffer messagePayload = asMsgPack("foo", "bar");
-    testClient.publishMessage("order canceled", "order-123", messagePayload);
+    apiRule.publishMessage(MESSAGE_NAME, correlationKey, asMsgPack("foo", "bar"));
 
     // then
     final Record<WorkflowInstanceSubscriptionRecordValue> subscription =
-        testClient
-            .receiveWorkflowInstanceSubscriptions()
-            .withIntent(WorkflowInstanceSubscriptionIntent.CORRELATED)
-            .getFirst();
+        getFirstWorkflowInstanceSubscriptionRecord(WorkflowInstanceSubscriptionIntent.CORRELATED);
 
     assertThat(subscription.getMetadata().getValueType())
         .isEqualTo(ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
@@ -230,21 +250,15 @@ public class MessageCatchElementTest {
   @Test
   public void shouldCorrelateMessageSubscription() {
     // given
-    final long workflowInstanceKey =
-        testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
-
     final Record<WorkflowInstanceRecordValue> catchEventEntered =
-        testClient.receiveElementInState("receive-message", enteredState);
+        getFirstElementRecord(enteredState);
 
     // when
-    testClient.publishMessage("order canceled", "order-123", asMsgPack("foo", "bar"));
+    apiRule.publishMessage(MESSAGE_NAME, correlationKey, asMsgPack("foo", "bar"));
 
     // then
     final Record<MessageSubscriptionRecordValue> subscription =
-        testClient
-            .receiveMessageSubscriptions()
-            .withIntent(MessageSubscriptionIntent.CORRELATED)
-            .getFirst();
+        getFirstMessageSubscriptionRecord(MessageSubscriptionIntent.CORRELATED);
 
     assertThat(subscription.getMetadata().getValueType()).isEqualTo(ValueType.MESSAGE_SUBSCRIPTION);
     assertThat(subscription.getMetadata().getRecordType()).isEqualTo(RecordType.EVENT);
@@ -255,79 +269,97 @@ public class MessageCatchElementTest {
   @Test
   public void shouldCloseMessageSubscription() {
     // given
-    final long workflowInstanceKey =
-        testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
-
     final Record<WorkflowInstanceRecordValue> catchEventEntered =
-        testClient.receiveElementInState("receive-message", enteredState);
+        getFirstElementRecord(enteredState);
+
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
+        .withWorkflowInstanceKey(workflowInstanceKey)
+        .await();
 
     // when
-    testClient.cancelWorkflowInstance(workflowInstanceKey);
+    apiRule.cancelWorkflowInstance(workflowInstanceKey);
 
     // then
     final Record<MessageSubscriptionRecordValue> messageSubscription =
-        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CLOSED).getFirst();
+        getFirstMessageSubscriptionRecord(MessageSubscriptionIntent.CLOSED);
 
     assertThat(messageSubscription.getMetadata().getRecordType()).isEqualTo(RecordType.EVENT);
 
     Assertions.assertThat(messageSubscription.getValue())
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasElementInstanceKey(catchEventEntered.getKey())
-        .hasMessageName("order canceled")
+        .hasMessageName(MESSAGE_NAME)
         .hasCorrelationKey("");
   }
 
   @Test
   public void shouldCloseWorkflowInstanceSubscription() {
-
-    final long workflowInstanceKey =
-        testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
-
+    // given
     final Record<WorkflowInstanceRecordValue> catchEventEntered =
-        testClient.receiveElementInState("receive-message", enteredState);
+        getFirstElementRecord(enteredState);
 
-    testClient.cancelWorkflowInstance(workflowInstanceKey);
+    // when
+    apiRule.cancelWorkflowInstance(workflowInstanceKey);
 
+    // then
     final Record<WorkflowInstanceSubscriptionRecordValue> subscription =
-        RecordingExporter.workflowInstanceSubscriptionRecords(
-                WorkflowInstanceSubscriptionIntent.CLOSED)
-            .getFirst();
+        getFirstWorkflowInstanceSubscriptionRecord(WorkflowInstanceSubscriptionIntent.CLOSED);
 
     assertThat(subscription.getMetadata().getRecordType()).isEqualTo(RecordType.EVENT);
 
     Assertions.assertThat(subscription.getValue())
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasElementInstanceKey(catchEventEntered.getKey())
-        .hasMessageName("order canceled");
+        .hasMessageName(MESSAGE_NAME);
   }
 
   @Test
   public void shouldCorrelateMessageAndContinue() {
     // given
-    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
+    RecordingExporter.workflowInstanceSubscriptionRecords(WorkflowInstanceSubscriptionIntent.OPENED)
+        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withMessageName(MESSAGE_NAME)
+        .await();
 
     // when
-    assertThat(
-            testClient
-                .receiveWorkflowInstanceSubscriptions()
-                .withMessageName("order canceled")
-                .withIntent(WorkflowInstanceSubscriptionIntent.OPENED)
-                .limit(1)
-                .getFirst())
-        .isNotNull();
-    testClient.publishMessage("order canceled", "order-123");
+    apiRule.publishMessage(MESSAGE_NAME, correlationKey);
 
     // then
     assertThat(
             RecordingExporter.workflowInstanceRecords(continueState)
+                .withWorkflowInstanceKey(workflowInstanceKey)
                 .withElementId(continuedElementId)
                 .exists())
         .isTrue();
 
     assertThat(
             RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN)
-                .withElementId("to-end")
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withElementId(SEQUENCE_FLOW_ID)
                 .exists())
         .isTrue();
+  }
+
+  private Record<WorkflowInstanceRecordValue> getFirstElementRecord(WorkflowInstanceIntent intent) {
+    return RecordingExporter.workflowInstanceRecords(intent)
+        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withElementId(ELEMENT_ID)
+        .getFirst();
+  }
+
+  private Record<MessageSubscriptionRecordValue> getFirstMessageSubscriptionRecord(
+      MessageSubscriptionIntent intent) {
+    return RecordingExporter.messageSubscriptionRecords(intent)
+        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withMessageName(MESSAGE_NAME)
+        .getFirst();
+  }
+
+  private Record<WorkflowInstanceSubscriptionRecordValue>
+      getFirstWorkflowInstanceSubscriptionRecord(WorkflowInstanceSubscriptionIntent intent) {
+    return RecordingExporter.workflowInstanceSubscriptionRecords(intent)
+        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withMessageName(MESSAGE_NAME)
+        .getFirst();
   }
 }

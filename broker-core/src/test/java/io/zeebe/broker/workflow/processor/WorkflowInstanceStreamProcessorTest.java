@@ -373,6 +373,7 @@ public class WorkflowInstanceStreamProcessorTest {
     // then
     verify(streamProcessorRule.getMockSubscriptionCommandSender(), timeout(5_000).times(2))
         .openMessageSubscription(
+            0,
             catchEvent.getValue().getWorkflowInstanceKey(),
             catchEvent.getKey(),
             wrapString("order canceled"),

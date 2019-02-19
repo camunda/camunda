@@ -88,9 +88,8 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
     mockSubscriptionCommandSender = mock(SubscriptionCommandSender.class);
     mockTopologyManager = mock(TopologyManager.class);
 
-    when(mockSubscriptionCommandSender.hasPartitionIds()).thenReturn(true);
     when(mockSubscriptionCommandSender.openMessageSubscription(
-            anyLong(), anyLong(), any(), any(), anyBoolean()))
+            anyInt(), anyLong(), anyLong(), any(), any(), anyBoolean()))
         .thenReturn(true);
     when(mockSubscriptionCommandSender.correlateMessageSubscription(
             anyInt(), anyLong(), anyLong(), any()))
@@ -109,7 +108,8 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
                   zeebeState,
                   mockSubscriptionCommandSender,
                   mockTopologyManager,
-                  new DueDateTimerChecker(workflowState));
+                  new DueDateTimerChecker(workflowState),
+                  1);
 
               JobEventProcessors.addJobProcessors(typedEventStreamProcessorBuilder, zeebeState);
 
