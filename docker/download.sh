@@ -10,7 +10,7 @@ ARTIFACT="camunda-optimize"
 ARTIFACT_VERSION="${VERSION}"
 
 # Determine if SNAPSHOT repo and version should be used
-if [ ${SNAPSHOT} = "true" ]; then
+if [ "${SNAPSHOT}" = "true" ]; then
     REPO="${REPO}-snapshots"
     ARTIFACT_VERSION="${VERSION}-SNAPSHOT"
 fi
@@ -34,8 +34,7 @@ function useLocalArtifact {
   tar xzf /tmp/${ARTIFACT}-${ARTIFACT_VERSION}-${DISTRO}.tar.gz
 }
 
-
-if [ "${SKIP_DOWNLOAD}" = false ]; then
+if [ "${SKIP_DOWNLOAD}" = "false" ]; then
   useNexusDownload
 else
   useLocalArtifact

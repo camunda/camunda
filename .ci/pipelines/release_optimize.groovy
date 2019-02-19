@@ -236,6 +236,7 @@ pipeline {
             echo '${GCR_REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
 
             docker build -t ${PROJECT_DOCKER_IMAGE()}:${VERSION} \
+              --build-arg=SKIP_DOWNLOAD=true \
               --build-arg=VERSION=${VERSION} \
               --build-arg=SNAPSHOT=false \
               --build-arg=USERNAME=${NEXUS_USR} \
