@@ -61,7 +61,7 @@ pipeline {
         container('node') {
           sh '''
             cd ./client
-            yarn
+            yarn install --frozen-lockfile
             yarn build
           '''
         }
