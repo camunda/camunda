@@ -7,7 +7,12 @@ import {Configuration} from './Configuration';
 import {DecisionFilter} from './filter';
 
 import {isChecked} from './service';
-import {getDataKeys, reportConfig, loadDecisionDefinitionXml} from 'services';
+import {
+  getDataKeys,
+  reportConfig,
+  loadDecisionDefinitionXml,
+  extractDefinitionName
+} from 'services';
 const {decision: decisionConfig} = reportConfig;
 
 function convertToUpperCase(string) {
@@ -49,9 +54,13 @@ export default class DecisionControlPanel extends React.Component {
   }
 
   createTitle = () => {
-    const {decisionDefinitionKey, decisionDefinitionVersion} = this.props.report.data;
-    if (decisionDefinitionKey && decisionDefinitionVersion) {
-      return `${decisionDefinitionKey} : ${decisionDefinitionVersion}`;
+    const {
+      decisionDefinitionKey,
+      decisionDefinitionVersion,
+      configuration: {xml}
+    } = this.props.report.data;
+    if (xml) {
+      return `${extractDefinitionName(decisionDefinitionKey, xml)} : ${decisionDefinitionVersion}`;
     } else {
       return 'Select Decision';
     }
@@ -70,6 +79,8 @@ export default class DecisionControlPanel extends React.Component {
 
     if (key && version) {
       change.configuration = {xml: {$set: await loadDecisionDefinitionXml(key, version)}};
+    } else {
+      change.configuration = {xml: {$set: null}};
     }
 
     if (groupBy && (groupBy.type === 'inputVariable' || groupBy.type === 'outputVariable')) {

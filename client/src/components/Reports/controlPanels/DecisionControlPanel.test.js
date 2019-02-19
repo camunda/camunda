@@ -1,7 +1,8 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {Dropdown} from 'components';
+import {Dropdown, Popover} from 'components';
+import {extractDefinitionName} from 'services';
 
 import DecisionControlPanel from './DecisionControlPanel';
 import DecisionDefinitionSelection from './DecisionDefinitionSelection';
@@ -12,6 +13,7 @@ jest.mock('services', () => {
   return {
     ...rest,
     loadDecisionDefinitionXml: jest.fn().mockReturnValue('somexml'),
+    extractDefinitionName: jest.fn(),
     reportConfig: {
       ...rest.reportConfig,
       decision: {
@@ -141,4 +143,22 @@ it('should not crash when no decisionDefinition is selected', () => {
       }}
     />
   );
+});
+
+it('should show decision definition name', async () => {
+  extractDefinitionName.mockReturnValue('aName');
+
+  const node = await shallow(<DecisionControlPanel report={report} />);
+
+  expect(node.find(Popover).prop('title')).toContain('aName');
+});
+
+it('should change decision definition name if decision definition is updated', async () => {
+  extractDefinitionName.mockReturnValue('aName');
+  const node = await shallow(<DecisionControlPanel report={report} />);
+
+  extractDefinitionName.mockReturnValue('anotherName');
+  node.setProps({decisionDefinitionKey: 'bar'});
+
+  expect(node.find(Popover).prop('title')).toContain('anotherName');
 });

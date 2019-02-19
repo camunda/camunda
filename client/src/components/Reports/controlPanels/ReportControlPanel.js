@@ -33,7 +33,6 @@ export default class ReportControlPanel extends React.Component {
     super(props);
 
     this.state = {
-      processDefinitionName: this.props.report.data.processDefinitionKey,
       variables: [],
       variableTypeaheadValue: '',
       variableStartIdx: 0,
@@ -42,7 +41,6 @@ export default class ReportControlPanel extends React.Component {
   }
 
   componentDidMount() {
-    this.loadProcessDefinitionName();
     this.loadVariables();
     this.loadFlowNodeNames();
   }
@@ -54,19 +52,6 @@ export default class ReportControlPanel extends React.Component {
     this.setState({
       flowNodeNames: await getFlowNodeNames(processDefinitionKey, processDefinitionVersion)
     });
-  };
-
-  loadProcessDefinitionName = async () => {
-    const {
-      configuration: {xml},
-      processDefinitionKey
-    } = this.props.report.data;
-    if (xml) {
-      const processDefinitionName = await extractDefinitionName(processDefinitionKey, xml);
-      this.setState({
-        processDefinitionName
-      });
-    }
   };
 
   loadVariables = async () => {
@@ -91,9 +76,6 @@ export default class ReportControlPanel extends React.Component {
   componentDidUpdate(prevProps) {
     const {data} = this.props.report;
     const {data: prevData} = prevProps.report;
-    if (data.processDefinitionKey !== prevData.processDefinitionKey) {
-      this.loadProcessDefinitionName();
-    }
 
     if (
       data.processDefinitionKey !== prevData.processDefinitionKey ||
@@ -105,12 +87,13 @@ export default class ReportControlPanel extends React.Component {
   }
 
   createTitle = () => {
-    const {processDefinitionKey, processDefinitionVersion} = this.props.report.data;
-    const processDefintionName = this.state.processDefinitionName
-      ? this.state.processDefinitionName
-      : processDefinitionKey;
-    if (processDefintionName && processDefinitionVersion) {
-      return `${processDefintionName} : ${processDefinitionVersion}`;
+    const {
+      processDefinitionKey,
+      processDefinitionVersion,
+      configuration: {xml}
+    } = this.props.report.data;
+    if (xml) {
+      return `${extractDefinitionName(processDefinitionKey, xml)} : ${processDefinitionVersion}`;
     } else {
       return 'Select Process';
     }
@@ -128,6 +111,8 @@ export default class ReportControlPanel extends React.Component {
 
     if (key && version) {
       change.configuration = {xml: {$set: await loadProcessDefinitionXml(key, version)}};
+    } else {
+      change.configuration = {xml: {$set: null}};
     }
 
     if (groupBy && groupBy.type === 'variable') {
