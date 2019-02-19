@@ -1,6 +1,6 @@
 # Get Help and Get Involved
 
-To support the open-source community, we provide public-facing Zeebe support channels and a way for users to report problems and make contributions.
+We provide a few different public-facing Zeebe support and feedback channels so that users can ask questions, report problems, and make contributions.
 
 ### Zeebe User Forum
 
