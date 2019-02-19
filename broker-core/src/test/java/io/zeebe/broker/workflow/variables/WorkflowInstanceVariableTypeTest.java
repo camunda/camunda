@@ -27,9 +27,10 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.intent.VariableIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.record.RecordingExporter;
-import org.junit.Before;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -44,10 +45,14 @@ public class WorkflowInstanceVariableTypeTest {
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done();
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
+  public static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public static ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
 
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+  @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+
+  @Rule
+  public RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   @Parameter(0)
   public String payload;
@@ -68,24 +73,22 @@ public class WorkflowInstanceVariableTypeTest {
     };
   }
 
-  private PartitionTestClient testClient;
-
-  @Before
-  public void init() {
-    testClient = apiRule.partitionClient();
+  @BeforeClass
+  public static void deployWorkflow() {
+    apiRule.deployWorkflow(WORKFLOW);
   }
 
   @Test
   public void shouldWriteVariableCreatedEvent() {
-    // given
-    testClient.deploy(WORKFLOW);
-
     // when
-    final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID, payload);
+    final long workflowInstanceKey = apiRule.createWorkflowInstance(PROCESS_ID, payload);
 
     // then
     final Record<VariableRecordValue> variableRecord =
-        RecordingExporter.variableRecords(VariableIntent.CREATED).getFirst();
+        RecordingExporter.variableRecords(VariableIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .getFirst();
+
     Assertions.assertThat(variableRecord.getValue())
         .hasScopeKey(workflowInstanceKey)
         .hasName("x")

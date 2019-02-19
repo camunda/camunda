@@ -262,6 +262,10 @@ public class ClientApiRule extends ExternalResource {
     return response.getKey();
   }
 
+  public long createWorkflowInstance(String bpmnProcessId, String jsonPayload) {
+    return createWorkflowInstance(bpmnProcessId, MsgPackUtil.asMsgPack(jsonPayload));
+  }
+
   public long createWorkflowInstance(String bpmnProcessId, DirectBuffer payload) {
     final ExecuteCommandResponse response =
         createCmdRequest()
