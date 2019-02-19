@@ -65,4 +65,8 @@ public class JobRecordStream
   public JobRecordStream withDeadline(final long deadline) {
     return valueFilter(v -> Instant.ofEpochMilli(deadline).equals(v.getDeadline()));
   }
+
+  public JobRecordStream withWorkflowInstanceKey(long workflowInstanceKey) {
+    return valueFilter(v -> v.getHeaders().getWorkflowInstanceKey() == workflowInstanceKey);
+  }
 }
