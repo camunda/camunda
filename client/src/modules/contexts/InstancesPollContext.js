@@ -76,12 +76,12 @@ class InstancesPollProvider extends React.Component {
       this.state.ids,
       this.props.visibleIdsInSelections
     );
-    const idsInListView = getCommonItems(
-      this.state.ids,
-      this.props.visibleIdsInListView
-    );
+
+    /* only update Selections if we have active operations present there */
     Boolean(idsInSelections.length) && this.props.onSelectionsRefresh();
-    Boolean(idsInListView.length) && this.props.onWorkflowInstancesRefresh();
+
+    /* always update Instances to reflect new count and statistics */
+    this.props.onWorkflowInstancesRefresh();
   };
 
   detectInstancesChangesPoll = async () => {
