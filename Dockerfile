@@ -1,4 +1,4 @@
-FROM alpine:3.9 as builder
+FROM openjdk:8u191-jre-alpine3.9 as builder
 WORKDIR /build
 
 ARG SKIP_DOWNLOAD=false
@@ -7,15 +7,15 @@ ARG VERSION=2.0.0
 ARG SNAPSHOT=false
 ARG DISTRO=production
 
-# Nexus credentials
-ARG USERNAME
-ARG PASSWORD
+ARG NEXUS_USR
+ARG NEXUS_PSW
 
 # Download Optimize
-RUN apk add --no-cache tar wget
-COPY Dockerfile distro/target/*-${DISTRO}.tar.gz /tmp/
-COPY docker/download.sh /bin/
-RUN /bin/download.sh
+RUN apk add --no-cache maven tar
+
+COPY settings.xml docker/download.sh distro/target/*-${DISTRO}.tar.gz /tmp/
+
+RUN /tmp/download.sh
 
 ############ Production image ###############
 FROM openjdk:8u191-jre-alpine3.9

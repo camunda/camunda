@@ -1,5 +1,5 @@
 #!/bin/sh -ex
-NEXUS="https://app.camunda.com/nexus/service/local/artifact/maven/redirect"
+
 REPO="${REPO:?Nexus repository required, eg. \'camunda-optimize\'}"
 VERSION="${VERSION:?Optimize version required, eg. \'2.0.0\'}"
 SNAPSHOT="${SNAPSHOT:?Snapshot version: \'true\' or \'false\'}"
@@ -20,17 +20,21 @@ function useNexusDownload {
   echo "machine app.camunda.com login ${USERNAME} password ${PASSWORD}" >> ~/.netrc
 
   # Determine nexus URL parameters
-  echo "Downloading Camunda Optimize ${VERSION}"
+  echo "Downloading Camunda Optimize ${ARTIFACT_VERSION}"
 
   # Download distro from nexus
-  wget --progress=bar:force:noscroll -O /tmp/optimize.tar.gz "${NEXUS}?r=${REPO}&g=${ARTIFACT_GROUP}&a=${ARTIFACT}&v=${ARTIFACT_VERSION}&c=${DISTRO}&p=tar.gz"
+  mvn dependency:copy -B --global-settings /tmp/settings.xml \
+    -Dartifact="${ARTIFACT_GROUP}:${ARTIFACT}:${ARTIFACT_VERSION}:tar.gz:${DISTRO}" \
+    -DoutputDirectory=/tmp/
 
-  # Unpack distro to /optimize directory
-  tar xzf /tmp/optimize.tar.gz
+  # Unpack distro to /build directory
+  tar xzf /tmp/${ARTIFACT}-${ARTIFACT_VERSION}-${DISTRO}.tar.gz
 }
 
 function useLocalArtifact {
   echo "Using local artifacts of Camunda Optimize ${ARTIFACT_VERSION}"
+
+  # Unpack distro to /build directory
   tar xzf /tmp/${ARTIFACT}-${ARTIFACT_VERSION}-${DISTRO}.tar.gz
 }
 
