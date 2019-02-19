@@ -340,14 +340,22 @@ class InstancesContainer extends Component {
   };
 
   handleWorkflowInstancesRefresh = async () => {
+    const hasDiagram = !isEmpty(this.state.diagramModel);
     this.setState({workflowInstancesLoaded: false});
     const instances = await this.fetchWorkflowInstances();
 
-    this.setState({
+    const newState = {
       workflowInstances: instances.workflowInstances,
       filterCount: instances.totalCount,
       workflowInstancesLoaded: true
-    });
+    };
+
+    if (hasDiagram) {
+      const statistics = await this.fetchStatistics();
+      newState.statistics = statistics;
+    }
+
+    this.setState(newState);
   };
 
   render() {
