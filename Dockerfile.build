@@ -27,7 +27,7 @@ RUN mvn clean install -P -docker,skipFrontendBuild -DskipTests=true
 #####################################
 ### DISTRO BUILD
 #####################################
-FROM openjdk:8u181-jre-alpine3.8
+FROM openjdk:8u191-jre-alpine3.9
 COPY --from=be-build /usr/src/app/backend/target/*-exec.jar /usr/app/camunda-operate.jar
 EXPOSE 8080
 ENV JAVA_OPTS=""
