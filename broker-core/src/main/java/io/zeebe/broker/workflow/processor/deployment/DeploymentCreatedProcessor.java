@@ -35,9 +35,11 @@ import java.util.List;
 public class DeploymentCreatedProcessor implements TypedRecordProcessor<DeploymentRecord> {
 
   private WorkflowState workflowState;
+  private final boolean isDeploymentPartition;
 
-  public DeploymentCreatedProcessor(WorkflowState workflowState) {
+  public DeploymentCreatedProcessor(WorkflowState workflowState, boolean isDeploymentPartition) {
     this.workflowState = workflowState;
+    this.isDeploymentPartition = isDeploymentPartition;
   }
 
   @Override
@@ -47,9 +49,10 @@ public class DeploymentCreatedProcessor implements TypedRecordProcessor<Deployme
       final TypedStreamWriter streamWriter) {
     final DeploymentRecord deploymentEvent = event.getValue();
 
-    // TODO: Write Distribute only on deployment partition (partition 0)
-    streamWriter.appendFollowUpCommand(
-        event.getKey(), DeploymentIntent.DISTRIBUTE, deploymentEvent);
+    if (isDeploymentPartition) {
+      streamWriter.appendFollowUpCommand(
+          event.getKey(), DeploymentIntent.DISTRIBUTE, deploymentEvent);
+    }
 
     for (final Workflow workflowRecord : deploymentEvent.workflows()) {
       if (workflowRecord.getVersion() != 1) { // if not the first version

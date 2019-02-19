@@ -186,7 +186,8 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
       ZeebeState zeebeState,
       TypedEventStreamProcessorBuilder typedProcessorBuilder) {
     final WorkflowState workflowState = zeebeState.getWorkflowState();
-    if (partitionId == Protocol.DEPLOYMENT_PARTITION) {
+    final boolean isDepoymentPartition = partitionId == Protocol.DEPLOYMENT_PARTITION;
+    if (isDepoymentPartition) {
       typedProcessorBuilder.withListener(
           new WorkflowRepository(
               clientApiTransport,
@@ -208,7 +209,7 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
     typedProcessorBuilder.onEvent(
         ValueType.DEPLOYMENT,
         DeploymentIntent.CREATED,
-        new DeploymentCreatedProcessor(workflowState));
+        new DeploymentCreatedProcessor(workflowState, isDepoymentPartition));
   }
 
   private void addIncidentProcessors(
