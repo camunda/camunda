@@ -42,4 +42,8 @@ public class VariableRecordStream
   public VariableRecordStream withValue(final String value) {
     return valueFilter(v -> v.getValue().equals(value));
   }
+
+  public VariableRecordStream withWorkflowInstanceKey(final long workflowInstanceKey) {
+    return valueFilter(v -> v.getWorkflowInstanceKey() == workflowInstanceKey);
+  }
 }

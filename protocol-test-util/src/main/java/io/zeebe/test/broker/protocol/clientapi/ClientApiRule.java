@@ -19,6 +19,8 @@ import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.DeploymentRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
@@ -36,6 +38,7 @@ import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.util.MsgPackUtil;
+import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transports;
@@ -216,7 +219,7 @@ public class ClientApiRule extends ExternalResource {
   }
 
   /** @return the workflow key */
-  public long deployWorkflow(BpmnModelInstance modelInstance) {
+  public Record<DeploymentRecordValue> deployWorkflow(BpmnModelInstance modelInstance) {
     final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
     Bpmn.writeModelToStream(outStream, modelInstance);
     final byte[] resource = outStream.toByteArray();
@@ -235,7 +238,28 @@ public class ClientApiRule extends ExternalResource {
             .done()
             .sendAndAwait();
 
-    return commandResponse.getKey();
+    assertThat(commandResponse.getIntent()).isEqualTo(DeploymentIntent.CREATED);
+
+    return RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
+        .withKey(commandResponse.getKey())
+        .getFirst();
+  }
+
+  public long createWorkflowInstance(long workflowKey, DirectBuffer payload) {
+    final ExecuteCommandResponse response =
+        createCmdRequest()
+            .partitionId(nextPartitionId())
+            .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
+            .command()
+            .put(WorkflowInstanceRecord.PROP_WORKFLOW_KEY, workflowKey)
+            .put(WorkflowInstanceRecord.PROP_WORKFLOW_PAYLOAD, BufferUtil.bufferAsArray(payload))
+            .done()
+            .sendAndAwait();
+
+    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+
+    return response.getKey();
   }
 
   public long createWorkflowInstance(String bpmnProcessId, DirectBuffer payload) {

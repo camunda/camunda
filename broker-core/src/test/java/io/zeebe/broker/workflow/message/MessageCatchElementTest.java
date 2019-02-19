@@ -33,7 +33,6 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
@@ -180,10 +179,7 @@ public class MessageCatchElementTest {
   }
 
   private static void deploy(BpmnModelInstance modelInstance) {
-    final long deploymentKey = apiRule.deployWorkflow(modelInstance);
-    RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
-        .withKey(deploymentKey)
-        .await();
+    apiRule.deployWorkflow(modelInstance);
   }
 
   @Before
