@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.DeploymentRecordValue;
+import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
@@ -318,6 +319,24 @@ public class ClientApiRule extends ExternalResource {
 
     assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
     assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_TERMINATING);
+  }
+
+  public void completeJob(String jobType, DirectBuffer payload) {
+    activateJobs(jobType).await();
+
+    final Record<JobRecordValue> jobRecord =
+        RecordingExporter.jobRecords(JobIntent.ACTIVATED).withType(jobType).getFirst();
+
+    final ExecuteCommandResponse response =
+        createCmdRequest()
+            .type(ValueType.JOB, JobIntent.COMPLETE)
+            .key(jobRecord.getKey())
+            .command()
+            .put("payload", BufferUtil.bufferAsArray(payload))
+            .done()
+            .sendAndAwait();
+
+    assertThat(response.getIntent()).isEqualTo(JobIntent.COMPLETED);
   }
 
   protected int nextPartitionId() {
