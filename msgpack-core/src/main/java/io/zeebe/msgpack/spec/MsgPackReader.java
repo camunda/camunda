@@ -357,7 +357,7 @@ public class MsgPackReader {
     skipValues(1);
   }
 
-  public void skipValues(int count) {
+  public void skipValues(long count) {
     while (count > 0) {
       final byte b = buffer.getByte(offset);
       ++offset;
@@ -435,28 +435,28 @@ public class MsgPackReader {
           offset += 17;
           break;
         case EXT8:
-          offset += 1 + 1 + buffer.getByte(offset);
+          offset += 1 + 1 + Byte.toUnsignedInt(buffer.getByte(offset));
           break;
         case EXT16:
-          offset += 1 + 2 + buffer.getShort(offset, BYTE_ORDER);
+          offset += 1 + 2 + Short.toUnsignedInt(buffer.getShort(offset, BYTE_ORDER));
           break;
         case EXT32:
-          offset += 1 + 4 + buffer.getInt(offset, BYTE_ORDER);
+          offset += 1 + 4 + (int) ensurePositive(buffer.getInt(offset, BYTE_ORDER));
           break;
         case ARRAY16:
-          count += buffer.getShort(offset, BYTE_ORDER);
+          count += Short.toUnsignedInt(buffer.getShort(offset, BYTE_ORDER));
           offset += 2;
           break;
         case ARRAY32:
-          count += buffer.getInt(offset, BYTE_ORDER);
+          count += (int) ensurePositive(buffer.getInt(offset, BYTE_ORDER));
           offset += 4;
           break;
         case MAP16:
-          count += buffer.getShort(offset, BYTE_ORDER) * 2;
+          count += Short.toUnsignedInt(buffer.getShort(offset, BYTE_ORDER)) * 2;
           offset += 2;
           break;
         case MAP32:
-          count += buffer.getInt(offset, BYTE_ORDER) * 2;
+          count += (int) ensurePositive(buffer.getInt(offset, BYTE_ORDER)) * 2;
           offset += 4;
           break;
         case NEVER_USED:
