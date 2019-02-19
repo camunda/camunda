@@ -1,4 +1,4 @@
-FROM alpine:3.8 as builder
+FROM alpine:3.9 as builder
 WORKDIR /build
 
 ARG REPO=camunda-optimize
@@ -17,7 +17,7 @@ COPY docker/download.sh /bin/
 RUN /bin/download.sh
 
 ############ Production image ###############
-FROM openjdk:8u171-jre-alpine3.8
+FROM openjdk:8u191-jre-alpine3.9
 
 ENV OPTIMIZE_HOME=/optimize
 ENV JAVA_OPTS="-Xms512m -Xmx512m -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256m"
