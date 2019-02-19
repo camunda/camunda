@@ -16,6 +16,10 @@
   </parent>
 
 
+  <properties>
+    <paths.certificates>${project.build.testResources[0].directory}/certs/</paths.certificates>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>io.zeebe</groupId>
@@ -54,6 +58,11 @@
 
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpcore-nio</artifactId>
     </dependency>
 
@@ -68,11 +77,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpclient</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
@@ -80,6 +84,12 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-test-util</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -114,12 +124,6 @@
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zb-test-util</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>pl.allegro.tech</groupId>
       <artifactId>embedded-elasticsearch</artifactId>
       <scope>test</scope>
@@ -132,6 +136,15 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <javax.net.ssl.trustStore>
+              ${paths.certificates}/elastic-stack-ca.p12
+            </javax.net.ssl.trustStore>
+            <javax.net.ssl.trustStorePassword>changeit</javax.net.ssl.trustStorePassword>
+            <javax.net.ssl.trustStoreType>pkcs12</javax.net.ssl.trustStoreType>
+          </systemPropertyVariables>
+        </configuration>
       </plugin>
     </plugins>
   </build>

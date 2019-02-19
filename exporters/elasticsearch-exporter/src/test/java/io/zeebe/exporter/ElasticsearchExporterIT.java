@@ -28,29 +28,71 @@ import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.util.ZbLogger;
 import java.io.IOException;
 import java.util.Map;
+import java.util.function.Consumer;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.security.AuthenticateResponse;
 import org.elasticsearch.common.collect.ImmutableOpenMap;
 import org.elasticsearch.common.settings.Settings;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 import org.slf4j.Logger;
 
+@RunWith(Parameterized.class)
 public class ElasticsearchExporterIT {
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  private ElasticsearchNode elastic = new ElasticsearchForkedJvm();
-
+  @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private final ExporterIntegrationRule exporterBrokerRule = new ExporterIntegrationRule();
+
+  private ElasticsearchNode elastic;
   private ElasticsearchExporterConfiguration configuration;
   private ElasticsearchTestClient esClient;
 
+  @Parameter(0)
+  public String name;
+
+  @Parameter(1)
+  public Consumer<ElasticsearchNode> elasticConfigurator;
+
+  @Parameter(2)
+  public Consumer<ElasticsearchExporterConfiguration> exporterConfigurator;
+
+  @Parameters(name = "{0}")
+  public static Object[][] data() {
+    return new Object[][] {
+      new Object[] {
+        "defaults", elastic(c -> {}), exporter(c -> {}),
+      },
+      new Object[] {
+        "basic authentication",
+        elastic(c -> c.withUser("zeebe", "1234567")),
+        exporter(
+            c -> {
+              c.authentication.username = "zeebe";
+              c.authentication.password = "1234567";
+            })
+      },
+      new Object[] {
+        "one way ssl handshake",
+        elastic(c -> c.withKeyStore("certs/elastic-certificates.p12")),
+        exporter(c -> {})
+      }
+    };
+  }
+
   @Before
-  public void setUp() {}
+  public void setUp() {
+    elastic = new ElasticsearchForkedJvm(temporaryFolder);
+  }
 
   @After
   public void tearDown() throws IOException {
@@ -61,61 +103,32 @@ public class ElasticsearchExporterIT {
 
     exporterBrokerRule.stop();
     elastic.stop();
+    configuration = null;
     RecordingExporter.reset();
   }
 
   @Test
   public void shouldExportRecords() {
     // given
+    elasticConfigurator.accept(elastic);
     elastic.start();
+
+    // given
     configuration = getDefaultConfiguration();
-    exporterBrokerRule.configure("es", ElasticsearchExporter.class, configuration);
-    exporterBrokerRule.start();
-    esClient = createElasticsearchClient(configuration);
+    exporterConfigurator.accept(configuration);
 
     // when
+    exporterBrokerRule.configure("es", ElasticsearchExporter.class, configuration);
+    exporterBrokerRule.start();
     exporterBrokerRule.performSampleWorkload();
 
     // then
 
     // assert index settings for all created indices
+    esClient = createElasticsearchClient(configuration);
     assertIndexSettings();
 
     // assert all records which where recorded during the tests where exported
-    exporterBrokerRule.visitExportedRecords(
-        r -> {
-          if (configuration.shouldIndexRecord(r)) {
-            assertRecordExported(r);
-          }
-        });
-  }
-
-  @Test
-  public void shouldUseBasicAuthenticationIfConfigured() {
-    // given
-    final String password = "1234567";
-    final String username = "zeebe";
-    elastic.withUser(username, password).start();
-    configuration = getDefaultConfiguration();
-    configuration.authentication.username = username;
-    configuration.authentication.password = password;
-    esClient = createElasticsearchClient(configuration);
-
-    // then - enforces checking we are not using the superuser role from anonymous users
-    try {
-      final AuthenticateResponse response =
-          esClient.client.security().authenticate(RequestOptions.DEFAULT);
-      assertThat(response.getUser().getUsername()).isEqualTo(username);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-
-    // when
-    exporterBrokerRule.configure("es", ElasticsearchExporter.class, configuration);
-    exporterBrokerRule.start();
-    exporterBrokerRule.performSampleWorkload();
-
-    // then
     exporterBrokerRule.visitExportedRecords(
         r -> {
           if (configuration.shouldIndexRecord(r)) {
@@ -158,7 +171,6 @@ public class ElasticsearchExporterIT {
         configuration, new ZbLogger("io.zeebe.exporter.elasticsearch"));
   }
 
-  @SuppressWarnings("unchecked")
   private Map<String, Object> recordToMap(final Record<?> record) {
     final JsonNode jsonNode;
     try {
@@ -170,7 +182,7 @@ public class ElasticsearchExporterIT {
     return MAPPER.convertValue(jsonNode, Map.class);
   }
 
-  public ElasticsearchExporterConfiguration getDefaultConfiguration() {
+  private ElasticsearchExporterConfiguration getDefaultConfiguration() {
     final ElasticsearchExporterConfiguration configuration =
         new ElasticsearchExporterConfiguration();
 
@@ -230,5 +242,14 @@ public class ElasticsearchExporterIT {
             "Failed to get record " + idFor(record) + " from index " + indexFor(record));
       }
     }
+  }
+
+  private static Consumer<ElasticsearchNode> elastic(Consumer<ElasticsearchNode> configurator) {
+    return configurator;
+  }
+
+  private static Consumer<ElasticsearchExporterConfiguration> exporter(
+      Consumer<ElasticsearchExporterConfiguration> configurator) {
+    return configurator;
   }
 }
