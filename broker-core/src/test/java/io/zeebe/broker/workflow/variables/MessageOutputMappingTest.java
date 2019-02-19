@@ -29,13 +29,18 @@ import io.zeebe.model.bpmn.builder.ZeebePayloadMappingBuilder;
 import io.zeebe.protocol.intent.VariableIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
+import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
 import org.assertj.core.groups.Tuple;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -48,11 +53,18 @@ import org.junit.runners.Parameterized.Parameters;
 public class MessageOutputMappingTest {
 
   private static final String PROCESS_ID = "process";
+  private static final String MESSAGE_NAME = "message";
+  private static final String CORRELATION_VARIABLE = "key";
+  private static final String CORRELATION_VARIABLE_PATH = "$." + CORRELATION_VARIABLE;
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
+  public static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public static ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
 
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+  @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+
+  @Rule
+  public RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   @Parameter(0)
   public String messagePayload;
@@ -61,7 +73,7 @@ public class MessageOutputMappingTest {
   public Consumer<IntermediateCatchEventBuilder> mappings;
 
   @Parameter(2)
-  public List<Tuple> expectedActivtyVariables;
+  public List<Tuple> expectedActivityVariables;
 
   @Parameter(3)
   public List<Tuple> expectedScopeVariables;
@@ -124,59 +136,78 @@ public class MessageOutputMappingTest {
     };
   }
 
-  private PartitionTestClient testClient;
+  private String correlationKey;
 
   @Before
   public void init() {
-    testClient = apiRule.partitionClient();
+    correlationKey = UUID.randomUUID().toString();
   }
 
   @Test
   public void shouldApplyOutputMappings() {
     // given
-    testClient.deploy(
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .intermediateCatchEvent(
-                "catch-event",
-                b -> {
-                  b.message(m -> m.name("msg").zeebeCorrelationKey("$.key"));
+    final long workflowKey =
+        apiRule
+            .deployWorkflow(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .intermediateCatchEvent(
+                        "catch-event",
+                        b -> {
+                          b.message(
+                              m ->
+                                  m.name(MESSAGE_NAME)
+                                      .zeebeCorrelationKey(CORRELATION_VARIABLE_PATH));
 
-                  mappings.accept(b);
-                })
-            .endEvent()
-            .done());
+                          mappings.accept(b);
+                        })
+                    .endEvent()
+                    .done())
+            .getValue()
+            .getDeployedWorkflows()
+            .get(0)
+            .getWorkflowKey();
+
+    final Map<String, Object> payload = new HashMap<>();
+    payload.put("i", 0);
+    payload.put(CORRELATION_VARIABLE, correlationKey);
 
     // when
-    final long flowScopeKey =
-        testClient.createWorkflowInstance(PROCESS_ID, "{'i': 0, 'key': 'msg-key'}");
+    final long workflowInstanceKey =
+        apiRule.createWorkflowInstance(workflowKey, MsgPackUtil.asMsgPack(payload));
 
-    testClient.publishMessage("msg", "msg-key", messagePayload);
+    apiRule.publishMessage(MESSAGE_NAME, correlationKey, MsgPackUtil.asMsgPack(messagePayload));
 
     // then
     final long elementInstanceKey =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
             .withElementId("catch-event")
             .getFirst()
             .getKey();
 
     final Record<VariableRecordValue> initialVariable =
-        RecordingExporter.variableRecords(VariableIntent.CREATED).withName("key").getFirst();
+        RecordingExporter.variableRecords(VariableIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withName(CORRELATION_VARIABLE)
+            .getFirst();
 
     assertThat(
             RecordingExporter.variableRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
                 .skipUntil(r -> r.getPosition() > initialVariable.getPosition())
                 .withScopeKey(elementInstanceKey)
-                .limit(expectedActivtyVariables.size()))
+                .limit(expectedActivityVariables.size()))
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getName(), v.getValue()))
-        .hasSize(expectedActivtyVariables.size())
-        .containsAll(expectedActivtyVariables);
+        .hasSize(expectedActivityVariables.size())
+        .containsAll(expectedActivityVariables);
 
     assertThat(
             RecordingExporter.variableRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
                 .skipUntil(r -> r.getPosition() > initialVariable.getPosition())
-                .withScopeKey(flowScopeKey)
+                .withScopeKey(workflowInstanceKey)
                 .limit(expectedScopeVariables.size()))
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getName(), v.getValue()))
