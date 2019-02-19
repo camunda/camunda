@@ -21,32 +21,19 @@ import io.zeebe.model.bpmn.impl.instance.BpmnModelElementInstanceImpl;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
 import java.util.Collection;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
-import org.camunda.bpm.model.xml.type.attribute.Attribute;
 import org.camunda.bpm.model.xml.type.child.ChildElementCollection;
 
 public class ZeebeIoMappingImpl extends BpmnModelElementInstanceImpl implements ZeebeIoMapping {
 
-  private static Attribute<ZeebeOutputBehavior> outputBehaviorAttribute;
   protected static ChildElementCollection<ZeebeInput> inputCollection;
   protected static ChildElementCollection<ZeebeOutput> outputCollection;
 
   public ZeebeIoMappingImpl(ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
-  }
-
-  @Override
-  public ZeebeOutputBehavior getOutputBehavior() {
-    return outputBehaviorAttribute.getValue(this);
-  }
-
-  @Override
-  public void setOutputBehavhior(ZeebeOutputBehavior behavior) {
-    outputBehaviorAttribute.setValue(this, behavior);
   }
 
   @Override
@@ -65,12 +52,6 @@ public class ZeebeIoMappingImpl extends BpmnModelElementInstanceImpl implements 
             .defineType(ZeebeIoMapping.class, ZeebeConstants.ELEMENT_IO_MAPPING)
             .namespaceUri(BpmnModelConstants.ZEEBE_NS)
             .instanceProvider(ZeebeIoMappingImpl::new);
-
-    outputBehaviorAttribute =
-        typeBuilder
-            .enumAttribute(ZeebeConstants.ATTRIBUTE_OUTPUT_BEHAVIOR, ZeebeOutputBehavior.class)
-            .namespace(BpmnModelConstants.ZEEBE_NS)
-            .build();
 
     inputCollection = typeBuilder.sequence().elementCollection(ZeebeInput.class).build();
     outputCollection = typeBuilder.sequence().elementCollection(ZeebeOutput.class).build();

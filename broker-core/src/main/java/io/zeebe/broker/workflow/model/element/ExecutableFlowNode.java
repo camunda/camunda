@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.workflow.model.element;
 
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
 import io.zeebe.msgpack.mapping.Mapping;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,8 +28,6 @@ public class ExecutableFlowNode extends AbstractFlowElement {
 
   private Mapping[] inputMappings = new Mapping[0];
   private Mapping[] outputMappings = new Mapping[0];
-
-  private ZeebeOutputBehavior outputBehavior;
 
   public ExecutableFlowNode(String id) {
     super(id);
@@ -66,13 +63,5 @@ public class ExecutableFlowNode extends AbstractFlowElement {
 
   public Mapping[] getOutputMappings() {
     return outputMappings;
-  }
-
-  public ZeebeOutputBehavior getOutputBehavior() {
-    return outputBehavior;
-  }
-
-  public void setOutputBehavior(ZeebeOutputBehavior outputBehavior) {
-    this.outputBehavior = outputBehavior;
   }
 }

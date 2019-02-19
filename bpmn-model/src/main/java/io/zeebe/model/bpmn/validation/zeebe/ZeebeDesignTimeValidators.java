@@ -45,7 +45,6 @@ public class ZeebeDesignTimeValidators {
     VALIDATORS.add(new SubProcessValidator());
     VALIDATORS.add(new TimerEventDefinitionValidator());
     VALIDATORS.add(new ZeebeTaskDefinitionValidator());
-    VALIDATORS.add(new ZeebeIoMappingValidator());
     VALIDATORS.add(new ZeebeSubscriptionValidator());
   }
 }

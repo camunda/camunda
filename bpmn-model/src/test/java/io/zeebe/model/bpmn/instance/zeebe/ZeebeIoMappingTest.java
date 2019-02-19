@@ -19,6 +19,7 @@ import io.zeebe.model.bpmn.impl.BpmnModelConstants;
 import io.zeebe.model.bpmn.instance.BpmnModelElementInstanceTest;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 
 public class ZeebeIoMappingTest extends BpmnModelElementInstanceTest {
 
@@ -36,6 +37,6 @@ public class ZeebeIoMappingTest extends BpmnModelElementInstanceTest {
 
   @Override
   public Collection<AttributeAssumption> getAttributesAssumptions() {
-    return Arrays.asList(new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "outputBehavior"));
+    return Collections.emptyList();
   }
 }

@@ -31,7 +31,6 @@ import io.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
 import java.util.function.Consumer;
 
 /** @author Sebastian Menski */
@@ -190,14 +189,6 @@ public abstract class AbstractCatchEventBuilder<
   @Override
   public B condition(String condition) {
     conditionalEventDefinition().condition(condition);
-    return myself;
-  }
-
-  @Override
-  public B zeebeOutputBehavior(ZeebeOutputBehavior outputBehavior) {
-    final ZeebeIoMapping ioMapping = getCreateSingleExtensionElement(ZeebeIoMapping.class);
-    ioMapping.setOutputBehavhior(outputBehavior);
-
     return myself;
   }
 

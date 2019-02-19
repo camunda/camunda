@@ -7,7 +7,6 @@
     <bpmn:serviceTask id="collect-money" name="Collect Money">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="collect-money" />
-        <zeebe:ioMapping outputBehavior="merge" />
       </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_1ml1so0</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1a571rg</bpmn:outgoing>
@@ -16,7 +15,6 @@
     <bpmn:serviceTask id="fetch-items" name="Fetch Items">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="fetch-items" />
-        <zeebe:ioMapping outputBehavior="merge" />
       </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_1a571rg</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0heyqfe</bpmn:outgoing>
@@ -25,7 +23,6 @@
     <bpmn:serviceTask id="ship-parcel" name="Ship Parcel">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="ship-parcel" />
-        <zeebe:ioMapping outputBehavior="merge" />
       </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_0heyqfe</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0g0j28e</bpmn:outgoing>

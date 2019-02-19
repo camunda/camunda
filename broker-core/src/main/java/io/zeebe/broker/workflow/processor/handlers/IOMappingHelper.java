@@ -20,7 +20,6 @@ package io.zeebe.broker.workflow.processor.handlers;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.state.VariablesState;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
 import io.zeebe.msgpack.mapping.Mapping;
 import io.zeebe.msgpack.mapping.MsgPackMergeTool;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
@@ -49,7 +48,7 @@ public class IOMappingHelper {
       variablesState.removePayload(elementInstanceKey);
     }
 
-    if (element.getOutputBehavior() != ZeebeOutputBehavior.none && hasOutputMappings) {
+    if (hasOutputMappings) {
       mergeTool.reset();
 
       final DirectBuffer variables = variablesState.getVariablesAsDocument(elementInstanceKey);
