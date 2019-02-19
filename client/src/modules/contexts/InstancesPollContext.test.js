@@ -218,7 +218,7 @@ describe('InstancesPollContext', () => {
 
     // instance 6 is only present in selections
     expect(providerPropsMock.onSelectionsRefresh).toHaveBeenCalled();
-    expect(providerPropsMock.onWorkflowInstancesRefresh).not.toHaveBeenCalled();
+    expect(providerPropsMock.onWorkflowInstancesRefresh).toHaveBeenCalled();
   });
 
   it('should continue polling until all ids have completed operations', async () => {
