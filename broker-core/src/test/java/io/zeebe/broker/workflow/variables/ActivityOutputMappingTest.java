@@ -28,13 +28,14 @@ import io.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.zeebe.model.bpmn.builder.ZeebePayloadMappingBuilder;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Consumer;
 import org.assertj.core.groups.Tuple;
-import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -48,10 +49,14 @@ public class ActivityOutputMappingTest {
 
   private static final String PROCESS_ID = "process";
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
+  public static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public static ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
 
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+  @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+
+  @Rule
+  public RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   @Parameter(0)
   public String initialPayload;
@@ -94,47 +99,50 @@ public class ActivityOutputMappingTest {
     };
   }
 
-  private PartitionTestClient testClient;
-
-  @Before
-  public void init() {
-    testClient = apiRule.partitionClient();
-  }
-
   @Test
   public void shouldApplyOutputMappings() {
     // given
-    testClient.deploy(
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .subProcess(
-                "sub",
-                b -> {
-                  b.embeddedSubProcess()
-                      .startEvent()
-                      .serviceTask("task", t -> t.zeebeTaskType("test"))
-                      .endEvent();
+    final String jobType = UUID.randomUUID().toString();
 
-                  mappings.accept(b);
-                })
-            .endEvent()
-            .done());
+    final long workflowKey =
+        apiRule
+            .deployWorkflow(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .subProcess(
+                        "sub",
+                        b -> {
+                          b.embeddedSubProcess()
+                              .startEvent()
+                              .serviceTask("task", t -> t.zeebeTaskType(jobType))
+                              .endEvent();
+
+                          mappings.accept(b);
+                        })
+                    .endEvent()
+                    .done())
+            .getValue()
+            .getDeployedWorkflows()
+            .get(0)
+            .getWorkflowKey();
 
     // when
-    final long flowScopeKey = testClient.createWorkflowInstance(PROCESS_ID, initialPayload);
+    final long workflowInstanceKey = apiRule.createWorkflowInstance(workflowKey, initialPayload);
 
-    testClient.completeJobOfType("test");
+    apiRule.completeJob(jobType);
 
     // then
     final Record<WorkflowInstanceRecordValue> taskCompleted =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
             .withElementId("task")
             .getFirst();
 
     assertThat(
             RecordingExporter.variableRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
                 .skipUntil(r -> r.getPosition() > taskCompleted.getPosition())
-                .withScopeKey(flowScopeKey)
+                .withScopeKey(workflowInstanceKey)
                 .limit(expectedScopeVariables.size()))
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getName(), v.getValue()))
