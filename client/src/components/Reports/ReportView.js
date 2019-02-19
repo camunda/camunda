@@ -24,12 +24,7 @@ export default class ReportView extends Component {
     this.setState({sharingEnabled});
   }
 
-  shouldShowCSVDownload = () => {
-    const {
-      report: {result}
-    } = this.props;
-    return result;
-  };
+  shouldShowCSVDownload = () => typeof this.props.report.result !== 'undefined';
 
   showDeleteModal = async () => {
     let conflictState = {};

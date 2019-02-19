@@ -111,6 +111,11 @@ it('should show a download csv button with the correct link', () => {
   expect(href).toContain(report.name);
 });
 
+it('should show a download csv button even if the result is 0', () => {
+  const node = shallow(<ReportView report={{...report, result: 0}} />);
+  expect(node.find('.Report__csv-download-button')).toBePresent();
+});
+
 it('should reflect excluded columns in the csv download link', () => {
   const newReport = {
     ...report,
