@@ -2,10 +2,11 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import ColumnRearrangement from './ColumnRearrangement';
+jest.mock('./processRawData', () => jest.fn());
 
 jest.mock('services', () => {
   return {
-    processRawData: jest.fn()
+    flatten: jest.fn()
   };
 });
 

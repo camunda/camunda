@@ -1,22 +1,15 @@
 import React from 'react';
 import ReportBlankSlate from '../../ReportBlankSlate';
+import processRawData from './processRawData';
 
 import {Table as TableRenderer, LoadingIndicator} from 'components';
-import {processRawData, reportConfig, formatters} from 'services';
 import {withErrorHandling} from 'HOC';
 
 import ColumnRearrangement from './ColumnRearrangement';
+import processCombinedData from './processCombinedData';
+import processDefaultData from './processDefaultData';
 
-import {
-  getCamundaEndpoints,
-  getFormattedLabels,
-  getBodyRows,
-  getCombinedTableProps
-} from './service';
-
-import {getRelativeValue, uniteResults} from '../service';
-
-const {formatReportResult} = formatters;
+import {getCamundaEndpoints} from './service';
 
 export default withErrorHandling(
   class Table extends React.Component {
@@ -38,76 +31,6 @@ export default withErrorHandling(
           this.setState({camundaEndpoints})
         );
       }
-    }
-
-    processSingleData(labels, result, instanceCount) {
-      const {formatter = v => v, report, flowNodeNames = {}} = this.props;
-      const {
-        configuration: {hideAbsoluteValue, hideRelativeValue},
-        view: {property}
-      } = report.data;
-
-      const displayRelativeValue = property === 'frequency' && !hideRelativeValue;
-      const displayAbsoluteValue = property === 'duration' || !hideAbsoluteValue;
-
-      if (!displayAbsoluteValue) {
-        labels.length = 1;
-      }
-
-      // normal two-dimensional data
-      return {
-        head: [...labels, ...(displayRelativeValue ? ['Relative Frequency'] : [])],
-        body: Object.keys(result).map(key => [
-          flowNodeNames[key] || key,
-          ...(displayAbsoluteValue ? [formatter(result[key])] : []),
-          ...(displayRelativeValue ? [getRelativeValue(result[key], instanceCount)] : [])
-        ])
-      };
-    }
-
-    processCombinedData() {
-      const {formatter, report} = this.props;
-      const {labels, reportsNames, combinedResult, processInstanceCount} = getCombinedTableProps(
-        report.result,
-        report.data.reportIds
-      );
-      const {
-        configuration: {hideAbsoluteValue, hideRelativeValue}
-      } = report.data;
-      const {view} = Object.values(report.result)[0].data;
-
-      const displayRelativeValue = view.property === 'frequency' && !hideRelativeValue;
-      const displayAbsoluteValue = !hideAbsoluteValue;
-
-      const keysLabel = labels[0][0];
-
-      const formattedLabels = getFormattedLabels(
-        labels,
-        reportsNames,
-        displayRelativeValue,
-        displayAbsoluteValue
-      );
-
-      // get all unique keys of results of multiple reports
-      let allKeys = Object.keys(Object.assign({}, ...combinedResult));
-
-      // make all hash tables look exactly the same by filling empty keys with empty string
-      const unitedResults = uniteResults(combinedResult, allKeys);
-
-      // convert hashtables into a table rows array
-      const rows = getBodyRows(
-        unitedResults,
-        allKeys,
-        formatter,
-        displayRelativeValue,
-        processInstanceCount,
-        displayAbsoluteValue
-      );
-
-      return {
-        head: [keysLabel, ...formattedLabels],
-        body: rows
-      };
     }
 
     render() {
@@ -134,49 +57,25 @@ export default withErrorHandling(
 
     formatData = () => {
       const {
-        report: {reportType, combined, data, processInstanceCount, decisionInstanceCount, result},
+        report: {reportType, combined, data, result},
         updateReport
       } = this.props;
-
-      const {
-        parameters,
-        configuration: {excludedColumns, columnOrder, xml},
-        groupBy,
-        view
-      } = data;
+      const {parameters} = data;
 
       // Combined Report
-      if (combined) return this.processCombinedData();
-
-      const formattedResult = formatReportResult(data, result);
+      if (combined) return processCombinedData(this.props);
 
       // raw data
       if (isRaw(result)) {
         return {
-          ...processRawData({
-            data: formattedResult,
-            excludedColumns,
-            columnOrder,
-            endpoints: this.state.camundaEndpoints,
-            reportType
-          }),
+          ...processRawData[reportType](this.props, this.state.camundaEndpoints),
           updateSorting: updateReport && this.updateSorting,
           sorting: parameters && parameters.sorting
         };
       }
 
       // Normal single Report
-      const config = reportConfig[reportType];
-      const labels = [
-        config.getLabelFor(config.options.groupBy, groupBy, xml),
-        config.getLabelFor(config.options.view, view, xml)
-      ];
-
-      return this.processSingleData(
-        labels,
-        formattedResult,
-        processInstanceCount || decisionInstanceCount || 0
-      );
+      return processDefaultData(this.props);
     };
   }
 );

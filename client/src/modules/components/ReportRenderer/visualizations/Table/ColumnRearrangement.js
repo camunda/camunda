@@ -1,6 +1,7 @@
 import React from 'react';
 
-import {processRawData} from 'services';
+import {flatten} from 'services';
+import processRawData from './processRawData';
 
 import './ColumnRearrangement.scss';
 
@@ -24,15 +25,10 @@ export default class ColumnRearrangement extends React.Component {
         .do(({classList}) => classList.add('ColumnRearrangement__draggedColumn'))
         .usingEvent(evt);
 
-      const {result, data, reportType} = this.props.report;
-      const currentHead = processRawData({
-        data: result,
-        excludedColumns: data.configuration.excludedColumns,
-        columnOrder: data.configuration.columnOrder,
-        reportType
-      }).head;
+      const {reportType} = this.props.report;
+      const currentHead = processRawData[reportType](this.props).head;
 
-      this.columnGroups = currentHead.reduce(processRawData.flatten(), []);
+      this.columnGroups = currentHead.reduce(flatten(), []);
       this.dragGroup = this.columnGroups[this.dragIdx];
 
       this.preview = createDragPreview(this.dragIdx, evt);

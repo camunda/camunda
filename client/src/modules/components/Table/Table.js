@@ -2,7 +2,7 @@ import React from 'react';
 import classnames from 'classnames';
 import ReactTable from 'react-table';
 import {Button} from 'components';
-import {processRawData} from 'services';
+import {flatten} from 'services';
 
 import './Table.scss';
 
@@ -141,7 +141,7 @@ export default class Table extends React.Component {
   };
 
   static formatData = (head, body) => {
-    const flatHead = head.reduce(processRawData.flatten('', entry => entry.id || entry), []);
+    const flatHead = head.reduce(flatten('', entry => entry.id || entry), []);
     return body.map(row => {
       const newRow = {};
       row.forEach((cell, columnIdx) => {
