@@ -64,6 +64,7 @@ public class PendingWorkflowInstanceSubscriptionChecker implements Runnable {
 
   private boolean sendOpenCommand(WorkflowInstanceSubscription subscription) {
     return commandSender.openMessageSubscription(
+        subscription.getSubscriptionPartitionId(),
         subscription.getWorkflowInstanceKey(),
         subscription.getElementInstanceKey(),
         subscription.getMessageName(),

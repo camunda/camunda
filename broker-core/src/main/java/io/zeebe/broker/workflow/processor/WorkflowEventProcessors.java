@@ -56,7 +56,8 @@ public class WorkflowEventProcessors {
       ZeebeState zeebeState,
       SubscriptionCommandSender subscriptionCommandSender,
       TopologyManager topologyManager,
-      DueDateTimerChecker timerChecker) {
+      DueDateTimerChecker timerChecker,
+      int partitionsCount) {
     final WorkflowState workflowState = zeebeState.getWorkflowState();
     final WorkflowInstanceSubscriptionState subscriptionState =
         zeebeState.getWorkflowInstanceSubscriptionState();
@@ -67,7 +68,7 @@ public class WorkflowEventProcessors {
     addWorkflowInstanceCommandProcessor(typedProcessorBuilder, workflowEngineState);
 
     final CatchEventBehavior catchEventOutput =
-        new CatchEventBehavior(zeebeState, subscriptionCommandSender);
+        new CatchEventBehavior(zeebeState, subscriptionCommandSender, partitionsCount);
     final BpmnStepProcessor bpmnStepProcessor =
         new BpmnStepProcessor(workflowEngineState, zeebeState, catchEventOutput);
     addBpmnStepProcessor(typedProcessorBuilder, bpmnStepProcessor);

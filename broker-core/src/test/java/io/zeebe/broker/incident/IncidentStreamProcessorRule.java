@@ -75,9 +75,8 @@ public class IncidentStreamProcessorRule extends ExternalResource {
     mockTopologyManager = mock(TopologyManager.class);
     mockTimerEventScheduler = mock(DueDateTimerChecker.class);
 
-    when(mockSubscriptionCommandSender.hasPartitionIds()).thenReturn(true);
     when(mockSubscriptionCommandSender.openMessageSubscription(
-            anyLong(), anyLong(), any(), any(), anyBoolean()))
+            anyInt(), anyLong(), anyLong(), any(), any(), anyBoolean()))
         .thenReturn(true);
     when(mockSubscriptionCommandSender.correlateMessageSubscription(
             anyInt(), anyLong(), anyLong(), any()))
@@ -96,7 +95,8 @@ public class IncidentStreamProcessorRule extends ExternalResource {
                   zeebeState,
                   mockSubscriptionCommandSender,
                   mockTopologyManager,
-                  mockTimerEventScheduler);
+                  mockTimerEventScheduler,
+                  1);
 
           IncidentEventProcessors.addProcessors(
               typedEventStreamProcessorBuilder, zeebeState, stepProcessor);

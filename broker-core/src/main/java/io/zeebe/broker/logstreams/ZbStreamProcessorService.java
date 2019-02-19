@@ -169,14 +169,15 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
   private BpmnStepProcessor addWorkflowProcessors(
       ZeebeState zeebeState, TypedEventStreamProcessorBuilder typedProcessorBuilder) {
     final SubscriptionCommandSender subscriptionCommandSender =
-        new SubscriptionCommandSender(clusterCfg, subscriptionApiClientInjector.getValue());
+        new SubscriptionCommandSender(subscriptionApiClientInjector.getValue());
     final DueDateTimerChecker timerChecker = new DueDateTimerChecker(zeebeState.getWorkflowState());
     return WorkflowEventProcessors.addWorkflowProcessors(
         typedProcessorBuilder,
         zeebeState,
         subscriptionCommandSender,
         topologyManager,
-        timerChecker);
+        timerChecker,
+        clusterCfg.getPartitionsCount());
   }
 
   public void addDeploymentRelatedProcessorAndServices(
@@ -197,7 +198,9 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
           typedProcessorBuilder,
           zeebeState,
           new CatchEventBehavior(
-              zeebeState, new SubscriptionCommandSender(clusterCfg, managementApi)));
+              zeebeState,
+              new SubscriptionCommandSender(managementApi),
+              clusterCfg.getPartitionsCount()));
     } else {
       DeploymentEventProcessors.addDeploymentCreateProcessor(typedProcessorBuilder, workflowState);
     }
@@ -223,7 +226,7 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
   private void addMessageProcessors(
       ZeebeState zeebeState, TypedEventStreamProcessorBuilder typedProcessorBuilder) {
     final SubscriptionCommandSender subscriptionCommandSender =
-        new SubscriptionCommandSender(clusterCfg, getSubscriptionApiClientInjector().getValue());
+        new SubscriptionCommandSender(getSubscriptionApiClientInjector().getValue());
     MessageEventProcessors.addMessageProcessors(
         typedProcessorBuilder, zeebeState, subscriptionCommandSender, topologyManager);
   }
