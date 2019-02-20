@@ -77,8 +77,9 @@ public class RawDecisionDataCommand extends DecisionReportCommand<SingleDecision
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    RawDataDecisionReportResultDto rawDataDecisionReportResultDto =
-      rawDataSingleReportResultDtoMapper.mapFrom(response, objectMapper);
+    RawDataDecisionReportResultDto rawDataDecisionReportResultDto = rawDataSingleReportResultDtoMapper.mapFrom(
+      response, objectMapper
+    );
     return new SingleDecisionRawDataReportResult(rawDataDecisionReportResultDto);
   }
 

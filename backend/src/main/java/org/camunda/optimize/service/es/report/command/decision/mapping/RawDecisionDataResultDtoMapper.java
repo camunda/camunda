@@ -16,7 +16,11 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toMap;
 
@@ -30,18 +34,22 @@ public class RawDecisionDataResultDtoMapper {
   }
 
   public RawDataDecisionReportResultDto mapFrom(final SearchResponse searchResponse, final ObjectMapper objectMapper) {
-    List<RawDataDecisionInstanceDto> rawData = new ArrayList<>();
-    SearchHits searchHits = searchResponse.getHits();
+    final List<RawDataDecisionInstanceDto> rawData = new ArrayList<>();
+    final Set<InputVariableEntry> allInputVariablesWithBlankValue = new LinkedHashSet<>();
+    final Set<OutputVariableEntry> allOutputVariablesWithNoValues = new LinkedHashSet<>();
 
+    final SearchHits searchHits = searchResponse.getHits();
     Arrays.stream(searchHits.getHits())
       .limit(recordLimit)
       .forEach(hit -> {
         final String sourceAsString = hit.getSourceAsString();
         try {
           final DecisionInstanceDto processInstanceDto = objectMapper.readValue(
-            sourceAsString,
-            DecisionInstanceDto.class
+            sourceAsString, DecisionInstanceDto.class
           );
+
+          allInputVariablesWithBlankValue.addAll(getInputVariables(processInstanceDto));
+          allOutputVariablesWithNoValues.addAll(getOutputVariables(processInstanceDto));
 
           RawDataDecisionInstanceDto dataEntry = convertToRawDataEntry(processInstanceDto);
           rawData.add(dataEntry);
@@ -50,7 +58,46 @@ public class RawDecisionDataResultDtoMapper {
         }
       });
 
+    ensureEveryRawDataInstanceContainsAllVariables(
+      rawData, allInputVariablesWithBlankValue, allOutputVariablesWithNoValues
+    );
+
     return createResult(rawData, searchHits.getTotalHits());
+  }
+
+  private void ensureEveryRawDataInstanceContainsAllVariables(final List<RawDataDecisionInstanceDto> rawData,
+                                                              final Set<InputVariableEntry> inputVariables,
+                                                              final Set<OutputVariableEntry> outputVariables) {
+    rawData.forEach(data -> {
+      inputVariables.forEach(
+        inputVariableEntry -> data.getInputVariables().putIfAbsent(inputVariableEntry.getId(), inputVariableEntry)
+      );
+      outputVariables.forEach(
+        outputVariableEntry -> data.getOutputVariables().putIfAbsent(outputVariableEntry.getId(), outputVariableEntry)
+      );
+    });
+  }
+
+  private Set<InputVariableEntry> getInputVariables(final DecisionInstanceDto processInstanceDto) {
+    return processInstanceDto.getInputs().stream()
+      .map(inputInstanceDto -> new InputVariableEntry(
+        inputInstanceDto.getClauseId(),
+        inputInstanceDto.getClauseName(),
+        inputInstanceDto.getType(),
+        ""
+      ))
+      .collect(Collectors.toSet());
+  }
+
+  private Set<OutputVariableEntry> getOutputVariables(final DecisionInstanceDto processInstanceDto) {
+    return processInstanceDto.getOutputs().stream()
+      .map(outputInstanceDto -> new OutputVariableEntry(
+        outputInstanceDto.getClauseId(),
+        outputInstanceDto.getClauseName(),
+        outputInstanceDto.getType(),
+        Collections.emptyList()
+      ))
+      .collect(Collectors.toSet());
   }
 
   private RawDataDecisionInstanceDto convertToRawDataEntry(final DecisionInstanceDto decisionInstanceDto) {
@@ -101,7 +148,7 @@ public class RawDecisionDataResultDtoMapper {
   }
 
   private RawDataDecisionReportResultDto createResult(final List<RawDataDecisionInstanceDto> limitedRawDataResult,
-                                                     final Long totalHits) {
+                                                      final Long totalHits) {
     RawDataDecisionReportResultDto result = new RawDataDecisionReportResultDto();
     result.setResult(limitedRawDataResult);
     result.setDecisionInstanceCount(totalHits);
