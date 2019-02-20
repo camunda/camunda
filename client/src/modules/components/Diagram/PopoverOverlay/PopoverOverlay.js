@@ -7,11 +7,6 @@ import Modal from 'modules/components/Modal';
 import Overlay from '../Overlay';
 import * as Styled from './styled';
 
-const position = {
-  bottom: -16,
-  left: -20
-};
-
 export default class PopoverOverlay extends React.Component {
   state = {
     isModalVisibile: false
@@ -85,7 +80,7 @@ export default class PopoverOverlay extends React.Component {
             >
               {selectedFlowNode.name}
             </Styled.Button>
-            <span> > {metadata.data.activityInstanceId}</span>
+            <span> › {metadata.data.activityInstanceId}</span>
           </Styled.SummaryHeader>
         )}
         <Styled.SummaryData>
@@ -121,9 +116,9 @@ export default class PopoverOverlay extends React.Component {
         isViewerLoaded={isViewerLoaded}
         id={selectedFlowNode.id}
         type={'popover'}
-        position={position}
+        position={this.props.position}
       >
-        <Styled.Popover theme={theme}>
+        <Styled.Popover theme={theme} position={this.props.position}>
           {this.renderSummary()}
           {Boolean(metadata.data) && (
             <Styled.Button
@@ -151,5 +146,13 @@ PopoverOverlay.propTypes = {
   onOverlayClear: PropTypes.func.isRequired,
   onFlowNodeSelection: PropTypes.func.isRequired,
   isViewerLoaded: PropTypes.bool.isRequired,
-  theme: PropTypes.oneOf(['dark', 'light']).isRequired
+  theme: PropTypes.oneOf(['dark', 'light']).isRequired,
+  position: PropTypes.shape({
+    top: PropTypes.number,
+    right: PropTypes.number,
+    bottom: PropTypes.number,
+    left: PropTypes.number,
+    side: PropTypes.oneOf(['TOP', 'RIGHT', 'BOTTOM', 'LEFT', 'BOTTOM_MIRROR'])
+      .isRequired
+  }).isRequired
 };

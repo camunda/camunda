@@ -22,6 +22,7 @@ class Diagram extends React.PureComponent {
     clickableFlowNodes: PropTypes.arrayOf(PropTypes.string),
     selectableFlowNodes: PropTypes.arrayOf(PropTypes.string),
     selectedFlowNodeId: PropTypes.string,
+    selectedFlowNodeName: PropTypes.string,
     onFlowNodeSelection: PropTypes.func,
     flowNodeStateOverlays: PropTypes.arrayOf(
       PropTypes.shape({
@@ -249,16 +250,66 @@ class Diagram extends React.PureComponent {
     });
   };
 
-  getFlownNodeName = flownodeId => {
-    const fallbackName = '';
+  getFlowNodePosition = flowNodeId => {
+    const MIN_HEIGHT = 70;
+    const MIN_WIDTH = 190;
 
-    if (!this.Viewer) {
-      return fallbackName;
+    const containerBoundary = this.myRef.current.getBoundingClientRect();
+
+    const element = this.Viewer.get('elementRegistry').getGraphics(flowNodeId);
+    const elementBoudary = element.getBoundingClientRect();
+    const elementBBox = element.getBBox();
+
+    const spaceToBottom =
+      containerBoundary.top +
+      containerBoundary.height -
+      elementBoudary.top -
+      elementBoudary.height;
+
+    if (spaceToBottom > MIN_HEIGHT) {
+      return {
+        bottom: -16,
+        left: elementBBox.width / 2,
+        side: 'BOTTOM'
+      };
     }
 
-    const element = this.Viewer.get('elementRegistry').get(flownodeId);
+    const spaceToLeft = elementBoudary.left - containerBoundary.left;
 
-    return element.businessObject.name || element.businessObject.id;
+    if (spaceToLeft > MIN_WIDTH) {
+      return {
+        left: -25,
+        top: elementBBox.height / 2,
+        side: 'LEFT'
+      };
+    }
+
+    const spaceToTop = elementBoudary.top - containerBoundary.top;
+
+    if (spaceToTop > MIN_HEIGHT) {
+      return {
+        top: -16,
+        left: elementBBox.width / 2,
+        side: 'TOP'
+      };
+    }
+
+    const spaceToRight =
+      containerBoundary.width - spaceToLeft - elementBoudary.width;
+
+    if (spaceToRight > MIN_WIDTH) {
+      return {
+        top: elementBBox.height / 2,
+        right: -16,
+        side: 'RIGHT'
+      };
+    }
+
+    return {
+      bottom: +16,
+      left: elementBBox.width / 2,
+      side: 'BOTTOM_MIRROR'
+    };
   };
 
   render() {
@@ -282,10 +333,12 @@ class Diagram extends React.PureComponent {
             key={this.props.selectedFlowNodeId}
             selectedFlowNode={{
               id: this.props.selectedFlowNodeId,
-              name: this.getFlownNodeName(this.props.selectedFlowNodeId)
+              name:
+                this.props.selectedFlowNodeName || this.props.selectedFlowNodeId
             }}
             metadata={this.props.metadata}
             onFlowNodeSelection={this.props.onFlowNodeSelection}
+            position={this.getFlowNodePosition(this.props.selectedFlowNodeId)}
             {...overlayProps}
           />
         )}

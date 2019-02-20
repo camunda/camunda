@@ -11,7 +11,14 @@ class Viewer {
     this.bpmnRenderer = bpmnRenderer;
     this.elementRegistry = {
       getGraphics: jest.fn(() => ({
-        querySelector: jest.fn(() => ({setAttribute: jest.fn()}))
+        querySelector: jest.fn(() => ({setAttribute: jest.fn()})),
+        getBoundingClientRect: jest.fn(() => ({
+          x: 0,
+          y: 0,
+          height: 0,
+          width: 0
+        })),
+        getBBox: jest.fn(() => ({x: 0, y: 0, height: 0, width: 0}))
       })),
       get: jest.fn(id => ({businessObject: {name: id}}))
     };

@@ -325,7 +325,7 @@ describe('Diagram', () => {
     });
   });
 
-  describe('metadata popover', () => {
+  describe.skip('metadata popover', () => {
     const {activityId} = createActivity();
     const mockMetadata = {data: createMetadata(activityId)};
     const summary = {
