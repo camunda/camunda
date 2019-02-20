@@ -24,16 +24,17 @@ exports[`should display a sentence to describe what the user can do on this page
           <div>
             Select Process
              
-            <ProcessDefinitionSelection
+            <DefinitionSelection
+              definitionKey=""
+              definitionVersion=""
               onChange={[Function]}
-              processDefinitionKey=""
-              processDefinitionVersion=""
+              type="process"
               xml={null}
             >
               <div>
-                ProcessDefinitionSelection
+                DefinitionSelection
               </div>
-            </ProcessDefinitionSelection>
+            </DefinitionSelection>
           </div>
         </Popover>
         analyse how the branches of

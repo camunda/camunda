@@ -29,7 +29,7 @@ jest.mock('components', () => {
         {props.children}
       </div>
     ),
-    ProcessDefinitionSelection: props => <div>ProcessDefinitionSelection</div>
+    DefinitionSelection: props => <div>DefinitionSelection</div>
   };
 });
 

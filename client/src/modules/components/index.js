@@ -19,7 +19,7 @@ export {Switch} from './Switch';
 export {Popover} from './Popover';
 export {DashboardView} from './DashboardView';
 export {DashboardObject} from './DashboardView';
-export {ProcessDefinitionSelection} from './ProcessDefinitionSelection';
+export {DefinitionSelection} from './DefinitionSelection';
 export {TargetValueBadge} from './TargetValueBadge';
 export {ErrorPage} from './ErrorPage';
 export {ErrorMessage} from './ErrorMessage';

@@ -1,5 +1,5 @@
 import React from 'react';
-import {Popover, ProcessDefinitionSelection, Button, Dropdown, Input, Labeled} from 'components';
+import {Popover, DefinitionSelection, Button, Dropdown, Input, Labeled} from 'components';
 
 import {Filter} from './filter';
 import {
@@ -131,12 +131,14 @@ export default class ReportControlPanel extends React.Component {
           <li className="select">
             <Labeled label="Process definition">
               <Popover className="processDefinitionPopover" title={this.createTitle()}>
-                <ProcessDefinitionSelection
-                  {...this.definitionConfig()}
+                <DefinitionSelection
+                  type="process"
+                  definitionKey={data.processDefinitionKey}
+                  definitionVersion={data.processDefinitionVersion}
                   xml={data.configuration.xml}
                   onChange={this.changeDefinition}
-                  renderDiagram={true}
-                  enableAllVersionSelection={true}
+                  renderDiagram
+                  enableAllVersionSelection
                 />
               </Popover>
             </Labeled>

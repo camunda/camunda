@@ -4,7 +4,7 @@ import AnalysisControlPanel from './AnalysisControlPanel';
 import {BPMNDiagram, Message} from 'components';
 
 import {loadFrequencyData} from './service';
-import {loadProcessDefinitions, incompatibleFilters, loadProcessDefinitionXml} from 'services';
+import {loadDefinitions, incompatibleFilters, loadProcessDefinitionXml} from 'services';
 import DiagramBehavior from './DiagramBehavior';
 import Statistics from './Statistics';
 
@@ -30,7 +30,7 @@ export default class Analysis extends React.Component {
   }
 
   componentDidMount = async () => {
-    const availableDefinitions = await loadProcessDefinitions();
+    const availableDefinitions = await loadDefinitions('process');
     if (availableDefinitions.length === 1) {
       const theOnlyKey = availableDefinitions[0].key;
       const latestVersion = availableDefinitions[0].versions[0].version;

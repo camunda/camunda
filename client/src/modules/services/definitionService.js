@@ -7,14 +7,8 @@ export function extractDefinitionName(key, xml) {
     .getAttribute('name');
 }
 
-export async function loadProcessDefinitions() {
-  const response = await get('api/process-definition/groupedByKey');
-
-  return await response.json();
-}
-
-export async function loadDecisionDefinitions() {
-  const response = await get('api/decision-definition/groupedByKey');
+export async function loadDefinitions(type) {
+  const response = await get(`api/${type}-definition/groupedByKey`);
 
   return await response.json();
 }

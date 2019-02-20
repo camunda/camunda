@@ -1,11 +1,10 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {Dropdown, Popover} from 'components';
+import {Dropdown, Popover, DefinitionSelection} from 'components';
 import {extractDefinitionName} from 'services';
 
 import DecisionControlPanel from './DecisionControlPanel';
-import DecisionDefinitionSelection from './DecisionDefinitionSelection';
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -109,7 +108,7 @@ it('should reset variable groupby on definition change', async () => {
     />
   );
 
-  await node.find(DecisionDefinitionSelection).prop('onChange')('newDefinition', '1');
+  await node.find(DefinitionSelection).prop('onChange')('newDefinition', '1');
 
   expect(spy).toHaveBeenCalled();
   expect(spy.mock.calls[0][0].groupBy).toEqual({$set: null});
@@ -129,7 +128,7 @@ it('should reset variable filters on definition change', async () => {
     />
   );
 
-  await node.find(DecisionDefinitionSelection).prop('onChange')('newDefinition', '1');
+  await node.find(DefinitionSelection).prop('onChange')('newDefinition', '1');
 
   expect(spy).toHaveBeenCalled();
   expect(spy.mock.calls[0][0].filter).toEqual({$set: [{type: 'evaluationDateTime'}]});

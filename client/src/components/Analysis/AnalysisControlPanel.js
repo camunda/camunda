@@ -1,7 +1,7 @@
 import classnames from 'classnames';
 import update from 'immutability-helper';
 import React from 'react';
-import {ActionItem, Popover, ProcessDefinitionSelection} from 'components';
+import {ActionItem, Popover, DefinitionSelection} from 'components';
 
 import {extractDefinitionName, getFlowNodeNames} from 'services';
 
@@ -116,8 +116,10 @@ export default class AnalysisControlPanel extends React.Component {
           <li className="AnalysisControlPanel__item summary">
             For
             <Popover className="AnalysisControlPanel__popover" title={this.createTitle()}>
-              <ProcessDefinitionSelection
-                {...this.getDefinitionConfig()}
+              <DefinitionSelection
+                type="process"
+                definitionKey={this.props.processDefinitionKey}
+                definitionVersion={this.props.processDefinitionVersion}
                 xml={this.props.xml}
                 onChange={(key, version) =>
                   this.props.onChange({

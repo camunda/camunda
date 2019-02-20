@@ -1,7 +1,6 @@
 import React from 'react';
-import {Popover, Dropdown, Labeled} from 'components';
+import {Popover, DefinitionSelection, Dropdown, Labeled} from 'components';
 
-import DecisionDefinitionSelection from './DecisionDefinitionSelection';
 import {Configuration} from './Configuration';
 
 import {DecisionFilter} from './filter';
@@ -98,10 +97,12 @@ export default class DecisionControlPanel extends React.Component {
           <li className="select">
             <Labeled label="Decision definition">
               <Popover className="processDefinitionPopover" title={this.createTitle()}>
-                <DecisionDefinitionSelection
-                  decisionDefinitionKey={decisionDefinitionKey}
-                  decisionDefinitionVersion={decisionDefinitionVersion}
+                <DefinitionSelection
+                  type="decision"
+                  definitionKey={decisionDefinitionKey}
+                  definitionVersion={decisionDefinitionVersion}
                   onChange={this.changeDefinition}
+                  enableAllVersionSelection
                 />
               </Popover>
             </Labeled>

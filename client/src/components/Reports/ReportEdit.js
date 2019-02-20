@@ -13,7 +13,7 @@ import {
 
 import {evaluateReport, saveReport} from './service';
 
-import {loadProcessDefinitions, incompatibleFilters, loadProcessDefinitionXml} from 'services';
+import {loadDefinitions, incompatibleFilters, loadProcessDefinitionXml} from 'services';
 import ReportControlPanel from './controlPanels/ReportControlPanel';
 import DecisionControlPanel from './controlPanels/DecisionControlPanel';
 import CombinedReportPanel from './controlPanels/CombinedReportPanel';
@@ -30,7 +30,7 @@ export default withErrorHandling(
     };
 
     getTheOnlyDefinition = async () => {
-      const availableDefinitions = await loadProcessDefinitions();
+      const availableDefinitions = await loadDefinitions('process');
       if (availableDefinitions.length === 1) {
         const theOnlyKey = availableDefinitions[0].key;
         const latestVersion = availableDefinitions[0].versions[0].version;

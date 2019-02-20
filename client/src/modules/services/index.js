@@ -11,8 +11,7 @@ export {default as getDataKeys} from './getDataKeys';
 export {flatten} from './tableServices';
 export {
   extractDefinitionName,
-  loadProcessDefinitions,
-  loadDecisionDefinitions,
+  loadDefinitions,
   loadProcessDefinitionXml,
   loadDecisionDefinitionXml
 } from './definitionService';

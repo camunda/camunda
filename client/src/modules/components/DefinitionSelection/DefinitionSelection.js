@@ -3,11 +3,11 @@ import classnames from 'classnames';
 
 import {Select, BPMNDiagram, LoadingIndicator, Labeled} from 'components';
 
-import {loadProcessDefinitions} from 'services';
+import {loadDefinitions} from 'services';
 
-import './ProcessDefinitionSelection.scss';
+import './DefinitionSelection.scss';
 
-export default class ProcessDefinitionSelection extends React.Component {
+export default class DefinitionSelection extends React.Component {
   constructor(props) {
     super(props);
 
@@ -18,7 +18,7 @@ export default class ProcessDefinitionSelection extends React.Component {
   }
 
   componentDidMount = async () => {
-    const availableDefinitions = await loadProcessDefinitions();
+    const availableDefinitions = await loadDefinitions(this.props.type);
 
     this.setState({
       availableDefinitions,
@@ -26,7 +26,7 @@ export default class ProcessDefinitionSelection extends React.Component {
     });
   };
 
-  changeKey = async evt => {
+  changeKey = evt => {
     let key = evt.target.value;
     let version;
     if (!key) {
@@ -38,14 +38,13 @@ export default class ProcessDefinitionSelection extends React.Component {
     this.props.onChange(key, version);
   };
 
-  changeVersion = async evt => {
+  changeVersion = evt => {
     let version = evt.target.value;
-    let key = this.props.processDefinitionKey;
     if (!version) {
       // reset to please select
       version = '';
     }
-    this.props.onChange(key, version);
+    this.props.onChange(this.props.definitionKey, version);
   };
 
   getLatestDefinition = key => {
@@ -53,39 +52,27 @@ export default class ProcessDefinitionSelection extends React.Component {
     return selectedKeyGroup.versions[0];
   };
 
-  findSelectedKeyGroup = key => {
-    return this.state.availableDefinitions.find(def => def.key === key);
-  };
+  findSelectedKeyGroup = key => this.state.availableDefinitions.find(def => def.key === key);
 
-  getKey = () => {
-    return this.props.processDefinitionKey ? this.props.processDefinitionKey : '';
-  };
-
-  getVersion = () => {
-    return this.props.processDefinitionVersion ? this.props.processDefinitionVersion : '';
-  };
+  getKey = () => (this.props.definitionKey ? this.props.definitionKey : '');
+  getVersion = () => (this.props.definitionVersion ? this.props.definitionVersion : '');
 
   getNameForKey = key => {
     const definition = this.getLatestDefinition(key);
     return definition.name ? definition.name : key;
   };
 
-  canRenderDiagram = () => {
-    return (
-      this.props.renderDiagram &&
-      this.props.processDefinitionKey &&
-      this.props.processDefinitionVersion
-    );
-  };
+  canRenderDiagram = () =>
+    this.props.renderDiagram && this.props.definitionKey && this.props.definitionVersion;
 
   render() {
     const {loaded} = this.state;
-    const key = this.props.processDefinitionKey;
-    const version = this.props.processDefinitionVersion;
+    const key = this.props.definitionKey;
+    const version = this.props.definitionVersion;
 
     if (!loaded) {
       return (
-        <div className="ProcessDefinitionSelection">
+        <div className="DefinitionSelection">
           <LoadingIndicator />
         </div>
       );
@@ -93,15 +80,15 @@ export default class ProcessDefinitionSelection extends React.Component {
 
     return (
       <div
-        className={classnames('ProcessDefinitionSelection', {
-          'ProcessDefinitionSelection--large': this.canRenderDiagram()
+        className={classnames('DefinitionSelection', {
+          large: this.canRenderDiagram()
         })}
       >
-        <div className="ProcessDefinitionSelection__selects">
-          <Labeled className="ProcessDefinitionSelection__selects-item" label="Name">
+        <div className="selects">
+          <Labeled label="Name">
             <Select
-              className="ProcessDefinitionSelection__name-select"
-              name="ProcessDefinitionSelection__key"
+              className="name"
+              name="DefinitionSelection__key"
               value={this.getKey()}
               onChange={this.changeKey}
             >
@@ -119,10 +106,10 @@ export default class ProcessDefinitionSelection extends React.Component {
               })}
             </Select>
           </Labeled>
-          <Labeled className="ProcessDefinitionSelection__selects-item" label="Version">
+          <Labeled label="Version">
             <Select
-              className="ProcessDefinitionSelection__version-select"
-              name="ProcessDefinitionSelection__version"
+              className="version"
+              name="DefinitionSelection__version"
               value={this.getVersion()}
               onChange={this.changeVersion}
               disabled={!key}
@@ -133,20 +120,20 @@ export default class ProcessDefinitionSelection extends React.Component {
                   all
                 </Select.Option>
               )}
-              {this.renderAllDefinitionVersions(key)}
+              {this.renderAllVersions(key)}
             </Select>
           </Labeled>
           {version === 'ALL' ? (
-            <div className="ProcessDefinitionSelection__version-select__warning">
-              Note: data from the older process versions can deviate, therefore the report data can
-              be inconsistent
+            <div className="warning">
+              Note: data from the older versions can deviate, therefore the report data can be
+              inconsistent
             </div>
           ) : (
             ''
           )}
         </div>
         {this.canRenderDiagram() && (
-          <div className={'ProcessDefinitionSelection__diagram'}>
+          <div className="diagram">
             <BPMNDiagram xml={this.props.xml} disableNavigation />
           </div>
         )}
@@ -154,14 +141,11 @@ export default class ProcessDefinitionSelection extends React.Component {
     );
   }
 
-  renderAllDefinitionVersions = key => {
-    return (
-      key &&
-      this.findSelectedKeyGroup(key).versions.map(({version}) => (
-        <Select.Option value={version} key={version}>
-          {version}
-        </Select.Option>
-      ))
-    );
-  };
+  renderAllVersions = key =>
+    key &&
+    this.findSelectedKeyGroup(key).versions.map(({version}) => (
+      <Select.Option value={version} key={version}>
+        {version}
+      </Select.Option>
+    ));
 }

@@ -12,7 +12,7 @@ import {
 } from 'services';
 
 import * as service from './service';
-import {ProcessDefinitionSelection} from 'components';
+import {DefinitionSelection} from 'components';
 
 const flushPromises = () => new Promise(resolve => setImmediate(resolve));
 
@@ -258,7 +258,7 @@ it('should load the process definition xml when a new definition is selected', a
 
   loadProcessDefinitionXml.mockClear();
 
-  await node.find(ProcessDefinitionSelection).prop('onChange')('newDefinition', 1);
+  await node.find(DefinitionSelection).prop('onChange')('newDefinition', 1);
 
   expect(loadProcessDefinitionXml).toHaveBeenCalledWith('newDefinition', 1);
 });
@@ -278,7 +278,7 @@ it('should remove incompatible filters when changing the process definition', as
     />
   );
 
-  await node.find(ProcessDefinitionSelection).prop('onChange')('newDefinition', 1);
+  await node.find(DefinitionSelection).prop('onChange')('newDefinition', 1);
 
   expect(spy.mock.calls[0][0].filter.$set).toEqual([{type: 'startDate'}]);
 });
@@ -292,7 +292,7 @@ it('should reset the groupby and visualization when changing process definition 
     />
   );
 
-  await node.find(ProcessDefinitionSelection).prop('onChange')('newDefinition', 1);
+  await node.find(DefinitionSelection).prop('onChange')('newDefinition', 1);
 
   expect(spy.mock.calls[0][0].groupBy).toEqual({$set: null});
   expect(spy.mock.calls[0][0].visualization).toEqual({$set: null});

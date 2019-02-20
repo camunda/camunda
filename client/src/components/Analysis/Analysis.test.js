@@ -25,7 +25,7 @@ jest.mock('./service', () => {
 jest.mock('services', () => {
   return {
     loadProcessDefinitionXml: jest.fn(),
-    loadProcessDefinitions: () => [{key: 'key', versions: [{version: 2}, {version: 1}]}],
+    loadDefinitions: () => [{key: 'key', versions: [{version: 2}, {version: 1}]}],
     incompatibleFilters: jest.fn()
   };
 });
