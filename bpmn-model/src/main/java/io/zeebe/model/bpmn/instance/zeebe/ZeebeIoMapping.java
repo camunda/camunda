@@ -20,10 +20,6 @@ import java.util.Collection;
 
 public interface ZeebeIoMapping extends BpmnModelElementInstance {
 
-  ZeebeOutputBehavior getOutputBehavior();
-
-  void setOutputBehavhior(ZeebeOutputBehavior behavior);
-
   Collection<ZeebeInput> getInputs();
 
   Collection<ZeebeOutput> getOutputs();

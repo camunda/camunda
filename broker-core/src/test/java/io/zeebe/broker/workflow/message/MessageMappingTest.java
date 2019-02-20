@@ -30,7 +30,6 @@ import io.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.zeebe.model.bpmn.instance.ReceiveTask;
 import io.zeebe.model.bpmn.instance.StartEvent;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
 import io.zeebe.protocol.intent.VariableIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -167,8 +166,7 @@ public class MessageMappingTest {
   @Test
   public void shouldMergeMessagePayload() {
     // given
-    final long workflowKey =
-        deployWorkflowWithMapping(e -> e.zeebeOutputBehavior(ZeebeOutputBehavior.merge));
+    final long workflowKey = deployWorkflowWithMapping(e -> {});
 
     final long workflowInstanceKey =
         apiRule.createWorkflowInstance(

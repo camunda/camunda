@@ -82,7 +82,6 @@ public class FlowNodeTransformer implements ModelElementTransformer<FlowNode> {
 
       flowNode.setInputMappings(inputMappings);
       flowNode.setOutputMappings(outputMappings);
-      flowNode.setOutputBehavior(ioMapping.getOutputBehavior());
     }
   }
 }

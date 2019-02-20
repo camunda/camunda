@@ -31,7 +31,6 @@ import io.zeebe.exporter.record.value.VariableRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
 import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.impl.record.value.incident.ErrorType;
 import io.zeebe.protocol.intent.IncidentIntent;
@@ -149,7 +148,6 @@ public class BoundaryEventTest {
             .boundaryEvent("event")
             .message(m -> m.name("message").zeebeCorrelationKey("$.key"))
             .zeebeOutput("$.foo", "$.bar")
-            .zeebeOutputBehavior(ZeebeOutputBehavior.merge)
             .endEvent("endTimer")
             .moveToActivity("task")
             .endEvent()
@@ -184,7 +182,6 @@ public class BoundaryEventTest {
             .boundaryEvent("timer")
             .cancelActivity(true)
             .timerWithDuration("PT1S")
-            .zeebeOutputBehavior(ZeebeOutputBehavior.merge)
             .endEvent("endTimer")
             .moveToActivity("task")
             .endEvent()

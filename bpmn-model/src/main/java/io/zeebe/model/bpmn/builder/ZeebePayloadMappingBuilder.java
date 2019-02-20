@@ -15,11 +15,7 @@
  */
 package io.zeebe.model.bpmn.builder;
 
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
-
 public interface ZeebePayloadMappingBuilder<B> {
-
-  B zeebeOutputBehavior(ZeebeOutputBehavior outputBehavior);
 
   B zeebeInput(String source, String target);
 

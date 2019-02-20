@@ -75,8 +75,7 @@ public class ZeebeBuilderTest {
             .serviceTask(
                 "foo",
                 b ->
-                    b.zeebeOutputBehavior(ZeebeOutputBehavior.none)
-                        .zeebeInput("inputSource", "inputTarget")
+                    b.zeebeInput("inputSource", "inputTarget")
                         .zeebeOutput("outputSource", "outputTarget"))
             .endEvent()
             .done();
@@ -87,7 +86,6 @@ public class ZeebeBuilderTest {
     final ServiceTask serviceTask = modelInstance.getModelElementById("foo");
 
     final ZeebeIoMapping ioMapping = getExtensionElement(serviceTask, ZeebeIoMapping.class);
-    assertThat(ioMapping.getOutputBehavior()).isEqualTo(ZeebeOutputBehavior.none);
 
     final Collection<ZeebeInput> inputs = ioMapping.getInputs();
     assertThat(inputs).hasSize(1);
