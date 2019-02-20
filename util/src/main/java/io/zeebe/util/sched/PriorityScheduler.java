@@ -56,10 +56,10 @@ public class PriorityScheduler implements TaskScheduler {
   private final Run currentRun;
 
   /** how many priorities there are */
-  private int priorityCount;
+  private final int priorityCount;
 
   /** pre-calculated priorities for time slices */
-  private int[] slicePriorities;
+  private final int[] slicePriorities;
 
   /**
    * @param getTaskFn function which can be used to get a task by a given priority class.
@@ -133,9 +133,5 @@ public class PriorityScheduler implements TaskScheduler {
     }
 
     return nextTask;
-  }
-
-  public int[] getSlicePriorites() {
-    return slicePriorities;
   }
 }

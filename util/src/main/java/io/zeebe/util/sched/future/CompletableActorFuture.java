@@ -138,14 +138,13 @@ public class CompletableActorFuture<V> implements ActorFuture<V> {
       // blocking get for non-actor threads
       completionLock.lock();
       try {
-        final long deadline = System.nanoTime() + unit.toNanos(timeout);
+        long remaining = unit.toNanos(timeout);
+
         while (!isDone()) {
-          final long remaining = deadline - System.nanoTime();
-          if (remaining < 0) {
+          if (remaining <= 0) {
             throw new TimeoutException("Timeout after: " + timeout + " " + unit);
           }
-
-          isDoneCondition.await(remaining, TimeUnit.NANOSECONDS);
+          remaining = isDoneCondition.awaitNanos(unit.toNanos(timeout));
         }
       } finally {
         completionLock.unlock();
