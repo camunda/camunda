@@ -131,7 +131,6 @@ public class WorkflowInstanceRecordTransformer implements AbstractRecordTransfor
 
       WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
 
-      eventEntity.setPayload(recordValue.getPayload());
       eventEntity.setWorkflowId(String.valueOf(recordValue.getWorkflowKey()));
       eventEntity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
       eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId());

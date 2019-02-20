@@ -36,6 +36,9 @@ public class ElasticsearchBulkProcessor extends Thread {
   @Autowired
   private DetailViewZeebeRecordProcessor detailViewZeebeRecordProcessor;
 
+  @Autowired
+  private VariableZeebeRecordProcessor variableZeebeRecordProcessor;
+
   public void persistZeebeRecords(List<? extends RecordImpl> zeebeRecords) throws PersistenceException {
 
       logger.debug("Writing [{}] Zeebe records to Elasticsearch", zeebeRecords.size());
@@ -43,9 +46,7 @@ public class ElasticsearchBulkProcessor extends Thread {
       BulkRequestBuilder bulkRequest = esClient.prepareBulk();
       for (RecordImpl record : zeebeRecords) {
         final AbstractRecordTransformer transformer = zeebeRecordTransformersMap.get(record.getMetadata().getValueType());
-        if (transformer == null) {
-          logger.warn("Unable to transform record of type [{}]", record.getMetadata().getValueType());
-        } else {
+        if (transformer != null) {
           final List<OperateZeebeEntity> operateEntities = transformer.convert(record);
           bulkRequest = addToBulk(bulkRequest, operateEntities);
         }
@@ -57,6 +58,8 @@ public class ElasticsearchBulkProcessor extends Thread {
         } else if (record.getMetadata().getValueType().equals(ValueType.INCIDENT)) {
           listViewZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
           detailViewZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
+        } if (record.getMetadata().getValueType().equals(ValueType.VARIABLE)) {
+          variableZeebeRecordProcessor.processVariableRecord(record, bulkRequest);
         }
       }
       ElasticsearchUtil.processBulkRequest(bulkRequest, true);

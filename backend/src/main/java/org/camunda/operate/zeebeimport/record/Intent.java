@@ -30,6 +30,9 @@ public enum Intent implements io.zeebe.protocol.intent.Intent {
 
   CANCELED,
 
+  //VARIABLE
+  UPDATED,
+
   UNKNOWN;
 
   private final short value = 0;

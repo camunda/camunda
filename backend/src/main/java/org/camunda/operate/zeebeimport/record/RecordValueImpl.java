@@ -10,26 +10,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.operate.util;
+package org.camunda.operate.zeebeimport.record;
 
-import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.RecordValue;
 
-public abstract class IdUtil {
+public abstract class RecordValueImpl implements RecordValue {
 
-  public static String getId(long key, Record record) {
-    return String.valueOf(key);
-  }
-
-  public static String getId(Record record) {
-    return String.valueOf(record.getKey());
-  }
-
-  public static long getKey(String id) {
-    return Long.valueOf(id);
-  }
-
-  public static String getVariableId(long scopeKey, String name) {
-    return String.format("%s-%s", scopeKey, name);
+  @Override
+  public String toJson() {
+    throw new UnsupportedOperationException("toJson operation is not supported");
   }
 
 }

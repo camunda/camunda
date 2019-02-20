@@ -28,6 +28,7 @@ import org.camunda.operate.zeebeimport.record.RecordImpl;
 import org.camunda.operate.zeebeimport.record.value.DeploymentRecordValueImpl;
 import org.camunda.operate.zeebeimport.record.value.IncidentRecordValueImpl;
 import org.camunda.operate.zeebeimport.record.value.JobRecordValueImpl;
+import org.camunda.operate.zeebeimport.record.value.VariableRecordValueImpl;
 import org.camunda.operate.zeebeimport.record.value.WorkflowInstanceRecordValueImpl;
 import org.elasticsearch.action.search.SearchPhaseExecutionException;
 import org.elasticsearch.action.search.SearchResponse;
@@ -63,7 +64,8 @@ public class ZeebeESImporter extends Thread {
     ImportValueType.DEPLOYMENT,
     ImportValueType.WORKFLOW_INSTANCE,
     ImportValueType.JOB,
-    ImportValueType.INCIDENT};
+    ImportValueType.INCIDENT,
+    ImportValueType.VARIABLE};
 
   private Set<Integer> partitionIds = new HashSet<>();
 
@@ -267,6 +269,7 @@ public class ZeebeESImporter extends Thread {
     public final static ImportValueType JOB = new ImportValueType(ValueType.JOB, "job", JobRecordValueImpl.class);
     public final static ImportValueType INCIDENT = new ImportValueType(ValueType.INCIDENT, "incident", IncidentRecordValueImpl.class);
     public final static ImportValueType DEPLOYMENT = new ImportValueType(ValueType.DEPLOYMENT, "deployment", DeploymentRecordValueImpl.class);
+    public final static ImportValueType VARIABLE = new ImportValueType(ValueType.VARIABLE, "variable", VariableRecordValueImpl.class);
 
     private final ValueType valueType;
     private final String aliasTemplate;

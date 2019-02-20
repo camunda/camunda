@@ -72,6 +72,7 @@ public class ElasticsearchTestRule extends ExternalResource {
   private String workflowInstanceIndexName;
   private String operationIndexName;
   private String activityInstanceIndexName;
+  private String variableIndexName;
   private String listViewIndexName;
   private String eventIndexName;
   private String importPositionIndexName;
@@ -85,6 +86,7 @@ public class ElasticsearchTestRule extends ExternalResource {
     workflowInstanceIndexName = OperateElasticsearchProperties.WORKFLOW_INSTANCE_INDEX_PATTERN + indexSuffix + "_";
     listViewIndexName = OperateElasticsearchProperties.LIST_VIEW_INDEX_PATTERN + indexSuffix + "_";
     activityInstanceIndexName = OperateElasticsearchProperties.ACTIVITY_INSTANCE_INDEX_PATTERN + indexSuffix + "_";
+    variableIndexName = OperateElasticsearchProperties.VARIABLE_INDEX_PATTERN + indexSuffix + "_";
     operationIndexName = OperateElasticsearchProperties.OPERATION_INDEX_PATTERN + indexSuffix + "_";
     eventIndexName = OperateElasticsearchProperties.EVENT_INDEX_PATTERN + indexSuffix + "_";
     importPositionIndexName = OperateElasticsearchProperties.IMPORT_POSITION_INDEX_PATTERN + indexSuffix + "_";
@@ -92,6 +94,7 @@ public class ElasticsearchTestRule extends ExternalResource {
     operateProperties.getElasticsearch().setWorkflowInstanceIndexName(workflowInstanceIndexName);
     operateProperties.getElasticsearch().setListViewIndexName(listViewIndexName);
     operateProperties.getElasticsearch().setActivityInstanceIndexName(activityInstanceIndexName);
+    operateProperties.getElasticsearch().setVariableIndexName(variableIndexName);
     operateProperties.getElasticsearch().setOperationIndexName(operationIndexName);
     operateProperties.getElasticsearch().setEventIndexName(eventIndexName);
     operateProperties.getElasticsearch().setImportPositionIndexName(importPositionIndexName);
@@ -113,6 +116,7 @@ public class ElasticsearchTestRule extends ExternalResource {
     operateProperties.getElasticsearch().setEventIndexName(OperateElasticsearchProperties.EVENT_INDEX_PATTERN + "_");
     operateProperties.getElasticsearch().setListViewIndexName(OperateElasticsearchProperties.LIST_VIEW_INDEX_PATTERN + "_");
     operateProperties.getElasticsearch().setActivityInstanceIndexName(OperateElasticsearchProperties.ACTIVITY_INSTANCE_INDEX_PATTERN + "_");
+    operateProperties.getElasticsearch().setVariableIndexName(OperateElasticsearchProperties.VARIABLE_INDEX_PATTERN + "_");
     operateProperties.getElasticsearch().setOperationIndexName(OperateElasticsearchProperties.OPERATION_INDEX_PATTERN + "_");
 
     operateProperties.getElasticsearch().setWorkflowAlias(OperateElasticsearchProperties.WORKFLOW_INDEX_PATTERN + "_alias");
@@ -206,6 +210,16 @@ public class ElasticsearchTestRule extends ExternalResource {
       logger.error(e.getMessage(), e);
     }
   }
+
+
+  public void processOneBatchOfEvents(ZeebeESImporter.ImportValueType importValueType) {
+    try {
+      zeebeESImporter.processNextEntitiesBatch(0, importValueType);
+    } catch (Exception e) {
+      logger.error(e.getMessage(), e);
+    }
+  }
+
 
   public void processAllEventsAndWait(Predicate<Object[]> waitTill, Object... arguments) {
     try {

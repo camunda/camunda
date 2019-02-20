@@ -107,38 +107,38 @@ public class EventIT extends OperateZeebeIntegrationTest {
     });
 
     //then
-    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.EVENT_TRIGGERED, 1, processId, workflowId, workflowInstanceKey, initialPayload, "start");
-    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_READY, 1, processId, workflowId, workflowInstanceKey, initialPayload, "taskA");
-    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_ACTIVATED, 1, processId, workflowId, workflowInstanceKey, initialPayload, "taskA");
-    assertEvent(eventEntities, EventSourceType.JOB, EventType.CREATED, 1, processId, workflowId, workflowInstanceKey, initialPayload, "taskA");
-    assertEvent(eventEntities, EventSourceType.JOB, EventType.ACTIVATED, 4, processId, workflowId, workflowInstanceKey, initialPayload, "taskA");
-    assertEvent(eventEntities, EventSourceType.JOB, EventType.FAILED, 3, processId, workflowId, workflowInstanceKey, initialPayload, "taskA");
+    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.EVENT_TRIGGERED, 1, processId, workflowId, workflowInstanceKey, "start");
+    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_READY, 1, processId, workflowId, workflowInstanceKey, "taskA");
+    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_ACTIVATED, 1, processId, workflowId, workflowInstanceKey, "taskA");
+    assertEvent(eventEntities, EventSourceType.JOB, EventType.CREATED, 1, processId, workflowId, workflowInstanceKey, "taskA");
+    assertEvent(eventEntities, EventSourceType.JOB, EventType.ACTIVATED, 4, processId, workflowId, workflowInstanceKey, "taskA");
+    assertEvent(eventEntities, EventSourceType.JOB, EventType.FAILED, 3, processId, workflowId, workflowInstanceKey, "taskA");
     //INCIDENT events do not have workflowId for some reason
-    assertEvent(eventEntities, EventSourceType.INCIDENT, EventType.CREATED, 1, processId, null, workflowInstanceKey, null, "taskA", errorMessage);
-    assertEvent(eventEntities, EventSourceType.JOB, EventType.RETRIES_UPDATED, 1, processId, workflowId, workflowInstanceKey, initialPayload, "taskA");
+    assertEvent(eventEntities, EventSourceType.INCIDENT, EventType.CREATED, 1, processId, null, workflowInstanceKey, "taskA", errorMessage);
+    assertEvent(eventEntities, EventSourceType.JOB, EventType.RETRIES_UPDATED, 1, processId, workflowId, workflowInstanceKey, "taskA");
     //INCIDENT events do not have workflowId for some reason
-    assertEvent(eventEntities, EventSourceType.INCIDENT, EventType.RESOLVED, 1, processId, null, workflowInstanceKey, null, "taskA", errorMessage);
+    assertEvent(eventEntities, EventSourceType.INCIDENT, EventType.RESOLVED, 1, processId, null, workflowInstanceKey, "taskA", errorMessage);
 
-    assertEvent(eventEntities, EventSourceType.JOB, EventType.COMPLETED, 1, processId, workflowId, workflowInstanceKey, taskAPayload, "taskA");
+    assertEvent(eventEntities, EventSourceType.JOB, EventType.COMPLETED, 1, processId, workflowId, workflowInstanceKey, "taskA");
     String afterTaskAJoinedPayload = "{\"a\":\"b\",\"goToTaskC\":true}";
-    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETING, 1, processId, workflowId, workflowInstanceKey, taskAPayload, "taskA");
-    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED, 1, processId, workflowId, workflowInstanceKey, afterTaskAJoinedPayload, "taskA");
-    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.GATEWAY_ACTIVATED, 1, processId, workflowId, workflowInstanceKey, afterTaskAJoinedPayload, "gateway");
+    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETING, 1, processId, workflowId, workflowInstanceKey, "taskA");
+    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED, 1, processId, workflowId, workflowInstanceKey, "taskA");
+    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.GATEWAY_ACTIVATED, 1, processId, workflowId, workflowInstanceKey, "gateway");
 
-    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_READY, 1, processId, workflowId, workflowInstanceKey, afterTaskAJoinedPayload, "taskC");
-    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_ACTIVATED, 1, processId, workflowId, workflowInstanceKey, afterTaskAJoinedPayload, "taskC");
-    assertEvent(eventEntities, EventSourceType.JOB, EventType.CREATED, 1, processId, workflowId, workflowInstanceKey, afterTaskAJoinedPayload, "taskC");
+    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_READY, 1, processId, workflowId, workflowInstanceKey, "taskC");
+    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_ACTIVATED, 1, processId, workflowId, workflowInstanceKey, "taskC");
+    assertEvent(eventEntities, EventSourceType.JOB, EventType.CREATED, 1, processId, workflowId, workflowInstanceKey, "taskC");
 
 //    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.PAYLOAD_UPDATED, 1, processId, workflowId, workflowInstanceId, updatedPayload, null);
 
-    assertEvent(eventEntities, EventSourceType.JOB, EventType.ACTIVATED, 1, processId, workflowId, workflowInstanceKey, afterTaskAJoinedPayload, "taskC");
-    assertEvent(eventEntities, EventSourceType.JOB, EventType.COMPLETED, 1, processId, workflowId, workflowInstanceKey, taskCPayload, "taskC");
-    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETING, 1, processId, workflowId, workflowInstanceKey, taskCPayload, "taskC");
+    assertEvent(eventEntities, EventSourceType.JOB, EventType.ACTIVATED, 1, processId, workflowId, workflowInstanceKey, "taskC");
+    assertEvent(eventEntities, EventSourceType.JOB, EventType.COMPLETED, 1, processId, workflowId, workflowInstanceKey, "taskC");
+    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETING, 1, processId, workflowId, workflowInstanceKey, "taskC");
 
     String finalPayload = "{\"a\":\"b\",\"goToTaskC\":true,\"b\": \"d\"}";
-    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED, 1, processId, workflowId, workflowInstanceKey, finalPayload, "taskC");
-    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.EVENT_ACTIVATED, 1, processId, workflowId, workflowInstanceKey, finalPayload, "end1");
-    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED, 1, processId, workflowId, workflowInstanceKey, finalPayload, "processWithGateway");
+    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED, 1, processId, workflowId, workflowInstanceKey, "taskC");
+    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.EVENT_ACTIVATED, 1, processId, workflowId, workflowInstanceKey, "end1");
+    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_COMPLETED, 1, processId, workflowId, workflowInstanceKey, "processWithGateway");
 
   }
 
@@ -162,23 +162,23 @@ public class EventIT extends OperateZeebeIntegrationTest {
     final List<EventEntity> eventEntities = eventReader.queryEvents(eventQueryDto, 0, 1000);
 
     //then
-    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_TERMINATED, 1, processId, workflowId, workflowInstanceKey, null, activityId);
-    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_TERMINATED, 1, processId, workflowId, workflowInstanceKey, null, processId);
+    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_TERMINATED, 1, processId, workflowId, workflowInstanceKey, activityId);
+    assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_TERMINATED, 1, processId, workflowId, workflowInstanceKey, processId);
 
   }
 
   public void assertEvent(List<EventEntity> eventEntities, EventSourceType eventSourceType, EventType eventType,
-    int count, String processId, String workflowId, long workflowInstanceKey, String payload) {
-    assertEvent(eventEntities, eventSourceType, eventType, count, processId, workflowId, workflowInstanceKey, payload, null);
+    int count, String processId, String workflowId, long workflowInstanceKey) {
+    assertEvent(eventEntities, eventSourceType, eventType, count, processId, workflowId, workflowInstanceKey, null);
   }
 
   public void assertEvent(List<EventEntity> eventEntities, EventSourceType eventSourceType, EventType eventType,
-    int count, String processId, String workflowId, long workflowInstanceKey, String payload, String activityId) {
-    assertEvent(eventEntities, eventSourceType, eventType, count, processId, workflowId, workflowInstanceKey, payload, activityId, null);
+    int count, String processId, String workflowId, long workflowInstanceKey, String activityId) {
+    assertEvent(eventEntities, eventSourceType, eventType, count, processId, workflowId, workflowInstanceKey, activityId, null);
   }
 
   public void assertEvent(List<EventEntity> eventEntities, EventSourceType eventSourceType, EventType eventType,
-    int count, String processId, String workflowId, long workflowInstanceKey, String payload, String activityId, String errorMessage) {
+    int count, String processId, String workflowId, long workflowInstanceKey, String activityId, String errorMessage) {
     String assertionName = String.format("%s.%s", eventSourceType, eventType);
     final Predicate<EventEntity> eventEntityFilterCriteria = eventEntity -> {
       boolean b = true;
@@ -200,9 +200,6 @@ public class EventIT extends OperateZeebeIntegrationTest {
         assertThat(eventEntity.getDateTime()).as(assertionName + ".dateTimeAfter").isAfterOrEqualTo(testStartTime);
         assertThat(eventEntity.getDateTime()).as(assertionName + ".dateTimeBefore").isBeforeOrEqualTo(OffsetDateTime.now());
         assertThat(eventEntity.getBpmnProcessId()).as(assertionName + ".bpmnProcessId").isEqualTo(processId);
-        if (payload != null) {
-          assertThat(eventEntity.getPayload()).as(assertionName + ".payload").isEqualToIgnoringWhitespace(payload);
-        }
         if (activityId != null) {
           assertThat(eventEntity.getActivityId()).as(assertionName + ".activityId").isEqualTo(activityId);
           if (eventEntity.getKey() != IdUtil.getKey(eventEntity.getWorkflowInstanceId())) {

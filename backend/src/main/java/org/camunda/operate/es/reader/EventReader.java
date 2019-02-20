@@ -79,29 +79,7 @@ public class EventReader {
   }
 
   protected List<EventEntity> scroll(SearchRequestBuilder builder) {
-    TimeValue keepAlive = new TimeValue(60000);
-
-    SearchResponse response = builder
-      .setScroll(keepAlive)
-      .get();
-
-    List<EventEntity> result = new ArrayList<>();
-
-    do {
-
-      SearchHits hits = response.getHits();
-      String scrollId = response.getScrollId();
-
-      result.addAll(mapSearchHits(hits.getHits()));
-
-      response = esClient
-          .prepareSearchScroll(scrollId)
-          .setScroll(keepAlive)
-          .get();
-
-    } while (response.getHits().getHits().length != 0);
-
-    return result;
+    return ElasticsearchUtil.scroll(builder, EventEntity.class, objectMapper, esClient);
   }
 
   protected List<EventEntity> mapSearchHits(SearchHit[] searchHits) {

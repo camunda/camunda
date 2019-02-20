@@ -14,18 +14,27 @@ package org.camunda.operate.util;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequestBuilder;
+import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JavaType;
@@ -37,6 +46,7 @@ public abstract class ElasticsearchUtil {
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchUtil.class);
 
   public static final String ES_INDEX_TYPE = "_doc";
+  public static final int SCROLL_KEEP_ALIVE_MS = 60000;
 
   public static QueryBuilder joinWithOr(BoolQueryBuilder boolQueryBuilder, QueryBuilder... queries) {
     List<QueryBuilder> notNullQueries = CollectionUtil.throwAwayNullElements(queries);
@@ -182,4 +192,66 @@ public abstract class ElasticsearchUtil {
       }
   }
 
+  public static <T extends OperateEntity> List<T> scroll(SearchRequestBuilder builder, Class<T> clazz, ObjectMapper objectMapper, TransportClient esClient) {
+    TimeValue keepAlive = new TimeValue(SCROLL_KEEP_ALIVE_MS);
+    SearchResponse response = builder
+      .setScroll(keepAlive)
+      .get();
+    List<T> result = new ArrayList<>();
+    do {
+      SearchHits hits = response.getHits();
+      String scrollId = response.getScrollId();
+
+      result.addAll(mapSearchHits(hits.getHits(), objectMapper, clazz));
+
+      response = esClient
+        .prepareSearchScroll(scrollId)
+        .setScroll(keepAlive)
+        .get();
+
+    } while (response.getHits().getHits().length != 0);
+    return result;
+  }
+
+  public static List<String> scrollIdsToList(SearchRequestBuilder builder, TransportClient esClient) {
+    List<String> result = new ArrayList<>();
+    TimeValue keepAlive = new TimeValue(5000);
+    SearchResponse response = builder
+      .setScroll(keepAlive)
+      .get();
+    do {
+      SearchHits hits = response.getHits();
+      String scrollId = response.getScrollId();
+
+      result.addAll(Arrays.stream(hits.getHits()).collect(ArrayList::new, (list, hit) -> list.add(hit.getId()), (list1, list2) -> list1.addAll(list2)));
+
+      response = esClient
+          .prepareSearchScroll(scrollId)
+          .setScroll(keepAlive)
+          .get();
+
+    } while (response.getHits().getHits().length != 0);
+    return result;
+  }
+
+  public static Set<String> scrollIdsToSet(SearchRequestBuilder builder, TransportClient esClient) {
+    Set<String> result = new HashSet<>();
+    TimeValue keepAlive = new TimeValue(5000);
+    SearchResponse response = builder
+      .setScroll(keepAlive)
+      .get();
+    do {
+      SearchHits hits = response.getHits();
+      String scrollId = response.getScrollId();
+
+      result.addAll(Arrays.stream(hits.getHits()).collect(HashSet::new, (set, hit) -> set.add(hit.getId()), (set1, set2) -> set1.addAll(set2)));
+
+      response = esClient
+          .prepareSearchScroll(scrollId)
+          .setScroll(keepAlive)
+          .get();
+
+    } while (response.getHits().getHits().length != 0);
+    return result;
+  }
 }

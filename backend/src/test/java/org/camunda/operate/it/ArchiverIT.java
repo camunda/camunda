@@ -303,7 +303,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     brokerRule.getClock().setCurrentTime(currentTime);
     List<String> ids = new ArrayList<>();
     for (int i = 0; i < count; i++) {
-      ids.add(IdTestUtil.getId(ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, null)));
+      ids.add(IdTestUtil.getId(ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"var\": 123}")));
     }
     elasticsearchTestRule.processAllEventsAndWait(workflowInstancesAreStartedCheck, ids);
     return ids;

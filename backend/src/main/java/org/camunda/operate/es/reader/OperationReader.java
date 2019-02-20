@@ -111,29 +111,14 @@ public class OperationReader {
   }
 
   public List<OperationEntity> getOperations(String workflowInstanceId) {
-    final List<OperationEntity> result = new ArrayList<>();
-
     final ConstantScoreQueryBuilder query = constantScoreQuery(termQuery(OperationTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId));
 
     final SearchRequestBuilder searchRequestBuilder = esClient.prepareSearch(operationTemplate.getAlias())
       .setQuery(query)
       .addSort(OperationTemplate.START_DATE, SortOrder.DESC)
       .addSort(OperationTemplate.ID, SortOrder.ASC);
-    TimeValue keepAlive = new TimeValue(2000);
-    SearchResponse response = searchRequestBuilder
-      .setScroll(keepAlive)
-      .get();
-    do {
-      String scrollId = response.getScrollId();
 
-      result.addAll(ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper, OperationEntity.class));
-      response = esClient
-        .prepareSearchScroll(scrollId)
-        .setScroll(keepAlive)
-        .get();
-
-    } while (response.getHits().getHits().length != 0);
-    return result;
+    return ElasticsearchUtil.scroll(searchRequestBuilder, OperationEntity.class, objectMapper, esClient);
   }
 
 }

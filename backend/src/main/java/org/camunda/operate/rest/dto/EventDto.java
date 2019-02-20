@@ -43,7 +43,6 @@ public class EventDto {
   private EventSourceType eventSourceType;
   private EventType eventType;
   private OffsetDateTime dateTime;
-  private String payload;
 
   private EventMetadataDto metadata;
 
@@ -119,14 +118,6 @@ public class EventDto {
     this.dateTime = dateTime;
   }
 
-  public String getPayload() {
-    return payload;
-  }
-
-  public void setPayload(String payload) {
-    this.payload = payload;
-  }
-
   public EventMetadataDto getMetadata() {
     return metadata;
   }
@@ -144,7 +135,6 @@ public class EventDto {
     eventDto.setDateTime(eventEntity.getDateTime());
     eventDto.setEventSourceType(eventEntity.getEventSourceType());
     eventDto.setEventType(eventEntity.getEventType());
-    eventDto.setPayload(eventEntity.getPayload());
     eventDto.setWorkflowId(eventEntity.getWorkflowId());
     eventDto.setWorkflowInstanceId(eventEntity.getWorkflowInstanceId());
 

@@ -84,8 +84,6 @@ public class JobEventTransformer implements AbstractRecordTransformer {
       eventEntity.setActivityInstanceId(IdUtil.getId(activityInstanceKey, record));
     }
 
-    eventEntity.setPayload(recordValue.getPayload());
-
     EventMetadataEntity eventMetadata = new EventMetadataEntity();
     eventMetadata.setJobType(recordValue.getType());
     eventMetadata.setJobRetries(recordValue.getRetries());

@@ -126,11 +126,11 @@ public class DetailViewZeebeRecordProcessor {
     //set parent
     String workflowInstanceId = IdUtil.getId(recordValue.getWorkflowInstanceKey(), record);
 
-    return getActivityInstanceQuery(entity, workflowInstanceId);
+    return getActivityInstanceQuery(entity);
 
   }
 
-  private UpdateRequestBuilder getActivityInstanceQuery(ActivityInstanceForDetailViewEntity entity, String workflowInstanceId) throws PersistenceException {
+  private UpdateRequestBuilder getActivityInstanceQuery(ActivityInstanceForDetailViewEntity entity) throws PersistenceException {
     try {
       logger.debug("Activity instance for list view: id {}", entity.getId());
       Map<String, Object> updateFields = new HashMap<>();
@@ -155,8 +155,7 @@ public class DetailViewZeebeRecordProcessor {
       return esClient
         .prepareUpdate(activityInstanceTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
         .setUpsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-        .setDoc(jsonMap)
-        .setRouting(workflowInstanceId);
+        .setDoc(jsonMap);
 
     } catch (IOException e) {
       logger.error("Error preparing the query to upsert activity instance for list view", e);

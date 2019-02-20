@@ -35,7 +35,6 @@ public class EventEntity extends OperateZeebeEntity {
   private EventSourceType eventSourceType;
   private EventType eventType;
   private OffsetDateTime dateTime;
-  private String payload;
 
   /**
    * Metadata
@@ -106,14 +105,6 @@ public class EventEntity extends OperateZeebeEntity {
     this.dateTime = dateTime;
   }
 
-  public String getPayload() {
-    return payload;
-  }
-
-  public void setPayload(String payload) {
-    this.payload = payload;
-  }
-
   public EventMetadataEntity getMetadata() {
     return metadata;
   }
@@ -149,8 +140,6 @@ public class EventEntity extends OperateZeebeEntity {
       return false;
     if (dateTime != null ? !dateTime.equals(that.dateTime) : that.dateTime != null)
       return false;
-    if (payload != null ? !payload.equals(that.payload) : that.payload != null)
-      return false;
     return metadata != null ? metadata.equals(that.metadata) : that.metadata == null;
   }
 
@@ -165,7 +154,6 @@ public class EventEntity extends OperateZeebeEntity {
     result = 31 * result + (eventSourceType != null ? eventSourceType.hashCode() : 0);
     result = 31 * result + (eventType != null ? eventType.hashCode() : 0);
     result = 31 * result + (dateTime != null ? dateTime.hashCode() : 0);
-    result = 31 * result + (payload != null ? payload.hashCode() : 0);
     result = 31 * result + (metadata != null ? metadata.hashCode() : 0);
     return result;
   }

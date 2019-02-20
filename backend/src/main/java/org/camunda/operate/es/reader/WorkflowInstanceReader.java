@@ -1,7 +1,5 @@
 package org.camunda.operate.es.reader;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
@@ -13,10 +11,8 @@ import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.IdsQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.search.SearchHits;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,28 +62,7 @@ public class WorkflowInstanceReader {
         .setQuery(constantScoreQuery(queryBuilder))
         .setFetchSource(false);
 
-    return scrollIds(searchRequestBuilder);
-  }
-
-  private List<String> scrollIds(SearchRequestBuilder builder) {
-    List<String> result = new ArrayList<>();
-    TimeValue keepAlive = new TimeValue(5000);
-    SearchResponse response = builder
-      .setScroll(keepAlive)
-      .get();
-    do {
-      SearchHits hits = response.getHits();
-      String scrollId = response.getScrollId();
-
-      result.addAll(Arrays.stream(hits.getHits()).collect(ArrayList::new, (list, hit) -> list.add(hit.getId()), (list1, list2) -> list1.addAll(list2)));
-
-      response = esClient
-          .prepareSearchScroll(scrollId)
-          .setScroll(keepAlive)
-          .get();
-
-    } while (response.getHits().getHits().length != 0);
-    return result;
+    return ElasticsearchUtil.scrollIdsToList(searchRequestBuilder, esClient);
   }
 
   /**

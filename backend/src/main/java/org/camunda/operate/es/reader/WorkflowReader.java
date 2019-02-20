@@ -149,30 +149,8 @@ public class WorkflowReader {
     return map;
   }
 
-  protected List<WorkflowEntity> scroll(SearchRequestBuilder builder) {
-    TimeValue keepAlive = new TimeValue(60000);
-
-    SearchResponse response = builder
-      .setScroll(keepAlive)
-      .get();
-
-    List<WorkflowEntity> result = new ArrayList<>();
-
-    do {
-
-      SearchHits hits = response.getHits();
-      String scrollId = response.getScrollId();
-
-      result.addAll(ElasticsearchUtil.mapSearchHits(hits.getHits(), objectMapper, WorkflowEntity.class));
-
-      response = esClient
-        .prepareSearchScroll(scrollId)
-        .setScroll(keepAlive)
-        .get();
-
-    } while (response.getHits().getHits().length != 0);
-
-    return result;
+  private List<WorkflowEntity> scroll(SearchRequestBuilder builder) {
+    return ElasticsearchUtil.scroll(builder, WorkflowEntity.class, objectMapper, esClient);
   }
 
 }

@@ -252,61 +252,8 @@ public class WorkflowInstanceImportIT extends OperateZeebeIntegrationTest {
       .extracting(WorkflowInstanceTemplate.ACTIVITY_ID).containsOnly("sf1", "sf2", "sf3");
 
   }
-/* TODO OPE-402
-  @Test
-  public void testPayloadUpdated() {
-    // having
-    String processId = "demoProcess";
-    BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
-      .startEvent("start")
-        .serviceTask("task1").zeebeTaskType("task1")
-        .serviceTask("task2").zeebeTaskType("task2")
-          .zeebeInput("$.a", "$.foo")
-          .zeebeOutput("$.foo", "$.bar")
-        .serviceTask("task3").zeebeTaskType("task3")
-      .endEvent()
-      .done();
-    deployWorkflow(workflow, processId + ".bpmn");
 
-    //when workflow instance is started
-    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\", \"nullVar\": null}");
-    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceKey, "task1");
-
-    //then
-    final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
-    WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
-    assertVariable(workflowInstanceEntity, "a","b");
-
-    //when activity with input mapping is activated
-    completeTask(workflowInstanceKey, "task1", null);
-    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceKey, "task2");
-
-    //then
-    workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
-    assertVariable(workflowInstanceEntity, "foo","b");
-
-    //when activity with output mapping is completed
-    completeTask(workflowInstanceKey, "task2", null);
-
-    //then
-    workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
-    assertVariable(workflowInstanceEntity, "bar", "b");
-    assertVariable(workflowInstanceEntity, "a","b");
-
-    //when payload is explicitly updated
-//    final Long activityInstanceKey = workflowInstanceEntity.getActivities().stream().filter(ai -> ai.getElementId().equals("task3")).findFirst().get().getKey();
-//    ZeebeUtil.updatePayload(zeebeClient, activityInstanceKey, workflowInstanceId, "{\"newVar\": 555 }", processId, workflowId);
-
-    //when task is completed with new payload and workflow instance is finished
-    completeTask(workflowInstanceKey, "task3", "{\"task3Completed\": true}");
-
-    //then
-    workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
-    assertVariable(workflowInstanceEntity, "task3Completed", true);
-//    assertVariable(workflowInstanceEntity, "newVar", 555L);
-
-  }
-
+/*
   @Test
   public void testVariablesCreated() throws URISyntaxException, IOException {
     // having

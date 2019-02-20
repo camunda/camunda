@@ -215,20 +215,8 @@ public abstract class ZeebeTestUtil {
     client.newResolveIncidentCommand(incidentKey).send().join();
   }
 
-//  public static void updatePayload(ZeebeClient client, Long key, String workflowInstanceId, String newPayload, String bpmnProcessId, String workflowId) {
-//
-//    long workflowInstanceKey = IdUtil.extractKey(workflowInstanceId);
-//    int partitionId = IdUtil.extractPartitionId(workflowInstanceId);
-//
-//    WorkflowInstanceEventImpl workflowInstanceEvent = new WorkflowInstanceEventImpl(new ZeebeObjectMapperImpl());
-//    workflowInstanceEvent.setKey(key);
-//    workflowInstanceEvent.setBpmnProcessId(bpmnProcessId);
-//    workflowInstanceEvent.setVersion(1);
-//    workflowInstanceEvent.setWorkflowKey(Long.valueOf(workflowId));
-//    workflowInstanceEvent.setWorkflowInstanceKey(workflowInstanceKey);
-//    workflowInstanceEvent.setPayload(newPayload);
-//    workflowInstanceEvent.setPartitionId(partitionId);
-//    client.newUpdatePayloadCommand(workflowInstanceEvent).payload(newPayload).send().join();
-//  }
+  public static void updatePayload(ZeebeClient client, String workflowInstanceId, String newPayload) {
+    client.newUpdatePayloadCommand(IdUtil.getKey(workflowInstanceId)).payload(newPayload).send().join();
+  }
 
 }

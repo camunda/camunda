@@ -293,28 +293,7 @@ public class ListViewReader {
     final SearchRequestBuilder instancesWithIncidentsSearchBuilder =
       esClient.prepareSearch(listViewTemplate.getAlias())
       .setQuery(constantScoreQuery(joinWithAnd(isWorkflowInstanceQ, workflowInstanceIdsQ, hasIncidentQ)));
-    return scrollIdsToSet(instancesWithIncidentsSearchBuilder);
-  }
-
-  private Set<String> scrollIdsToSet(SearchRequestBuilder builder) {
-    Set<String> result = new HashSet<>();
-    TimeValue keepAlive = new TimeValue(5000);
-    SearchResponse response = builder
-      .setScroll(keepAlive)
-      .get();
-    do {
-      SearchHits hits = response.getHits();
-      String scrollId = response.getScrollId();
-
-      result.addAll(Arrays.stream(hits.getHits()).collect(HashSet::new, (set, hit) -> set.add(hit.getId()), (set1, set2) -> set1.addAll(set2)));
-
-      response = esClient
-          .prepareSearchScroll(scrollId)
-          .setScroll(keepAlive)
-          .get();
-
-    } while (response.getHits().getHits().length != 0);
-    return result;
+    return ElasticsearchUtil.scrollIdsToSet(instancesWithIncidentsSearchBuilder, esClient);
   }
 
   private QueryBuilder createRunningFinishedQuery(ListViewQueryDto query) {
