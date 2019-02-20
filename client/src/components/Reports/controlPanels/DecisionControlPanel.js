@@ -15,10 +15,6 @@ import {
 } from 'services';
 const {decision: decisionConfig} = reportConfig;
 
-function convertToUpperCase(string) {
-  return string.replace(/^\w/, character => character.toUpperCase());
-}
-
 export default class DecisionControlPanel extends React.Component {
   state = {};
 
@@ -40,12 +36,12 @@ export default class DecisionControlPanel extends React.Component {
           inputVariable: [...definitions.querySelectorAll('input')].map(node => ({
             id: node.getAttribute('id'),
             name: node.getAttribute('label'),
-            type: convertToUpperCase(node.querySelector('inputExpression').getAttribute('typeRef'))
+            type: node.querySelector('inputExpression').getAttribute('typeRef')
           })),
           outputVariable: [...definitions.querySelectorAll('output')].map(node => ({
             id: node.getAttribute('id'),
             name: node.getAttribute('label'),
-            type: convertToUpperCase(node.getAttribute('typeRef'))
+            type: node.getAttribute('typeRef')
           }))
         }
       };

@@ -90,8 +90,8 @@ it('should parse variables from the xml', () => {
   const node = shallow(<DecisionControlPanel report={report} />);
 
   expect(node.state().variables.inputVariable).toEqual([
-    {id: 'anId', name: 'aName', type: 'String'},
-    {id: 'anotherId', name: 'anotherName', type: 'String'}
+    {id: 'anId', name: 'aName', type: 'string'},
+    {id: 'anotherId', name: 'anotherName', type: 'string'}
   ]);
 });
 

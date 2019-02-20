@@ -51,12 +51,12 @@ export default class VariableFilter extends React.Component {
       return () => null;
     }
 
-    switch (variable.type) {
-      case 'String':
+    switch (variable.type.toLowerCase()) {
+      case 'string':
         return StringInput;
-      case 'Boolean':
+      case 'boolean':
         return BooleanInput;
-      case 'Date':
+      case 'date':
         return DateInput;
       default:
         return NumberInput;
