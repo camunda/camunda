@@ -1,6 +1,5 @@
 #!/bin/sh -ex
 
-REPO="${REPO:?Nexus repository required, eg. \'camunda-optimize\'}"
 VERSION="${VERSION:?Optimize version required, eg. \'2.0.0\'}"
 SNAPSHOT="${SNAPSHOT:?Snapshot version: \'true\' or \'false\'}"
 DISTRO="${DISTRO:?Download \'production\' or \'demo\' distribution}"
@@ -11,18 +10,17 @@ ARTIFACT_VERSION="${VERSION}"
 
 # Determine if SNAPSHOT repo and version should be used
 if [ "${SNAPSHOT}" = "true" ]; then
-    REPO="${REPO}-snapshots"
     ARTIFACT_VERSION="${VERSION}-SNAPSHOT"
 fi
 
 function useNexusDownload {
-  # Configure username and password for download
-  echo "machine app.camunda.com login ${USERNAME} password ${PASSWORD}" >> ~/.netrc
-
-  # Determine nexus URL parameters
   echo "Downloading Camunda Optimize ${ARTIFACT_VERSION}"
 
   # Download distro from nexus
+  mvn dependency:get -B --global-settings /tmp/settings.xml \
+    -DremoteRepositories="camunda-nexus::::https://app.camunda.com/nexus/content/groups/internal" \
+    -DgroupId="${ARTIFACT_GROUP}" -DartifactId="${ARTIFACT}" \
+    -Dversion="${ARTIFACT_VERSION}" -Dpackaging="tar.gz" -Dclassifier="${DISTRO}" -Dtransitive=false
   mvn dependency:copy -B --global-settings /tmp/settings.xml \
     -Dartifact="${ARTIFACT_GROUP}:${ARTIFACT}:${ARTIFACT_VERSION}:tar.gz:${DISTRO}" \
     -DoutputDirectory=/tmp/

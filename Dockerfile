@@ -2,7 +2,6 @@ FROM openjdk:8u191-jre-alpine3.9 as builder
 WORKDIR /build
 
 ARG SKIP_DOWNLOAD=false
-ARG REPO=camunda-optimize
 ARG VERSION=2.0.0
 ARG SNAPSHOT=false
 ARG DISTRO=production
