@@ -118,6 +118,23 @@ public class ObjectMapperFactoryTest {
     assertThat(((BooleanVariableFilterDataDto) data.getFilter().get(0).getData()).getData().getValue(), is("true"));
   }
 
+
+  @Test
+  public void testFilterSerializationWithLowecaseType() throws Exception {
+    ProcessReportDataDto data = optimizeMapper.readValue(
+      this.getClass()
+        .getResourceAsStream("/test/data/filter_request_lowercase_type.json"),
+      ProcessReportDataDto.class
+    );
+    assertThat(((BooleanVariableFilterDataDto) data.getFilter().get(0).getData()).getData().getValue(), is("true"));
+
+    data = optimizeMapper.readValue(
+      this.getClass().getResourceAsStream("/test/data/filter_request_single.json"),
+      ProcessReportDataDto.class
+    );
+    assertThat(((BooleanVariableFilterDataDto) data.getFilter().get(0).getData()).getData().getValue(), is("true"));
+  }
+
   @Test
   public void testDateSerialization() throws Exception {
     DateHolder instance = new DateHolder();
