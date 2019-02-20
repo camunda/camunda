@@ -29,13 +29,16 @@ import io.zeebe.model.bpmn.builder.ZeebePayloadMappingBuilder;
 import io.zeebe.protocol.intent.VariableIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
+import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Consumer;
 import org.assertj.core.groups.Tuple;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -49,10 +52,14 @@ public class JobOutputMappingTest {
 
   private static final String PROCESS_ID = "process";
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
+  public static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public static ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
 
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+  @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+
+  @Rule
+  public RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   @Parameter(0)
   public String jobPayload;
@@ -149,44 +156,56 @@ public class JobOutputMappingTest {
     };
   }
 
-  private PartitionTestClient testClient;
+  private String jobType;
 
   @Before
   public void init() {
-    testClient = apiRule.partitionClient();
+    jobType = UUID.randomUUID().toString();
   }
 
   @Test
   public void shouldApplyOutputMappings() {
     // given
-    testClient.deploy(
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .serviceTask(
-                "task",
-                builder -> {
-                  builder.zeebeTaskType("test");
-                  mappings.accept(builder);
-                })
-            .endEvent()
-            .done());
+    final long workflowKey =
+        apiRule
+            .deployWorkflow(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .serviceTask(
+                        "task",
+                        builder -> {
+                          builder.zeebeTaskType(jobType);
+                          mappings.accept(builder);
+                        })
+                    .endEvent()
+                    .done())
+            .getValue()
+            .getDeployedWorkflows()
+            .get(0)
+            .getWorkflowKey();
 
     // when
-    final long flowScopeKey = testClient.createWorkflowInstance(PROCESS_ID, "{'i': 0}");
-    testClient.completeJobOfType("test", jobPayload);
+    final long workflowInstanceKey =
+        apiRule.createWorkflowInstance(workflowKey, MsgPackUtil.asMsgPack("i", 0));
+    apiRule.completeJob(jobType, MsgPackUtil.asMsgPack(jobPayload));
 
     // then
     final long elementInstanceKey =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
             .withElementId("task")
             .getFirst()
             .getKey();
 
     final Record<VariableRecordValue> initialVariable =
-        RecordingExporter.variableRecords(VariableIntent.CREATED).withName("i").getFirst();
+        RecordingExporter.variableRecords(VariableIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withName("i")
+            .getFirst();
 
     assertThat(
             RecordingExporter.variableRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
                 .skipUntil(r -> r.getPosition() > initialVariable.getPosition())
                 .withScopeKey(elementInstanceKey)
                 .limit(expectedActivityVariables.size()))
@@ -197,8 +216,9 @@ public class JobOutputMappingTest {
 
     assertThat(
             RecordingExporter.variableRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
                 .skipUntil(r -> r.getPosition() > initialVariable.getPosition())
-                .withScopeKey(flowScopeKey)
+                .withScopeKey(workflowInstanceKey)
                 .limit(expectedScopeVariables.size()))
         .extracting(Record::getValue)
         .extracting(v -> tuple(v.getName(), v.getValue()))
