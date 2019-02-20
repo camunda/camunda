@@ -78,7 +78,7 @@ export default class DecisionTable extends React.Component {
         {Object.keys(rules).map(this.renderRuleCell)}
         <DmnJsPortal renderIn={summary}>
           <b>
-            {decisionInstanceCount} Evaluations
+            {decisionInstanceCount} Instance{decisionInstanceCount !== 1 ? 's' : ''}
             {hitCount > decisionInstanceCount && ` / ${hitCount} Hits`}
           </b>
         </DmnJsPortal>
