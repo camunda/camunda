@@ -142,6 +142,9 @@ export default class Filter extends React.Component {
           <Dropdown.Option onClick={this.filterByInstancesOnly('canceledInstancesOnly')}>
             Canceled Instances Only
           </Dropdown.Option>
+          <Dropdown.Option onClick={this.filterByInstancesOnly('nonCanceledInstancesOnly')}>
+            Non Canceled Instances Only
+          </Dropdown.Option>
           <Dropdown.Option onClick={this.openNewFilterModal('startDate')}>
             Start Date
           </Dropdown.Option>

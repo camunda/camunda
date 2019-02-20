@@ -281,6 +281,22 @@ export default class FilterList extends React.Component {
               </ActionItem>
             </li>
           );
+        } else if (filter.type === 'nonCanceledInstancesOnly') {
+          list.push(
+            <li key={i} className="FilterList__item FilterList__item--not-editable">
+              <ActionItem
+                onClick={evt => {
+                  evt.stopPropagation();
+                  this.props.deleteFilter(filter);
+                }}
+                className="FilterList__action-item"
+              >
+                <span className="FilterList__parameter-name">
+                  Non Canceled Process Instances Only
+                </span>
+              </ActionItem>
+            </li>
+          );
         }
       }
 

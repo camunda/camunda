@@ -18,8 +18,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterD
     @JsonSubTypes.Type(value = RunningInstancesOnlyFilterDto.class, name = "runningInstancesOnly"),
     @JsonSubTypes.Type(value = CompletedInstancesOnlyFilterDto.class, name = "completedInstancesOnly"),
     @JsonSubTypes.Type(value = CanceledInstancesOnlyFilterDto.class, name = "canceledInstancesOnly"),
-}
-)
+    @JsonSubTypes.Type(value = NonCanceledInstancesOnlyFilterDto.class, name = "nonCanceledInstancesOnly"),
+})
+
 public abstract class ProcessFilterDto<DATA extends FilterDataDto> {
   protected DATA data;
 
