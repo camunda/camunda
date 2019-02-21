@@ -27,13 +27,13 @@ import io.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.zeebe.model.bpmn.builder.ZeebePayloadMappingBuilder;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import org.assertj.core.groups.Tuple;
-import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -47,10 +47,14 @@ public class ActivityInputMappingTest {
 
   private static final String PROCESS_ID = "process";
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
+  public static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public static ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
 
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+  @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+
+  @Rule
+  public RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   @Parameter(0)
   public String initialPayload;
@@ -84,41 +88,42 @@ public class ActivityInputMappingTest {
     };
   }
 
-  private PartitionTestClient testClient;
-
-  @Before
-  public void init() {
-    testClient = apiRule.partitionClient();
-  }
-
   @Test
   public void shouldApplyInputMappings() {
     // given
-    testClient.deploy(
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .subProcess(
-                "sub",
-                b -> {
-                  b.embeddedSubProcess().startEvent().endEvent();
+    final long workflowKey =
+        apiRule
+            .deployWorkflow(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .subProcess(
+                        "sub",
+                        b -> {
+                          b.embeddedSubProcess().startEvent().endEvent();
 
-                  mappings.accept(b);
-                })
-            .endEvent()
-            .done());
+                          mappings.accept(b);
+                        })
+                    .endEvent()
+                    .done())
+            .getValue()
+            .getDeployedWorkflows()
+            .get(0)
+            .getWorkflowKey();
 
     // when
-    testClient.createWorkflowInstance(PROCESS_ID, initialPayload);
+    final long workflowInstanceKey = apiRule.createWorkflowInstance(workflowKey, initialPayload);
 
     // then
     final long flowScopeKey =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
             .withElementId("sub")
             .getFirst()
             .getKey();
 
     assertThat(
             RecordingExporter.variableRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
                 .withScopeKey(flowScopeKey)
                 .limit(expectedActivityVariables.size()))
         .extracting(Record::getValue)
