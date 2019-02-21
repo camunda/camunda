@@ -1,3 +1,8 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
 package org.camunda.operate.zeebeimport;
 
 import java.io.IOException;
@@ -6,7 +11,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.camunda.operate.entities.VariableEntity;
-import org.camunda.operate.es.schema.templates.ActivityInstanceTemplate;
 import org.camunda.operate.es.schema.templates.VariableTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ElasticsearchUtil;

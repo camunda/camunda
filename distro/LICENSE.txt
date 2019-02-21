@@ -1,0 +1,2 @@
+The commecial Components of the Camunda Software shall only be used once you have signed a licensing agreement with Camunda services GmbH.
+The terms and conditions for using the Commercial Components of the Camunda Software are specified by the licensing agreement.

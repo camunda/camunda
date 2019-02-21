@@ -1,3 +1,5 @@
+License: This repository contains files subject to a commercial license.
+
 # Camunda Operate
 
 **[Backend Documentation](./backend)**

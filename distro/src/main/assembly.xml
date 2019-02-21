@@ -44,6 +44,18 @@
       <lineEnding>keep</lineEnding>
       <outputDirectory></outputDirectory>
     </file>
+    <file>
+      <source>LICENSE.txt</source>
+      <filtered>true</filtered>
+      <lineEnding>keep</lineEnding>
+      <outputDirectory></outputDirectory>
+    </file>
+    <file>
+      <source>NOTICE.txt</source>
+      <filtered>true</filtered>
+      <lineEnding>keep</lineEnding>
+      <outputDirectory></outputDirectory>
+    </file>
   </files>
 
 </assembly>
