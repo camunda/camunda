@@ -1,4 +1,4 @@
-package org.camunda.optimize.dto.optimize.query.report.configuration.target_value;
+package org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 

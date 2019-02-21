@@ -1,6 +1,6 @@
 package org.camunda.optimize.service.util;
 
-import org.camunda.optimize.dto.optimize.query.report.VariableType;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 import java.util.Arrays;
 import java.util.Collections;

@@ -13,7 +13,8 @@ public class DynamicMappingsBuilder {
     // @formatter:off
     XContentBuilder content = XContentFactory.jsonBuilder()
       .startObject()
-        .field("dynamic", "strict")
+        // false allows us to seamlessly upgrade the schema while keeping old properties to be migrated by a dedicated step
+        .field("dynamic", "false")
         .startObject("properties");
           appender.addProperties(content)
         .endObject()

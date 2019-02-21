@@ -4,8 +4,8 @@ package org.camunda.optimize.dto.optimize.query.report.single.filter.data.variab
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 import static org.camunda.optimize.service.util.ProcessVariableHelper.BOOLEAN_TYPE;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.BOOLEAN_TYPE_LOWERCASE;

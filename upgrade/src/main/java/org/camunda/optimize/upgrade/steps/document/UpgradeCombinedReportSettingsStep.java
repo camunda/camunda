@@ -16,14 +16,31 @@ public class UpgradeCombinedReportSettingsStep extends AbstractReportConfigurati
       getDeepCopyMapScript() +
         "def reportData = ctx._source.data;\n" +
         "def singleReports = params.singleReports;\n" +
+        // migrate reportId list to new list of reports
+        "if (reportData.reportIds != null && reportData.reportIds.length > 0) {\n" +
+        "  def reports = new ArrayList();\n" +
+        "  def reportIds = reportData.reportIds;\n" +
+        "  for(int i=0; i < reportIds.size(); i++) {\n" +
+        "    def reportEntry = new HashMap();\n" +
+        "    reportEntry.id =  reportIds.get(i);\n" +
+        "    if (reportData.configuration.color != null && i < reportData.configuration.color.size()) {\n" +
+        "      reportEntry.color = reportData.configuration.color.get(i);\n" +
+        "    }\n" +
+        "    reports.add(reportEntry);\n" +
+        "  }" +
+        "  reportData.reports = reports;\n" +
+        "  reportData.remove(\"reportIds\");\n" +
+        "}\n" +
+        "reportData.configuration?.remove(\"color\");\n" +
+        // config structure migration
         "def newConfig = deepCopyMap(params.defaultConfiguration);\n" +
         getMigrateCompatibleFieldsScript() +
         // incompatible field migration
         "if (reportData.configuration?.targetValue != null\n" +
-        "    && reportData.reportIds != null\n" +
+        "    && reportData.reports != null\n" +
         "    && singleReports != null\n" +
-        "    && reportData.reportIds.length > 0) {\n" +
-        "  def firstReportId = reportData.reportIds[0];\n" +
+        "    && reportData.reports.length > 0) {\n" +
+        "  def firstReportId = reportData.reports[0].id;\n" +
         "  def singleReportData = singleReports.get(firstReportId);\n" +
         "  if (singleReportData != null) {\n" +
         //   #1 IF visualization is line OR bar OR number

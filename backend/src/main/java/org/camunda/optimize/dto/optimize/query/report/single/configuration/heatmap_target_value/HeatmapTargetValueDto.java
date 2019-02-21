@@ -1,4 +1,4 @@
-package org.camunda.optimize.dto.optimize.query.report.configuration.heatmap_target_value;
+package org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value;
 
 import java.util.HashMap;
 import java.util.Map;

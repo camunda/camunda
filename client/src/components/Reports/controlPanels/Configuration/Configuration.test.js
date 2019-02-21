@@ -35,7 +35,7 @@ it('should be disabled if the report is combined with a duration view', () => {
     <Configuration
       report={{
         combined: true,
-        data: {reportIds: ['test']},
+        data: {reports: [{id: 'test'}]},
         result: {test: {data: {view: {property: 'duration'}}}}
       }}
     />

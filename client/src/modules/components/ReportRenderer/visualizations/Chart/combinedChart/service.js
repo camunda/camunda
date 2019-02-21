@@ -24,24 +24,22 @@ export function generateLegendLabels(chart) {
 }
 
 export function getCombinedChartProps(result, data) {
-  if (data.visualization === 'number')
-    return {
-      resultArr: getCombinedNumberData(result),
-      reportsNames: Object.values(result).map(report => report.name)
-    };
-  return data.reportIds.reduce(
-    (prev, reportId) => {
+  return data.reports.reduce(
+    (prev, {id, color}) => {
+      const report = result[id];
+      let singleReportResult;
+      if (data.visualization === 'number') {
+        singleReportResult = {[report.name]: report.result};
+      } else {
+        singleReportResult = formatReportResult(data, report.result);
+      }
+
       return {
-        resultArr: [...prev.resultArr, formatReportResult(data, result[reportId].result)],
-        reportsNames: [...prev.reportsNames, result[reportId].name]
+        resultArr: [...prev.resultArr, singleReportResult],
+        reportsNames: [...prev.reportsNames, report.name],
+        reportColors: [...prev.reportColors, color]
       };
     },
-    {resultArr: [], reportsNames: []}
+    {resultArr: [], reportsNames: [], reportColors: []}
   );
-}
-
-function getCombinedNumberData(result) {
-  return Object.values(result).map(report => ({
-    [report.name]: report.result
-  }));
 }

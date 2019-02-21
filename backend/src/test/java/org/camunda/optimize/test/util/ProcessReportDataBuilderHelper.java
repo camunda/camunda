@@ -1,7 +1,7 @@
 package org.camunda.optimize.test.util;
 
-import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
@@ -12,8 +12,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewOperation;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 import java.util.Arrays;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByFlowNode;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByNone;
@@ -803,7 +805,9 @@ public class ProcessReportDataBuilderHelper {
 
   public static CombinedReportDataDto createCombinedReport(String... reportIds) {
     CombinedReportDataDto combinedReportDataDto = new CombinedReportDataDto();
-    combinedReportDataDto.setReportIds(Arrays.asList(reportIds));
+    combinedReportDataDto.setReports(
+      Arrays.stream(reportIds).map(CombinedReportItemDto::new).collect(Collectors.toList())
+    );
     return combinedReportDataDto;
   }
 

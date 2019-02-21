@@ -4,7 +4,7 @@ import org.camunda.optimize.dto.engine.HistoricDecisionInputInstanceDto;
 import org.camunda.optimize.dto.engine.HistoricDecisionInstanceDto;
 import org.camunda.optimize.dto.engine.HistoricDecisionOutputInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.VariableType;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.plugin.DecisionInputImportAdapterProvider;
 import org.camunda.optimize.plugin.DecisionOutputImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;

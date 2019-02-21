@@ -11,7 +11,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDeci
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionUpdateDto;
-import org.camunda.optimize.service.es.schema.type.report.CombinedReportType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
@@ -42,6 +41,9 @@ import java.time.OffsetDateTime;
 import java.util.Collections;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.service.es.schema.type.report.CombinedReportType.DATA;
+import static org.camunda.optimize.service.es.schema.type.report.CombinedReportType.REPORTS;
+import static org.camunda.optimize.service.es.schema.type.report.CombinedReportType.REPORT_ITEM_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_TYPE;
@@ -274,21 +276,20 @@ public class ReportWriter {
     Script removeReportIdFromCombinedReportsScript = new Script(
       ScriptType.INLINE,
       Script.DEFAULT_SCRIPT_LANG,
-      "def reportIds = ctx._source.data.reportIds;" +
-        "for(int i=0; i<reportIds.size(); i++) {" +
-        "  if(params.idToRemove.equals(reportIds.get(i))) {" +
-        "     ctx._source.data.reportIds.remove(i);" +
-        "     if(i < ctx._source.data.configuration.reportColors.size()) {" +
-        "       ctx._source.data.configuration.reportColors.remove(i);" +
-        "     }" +
-        "  }" +
-        "}",
+      "def reports = ctx._source.data.reports;" +
+      "if(reports != null) {" +
+      "  reports.removeIf(r -> r.id.equals(params.idToRemove));" +
+      "}",
       Collections.singletonMap("idToRemove", reportId)
     );
 
     NestedQueryBuilder query = nestedQuery(
-      CombinedReportType.DATA,
-      termQuery(CombinedReportType.DATA + "." + CombinedReportType.REPORT_IDS, reportId),
+      DATA,
+      nestedQuery(
+        String.join(".", DATA, REPORTS),
+        termQuery(String.join(".", DATA, REPORTS, REPORT_ITEM_ID), reportId),
+        ScoreMode.None
+      ),
       ScoreMode.None
     );
 

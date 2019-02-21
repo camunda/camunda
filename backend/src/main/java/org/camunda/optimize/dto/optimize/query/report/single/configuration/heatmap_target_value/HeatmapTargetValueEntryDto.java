@@ -1,6 +1,6 @@
-package org.camunda.optimize.dto.optimize.query.report.configuration.heatmap_target_value;
+package org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value;
 
-import org.camunda.optimize.dto.optimize.query.report.configuration.target_value.TargetValueUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 
 public class HeatmapTargetValueEntryDto {
 

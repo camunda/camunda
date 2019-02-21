@@ -49,7 +49,7 @@ it('should return correct cominbed chart repot data properties for single report
 
   const data = {
     ...report.data,
-    reportIds: ['report A', 'report B']
+    reports: [{id: 'report A', color: 'red'}, {id: 'report B', color: 'blue'}]
   };
 
   const chartProps = getCombinedChartProps(result, data);
@@ -59,7 +59,8 @@ it('should return correct cominbed chart repot data properties for single report
       {'2015-03-25T12:00:00Z': 2, '2015-03-26T12:00:00Z': 3},
       {'2015-03-25T12:00:00Z': 2, '2015-03-26T12:00:00Z': 3}
     ],
-    reportsNames: ['report A', 'report A']
+    reportsNames: ['report A', 'report A'],
+    reportColors: ['red', 'blue']
   });
 });
 
@@ -77,10 +78,14 @@ it('should convert results of a combined number report to a correctly formatted 
     NumberReportB: NumberReportA
   };
 
-  const chartProps = getCombinedChartProps(result, {visualization: 'number'});
+  const chartProps = getCombinedChartProps(result, {
+    visualization: 'number',
+    reports: [{id: 'NumberReportA', color: 'red'}, {id: 'NumberReportB', color: 'blue'}]
+  });
 
   expect(chartProps).toEqual({
     resultArr: [{'report A': 100}, {'report A': 100}],
-    reportsNames: ['report A', 'report A']
+    reportsNames: ['report A', 'report A'],
+    reportColors: ['red', 'blue']
   });
 });

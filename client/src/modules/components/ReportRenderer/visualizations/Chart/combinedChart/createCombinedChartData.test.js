@@ -26,8 +26,8 @@ it('should return correct chart data object for a combined report', () => {
           value: ''
         },
         view: {},
-        reportIds: ['reportA', 'reportB'],
-        configuration: {reportColors: ['blue', 'yellow']},
+        reports: [{id: 'reportA', color: 'blue'}, {id: 'reportB', color: 'yellow'}],
+        configuration: {},
         visualization: 'line'
       },
       combined: true

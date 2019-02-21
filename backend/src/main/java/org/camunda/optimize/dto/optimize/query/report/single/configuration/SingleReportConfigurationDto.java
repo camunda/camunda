@@ -1,19 +1,17 @@
-package org.camunda.optimize.dto.optimize.query.report.configuration;
+package org.camunda.optimize.dto.optimize.query.report.single.configuration;
 
-import org.camunda.optimize.dto.optimize.query.report.configuration.heatmap_target_value.HeatmapTargetValueDto;
-import org.camunda.optimize.dto.optimize.query.report.configuration.target_value.TargetValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value.HeatmapTargetValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-public class ReportConfigurationDto {
+public class SingleReportConfigurationDto {
 
   public static final String DEFAULT_CONFIGURATION_COLOR = "#1991c8";
 
   private String color = DEFAULT_CONFIGURATION_COLOR;
-  private List<String> reportColors = Collections.singletonList(DEFAULT_CONFIGURATION_COLOR);
   private Boolean showInstanceCount = false;
   private Boolean pointMarkers = true;
   private Integer precision = null;
@@ -26,7 +24,7 @@ public class ReportConfigurationDto {
   private String xml = null;
   private List<String> excludedColumns = new ArrayList<>();
   private ColumnOrderDto columnOrder = new ColumnOrderDto();
-  private TargetValueDto targetValue = new TargetValueDto();
+  private SingleReportTargetValueDto targetValue = new SingleReportTargetValueDto();
   private HeatmapTargetValueDto heatmapTargetValue = new HeatmapTargetValueDto();
 
   public String getColor() {
@@ -35,14 +33,6 @@ public class ReportConfigurationDto {
 
   public void setColor(String color) {
     this.color = color;
-  }
-
-  public List<String> getReportColors() {
-    return reportColors;
-  }
-
-  public void setReportColors(List<String> reportColors) {
-    this.reportColors = reportColors;
   }
 
   public Boolean getShowInstanceCount() {
@@ -141,11 +131,11 @@ public class ReportConfigurationDto {
     this.columnOrder = columnOrder;
   }
 
-  public TargetValueDto getTargetValue() {
+  public SingleReportTargetValueDto getTargetValue() {
     return targetValue;
   }
 
-  public void setTargetValue(TargetValueDto targetValue) {
+  public void setTargetValue(SingleReportTargetValueDto targetValue) {
     this.targetValue = targetValue;
   }
 
@@ -162,12 +152,11 @@ public class ReportConfigurationDto {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof ReportConfigurationDto)) {
+    if (!(o instanceof SingleReportConfigurationDto)) {
       return false;
     }
-    ReportConfigurationDto that = (ReportConfigurationDto) o;
+    SingleReportConfigurationDto that = (SingleReportConfigurationDto) o;
     return Objects.equals(color, that.color) &&
-      Objects.equals(reportColors, that.reportColors) &&
       Objects.equals(showInstanceCount, that.showInstanceCount) &&
       Objects.equals(pointMarkers, that.pointMarkers) &&
       Objects.equals(precision, that.precision) &&
@@ -188,7 +177,6 @@ public class ReportConfigurationDto {
   public int hashCode() {
     return Objects.hash(
       color,
-      reportColors,
       showInstanceCount,
       pointMarkers,
       precision,

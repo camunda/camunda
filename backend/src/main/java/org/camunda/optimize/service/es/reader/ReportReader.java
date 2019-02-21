@@ -18,7 +18,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -38,10 +38,14 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.report.AbstractReportType.DATA;
+import static org.camunda.optimize.service.es.schema.type.report.CombinedReportType.REPORTS;
+import static org.camunda.optimize.service.es.schema.type.report.CombinedReportType.REPORT_ITEM_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE;
+import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @Component
 public class ReportReader {
@@ -284,12 +288,15 @@ public class ReportReader {
   public List<CombinedReportDefinitionDto> findFirstCombinedReportsForSimpleReport(String simpleReportId) {
     logger.debug("Fetching first combined reports using simpleReport with id {}", simpleReportId);
 
-    final QueryBuilder getCombinedReportsBySimpleReportIdQuery = QueryBuilders.boolQuery()
-      .filter(QueryBuilders.nestedQuery(
-        DATA,
-        QueryBuilders.termQuery("data.reportIds", simpleReportId),
+    final NestedQueryBuilder getCombinedReportsBySimpleReportIdQuery = nestedQuery(
+      DATA,
+      nestedQuery(
+        String.join(".", DATA, REPORTS),
+        termQuery(String.join(".", DATA, REPORTS, REPORT_ITEM_ID), simpleReportId),
         ScoreMode.None
-      ));
+      ),
+      ScoreMode.None
+    );
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(getCombinedReportsBySimpleReportIdQuery);
     searchSourceBuilder.size(LIST_FETCH_LIMIT);

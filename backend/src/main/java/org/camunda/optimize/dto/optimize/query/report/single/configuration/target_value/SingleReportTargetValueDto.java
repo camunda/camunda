@@ -1,20 +1,20 @@
-package org.camunda.optimize.dto.optimize.query.report.configuration.target_value;
+package org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value;
 
 import java.util.Objects;
 
-public class TargetValueDto {
+public class SingleReportTargetValueDto {
 
-  private CountChartDto countChart = new CountChartDto();
+  private SingleReportCountChartDto countChart = new SingleReportCountChartDto();
   private DurationProgressDto durationProgress = new DurationProgressDto();
   private Boolean active = false;
   private CountProgressDto countProgress = new CountProgressDto();
-  private DurationChartDto durationChart = new DurationChartDto();
+  private SingleReportDurationChartDto durationChart = new SingleReportDurationChartDto();
 
-  public CountChartDto getCountChart() {
+  public SingleReportCountChartDto getCountChart() {
     return countChart;
   }
 
-  public void setCountChart(CountChartDto countChart) {
+  public void setCountChart(SingleReportCountChartDto countChart) {
     this.countChart = countChart;
   }
 
@@ -42,11 +42,11 @@ public class TargetValueDto {
     this.countProgress = countProgress;
   }
 
-  public DurationChartDto getDurationChart() {
+  public SingleReportDurationChartDto getDurationChart() {
     return durationChart;
   }
 
-  public void setDurationChart(DurationChartDto durationChart) {
+  public void setDurationChart(SingleReportDurationChartDto durationChart) {
     this.durationChart = durationChart;
   }
 
@@ -55,10 +55,10 @@ public class TargetValueDto {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof TargetValueDto)) {
+    if (!(o instanceof SingleReportTargetValueDto)) {
       return false;
     }
-    TargetValueDto that = (TargetValueDto) o;
+    SingleReportTargetValueDto that = (SingleReportTargetValueDto) o;
     return Objects.equals(countChart, that.countChart) &&
       Objects.equals(durationProgress, that.durationProgress) &&
       Objects.equals(active, that.active) &&

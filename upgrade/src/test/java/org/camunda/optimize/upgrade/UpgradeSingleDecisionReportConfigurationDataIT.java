@@ -1,7 +1,7 @@
 package org.camunda.optimize.upgrade;
 
 import com.google.common.collect.Lists;
-import org.camunda.optimize.dto.optimize.query.report.configuration.ReportConfigurationDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.service.es.schema.type.DecisionDefinitionType;
 import org.camunda.optimize.service.es.schema.type.report.AbstractReportType;
@@ -21,7 +21,7 @@ import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.util.ReportUtil.buildDecisionDefinitionXmlByKeyAndVersionMap;
-import static org.camunda.optimize.upgrade.util.SchemaUpgradeUtil.getDefaultReportConfigurationAsMap;
+import static org.camunda.optimize.upgrade.util.SchemaUpgradeUtil.getDefaultSingleReportConfigurationAsMap;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -66,19 +66,19 @@ public class UpgradeSingleDecisionReportConfigurationDataIT extends AbstractUpgr
     upgradePlan.execute();
 
     // then
-    final ReportConfigurationDto configurationVersionAll = getSingleDecisionReportDefinitionConfigurationById(
+    final SingleReportConfigurationDto configurationVersionAll = getSingleDecisionReportDefinitionConfigurationById(
       REPORT_VERSION_ALL_ID
     );
     assertThat(configurationVersionAll.getXml(), is(notNullValue()));
     assertThat(configurationVersionAll.getXml(), is(getInvoiceClassificationXmlByVersion("2")));
 
-    final ReportConfigurationDto configurationVersion1 = getSingleDecisionReportDefinitionConfigurationById(
+    final SingleReportConfigurationDto configurationVersion1 = getSingleDecisionReportDefinitionConfigurationById(
       REPORT_VERSION_1_ID
     );
     assertThat(configurationVersion1.getXml(), is(notNullValue()));
     assertThat(configurationVersion1.getXml(), is(getInvoiceClassificationXmlByVersion("1")));
 
-    final ReportConfigurationDto configurationEmpty = getSingleDecisionReportDefinitionConfigurationById(
+    final SingleReportConfigurationDto configurationEmpty = getSingleDecisionReportDefinitionConfigurationById(
       EMPTY_REPORT_ID
     );
     assertThat(configurationEmpty.getXml(), is(nullValue()));
@@ -98,7 +98,7 @@ public class UpgradeSingleDecisionReportConfigurationDataIT extends AbstractUpgr
     upgradePlan.execute();
 
     // then
-    final ReportConfigurationDto configuration = getSingleDecisionReportDefinitionConfigurationById(
+    final SingleReportConfigurationDto configuration = getSingleDecisionReportDefinitionConfigurationById(
       REPORT_VERSION_ALL_ID
     );
     assertThat(configuration.getColumnOrder().getInputVariables().size(), is(2));
@@ -116,13 +116,13 @@ public class UpgradeSingleDecisionReportConfigurationDataIT extends AbstractUpgr
       .fromVersion(FROM_VERSION)
       .toVersion(TO_VERSION)
       .addUpgradeStep(new UpgradeSingleDecisionReportSettingsStep(
-        getDefaultReportConfigurationAsMap(),
+        getDefaultSingleReportConfigurationAsMap(),
         decisionDefinitionXmlByKeyAndVersion
       ))
       .build();
   }
 
-  private ReportConfigurationDto getSingleDecisionReportDefinitionConfigurationById(final String id) throws
+  private SingleReportConfigurationDto getSingleDecisionReportDefinitionConfigurationById(final String id) throws
                                                                                                      IOException {
     final GetResponse reportResponse = restClient.get(
       new GetRequest(getReportIndexAlias(), SINGLE_DECISION_REPORT_TYPE.getType(), id), RequestOptions.DEFAULT

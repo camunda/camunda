@@ -32,7 +32,7 @@ const singleReport = {
 const combinedReport = {
   combined: true,
   data: {
-    reportIds: ['reportA', 'reportB'],
+    reports: [{id: 'reportA'}, {id: 'reportB'}],
     configuration: {}
   },
   result: {

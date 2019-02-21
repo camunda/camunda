@@ -7,7 +7,8 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.configuration.ReportConfigurationDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.configuration.CombinedReportConfigurationDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -32,7 +33,6 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,11 +97,7 @@ public class CombinedReportHandlingIT {
     assertThat(definitionDto.getData(), notNullValue());
     CombinedReportDataDto data = definitionDto.getData();
     assertThat(data.getConfiguration(), notNullValue());
-    assertThat(data.getConfiguration(), equalTo(new ReportConfigurationDto()));
-    assertThat(
-      data.getConfiguration().getColor(),
-      is(ReportConfigurationDto.DEFAULT_CONFIGURATION_COLOR)
-    );
+    assertThat(data.getConfiguration(), equalTo(new CombinedReportConfigurationDto()));
     assertThat(definitionDto.getData().getReportIds(), notNullValue());
   }
 
@@ -134,7 +130,7 @@ public class CombinedReportHandlingIT {
     String singleReportId = createNewSingleNumberReport(engineDto);
     CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
     report.setData(createCombinedReport(singleReportId));
-    report.getData().getConfiguration().setPrecision(100);
+    report.getData().getConfiguration().setxLabel("FooXLabel");;
     report.setId("shouldNotBeUpdated");
     report.setLastModifier("shouldNotBeUpdatedManually");
     report.setName("MyReport");
@@ -153,7 +149,7 @@ public class CombinedReportHandlingIT {
       .filter(r -> r instanceof CombinedReportDefinitionDto).findFirst().get();
     assertThat(newReport.getData().getReportIds().isEmpty(), is(false));
     assertThat(newReport.getData().getReportIds().get(0), is(singleReportId));
-    assertThat(newReport.getData().getConfiguration().getPrecision(), is(100));
+    assertThat(newReport.getData().getConfiguration().getxLabel(), is("FooXLabel"));
     assertThat(newReport.getData().getVisualization(), is(ProcessVisualization.NUMBER));
     assertThat(newReport.getId(), is(id));
     assertThat(newReport.getCreated(), is(not(shouldBeIgnoredDate)));
@@ -208,7 +204,7 @@ public class CombinedReportHandlingIT {
     CombinedReportDataDto dataDto = result.getData();
     assertThat(dataDto.getReportIds().size(), is(1));
     assertThat(dataDto.getReportIds().get(0), is(singleReportId));
-    assertThat(report.getData().getConfiguration(), equalTo(new ReportConfigurationDto()));
+    assertThat(report.getData().getConfiguration(), equalTo(new CombinedReportConfigurationDto()));
   }
 
   @Test
@@ -298,38 +294,6 @@ public class CombinedReportHandlingIT {
       .findFirst();
     assertThat(combinedReport.isPresent(), is(true));
     CombinedReportDataDto dataDto = combinedReport.get().getData();
-    assertThat(dataDto.getReportIds().size(), is(1));
-    assertThat(dataDto.getReportIds().get(0), is(remainingSingleReportId));
-  }
-
-  @Test
-  public void deletedSingleReportColorsAreAlsoRemovedFromCombinedReportWhenForced() {
-    // given
-    ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
-    String singleReportIdToDelete = createNewSingleMapReport(engineDto);
-    String remainingSingleReportId = createNewSingleMapReport(engineDto);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    // when
-    CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
-    CombinedReportDataDto combinedReportData = createCombinedReport(singleReportIdToDelete, remainingSingleReportId);
-    combinedReportData.getConfiguration().setReportColors(Arrays.asList("red", "blue"));
-    report.setData(combinedReportData);
-
-    String combinedReportId = createNewCombinedReport(report);
-    deleteReport(singleReportIdToDelete, true);
-    List<ReportDefinitionDto> reports = getAllReports();
-
-    // then
-    Optional<CombinedReportDefinitionDto> combinedReport = reports.stream()
-      .filter(r -> r instanceof CombinedReportDefinitionDto)
-      .map(r -> (CombinedReportDefinitionDto)r)
-      .findFirst();
-    assertThat(combinedReport.isPresent(), is(true));
-    CombinedReportDataDto dataDto = combinedReport.get().getData();
-    assertThat(dataDto.getConfiguration().getReportColors().size(), is(1));
-    assertThat(dataDto.getConfiguration().getReportColors().get(0), is("blue"));
     assertThat(dataDto.getReportIds().size(), is(1));
     assertThat(dataDto.getReportIds().get(0), is(remainingSingleReportId));
   }

@@ -50,8 +50,8 @@ export async function deleteReport(id) {
 export function getReportInfo(report) {
   if (report.data) {
     // if not empty combined
-    if (report.combined && report.data.reportIds && report.data.reportIds.length) {
-      const reportsCount = report.data.reportIds.length;
+    if (report.combined && report.data.reports && report.data.reports.length) {
+      const reportsCount = report.data.reports.length;
       return `${reportsCount} report${reportsCount !== 1 ? 's' : ''}`;
     }
     // if normal report
@@ -87,8 +87,8 @@ function getIconKey({data}) {
   return 'generic';
 }
 
-export function isValidCombinedReport({combined, data: {reportIds}}) {
-  return combined && reportIds && reportIds.length;
+export function isValidCombinedReport({combined, data: {reports}}) {
+  return combined && reports && reports.length;
 }
 
 // ALERTS

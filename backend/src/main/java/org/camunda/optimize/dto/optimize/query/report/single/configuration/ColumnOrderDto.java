@@ -1,4 +1,4 @@
-package org.camunda.optimize.dto.optimize.query.report.configuration;
+package org.camunda.optimize.dto.optimize.query.report.single.configuration;
 
 import java.util.ArrayList;
 import java.util.List;

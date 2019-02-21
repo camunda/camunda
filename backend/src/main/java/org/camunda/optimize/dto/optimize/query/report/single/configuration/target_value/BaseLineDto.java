@@ -1,11 +1,11 @@
-package org.camunda.optimize.dto.optimize.query.report.configuration.target_value;
+package org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value;
 
 import java.util.Objects;
 
-public class TargetDto {
+public class BaseLineDto {
 
   private TargetValueUnit unit = TargetValueUnit.HOURS;
-  private String value = "2";
+  private String value = "0";
 
   public TargetValueUnit getUnit() {
     return unit;
@@ -28,12 +28,12 @@ public class TargetDto {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof TargetDto)) {
+    if (!(o instanceof BaseLineDto)) {
       return false;
     }
-    TargetDto targetDto = (TargetDto) o;
-    return unit == targetDto.unit &&
-      Objects.equals(value, targetDto.value);
+    BaseLineDto that = (BaseLineDto) o;
+    return unit == that.unit &&
+      Objects.equals(value, that.value);
   }
 
   @Override

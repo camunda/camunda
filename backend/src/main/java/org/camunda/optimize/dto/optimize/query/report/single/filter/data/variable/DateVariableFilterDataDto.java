@@ -1,7 +1,7 @@
 package org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable;
 
-import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.data.DateVariableFilterSubDataDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 import java.time.OffsetDateTime;
 

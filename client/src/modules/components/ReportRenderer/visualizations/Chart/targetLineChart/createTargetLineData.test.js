@@ -31,8 +31,8 @@ it('should create two datasets for each report in combined line charts with targ
     report: {
       result: {reportA: {name, result}, reportB: {name, result}},
       data: {
-        reportIds: ['reportA', 'reportB'],
-        configuration: {reportColors: ['blue', 'yellow']},
+        reports: [{id: 'reportA', color: 'blue'}, {id: 'reportB', color: 'yellow'}],
+        configuration: {},
         visualization: 'line',
         groupBy: {
           type: '',

@@ -1,22 +1,13 @@
-package org.camunda.optimize.dto.optimize.query.report.configuration.target_value;
+package org.camunda.optimize.dto.optimize.query.report.combined.configuration.target_value;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class DurationChartDto {
+public class CombinedReportCountChartDto {
 
-  private TargetValueUnit unit = TargetValueUnit.HOURS;
   private Boolean isBelow = false;
-  private String value = "2";
-
-  public TargetValueUnit getUnit() {
-    return unit;
-  }
-
-  public void setUnit(TargetValueUnit unit) {
-    this.unit = unit;
-  }
+  private String value = "100";
 
   @JsonProperty(value="isBelow")
   public Boolean getBelow() {
@@ -40,17 +31,16 @@ public class DurationChartDto {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof DurationChartDto)) {
+    if (!(o instanceof CombinedReportCountChartDto)) {
       return false;
     }
-    DurationChartDto that = (DurationChartDto) o;
-    return unit == that.unit &&
-      Objects.equals(isBelow, that.isBelow) &&
+    CombinedReportCountChartDto that = (CombinedReportCountChartDto) o;
+    return Objects.equals(isBelow, that.isBelow) &&
       Objects.equals(value, that.value);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(unit, isBelow, value);
+    return Objects.hash(isBelow, value);
   }
 }

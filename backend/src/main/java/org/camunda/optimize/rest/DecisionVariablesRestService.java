@@ -1,6 +1,6 @@
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.dto.optimize.query.report.VariableType;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.es.reader.DecisionVariableReader;
 import org.camunda.optimize.service.util.ValidationHelper;

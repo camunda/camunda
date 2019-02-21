@@ -5,7 +5,7 @@ import org.camunda.optimize.upgrade.steps.UpgradeStep;
 public class UpgradePlanBuilder {
 
 
-  public static AddFromVersionBuilder createUpgradePlan() throws Exception {
+  public static AddFromVersionBuilder createUpgradePlan() {
     UpgradeExecutionPlan upgradeExecutionPlan = new UpgradeExecutionPlan();
     return new UpgradePlanBuilder().addFromVersion(upgradeExecutionPlan);
   }

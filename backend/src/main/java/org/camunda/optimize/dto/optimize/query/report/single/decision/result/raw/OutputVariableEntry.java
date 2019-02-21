@@ -1,7 +1,7 @@
 package org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.camunda.optimize.dto.optimize.query.report.VariableType;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 import java.util.ArrayList;
 import java.util.Arrays;

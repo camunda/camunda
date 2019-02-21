@@ -1,6 +1,6 @@
 package org.camunda.optimize.dto.optimize.importing;
 
-import org.camunda.optimize.dto.optimize.query.report.VariableType;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 public class InputInstanceDto {
   private String id;

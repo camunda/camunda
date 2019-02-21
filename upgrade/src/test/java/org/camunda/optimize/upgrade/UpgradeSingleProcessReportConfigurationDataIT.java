@@ -4,9 +4,9 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
-import org.camunda.optimize.dto.optimize.query.report.configuration.ReportConfigurationDto;
-import org.camunda.optimize.dto.optimize.query.report.configuration.heatmap_target_value.HeatmapTargetValueEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.configuration.target_value.TargetValueUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value.HeatmapTargetValueEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.es.schema.type.report.AbstractReportType;
 import org.camunda.optimize.service.es.schema.type.report.SingleProcessReportType;
@@ -32,7 +32,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
-import static org.camunda.optimize.upgrade.util.SchemaUpgradeUtil.getDefaultReportConfigurationAsMap;
+import static org.camunda.optimize.upgrade.util.SchemaUpgradeUtil.getDefaultSingleReportConfigurationAsMap;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -204,7 +204,7 @@ public class UpgradeSingleProcessReportConfigurationDataIT extends AbstractUpgra
     // then
     assertThat(
       getSingleProcessReportDefinitionConfigurationById(REPORT_210_TARGET_VALUE_PRESENT_BUT_NO_VALUES).getTargetValue(),
-      is(new ReportConfigurationDto().getTargetValue())
+      is(new SingleReportConfigurationDto().getTargetValue())
     );
   }
 
@@ -219,11 +219,11 @@ public class UpgradeSingleProcessReportConfigurationDataIT extends AbstractUpgra
     // then
     assertThat(
       getSingleProcessReportDefinitionConfigurationById(REPORT_210_4_RAW_DATA_EMPTY_TARGET_VALUE_COLUMN_ORDER).getTargetValue(),
-      is(new ReportConfigurationDto().getTargetValue())
+      is(new SingleReportConfigurationDto().getTargetValue())
     );
     assertThat(
       getSingleProcessReportDefinitionConfigurationById(REPORT_210_COUNT_PROCESS_INSTANCE_EMPTY_TARGET_VALUE).getTargetValue(),
-      is(new ReportConfigurationDto().getTargetValue())
+      is(new SingleReportConfigurationDto().getTargetValue())
     );
   }
 
@@ -283,7 +283,7 @@ public class UpgradeSingleProcessReportConfigurationDataIT extends AbstractUpgra
     upgradePlan.execute();
 
     // then
-    final ReportConfigurationDto configuration = getSingleProcessReportDefinitionConfigurationById(reportId);
+    final SingleReportConfigurationDto configuration = getSingleProcessReportDefinitionConfigurationById(reportId);
 
     assertThat(configuration.getTargetValue(), is(getDefaultReportConfiguration().getTargetValue()));
     assertThat(configuration.getHeatmapTargetValue().getActive(), is(true));
@@ -305,7 +305,7 @@ public class UpgradeSingleProcessReportConfigurationDataIT extends AbstractUpgra
     upgradePlan.execute();
 
     // then
-    final ReportConfigurationDto configuration = getSingleProcessReportDefinitionConfigurationById(reportId);
+    final SingleReportConfigurationDto configuration = getSingleProcessReportDefinitionConfigurationById(reportId);
 
     assertThat(configuration.getTargetValue().getActive(), is(true));
     assertThat(configuration.getTargetValue().getCountChart().getValue(), is("1.5"));
@@ -322,7 +322,7 @@ public class UpgradeSingleProcessReportConfigurationDataIT extends AbstractUpgra
     upgradePlan.execute();
 
     // then
-    final ReportConfigurationDto configuration = getSingleProcessReportDefinitionConfigurationById(reportId);
+    final SingleReportConfigurationDto configuration = getSingleProcessReportDefinitionConfigurationById(reportId);
 
     assertThat(configuration.getTargetValue().getActive(), is(true));
     assertThat(configuration.getTargetValue().getCountChart().getValue(), is("1.5"));
@@ -340,7 +340,7 @@ public class UpgradeSingleProcessReportConfigurationDataIT extends AbstractUpgra
     upgradePlan.execute();
 
     // then
-    final ReportConfigurationDto configuration = getSingleProcessReportDefinitionConfigurationById(reportId);
+    final SingleReportConfigurationDto configuration = getSingleProcessReportDefinitionConfigurationById(reportId);
 
     assertThat(configuration.getTargetValue().getActive(), is(true));
     assertThat(configuration.getTargetValue().getDurationChart().getValue(), is("1"));
@@ -358,7 +358,7 @@ public class UpgradeSingleProcessReportConfigurationDataIT extends AbstractUpgra
     upgradePlan.execute();
 
     // then
-    final ReportConfigurationDto configuration = getSingleProcessReportDefinitionConfigurationById(reportId);
+    final SingleReportConfigurationDto configuration = getSingleProcessReportDefinitionConfigurationById(reportId);
 
     assertThat(configuration.getTargetValue().getActive(), is(true));
     assertThat(configuration.getTargetValue().getDurationChart().getValue(), is("1"));
@@ -379,7 +379,7 @@ public class UpgradeSingleProcessReportConfigurationDataIT extends AbstractUpgra
     upgradePlan.execute();
 
     // then
-    final ReportConfigurationDto configuration = getSingleProcessReportDefinitionConfigurationById(reportId);
+    final SingleReportConfigurationDto configuration = getSingleProcessReportDefinitionConfigurationById(reportId);
 
     assertThat(configuration.getTargetValue().getActive(), is(true));
     assertThat(configuration.getTargetValue().getCountProgress().getBaseline(), is("1"));
@@ -399,7 +399,7 @@ public class UpgradeSingleProcessReportConfigurationDataIT extends AbstractUpgra
     upgradePlan.execute();
 
     // then
-    final ReportConfigurationDto configuration = getSingleProcessReportDefinitionConfigurationById(reportId);
+    final SingleReportConfigurationDto configuration = getSingleProcessReportDefinitionConfigurationById(reportId);
 
     assertThat(configuration.getTargetValue().getActive(), is(true));
     assertThat(configuration.getTargetValue().getDurationProgress().getBaseline().getValue(), is("1"));
@@ -418,14 +418,14 @@ public class UpgradeSingleProcessReportConfigurationDataIT extends AbstractUpgra
     );
   }
 
-  private ReportConfigurationDto getDefaultReportConfiguration() {
-    String pathToMapping = "upgrade/main/UpgradeFrom23To24/default-report-configuration.json";
+  private SingleReportConfigurationDto getDefaultReportConfiguration() {
+    String pathToMapping = "upgrade/main/UpgradeFrom23To24/default-single-report-configuration.json";
     String reportConfigurationStructureAsJson = SchemaUpgradeUtil.readClasspathFileAsString(pathToMapping);
-    ReportConfigurationDto reportConfigurationAsMap;
+    SingleReportConfigurationDto reportConfigurationAsMap;
     try {
       reportConfigurationAsMap = objectMapper.readValue(
         reportConfigurationStructureAsJson,
-        ReportConfigurationDto.class
+        SingleReportConfigurationDto.class
       );
     } catch (IOException e) {
       throw new UpgradeRuntimeException("Could not deserialize default report configuration structure as json!");
@@ -441,11 +441,11 @@ public class UpgradeSingleProcessReportConfigurationDataIT extends AbstractUpgra
     return UpgradePlanBuilder.createUpgradePlan()
       .fromVersion(FROM_VERSION)
       .toVersion(TO_VERSION)
-      .addUpgradeStep(new UpgradeSingleProcessReportSettingsStep(getDefaultReportConfigurationAsMap()))
+      .addUpgradeStep(new UpgradeSingleProcessReportSettingsStep(getDefaultSingleReportConfigurationAsMap()))
       .build();
   }
 
-  private ReportConfigurationDto getSingleProcessReportDefinitionConfigurationById(final String id) throws IOException {
+  private SingleReportConfigurationDto getSingleProcessReportDefinitionConfigurationById(final String id) throws IOException {
     final GetResponse reportResponse = restClient.get(
       new GetRequest(getReportIndexAlias(), SINGLE_PROCESS_REPORT_TYPE.getType(), id), RequestOptions.DEFAULT
     );

@@ -40,8 +40,8 @@ export default function TableConfig({report, onChange}) {
 TableConfig.isDisabled = report => {
   return (
     report.combined &&
-    report.data.reportIds &&
-    report.data.reportIds.length &&
+    report.data.reports &&
+    report.data.reports.length &&
     isDurationReport(Object.values(report.result)[0])
   );
 };

@@ -30,11 +30,7 @@ export function extractCombinedData({report, theme, targetValue}) {
 
   const data = {...Object.values(result)[0].data, ...combinedReportData};
 
-  const {reportsNames, resultArr} = getCombinedChartProps(result, data);
-
-  const {
-    configuration: {reportColors}
-  } = data;
+  const {reportsNames, resultArr, reportColors} = getCombinedChartProps(result, data);
 
   const isDark = theme === 'dark';
 

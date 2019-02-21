@@ -1,6 +1,6 @@
 package org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw;
 
-import org.camunda.optimize.dto.optimize.query.report.VariableType;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 import java.util.Objects;
 

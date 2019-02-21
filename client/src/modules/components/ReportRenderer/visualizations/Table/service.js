@@ -56,7 +56,7 @@ export function getBodyRows(
   return rows;
 }
 
-export function getCombinedTableProps(reportResult, reportIds) {
+export function getCombinedTableProps(reportResult, reports) {
   const initialData = {
     labels: [],
     reportsNames: [],
@@ -64,8 +64,8 @@ export function getCombinedTableProps(reportResult, reportIds) {
     processInstanceCount: []
   };
 
-  const combinedProps = reportIds.reduce((prevReport, reportId) => {
-    const report = reportResult[reportId];
+  const combinedProps = reports.reduce((prevReport, {id}) => {
+    const report = reportResult[id];
     const {data, result, processInstanceCount, name} = report;
     const {
       configuration: {xml}

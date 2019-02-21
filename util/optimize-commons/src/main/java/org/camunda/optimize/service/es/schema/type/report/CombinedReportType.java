@@ -10,11 +10,14 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_RE
 @Component
 public class CombinedReportType extends AbstractReportType {
 
-  public static final int VERSION = 1;
+  public static final int VERSION = 2;
 
-  public static final String REPORT_IDS = "reportIds";
   public static final String VISUALIZATION = "visualization";
   public static final String CONFIGURATION = "configuration";
+
+  public static final String REPORTS = "reports";
+  public static final String REPORT_ITEM_ID = "id";
+  public static final String REPORT_ITEM_COLOR = "color";
 
   @Override
   public String getType() {
@@ -38,8 +41,16 @@ public class CombinedReportType extends AbstractReportType {
           .startObject(VISUALIZATION)
             .field("type", "keyword")
           .endObject()
-          .startObject(REPORT_IDS)
-            .field("type", "keyword")
+          .startObject(REPORTS)
+            .field("type", "nested")
+            .startObject("properties")
+              .startObject(REPORT_ITEM_ID)
+                .field("type", "keyword")
+              .endObject()
+              .startObject(REPORT_ITEM_COLOR)
+                .field("type", "keyword")
+              .endObject()
+            .endObject()
           .endObject()
         .endObject()
       .endObject();

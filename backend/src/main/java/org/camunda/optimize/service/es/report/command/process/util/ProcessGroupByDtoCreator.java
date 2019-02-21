@@ -1,6 +1,5 @@
 package org.camunda.optimize.service.es.report.command.process.util;
 
-import org.camunda.optimize.dto.optimize.query.report.VariableType;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
@@ -9,6 +8,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Start
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.StartDateGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 
 public class ProcessGroupByDtoCreator {

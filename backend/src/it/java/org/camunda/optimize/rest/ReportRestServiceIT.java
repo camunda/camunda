@@ -6,13 +6,11 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
 import org.camunda.optimize.service.sharing.AbstractSharingIT;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -401,25 +399,18 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void nullReportIdsThrowsReportEvaluationException() {
+  public void nullReportsAreHandledAsEmptyList() {
     // then
     CombinedReportDataDto combinedReport = ProcessReportDataBuilderHelper.createCombinedReport();
-    combinedReport.setReportIds(null);
+    combinedReport.setReports(null);
 
-    ReportEvaluationException errorMessage = embeddedOptimizeRule
+    Response response = embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateCombinedUnsavedReportRequest(combinedReport)
-      .execute(ReportEvaluationException.class, 500);
+      .execute();
 
     // then
-    if(errorMessage.getReportDefinition() instanceof CombinedReportDefinitionDto) {
-      CombinedReportDefinitionDto combinedProcessReport =
-        (CombinedReportDefinitionDto) errorMessage.getReportDefinition();
-      assertThat(combinedProcessReport, is(notNullValue()));
-      assertThat(combinedProcessReport.getData(), is(notNullValue()));
-    } else {
-      throw new OptimizeIntegrationTestException("Evaluation exception should contain combined process report!");
-    }
+    assertThat(response.getStatus(), is(200));
   }
 
   @Test

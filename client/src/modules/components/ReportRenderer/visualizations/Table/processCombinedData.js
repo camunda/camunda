@@ -4,7 +4,7 @@ import {uniteResults} from '../service';
 export default function processCombinedData({formatter, report}) {
   const {labels, reportsNames, combinedResult, processInstanceCount} = getCombinedTableProps(
     report.result,
-    report.data.reportIds
+    report.data.reports
   );
 
   const {

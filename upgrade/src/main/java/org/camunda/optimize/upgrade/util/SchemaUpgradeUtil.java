@@ -23,17 +23,14 @@ public class SchemaUpgradeUtil {
     return "{ \"mappings\": {\"" + type.getType() + "\": " + Strings.toString(type.getSource()) + "} }";
   }
 
-  public static Map getDefaultReportConfigurationAsMap() {
-    String pathToMapping = "upgrade/main/UpgradeFrom23To24/default-report-configuration.json";
-    String reportConfigurationStructureAsJson = SchemaUpgradeUtil.readClasspathFileAsString(pathToMapping);
-    ObjectMapper objectMapper = new ObjectMapper();
-    Map reportConfigurationAsMap;
-    try {
-      reportConfigurationAsMap = objectMapper.readValue(reportConfigurationStructureAsJson, Map.class);
-    } catch (IOException e) {
-      throw new UpgradeRuntimeException("Could not deserialize default report configuration structure as json!");
-    }
-    return reportConfigurationAsMap;
+  public static Map getDefaultSingleReportConfigurationAsMap() {
+    String pathToMapping = "upgrade/main/UpgradeFrom23To24/default-single-report-configuration.json";
+    return getDefaultSingleReportConfigurationAsMap(pathToMapping);
+  }
+
+  public static Map getDefaultCombinedReportConfigurationAsMap() {
+    String pathToMapping = "upgrade/main/UpgradeFrom23To24/default-combined-report-configuration.json";
+    return getDefaultSingleReportConfigurationAsMap(pathToMapping);
   }
 
   public static String readClasspathFileAsString(String filePath) {
@@ -45,6 +42,18 @@ public class SchemaUpgradeUtil {
       logger.error("can't read [{}] from classpath", filePath, e);
     }
     return data;
+  }
+
+  private static Map getDefaultSingleReportConfigurationAsMap(String pathToMapping) {
+    String reportConfigurationStructureAsJson = SchemaUpgradeUtil.readClasspathFileAsString(pathToMapping);
+    ObjectMapper objectMapper = new ObjectMapper();
+    Map reportConfigurationAsMap;
+    try {
+      reportConfigurationAsMap = objectMapper.readValue(reportConfigurationStructureAsJson, Map.class);
+    } catch (IOException e) {
+      throw new UpgradeRuntimeException("Could not deserialize default report configuration structure as json!");
+    }
+    return reportConfigurationAsMap;
   }
 
   private static String readFromInputStream(InputStream inputStream) throws IOException {

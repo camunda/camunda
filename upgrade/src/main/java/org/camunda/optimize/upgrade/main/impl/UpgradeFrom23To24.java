@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
+import org.camunda.optimize.service.es.schema.type.report.CombinedReportType;
 import org.camunda.optimize.service.es.schema.type.report.SingleDecisionReportType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
@@ -26,11 +27,13 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
 import static org.camunda.optimize.upgrade.util.ReportUtil.buildDecisionDefinitionXmlByKeyAndVersionMap;
 import static org.camunda.optimize.upgrade.util.ReportUtil.buildSingleReportIdToVisualizationAndViewMap;
 import static org.camunda.optimize.upgrade.util.SchemaUpgradeUtil.createMappingAndSettingsJsonStringFromMapping;
-import static org.camunda.optimize.upgrade.util.SchemaUpgradeUtil.getDefaultReportConfigurationAsMap;
+import static org.camunda.optimize.upgrade.util.SchemaUpgradeUtil.getDefaultCombinedReportConfigurationAsMap;
+import static org.camunda.optimize.upgrade.util.SchemaUpgradeUtil.getDefaultSingleReportConfigurationAsMap;
 
 
 public class UpgradeFrom23To24 implements Upgrade {
@@ -56,12 +59,9 @@ public class UpgradeFrom23To24 implements Upgrade {
   @Override
   public void performUpgrade() {
     try {
-      UpgradePlanBuilder.AddUpgradeStepBuilder upgradePlanBuilder = UpgradePlanBuilder.createUpgradePlan()
+      final UpgradePlanBuilder.AddUpgradeStepBuilder upgradePlanBuilder = UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
-        .toVersion(TO_VERSION)
-        .addUpgradeStep(migrateConfigurationInCombinedProcessReport())
-        .addUpgradeStep(migrateConfigurationInSimpleProcessReport())
-        .addUpgradeStep(migrateConfigurationInSimpleDecisionReport());
+        .toVersion(TO_VERSION);
 
       if (isTargetValueIndexPresent()) {
         upgradePlanBuilder
@@ -78,10 +78,24 @@ public class UpgradeFrom23To24 implements Upgrade {
           .addUpgradeStep(buildMatchedRules());
       }
 
+      if (isDecisionInstanceIndexPresent()) {
+        upgradePlanBuilder
+          .addUpgradeStep(new UpdateIndexStep(
+            COMBINED_REPORT_TYPE,
+            CombinedReportType.VERSION,
+            createMappingAndSettingsJsonStringFromMapping(new CombinedReportType())
+          ))
+          .addUpgradeStep(buildMatchedRules());
+      }
+
       ensureSingleDecisionReportIndexIsInitialized();
 
-      UpgradePlan upgradePlan = upgradePlanBuilder
-        .build();
+      upgradePlanBuilder
+        .addUpgradeStep(migrateConfigurationInCombinedProcessReport())
+        .addUpgradeStep(migrateConfigurationInSimpleProcessReport())
+        .addUpgradeStep(migrateConfigurationInSimpleDecisionReport());
+
+      final UpgradePlan upgradePlan = upgradePlanBuilder.build();
       upgradePlan.execute();
     } catch (Exception e) {
       logger.error("Error while executing upgrade", e);
@@ -101,24 +115,28 @@ public class UpgradeFrom23To24 implements Upgrade {
   }
 
   private UpdateDataStep migrateConfigurationInSimpleProcessReport() {
-    return new UpgradeSingleProcessReportSettingsStep(getDefaultReportConfigurationAsMap());
+    return new UpgradeSingleProcessReportSettingsStep(getDefaultSingleReportConfigurationAsMap());
   }
 
   private UpdateDataStep migrateConfigurationInSimpleDecisionReport() {
     return new UpgradeSingleDecisionReportSettingsStep(
-      getDefaultReportConfigurationAsMap(),
+      getDefaultSingleReportConfigurationAsMap(),
       buildDecisionDefinitionXmlByKeyAndVersionMap(configurationService)
     );
   }
 
   private UpdateDataStep migrateConfigurationInCombinedProcessReport() {
     return new UpgradeCombinedReportSettingsStep(
-      getDefaultReportConfigurationAsMap(), buildSingleReportIdToVisualizationAndViewMap(configurationService)
+      getDefaultCombinedReportConfigurationAsMap(), buildSingleReportIdToVisualizationAndViewMap(configurationService)
     );
   }
 
   private boolean isDecisionInstanceIndexPresent() {
     return checkIfIndexExists("optimize-decision-instance_v1");
+  }
+
+  private boolean isCombinedReportIndexPresent() {
+    return checkIfIndexExists("optimize-combined-report_v1");
   }
 
   private boolean isTargetValueIndexPresent() {

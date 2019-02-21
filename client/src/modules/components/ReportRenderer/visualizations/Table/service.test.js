@@ -74,14 +74,14 @@ it('should return correct combined table report data properties', () => {
     combined: true,
     data: {
       configuration: {},
-      reportIds: ['report A', 'report B']
+      reports: [{id: 'report A'}, {id: 'report B'}]
     },
     result: {
       'report A': report,
       'report B': report
     }
   };
-  const tableProps = getCombinedTableProps(combinedReport.result, combinedReport.data.reportIds);
+  const tableProps = getCombinedTableProps(combinedReport.result, combinedReport.data.reports);
 
   expect(tableProps).toEqual({
     combinedResult: [{'2015-03-25': 2, '2015-03-26': 3}, {'2015-03-25': 2, '2015-03-26': 3}],

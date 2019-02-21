@@ -1,10 +1,10 @@
-package org.camunda.optimize.dto.optimize.query.report.configuration.target_value;
+package org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class CountChartDto {
+public class SingleReportCountChartDto {
 
   private Boolean isBelow = false;
   private String value = "100";
@@ -31,10 +31,10 @@ public class CountChartDto {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof CountChartDto)) {
+    if (!(o instanceof SingleReportCountChartDto)) {
       return false;
     }
-    CountChartDto that = (CountChartDto) o;
+    SingleReportCountChartDto that = (SingleReportCountChartDto) o;
     return Objects.equals(isBelow, that.isBelow) &&
       Objects.equals(value, that.value);
   }

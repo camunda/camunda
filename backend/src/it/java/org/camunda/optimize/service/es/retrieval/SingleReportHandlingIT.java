@@ -2,10 +2,10 @@ package org.camunda.optimize.service.es.retrieval;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.configuration.ReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -91,10 +91,10 @@ public class SingleReportHandlingIT {
     assertThat(data.getFilter(), notNullValue());
     assertThat(data.getParameters(), notNullValue());
     assertThat(data.getConfiguration(), notNullValue());
-    assertThat(data.getConfiguration(), equalTo(new ReportConfigurationDto()));
+    assertThat(data.getConfiguration(), equalTo(new SingleReportConfigurationDto()));
     assertThat(
       data.getConfiguration().getColor(),
-      is(ReportConfigurationDto.DEFAULT_CONFIGURATION_COLOR)
+      is(SingleReportConfigurationDto.DEFAULT_CONFIGURATION_COLOR)
     );
   }
 
@@ -153,7 +153,7 @@ public class SingleReportHandlingIT {
     reportData.setProcessDefinitionKey("procdef");
     reportData.setProcessDefinitionVersion("123");
     reportData.setFilter(Collections.emptyList());
-    ReportConfigurationDto configuration = new ReportConfigurationDto();
+    SingleReportConfigurationDto configuration = new SingleReportConfigurationDto();
     configuration.setyLabel("fooYLabel");
     reportData.setConfiguration(configuration);
     ProcessPartDto processPartDto = new ProcessPartDto();

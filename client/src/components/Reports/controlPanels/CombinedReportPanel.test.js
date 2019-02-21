@@ -1,7 +1,6 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 import {loadEntity} from 'services';
-import {ColorPicker} from 'components';
 import CombinedReportPanel from './CombinedReportPanel';
 
 jest.mock('services', () => {
@@ -44,7 +43,7 @@ const reportsList = [
     combined: true,
     data: {
       configuration: {},
-      reportIds: ['singleReport'],
+      reports: [{id: 'singleReport'}],
       visualization: 'bar'
     },
     result: {
@@ -183,7 +182,7 @@ it('should update the color of a single report inside a combined report', async 
         ...reportsList[1],
         data: {
           ...reportsList[1].data,
-          configuration: {reportColors: ['red', 'yellow']}
+          reports: [{id: 'report1', color: 'red'}, {id: 'report2', color: 'yellow'}]
         }
       }}
       updateReport={spy}
@@ -194,7 +193,9 @@ it('should update the color of a single report inside a combined report', async 
 
   node.instance().updateColor(1)('blue');
 
-  expect(spy).toHaveBeenCalledWith({configuration: {reportColors: {$set: ['red', 'blue']}}});
+  expect(spy).toHaveBeenCalledWith({
+    reports: {$set: [{color: 'red', id: 'report1'}, {color: 'blue', id: 'report2'}]}
+  });
 });
 
 it('should generate new colors or preserve existing ones when selected/deselecting or reordering reports', async () => {
@@ -205,7 +206,11 @@ it('should generate new colors or preserve existing ones when selected/deselecti
     combined: true,
     data: {
       configuration: {},
-      reportIds: ['report1', 'report2', 'report3']
+      reports: [
+        {id: 'report1', color: 'red'},
+        {id: 'report2', color: 'blue'},
+        {id: 'report3', color: 'yellow'}
+      ]
     }
   };
   const result = {
@@ -227,15 +232,11 @@ it('should generate new colors or preserve existing ones when selected/deselecti
     <CombinedReportPanel
       report={{
         ...report,
-        result,
-        data: {
-          ...report.data,
-          configuration: {reportColors: [ColorPicker.dark.red, ColorPicker.dark.blue]}
-        }
+        result
       }}
     />
   );
   const updatedColors = node.instance().getUpdatedColors([{id: 'report2'}, {id: 'report1'}]);
 
-  expect(updatedColors).toEqual([ColorPicker.dark.blue, ColorPicker.dark.red, '#00d0a3']);
+  expect(updatedColors).toEqual(['blue', 'red']);
 });

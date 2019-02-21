@@ -1,7 +1,5 @@
 package org.camunda.optimize.dto.optimize.query.variable;
 
-import org.camunda.optimize.dto.optimize.query.report.VariableType;
-
 public class VariableRetrievalDto {
 
   protected String name;

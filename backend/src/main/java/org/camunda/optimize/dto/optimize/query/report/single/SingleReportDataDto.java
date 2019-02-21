@@ -2,17 +2,17 @@ package org.camunda.optimize.dto.optimize.query.report.single;
 
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.configuration.ReportConfigurationDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 
 public abstract class SingleReportDataDto implements ReportDataDto, Combinable {
 
-  protected ReportConfigurationDto configuration = new ReportConfigurationDto();
+  protected SingleReportConfigurationDto configuration = new SingleReportConfigurationDto();
 
-  public ReportConfigurationDto getConfiguration() {
+  public SingleReportConfigurationDto getConfiguration() {
     return configuration;
   }
 
-  public void setConfiguration(ReportConfigurationDto configuration) {
+  public void setConfiguration(SingleReportConfigurationDto configuration) {
     this.configuration = configuration;
   }
 }

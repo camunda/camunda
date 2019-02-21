@@ -14,7 +14,8 @@ import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.configuration.ReportConfigurationDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.configuration.CombinedReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
@@ -242,40 +243,6 @@ public class ReportConflictIT {
     checkCollectionsStillContainReport(expectedConflictedItemIds, reportId);
   }
 
-  @Test
-  public void noErrorOnUpdateSingleReportWithConflictOnCombinedReportWithoutReportColors() {
-    // given
-    String firstSingleReportId = createAndStoreDefaultProcessReportDefinition(
-      ProcessReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode(RANDOM_KEY, RANDOM_VERSION)
-    );
-    String secondSingleReportId = createAndStoreDefaultProcessReportDefinition(
-      ProcessReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode(RANDOM_KEY, RANDOM_VERSION)
-    );
-    String combinedReportId = createNewCombinedReport();
-    CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
-    CombinedReportDataDto combinedReportData = createCombinedReport(firstSingleReportId, secondSingleReportId);
-    combinedReportData.getConfiguration().setReportColors(Collections.emptyList());
-    report.setData(combinedReportData);
-    updateReport(combinedReportId, report);
-
-    // when
-    final SingleProcessReportDefinitionDto firstSingleReport =
-      (SingleProcessReportDefinitionDto) getReport(firstSingleReportId);
-    final SingleProcessReportDefinitionDto reportUpdate = new SingleProcessReportDefinitionDto();
-    reportUpdate.setData(ProcessReportDataBuilderHelper.createAverageProcessInstanceDurationGroupByStartDateReport(
-      firstSingleReport.getData().getProcessDefinitionKey(),
-      firstSingleReport.getData().getProcessDefinitionVersion(),
-      GroupByDateUnit.DAY
-    ));
-
-    // then
-    Response response = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildUpdateReportRequest(firstSingleReportId, reportUpdate, true)
-      .execute();
-    assertThat(response.getStatus(), is(204));
-  }
-
   private void checkCollectionsStillContainReport(String[] expectedConflictedItemIds, String reportId) {
     List<ResolvedReportCollectionDefinitionDto> collections = getAllCollections();
     collections.removeIf(r -> r.getId().equals(EVERYTHING_ELSE_COLLECTION_ID));
@@ -457,8 +424,10 @@ public class ReportConflictIT {
 
   private static CombinedReportDataDto createCombinedReport(String... reportIds) {
     CombinedReportDataDto combinedReportDataDto = new CombinedReportDataDto();
-    combinedReportDataDto.setReportIds(Arrays.asList(reportIds));
-    combinedReportDataDto.setConfiguration(new ReportConfigurationDto());
+    combinedReportDataDto.setReports(
+      Arrays.stream(reportIds).map(CombinedReportItemDto::new).collect(Collectors.toList())
+    );
+    combinedReportDataDto.setConfiguration(new CombinedReportConfigurationDto());
     return combinedReportDataDto;
   }
 
