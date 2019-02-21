@@ -23,6 +23,7 @@
     <!-- disable jdk8 javadoc checks on release build -->
     <additionalparam>-Xdoclint:none</additionalparam>
     <checkstyle.config.location>.checkstyle.xml</checkstyle.config.location>
+    <spotbugs.include>spotbugs/spotbugs-include.xml</spotbugs.include>
 
     <!-- EXTERNAL LIBS -->
     <version.agrona>0.9.33</version.agrona>
@@ -83,6 +84,7 @@
     <plugin.version.versions>2.7</plugin.version.versions>
     <plugin.version.enforcer>3.0.0-M2</plugin.version.enforcer>
     <plugin.version.dependency>3.1.1</plugin.version.dependency>
+    <plugin.version.spotbugs>3.1.10</plugin.version.spotbugs>
 
     <!-- maven extensions -->
     <extension.version.os-maven-plugin>1.6.2</extension.version.os-maven-plugin>
@@ -872,6 +874,7 @@
         </plugins>
       </build>
     </profile>
+
     <profile>
       <id>skip-unstable-ci</id>
       <build>
@@ -886,6 +889,7 @@
         </plugins>
       </build>
     </profile>
+
     <profile>
       <id>retry-tests</id>
       <build>
@@ -900,6 +904,7 @@
         </plugins>
       </build>
     </profile>
+
     <profile>
       <id>parallel-tests</id>
       <build>
@@ -919,6 +924,42 @@
             </configuration>
           </plugin>
         </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>spotbugs</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.github.spotbugs</groupId>
+            <artifactId>spotbugs-maven-plugin</artifactId>
+            <version>${plugin.version.spotbugs}</version>
+            <configuration>
+              <effort>Max</effort>
+              <threshold>Low</threshold>
+              <xmlOutput>true</xmlOutput>
+              <includeFilterFile>${spotbugs.include}</includeFilterFile>
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+              </execution>
+            </executions>
+
+            <!-- dependency on build tool to reference the spotbugs filter-->
+            <dependencies>
+              <dependency>
+                <groupId>io.zeebe</groupId>
+                <artifactId>zb-build-tools</artifactId>
+                <version>${project.version}</version>
+              </dependency>
+            </dependencies>
+          </plugin>
+        </plugins>
+
       </build>
     </profile>
   </profiles>
