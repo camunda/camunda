@@ -449,7 +449,7 @@ public class ListViewReader {
       children(activities, ListViewTemplate.ACTIVITIES_JOIN_RELATION)
         .subAggregation(filter(activeActivitiesAggName, termQuery(ACTIVITY_STATE, activityState.toString()))
           .subAggregation(terms(uniqueActivitiesAggName).field(ACTIVITY_ID)
-             .size(100) //TODO
+              .size(operateProperties.getElasticsearch().getTerms().getMaxFlowNodesInOneWorkflow())
              .subAggregation(parent(activityToWorkflowAggName, ACTIVITIES_JOIN_RELATION))    //we need this to count workflow instances, not the activity instances
             ));
 
@@ -494,7 +494,7 @@ public class ListViewReader {
       children(activities, ListViewTemplate.ACTIVITIES_JOIN_RELATION)
         .subAggregation(filter(activeActivitiesAggName, boolQuery().mustNot(existsQuery(INCIDENT_KEY)).must(termQuery(ACTIVITY_STATE, ActivityState.ACTIVE.toString())))
           .subAggregation(terms(uniqueActivitiesAggName).field(ACTIVITY_ID)
-             .size(100) //TODO
+             .size(operateProperties.getElasticsearch().getTerms().getMaxFlowNodesInOneWorkflow())
              .subAggregation(parent(activityToWorkflowAggName, ACTIVITIES_JOIN_RELATION))    //we need this to count workflow instances, not the activity instances
             ));
 
@@ -539,7 +539,7 @@ public class ListViewReader {
       children(activities, ListViewTemplate.ACTIVITIES_JOIN_RELATION)
         .subAggregation(filter(activeActivitiesAggName, existsQuery(INCIDENT_KEY))
           .subAggregation(terms(uniqueActivitiesAggName).field(ACTIVITY_ID)
-             .size(100) //TODO
+              .size(operateProperties.getElasticsearch().getTerms().getMaxFlowNodesInOneWorkflow())
              .subAggregation(parent(activityToWorkflowAggName, ACTIVITIES_JOIN_RELATION))    //we need this to count workflow instances, not the activity instances
             ));
 
@@ -583,7 +583,7 @@ public class ListViewReader {
       children(activities, ListViewTemplate.ACTIVITIES_JOIN_RELATION)
         .subAggregation(filter(activeActivitiesAggName, completedEndEventsQ)
           .subAggregation(terms(uniqueActivitiesAggName).field(ACTIVITY_ID)
-            .size(100) //TODO
+            .size(operateProperties.getElasticsearch().getTerms().getMaxFlowNodesInOneWorkflow())
             .subAggregation(parent(activityToWorkflowAggName, ACTIVITIES_JOIN_RELATION))     //we need this to count workflow instances, not the activity instances
           ));
 

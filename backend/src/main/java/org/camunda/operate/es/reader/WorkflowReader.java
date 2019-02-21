@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.es.schema.indices.WorkflowIndex;
+import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.exception.NotFoundException;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -41,6 +42,9 @@ public class WorkflowReader {
 
   @Autowired
   private WorkflowIndex workflowType;
+
+  @Autowired
+  private OperateProperties operateProperties;
 
   /**
    * Gets the workflow diagram XML as a string.
@@ -102,10 +106,11 @@ public class WorkflowReader {
         .addAggregation(
           terms(groupsAggName)
             .field(WorkflowIndex.BPMN_PROCESS_ID)
+            .size(operateProperties.getElasticsearch().getTerms().getMaxUniqueBpmnProcessIdCount())
             .subAggregation(
               topHits(workflowsAggName)
                 .fetchSource(new String[] { WorkflowIndex.ID, WorkflowIndex.NAME, WorkflowIndex.VERSION, WorkflowIndex.BPMN_PROCESS_ID  }, null)
-                .size(100)
+                .size(operateProperties.getElasticsearch().getTerms().getMaxVersionOfOneWorkflowCount())
                 .sort(WorkflowIndex.VERSION, SortOrder.DESC)));
 
     logger.debug("Grouped workflow request: \n{}", searchRequestBuilder.toString());

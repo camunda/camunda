@@ -12,6 +12,8 @@
  */
 package org.camunda.operate.property;
 
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
+
 public class OperateElasticsearchProperties extends ElasticsearchProperties {
 
   public static final String IMPORT_POSITION_INDEX_PATTERN = "operate-import-position";
@@ -48,6 +50,9 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
    */
   private String rolloverInterval = "1d";
   private int rolloverBatchSize = 100;
+
+  @NestedConfigurationProperty
+  private TermsQueryProperties terms = new TermsQueryProperties();
 
   public String getWorkflowInstanceIndexName() {
     return workflowInstanceIndexName;
@@ -167,5 +172,13 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
 
   public void setRolloverBatchSize(int rolloverBatchSize) {
     this.rolloverBatchSize = rolloverBatchSize;
+  }
+
+  public TermsQueryProperties getTerms() {
+    return terms;
+  }
+
+  public void setTerms(TermsQueryProperties terms) {
+    this.terms = terms;
   }
 }

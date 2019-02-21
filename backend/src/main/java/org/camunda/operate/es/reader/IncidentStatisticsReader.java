@@ -145,11 +145,14 @@ public class IncidentStatisticsReader {
     final String activeIncidentsAggName = "active_incidents";
     final String incidentsToInstancesAggName = "incidents_to_instances";
     AggregationBuilder agg =
-      terms(workflowIdsAggName).field(WorkflowInstanceTemplate.WORKFLOW_ID).subAggregation(
-        nested(incidentsAggName, WorkflowInstanceTemplate.INCIDENTS).subAggregation(
-          filter(activeIncidentsAggName, termQuery(INCIDENT_STATE_TERM, ACTIVE.toString())).subAggregation(
-            reverseNested(incidentsToInstancesAggName)
-          )
+      terms(workflowIdsAggName)
+        .field(WorkflowInstanceTemplate.WORKFLOW_ID)
+        .size(operateProperties.getElasticsearch().getTerms().getMaxWorkflowCount())
+        .subAggregation(
+          nested(incidentsAggName, WorkflowInstanceTemplate.INCIDENTS).subAggregation(
+            filter(activeIncidentsAggName, termQuery(INCIDENT_STATE_TERM, ACTIVE.toString())).subAggregation(
+              reverseNested(incidentsToInstancesAggName)
+            )
         )
       );
 
@@ -192,9 +195,13 @@ public class IncidentStatisticsReader {
     AggregationBuilder agg =
       nested(incidentsAggName, WorkflowInstanceTemplate.INCIDENTS).subAggregation(
         filter(activeIncidentsAggName, termQuery(INCIDENT_STATE_TERM, IncidentState.ACTIVE.toString())).subAggregation(
-          terms(errorMessagesAggName).field(INCIDENT_ERRORMSG_TERM).subAggregation(
+          terms(errorMessagesAggName)
+            .size(operateProperties.getElasticsearch().getTerms().getMaxIncidentErrorMessageCount())
+            .field(INCIDENT_ERRORMSG_TERM).subAggregation(
             reverseNested(incidentsToInstancesAggName).subAggregation(
-              terms(workflowIdsAggName).field(WorkflowInstanceTemplate.WORKFLOW_ID)     //TODO check if we can put workflowId inside incident entity
+              terms(workflowIdsAggName)
+                .size(operateProperties.getElasticsearch().getTerms().getMaxWorkflowCount())
+                .field(WorkflowInstanceTemplate.WORKFLOW_ID)     //TODO check if we can put workflowId inside incident entity
             )
           )
         )
