@@ -97,6 +97,10 @@ public class CompletedUserTaskInstanceWriter {
     params.put(UserTaskInstanceType.ACTIVITY_INSTANCE_ID, userTask.getActivityInstanceId());
 
     params.put(UserTaskInstanceType.TOTAL_DURATION, userTask.getTotalDurationInMs());
+    // by default work duration equals total duration, it get's eventually updated on user operation import
+    params.put(UserTaskInstanceType.WORK_DURATION, userTask.getTotalDurationInMs());
+    // idle time defaults to 0, it get's eventually updated on user operation import
+    params.put(UserTaskInstanceType.IDLE_DURATION, 0);
     params.put(UserTaskInstanceType.START_DATE, dateTimeFormatter.format(userTask.getStartDate()));
     params.put(UserTaskInstanceType.END_DATE, dateTimeFormatter.format(userTask.getEndDate()));
 
