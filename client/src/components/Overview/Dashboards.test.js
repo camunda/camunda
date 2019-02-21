@@ -130,54 +130,51 @@ it('should reload the list after duplication', async () => {
   expect(loadDashboards).toHaveBeenCalled();
 });
 
-it('should filter dashboards with search', () => {
-  loadDashboards.mockReturnValueOnce([
-    {
-      id: 'dashboardID',
-      name: 'Dashboard 1',
-      lastModifier: 'Admin',
-      lastModified: '2017-11-11T11:11:11.1111+0200',
-      reports: []
-    },
-    {
-      id: 'dashboardID2',
-      name: 'My Dashboard',
-      lastModifier: 'Admin',
-      lastModified: '2017-11-11T11:11:11.1111+0200',
-      reports: []
-    }
-  ]);
-
+it('should contain a button to collapse the entities list', () => {
   const node = shallow(<Dashboards {...props} />);
 
-  node.find('.searchInput').simulate('change', {target: {value: '1'}});
-
-  expect(node.find('li')).toHaveLength(1);
-  expect(node.find('.dataTitle')).toIncludeText('Dashboard 1');
+  expect(node.find('ToggleButton')).toBePresent();
 });
 
-it('should filter case-insensitive', () => {
-  loadDashboards.mockReturnValueOnce([
-    {
-      id: 'dashboardID',
-      name: 'Dashboard 1',
-      lastModifier: 'Admin',
-      lastModified: '2017-11-11T11:11:11.1111+0200',
-      reports: []
-    },
-    {
-      id: 'dashboardID2',
-      name: 'My Dashboard',
-      lastModifier: 'Admin',
-      lastModified: '2017-11-11T11:11:11.1111+0200',
-      reports: []
-    }
-  ]);
-
+it('should hide the list of entities when clicking the collapse buttons', () => {
   const node = shallow(<Dashboards {...props} />);
 
-  node.find('.searchInput').simulate('change', {target: {value: 'MY DaShBoArD'}});
+  const button = node
+    .find('ToggleButton')
+    .dive()
+    .find('.ToggleCollapse');
 
-  expect(node.find('li')).toHaveLength(1);
-  expect(node.find('.dataTitle')).toIncludeText('My Dashboard');
+  button.simulate('click');
+
+  expect(node.find('.entityList')).not.toBePresent();
+});
+
+it('should not show a button to show all entities if the number of entities is less than 5', () => {
+  const node = shallow(<Dashboards {...props} />);
+
+  expect(node).not.toIncludeText('Show all');
+});
+
+it('should show a button to show all entities if the number of entities is greater than 5', () => {
+  loadDashboards.mockReturnValue([
+    dashboard,
+    dashboard,
+    dashboard,
+    dashboard,
+    dashboard,
+    dashboard
+  ]);
+  const node = shallow(<Dashboards {...props} />);
+
+  expect(node).toIncludeText('Show all');
+});
+
+it('should show a button to show all entities if the number of entities is greater than 5', () => {
+  const node = shallow(<Dashboards {...props} />);
+
+  const button = node.find(Button).filter('[type="link"]');
+
+  button.simulate('click');
+
+  expect(node).toIncludeText('Show less...');
 });

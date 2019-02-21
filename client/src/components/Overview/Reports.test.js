@@ -163,58 +163,6 @@ it('should reload the list after duplication', async () => {
   expect(loadReports).toHaveBeenCalled();
 });
 
-it('should filter reports with search', () => {
-  loadReports.mockReturnValueOnce([
-    {
-      id: 'reportID',
-      name: 'Report 1',
-      lastModifier: 'Admin',
-      lastModified: '2017-11-11T11:11:11.1111+0200',
-      reports: []
-    },
-    {
-      id: 'reportID2',
-      name: 'My Report',
-      lastModifier: 'Admin',
-      lastModified: '2017-11-11T11:11:11.1111+0200',
-      reports: []
-    }
-  ]);
-
-  const node = shallow(<Reports {...props} />);
-
-  node.find('.searchInput').simulate('change', {target: {value: '1'}});
-
-  expect(node.find('li')).toHaveLength(1);
-  expect(node.find('.dataTitle')).toIncludeText('Report 1');
-});
-
-it('should filter case-insensitive', () => {
-  loadReports.mockReturnValueOnce([
-    {
-      id: 'reportID',
-      name: 'Report 1',
-      lastModifier: 'Admin',
-      lastModified: '2017-11-11T11:11:11.1111+0200',
-      reports: []
-    },
-    {
-      id: 'reportID2',
-      name: 'My Report',
-      lastModifier: 'Admin',
-      lastModified: '2017-11-11T11:11:11.1111+0200',
-      reports: []
-    }
-  ]);
-
-  const node = shallow(<Reports {...props} />);
-
-  node.find('.searchInput').simulate('change', {target: {value: 'MY RePoRt'}});
-
-  expect(node.find('li')).toHaveLength(1);
-  expect(node.find('.dataTitle')).toIncludeText('My Report');
-});
-
 it('should check for deletion conflicts', () => {
   checkDeleteConflict.mockClear();
   const node = shallow(<Reports {...props} />);
@@ -265,4 +213,53 @@ it('should display decision tag for decision reports', () => {
   const node = shallow(<Reports {...props} />);
 
   expect(node.find('.dataTitle')).toIncludeText('Decision');
+});
+
+it('should contain a button to collapse the entities list', () => {
+  const node = shallow(<Reports {...props} />);
+
+  expect(node.find('ToggleButton')).toBePresent();
+});
+
+it('should hide the list of entities when clicking the collapse buttons', () => {
+  const node = shallow(<Reports {...props} />);
+
+  const button = node
+    .find('ToggleButton')
+    .dive()
+    .find('.ToggleCollapse');
+
+  button.simulate('click');
+
+  expect(node.find('.entityList')).not.toBePresent();
+});
+
+it('should not show a button to show all entities if the number of entities is less than 5', () => {
+  const node = shallow(<Reports {...props} />);
+
+  expect(node).not.toIncludeText('Show all');
+});
+
+it('should show a button to show all entities if the number of entities is greater than 5', () => {
+  loadReports.mockReturnValue([
+    processReport,
+    processReport,
+    processReport,
+    processReport,
+    processReport,
+    processReport
+  ]);
+  const node = shallow(<Reports {...props} />);
+
+  expect(node).toIncludeText('Show all');
+});
+
+it('should show a button to show all entities if the number of entities is greater than 5', () => {
+  const node = shallow(<Reports {...props} />);
+
+  const button = node.find(Button).filter('[type="link"]');
+
+  button.simulate('click');
+
+  expect(node).toIncludeText('Show less...');
 });

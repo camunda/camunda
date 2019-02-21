@@ -1,17 +1,9 @@
 import React from 'react';
-import {
-  Button,
-  Message,
-  LoadingIndicator,
-  Input,
-  ConfirmationModal,
-  Icon,
-  Dropdown
-} from 'components';
+import {Button, Message, LoadingIndicator, ConfirmationModal, Icon, Dropdown} from 'components';
 
 import {withErrorHandling} from 'HOC';
 import {Redirect, Link} from 'react-router-dom';
-import {formatters, checkDeleteConflict} from 'services';
+import {checkDeleteConflict} from 'services';
 
 import entityIcons from './entityIcons';
 import {createReport, loadReports, deleteReport, getReportInfo, getReportIcon} from './service';
@@ -29,7 +21,8 @@ class Reports extends React.Component {
     entities: [],
     deleting: false,
     conflicts: [],
-    search: ''
+    open: true,
+    limit: true
   };
 
   loadReports = async () => {
@@ -81,8 +74,6 @@ class Reports extends React.Component {
     this.loadReports();
   };
 
-  updateSearch = ({target: {value}}) => this.setState({search: value});
-
   render() {
     if (this.state.redirect) {
       return <Redirect to={`/report/${this.state.redirect}/edit?new`} />;
@@ -98,80 +89,111 @@ class Reports extends React.Component {
       <NoEntities label="Report" createFunction={this.createProcessReport} />
     );
 
-    const search = !loading && !empty && (
-      <Input className="searchInput" placeholder="Filter for name" onChange={this.updateSearch} />
-    );
+    const ToggleButton = ({children}) =>
+      this.state.entities.length > 0 ? (
+        <Button className="ToggleCollapse" onClick={() => this.setState({open: !this.state.open})}>
+          <Icon className="collapseIcon" size="30px" type={this.state.open ? 'down' : 'right'} />
+          {children}
+        </Button>
+      ) : (
+        children
+      );
 
     return (
       <div className="Reports">
-        <h1>
-          <HeaderIcon /> Reports
-        </h1>
-        <div className="createButton">
-          <Button color="green" onClick={this.createProcessReport}>
-            Create Process Report
-          </Button>
-          <Dropdown label={<Icon type="down" />}>
-            <Dropdown.Option onClick={this.createProcessReport}>
+        <div className="header">
+          <ToggleButton>
+            <h1>
+              <HeaderIcon /> Reports
+            </h1>
+          </ToggleButton>
+          <div className="createButton">
+            <Button color="green" onClick={this.createProcessReport}>
               Create Process Report
-            </Dropdown.Option>
-            <Dropdown.Option onClick={this.createCombinedReport}>
-              Create Combined Process Report
-            </Dropdown.Option>
-            <Dropdown.Option onClick={this.createDecisionReport}>
-              Create Decision Report
-            </Dropdown.Option>
-          </Dropdown>
+            </Button>
+            <Dropdown label={<Icon type="down" />}>
+              <Dropdown.Option onClick={this.createProcessReport}>
+                Create Process Report
+              </Dropdown.Option>
+              <Dropdown.Option onClick={this.createCombinedReport}>
+                Create Combined Process Report
+              </Dropdown.Option>
+              <Dropdown.Option onClick={this.createDecisionReport}>
+                Create Decision Report
+              </Dropdown.Option>
+            </Dropdown>
+          </div>
         </div>
-        {error}
-        {search}
-        {loading}
-        <ul className="entityList">
-          {empty}
-          {this.state.entities
-            .filter(({name}) => name.toLowerCase().includes(this.state.search.toLowerCase()))
-            .map((itemData, idx) => {
-              const {Icon: ReportIcon, label} = getReportIcon(itemData);
+        {this.state.open && (
+          <>
+            {error}
+            {loading}
+            <ul className="entityList">
+              {empty}
+              {this.state.entities
+                .slice(0, this.state.limit ? 5 : undefined)
+                .map((itemData, idx) => {
+                  const {Icon: ReportIcon, label} = getReportIcon(itemData);
 
-              return (
-                <li key={idx}>
-                  <Link className="info" to={`/report/${itemData.id}`}>
-                    <span className="icon" title={label}>
-                      <ReportIcon />
-                    </span>
-                    <div className="textInfo">
-                      <div className="data dataTitle">
-                        <h3>{formatters.getHighlightedText(itemData.name, this.state.search)}</h3>
-                        {itemData.combined && <span>Combined</span>}
-                        {itemData.reportType && itemData.reportType === 'decision' && (
-                          <span>Decision</span>
-                        )}
+                  return (
+                    <li key={idx}>
+                      <Link className="info" to={`/report/${itemData.id}`}>
+                        <span className="icon" title={label}>
+                          <ReportIcon />
+                        </span>
+                        <div className="textInfo">
+                          <div className="data dataTitle">
+                            <h3>{itemData.name}</h3>
+                            {itemData.combined && <span>Combined</span>}
+                            {itemData.reportType && itemData.reportType === 'decision' && (
+                              <span>Decision</span>
+                            )}
+                          </div>
+                          <div className="extraInfo">
+                            <span className="data custom">{getReportInfo(itemData)}</span>
+                            <LastModified
+                              date={itemData.lastModified}
+                              author={itemData.lastModifier}
+                            />
+                          </div>
+                        </div>
+                      </Link>
+                      <div className="operations">
+                        <Link title="Edit Report" to={`/report/${itemData.id}/edit`}>
+                          <Icon title="Edit Report" type="edit" className="editLink" />
+                        </Link>
+                        <Button title="Duplicate Report" onClick={this.duplicateReport(itemData)}>
+                          <Icon
+                            type="copy-document"
+                            title="Duplicate Report"
+                            className="duplicateIcon"
+                          />
+                        </Button>
+                        <Button title="Delete Report" onClick={this.showDeleteModalFor(itemData)}>
+                          <Icon type="delete" title="Delete Report" className="deleteIcon" />
+                        </Button>
                       </div>
-                      <div className="extraInfo">
-                        <span className="data custom">{getReportInfo(itemData)}</span>
-                        <LastModified date={itemData.lastModified} author={itemData.lastModifier} />
-                      </div>
-                    </div>
-                  </Link>
-                  <div className="operations">
-                    <Link title="Edit Report" to={`/report/${itemData.id}/edit`}>
-                      <Icon title="Edit Report" type="edit" className="editLink" />
-                    </Link>
-                    <Button title="Duplicate Report" onClick={this.duplicateReport(itemData)}>
-                      <Icon
-                        type="copy-document"
-                        title="Duplicate Report"
-                        className="duplicateIcon"
-                      />
-                    </Button>
-                    <Button title="Delete Report" onClick={this.showDeleteModalFor(itemData)}>
-                      <Icon type="delete" title="Delete Report" className="deleteIcon" />
-                    </Button>
-                  </div>
-                </li>
-              );
-            })}
-        </ul>
+                    </li>
+                  );
+                })}
+            </ul>
+            {!empty &&
+              !loading &&
+              this.state.entities.length > 5 &&
+              (this.state.limit ? (
+                <>
+                  {this.state.entities.length} Reports.{' '}
+                  <Button type="link" onClick={() => this.setState({limit: false})}>
+                    Show all...
+                  </Button>
+                </>
+              ) : (
+                <Button type="link" onClick={() => this.setState({limit: true})}>
+                  Show less...
+                </Button>
+              ))}
+          </>
+        )}
         <ConfirmationModal
           open={this.state.deleting !== false}
           onClose={this.hideDeleteModal}

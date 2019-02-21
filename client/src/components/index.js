@@ -6,4 +6,4 @@ export {PrivateRoute} from './PrivateRoute';
 export {Dashboard} from './Dashboards';
 export {Report} from './Reports';
 export {Sharing} from './Sharing';
-export {Overview} from './Overview';
+export {Overview, Alerts} from './Overview';

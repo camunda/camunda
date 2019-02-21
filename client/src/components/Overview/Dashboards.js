@@ -1,9 +1,8 @@
 import React from 'react';
-import {Button, Icon, ConfirmationModal, Message, LoadingIndicator, Input} from 'components';
+import {Button, Icon, ConfirmationModal, Message, LoadingIndicator} from 'components';
 
 import {withErrorHandling} from 'HOC';
 import {Redirect, Link} from 'react-router-dom';
-import {formatters} from 'services';
 
 import entityIcons from './entityIcons';
 import {createDashboard, loadDashboards, deleteDashboard} from './service';
@@ -19,7 +18,8 @@ class Dashboards extends React.Component {
     loading: true,
     entities: [],
     deleting: false,
-    search: ''
+    open: true,
+    limit: true
   };
 
   loadDashboards = async () => {
@@ -59,8 +59,6 @@ class Dashboards extends React.Component {
     });
   };
 
-  updateSearch = ({target: {value}}) => this.setState({search: value});
-
   render() {
     if (this.state.redirect) {
       return <Redirect to={`/dashboard/${this.state.redirect}/edit?new`} />;
@@ -72,67 +70,100 @@ class Dashboards extends React.Component {
 
     const loading = this.state.loading && <LoadingIndicator />;
 
-    const empty = !loading &&
-      this.state.entities.length === 0 && (
-        <NoEntities label="Dashboard" createFunction={this.createDashboard} />
-      );
+    const empty = !loading && this.state.entities.length === 0 && (
+      <NoEntities label="Dashboard" createFunction={this.createDashboard} />
+    );
 
-    const search = !loading &&
-      !empty && (
-        <Input className="searchInput" placeholder="Filter for name" onChange={this.updateSearch} />
+    const ToggleButton = ({children}) =>
+      this.state.entities.length > 0 ? (
+        <Button className="ToggleCollapse" onClick={() => this.setState({open: !this.state.open})}>
+          <Icon className="collapseIcon" size="30px" type={this.state.open ? 'down' : 'right'} />
+          {children}
+        </Button>
+      ) : (
+        children
       );
 
     return (
       <div className="Dashboards">
-        <h1>
-          <HeaderIcon /> Dashboards
-        </h1>
-        <Button color="green" className="createButton" onClick={this.createDashboard}>
-          Create New Dashboard
-        </Button>
-        {error}
-        {search}
-        {loading}
-        <ul className="entityList">
-          {empty}
-          {this.state.entities
-            .filter(({name}) => name.toLowerCase().includes(this.state.search.toLowerCase()))
-            .map((itemData, idx) => (
-              <li key={idx}>
-                <Link className="info" to={`/dashboard/${itemData.id}`}>
-                  <span className="icon">
-                    <EntityIcon />
-                  </span>
-                  <div className="textInfo">
-                    <div className="data dataTitle">
-                      <h3>{formatters.getHighlightedText(itemData.name, this.state.search)}</h3>
-                    </div>
-                    <div className="extraInfo">
-                      <span className="data custom">
-                        {itemData.reports.length} Report{itemData.reports.length !== 1 ? 's' : ''}
+        <div className="header">
+          <ToggleButton>
+            <h1>
+              <HeaderIcon /> Dashboards
+            </h1>
+          </ToggleButton>
+          <Button color="green" className="createButton" onClick={this.createDashboard}>
+            Create New Dashboard
+          </Button>
+        </div>
+        {this.state.open && (
+          <>
+            {error}
+            {loading}
+            <ul className="entityList">
+              {empty}
+              {this.state.entities
+                .slice(0, this.state.limit ? 5 : undefined)
+                .map((itemData, idx) => (
+                  <li key={idx}>
+                    <Link className="info" to={`/dashboard/${itemData.id}`}>
+                      <span className="icon">
+                        <EntityIcon />
                       </span>
-                      <LastModified date={itemData.lastModified} author={itemData.lastModifier} />
+                      <div className="textInfo">
+                        <div className="data dataTitle">
+                          <h3>{itemData.name}</h3>
+                        </div>
+                        <div className="extraInfo">
+                          <span className="data custom">
+                            {itemData.reports.length} Report
+                            {itemData.reports.length !== 1 ? 's' : ''}
+                          </span>
+                          <LastModified
+                            date={itemData.lastModified}
+                            author={itemData.lastModifier}
+                          />
+                        </div>
+                      </div>
+                    </Link>
+                    <div className="operations">
+                      <Link title="Edit Dashboard" to={`/dashboard/${itemData.id}/edit`}>
+                        <Icon title="Edit Dashboard" type="edit" className="editLink" />
+                      </Link>
+                      <Button
+                        title="Duplicate Dashboard"
+                        onClick={this.duplicateDashboard(itemData)}
+                      >
+                        <Icon
+                          type="copy-document"
+                          title="Duplicate Dashboard"
+                          className="duplicateIcon"
+                        />
+                      </Button>
+                      <Button title="Delete Dashboard" onClick={this.showDeleteModalFor(itemData)}>
+                        <Icon type="delete" title="Delete Dashboard" className="deleteIcon" />
+                      </Button>
                     </div>
-                  </div>
-                </Link>
-                <div className="operations">
-                  <Link title="Edit Dashboard" to={`/dashboard/${itemData.id}/edit`}>
-                    <Icon title="Edit Dashboard" type="edit" className="editLink" />
-                  </Link>
-                  <Button title="Duplicate Dashboard" onClick={this.duplicateDashboard(itemData)}>
-                    <Icon
-                      type="copy-document"
-                      title="Duplicate Dashboard"
-                      className="duplicateIcon"
-                    />
+                  </li>
+                ))}
+            </ul>
+            {!empty &&
+              !loading &&
+              this.state.entities.length > 5 &&
+              (this.state.limit ? (
+                <>
+                  {this.state.entities.length} Dashboards.{' '}
+                  <Button type="link" onClick={() => this.setState({limit: false})}>
+                    Show all...
                   </Button>
-                  <Button title="Delete Dashboard" onClick={this.showDeleteModalFor(itemData)}>
-                    <Icon type="delete" title="Delete Dashboard" className="deleteIcon" />
-                  </Button>
-                </div>
-              </li>
-            ))}
-        </ul>
+                </>
+              ) : (
+                <Button type="link" onClick={() => this.setState({limit: true})}>
+                  Show less...
+                </Button>
+              ))}
+          </>
+        )}
         <ConfirmationModal
           open={this.state.deleting !== false}
           onClose={this.hideDeleteModal}

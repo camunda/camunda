@@ -3,11 +3,11 @@ import {shallow} from 'enzyme';
 
 import App from './App';
 
-it('should include a header for the Home page', () => {
+it('should include a header for the Alert page', () => {
   const node = shallow(<App />);
   const content = shallow(node.find('Route').prop('render')({location: {pathname: '/'}}));
 
-  expect(content.find('Header')).toBePresent();
+  expect(content.find('withRouter(Header)')).toBePresent();
   expect(content.find('Footer')).toBePresent();
 });
 

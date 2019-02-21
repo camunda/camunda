@@ -7,6 +7,7 @@ import {
   Footer,
   Login,
   Overview,
+  Alerts,
   Report,
   Dashboard,
   Analysis,
@@ -31,11 +32,9 @@ const App = () => (
               <main>
                 <ErrorBoundary>
                   <Route exact path="/login" component={Login} />
-                  <PrivateRoute exact path="/" component={Overview.Home} />
-                  <PrivateRoute exact path="/dashboards" component={Overview.Dashboards} />
-                  <PrivateRoute exact path="/reports" component={Overview.Reports} />
+                  <PrivateRoute exact path="/" component={Overview} />
                   <PrivateRoute exact path="/analysis" component={Analysis} />
-                  <PrivateRoute exact path="/alerts" component={Overview.Alerts} />
+                  <PrivateRoute exact path="/alerts" component={Alerts} />
                   <Route exact path="/share/:type/:id" component={Sharing} />
                   <PrivateRoute path="/report/:id/:viewMode?" component={Report} />
                   <PrivateRoute path="/dashboard/:id/:viewMode?" component={Dashboard} />

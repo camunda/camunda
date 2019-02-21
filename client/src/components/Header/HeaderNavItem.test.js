@@ -28,8 +28,10 @@ it('should contain a link to the provided destination', () => {
   expect(node.find('a')).toHaveProp('href', '/section');
 });
 
-it('should set the active class if the location pathname includes the active substring', () => {
-  const node = mount(<HeaderNavItem active="dashboard" location={{pathname: '/dashboards/1'}} />);
+it('should set the active class if the location pathname matches headerItem paths', () => {
+  const node = mount(
+    <HeaderNavItem active="/dashboards/*" location={{pathname: '/dashboards/1'}} />
+  );
 
   expect(node.find('.HeaderNav__item')).toHaveClassName('active');
 });

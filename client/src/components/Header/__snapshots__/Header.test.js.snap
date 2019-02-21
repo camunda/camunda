@@ -7,7 +7,7 @@ exports[`matches the snapshot 1`] = `
 >
   <Link
     className="Header__link"
-    replace={false}
+    replace={true}
     title="Awesome App"
     to="/"
   >
@@ -19,22 +19,23 @@ exports[`matches the snapshot 1`] = `
     </span>
   </Link>
   <HeaderNav>
-    <withRouter(HeaderNavItem)
-      active="/dashboard"
-      linksTo="/dashboards"
-      name="Dashboards"
+    <HeaderNavItem
+      active={
+        Array [
+          "/",
+          "/report/*",
+          "/dashboard/*",
+        ]
+      }
+      linksTo="/"
+      name="Dashboards & Reports"
     />
-    <withRouter(HeaderNavItem)
-      active="/report"
-      linksTo="/reports"
-      name="Reports"
-    />
-    <withRouter(HeaderNavItem)
+    <HeaderNavItem
       active="/analysis"
       linksTo="/analysis"
       name="Analysis"
     />
-    <withRouter(HeaderNavItem)
+    <HeaderNavItem
       active="/alerts"
       linksTo="/alerts"
       name="Alerts"

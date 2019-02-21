@@ -1,19 +1,40 @@
+.Dashboards {
+  margin-bottom: 50px;
+}
+
 .Overview {
   max-width: 1024px;
   margin: auto;
   width: 100%;
+  margin-bottom: 48px;
+  position: relative;
 
-  h1 {
-    display: inline-block;
-  }
+  .header {
+    border-bottom: 1px solid #d1d1d1;
 
-  .createButton {
-    float: right;
-    margin: 6px 0 0 10px;
-  }
+    .ToggleCollapse {
+      background: none;
+      border: none;
+      box-shadow: none;
 
-  .searchInput {
-    width: 100%;
+      .collapseIcon {
+        position: absolute;
+        left: -30px;
+      }
+    }
+
+    h1 {
+      display: inline-block;
+    }
+
+    .createButton {
+      float: right;
+      margin: 6px 0 0 10px;
+    }
+
+    .searchInput {
+      width: 100%;
+    }
   }
 
   ul.entityList {
@@ -26,16 +47,11 @@
       display: flex;
       border-bottom: 1px solid #ededed;
 
-      &:first-child {
-        border-top: 1px solid #ededed;
-      }
-
-      &:nth-child(even) {
-        background: rgba(0, 0, 0, 0.03);
-      }
-
       &:not(.NoEntities):hover {
-        background: rgba(0, 0, 0, 0.05);
+        background: #f7f7f7;
+        .operations {
+          visibility: visible;
+        }
       }
 
       .info {
@@ -113,23 +129,20 @@
         display: flex;
         flex-shrink: 0;
         align-self: center;
+        visibility: hidden;
 
         > * {
           width: 32px;
           height: 32px;
-          border-radius: 100%;
           margin-right: 9px;
           display: flex;
           flex-direction: column;
           justify-content: center;
           align-items: center;
-          border: 1px solid #dadee3;
+          border: none;
           cursor: pointer;
           color: #6a727e;
           background: transparent;
-          &:hover {
-            background: #d6d6d6;
-          }
         }
 
         span {
