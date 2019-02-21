@@ -151,7 +151,7 @@
 
   function preProcessRecords(records) {
     return records.map(r => {
-      r._json = JSON.stringify(r, null, 2)
+      r._json = JSON.stringify(r, null, 2);
       r._id = r.metadata.partitionId + '-' + r.position;
       r._name = normalize(r.metadata.valueType + " " + r.metadata.intent);
       switch (r.metadata.valueType) {
