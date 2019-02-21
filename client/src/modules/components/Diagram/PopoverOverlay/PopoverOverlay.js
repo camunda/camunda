@@ -61,7 +61,7 @@ export default class PopoverOverlay extends React.Component {
             {`There are ${metadata.instancesCount} instances`}
           </Styled.PeterCaseSummaryHeader>
           <Styled.PeterCaseSummaryBody>
-            To view metadata for any of these, select on instance in the
+            To view metadata for any of these, select one instance in the
             Instance History.
           </Styled.PeterCaseSummaryBody>
         </>
