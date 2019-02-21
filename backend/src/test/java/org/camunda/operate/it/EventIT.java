@@ -15,15 +15,20 @@ import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.es.reader.EventReader;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.rest.dto.EventQueryDto;
+import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.util.IdTestUtil;
 import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
+import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class EventIT extends OperateZeebeIntegrationTest {
@@ -47,15 +52,22 @@ public class EventIT extends OperateZeebeIntegrationTest {
   private Predicate<Object[]> activityIsCompletedCheck;
 
   @Autowired
+  @Qualifier("incidentIsActiveCheck")
+  private Predicate<Object[]> incidentIsActiveCheck;
+
+  @Autowired
   @Qualifier("activityIsTerminatedCheck")
   private Predicate<Object[]> activityIsTerminatedCheck;
 
   private OffsetDateTime testStartTime;
 
+  private ZeebeClient zeebeClient;
+
   @Before
   public void init() {
     super.before();
     testStartTime = OffsetDateTime.now();
+    zeebeClient = super.getClient();
   }
 
   @Test
@@ -169,6 +181,35 @@ public class EventIT extends OperateZeebeIntegrationTest {
     //then
     assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_TERMINATED, 1, processId, workflowId, workflowInstanceKey, activityId);
     assertEvent(eventEntities, EventSourceType.WORKFLOW_INSTANCE, EventType.ELEMENT_TERMINATED, 1, processId, workflowId, workflowInstanceKey, processId);
+
+  }
+
+  @Test
+  public void testIncidentOnInputMapping() {
+    // having
+    String processId = "demoProcess";
+    BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
+      .startEvent("start")
+      .serviceTask("task1").zeebeTaskType("task1")
+      .zeebeInput("$.var", "$.varIn")
+      .endEvent()
+      .done();
+
+    deployWorkflow(workflow, processId + ".bpmn");
+
+    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");      //wrong payload provokes incident
+    elasticsearchTestRule.processAllEventsAndWait(incidentIsActiveCheck, workflowInstanceKey);
+
+    //when
+    EventQueryDto eventQueryDto = new EventQueryDto();
+    eventQueryDto.setWorkflowInstanceId(IdTestUtil.getId(workflowInstanceKey));
+    final List<EventEntity> eventEntities = eventReader.queryEvents(eventQueryDto, 0, 1000);
+
+    //then last event does not have a jobId
+    final EventEntity lastEvent = eventEntities.get(eventEntities.size() - 1);
+    assertThat(lastEvent.getEventSourceType()).isEqualTo(EventSourceType.INCIDENT);
+    assertThat(lastEvent.getEventType()).isEqualTo(EventType.CREATED);
+    assertThat(lastEvent.getMetadata().getJobId()).isNull();
 
   }
 

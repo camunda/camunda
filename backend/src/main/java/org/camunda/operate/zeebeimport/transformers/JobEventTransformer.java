@@ -59,12 +59,12 @@ public class JobEventTransformer implements AbstractRecordTransformer {
     Headers headers = recordValue.getHeaders();
 
     final long workflowKey = headers.getWorkflowKey();
-    if (workflowKey != 0) {
+    if (workflowKey > 0) {
       eventEntity.setWorkflowId(String.valueOf(workflowKey));
     }
 
     final long workflowInstanceKey = headers.getWorkflowInstanceKey();
-    if (workflowInstanceKey != 0) {
+    if (workflowInstanceKey > 0) {
       eventEntity.setWorkflowInstanceId(IdUtil.getId(workflowInstanceKey, record));
     }
 
@@ -73,7 +73,7 @@ public class JobEventTransformer implements AbstractRecordTransformer {
     eventEntity.setActivityId(headers.getElementId());
 
     final long activityInstanceKey = headers.getElementInstanceKey();
-    if (activityInstanceKey != 0) {
+    if (activityInstanceKey > 0) {
       eventEntity.setActivityInstanceId(IdUtil.getId(activityInstanceKey, record));
     }
 
@@ -83,7 +83,9 @@ public class JobEventTransformer implements AbstractRecordTransformer {
     eventMetadata.setJobWorker(recordValue.getWorker());
     eventMetadata.setJobCustomHeaders(recordValue.getCustomHeaders());
 
-    eventMetadata.setJobId(String.valueOf(record.getKey()));
+    if (record.getKey() > 0) {
+      eventMetadata.setJobId(String.valueOf(record.getKey()));
+    }
 
     Instant jobDeadline = recordValue.getDeadline();
     if (jobDeadline != null) {

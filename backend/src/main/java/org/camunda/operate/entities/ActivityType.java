@@ -26,7 +26,7 @@ public enum ActivityType {
   SEQUENCE_FLOW,
   UNKNOWN;
 
-  private static final Logger logger = LoggerFactory.getLogger(EventType.class);
+  private static final Logger logger = LoggerFactory.getLogger(ActivityType.class);
 
   public static ActivityType fromZeebeBpmnElementType(BpmnElementType type) {
     if (type == null) {
