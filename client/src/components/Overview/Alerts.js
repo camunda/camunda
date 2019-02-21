@@ -4,7 +4,7 @@ import {Button, Icon, ConfirmationModal, Message, LoadingIndicator} from 'compon
 import AlertModal from './subComponents/AlertModal';
 
 import {withErrorHandling} from 'HOC';
-import {formatters} from 'services';
+import {formatters, isDurationReport} from 'services';
 
 import './Alerts.scss';
 import entityIcons from './entityIcons';
@@ -68,9 +68,7 @@ class Alerts extends React.Component {
         <span className="highlight">{report.name}</span> has a value{' '}
         <span className="highlight">
           {alert.thresholdOperator === '<' ? 'below ' : 'above '}
-          {report.data.view.property === 'duration'
-            ? duration(alert.threshold)
-            : frequency(alert.threshold)}
+          {isDurationReport(report) ? duration(alert.threshold) : frequency(alert.threshold)}
         </span>
       </span>
     );
@@ -105,10 +103,9 @@ class Alerts extends React.Component {
 
     const loading = this.state.loading && <LoadingIndicator />;
 
-    const empty = !loading &&
-      this.state.entities.length === 0 && (
-        <NoEntities label="Alert" createFunction={this.showCreateModal} />
-      );
+    const empty = !loading && this.state.entities.length === 0 && (
+      <NoEntities label="Alert" createFunction={this.showCreateModal} />
+    );
 
     return (
       <div className="Alerts">

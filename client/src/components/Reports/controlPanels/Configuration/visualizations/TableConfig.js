@@ -2,6 +2,8 @@ import React from 'react';
 import ColumnSelection from './subComponents/ColumnSelection';
 import RelativeAbsoluteSelection from './subComponents/RelativeAbsoluteSelection';
 
+import {isDurationReport} from 'services';
+
 export default function TableConfig({report, onChange}) {
   let typeSpecificComponent = null;
   const viewType = !report.combined
@@ -40,6 +42,6 @@ TableConfig.isDisabled = report => {
     report.combined &&
     report.data.reportIds &&
     report.data.reportIds.length &&
-    Object.values(report.result)[0].data.view.property === 'duration'
+    isDurationReport(Object.values(report.result)[0])
   );
 };

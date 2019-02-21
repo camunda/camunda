@@ -1,6 +1,7 @@
 import {generateLegendLabels} from './service';
 import {formatTooltip, getTooltipLabelColor} from '../service';
 import {createBarOptions} from '../defaultChart/createDefaultChartOptions';
+import {isDurationReport} from 'services';
 
 export default function createCombinedChartOptions({report, targetValue, theme, formatter}) {
   const {
@@ -12,7 +13,7 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
   const stacked = visualization === 'number';
   const property = Object.values(result)[0].data.view.property;
   const instanceCountArr = Object.values(result).map(report => report.processInstanceCount);
-  const maxDuration = property === 'duration' ? findMaxDurationAcrossReports(result) : 0;
+  const maxDuration = isDurationReport(report) ? findMaxDurationAcrossReports(result) : 0;
 
   return {
     ...createBarOptions(targetValue, configuration, stacked, maxDuration, isDark),

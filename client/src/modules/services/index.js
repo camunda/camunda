@@ -17,5 +17,7 @@ export {
   loadDecisionDefinitionXml
 } from './definitionService';
 
+export {isDurationReport} from './reportService';
+
 // unfortunately, there is no syntax like "export * as formatters from './formatters'"
 export const formatters = formattersImport;

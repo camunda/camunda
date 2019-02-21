@@ -1,13 +1,10 @@
-import {reportConfig, formatters} from 'services';
+import {reportConfig, formatters, isDurationReport} from 'services';
 import {getRelativeValue} from '../service';
 
 const {formatReportResult} = formatters;
 
-export default function processDefaultData({
-  formatter = v => v,
-  report: {data, result, reportType, processInstanceCount, decisionInstanceCount},
-  flowNodeNames = {}
-}) {
+export default function processDefaultData({formatter = v => v, report, flowNodeNames = {}}) {
+  const {data, result, reportType, processInstanceCount, decisionInstanceCount} = report;
   const {
     configuration: {hideAbsoluteValue, hideRelativeValue, xml},
     view,
@@ -22,8 +19,12 @@ export default function processDefaultData({
     config.getLabelFor(config.options.view, view, xml)
   ];
 
+  if (view.entity === 'userTask') {
+    labels[0] = 'User Task';
+  }
+
   const displayRelativeValue = view.property === 'frequency' && !hideRelativeValue;
-  const displayAbsoluteValue = view.property === 'duration' || !hideAbsoluteValue;
+  const displayAbsoluteValue = isDurationReport(report) || !hideAbsoluteValue;
 
   if (!displayAbsoluteValue) {
     labels.length = 1;

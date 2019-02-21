@@ -1,6 +1,6 @@
 import {createDurationFormattingOptions, getFormattedTargetValue} from './service';
 import {formatTooltip, getTooltipLabelColor} from '../service';
-
+import {isDurationReport} from 'services';
 import {getColorFor, createColors, determineBarColor} from '../colorsUtils';
 
 export default function createDefaultChartOptions({report, targetValue, theme, formatter}) {
@@ -13,7 +13,7 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
 
   const isDark = theme === 'dark';
   const instanceCountArr = [processInstanceCount || decisionInstanceCount || 0];
-  const maxValue = view.property === 'duration' ? Math.max(...Object.values(result)) : 0;
+  const maxValue = isDurationReport(report) ? Math.max(...Object.values(result)) : 0;
 
   let options;
   switch (visualization) {

@@ -18,7 +18,7 @@ import ThresholdInput from './ThresholdInput';
 
 import './AlertModal.scss';
 
-import {formatters} from 'services';
+import {formatters, isDurationReport} from 'services';
 
 const newAlert = {
   name: 'New Alert',
@@ -166,7 +166,12 @@ export default function AlertModal(reports) {
     getReportType = reportId => {
       const report = reports.find(({id}) => id === reportId);
 
-      return report && report.data.view.property;
+      if (report) {
+        if (isDurationReport(report)) {
+          return 'duration';
+        }
+        return report.data.view.property;
+      }
     };
 
     getThresholdValue = () =>

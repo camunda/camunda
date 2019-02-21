@@ -41,7 +41,8 @@ jest.mock('../service', () => {
 jest.mock('services', () => {
   const durationFct = jest.fn();
   return {
-    formatters: {duration: durationFct, convertToMilliseconds: jest.fn()}
+    formatters: {duration: durationFct, convertToMilliseconds: jest.fn()},
+    isDurationReport: jest.fn().mockReturnValue(false)
   };
 });
 

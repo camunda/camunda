@@ -142,5 +142,17 @@ export const view = {
       ]
     },
     label: 'Flow Node Duration'
+  },
+  userTaskDuration: {
+    label: 'User Task Duration',
+    data: {
+      entity: 'userTask',
+      operation: 'avg',
+      property: [
+        {data: 'idleDuration', label: 'Idle', next: combinations.flowNodes},
+        {data: 'workDuration', label: 'Work', next: combinations.flowNodes},
+        {data: 'duration', label: 'Total', next: combinations.flowNodes}
+      ]
+    }
   }
 };

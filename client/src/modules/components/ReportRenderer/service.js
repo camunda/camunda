@@ -9,6 +9,8 @@ export function getFormatter(viewProperty) {
     case 'frequency':
       return formatters.frequency;
     case 'duration':
+    case 'idleDuration':
+    case 'workDuration':
       return formatters.duration;
     default:
       return v => v;

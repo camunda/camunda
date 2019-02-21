@@ -5,7 +5,7 @@ import HeatmapOverlay from './HeatmapOverlay';
 
 import {calculateTargetValueHeat} from './service';
 import {getRelativeValue} from '../service';
-import {formatters} from 'services';
+import {formatters, isDurationReport} from 'services';
 
 import './Heatmap.scss';
 
@@ -13,8 +13,7 @@ const Heatmap = ({report, formatter, errorMessage}) => {
   const {
     result,
     data: {
-      configuration: {alwaysShowAbsolute, alwaysShowRelative, heatmapTargetValue: targetValue, xml},
-      view
+      configuration: {alwaysShowAbsolute, alwaysShowRelative, heatmapTargetValue: targetValue, xml}
     },
     processInstanceCount
   } = report;
@@ -75,7 +74,7 @@ const Heatmap = ({report, formatter, errorMessage}) => {
           const absolute = formatter(data);
           const relative = getRelativeValue(data, processInstanceCount);
 
-          if (view.property === 'duration') {
+          if (isDurationReport(report)) {
             return absolute;
           }
 
