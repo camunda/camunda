@@ -1,5 +1,7 @@
 import React from 'react';
-import {mount} from 'enzyme';
+import {shallow, mount} from 'enzyme';
+
+import {BPMNDiagram, Table} from 'components';
 
 import DurationHeatmapModal from './DurationHeatmapModal';
 
@@ -30,51 +32,11 @@ jest.mock('bpmn-js/lib/NavigatedViewer', () => {
   };
 });
 
-jest.mock('components', () => {
-  const Modal = ({onConfirm, ...props}) => <div {...props}>{props.children}</div>;
-  Modal.Header = props => <div>{props.children}</div>;
-  Modal.Content = props => <div>{props.children}</div>;
-  Modal.Actions = props => <div>{props.children}</div>;
-
-  const Select = props => <select {...props}>{props.children}</select>;
-  Select.Option = props => <option {...props}>{props.children}</option>;
-
-  return {
-    Button: props => (
-      <button {...props} active={props.active ? 'true' : undefined}>
-        {props.children}
-      </button>
-    ),
-    Modal,
-    BPMNDiagram: () => <div>BPMNDiagram</div>,
-    Table: ({body}) => (
-      <div>{body.map(row => row.map((col, idx) => <div key={idx}>{col}</div>))}</div>
-    ),
-    Input: props => (
-      <input
-        id={props.id}
-        readOnly={props.readOnly}
-        type={props.type}
-        onChange={props.onChange}
-        onBlur={props.onBlur}
-        value={props.value}
-        name={props.name}
-        className={props.className}
-      />
-    ),
-    Select,
-    TargetValueBadge: () => <div>TargetValueBadge</div>,
-    ErrorMessage: props => <div {...props}>{props.children}</div>,
-    LoadingIndicator: props => (
-      <div className="sk-circle" {...props}>
-        Loading...
-      </div>
-    )
-  };
-});
-
 jest.mock('services', () => {
+  const rest = jest.requireActual('services');
+
   return {
+    ...rest,
     formatters: {
       duration: a => a
     },
@@ -118,25 +80,27 @@ const validProps = {
 };
 
 it('should display the bpmn diagram in the modal', () => {
-  const node = mount(<DurationHeatmapModal {...validProps} />);
+  const node = shallow(<DurationHeatmapModal {...validProps} />);
 
-  expect(node).toIncludeText('BPMNDiagram');
+  expect(node.find(BPMNDiagram)).toBePresent();
 });
 
 it('should display a list of flow nodes in a table', async () => {
-  const node = mount(<DurationHeatmapModal {...validProps} />);
+  const node = shallow(<DurationHeatmapModal {...validProps} />);
 
   await node.setProps({open: true});
 
-  expect(node).toIncludeText('Element A');
-  expect(node).toIncludeText('Element B');
-  expect(node).toIncludeText('Element C');
+  const body = node.find(Table).prop('body');
+
+  expect(body[0][0]).toBe('Element A');
+  expect(body[1][0]).toBe('Element B');
+  expect(body[2][0]).toBe('Element C');
 });
 
 it('should save the changes target values', async () => {
   const spy = jest.fn();
 
-  const node = mount(<DurationHeatmapModal {...validProps} onConfirm={spy} />);
+  const node = shallow(<DurationHeatmapModal {...validProps} onConfirm={spy} />);
 
   await node.setProps({open: true});
 
@@ -145,7 +109,7 @@ it('should save the changes target values', async () => {
 
   spy.mockClear();
 
-  node.find('button[type="primary"]').simulate('click');
+  node.find('[type="primary"]').simulate('click');
 
   expect(spy).toHaveBeenCalledWith({
     a: {
@@ -156,7 +120,7 @@ it('should save the changes target values', async () => {
 });
 
 it('should apply previously defined target values to input fields', async () => {
-  const node = mount(<DurationHeatmapModal {...validProps} />);
+  const node = shallow(<DurationHeatmapModal {...validProps} />);
 
   await node.setProps({open: true});
 

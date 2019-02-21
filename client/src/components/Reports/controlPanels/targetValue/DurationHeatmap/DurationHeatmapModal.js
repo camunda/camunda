@@ -69,7 +69,7 @@ export default class DurationHeatmapModal extends React.Component {
         const set = new Set();
         viewer
           .get('elementRegistry')
-          .filter(element => element.businessObject.$instanceOf('bpmn:FlowNode'))
+          .filter(element => element.businessObject.$instanceOf('bpmn:' + this.getNodeType()))
           .map(element => element.businessObject)
           .forEach(element => set.add(element));
         set.forEach(element => {
@@ -224,6 +224,13 @@ export default class DurationHeatmapModal extends React.Component {
     }
   }
 
+  getNodeType = () => {
+    if (this.props.report.data.view.entity === 'userTask') {
+      return 'UserTask';
+    }
+    return 'FlowNode';
+  };
+
   render() {
     const {open, onClose, report} = this.props;
     let errorMessage = !this.hasSomethingChanged() ? 'Please change at least one value' : '';
@@ -235,7 +242,11 @@ export default class DurationHeatmapModal extends React.Component {
           {this.state.loading && <LoadingIndicator />}
           <div className="DurationHeatmapModal__DiagramContainer">
             <BPMNDiagram xml={report.data.configuration.xml}>
-              <TargetValueDiagramBehavior onClick={this.updateFocus} focus={this.state.focus} />
+              <TargetValueDiagramBehavior
+                onClick={this.updateFocus}
+                focus={this.state.focus}
+                nodeType={this.getNodeType()}
+              />
               <TargetValueBadge values={this.state.values} />
             </BPMNDiagram>
           </div>

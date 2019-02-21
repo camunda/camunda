@@ -106,14 +106,26 @@ export default class ReportControlPanel extends React.Component {
       processDefinitionKey: {$set: key},
       processDefinitionVersion: {$set: version},
       parameters: {$set: {}},
+      configuration: {
+        excludedColumns: {$set: []},
+        columnOrder: {
+          $set: {
+            inputVariables: [],
+            instanceProps: [],
+            outputVariables: [],
+            variables: []
+          }
+        },
+        heatmapTargetValue: {
+          $set: {
+            active: false,
+            values: {}
+          }
+        },
+        xml: {$set: key && version ? await loadProcessDefinitionXml(key, version) : null}
+      },
       filter: {$set: filter.filter(({type}) => type !== 'executedFlowNodes' && type !== 'variable')}
     };
-
-    if (key && version) {
-      change.configuration = {xml: {$set: await loadProcessDefinitionXml(key, version)}};
-    } else {
-      change.configuration = {xml: {$set: null}};
-    }
 
     if (groupBy && groupBy.type === 'variable') {
       change.groupBy = {$set: null};
@@ -209,8 +221,8 @@ export default class ReportControlPanel extends React.Component {
 
     return (
       view &&
-      view.entity === 'flowNode' &&
-      view.property === 'duration' &&
+      ((view.entity === 'flowNode' && view.property === 'duration') ||
+        view.entity === 'userTask') &&
       visualization === 'heat' &&
       processDefinitionKey &&
       processDefinitionVersion

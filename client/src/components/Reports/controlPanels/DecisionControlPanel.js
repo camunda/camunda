@@ -67,16 +67,22 @@ export default class DecisionControlPanel extends React.Component {
     const change = {
       decisionDefinitionKey: {$set: key},
       decisionDefinitionVersion: {$set: version},
+      configuration: {
+        excludedColumns: {$set: []},
+        columnOrder: {
+          $set: {
+            inputVariables: [],
+            instanceProps: [],
+            outputVariables: [],
+            variables: []
+          }
+        },
+        xml: {$set: key && version ? await loadDecisionDefinitionXml(key, version) : null}
+      },
       filter: {
         $set: filter.filter(({type}) => type !== 'inputVariable' && type !== 'outputVariable')
       }
     };
-
-    if (key && version) {
-      change.configuration = {xml: {$set: await loadDecisionDefinitionXml(key, version)}};
-    } else {
-      change.configuration = {xml: {$set: null}};
-    }
 
     if (groupBy && (groupBy.type === 'inputVariable' || groupBy.type === 'outputVariable')) {
       change.groupBy = {$set: null};

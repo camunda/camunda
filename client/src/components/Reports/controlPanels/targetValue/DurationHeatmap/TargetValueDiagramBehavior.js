@@ -21,7 +21,7 @@ export default class TargetValueDiagramBehavior extends React.Component {
     return null;
   }
 
-  isValidNode = element => element.$instanceOf('bpmn:FlowNode');
+  isValidNode = element => element.$instanceOf('bpmn:' + this.props.nodeType);
 
   componentDidMount() {
     const {viewer} = this.props;
@@ -57,7 +57,11 @@ export default class TargetValueDiagramBehavior extends React.Component {
   }
 
   clickHandler = ({element}) => {
-    if (element && element.businessObject && element.businessObject.$instanceOf('bpmn:FlowNode')) {
+    if (
+      element &&
+      element.businessObject &&
+      element.businessObject.$instanceOf('bpmn:' + this.props.nodeType)
+    ) {
       this.props.onClick(element.businessObject.id);
     }
   };

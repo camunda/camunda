@@ -1,5 +1,5 @@
 import React from 'react';
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
 
 import TargetValueDiagramBehavior from './TargetValueDiagramBehavior';
 
@@ -19,7 +19,7 @@ const viewer = {
 
 it('should call the click handler with the selected node', () => {
   const spy = jest.fn();
-  mount(<TargetValueDiagramBehavior viewer={viewer} onClick={spy} />);
+  shallow(<TargetValueDiagramBehavior viewer={viewer} onClick={spy} nodeType="FlowNode" />);
 
   const element = {
     businessObject: {

@@ -7,12 +7,16 @@ const config = {
   decision: reportConfig(decisionOptions)
 };
 
-const processUpdateView = config.process.updateView;
-config.process.updateView = (newView, props) => {
-  const changes = processUpdateView(newView, props);
+const processUpdate = config.process.update;
+config.process.update = (type, data, props) => {
+  const changes = processUpdate(type, data, props);
 
-  if (newView.property !== 'duration' || newView.entity !== 'processInstance') {
-    changes.parameters = {processPart: {$set: null}};
+  if (type === 'view') {
+    changes.configuration = {heatmapTargetValue: {$set: {active: false, values: {}}}};
+
+    if (data.property !== 'duration' || data.entity !== 'processInstance') {
+      changes.parameters = {processPart: {$set: null}};
+    }
   }
 
   return changes;
