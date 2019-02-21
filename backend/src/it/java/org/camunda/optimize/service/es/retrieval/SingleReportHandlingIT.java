@@ -2,10 +2,12 @@ package org.camunda.optimize.service.es.retrieval;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value.HeatmapTargetValueEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -187,6 +189,38 @@ public class SingleReportHandlingIT {
     assertThat(newReport.getLastModified(), is(not(shouldBeIgnoredDate)));
     assertThat(newReport.getName(), is("MyReport"));
     assertThat(newReport.getOwner(), is("NewOwner"));
+  }
+
+  @Test
+  public void testUpdateProcessReportRemoveHeatMapTargetValue() {
+    // given
+    final String id = createNewReport();
+    final ProcessReportDataDto reportData = new ProcessReportDataDto();
+    reportData.setProcessDefinitionKey("procdef");
+    reportData.setProcessDefinitionVersion("123");
+    reportData.setFilter(Collections.emptyList());
+    final SingleReportConfigurationDto configuration = new SingleReportConfigurationDto();
+    configuration.getHeatmapTargetValue().getValues()
+      .put("flowNodeId", new HeatmapTargetValueEntryDto(TargetValueUnit.DAYS, "55"));
+    reportData.setConfiguration(configuration);
+
+    final SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
+    report.setData(reportData);
+    report.setId("shouldNotBeUpdated");
+    report.setLastModifier("shouldNotBeUpdatedManually");
+    report.setName("MyReport");
+    report.setOwner("NewOwner");
+    updateReport(id, report);
+
+    // when
+    configuration.getHeatmapTargetValue().setValues(new HashMap<>());
+    updateReport(id, report);
+    final List<ReportDefinitionDto> reports = getAllReports();
+
+    // then
+    assertThat(reports.size(), is(1));
+    SingleProcessReportDefinitionDto newReport = (SingleProcessReportDefinitionDto) reports.get(0);
+    assertThat(newReport.getData().getConfiguration().getHeatmapTargetValue().getValues().size(), is(0));
   }
 
   @Test

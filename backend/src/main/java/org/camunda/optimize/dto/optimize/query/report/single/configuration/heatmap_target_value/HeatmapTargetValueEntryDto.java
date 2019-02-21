@@ -7,6 +7,14 @@ public class HeatmapTargetValueEntryDto {
   private TargetValueUnit unit = TargetValueUnit.HOURS;
   private String value = "2";
 
+  public HeatmapTargetValueEntryDto() {
+  }
+
+  public HeatmapTargetValueEntryDto(final TargetValueUnit unit, final String value) {
+    this.unit = unit;
+    this.value = value;
+  }
+
   public TargetValueUnit getUnit() {
     return unit;
   }

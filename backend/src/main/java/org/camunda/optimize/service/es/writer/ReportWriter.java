@@ -39,6 +39,7 @@ import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
+import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.report.CombinedReportType.DATA;
@@ -203,30 +204,26 @@ public class ReportWriter {
   private void updateReport(ReportDefinitionUpdateDto updatedReport, String elasticsearchType) {
     logger.debug("Updating report with id [{}] in Elasticsearch", updatedReport.getId());
     try {
-      UpdateRequest request =
+      final UpdateRequest request =
         new UpdateRequest(
           getOptimizeIndexAliasForType(elasticsearchType),
           elasticsearchType,
           updatedReport.getId()
         )
-          .doc(objectMapper.writeValueAsString(updatedReport), XContentType.JSON)
+          .script(buildUpdateScript(updatedReport))
           .setRefreshPolicy(IMMEDIATE)
           .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
-      UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
-
+      final UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
       if (updateResponse.getShardInfo().getFailed() > 0) {
         logger.error(
-          "Was not able to update report with id [{}] and name [{}].",
-          updatedReport.getId(),
-          updatedReport.getName()
+          "Was not able to update report with id [{}] and name [{}].", updatedReport.getId(), updatedReport.getName()
         );
         throw new OptimizeRuntimeException("Was not able to update collection!");
       }
     } catch (IOException e) {
       String errorMessage = String.format(
-        "Was not able to update report with id [%s].",
-        updatedReport.getId()
+        "Was not able to update report with id [%s].", updatedReport.getId()
       );
       logger.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
@@ -277,9 +274,9 @@ public class ReportWriter {
       ScriptType.INLINE,
       Script.DEFAULT_SCRIPT_LANG,
       "def reports = ctx._source.data.reports;" +
-      "if(reports != null) {" +
-      "  reports.removeIf(r -> r.id.equals(params.idToRemove));" +
-      "}",
+        "if(reports != null) {" +
+        "  reports.removeIf(r -> r.id.equals(params.idToRemove));" +
+        "}",
       Collections.singletonMap("idToRemove", reportId)
     );
 
@@ -348,5 +345,22 @@ public class ReportWriter {
     }
   }
 
+  private Script buildUpdateScript(final ReportDefinitionUpdateDto updateDto) {
+    return new Script(
+      ScriptType.INLINE,
+      Script.DEFAULT_SCRIPT_LANG,
+      "ctx._source.name = params.name != null ? params.name : ctx._source.name; " +
+        "ctx._source.lastModified = params.lastModified != null ? params.lastModified : ctx._source.lastModified; " +
+        "ctx._source.lastModifier = params.lastModifier != null ? params.lastModifier : ctx._source.lastModifier; " +
+        "ctx._source.owner = params.owner != null ? params.owner : ctx._source.owner; " +
+        "ctx._source.data = params.data != null ? params.data : ctx._source.data; ",
+      mapToParameterSet(updateDto)
+    );
+  }
+
+  @SuppressWarnings(value = "unchecked")
+  private Map<String, Object> mapToParameterSet(final ReportDefinitionUpdateDto updateDto) {
+    return objectMapper.convertValue(updateDto, Map.class);
+  }
 
 }
