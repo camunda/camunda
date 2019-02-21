@@ -33,6 +33,7 @@ import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.MessageIntent;
@@ -349,6 +350,32 @@ public class ClientApiRule extends ExternalResource {
             .sendAndAwait();
 
     assertThat(response.getIntent()).isEqualTo(JobIntent.COMPLETED);
+  }
+
+  public void updatePayload(long elementInstanceKey, DirectBuffer payload) {
+
+    final ExecuteCommandResponse response =
+        createCmdRequest()
+            .partitionId(Protocol.decodePartitionId(elementInstanceKey))
+            .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.UPDATE_PAYLOAD)
+            .key(elementInstanceKey)
+            .command()
+            .put("payload", BufferUtil.bufferAsArray(payload))
+            .done()
+            .sendAndAwait();
+
+    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.PAYLOAD_UPDATED);
+  }
+
+  public ExecuteCommandResponse resolveIncident(long incidentKey) {
+    return createCmdRequest()
+        .partitionId(Protocol.decodePartitionId(incidentKey))
+        .type(ValueType.INCIDENT, IncidentIntent.RESOLVE)
+        .key(incidentKey)
+        .command()
+        .done()
+        .sendAndAwait();
   }
 
   protected int nextPartitionId() {
