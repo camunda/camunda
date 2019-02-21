@@ -47,6 +47,7 @@ export const ModalHeader = themed(styled(Panel.Header)`
       dark: Colors.uiDark06,
       light: Colors.uiLight05
     })};
+  border-radius: 3px 3px 0 0;
 `);
 
 export const CrossButton = styled.button`
@@ -81,6 +82,7 @@ export const ModalFooter = themed(styled(Panel.Footer)`
       dark: Colors.uiDark06,
       light: Colors.uiLight05
     })};
+  border-radius: 0 0 3px 3px;
 `);
 
 export const CloseButton = styled(Button)`

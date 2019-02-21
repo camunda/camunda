@@ -35,21 +35,6 @@ export function isRunningInstance(state) {
   return state === STATE.ACTIVE || state === STATE.INCIDENT;
 }
 
-export function beautifyMetadataKey(key) {
-  switch (key) {
-    case 'activityInstanceId':
-      return 'activityInstanceId';
-    case 'jobId':
-      return 'jobId';
-    case 'startDate':
-      return 'startDate';
-    case 'endDate':
-      return 'endDate';
-    default:
-      return key;
-  }
-}
-
 /**
  * transforms the activities instrances tree to
  * @return activityIdToActivityInstanceMap: (activityId -> activityInstance) map
