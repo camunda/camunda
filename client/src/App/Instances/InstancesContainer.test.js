@@ -733,4 +733,76 @@ describe('InstancesContainer', () => {
       expect(node.find('Instances').prop('sorting')).toEqual(DEFAULT_SORTING);
     });
   });
+
+  describe('handleWorkflowInstancesRefresh', () => {
+    it('should pass handleWorkflowInstancesRefresh to Instances', () => {
+      const node = mount(
+        <InstancesContainerWrapped
+          {...localStorageProps}
+          {...getRouterProps()}
+        />
+      );
+
+      expect(
+        node.find(Instances).props().onWorkflowInstancesRefresh
+      ).toBeDefined();
+    });
+
+    it('should refetch the workflow instances', async () => {
+      const MOCK = {workflowInstances: ['1', '2'], totalCount: 2};
+      api.fetchWorkflowInstances = mockResolvedAsyncFn(MOCK);
+
+      const node = mount(
+        <InstancesContainerWrapped
+          {...localStorageProps}
+          {...getRouterProps(fullFilterWithoutWorkflow)}
+        />
+      );
+
+      // when
+      await flushPromises();
+      node.update();
+
+      const onWorkflowInstancesRefresh = node.find(Instances).props()
+        .onWorkflowInstancesRefresh;
+
+      // when
+      onWorkflowInstancesRefresh();
+      node.update();
+      await flushPromises();
+
+      expect(api.fetchWorkflowInstances).toHaveBeenCalledTimes(2);
+      expect(node.find(Instances).props().workflowInstances).toEqual(
+        MOCK.workflowInstances
+      );
+      expect(node.find(Instances).props().filterCount).toEqual(MOCK.totalCount);
+      expect(api.fetchWorkflowInstancesStatistics).toHaveBeenCalledTimes(0);
+    });
+
+    it('should refetch and set the statistics when a diagram is visible', async () => {
+      const MOCK = ['statistics'];
+      api.fetchWorkflowInstancesStatistics = mockResolvedAsyncFn(MOCK);
+      const node = mount(
+        <InstancesContainerWrapped
+          {...localStorageProps}
+          {...getRouterProps(fullFilterWithWorkflow)}
+        />
+      );
+
+      // when
+      await flushPromises();
+      node.update();
+
+      const onWorkflowInstancesRefresh = node.find(Instances).props()
+        .onWorkflowInstancesRefresh;
+
+      onWorkflowInstancesRefresh();
+
+      await flushPromises();
+      node.update();
+
+      expect(api.fetchWorkflowInstancesStatistics).toHaveBeenCalledTimes(2);
+      expect(node.find(Instances).props().statistics).toEqual(MOCK);
+    });
+  });
 });
