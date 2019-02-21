@@ -22,10 +22,6 @@ public abstract class ReportResult<ResultDto extends ReportDefinitionDto & Repor
     return reportResultDto;
   }
 
-  public ReportResultDto getResultAsResultDto() {
-    return reportResultDto;
-  }
-
   public abstract List<String[]> getResultAsCsv(final Integer limit, final Integer offset, Set<String> excludedColumns);
 
   public abstract void copyReportData(Data data);

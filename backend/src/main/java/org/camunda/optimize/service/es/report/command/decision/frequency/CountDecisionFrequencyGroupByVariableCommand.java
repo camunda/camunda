@@ -30,7 +30,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_IN
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-public class CountDecisionFrequencyGroupByVariableCommand
+public abstract class CountDecisionFrequencyGroupByVariableCommand
   extends DecisionReportCommand<SingleDecisionMapReportResult> {
 
   private static final String NESTED_AGGREGATION = "nested";

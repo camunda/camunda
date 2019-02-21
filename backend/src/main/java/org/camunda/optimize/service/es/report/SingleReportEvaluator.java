@@ -11,9 +11,10 @@ import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.NotSupportedCommand;
 import org.camunda.optimize.service.es.report.command.decision.RawDecisionDataCommand;
 import org.camunda.optimize.service.es.report.command.decision.frequency.CountDecisionFrequencyGroupByEvaluationDateTimeCommand;
+import org.camunda.optimize.service.es.report.command.decision.frequency.CountDecisionFrequencyGroupByInputVariableCommand;
 import org.camunda.optimize.service.es.report.command.decision.frequency.CountDecisionFrequencyGroupByMatchedRuleCommand;
 import org.camunda.optimize.service.es.report.command.decision.frequency.CountDecisionFrequencyGroupByNoneCommand;
-import org.camunda.optimize.service.es.report.command.decision.frequency.CountDecisionFrequencyGroupByVariableCommand;
+import org.camunda.optimize.service.es.report.command.decision.frequency.CountDecisionFrequencyGroupByOutputVariableCommand;
 import org.camunda.optimize.service.es.report.command.process.RawProcessDataCommand;
 import org.camunda.optimize.service.es.report.command.process.flownode.duration.AverageFlowNodeDurationByFlowNodeCommand;
 import org.camunda.optimize.service.es.report.command.process.flownode.duration.MaxFlowNodeDurationByFlowNodeCommand;
@@ -62,6 +63,7 @@ import org.camunda.optimize.service.es.report.command.process.user_task.duration
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
 import org.camunda.optimize.service.es.report.result.ReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeException;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -122,17 +124,15 @@ import static org.camunda.optimize.service.es.report.command.process.util.Proces
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createMinUserTaskTotalDurationGroupByUserTaskReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createMinUserTaskWorkDurationGroupByUserTaskReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createRawDataReport;
-import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.INPUTS;
-import static org.camunda.optimize.service.es.schema.type.DecisionInstanceType.OUTPUTS;
 
 @Component
 public class SingleReportEvaluator {
 
-  private static Map<String, Command> possibleCommands = new HashMap<>();
+  private static Map<String, Class<? extends Command>> possibleCommands = new HashMap<>();
 
   static {
     // process reports
-    possibleCommands.put(createRawDataReport().createCommandKey(), new RawProcessDataCommand());
+    possibleCommands.put(createRawDataReport().createCommandKey(), RawProcessDataCommand.class);
 
     addCountProcessInstanceFrequencyReports();
     addCountFlowNodeFrequencyReports();
@@ -148,7 +148,7 @@ public class SingleReportEvaluator {
     addFlowNodeDurationReports();
 
     // decision reports
-    possibleCommands.put(createRawDecisionDataReport().createCommandKey(), new RawDecisionDataCommand());
+    possibleCommands.put(createRawDecisionDataReport().createCommandKey(), RawDecisionDataCommand.class);
 
     addDecisionCountFrequencyReports();
   }
@@ -164,7 +164,7 @@ public class SingleReportEvaluator {
   public SingleReportEvaluator(ConfigurationService configurationService, ObjectMapper objectMapper,
                                ProcessQueryFilterEnhancer processQueryFilterEnhancer,
                                DecisionQueryFilterEnhancer decisionQueryFilterEnhancer, RestHighLevelClient esClient,
-                                IntervalAggregationService intervalAggregationService) {
+                               IntervalAggregationService intervalAggregationService) {
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;
     this.processQueryFilterEnhancer = processQueryFilterEnhancer;
@@ -174,17 +174,22 @@ public class SingleReportEvaluator {
   }
 
   ReportResult evaluate(ReportDataDto reportData) throws OptimizeException {
-    CommandContext commandContext = createCommandContext(reportData);
-    Command evaluationCommand = extractCommandWithValidation(reportData);
+    CommandContext<ReportDataDto> commandContext = createCommandContext(reportData);
+    Command<ReportDataDto> evaluationCommand = extractCommandWithValidation(reportData);
     return evaluationCommand.evaluate(commandContext);
   }
 
-  Command extractCommand(ReportDataDto reportData) {
-    return possibleCommands.getOrDefault(reportData.createCommandKey(), new NotSupportedCommand());
+  @SuppressWarnings(value = "unchecked")
+  Command<ReportDataDto> extractCommand(ReportDataDto reportData) {
+    try {
+      return possibleCommands.getOrDefault(reportData.createCommandKey(), NotSupportedCommand.class).newInstance();
+    } catch (InstantiationException | IllegalAccessException e) {
+      throw new OptimizeRuntimeException("Failed creating command!", e);
+    }
   }
 
-  protected CommandContext createCommandContext(ReportDataDto reportData) {
-    CommandContext commandContext = new CommandContext();
+  protected CommandContext<ReportDataDto> createCommandContext(ReportDataDto reportData) {
+    CommandContext<ReportDataDto> commandContext = new CommandContext<>();
     commandContext.setConfigurationService(configurationService);
     commandContext.setEsClient(esClient);
     commandContext.setObjectMapper(objectMapper);
@@ -198,7 +203,7 @@ public class SingleReportEvaluator {
     return commandContext;
   }
 
-  private Command extractCommandWithValidation(ReportDataDto reportData) {
+  private Command<ReportDataDto> extractCommandWithValidation(ReportDataDto reportData) {
     ValidationHelper.validate(reportData);
     return extractCommand(reportData);
   }
@@ -206,98 +211,98 @@ public class SingleReportEvaluator {
   private static void addCountProcessInstanceFrequencyReports() {
     possibleCommands.put(
       createCountProcessInstanceFrequencyGroupByNoneReport().createCommandKey(),
-      new CountProcessInstanceFrequencyGroupByNoneCommand()
+      CountProcessInstanceFrequencyGroupByNoneCommand.class
     );
     possibleCommands.put(
       createCountProcessInstanceFrequencyGroupByStartDateReport().createCommandKey(),
-      new CountProcessInstanceFrequencyByStartDateCommand()
+      CountProcessInstanceFrequencyByStartDateCommand.class
     );
     possibleCommands.put(
       createCountProcessInstanceFrequencyGroupByVariableReport().createCommandKey(),
-      new CountProcessInstanceFrequencyByVariableCommand()
+      CountProcessInstanceFrequencyByVariableCommand.class
     );
   }
 
   private static void addCountFlowNodeFrequencyReports() {
     possibleCommands.put(
       createCountFlowNodeFrequencyGroupByFlowNodeReport().createCommandKey(),
-      new CountFlowNodeFrequencyByFlowNodeCommand()
+      CountFlowNodeFrequencyByFlowNodeCommand.class
     );
   }
 
   private static void addFlowNodeDurationReports() {
     possibleCommands.put(
       createAverageFlowNodeDurationGroupByFlowNodeReport().createCommandKey(),
-      new AverageFlowNodeDurationByFlowNodeCommand()
+      AverageFlowNodeDurationByFlowNodeCommand.class
     );
     possibleCommands.put(
       createMinFlowNodeDurationGroupByFlowNodeReport().createCommandKey(),
-      new MinFlowNodeDurationByFlowNodeCommand()
+      MinFlowNodeDurationByFlowNodeCommand.class
     );
     possibleCommands.put(
       createMaxFlowNodeDurationGroupByFlowNodeReport().createCommandKey(),
-      new MaxFlowNodeDurationByFlowNodeCommand()
+      MaxFlowNodeDurationByFlowNodeCommand.class
     );
     possibleCommands.put(
       createMedianFlowNodeDurationGroupByFlowNodeReport().createCommandKey(),
-      new MedianFlowNodeDurationByFlowNodeCommand()
+      MedianFlowNodeDurationByFlowNodeCommand.class
     );
   }
 
   private static void addUserTaskIdleDurationReports() {
     possibleCommands.put(
       createAverageUserTaskIdleDurationGroupByUserTaskReport().createCommandKey(),
-      new AverageUserTaskIdleDurationByUserTaskCommand()
+      AverageUserTaskIdleDurationByUserTaskCommand.class
     );
     possibleCommands.put(
       createMinUserTaskIdleDurationGroupByUserTaskReport().createCommandKey(),
-      new MinUserTaskIdleDurationByUserTaskCommand()
+      MinUserTaskIdleDurationByUserTaskCommand.class
     );
     possibleCommands.put(
       createMaxUserTaskIdleDurationGroupByUserTaskReport().createCommandKey(),
-      new MaxUserTaskIdleDurationByUserTaskCommand()
+      MaxUserTaskIdleDurationByUserTaskCommand.class
     );
     possibleCommands.put(
       createMedianUserTaskIdleDurationGroupByUserTaskReport().createCommandKey(),
-      new MedianUserTaskIdleDurationByUserTaskCommand()
+      MedianUserTaskIdleDurationByUserTaskCommand.class
     );
   }
 
   private static void addUserTaskTotalDurationReports() {
     possibleCommands.put(
       createAverageUserTaskTotalDurationGroupByUserTaskReport().createCommandKey(),
-      new AverageUserTaskTotalDurationByUserTaskCommand()
+      AverageUserTaskTotalDurationByUserTaskCommand.class
     );
     possibleCommands.put(
       createMinUserTaskTotalDurationGroupByUserTaskReport().createCommandKey(),
-      new MinUserTaskTotalDurationByUserTaskCommand()
+      MinUserTaskTotalDurationByUserTaskCommand.class
     );
     possibleCommands.put(
       createMaxUserTaskTotalDurationGroupByUserTaskReport().createCommandKey(),
-      new MaxUserTaskTotalDurationByUserTaskCommand()
+      MaxUserTaskTotalDurationByUserTaskCommand.class
     );
     possibleCommands.put(
       createMedianUserTaskTotalDurationGroupByUserTaskReport().createCommandKey(),
-      new MedianUserTaskTotalDurationByUserTaskCommand()
+      MedianUserTaskTotalDurationByUserTaskCommand.class
     );
   }
 
   private static void addUserTaskWorkDurationReports() {
     possibleCommands.put(
       createAverageUserTaskWorkDurationGroupByUserTaskReport().createCommandKey(),
-      new AverageUserTaskWorkDurationByUserTaskCommand()
+      AverageUserTaskWorkDurationByUserTaskCommand.class
     );
     possibleCommands.put(
       createMinUserTaskWorkDurationGroupByUserTaskReport().createCommandKey(),
-      new MinUserTaskWorkDurationByUserTaskCommand()
+      MinUserTaskWorkDurationByUserTaskCommand.class
     );
     possibleCommands.put(
       createMaxUserTaskWorkDurationGroupByUserTaskReport().createCommandKey(),
-      new MaxUserTaskWorkDurationByUserTaskCommand()
+      MaxUserTaskWorkDurationByUserTaskCommand.class
     );
     possibleCommands.put(
       createMedianUserTaskWorkDurationGroupByUserTaskReport().createCommandKey(),
-      new MedianUserTaskWorkDurationByUserTaskCommand()
+      MedianUserTaskWorkDurationByUserTaskCommand.class
     );
   }
 
@@ -305,131 +310,131 @@ public class SingleReportEvaluator {
   private static void addAverageProcessInstanceDurationReports() {
     possibleCommands.put(
       createAverageProcessInstanceDurationGroupByNoneReport().createCommandKey(),
-      new AverageProcessInstanceDurationGroupByNoneCommand()
+      AverageProcessInstanceDurationGroupByNoneCommand.class
     );
     possibleCommands.put(
       createAverageProcessInstanceDurationGroupByNoneWithProcessPartReport().createCommandKey(),
-      new AverageProcessInstanceDurationGroupByNoneWithProcessPartCommand()
+      AverageProcessInstanceDurationGroupByNoneWithProcessPartCommand.class
     );
     possibleCommands.put(
       createAverageProcessInstanceDurationGroupByStartDateReport().createCommandKey(),
-      new AverageProcessInstanceDurationGroupByStartDateCommand()
+      AverageProcessInstanceDurationGroupByStartDateCommand.class
     );
     possibleCommands.put(
       createAverageProcessInstanceDurationGroupByStartDateWithProcessPartReport().createCommandKey(),
-      new AverageProcessInstanceDurationGroupByStartDateWithProcessPartCommand()
+      AverageProcessInstanceDurationGroupByStartDateWithProcessPartCommand.class
     );
     possibleCommands.put(
       createAverageProcessInstanceDurationGroupByVariableReport().createCommandKey(),
-      new AverageProcessInstanceDurationByVariableCommand()
+      AverageProcessInstanceDurationByVariableCommand.class
     );
     possibleCommands.put(
       createAverageProcessInstanceDurationGroupByVariableWithProcessPartReport().createCommandKey(),
-      new AverageProcessInstanceDurationGroupByVariableWithProcessPartCommand()
+      AverageProcessInstanceDurationGroupByVariableWithProcessPartCommand.class
     );
   }
 
   private static void addMinProcessInstanceDurationReports() {
     possibleCommands.put(
       createMinProcessInstanceDurationGroupByNoneReport().createCommandKey(),
-      new MinProcessInstanceDurationGroupByNoneCommand()
+      MinProcessInstanceDurationGroupByNoneCommand.class
     );
     possibleCommands.put(
       createMinProcessInstanceDurationGroupByNoneWithProcessPartReport().createCommandKey(),
-      new MinProcessInstanceDurationGroupByNoneWithProcessPartCommand()
+      MinProcessInstanceDurationGroupByNoneWithProcessPartCommand.class
     );
     possibleCommands.put(
       createMinProcessInstanceDurationGroupByStartDateReport().createCommandKey(),
-      new MinProcessInstanceDurationGroupByStartDateCommand()
+      MinProcessInstanceDurationGroupByStartDateCommand.class
     );
     possibleCommands.put(
       createMinProcessInstanceDurationGroupByStartDateWithProcessPartReport().createCommandKey(),
-      new MinProcessInstanceDurationGroupByStartDateWithProcessPartCommand()
+      MinProcessInstanceDurationGroupByStartDateWithProcessPartCommand.class
     );
     possibleCommands.put(
       createMinProcessInstanceDurationGroupByVariableReport().createCommandKey(),
-      new MinProcessInstanceDurationByVariableCommand()
+      MinProcessInstanceDurationByVariableCommand.class
     );
     possibleCommands.put(
       createMinProcessInstanceDurationGroupByVariableWithProcessPartReport().createCommandKey(),
-      new MinProcessInstanceDurationGroupByVariableWithProcessPartCommand()
+      MinProcessInstanceDurationGroupByVariableWithProcessPartCommand.class
     );
   }
 
   private static void addMaxProcessInstanceDurationReports() {
     possibleCommands.put(
       createMaxProcessInstanceDurationGroupByNoneReport().createCommandKey(),
-      new MaxProcessInstanceDurationGroupByNoneCommand()
+      MaxProcessInstanceDurationGroupByNoneCommand.class
     );
     possibleCommands.put(
       createMaxProcessInstanceDurationGroupByNoneWithProcessPartReport().createCommandKey(),
-      new MaxProcessInstanceDurationGroupByNoneWithProcessPartCommand()
+      MaxProcessInstanceDurationGroupByNoneWithProcessPartCommand.class
     );
     possibleCommands.put(
       createMaxProcessInstanceDurationGroupByStartDateReport().createCommandKey(),
-      new MaxProcessInstanceDurationGroupByStartDateCommand()
+      MaxProcessInstanceDurationGroupByStartDateCommand.class
     );
     possibleCommands.put(
       createMaxProcessInstanceDurationGroupByStartDateWithProcessPartReport().createCommandKey(),
-      new MaxProcessInstanceDurationGroupByStartDateWithProcessPartCommand()
+      MaxProcessInstanceDurationGroupByStartDateWithProcessPartCommand.class
     );
     possibleCommands.put(
       createMaxProcessInstanceDurationGroupByVariableReport().createCommandKey(),
-      new MaxProcessInstanceDurationByVariableCommand()
+      MaxProcessInstanceDurationByVariableCommand.class
     );
     possibleCommands.put(
       createMaxProcessInstanceDurationGroupByVariableWithProcessPartReport().createCommandKey(),
-      new MaxProcessInstanceDurationGroupByVariableWithProcessPartCommand()
+      MaxProcessInstanceDurationGroupByVariableWithProcessPartCommand.class
     );
   }
 
   private static void addMedianProcessInstanceDurationReports() {
     possibleCommands.put(
       createMedianProcessInstanceDurationGroupByNoneReport().createCommandKey(),
-      new MedianProcessInstanceDurationGroupByNoneCommand()
+      MedianProcessInstanceDurationGroupByNoneCommand.class
     );
     possibleCommands.put(
       createMedianProcessInstanceDurationGroupByNoneWithProcessPartReport().createCommandKey(),
-      new MedianProcessInstanceDurationGroupByNoneWithProcessPartCommand()
+      MedianProcessInstanceDurationGroupByNoneWithProcessPartCommand.class
     );
     possibleCommands.put(
       createMedianProcessInstanceDurationGroupByStartDateReport().createCommandKey(),
-      new MedianProcessInstanceDurationGroupByStartDateCommand()
+      MedianProcessInstanceDurationGroupByStartDateCommand.class
     );
     possibleCommands.put(
       createMedianProcessInstanceDurationGroupByStartDateWithProcessPartReport().createCommandKey(),
-      new MedianProcessInstanceDurationGroupByStartDateWithProcessPartCommand()
+      MedianProcessInstanceDurationGroupByStartDateWithProcessPartCommand.class
     );
     possibleCommands.put(
       createMedianProcessInstanceDurationGroupByVariableReport().createCommandKey(),
-      new MedianProcessInstanceDurationByVariableCommand()
+      MedianProcessInstanceDurationByVariableCommand.class
     );
     possibleCommands.put(
       createMedianProcessInstanceDurationGroupByVariableWithProcessPartReport().createCommandKey(),
-      new MedianProcessInstanceDurationGroupByVariableWithProcessPartCommand()
+      MedianProcessInstanceDurationGroupByVariableWithProcessPartCommand.class
     );
   }
 
   private static void addDecisionCountFrequencyReports() {
     possibleCommands.put(
       createCountFrequencyGroupByNoneReport().createCommandKey(),
-      new CountDecisionFrequencyGroupByNoneCommand()
+      CountDecisionFrequencyGroupByNoneCommand.class
     );
     possibleCommands.put(
       createCountFrequencyGroupByEvaluationDateTimeReport().createCommandKey(),
-      new CountDecisionFrequencyGroupByEvaluationDateTimeCommand()
+      CountDecisionFrequencyGroupByEvaluationDateTimeCommand.class
     );
     possibleCommands.put(
       createCountFrequencyGroupByInputVariableReport().createCommandKey(),
-      new CountDecisionFrequencyGroupByVariableCommand(INPUTS)
+      CountDecisionFrequencyGroupByInputVariableCommand.class
     );
     possibleCommands.put(
       createCountFrequencyGroupByOutputVariableReport().createCommandKey(),
-      new CountDecisionFrequencyGroupByVariableCommand(OUTPUTS)
+      CountDecisionFrequencyGroupByOutputVariableCommand.class
     );
     possibleCommands.put(
       createCountFrequencyGroupByMatchedRuleReport().createCommandKey(),
-      new CountDecisionFrequencyGroupByMatchedRuleCommand()
+      CountDecisionFrequencyGroupByMatchedRuleCommand.class
     );
   }
 }
