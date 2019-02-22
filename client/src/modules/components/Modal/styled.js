@@ -38,7 +38,7 @@ export const ModalContent = themed(styled(Panel)`
 `);
 
 export const ModalHeader = themed(styled(Panel.Header)`
-  height: 56px;
+  height: 55px;
   padding-top: 18px;
   padding-bottom: 19px;
   padding-left: 20px;
@@ -50,7 +50,7 @@ export const ModalHeader = themed(styled(Panel.Header)`
   border-radius: 3px 3px 0 0;
 `);
 
-export const CrossButton = styled.button`
+export const CrossButton = themed(styled.button`
   padding: 0;
   margin: 0;
   background: transparent;
@@ -58,13 +58,35 @@ export const CrossButton = styled.button`
   position: absolute;
   right: 21px;
   top: 19px;
-`;
-
-export const CrossIcon = themed(styled(CloseLarge)`
   color: ${themeStyle({
     dark: '#ffffff',
     light: Colors.uiLight06
   })};
+
+  opacity: ${themeStyle({
+    dark: 0.5,
+    light: 0.9
+  })};
+
+  &:hover {
+    opacity: ${themeStyle({
+      dark: 0.7,
+      light: 1
+    })};
+  }
+
+  &:active {
+    color: ${themeStyle({
+      dark: '#ffffff',
+      light: Colors.uiDark04
+    })};
+    opacity: 1;
+  }
+`);
+
+export const CrossIcon = themed(styled(CloseLarge)`
+
+  }
 `);
 
 export const ModalBody = styled(Panel.Body)``;

@@ -270,7 +270,7 @@ export const CodeLine = themed(styled.p`
       dark: '#ffffff',
       light: '#000000'
     })};
-    font-size: 12px;
+    font-size: 14px;
   }
 `);
 
