@@ -16,6 +16,7 @@ import * as Styled from './styled.js';
 class SelectionList extends React.Component {
   static propTypes = {
     selections: PropTypes.array.isRequired,
+    selectionsFetchCounter: PropTypes.number.isRequired,
     openSelection: PropTypes.number,
     onToggleSelection: PropTypes.func.isRequired,
     onDeleteSelection: PropTypes.func.isRequired,
@@ -88,6 +89,7 @@ class SelectionList extends React.Component {
                       onCancel={() => this.handleCancelSelection(selectionId)}
                       onToggle={() => onToggleSelection(selectionId)}
                       onDelete={() => onDeleteSelection(selectionId)}
+                      selectionsFetchCounter={this.props.selectionsFetchCounter}
                     />
                   </Styled.Li>
                 </CSSTransition>

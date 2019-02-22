@@ -58,13 +58,14 @@ class BasicSelectionProvider extends React.Component {
       rollingSelectionIndex: rollingSelectionIndex || 0,
       selectedInstances: DEFAULT_SELECTED_INSTANCES,
       selectionCount: selectionCount || 0,
-      selections: deserializeInstancesMaps(selections) || []
+      selections: deserializeInstancesMaps(selections) || [],
+      selectionsFetchCounter: 0
     };
   }
 
   async componentDidMount() {
     if (this.state.selectionCount) {
-      await this.refetchInstancesInSelections();
+      await this.handleInstancesInSelectionsRefresh();
     }
   }
 
@@ -269,7 +270,7 @@ class BasicSelectionProvider extends React.Component {
   /**
    * Re-fetches all workflow instances present in the selections
    */
-  refetchInstancesInSelections = async () => {
+  handleInstancesInSelectionsRefresh = async () => {
     const IdsOfInstancesInSelections = getInstancesIdsFromSelections(
       this.state.selections
     );
@@ -290,7 +291,12 @@ class BasicSelectionProvider extends React.Component {
       }
     );
 
-    this.setState({selections});
+    this.setState(prevState => {
+      return {
+        selectionsFetchCounter: prevState.selectionsFetchCounter + 1,
+        selections
+      };
+    });
   };
 
   /**
@@ -318,7 +324,7 @@ class BasicSelectionProvider extends React.Component {
       onAddToOpenSelection: this.handleAddToOpenSelection,
       onToggleSelection: this.handleToggleSelection,
       onDeleteSelection: this.handleDeleteSelectionById,
-      refetchInstancesInSelections: this.refetchInstancesInSelections
+      onInstancesInSelectionsRefresh: this.handleInstancesInSelectionsRefresh
     };
 
     return (

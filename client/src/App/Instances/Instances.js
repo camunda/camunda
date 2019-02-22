@@ -85,7 +85,7 @@ export default class Instances extends Component {
           {selections => (
             <InstancesPollProvider
               onWorkflowInstancesRefresh={this.props.onWorkflowInstancesRefresh}
-              onSelectionsRefresh={selections.refetchInstancesInSelections}
+              onSelectionsRefresh={selections.onInstancesInSelectionsRefresh}
               visibleIdsInListView={this.props.workflowInstances.map(x => x.id)}
               visibleIdsInSelections={getInstancesIdsFromSelections(
                 selections.selections

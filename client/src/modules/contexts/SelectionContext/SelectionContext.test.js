@@ -92,7 +92,8 @@ describe('SelectionContext', () => {
     expect(fooNode.prop('selectionCount')).toBe(
       localStorageData.selectionCount
     );
-    expect(fooNode.prop('refetchInstancesInSelections')).toBeDefined();
+    expect(fooNode.prop('onInstancesInSelectionsRefresh')).toBeDefined();
+    expect(fooNode.prop('selectionsFetchCounter')).toEqual(1);
     const selections = fooNode.prop('selections');
     expect(selections[0].instancesMap.get('key1').value).toBe('newValue1');
     expect(selections[0].instancesMap.get('key2').value).toBe('newValue2');
@@ -214,6 +215,7 @@ describe('SelectionContext', () => {
       expect(node.state('selectedInstances')).toEqual(
         DEFAULT_SELECTED_INSTANCES
       );
+      expect(node.state('selectionsFetchCounter')).toEqual(0);
 
       // (3) localStorage changes with new selection related data
       const storeStateCall = mockProps.storeStateLocally.mock.calls[0][0];
@@ -476,8 +478,8 @@ describe('SelectionContext', () => {
     });
   });
 
-  describe('refetchInstancesInSelections', () => {
-    it('fetch the instances in selections', async () => {
+  describe('onInstancesInSelectionsRefresh', () => {
+    it('fetches the instances in selections', async () => {
       const mockLocalStorage = {
         instancesInSelectionsCount: 2,
         rollingSelectionIndex: 2,
@@ -508,11 +510,19 @@ describe('SelectionContext', () => {
       const wrapper = mountNode({
         getStateLocally: () => mockLocalStorage
       });
-      const node = wrapper.find('BasicSelectionProvider');
+
       await flushPromises();
+      wrapper.update();
 
       // when
-      node.instance().refetchInstancesInSelections();
+      const node = wrapper.find('BasicSelectionProvider');
+
+      node
+        .find('Foo')
+        .props()
+        .onInstancesInSelectionsRefresh();
+
+      await flushPromises();
       wrapper.update();
 
       // then
@@ -520,6 +530,9 @@ describe('SelectionContext', () => {
       expect(instancesApi.fetchWorkflowInstancesByIds.mock.calls[1][0]).toEqual(
         mockResponse.workflowInstances.map(x => x.id)
       );
+
+      // expect the counter to be updated
+      expect(node.find('Foo').props().selectionsFetchCounter).toEqual(1);
     });
   });
 });

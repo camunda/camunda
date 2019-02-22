@@ -1,15 +1,21 @@
 import React from 'react';
-import {mount} from 'enzyme';
+import {mount, shallow} from 'enzyme';
 
-import {createInstance} from 'modules/testUtils';
+import {
+  createInstance,
+  flushPromises,
+  createOperation
+} from 'modules/testUtils';
+import {OPERATION_STATE} from 'modules/constants';
 import {ThemeProvider} from 'modules/theme';
-
 import StateIcon from 'modules/components/StateIcon';
 import Dropdown from 'modules/components/Dropdown';
 import Selection from './Selection';
 import * as Styled from './styled';
 
-const mockInstance = createInstance();
+const mockInstance = createInstance({
+  operations: [createOperation({state: 'SENT'})]
+});
 const mockMap = new Map([['1', mockInstance]]);
 
 const mockOnClick = jest.fn();
@@ -29,6 +35,7 @@ const mountSelection = isOpen => {
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
         onDelete={mockOnDelete}
+        selectionsFetchCounter={0}
       />
     </ThemeProvider>
   );
@@ -117,5 +124,39 @@ describe('Selection', () => {
 
     node.find('[data-test="CANCEL-dropdown-option"]').simulate('click');
     expect(mockOnCancel).toHaveBeenCalled();
+  });
+
+  it.only('should pass the loading state to ActionStatus', async () => {
+    const node = shallow(
+      <Selection
+        isOpen={isOpen}
+        selectionId={1}
+        instances={mockMap}
+        instanceCount={145}
+        onToggle={mockOnClick}
+        onRetry={mockOnRetry}
+        onCancel={mockOnCancel}
+        onDelete={mockOnDelete}
+        selectionsFetchCounter={0}
+      />
+    );
+
+    node.find('[data-test="CANCEL-dropdown-option"]').simulate('click');
+
+    await flushPromises();
+    node.update();
+
+    expect(node.find('Styled(ActionStatus)').props().operationState).toBe(
+      OPERATION_STATE.SCHEDULED
+    );
+
+    // simulate list update
+    node.setProps({selectionsFetchCounter: 1});
+    node.update();
+
+    // remove spinner and show state of last operation
+    expect(node.find('Styled(ActionStatus)').props().operationState).not.toBe(
+      OPERATION_STATE.SCHEDULED
+    );
   });
 });

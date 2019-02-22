@@ -1,7 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {CSSTransition} from 'react-transition-group';
-
 import StateIcon from 'modules/components/StateIcon';
 import Dropdown from 'modules/components/Dropdown';
 
@@ -26,10 +25,24 @@ export default class Selection extends React.Component {
     onToggle: PropTypes.func.isRequired,
     onRetry: PropTypes.func.isRequired,
     onCancel: PropTypes.func.isRequired,
-    onDelete: PropTypes.func.isRequired
+    onDelete: PropTypes.func.isRequired,
+    selectionsFetchCounter: PropTypes.number.isRequired
   };
 
-  state = {operationState: ''};
+  state = {
+    isOperationStarted: false
+  };
+
+  componentDidUpdate(prevProps, prevState) {
+    const isNewInstancesList =
+      prevProps.selectionsFetchCounter !== this.props.selectionsFetchCounter;
+
+    // detect if the list has been updated since the operation and reset the spinner
+    if (isNewInstancesList) {
+      this.state.isOperationStarted &&
+        this.setState({isOperationStarted: false});
+    }
+  }
 
   operationsMap = {
     [OPERATION_TYPE.CANCEL]: {
@@ -45,7 +58,9 @@ export default class Selection extends React.Component {
   };
 
   handleOnClick = optionType => {
-    this.setState({operationState: OPERATION_STATE.SCHEDULED});
+    this.setState({
+      isOperationStarted: true
+    });
     this.operationsMap[optionType].action();
   };
 
@@ -130,7 +145,7 @@ export default class Selection extends React.Component {
     return (
       <Styled.TransitionGroup component={'ul'}>
         {instances.map(([_, instanceDetails], index) => {
-          const {state, type} = getLatestOperation(instanceDetails.operations);
+          const {type, state} = getLatestOperation(instanceDetails.operations);
           return (
             <CSSTransition
               data-test="addInstanceTransition"
@@ -147,13 +162,13 @@ export default class Selection extends React.Component {
                 </Styled.NameCell>
                 <Styled.IdCell>{instanceDetails.id}</Styled.IdCell>
                 <Styled.ActionStatusCell>
-                  {/*
-                    change logic of showing spinner, it only reads from state once the user clicked
-                    https://app.camunda.com/jira/browse/OPE-409
-                  */}
                   <Styled.InstanceActionStatus
                     instance={instanceDetails}
-                    operationState={state}
+                    operationState={
+                      this.state.isOperationStarted
+                        ? OPERATION_STATE.SCHEDULED
+                        : state
+                    }
                     operationType={type}
                   />
                 </Styled.ActionStatusCell>
