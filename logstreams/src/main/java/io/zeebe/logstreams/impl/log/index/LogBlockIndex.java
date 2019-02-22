@@ -15,19 +15,15 @@
  */
 package io.zeebe.logstreams.impl.log.index;
 
-import static io.zeebe.logstreams.impl.log.index.LogBlockIndexDescriptor.dataOffset;
-import static io.zeebe.logstreams.impl.log.index.LogBlockIndexDescriptor.entryAddressOffset;
-import static io.zeebe.logstreams.impl.log.index.LogBlockIndexDescriptor.entryLength;
-import static io.zeebe.logstreams.impl.log.index.LogBlockIndexDescriptor.entryLogPositionOffset;
-import static io.zeebe.logstreams.impl.log.index.LogBlockIndexDescriptor.entryOffset;
-import static io.zeebe.logstreams.impl.log.index.LogBlockIndexDescriptor.indexSizeOffset;
-
+import io.zeebe.db.ColumnFamily;
+import io.zeebe.db.ZeebeDb;
+import io.zeebe.db.ZeebeDbFactory;
+import io.zeebe.db.impl.DbLong;
 import io.zeebe.logstreams.spi.SnapshotSupport;
-import io.zeebe.util.StreamUtil;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.function.Function;
-import org.agrona.concurrent.AtomicBuffer;
+import io.zeebe.logstreams.state.StateSnapshotController;
+import io.zeebe.logstreams.state.StateSnapshotMetadata;
+import io.zeebe.logstreams.state.StateStorage;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Block index, mapping an event's position to the physical address of the block in which it resides
@@ -42,222 +38,114 @@ import org.agrona.concurrent.AtomicBuffer;
  * requested.
  */
 public class LogBlockIndex implements SnapshotSupport {
-  public static final double GROW_FACTOR = 1.25;
 
-  private final Function<Integer, AtomicBuffer> bufferAllocator;
+  private final StateSnapshotController stateSnapshotController;
+  private ColumnFamily<DbLong, DbLong> blockPositionToAddress;
 
-  protected AtomicBuffer indexBuffer;
-  protected int capacity;
+  private final DbLong blockPosition = new DbLong();
+  private final DbLong value = new DbLong();
+  private ZeebeDb db;
 
-  protected long lastVirtualPosition = -1;
+  private long lastVirtualPosition = -1;
 
-  public LogBlockIndex(int capacity, Function<Integer, AtomicBuffer> bufferAllocator) {
-    this.bufferAllocator = bufferAllocator;
-    this.indexBuffer = allocateBuffer(capacity);
-    this.capacity = capacity;
+  public LogBlockIndex(
+      ZeebeDbFactory<LogBlockColumnFamilies> dbFactory, StateStorage stateStorage) {
+    this.stateSnapshotController = new StateSnapshotController(dbFactory, stateStorage);
+  }
 
-    reset();
+  public void openDb() {
+    db = stateSnapshotController.openDb();
+    blockPositionToAddress =
+        db.createColumnFamily(LogBlockColumnFamilies.BLOCK_POSITION_ADDRESS, blockPosition, value);
+  }
+
+  public void closeDb() throws Exception {
+    if (db != null) {
+      stateSnapshotController.close();
+      db = null;
+    }
   }
 
   /**
    * Returns the physical address of the block in which the log entry identified by the provided
    * position resides.
    *
-   * @param position a virtual log position
+   * @param entryPosition a virtual log position
    * @return the physical address of the block containing the log entry identified by the provided
    *     virtual position
    */
-  public long lookupBlockAddress(long position) {
-    final int offset = lookupOffset(position);
-    return offset >= 0 ? indexBuffer.getLong(entryAddressOffset(offset)) : offset;
+  public synchronized long lookupBlockAddress(final long entryPosition) {
+    final long blockPosition = lookupBlockPosition(entryPosition);
+    if (blockPosition == -1) {
+      return -1;
+    }
+
+    this.blockPosition.wrapLong(blockPosition);
+    final DbLong address = blockPositionToAddress.get(this.blockPosition);
+
+    return address != null ? address.getValue() : -1;
   }
 
   /**
    * Returns the position of the first log entry of the the block in which the log entry identified
    * by the provided position resides.
    *
-   * @param position a virtual log position
+   * @param entryPosition a virtual log position
    * @return the position of the block containing the log entry identified by the provided virtual
    *     position
    */
-  public long lookupBlockPosition(long position) {
-    final int offset = lookupOffset(position);
-    return offset >= 0 ? indexBuffer.getLong(entryLogPositionOffset(offset)) : offset;
+  public synchronized long lookupBlockPosition(final long entryPosition) {
+    final AtomicLong blockPosition = new AtomicLong(-1);
+
+    blockPositionToAddress.whileTrue(
+        (key, val) -> {
+          final long currentBlockPosition = key.getValue();
+
+          if (currentBlockPosition <= entryPosition) {
+            blockPosition.set(currentBlockPosition);
+            return true;
+          } else {
+            return false;
+          }
+        });
+
+    return blockPosition.get();
   }
 
-  /**
-   * Returns the offset of the block in which the log entry identified by the provided position
-   * resides.
-   *
-   * @param position a virtual log position
-   * @return the offset of the block containing the log entry identified by the provided virtual
-   *     position
-   */
-  protected int lookupOffset(long position) {
-    final int idx = lookupIndex(position);
-    return idx >= 0 ? entryOffset(idx) : idx;
-  }
-
-  /**
-   * Returns the index of the block in which the log entry identified by the provided position
-   * resides.
-   *
-   * @param position a virtual log position
-   * @return the index of the block containing the log entry identified by the provided virtual
-   *     position
-   */
-  protected int lookupIndex(long position) {
-    final int lastEntryIdx = size() - 1;
-
-    int low = 0;
-    int high = lastEntryIdx;
-
-    int idx = -1;
-
-    if (low == high) {
-      final int entryOffset = entryOffset(low);
-      final long entryValue = indexBuffer.getLong(entryLogPositionOffset(entryOffset));
-
-      if (entryValue <= position) {
-        idx = low;
-      }
-
-      high = -1;
-    }
-
-    while (low <= high) {
-      final int mid = (low + high) >>> 1;
-      final int entryOffset = entryOffset(mid);
-
-      if (mid == lastEntryIdx) {
-        idx = mid;
-        break;
-      } else {
-        final long entryValue = indexBuffer.getLong(entryLogPositionOffset(entryOffset));
-        final long nextEntryValue =
-            indexBuffer.getLong(entryLogPositionOffset(entryOffset(mid + 1)));
-
-        if (entryValue <= position && position < nextEntryValue) {
-          idx = mid;
-          break;
-        } else if (entryValue < position) {
-          low = mid + 1;
-        } else if (entryValue > position) {
-          high = mid - 1;
-        }
-      }
-    }
-
-    return idx;
-  }
-
-  /**
-   * Invoked by the log Appender thread after it has first written one or more entries to a block.
-   *
-   * @param logPosition the virtual position of the block (equal or smaller to the v position of the
-   *     first entry in the block)
-   * @param storageAddr the physical address of the block in the underlying storage
-   * @return the new size of the index.
-   */
-  public int addBlock(long logPosition, long storageAddr) {
-    final int currentIndexSize =
-        indexBuffer.getInt(indexSizeOffset()); // volatile get not necessary
-    final int entryOffset = entryOffset(currentIndexSize);
-    final int newIndexSize = 1 + currentIndexSize;
-
-    if (newIndexSize > capacity) {
-      expandIndexBuffer();
-    }
-
-    if (lastVirtualPosition >= logPosition) {
+  public synchronized void addBlock(long blockPosition, long blockAddress) {
+    if (lastVirtualPosition >= blockPosition) {
       final String errorMessage =
           String.format(
               "Illegal value for position.Value=%d, last value in index=%d. Must provide positions in ascending order.",
-              logPosition, lastVirtualPosition);
+              blockPosition, lastVirtualPosition);
       throw new IllegalArgumentException(errorMessage);
     }
 
-    lastVirtualPosition = logPosition;
+    lastVirtualPosition = blockPosition;
+    this.blockPosition.wrapLong(blockPosition);
+    value.wrapLong(blockAddress);
 
-    // write next entry
-    indexBuffer.putLong(entryLogPositionOffset(entryOffset), logPosition);
-    indexBuffer.putLong(entryAddressOffset(entryOffset), storageAddr);
-
-    // increment size
-    indexBuffer.putIntOrdered(indexSizeOffset(), newIndexSize);
-
-    return newIndexSize;
-  }
-
-  private AtomicBuffer allocateBuffer(int capacity) {
-    final int requiredBufferCapacity = dataOffset() + (capacity * entryLength());
-    return bufferAllocator.apply(requiredBufferCapacity);
-  }
-
-  private void expandIndexBuffer() {
-    final int newCapacity = Math.toIntExact(Math.round(capacity * GROW_FACTOR));
-    final AtomicBuffer newBuffer = allocateBuffer(newCapacity);
-
-    newBuffer.putBytes(0, indexBuffer.byteArray());
-
-    this.indexBuffer = newBuffer;
-    this.capacity = newCapacity;
-  }
-
-  /** @return the current size of the index */
-  public int size() {
-    return indexBuffer.getIntVolatile(indexSizeOffset());
-  }
-
-  /** @return the capacity of the index */
-  public int capacity() {
-    return capacity;
-  }
-
-  public long getLogPosition(int idx) {
-    boundsCheck(idx, size());
-
-    final int entryOffset = entryOffset(idx);
-
-    return indexBuffer.getLong(entryLogPositionOffset(entryOffset));
-  }
-
-  public long getAddress(int idx) {
-    boundsCheck(idx, size());
-
-    final int entryOffset = entryOffset(idx);
-
-    return indexBuffer.getLong(entryAddressOffset(entryOffset));
-  }
-
-  private static void boundsCheck(int idx, int size) {
-    if (idx < 0 || idx >= size) {
-      throw new IllegalArgumentException(
-          String.format("Index out of bounds. index=%d, size=%d.", idx, size));
-    }
+    blockPositionToAddress.put(this.blockPosition, value);
   }
 
   @Override
-  public long writeSnapshot(OutputStream outputStream) throws Exception {
-    StreamUtil.write(indexBuffer, outputStream);
-    return indexBuffer.capacity();
+  public void writeSnapshot(final long snapshotEventPosition) {
+    final StateSnapshotMetadata snapshotMetadata = new StateSnapshotMetadata(snapshotEventPosition);
+    stateSnapshotController.takeSnapshot(snapshotMetadata);
   }
 
   @Override
-  public void recoverFromSnapshot(InputStream inputStream) throws Exception {
-    final byte[] byteArray = StreamUtil.read(inputStream);
-
-    indexBuffer.putBytes(0, byteArray);
+  public void recoverFromSnapshot() throws Exception {
+    final StateSnapshotMetadata snapshotMetadata =
+        stateSnapshotController.recoverFromLatestSnapshot();
+    lastVirtualPosition = snapshotMetadata.getLastWrittenEventPosition();
   }
 
-  @Override
-  public void reset() {
-    // verify alignment to ensure atomicity of updates to the index metadata
-    indexBuffer.verifyAlignment();
+  public synchronized boolean isEmpty() {
+    return blockPositionToAddress.isEmpty();
+  }
 
-    // set initial size
-    indexBuffer.putIntVolatile(indexSizeOffset(), 0);
-
-    indexBuffer.setMemory(dataOffset(), capacity * entryLength(), (byte) 0);
+  public long getLastPosition() {
+    return lastVirtualPosition;
   }
 }

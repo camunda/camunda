@@ -204,10 +204,7 @@ public class StreamProcessorRule implements TestRule {
 
       streams =
           new TestStreams(
-              tempFolder.getRoot(),
-              closeables,
-              serviceContainerRule.get(),
-              actorSchedulerRule.get());
+              tempFolder, closeables, serviceContainerRule.get(), actorSchedulerRule.get());
       streams.createLogStream(STREAM_NAME, partitionId);
 
       streams

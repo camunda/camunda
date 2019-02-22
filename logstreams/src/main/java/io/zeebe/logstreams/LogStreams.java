@@ -15,17 +15,12 @@
  */
 package io.zeebe.logstreams;
 
-import io.zeebe.logstreams.fs.FsSnapshotStorageBuilder;
 import io.zeebe.logstreams.impl.LogStreamBuilder;
 import io.zeebe.logstreams.processor.StreamProcessorBuilder;
 
 public class LogStreams {
   public static LogStreamBuilder createFsLogStream(final int partitionId) {
     return new LogStreamBuilder(partitionId).logName(Integer.toString(partitionId));
-  }
-
-  public static FsSnapshotStorageBuilder createFsSnapshotStore(final String rootPath) {
-    return new FsSnapshotStorageBuilder(rootPath);
   }
 
   public static StreamProcessorBuilder createStreamProcessor(final String name, final int id) {

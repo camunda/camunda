@@ -38,6 +38,10 @@ public class StateSnapshotMetadata implements Comparable<StateSnapshotMetadata> 
         INITIAL_LAST_PROCESSED_EVENT_POSITION, INITIAL_LAST_WRITTEN_EVENT_POSITION, term, false);
   }
 
+  public StateSnapshotMetadata(long lastWrittenEventPosition) {
+    this(0, lastWrittenEventPosition, 0, true);
+  }
+
   public StateSnapshotMetadata(
       long lastSuccessfulProcessedEventPosition,
       long lastWrittenEventPosition,

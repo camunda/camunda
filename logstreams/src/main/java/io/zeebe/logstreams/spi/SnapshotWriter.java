@@ -46,7 +46,9 @@ public interface SnapshotWriter {
    * @throws Exception if fails to write the snapshot
    */
   default long writeSnapshot(SnapshotSupport snapshotSupport) throws Exception {
-    return snapshotSupport.writeSnapshot(getOutputStream());
+    return 0;
+    // NOTE: this is unused and will be deleted in the following commit
+    //      return snapshotSupport.writeSnapshot(getOutputStream());
   }
 
   /**

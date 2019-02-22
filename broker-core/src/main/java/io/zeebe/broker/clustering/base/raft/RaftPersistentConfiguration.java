@@ -64,15 +64,19 @@ public class RaftPersistentConfiguration implements RaftPersistentStorage {
   private final File logDirectory;
   private final File snapshotsDirectory;
   private final File statesDirectory;
+  private final File blockIndexDirectory;
 
   public RaftPersistentConfiguration(
       final File metaFile,
       final File partitionLogDir,
       final File partitionSnapshotsDir,
-      final File statesDir) {
+      final File statesDir,
+      final File blockIndexDir) {
     this.logDirectory = partitionLogDir;
     this.snapshotsDirectory = partitionSnapshotsDir;
     this.statesDirectory = statesDir;
+    this.blockIndexDirectory = blockIndexDir;
+
     file = metaFile;
     tmpFile = new File(file.getAbsolutePath() + ".tmp");
     path = Paths.get(file.getAbsolutePath());
@@ -211,5 +215,9 @@ public class RaftPersistentConfiguration implements RaftPersistentStorage {
 
   public File getStatesDirectory() {
     return statesDirectory;
+  }
+
+  public File getBlockIndexDirectory() {
+    return blockIndexDirectory;
   }
 }
