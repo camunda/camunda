@@ -17,10 +17,12 @@ package io.zeebe.exporter;
 
 import static io.zeebe.exporter.ElasticsearchExporter.ZEEBE_RECORD_TEMPLATE_JSON;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -28,6 +30,7 @@ import io.zeebe.exporter.record.Record;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.test.exporter.ExporterTestHarness;
+import io.zeebe.util.ZbLogger;
 import java.time.Duration;
 import java.util.List;
 import org.junit.Before;
@@ -43,6 +46,18 @@ public class ElasticsearchExporterTest {
   public void setUp() {
     config = new ElasticsearchExporterConfiguration();
     esClient = mockElasticsearchClient();
+  }
+
+  @Test
+  public void shouldNotFailOnOpenIfElasticIsUnreachable() {
+    // given
+    final ElasticsearchClient client = spy(new ElasticsearchClient(config, new ZbLogger("test")));
+    final ElasticsearchExporter exporter = createExporter(client);
+    config.index.createTemplate = true;
+
+    // when - then : only fails when trying to export, not before
+    openExporter(exporter);
+    assertThatThrownBy(testHarness::export).isInstanceOf(ElasticsearchExporterException.class);
   }
 
   @Test
@@ -63,6 +78,7 @@ public class ElasticsearchExporterTest {
 
     // when
     createAndOpenExporter();
+    testHarness.export();
 
     // then
     verify(esClient).putIndexTemplate("foo-bar", ZEEBE_RECORD_TEMPLATE_JSON, "-");
@@ -322,18 +338,28 @@ public class ElasticsearchExporterTest {
     assertThat(testHarness.getController().getPosition()).isEqualTo(exported.get(3).getPosition());
   }
 
-  private ElasticsearchExporter createAndOpenExporter() {
-    final ElasticsearchExporter exporter =
-        new ElasticsearchExporter() {
-          @Override
-          protected ElasticsearchClient createClient() {
-            return esClient;
-          }
-        };
+  private ElasticsearchExporter createExporter() {
+    return createExporter(esClient);
+  }
+
+  private ElasticsearchExporter createExporter(ElasticsearchClient client) {
+    return new ElasticsearchExporter() {
+      @Override
+      protected ElasticsearchClient createClient() {
+        return client;
+      }
+    };
+  }
+
+  private void openExporter(ElasticsearchExporter exporter) {
     testHarness = new ExporterTestHarness(exporter);
     testHarness.configure("elasticsearch", config);
     testHarness.open();
+  }
 
+  private ElasticsearchExporter createAndOpenExporter() {
+    final ElasticsearchExporter exporter = createExporter();
+    openExporter(exporter);
     return exporter;
   }
 

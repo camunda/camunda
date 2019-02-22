@@ -26,12 +26,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.http.HttpHost;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.HttpClients;
 import org.elasticsearch.client.ElasticsearchClient;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.security.PutRoleRequest;
 import org.elasticsearch.client.security.PutUserRequest;
@@ -56,6 +53,7 @@ public class ElasticsearchForkedJvm implements ElasticsearchNode<ElasticsearchFo
   private String username;
   private String password;
   private File installationDirectory;
+  private RestHighLevelClient client;
 
   private final List<String> javaOptions = new ArrayList<>();
 
@@ -93,6 +91,7 @@ public class ElasticsearchForkedJvm implements ElasticsearchNode<ElasticsearchFo
   public void start() {
     if (elastic == null) {
       elastic = builder.build();
+      client = new RestHighLevelClient(RestClient.builder(getRestHttpHost()));
 
       try {
         elastic.start();
@@ -101,7 +100,7 @@ public class ElasticsearchForkedJvm implements ElasticsearchNode<ElasticsearchFo
         // the exception is caught and a simple retry is performed with the correct host
         if (isSslEnabled) {
           try {
-            HttpClients.createMinimal().execute(new HttpGet(getRestHttpHost().toString()));
+            client.ping(RequestOptions.DEFAULT);
           } catch (IOException ioe) {
             throw new RuntimeException(ioe);
           }
@@ -125,6 +124,14 @@ public class ElasticsearchForkedJvm implements ElasticsearchNode<ElasticsearchFo
       elastic = null;
       javaOptions.clear();
       isSslEnabled = false;
+
+      try {
+        client.close();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      client = null;
+
       builder = EmbeddedElastic.builder();
     }
   }
@@ -196,7 +203,6 @@ public class ElasticsearchForkedJvm implements ElasticsearchNode<ElasticsearchFo
   }
 
   private void setupUser() {
-    final RestHighLevelClient client = newClient();
     final User user = new User(username, Collections.singleton("zeebe-exporter"));
 
     try {
@@ -210,11 +216,6 @@ public class ElasticsearchForkedJvm implements ElasticsearchNode<ElasticsearchFo
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  private RestHighLevelClient newClient() {
-    final RestClientBuilder builder = RestClient.builder(getRestHttpHost());
-    return new RestHighLevelClient(builder);
   }
 
   // note: caveat, do not use custom index prefixes!

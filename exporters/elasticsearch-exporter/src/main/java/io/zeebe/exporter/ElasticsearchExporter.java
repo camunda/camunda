@@ -36,6 +36,7 @@ public class ElasticsearchExporter implements Exporter {
   private ElasticsearchClient client;
 
   private long lastPosition = -1;
+  private boolean indexTemplatesCreated;
 
   @Override
   public void configure(Context context) {
@@ -49,7 +50,6 @@ public class ElasticsearchExporter implements Exporter {
   public void open(Controller controller) {
     this.controller = controller;
     client = createClient();
-    createIndexTemplates();
     scheduleDelayedFlush();
     log.info("Exporter opened");
   }
@@ -72,6 +72,10 @@ public class ElasticsearchExporter implements Exporter {
 
   @Override
   public void export(Record record) {
+    if (!indexTemplatesCreated) {
+      createIndexTemplates();
+    }
+
     if (configuration.shouldIndexRecord(record)) {
       client.index(record);
     }
@@ -137,6 +141,8 @@ public class ElasticsearchExporter implements Exporter {
         createValueIndexTemplate(ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
       }
     }
+
+    indexTemplatesCreated = true;
   }
 
   private void createRootIndexTemplate() {
