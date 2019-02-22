@@ -24,7 +24,6 @@ import io.zeebe.broker.exporter.record.value.JobBatchRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.JobRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.MessageStartEventSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.MessageSubscriptionRecordValueImpl;
-import io.zeebe.broker.exporter.record.value.RaftRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.TimerRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.VariableRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.WorkflowInstanceRecordValueImpl;
@@ -32,7 +31,6 @@ import io.zeebe.broker.exporter.record.value.WorkflowInstanceSubscriptionRecordV
 import io.zeebe.broker.exporter.record.value.deployment.DeployedWorkflowImpl;
 import io.zeebe.broker.exporter.record.value.deployment.DeploymentResourceImpl;
 import io.zeebe.broker.exporter.record.value.job.HeadersImpl;
-import io.zeebe.broker.exporter.record.value.raft.RaftMemberImpl;
 import io.zeebe.broker.subscription.message.data.MessageStartEventSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
@@ -44,14 +42,12 @@ import io.zeebe.exporter.record.value.IncidentRecordValue;
 import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.exporter.record.value.MessageRecordValue;
 import io.zeebe.exporter.record.value.MessageSubscriptionRecordValue;
-import io.zeebe.exporter.record.value.RaftRecordValue;
 import io.zeebe.exporter.record.value.VariableRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.exporter.record.value.deployment.DeployedWorkflow;
 import io.zeebe.exporter.record.value.deployment.DeploymentResource;
 import io.zeebe.exporter.record.value.deployment.ResourceType;
-import io.zeebe.exporter.record.value.raft.RaftMember;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.value.LongValue;
 import io.zeebe.protocol.Protocol;
@@ -65,8 +61,6 @@ import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.raft.event.RaftConfigurationEvent;
-import io.zeebe.raft.event.RaftConfigurationEventMember;
 import io.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.time.Instant;
@@ -105,9 +99,6 @@ public class ExporterRecordMapper {
         break;
       case MESSAGE_SUBSCRIPTION:
         valueSupplier = this::ofMessageSubscriptionRecord;
-        break;
-      case RAFT:
-        valueSupplier = this::ofRaftRecord;
         break;
       case WORKFLOW_INSTANCE:
         valueSupplier = this::ofWorkflowInstanceRecord;
@@ -148,19 +139,6 @@ public class ExporterRecordMapper {
         event.getSourceEventPosition(),
         metadata,
         valueSupplier.apply(event));
-  }
-
-  // VALUE SUPPLIERS
-  private RaftRecordValue ofRaftRecord(final LoggedEvent event) {
-    final RaftConfigurationEvent record = new RaftConfigurationEvent();
-    event.readValue(record);
-
-    final List<RaftMember> members = new ArrayList<>();
-    for (final RaftConfigurationEventMember member : record.members()) {
-      members.add(new RaftMemberImpl(member.getNodeId()));
-    }
-
-    return new RaftRecordValueImpl(objectMapper, members);
   }
 
   private JobRecordValue ofJobRecord(final LoggedEvent event) {

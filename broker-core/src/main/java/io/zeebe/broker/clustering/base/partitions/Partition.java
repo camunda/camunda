@@ -20,7 +20,6 @@ package io.zeebe.broker.clustering.base.partitions;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.broker.logstreams.state.StateStorageFactory;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;

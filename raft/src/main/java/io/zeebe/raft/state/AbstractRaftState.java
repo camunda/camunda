@@ -80,7 +80,7 @@ public abstract class AbstractRaftState implements Service<AbstractRaftState>, M
     this.heartbeat = raft.getHeartbeat();
     this.raftMembers = raft.getRaftMembers();
 
-    reader = new BufferedLogStreamReader(logStream, true);
+    reader = new BufferedLogStreamReader(logStream);
 
     reset();
   }

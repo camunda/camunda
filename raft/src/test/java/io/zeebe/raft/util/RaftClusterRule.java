@@ -239,7 +239,7 @@ public class RaftClusterRule implements TestRule {
 
     final LogStream logStream = raft.getLogStream();
     final long commitPosition = logStream.getCommitPosition();
-    final BufferedLogStreamReader reader = new BufferedLogStreamReader(logStream, readUncommitted);
+    final BufferedLogStreamReader reader = new BufferedLogStreamReader(logStream);
     reader.seekToFirstEvent();
 
     while (reader.hasNext()) {

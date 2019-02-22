@@ -33,7 +33,6 @@
 
     <enum name="ValueType" encodingType="uint8" description="The type of a record value">
       <validValue name="JOB">0</validValue>
-      <validValue name="RAFT">1</validValue>
       <validValue name="DEPLOYMENT">4</validValue>
       <validValue name="WORKFLOW_INSTANCE">5</validValue>
       <validValue name="INCIDENT">6</validValue>

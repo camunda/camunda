@@ -40,7 +40,7 @@ public class DistributedLogstreamPartition implements Service<DistributedLogstre
 
   public DistributedLogstreamPartition(int partitionId) {
     this.partitionId = partitionId;
-    partitionName = String.valueOf(this.partitionId);
+    partitionName = String.format("log-partition-%d", partitionId);
   }
 
   public void append(ByteBuffer blockBuffer, long commitPosition) {

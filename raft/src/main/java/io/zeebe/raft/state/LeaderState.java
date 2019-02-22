@@ -16,7 +16,6 @@
 package io.zeebe.raft.state;
 
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.protocol.intent.RaftIntent;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftMember;
 import io.zeebe.raft.controller.AppendRaftEventController;

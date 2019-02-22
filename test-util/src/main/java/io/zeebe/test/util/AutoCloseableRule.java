@@ -35,7 +35,7 @@ public class AutoCloseableRule extends ExternalResource {
   }
 
   @Override
-  protected void after() {
+  public void after() {
     final int size = thingsToClose.size();
     for (int i = size - 1; i >= 0; i--) {
       try {

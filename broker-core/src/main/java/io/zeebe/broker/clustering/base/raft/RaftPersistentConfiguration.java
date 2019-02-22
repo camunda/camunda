@@ -20,7 +20,6 @@ package io.zeebe.broker.clustering.base.raft;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import io.zeebe.raft.RaftPersistentStorage;
 import io.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.FileInputStream;
@@ -42,7 +41,7 @@ import java.util.List;
  *   <li>directory path of the local data directory of the logstream used
  * </ul>
  */
-public class RaftPersistentConfiguration implements RaftPersistentStorage {
+public class RaftPersistentConfiguration {
   private final RaftConfigurationMetadata configuration = new RaftConfigurationMetadata();
   private static final ObjectWriter JSON_WRITER;
   private static final ObjectReader JSON_READER;
@@ -86,30 +85,6 @@ public class RaftPersistentConfiguration implements RaftPersistentStorage {
     FileUtil.deleteFile(tmpFile);
   }
 
-  @Override
-  public int getTerm() {
-    return configuration.getTerm();
-  }
-
-  @Override
-  public RaftPersistentConfiguration setTerm(final int term) {
-    configuration.setTerm(term);
-    return this;
-  }
-
-  @Override
-  public Integer getVotedFor() {
-    return votedFor;
-  }
-
-  @Override
-  public RaftPersistentConfiguration setVotedFor(final Integer votedFor) {
-    configuration.setVotedFor(votedFor);
-    this.votedFor = votedFor;
-
-    return this;
-  }
-
   public List<Integer> getMembers() {
     return new ArrayList<>(configuration.getMembers());
   }
@@ -119,20 +94,17 @@ public class RaftPersistentConfiguration implements RaftPersistentStorage {
     return this;
   }
 
-  @Override
   public RaftPersistentConfiguration addMember(final int nodeId) {
     configuration.getMembers().add(nodeId);
     return this;
   }
 
-  @Override
-  public RaftPersistentStorage removeMember(final int nodeId) {
+  public RaftPersistentConfiguration removeMember(final int nodeId) {
     configuration.getMembers().removeIf(member -> member.equals(nodeId));
     return this;
   }
 
-  @Override
-  public RaftPersistentStorage clearMembers() {
+  public RaftPersistentConfiguration clearMembers() {
     configuration.getMembers().clear();
 
     return this;
@@ -150,12 +122,10 @@ public class RaftPersistentConfiguration implements RaftPersistentStorage {
 
       if (metadata != null) {
         configuration.copy(metadata);
-        votedFor = configuration.getVotedFor();
       }
     }
   }
 
-  @Override
   public RaftPersistentConfiguration save() {
     try (final FileOutputStream os = new FileOutputStream(tmpFile)) {
       os.write(JSON_WRITER.writeValueAsBytes(configuration));
@@ -177,7 +147,6 @@ public class RaftPersistentConfiguration implements RaftPersistentStorage {
     return configuration.getPartitionId();
   }
 
-  @Override
   public int getReplicationFactor() {
     return configuration.getReplicationFactor();
   }

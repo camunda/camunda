@@ -26,6 +26,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
+import io.zeebe.broker.clustering.base.partitions.RaftState;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.distributedlog.CommitLogEvent;
 import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
@@ -44,7 +45,6 @@ import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.MessageIntent;
-import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.RemoteAddress;
@@ -183,7 +183,7 @@ public class ClientApiMessageHandlerTest {
     // then
     assertThat(isHandled).isTrue();
 
-    final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream, true);
+    final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream);
     waitForAvailableEvent(logStreamReader);
 
     final LoggedEvent loggedEvent = logStreamReader.next();

@@ -29,7 +29,7 @@ import org.junit.rules.Timeout;
 
 public class TopologyClusterTest {
 
-  public Timeout testTimeout = Timeout.seconds(60);
+  public Timeout testTimeout = Timeout.seconds(120);
   public ClusteringRule clusteringRule = new ClusteringRule();
   public GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 

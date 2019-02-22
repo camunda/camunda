@@ -21,7 +21,6 @@ import io.atomix.core.Atomix;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.concurrent.CompletableFuture;
@@ -36,13 +35,7 @@ public class AtomixJoinService implements Service<Void> {
     atomix = atomixInjector.getValue();
 
     final CompletableFuture<Void> startFuture = atomix.start();
-    startContext.async(mapCompletableFuture(startFuture));
-  }
-
-  @Override
-  public void stop(ServiceStopContext stopContext) {
-    final CompletableFuture<Void> stopFuture = atomix.stop();
-    stopContext.async(mapCompletableFuture(stopFuture));
+    startContext.async(mapCompletableFuture(startFuture), true);
   }
 
   @Override

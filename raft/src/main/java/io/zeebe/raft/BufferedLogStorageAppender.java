@@ -65,7 +65,7 @@ public class BufferedLogStorageAppender {
   public BufferedLogStorageAppender(final Raft raft) {
     this.raft = raft;
     this.logStream = raft.getLogStream();
-    this.reader = new BufferedLogStreamReader(logStream, true);
+    this.reader = new BufferedLogStreamReader(logStream);
 
     lastWrittenPosition = previousEventPositionNullValue();
     lastWrittenTerm = previousEventTermNullValue();

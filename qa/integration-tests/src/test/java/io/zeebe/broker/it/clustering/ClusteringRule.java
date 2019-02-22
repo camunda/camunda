@@ -153,10 +153,16 @@ public class ClusteringRule extends ExternalResource {
     // create client
     client = createClient();
 
-    waitForPartitionReplicationFactor();
-    LOG.info("Full replication factor");
-    waitUntilBrokersInTopology();
-    LOG.info("All brokers in topology");
+    try {
+      waitForPartitionReplicationFactor();
+      LOG.info("Full replication factor");
+      waitUntilBrokersInTopology();
+      LOG.info("All brokers in topology");
+    } catch (Error e) {
+      // If the previous waits timeouts, the brokers are not closed automatically.
+      closables.after();
+      throw e;
+    }
   }
 
   private Broker getBroker(final int nodeId) {
@@ -193,6 +199,7 @@ public class ClusteringRule extends ExternalResource {
     if (nodeId > 0) {
       // all nodes have to join the same broker
       // https://github.com/zeebe-io/zeebe/issues/2012
+
       setInitialContactPoints(getBrokerCfg(0).getNetwork().getAtomix().toSocketAddress().toString())
           .accept(brokerCfg);
     }

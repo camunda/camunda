@@ -84,7 +84,7 @@ public class MemberReplicateLogController extends Actor implements Service<Void>
     this.heartbeatInterval = raft.getConfiguration().getHeartbeatIntervalDuration();
     this.clientOutput = clientTransport.getOutput();
     this.logStream = raft.getLogStream();
-    this.reader = new BufferedLogStreamReader(logStream, true);
+    this.reader = new BufferedLogStreamReader(logStream);
   }
 
   @Override

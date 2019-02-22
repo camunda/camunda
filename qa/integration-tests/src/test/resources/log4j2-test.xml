@@ -9,7 +9,7 @@
 
   <Loggers>
     <Logger name="io.zeebe" level="info"/>
-    <Logger name="io.atomix" level="info"/>
+    <Logger name="io.atomix" level="debug"/>
     <!--<Logger name="io.zeebe.raft" level="debug"/>-->
 
     <Root level="info">

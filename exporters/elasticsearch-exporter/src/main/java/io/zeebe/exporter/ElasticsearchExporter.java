@@ -124,9 +124,6 @@ public class ElasticsearchExporter implements Exporter {
       if (index.messageSubscription) {
         createValueIndexTemplate(ValueType.MESSAGE_SUBSCRIPTION);
       }
-      if (index.raft) {
-        createValueIndexTemplate(ValueType.RAFT);
-      }
       if (index.variable) {
         createValueIndexTemplate(ValueType.VARIABLE);
       }

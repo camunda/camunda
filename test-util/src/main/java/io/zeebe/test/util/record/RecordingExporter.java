@@ -24,7 +24,6 @@ import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.exporter.record.value.MessageRecordValue;
 import io.zeebe.exporter.record.value.MessageStartEventSubscriptionRecordValue;
 import io.zeebe.exporter.record.value.MessageSubscriptionRecordValue;
-import io.zeebe.exporter.record.value.RaftRecordValue;
 import io.zeebe.exporter.record.value.TimerRecordValue;
 import io.zeebe.exporter.record.value.VariableRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
@@ -38,7 +37,6 @@ import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.protocol.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
-import io.zeebe.protocol.intent.RaftIntent;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.VariableIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -83,14 +81,6 @@ public class RecordingExporter implements Exporter {
     return StreamSupport.stream(spliterator, false)
         .filter(r -> r.getMetadata().getValueType() == valueType)
         .map(r -> (Record<T>) r);
-  }
-
-  public static RaftRecordStream raftRecords() {
-    return new RaftRecordStream(records(ValueType.RAFT, RaftRecordValue.class));
-  }
-
-  public static RaftRecordStream raftRecords(final RaftIntent intent) {
-    return raftRecords().withIntent(intent);
   }
 
   public static MessageSubscriptionRecordStream messageSubscriptionRecords() {

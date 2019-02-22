@@ -18,7 +18,7 @@
 package io.zeebe.broker.clustering.base.topology;
 
 import io.zeebe.broker.Loggers;
-import io.zeebe.raft.state.RaftState;
+import io.zeebe.broker.clustering.base.partitions.RaftState;
 import io.zeebe.transport.SocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -208,10 +208,6 @@ public class Topology {
 
           member.removeLeader(partition);
           member.addFollower(partition);
-          break;
-
-        case CANDIDATE:
-          // internal raft state: not tracked by topology
           break;
       }
     }

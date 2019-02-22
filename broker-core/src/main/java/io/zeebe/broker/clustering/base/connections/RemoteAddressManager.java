@@ -34,18 +34,14 @@ import io.zeebe.transport.ClientTransport;
 public class RemoteAddressManager implements Service<Void>, TopologyMemberListener {
   private final Injector<TopologyManager> topologyManagerInjector = new Injector<>();
   private final Injector<ClientTransport> managementClientTransportInjector = new Injector<>();
-  private final Injector<ClientTransport> replicationClientTransportInjector = new Injector<>();
 
   private TopologyManager topologyManager;
   private ClientTransport managementClientTransport;
-  private ClientTransport replicationClientTransport;
 
   @Override
   public void start(ServiceStartContext startContext) {
     topologyManager = topologyManagerInjector.getValue();
     managementClientTransport = managementClientTransportInjector.getValue();
-    replicationClientTransport = replicationClientTransportInjector.getValue();
-
     topologyManager.addTopologyMemberListener(this);
   }
 
@@ -63,14 +59,11 @@ public class RemoteAddressManager implements Service<Void>, TopologyMemberListen
   public void onMemberAdded(final NodeInfo memberInfo, final Topology topology) {
     managementClientTransport.registerEndpoint(
         memberInfo.getNodeId(), memberInfo.getManagementApiAddress());
-    replicationClientTransport.registerEndpoint(
-        memberInfo.getNodeId(), memberInfo.getReplicationApiAddress());
   }
 
   @Override
   public void onMemberRemoved(final NodeInfo memberInfo, final Topology topology) {
     managementClientTransport.deactivateEndpoint(memberInfo.getNodeId());
-    replicationClientTransport.deactivateEndpoint(memberInfo.getNodeId());
   }
 
   public Injector<TopologyManager> getTopologyManagerInjector() {
@@ -79,9 +72,5 @@ public class RemoteAddressManager implements Service<Void>, TopologyMemberListen
 
   public Injector<ClientTransport> getManagementClientTransportInjector() {
     return managementClientTransportInjector;
-  }
-
-  public Injector<ClientTransport> getReplicationClientTransportInjector() {
-    return replicationClientTransportInjector;
   }
 }

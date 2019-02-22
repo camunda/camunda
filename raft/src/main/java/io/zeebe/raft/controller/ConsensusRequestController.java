@@ -61,7 +61,7 @@ public class ConsensusRequestController {
   }
 
   public void sendRequest() {
-    this.reader = new BufferedLogStreamReader(raft.getLogStream(), true);
+    this.reader = new BufferedLogStreamReader(raft.getLogStream());
     final BufferWriter request = createRequest();
     sendRequestToMembers(request);
   }

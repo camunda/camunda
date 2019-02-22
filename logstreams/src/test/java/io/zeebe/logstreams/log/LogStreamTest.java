@@ -360,7 +360,7 @@ public class LogStreamTest {
   }
 
   private Stream<LoggedEvent> events(final LogStream stream) {
-    final BufferedLogStreamReader reader = new BufferedLogStreamReader(stream, true);
+    final BufferedLogStreamReader reader = new BufferedLogStreamReader(stream);
     closeables.manage(reader);
 
     reader.seekToFirstEvent();

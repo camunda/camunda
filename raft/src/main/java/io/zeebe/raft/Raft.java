@@ -28,12 +28,12 @@ import static io.zeebe.raft.state.RaftTranisiton.TO_CANDIDATE;
 import static io.zeebe.raft.state.RaftTranisiton.TO_FOLLOWER;
 import static io.zeebe.raft.state.RaftTranisiton.TO_LEADER;
 
+import io.zeebe.logstreams.impl.service.LeaderOpenLogStreamAppenderService;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.raft.controller.AppendRaftEventController;
 import io.zeebe.raft.controller.LeaderCommitInitialEvent;
-import io.zeebe.raft.controller.LeaderOpenLogStreamAppenderService;
 import io.zeebe.raft.controller.RaftJoinService;
 import io.zeebe.raft.controller.RaftPollService;
 import io.zeebe.raft.event.RaftConfigurationEventMember;

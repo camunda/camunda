@@ -45,8 +45,7 @@ public class DistributedLogPartitionRule {
   private final int partition;
   private final int nodeId;
   private LogStream logStream;
-  private BufferedLogStreamReader uncommittedReader;
-  private BufferedLogStreamReader committedReader;
+  private BufferedLogStreamReader reader;
   private LogStreamWriterImpl writer = new LogStreamWriterImpl();
 
   private final RecordMetadata metadata = new RecordMetadata();
@@ -89,8 +88,7 @@ public class DistributedLogPartitionRule {
             .build();
     logStream = logStreamFuture.join();
 
-    uncommittedReader = new BufferedLogStreamReader(logStream, true);
-    committedReader = new BufferedLogStreamReader(logStream, false);
+    reader = new BufferedLogStreamReader(logStream);
 
     TestUtil.waitUntil(
         () -> serviceContainer.hasService(logStorageCommitListenerServiceName(logName)));
@@ -104,9 +102,9 @@ public class DistributedLogPartitionRule {
   }
 
   public boolean eventAppended(String message, long writePosition) {
-    uncommittedReader.seek(writePosition);
-    if (uncommittedReader.hasNext()) {
-      final LoggedEvent event = uncommittedReader.next();
+    reader.seek(writePosition);
+    if (reader.hasNext()) {
+      final LoggedEvent event = reader.next();
       final String messageRead =
           bufferAsString(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
       final long eventPosition = event.getPosition();
@@ -139,9 +137,9 @@ public class DistributedLogPartitionRule {
 
   public int getCommittedEventsCount() {
     int numEvents = 0;
-    uncommittedReader.seekToFirstEvent();
-    while (uncommittedReader.hasNext()) {
-      uncommittedReader.next();
+    reader.seekToFirstEvent();
+    while (reader.hasNext()) {
+      reader.next();
       numEvents++;
     }
     return numEvents;

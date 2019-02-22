@@ -29,7 +29,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.junit.Assert.fail;
 
-import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.job.JobTimeoutTrigger;
@@ -49,10 +48,6 @@ import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
-import io.zeebe.raft.Raft;
-import io.zeebe.raft.RaftServiceNames;
-import io.zeebe.raft.state.RaftState;
-import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.util.sched.clock.ControlledActorClock;
@@ -477,32 +472,6 @@ public class BrokerReprocessingTest {
     // then
     assertIncidentResolved();
     assertJobCreated("test");
-  }
-
-  @Test
-  public void shouldLoadRaftConfiguration() {
-    // given
-    final int testTerm = 8;
-
-    final ServiceName<Raft> serviceName =
-        RaftServiceNames.raftServiceName(Partition.getPartitionName(0));
-
-    final Raft raft = brokerRule.getService(serviceName);
-    waitUntil(() -> raft.getState() == RaftState.LEADER);
-
-    raft.setTerm(testTerm);
-
-    // when
-    reprocessingTrigger.accept(this);
-
-    final Raft raftAfterRestart = brokerRule.getService(serviceName);
-    waitUntil(() -> raftAfterRestart.getState() == RaftState.LEADER);
-
-    // then
-    assertThat(raftAfterRestart.getState()).isEqualTo(RaftState.LEADER);
-    assertThat(raftAfterRestart.getTerm()).isGreaterThanOrEqualTo(9);
-    assertThat(raftAfterRestart.getMemberSize()).isEqualTo(0);
-    assertThat(raftAfterRestart.getVotedFor()).isEqualTo(0);
   }
 
   @Test

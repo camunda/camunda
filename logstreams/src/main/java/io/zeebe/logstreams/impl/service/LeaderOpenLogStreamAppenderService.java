@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.raft.controller;
+package io.zeebe.logstreams.impl.service;
 
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.servicecontainer.Service;

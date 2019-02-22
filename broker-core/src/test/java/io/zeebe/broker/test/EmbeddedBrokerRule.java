@@ -32,8 +32,8 @@ import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setSubscriptionApi
 import io.atomix.core.Atomix;
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.TestLoggers;
-import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
 import io.zeebe.broker.clustering.base.partitions.Partition;
+import io.zeebe.broker.clustering.base.partitions.PartitionServiceNames;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.protocol.Protocol;
@@ -244,7 +244,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
 
       serviceContainer
           .createService(TestService.NAME, new TestService())
-          .dependency(ClusterBaseLayerServiceNames.leaderPartitionServiceName(partitionName))
+          .dependency(PartitionServiceNames.leaderPartitionServiceName(partitionName))
           .dependency(
               TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME))
           .install()

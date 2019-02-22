@@ -34,11 +34,15 @@ import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 
 public class AtomixService implements Service<Atomix> {
@@ -109,6 +113,12 @@ public class AtomixService implements Service<Atomix> {
   }
 
   @Override
+  public void stop(ServiceStopContext stopContext) {
+    final CompletableFuture<Void> stopFuture = atomix.stop();
+    stopContext.async(mapCompletableFuture(stopFuture));
+  }
+
+  @Override
   public Atomix get() {
     return atomix;
   }
@@ -140,5 +150,18 @@ public class AtomixService implements Service<Atomix> {
           nodes.add(node);
         });
     return builder.withNodes(nodes).build();
+  }
+
+  private ActorFuture<Void> mapCompletableFuture(CompletableFuture<Void> atomixFuture) {
+    final ActorFuture<Void> mappedActorFuture = new CompletableActorFuture<>();
+
+    atomixFuture
+        .thenAccept(mappedActorFuture::complete)
+        .exceptionally(
+            t -> {
+              mappedActorFuture.completeExceptionally(t);
+              return null;
+            });
+    return mappedActorFuture;
   }
 }

@@ -21,7 +21,6 @@ import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
-import io.zeebe.protocol.intent.RaftIntent;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftMember;
 import java.util.List;

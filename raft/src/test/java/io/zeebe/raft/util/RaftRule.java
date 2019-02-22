@@ -152,8 +152,8 @@ public class RaftRule extends ExternalResource implements RaftStateListener {
     raft.addMembersWhenJoined(
         members.stream().map(RaftRule::getNodeId).collect(Collectors.toList()));
 
-    uncommittedReader = new BufferedLogStreamReader(logStream, true);
-    committedReader = new BufferedLogStreamReader(logStream, false);
+    uncommittedReader = new BufferedLogStreamReader(logStream);
+    committedReader = new BufferedLogStreamReader(logStream);
 
     raftServiceName = raftServiceName(logName);
     serviceContainer

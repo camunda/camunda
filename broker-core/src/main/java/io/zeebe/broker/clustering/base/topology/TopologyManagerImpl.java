@@ -23,12 +23,14 @@ import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.Member;
 import io.atomix.core.Atomix;
+import io.atomix.core.election.Leader;
+import io.atomix.core.election.LeaderElection;
+import io.atomix.core.election.Leadership;
+import io.atomix.core.election.LeadershipEvent;
 import io.zeebe.broker.Loggers;
+import io.zeebe.broker.clustering.base.partitions.RaftState;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.protocol.impl.data.cluster.BrokerInfo;
-import io.zeebe.raft.Raft;
-import io.zeebe.raft.RaftStateListener;
-import io.zeebe.raft.state.RaftState;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.LogUtil;
 import io.zeebe.util.sched.Actor;
@@ -39,7 +41,7 @@ import java.util.Properties;
 import org.slf4j.Logger;
 
 public class TopologyManagerImpl extends Actor
-    implements TopologyManager, RaftStateListener, ClusterMembershipEventListener {
+    implements TopologyManager, ClusterMembershipEventListener {
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
   private final Topology topology;
   private final Atomix atomix;
@@ -83,12 +85,72 @@ public class TopologyManagerImpl extends Actor
     return "topology";
   }
 
-  public void onRaftStarted(Raft raft) {
+  public void onLeaderElectionStarted(LeaderElection<String> election) {
     actor.run(
         () -> {
-          raft.registerRaftStateListener(this);
+          LOG.debug("Topology manager : Adding leader election listener");
+          election.addListener(this::onLeadershipEvent);
+          updateLeader(election.getLeadership(), Integer.parseInt(election.name()));
+        });
+  }
 
-          onStateChange(raft, raft.getState());
+  private void updateLeader(Leadership<String> leadership, int partitionId) {
+    final String memberId = atomix.getMembershipService().getLocalMember().id().id();
+    final Leader<String> leader = leadership.leader();
+    final RaftState newState;
+    final NodeInfo memberInfo = topology.getLocal();
+
+    final boolean isLeader = leader != null && memberId.equals(leader.id());
+    if (isLeader) {
+      newState = RaftState.LEADER;
+    } else {
+      newState = RaftState.FOLLOWER;
+    }
+
+    final int replicationFactor = leadership.candidates().size() + 1; // TODO: check
+
+    LOG.debug("Initialize state partition {} {}", partitionId, newState);
+    updatePartition(partitionId, replicationFactor, memberInfo, newState);
+    publishTopologyChanges();
+  }
+
+  // Listener for leadership change events.
+  private void onLeadershipEvent(LeadershipEvent<String> leadershipEvent) {
+    actor.call(
+        () -> {
+          final Leader<String> oldLeader = leadershipEvent.oldLeadership().leader();
+          final Leader<String> newLeader = leadershipEvent.newLeadership().leader();
+          if (newLeader == null) {
+            return;
+          }
+
+          final NodeInfo memberInfo = topology.getLocal();
+          final String memberId = atomix.getMembershipService().getLocalMember().id().id();
+
+          final boolean wasLeader = oldLeader != null && memberId.equals(oldLeader.id());
+          final boolean isLeader = memberId.equals(newLeader.id());
+          final boolean becomeLeader = !wasLeader & isLeader;
+          final boolean becomeFollower = wasLeader & !isLeader;
+          final boolean myStateChanged = becomeFollower || becomeLeader;
+          if (myStateChanged) {
+            final RaftState newState;
+
+            if (becomeFollower) {
+              newState = RaftState.FOLLOWER;
+
+            } else {
+              newState = RaftState.LEADER;
+            }
+
+            final int partitionId = Integer.parseInt(leadershipEvent.topic());
+            final int replicationFactor =
+                leadershipEvent.newLeadership().candidates().size() + 1; // TODO: check
+
+            LOG.info("On leadershipchange {} {}", partitionId, newState);
+            updatePartition(partitionId, replicationFactor, memberInfo, newState);
+
+            publishTopologyChanges();
+          }
         });
   }
 
@@ -100,44 +162,10 @@ public class TopologyManagerImpl extends Actor
     notifyPartitionUpdated(updatedPartition, member);
   }
 
-  public void onRaftRemoved(Raft raft) {
-    actor.run(
-        () -> {
-          final NodeInfo memberInfo = topology.getLocal();
-
-          topology.removePartitionForMember(raft.getPartitionId(), memberInfo);
-
-          raft.unregisterRaftStateListener(this);
-
-          publishTopologyChanges();
-        });
-  }
-
-  @Override
-  public void onStateChange(Raft raft, RaftState raftState) {
-    LOG.debug(
-        "Raft state changed in node {}  partition {} to {}",
-        topology.getLocal().getNodeId(),
-        raft.getPartitionId(),
-        raft.getState());
-    if (raft.getState() == null) {
-      return;
-    }
-    actor.run(
-        () -> {
-          final NodeInfo memberInfo = topology.getLocal();
-
-          updatePartition(
-              raft.getPartitionId(), raft.getReplicationFactor(), memberInfo, raft.getState());
-
-          publishTopologyChanges();
-        });
-  }
-
   @Override
   public void event(ClusterMembershipEvent clusterMembershipEvent) {
     final Member eventSource = clusterMembershipEvent.subject();
-    LOG.debug(
+    LOG.info(
         "Member {} received event {}", topology.getLocal().getNodeId(), clusterMembershipEvent);
     final BrokerInfo brokerInfo = readBrokerInfo(eventSource);
 

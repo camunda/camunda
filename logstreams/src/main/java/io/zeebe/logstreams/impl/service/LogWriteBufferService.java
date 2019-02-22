@@ -62,7 +62,7 @@ public class LogWriteBufferService implements Service<Dispatcher> {
     final LogStorage logStorage = logStorageInjector.getValue();
     final LogBlockIndex logBlockIndex = logBlockIndexInjector.getValue();
 
-    try (BufferedLogStreamReader logReader = new BufferedLogStreamReader(true)) {
+    try (BufferedLogStreamReader logReader = new BufferedLogStreamReader()) {
       logReader.wrap(logStorage, logBlockIndex);
 
       long lastPosition = 0;

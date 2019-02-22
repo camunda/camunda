@@ -81,11 +81,6 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-raft</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
       <artifactId>zeebe-gateway</artifactId>
     </dependency>
 

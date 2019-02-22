@@ -25,8 +25,6 @@ import java.util.List;
 public class RaftConfigurationMetadata {
   private int partitionId;
   private int replicationFactor;
-  private int term;
-  private Integer votedFor;
 
   @JsonProperty("segmentSize")
   private long logSegmentSize;
@@ -37,8 +35,6 @@ public class RaftConfigurationMetadata {
     partitionId = -1;
     replicationFactor = -1;
     logSegmentSize = ByteValue.ofMegabytes(512).toBytes();
-    term = 0;
-    votedFor = null;
     members = new ArrayList<>();
   }
 
@@ -56,22 +52,6 @@ public class RaftConfigurationMetadata {
 
   public void setReplicationFactor(int replicationFactor) {
     this.replicationFactor = replicationFactor;
-  }
-
-  public int getTerm() {
-    return term;
-  }
-
-  public void setTerm(final int term) {
-    this.term = term;
-  }
-
-  public Integer getVotedFor() {
-    return votedFor;
-  }
-
-  public void setVotedFor(final Integer nodeId) {
-    this.votedFor = nodeId;
   }
 
   public List<Integer> getMembers() {
@@ -95,8 +75,6 @@ public class RaftConfigurationMetadata {
     setLogSegmentSize(source.getLogSegmentSize());
     setPartitionId(source.getPartitionId());
     setReplicationFactor(source.getReplicationFactor());
-    setTerm(source.getTerm());
     setMembers(source.getMembers());
-    setVotedFor(source.getVotedFor());
   }
 }

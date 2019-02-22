@@ -26,7 +26,6 @@
     <module>bpmn-model</module>
     <module>logstreams</module>
     <module>transport</module>
-    <module>raft</module>
     <module>test</module>
     <module>util</module>
     <module>test-util</module>

@@ -22,12 +22,7 @@ import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_MESSAGE
 import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_SERVER_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_CLIENT_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_SERVER_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_CLIENT_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_MESSAGE_HANDLER;
-import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_SERVER_NAME;
 
-import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
-import io.zeebe.broker.clustering.base.raft.RaftApiMessageHandlerService;
 import io.zeebe.broker.services.DispatcherService;
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
@@ -75,31 +70,11 @@ public class TransportComponent implements Component {
             Collections.singletonList(new IntTuple<>(nodeId, managementEndpoint)));
 
     context.addRequiredStartAction(managementClientFuture);
-
-    final ActorFuture<ClientTransport> replicationClientFuture =
-        createClientTransport(
-            serviceContainer,
-            REPLICATION_API_CLIENT_NAME,
-            new ByteValue(networkCfg.getDefaultSendBufferSize()),
-            null);
-
-    context.addRequiredStartAction(replicationClientFuture);
   }
 
   private void createSocketBindings(final SystemContext context) {
     final NetworkCfg networkCfg = context.getBrokerConfiguration().getNetwork();
     final ServiceContainer serviceContainer = context.getServiceContainer();
-
-    final ActorFuture<ServerTransport> replicationApiFuture =
-        bindNonBufferingProtocolEndpoint(
-            context,
-            serviceContainer,
-            REPLICATION_API_SERVER_NAME,
-            networkCfg.getReplication(),
-            REPLICATION_API_MESSAGE_HANDLER,
-            REPLICATION_API_MESSAGE_HANDLER);
-
-    context.addRequiredStartAction(replicationApiFuture);
 
     final ActorFuture<BufferingServerTransport> managementApiFuture =
         bindBufferingProtocolEndpoint(
@@ -128,15 +103,6 @@ public class TransportComponent implements Component {
         .createService(CLIENT_API_MESSAGE_HANDLER, messageHandlerService)
         .groupReference(
             LEADER_PARTITION_GROUP_NAME, messageHandlerService.getLeaderParitionsGroupReference())
-        .install();
-
-    final RaftApiMessageHandlerService raftApiMessageHandlerService =
-        new RaftApiMessageHandlerService();
-    serviceContainer
-        .createService(REPLICATION_API_MESSAGE_HANDLER, raftApiMessageHandlerService)
-        .groupReference(
-            ClusterBaseLayerServiceNames.RAFT_SERVICE_GROUP,
-            raftApiMessageHandlerService.getRaftGroupReference())
         .install();
   }
 

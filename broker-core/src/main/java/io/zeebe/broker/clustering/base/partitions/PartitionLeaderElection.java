@@ -15,58 +15,59 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.clustering.base.topology;
+package io.zeebe.broker.clustering.base.partitions;
 
 import io.atomix.core.Atomix;
 import io.atomix.core.election.LeaderElection;
-import io.zeebe.broker.system.configuration.ClusterCfg;
+import io.atomix.protocols.raft.MultiRaftProtocol;
+import io.zeebe.broker.Loggers;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceGroupReference;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
+import org.slf4j.Logger;
 
-public class TopologyManagerService implements Service<TopologyManager> {
-  private TopologyManagerImpl topologyManager;
+public class PartitionLeaderElection implements Service<LeaderElection> {
 
-  private final ServiceGroupReference<LeaderElection> leaderElectionReference =
-      ServiceGroupReference.<LeaderElection>create()
-          .onAdd(
-              (name, election) ->
-                  topologyManager.onLeaderElectionStarted((LeaderElection<String>) election))
-          .build();
+  private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
-  private final NodeInfo localMember;
-  private final ClusterCfg clusterCfg;
   private final Injector<Atomix> atomixInjector = new Injector<>();
+  private Atomix atomix;
 
-  public TopologyManagerService(NodeInfo localMember, ClusterCfg clusterCfg) {
-    this.localMember = localMember;
-    this.clusterCfg = clusterCfg;
+  // TODO: Check if we should use memberId instead of string
+  private LeaderElection<String> election;
+
+  private final int partitionId;
+  private String memberId;
+
+  public PartitionLeaderElection(int partitionId) {
+    this.partitionId = partitionId;
   }
 
   @Override
   public void start(ServiceStartContext startContext) {
-    final Atomix atomix = atomixInjector.getValue();
+    atomix = atomixInjector.getValue();
+    memberId = atomix.getMembershipService().getLocalMember().id().id();
 
-    topologyManager = new TopologyManagerImpl(atomix, localMember, clusterCfg);
-    atomix.getMembershipService().addListener(topologyManager);
+    LOG.info("Creating leader election for partition {} in node {}", partitionId, memberId);
 
-    startContext.async(startContext.getScheduler().submitActor(topologyManager));
+    election =
+        atomix
+            .<String>leaderElectionBuilder(String.valueOf(partitionId))
+            .withProtocol(MultiRaftProtocol.builder().build())
+            .build();
+
+    election.run(memberId);
   }
 
   @Override
   public void stop(ServiceStopContext stopContext) {
-    stopContext.async(topologyManager.close());
+    election.withdraw(memberId);
   }
 
   @Override
-  public TopologyManager get() {
-    return topologyManager;
-  }
-
-  public ServiceGroupReference<LeaderElection> getLeaderElectionReference() {
-    return leaderElectionReference;
+  public LeaderElection<String> get() {
+    return election;
   }
 
   public Injector<Atomix> getAtomixInjector() {

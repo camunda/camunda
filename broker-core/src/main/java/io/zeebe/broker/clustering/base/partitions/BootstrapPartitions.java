@@ -17,9 +17,7 @@
  */
 package io.zeebe.broker.clustering.base.partitions;
 
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.partitionInstallServiceName;
-import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_CLIENT_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.clientTransport;
+import static io.zeebe.broker.clustering.base.partitions.PartitionServiceNames.partitionInstallServiceName;
 
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfiguration;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
@@ -103,14 +101,9 @@ public class BootstrapPartitions implements Service<Void> {
         partitionInstallServiceName(partitionName);
 
     final PartitionInstallService partitionInstallService =
-        new PartitionInstallService(brokerCfg, configuration);
+        new PartitionInstallService(configuration);
 
-    startContext
-        .createService(partitionInstallServiceName, partitionInstallService)
-        .dependency(
-            clientTransport(REPLICATION_API_CLIENT_NAME),
-            partitionInstallService.getClientTransportInjector())
-        .install();
+    startContext.createService(partitionInstallServiceName, partitionInstallService).install();
   }
 
   @Override

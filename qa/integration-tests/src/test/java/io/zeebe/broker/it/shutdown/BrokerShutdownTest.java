@@ -58,10 +58,7 @@ public class BrokerShutdownTest {
                         TransportServiceNames.MANAGEMENT_API_SERVER_NAME))
                 .dependency(
                     TransportServiceNames.serverTransport(
-                        TransportServiceNames.CLIENT_API_SERVER_NAME))
-                .dependency(
-                    TransportServiceNames.serverTransport(
-                        TransportServiceNames.REPLICATION_API_SERVER_NAME)));
+                        TransportServiceNames.CLIENT_API_SERVER_NAME)));
 
     final Broker broker = brokerRule.getBroker();
     broker.getBrokerContext().setCloseTimeout(Duration.ofSeconds(1));

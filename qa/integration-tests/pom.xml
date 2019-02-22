@@ -31,11 +31,6 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-raft</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
       <artifactId>zb-util</artifactId>
     </dependency>
 
@@ -134,7 +129,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <argLine>-Xmx512m -XX:MaxDirectMemorySize=4g</argLine>
+          <argLine>-Xmx2048m -XX:MaxDirectMemorySize=4g</argLine>
         </configuration>
       </plugin>
     </plugins>

@@ -38,7 +38,6 @@ public class BufferedLogStreamReader implements LogStreamReader {
   private static final long LAST_POSITION = Long.MAX_VALUE;
 
   // configuration
-  private final boolean readUncommittedEntries;
   private final ReadResultProcessor completeEventsInBlockProcessor =
       new CompleteEventsInBlockProcessor();
 
@@ -61,23 +60,13 @@ public class BufferedLogStreamReader implements LogStreamReader {
   private int bufferOffset;
   private DirectBuffer directBuffer = new UnsafeBuffer(0, 0);
 
-  public BufferedLogStreamReader() {
-    this(false);
-  }
-
   public BufferedLogStreamReader(final LogStream logStream) {
     this();
     wrap(logStream);
   }
 
-  public BufferedLogStreamReader(final boolean readUncommittedEntries) {
-    this.readUncommittedEntries = readUncommittedEntries;
+  public BufferedLogStreamReader() {
     state = IteratorState.WRAP_NOT_CALLED;
-  }
-
-  public BufferedLogStreamReader(final LogStream logStream, final boolean readUncommittedEntries) {
-    this(readUncommittedEntries);
-    wrap(logStream);
   }
 
   @Override
@@ -404,27 +393,12 @@ public class BufferedLogStreamReader implements LogStreamReader {
   }
 
   private void checkIfNextEventIsCommitted() {
-    if (readUncommittedEntries || isNextEventCommitted()) {
-      state = IteratorState.EVENT_AVAILABLE;
-    } else {
-      state = IteratorState.EVENT_NOT_COMMITTED;
-    }
-  }
-
-  private boolean isNextEventCommitted() {
-    return nextEvent.getPosition() <= getCommitPosition();
-  }
-
-  private long getCommitPosition() {
-    return logStream.getCommitPosition();
+    // Next Event is always committed.
+    state = IteratorState.EVENT_AVAILABLE;
   }
 
   private long getLastPosition() {
-    if (readUncommittedEntries) {
-      return LAST_POSITION;
-    } else {
-      return getCommitPosition();
-    }
+    return LAST_POSITION;
   }
 
   enum IteratorState {

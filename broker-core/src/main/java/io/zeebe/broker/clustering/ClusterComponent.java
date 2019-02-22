@@ -21,13 +21,12 @@ import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMI
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_SERVICE;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.CLUSTERING_BASE_LAYER;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.GATEWAY_SERVICE;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADERSHIP_SERVICE_GROUP;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.RAFT_BOOTSTRAP_SERVICE;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.RAFT_CONFIGURATION_MANAGER;
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.RAFT_SERVICE_GROUP;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.REMOTE_ADDRESS_MANAGER_SERVICE;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.TOPOLOGY_MANAGER_SERVICE;
 import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_CLIENT_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_CLIENT_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.clientTransport;
 
 import io.zeebe.broker.clustering.base.EmbeddedGatewayService;
@@ -76,7 +75,8 @@ public class ClusterComponent implements Component {
     baseLayerInstall
         .createService(TOPOLOGY_MANAGER_SERVICE, topologyManagerService)
         .dependency(ATOMIX_SERVICE, topologyManagerService.getAtomixInjector())
-        .groupReference(RAFT_SERVICE_GROUP, topologyManagerService.getRaftReference())
+        .groupReference(
+            LEADERSHIP_SERVICE_GROUP, topologyManagerService.getLeaderElectionReference())
         .install();
 
     final RemoteAddressManager remoteAddressManager = new RemoteAddressManager();
@@ -86,9 +86,6 @@ public class ClusterComponent implements Component {
         .dependency(
             clientTransport(MANAGEMENT_API_CLIENT_NAME),
             remoteAddressManager.getManagementClientTransportInjector())
-        .dependency(
-            clientTransport(REPLICATION_API_CLIENT_NAME),
-            remoteAddressManager.getReplicationClientTransportInjector())
         .install();
 
     if (brokerConfig.getGateway().isEnable()) {

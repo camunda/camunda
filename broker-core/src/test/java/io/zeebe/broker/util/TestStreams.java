@@ -64,7 +64,6 @@ import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.Intent;
-import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.LangUtil;
@@ -95,7 +94,6 @@ public class TestStreams {
     VALUE_TYPES.put(
         WorkflowInstanceSubscriptionRecord.class, ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
     VALUE_TYPES.put(ExporterRecord.class, ValueType.EXPORTER);
-    VALUE_TYPES.put(RaftConfigurationEvent.class, ValueType.RAFT);
     VALUE_TYPES.put(JobBatchRecord.class, ValueType.JOB_BATCH);
     VALUE_TYPES.put(TimerRecord.class, ValueType.TIMER);
     VALUE_TYPES.put(VariableRecord.class, ValueType.VARIABLE);
