@@ -1,5 +1,3 @@
-License: This repository contains files subject to a commercial license.
-
 # Camunda Operate
 
 **[Backend Documentation](./backend)**
@@ -75,3 +73,5 @@ To re-create the "public" environment (or any other environment):
 * Change the BRANCH field to "public"
 * (special) If you're deploying version 1.0.0-RC1, also put INFRASTRUCTURE_BRANCH: operate-public (this will run older Zeebe version: 0.13.1)
 * Click on "Build"
+
+License: This repository contains files subject to a commercial license.

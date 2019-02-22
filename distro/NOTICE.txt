@@ -1,5 +1,5 @@
 Camunda
-Copyright 2019-2019 Camunda Services GmbH
+Copyright 2018-2019 Camunda Services GmbH
 
 ========================================================
 
