@@ -22,7 +22,7 @@ public class UpgradeExecutionPlanTest {
     final UpgradeExecutionPlan underTest = new UpgradeExecutionPlan();
     final List<TypeMappingCreator> mappings = underTest.getMappings();
 
-    assertThat(mappings.size(), is(17));
+    assertThat(mappings.size(), is(16));
   }
 
   @Test

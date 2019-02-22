@@ -3,6 +3,7 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
+import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.UserOperationDto;
 import org.camunda.optimize.dto.optimize.importing.UserOperationLogEntryDto;
 import org.camunda.optimize.dto.optimize.importing.UserTaskInstanceDto;
@@ -27,11 +28,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.writer.CompletedUserTaskInstanceWriter.createUpdateUserTaskMetricsScript;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.USER_TASK_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 
 @Component
 public class UserOperationsLogEntryWriter {
@@ -54,48 +55,67 @@ public class UserOperationsLogEntryWriter {
     final BulkRequest userOperationsBulkRequest = new BulkRequest();
     userOperationsBulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
 
-    final Map<String, Set<UserOperationLogEntryDto>> userOperationsByUserTask = userOperationLogEntries.stream()
-      .collect(groupingBy(UserOperationLogEntryDto::getUserTaskId, toSet()));
+    final Map<String, List<UserOperationLogEntryDto>> operationsByTaskId = userOperationLogEntries.stream()
+      .collect(groupingBy(UserOperationLogEntryDto::getUserTaskId));
+    final Map<String, List<UserTaskInstanceDto>> userTasksByProcessInstance = operationsByTaskId
+      .entrySet()
+      .stream()
+      .map(entry -> {
+        final UserOperationLogEntryDto firstOperationEntry = entry.getValue().get(0);
+        final UserTaskInstanceDto userTaskInstanceDto = new UserTaskInstanceDto(
+          firstOperationEntry.getUserTaskId(),
+          firstOperationEntry.getProcessDefinitionId(),
+          firstOperationEntry.getProcessDefinitionKey(),
+          firstOperationEntry.getProcessInstanceId(),
+          mapToUserOperationDtos(entry.getValue()),
+          firstOperationEntry.getEngineAlias()
+        );
+        return userTaskInstanceDto;
+      })
+      .collect(groupingBy(UserTaskInstanceDto::getProcessInstanceId));
 
-    for (Map.Entry<String, Set<UserOperationLogEntryDto>> taskIdOperationsEntry : userOperationsByUserTask.entrySet()) {
-      addImportUserOperationsLogEntryRequest(
-        userOperationsBulkRequest, taskIdOperationsEntry.getKey(), taskIdOperationsEntry.getValue()
+    for (Map.Entry<String, List<UserTaskInstanceDto>> processInstanceTasks : userTasksByProcessInstance.entrySet()) {
+      addImportUserTaskInstanceDtoWithOperationsLogRequest(
+        userOperationsBulkRequest, processInstanceTasks.getKey(), processInstanceTasks.getValue()
       );
     }
 
     final BulkResponse bulkResponse = esClient.bulk(userOperationsBulkRequest, RequestOptions.DEFAULT);
     if (bulkResponse.hasFailures()) {
       throw new OptimizeRuntimeException(
-        "There were failures while writing user operation log entries with message: "
-          + bulkResponse.buildFailureMessage()
+        "There were failures while writing user operation log entries with message: " + bulkResponse.buildFailureMessage()
       );
     }
   }
 
-  private void addImportUserOperationsLogEntryRequest(final BulkRequest bulkRequest,
-                                                      final String userTaskId,
-                                                      final Set<UserOperationLogEntryDto> userOperationLogEntries)
+  private void addImportUserTaskInstanceDtoWithOperationsLogRequest(final BulkRequest bulkRequest,
+                                                                    final String processInstanceId,
+                                                                    final List<UserTaskInstanceDto> userTasks)
     throws JsonProcessingException {
 
-    final UserOperationLogEntryDto firstUserLogEntry = userOperationLogEntries.stream().findFirst()
-      .orElseThrow(() -> new IllegalArgumentException("Expected at least one user operation log entry"));
-    final Set<UserOperationDto> userOperationDtos = mapToUserOperationDtos(userOperationLogEntries);
+    final UserTaskInstanceDto firstUserTaskEntry = userTasks.stream()
+      .findFirst()
+      .orElseThrow(() -> new IllegalArgumentException("Expected at least one user task entry"));
 
-    final Script updateScript = createUpdateUserOperationsScript(userOperationDtos);
-    final String newUserTaskEntryIfAbsent = objectMapper.writeValueAsString(
-      new UserTaskInstanceDto(userTaskId, userOperationDtos, firstUserLogEntry.getEngineAlias())
-    );
+    final ProcessInstanceDto procInst = new ProcessInstanceDto();
+    procInst.setProcessDefinitionId(firstUserTaskEntry.getProcessDefinitionId());
+    procInst.setProcessDefinitionKey(firstUserTaskEntry.getProcessDefinitionKey());
+    procInst.setProcessInstanceId(firstUserTaskEntry.getProcessInstanceId());
+    procInst.getUserTasks().addAll(userTasks);
+    procInst.setEngine(firstUserTaskEntry.getEngine());
+    final String newProcessInstanceIfAbsent = objectMapper.writeValueAsString(procInst);
 
+    final Script updateScript = createUpdateUserOperationsScript(userTasks);
     final UpdateRequest request =
-      new UpdateRequest(getOptimizeIndexAliasForType(USER_TASK_INSTANCE_TYPE), USER_TASK_INSTANCE_TYPE, userTaskId)
+      new UpdateRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE), PROC_INSTANCE_TYPE, processInstanceId)
         .script(updateScript)
-        .upsert(newUserTaskEntryIfAbsent, XContentType.JSON)
+        .upsert(newProcessInstanceIfAbsent, XContentType.JSON)
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
     bulkRequest.add(request);
   }
 
-  private Set<UserOperationDto> mapToUserOperationDtos(final Set<UserOperationLogEntryDto> userOperationLogEntries) {
+  private Set<UserOperationDto> mapToUserOperationDtos(final List<UserOperationLogEntryDto> userOperationLogEntries) {
     return userOperationLogEntries.stream()
       .map(userOperationLogEntryDto -> new UserOperationDto(
         userOperationLogEntryDto.getId(),
@@ -109,37 +129,43 @@ public class UserOperationsLogEntryWriter {
       .collect(Collectors.toSet());
   }
 
-  private Script createUpdateUserOperationsScript(final Set<UserOperationDto> userOperationDtos) {
+  private Script createUpdateUserOperationsScript(final List<UserTaskInstanceDto> userTasksWithOperations) {
     return new Script(
       ScriptType.INLINE,
       Script.DEFAULT_SCRIPT_LANG,
       // @formatter:off
-      "HashMap userOperationsById = new HashMap();\n" +
-      "if (ctx._source.userOperations != null) {\n" +
-        "for (def existingUserOperation : ctx._source.userOperations) {\n" +
-          "userOperationsById.put(existingUserOperation.id, existingUserOperation);\n" +
+      // 1 check for existing userTask
+      "if (ctx._source.userTasks == null) ctx._source.userTasks = [];\n" +
+      "def existingUserTasksById = ctx._source.userTasks.stream().collect(Collectors.toMap(task -> task.id, task -> task));\n" +
+      "for (def currentUserTask : params.userTasks) {\n" +
+        "def existingTask = existingUserTasksById.get(currentUserTask.id);\n" +
+        "if (existingTask != null) {\n" +
+          // 2.1 if it exists add the operation to the existing ones
+          "def existingOperationsById = existingTask.userOperations.stream()\n" +
+            ".collect(Collectors.toMap(operation -> operation.id, operation -> operation));\n" +
+          "currentUserTask.userOperations.stream()\n" +
+            ".forEach(userOperation -> existingOperationsById.putIfAbsent(userOperation.id, userOperation));\n" +
+          "existingTask.userOperations = existingOperationsById.values();\n" +
+        "} else {\n" +
+          // 2.2 if it doesn't exist add it with id and userOperations set
+          "ctx._source.userTasks.add(currentUserTask);\n" +
         "}\n" +
-      "}\n" +
-      "for (def newUserOperation : params.userOperations) {\n" +
-        "userOperationsById.putIfAbsent(newUserOperation.id, newUserOperation);\n" +
-      "}\n" +
-      "ctx._source.userOperations = userOperationsById.values();\n"
-
-       + createUpdateUserTaskMetricsScript(),
+      "}\n"
+       + createUpdateUserTaskMetricsScript()
+      ,
       // @formatter:on
       ImmutableMap.of(
-        "userOperations", mapToParameterSet(userOperationDtos)
+        "userTasks", mapToParameterSet(userTasksWithOperations)
       )
     );
   }
 
 
-
   @SuppressWarnings("unchecked")
-  private Set<Map<String, String>> mapToParameterSet(final Set<UserOperationDto> userOperationDtos) {
-    return userOperationDtos.stream()
-      .map(userOperationDto -> (Map<String, String>) objectMapper.convertValue(userOperationDto, Map.class))
-      .collect(Collectors.toSet());
+  private List<Map<String, String>> mapToParameterSet(final List<UserTaskInstanceDto> operationsByTask) {
+    return operationsByTask.stream()
+      .map(value -> (Map<String, String>) objectMapper.convertValue(value, Map.class))
+      .collect(toList());
   }
 
 }

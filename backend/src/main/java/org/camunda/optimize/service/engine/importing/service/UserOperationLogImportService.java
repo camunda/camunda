@@ -68,6 +68,9 @@ public class UserOperationLogImportService {
   private UserOperationLogEntryDto mapEngineEntityToOptimizeEntity(final UserOperationLogEntryEngineDto engineEntity) {
     final UserOperationLogEntryDto userTaskInstanceDto = new UserOperationLogEntryDto(
       engineEntity.getId(),
+      engineEntity.getProcessDefinitionId(),
+      engineEntity.getProcessDefinitionKey(),
+      engineEntity.getProcessInstanceId(),
       engineEntity.getTaskId(),
       engineEntity.getUserId(),
       engineEntity.getTimestamp(),

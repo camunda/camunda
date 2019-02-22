@@ -7,15 +7,18 @@ import java.util.Objects;
 
 public class UserOperationDto implements OptimizeDto {
 
-  private final String id;
+  private String id;
 
-  private final String userId;
-  private final OffsetDateTime timestamp;
+  private String userId;
+  private OffsetDateTime timestamp;
 
-  private final String type;
-  private final String property;
-  private final String originalValue;
-  private final String newValue;
+  private String type;
+  private String property;
+  private String originalValue;
+  private String newValue;
+
+  protected UserOperationDto() {
+  }
 
   public UserOperationDto(final String id, final String userId, final OffsetDateTime timestamp,
                           final String type, final String property, final String originalValue, final String newValue) {

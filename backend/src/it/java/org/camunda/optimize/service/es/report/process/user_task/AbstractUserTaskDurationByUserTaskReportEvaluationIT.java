@@ -6,6 +6,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewOperation;
@@ -15,6 +16,7 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.util.DateUtilHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -22,8 +24,10 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import javax.ws.rs.core.Response;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -384,14 +388,52 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final ProcessReportDataDto reportData =
-      createReport(processDefinition);
+    final ProcessReportDataDto reportData = createReport(processDefinition);
     final ProcessReportMapResultDto result = evaluateReport(reportData);
 
     // then
     final Map<String, Long> byUserTaskIdResult = result.getResult();
     assertThat(byUserTaskIdResult.size(), is(1));
     assertThat(byUserTaskIdResult.get(USER_TASK_1), is(10L));
+  }
+
+  @Test
+  public void filterInReport() {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
+    final ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
+    engineRule.finishAllUserTasks(processInstanceDto.getId());
+    changeDuration(processInstanceDto, 10L);
+
+    final OffsetDateTime processStartTime = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
+
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // when
+    ProcessReportDataDto reportData = createReport(processDefinition);
+    reportData.setFilter(createStartDateFilter(null, processStartTime.minusSeconds(1L)));
+    ProcessReportMapResultDto result = evaluateReport(reportData);
+
+    // then
+    assertThat(result.getResult(), is(notNullValue()));
+    Map<String, Long> byUserTaskIdResult = result.getResult();
+    assertThat(byUserTaskIdResult.size(), is(0));
+
+    // when
+    reportData = createReport(processDefinition);
+    reportData.setFilter(createStartDateFilter(processStartTime, null));
+    result = evaluateReport(reportData);
+
+    // then
+    assertThat(result.getResult(), is(notNullValue()));
+    byUserTaskIdResult = result.getResult();
+    assertThat(byUserTaskIdResult.size(), is(1));
+    assertThat(byUserTaskIdResult.get(USER_TASK_1 ), is(10L));
+  }
+
+  private List<ProcessFilterDto> createStartDateFilter(OffsetDateTime startDate, OffsetDateTime endDate) {
+    return DateUtilHelper.createFixedStartDateFilter(startDate, endDate);
   }
 
   @Test

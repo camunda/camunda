@@ -1,11 +1,13 @@
 package org.camunda.optimize.service.es.writer;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.apache.commons.text.StringSubstitutor;
+import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.UserTaskInstanceDto;
-import org.camunda.optimize.service.es.schema.type.UserTaskInstanceType;
+import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.support.WriteRequest;
@@ -20,18 +22,27 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.groupingBy;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASKS;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_ACTIVITY_ID;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_ACTIVITY_INSTANCE_ID;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_DELETE_REASON;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_DUE_DATE;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_END_DATE;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_IDLE_DURATION;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_START_DATE;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_TOTAL_DURATION;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_WORK_DURATION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.USER_TASK_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 
 @Component
 public class CompletedUserTaskInstanceWriter {
@@ -39,44 +50,67 @@ public class CompletedUserTaskInstanceWriter {
 
   private RestHighLevelClient esClient;
   private ObjectMapper objectMapper;
-  private DateTimeFormatter dateTimeFormatter;
 
   @Autowired
   public CompletedUserTaskInstanceWriter(final RestHighLevelClient esClient,
-                                         final ObjectMapper objectMapper,
-                                         final DateTimeFormatter dateTimeFormatter) {
+                                         final ObjectMapper objectMapper) {
     this.esClient = esClient;
     this.objectMapper = objectMapper;
-    this.dateTimeFormatter = dateTimeFormatter;
   }
 
   public void importUserTaskInstances(final List<UserTaskInstanceDto> userTaskInstances) throws Exception {
     logger.debug("Writing [{}] completed user task instances to elasticsearch", userTaskInstances.size());
 
-    final BulkRequest userTaskBulkRequest = new BulkRequest();
-    userTaskBulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+    final BulkRequest userTaskToProcessInstanceBulkRequest = new BulkRequest();
+    userTaskToProcessInstanceBulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
 
-    for (UserTaskInstanceDto userTaskInstance : userTaskInstances) {
-      addImportUserTaskInstanceRequest(userTaskBulkRequest, userTaskInstance);
+    final Map<String, List<UserTaskInstanceDto>> userTasksByProcessInstance =
+      userTaskInstances.stream().collect(groupingBy(UserTaskInstanceDto::getProcessInstanceId));
+
+    for (Map.Entry<String, List<UserTaskInstanceDto>> processInstanceEntry : userTasksByProcessInstance.entrySet()) {
+      addActivityInstancesToProcessInstanceRequest(
+        userTaskToProcessInstanceBulkRequest,
+        processInstanceEntry.getKey(),
+        processInstanceEntry.getValue()
+      );
     }
-    BulkResponse bulkResponse = esClient.bulk(userTaskBulkRequest, RequestOptions.DEFAULT);
+
+    BulkResponse bulkResponse = esClient.bulk(userTaskToProcessInstanceBulkRequest, RequestOptions.DEFAULT);
     if (bulkResponse.hasFailures()) {
-      logger.warn(
+      String errorMessage = String.format(
         "There were failures while writing completed user task instances with message: {}",
         bulkResponse.buildFailureMessage()
       );
+      throw new OptimizeRuntimeException(errorMessage);
     }
+
   }
 
-  private void addImportUserTaskInstanceRequest(final BulkRequest bulkRequest, final UserTaskInstanceDto userTask)
-    throws JsonProcessingException {
+  private void addActivityInstancesToProcessInstanceRequest(final BulkRequest bulkRequest,
+                                                            final String processInstanceId,
+                                                            final List<UserTaskInstanceDto> userTasks)
+    throws IOException {
 
-    final String userTaskId = userTask.getId();
-    final Script updateScript = createUpdateFieldsScript(userTask);
-    final String newEntryIfAbsent = objectMapper.writeValueAsString(userTask);
+    final ImmutableMap<String, Object> scriptParameters = ImmutableMap.of(USER_TASKS, mapToParameterSet(userTasks));
+    final Script updateScript = new Script(
+      ScriptType.INLINE,
+      Script.DEFAULT_SCRIPT_LANG,
+      createInlineUpdateScript(),
+      scriptParameters
+    );
 
-    final UpdateRequest request =
-      new UpdateRequest(getOptimizeIndexAliasForType(USER_TASK_INSTANCE_TYPE), USER_TASK_INSTANCE_TYPE, userTaskId)
+    final UserTaskInstanceDto firstUserTaskInstance = userTasks.stream().findFirst()
+      .orElseThrow(() -> new OptimizeRuntimeException("No user tasks to import provided"));
+    final ProcessInstanceDto procInst = new ProcessInstanceDto();
+    procInst.setProcessDefinitionId(firstUserTaskInstance.getProcessDefinitionId());
+    procInst.setProcessDefinitionKey(firstUserTaskInstance.getProcessDefinitionKey());
+    procInst.setProcessInstanceId(firstUserTaskInstance.getProcessInstanceId());
+    procInst.getUserTasks().addAll(userTasks);
+    procInst.setEngine(firstUserTaskInstance.getEngine());
+    String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
+
+    UpdateRequest request =
+      new UpdateRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE), PROC_INSTANCE_TYPE, processInstanceId)
         .script(updateScript)
         .upsert(newEntryIfAbsent, XContentType.JSON)
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
@@ -84,82 +118,85 @@ public class CompletedUserTaskInstanceWriter {
     bulkRequest.add(request);
   }
 
-  private Script createUpdateFieldsScript(final UserTaskInstanceDto userTask) {
-    // only fields for which the source of truth is the completed user task
-    final Map<String, Object> params = new HashMap<>();
-    params.put(UserTaskInstanceType.PROCESS_DEFINITION_ID, userTask.getProcessDefinitionId());
-    params.put(UserTaskInstanceType.PROCESS_DEFINITION_KEY, userTask.getProcessDefinitionKey());
-    params.put(UserTaskInstanceType.PROCESS_DEFINITION_VERSION, userTask.getProcessDefinitionVersion());
-
-    params.put(UserTaskInstanceType.PROCESS_INSTANCE_ID, userTask.getProcessInstanceId());
-
-    params.put(UserTaskInstanceType.ACTIVITY_ID, userTask.getActivityId());
-    params.put(UserTaskInstanceType.ACTIVITY_INSTANCE_ID, userTask.getActivityInstanceId());
-
-    params.put(UserTaskInstanceType.TOTAL_DURATION, userTask.getTotalDurationInMs());
-    // by default work duration equals total duration, it get's eventually updated on user operation import
-    params.put(UserTaskInstanceType.WORK_DURATION, userTask.getTotalDurationInMs());
-    // idle time defaults to 0, it get's eventually updated on user operation import
-    params.put(UserTaskInstanceType.IDLE_DURATION, 0);
-    params.put(UserTaskInstanceType.START_DATE, dateTimeFormatter.format(userTask.getStartDate()));
-    params.put(UserTaskInstanceType.END_DATE, dateTimeFormatter.format(userTask.getEndDate()));
-
-    Optional.ofNullable(userTask.getDueDate())
-      .ifPresent(dueDate -> params.put(UserTaskInstanceType.DUE_DATE, dateTimeFormatter.format(dueDate)));
-
-    params.put(UserTaskInstanceType.DELETE_REASON, userTask.getDeleteReason());
-
-    params.put(UserTaskInstanceType.ENGINE, userTask.getEngine());
-
-    return new Script(
-      ScriptType.INLINE,
-      Script.DEFAULT_SCRIPT_LANG,
-      createUpdateFieldsScript(params.keySet())
-        + createUpdateUserTaskMetricsScript(),
-      params
-    );
+  private String createInlineUpdateScript() {
+    // @formatter:off
+    return
+      "if (ctx._source.userTasks == null) ctx._source.userTasks = [];\n" +
+      "def existingUserTasksById = ctx._source.userTasks.stream().collect(Collectors.toMap(task -> task.id, task -> task));\n" +
+      "for (def newUserTask : params.userTasks) {\n" +
+        "def existingTask  = existingUserTasksById.get(newUserTask.id);\n" +
+        "if (existingTask != null) {\n" +
+          createUpdateFieldsScript(ImmutableSet.of(
+                USER_TASK_ACTIVITY_ID, USER_TASK_ACTIVITY_INSTANCE_ID,
+                USER_TASK_TOTAL_DURATION, USER_TASK_WORK_DURATION, USER_TASK_IDLE_DURATION,
+                USER_TASK_START_DATE, USER_TASK_END_DATE, USER_TASK_DUE_DATE, USER_TASK_DELETE_REASON
+              )) +
+          // idle time defaults to 0, it get's eventually updated on user operation import
+          "existingTask." + USER_TASK_IDLE_DURATION + " = 0;\n" +
+          // by default work duration equals total duration, it get's eventually updated on user operation import
+          "existingTask." + USER_TASK_WORK_DURATION + " = existingTask." + USER_TASK_TOTAL_DURATION +";\n" +
+        "} else {\n" +
+          "if (ctx._source.userTasks == null) ctx._source.userTasks = [];\n" +
+          "ctx._source.userTasks.add(newUserTask);\n" +
+        "}\n" +
+      "}\n"
+      + createUpdateUserTaskMetricsScript()
+      ;
+    // @formatter:on
   }
 
-  private String createUpdateFieldsScript(final Set<String> fieldKeys) {
-    return fieldKeys
-      .stream()
-      .map(fieldKey -> String.format("ctx._source.%s = params.%s;\n", fieldKey, fieldKey))
-      .collect(Collectors.joining());
-  }
-
-  public static String createUpdateUserTaskMetricsScript() {
+  static String createUpdateUserTaskMetricsScript() {
     // @formatter:off
     final StringSubstitutor substitutor = new StringSubstitutor(
       ImmutableMap.<String, String>builder()
-      .put("userOperationsField", UserTaskInstanceType.USER_OPERATIONS)
-      .put("startDateField", UserTaskInstanceType.START_DATE)
-      .put("endDateField", UserTaskInstanceType.END_DATE)
+      .put("userTasksField", USER_TASKS)
+      .put("userOperationsField", ProcessInstanceType.USER_OPERATIONS)
+      .put("startDateField", ProcessInstanceType.START_DATE)
+      .put("endDateField", ProcessInstanceType.END_DATE)
       .put("claimTypeValue", "Claim")
       .put("dateFormatPattern", OPTIMIZE_DATE_FORMAT)
       .build()
     );
     return substitutor.replace(
-      "if (ctx._source.${userOperationsField} != null) {\n" +
-        "def dateFormatter = new SimpleDateFormat(\"${dateFormatPattern}\");\n" +
-        "def optionalFirstClaimDate = ctx._source.${userOperationsField}.stream()\n" +
-            ".filter(userOperation -> \"${claimTypeValue}\".equals(userOperation.type))\n" +
-            ".map(userOperation -> userOperation.timestamp)\n" +
-            ".map(dateFormatter::parse)\n" +
-            ".min(Date::compareTo);\n" +
-        "optionalFirstClaimDate.ifPresent(claimDate -> {\n" +
-          "def claimDateInMs = claimDate.getTime();\n" +
-          "def optionalStartDate = Optional.ofNullable(ctx._source.${startDateField}).map(dateFormatter::parse);\n" +
-          "def optionalEndDate = Optional.ofNullable(ctx._source.${endDateField}).map(dateFormatter::parse);\n" +
-          "optionalStartDate.ifPresent(startDate -> {\n" +
-              "ctx._source.idleDurationInMs = claimDateInMs - startDate.getTime();\n" +
-          "});\n" +
-          "optionalEndDate.ifPresent(endDate -> {\n" +
-              "ctx._source.workDurationInMs = endDate.getTime() - claimDateInMs;\n" +
-          "});\n" +
-        "});\n" +
+      "if (ctx._source.${userTasksField} != null) {\n" +
+        "for (def currentTask : ctx._source.${userTasksField}) {\n" +
+          "if (currentTask.${userOperationsField} != null) {\n" +
+            "def dateFormatter = new SimpleDateFormat(\"${dateFormatPattern}\");\n" +
+            "def optionalFirstClaimDate = currentTask.${userOperationsField}.stream()\n" +
+                ".filter(userOperation -> \"${claimTypeValue}\".equals(userOperation.type))\n" +
+                ".map(userOperation -> userOperation.timestamp)\n" +
+                ".map(dateFormatter::parse)\n" +
+                ".min(Date::compareTo);\n" +
+            "optionalFirstClaimDate.ifPresent(claimDate -> {\n" +
+              "def claimDateInMs = claimDate.getTime();\n" +
+              "def optionalStartDate = Optional.ofNullable(currentTask.${startDateField}).map(dateFormatter::parse);\n" +
+              "def optionalEndDate = Optional.ofNullable(currentTask.${endDateField}).map(dateFormatter::parse);\n" +
+              "optionalStartDate.ifPresent(startDate -> {\n" +
+                  "currentTask.idleDurationInMs = claimDateInMs - startDate.getTime();\n" +
+              "});\n" +
+              "optionalEndDate.ifPresent(endDate -> {\n" +
+                  "currentTask.workDurationInMs = endDate.getTime() - claimDateInMs;\n" +
+              "});\n" +
+            "});\n" +
+          "}\n" +
+        "}\n" +
       "}\n"
     );
     // @formatter:on
+  }
+
+  @SuppressWarnings("unchecked")
+  private List<Map<String, String>> mapToParameterSet(final List<UserTaskInstanceDto> userTaskInstanceDtos) {
+    return userTaskInstanceDtos.stream()
+      .map(userOperationDto -> (Map<String, String>) objectMapper.convertValue(userOperationDto, Map.class))
+      .collect(Collectors.toList());
+  }
+
+  private String createUpdateFieldsScript(final Set<String> fieldKeys) {
+    return fieldKeys
+      .stream()
+      .map(fieldKey -> String.format("existingTask.%s = newUserTask.%s;\n", fieldKey, fieldKey))
+      .collect(Collectors.joining());
   }
 
 }

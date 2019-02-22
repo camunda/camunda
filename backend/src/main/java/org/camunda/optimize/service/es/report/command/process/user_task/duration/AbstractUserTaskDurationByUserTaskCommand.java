@@ -14,6 +14,8 @@ import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.filter.Filter;
+import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.support.ValuesSourceAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -23,12 +25,19 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
-import static org.camunda.optimize.service.es.schema.type.UserTaskInstanceType.ACTIVITY_ID;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.USER_TASK_INSTANCE_TYPE;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASKS;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_ACTIVITY_ID;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
 public abstract class AbstractUserTaskDurationByUserTaskCommand<T extends Aggregation> extends UserTaskGroupingCommand {
 
-  private static final String TASK_ID_TERMS_AGGREGATION = "tasks";
+  private static final String USER_TASK_ID_TERMS_AGGREGATION = "tasks";
+  private static final String USER_TASKS_AGGREGATION = "userTasks";
+  private static final String FILTERED_USER_TASKS_AGGREGATION = "filteredUserTasks";
   private static final String DURATION_AGGREGATION = "durationAggregation";
 
   @Override
@@ -47,8 +56,8 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand<T extends Aggreg
       .fetchSource(false)
       .aggregation(createAggregation())
       .size(0);
-    final SearchRequest searchRequest = new SearchRequest(getOptimizeIndexAliasForType(USER_TASK_INSTANCE_TYPE))
-      .types(USER_TASK_INSTANCE_TYPE)
+    final SearchRequest searchRequest = new SearchRequest(getOptimizeIndexAliasForType(PROC_INSTANCE_TYPE))
+      .types(PROC_INSTANCE_TYPE)
       .source(searchSourceBuilder);
 
     try {
@@ -69,13 +78,22 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand<T extends Aggreg
   }
 
   private AggregationBuilder createAggregation() {
-    return AggregationBuilders
-      .terms(TASK_ID_TERMS_AGGREGATION)
-      .size(Integer.MAX_VALUE)
-      .field(ACTIVITY_ID)
+    return nested(USER_TASKS, USER_TASKS_AGGREGATION)
       .subAggregation(
-        getDurationAggregationBuilder(DURATION_AGGREGATION)
-          .field(getDurationFieldName())
+        filter(
+          FILTERED_USER_TASKS_AGGREGATION,
+          boolQuery()
+            .must(existsQuery(USER_TASKS + "." + getDurationFieldName()))
+        )
+          .subAggregation(AggregationBuilders
+                            .terms(USER_TASK_ID_TERMS_AGGREGATION)
+                            .size(Integer.MAX_VALUE)
+                            .field(USER_TASKS + "." + USER_TASK_ACTIVITY_ID)
+                            .subAggregation(
+                              getDurationAggregationBuilder(DURATION_AGGREGATION)
+                                .field(USER_TASKS + "." + getDurationFieldName())
+                            )
+          )
       );
   }
 
@@ -87,7 +105,9 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand<T extends Aggreg
 
   private Map<String, Long> processAggregations(final Aggregations aggregations) {
     ValidationHelper.ensureNotNull("aggregations", aggregations);
-    final Terms byTaskIdAggregation = aggregations.get(TASK_ID_TERMS_AGGREGATION);
+    final Nested userTasks = aggregations.get(USER_TASKS_AGGREGATION);
+    final Filter filteredUserTasks = userTasks.getAggregations().get(FILTERED_USER_TASKS_AGGREGATION);
+    final Terms byTaskIdAggregation = filteredUserTasks.getAggregations().get(USER_TASK_ID_TERMS_AGGREGATION);
     final Map<String, Long> result = new HashMap<>();
     for (Terms.Bucket b : byTaskIdAggregation.getBuckets()) {
       Long roundedDuration = mapDurationByTaskIdAggregationResult(b.getAggregations().get(DURATION_AGGREGATION));

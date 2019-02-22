@@ -27,6 +27,7 @@ public class ProcessInstanceDto implements OptimizeDto {
   protected String engine;
   protected String state;
   protected List<SimpleEventDto> events = new ArrayList<>();
+  protected List<SimpleUserTaskInstanceDto> userTasks = new ArrayList<>();
 
   protected List<StringVariableDto> stringVariables = new ArrayList<>();
   protected List<IntegerVariableDto> integerVariables = new ArrayList<>();
@@ -213,4 +214,7 @@ public class ProcessInstanceDto implements OptimizeDto {
 
   public void setState(String state) { this.state = state; }
 
+  public List<SimpleUserTaskInstanceDto> getUserTasks() {
+    return userTasks;
+  }
 }

@@ -7,9 +7,7 @@ import org.camunda.optimize.service.engine.importing.fetcher.instance.CompletedU
 import org.camunda.optimize.service.engine.importing.index.handler.impl.CompletedUserTaskInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.page.TimestampBasedImportPage;
 import org.camunda.optimize.service.engine.importing.service.CompletedUserTaskInstanceImportService;
-import org.camunda.optimize.service.engine.importing.service.ProcessDefinitionVersionResolverService;
 import org.camunda.optimize.service.es.writer.CompletedUserTaskInstanceWriter;
-import org.camunda.optimize.service.exceptions.OptimizeProcessDefinitionFetchException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -28,8 +26,6 @@ public class CompletedUserTaskEngineImportMediator
 
   @Autowired
   private CompletedUserTaskInstanceWriter completedUserTaskInstanceWriter;
-  @Autowired
-  private ProcessDefinitionVersionResolverService processDefinitionVersionResolverService;
 
   private CompletedUserTaskInstanceImportService completedUserTaskInstanceImportService;
 
@@ -44,8 +40,7 @@ public class CompletedUserTaskEngineImportMediator
     completedUserTaskInstanceImportService = new CompletedUserTaskInstanceImportService(
       completedUserTaskInstanceWriter,
       elasticsearchImportJobExecutor,
-      engineContext,
-      processDefinitionVersionResolverService
+      engineContext
     );
   }
 
@@ -64,18 +59,10 @@ public class CompletedUserTaskEngineImportMediator
         .addAll(nextPageUserTaskEntities)
         .build();
 
-      try {
-        completedUserTaskInstanceImportService.executeImport(allEntities);
-        if (!nextPageUserTaskEntities.isEmpty()) {
-          OffsetDateTime timestamp = nextPageUserTaskEntities.get(nextPageUserTaskEntities.size() - 1).getStartTime();
-          importIndexHandler.updateTimestampOfLastEntity(timestamp);
-        }
-      } catch (OptimizeProcessDefinitionFetchException e) {
-        logger.debug(
-          "Required Process Definition not imported yet, skipping current user task instance import cycle.",
-          e.getMessage()
-        );
-        return false;
+      completedUserTaskInstanceImportService.executeImport(allEntities);
+      if (!nextPageUserTaskEntities.isEmpty()) {
+        OffsetDateTime timestamp = nextPageUserTaskEntities.get(nextPageUserTaskEntities.size() - 1).getStartTime();
+        importIndexHandler.updateTimestampOfLastEntity(timestamp);
       }
     }
 

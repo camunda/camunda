@@ -7,7 +7,6 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.CompletedUserTasksElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.CompletedUserTaskInstanceWriter;
-import org.camunda.optimize.service.exceptions.OptimizeProcessDefinitionFetchException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,27 +19,24 @@ public class CompletedUserTaskInstanceImportService {
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private final EngineContext engineContext;
   private final CompletedUserTaskInstanceWriter completedProcessInstanceWriter;
-  private final ProcessDefinitionVersionResolverService processDefinitionVersionResolverService;
 
   public CompletedUserTaskInstanceImportService(final CompletedUserTaskInstanceWriter completedProcessInstanceWriter,
                                                 final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-                                                final EngineContext engineContext,
-                                                final ProcessDefinitionVersionResolverService processDefinitionVersionResolverService) {
+                                                final EngineContext engineContext) {
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.engineContext = engineContext;
     this.completedProcessInstanceWriter = completedProcessInstanceWriter;
-    this.processDefinitionVersionResolverService = processDefinitionVersionResolverService;
   }
 
-  public void executeImport(final List<HistoricUserTaskInstanceDto> pageOfEngineEntities)
-    throws OptimizeProcessDefinitionFetchException {
+  public void executeImport(final List<HistoricUserTaskInstanceDto> pageOfEngineEntities) {
     logger.trace("Importing completed user task entities from engine...");
 
     final boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
       final List<UserTaskInstanceDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
       final ElasticsearchImportJob<UserTaskInstanceDto> elasticsearchImportJob = createElasticsearchImportJob(
-        newOptimizeEntities);
+        newOptimizeEntities
+      );
       addElasticsearchImportJobToQueue(elasticsearchImportJob);
     }
   }
@@ -53,8 +49,7 @@ public class CompletedUserTaskInstanceImportService {
     }
   }
 
-  private List<UserTaskInstanceDto> mapEngineEntitiesToOptimizeEntities(final List<HistoricUserTaskInstanceDto> engineEntities)
-    throws OptimizeProcessDefinitionFetchException {
+  private List<UserTaskInstanceDto> mapEngineEntitiesToOptimizeEntities(final List<HistoricUserTaskInstanceDto> engineEntities) {
     List<UserTaskInstanceDto> list = new ArrayList<>();
     for (HistoricUserTaskInstanceDto engineEntity : engineEntities) {
       UserTaskInstanceDto userTaskInstanceDto = mapEngineEntityToOptimizeEntity(engineEntity);
@@ -71,13 +66,11 @@ public class CompletedUserTaskInstanceImportService {
     return importJob;
   }
 
-  private UserTaskInstanceDto mapEngineEntityToOptimizeEntity(final HistoricUserTaskInstanceDto engineEntity)
-    throws OptimizeProcessDefinitionFetchException {
+  private UserTaskInstanceDto mapEngineEntityToOptimizeEntity(final HistoricUserTaskInstanceDto engineEntity) {
     final UserTaskInstanceDto userTaskInstanceDto = new UserTaskInstanceDto(
       engineEntity.getId(),
       engineEntity.getProcessDefinitionId(),
       engineEntity.getProcessDefinitionKey(),
-      resolveProcessDefinitionVersion(engineEntity),
       engineEntity.getProcessInstanceId(),
       engineEntity.getTaskDefinitionKey(),
       engineEntity.getActivityInstanceId(),
@@ -89,19 +82,6 @@ public class CompletedUserTaskInstanceImportService {
       engineContext.getEngineAlias()
     );
     return userTaskInstanceDto;
-  }
-
-  private String resolveProcessDefinitionVersion(final HistoricUserTaskInstanceDto engineEntity)
-    throws OptimizeProcessDefinitionFetchException {
-    return processDefinitionVersionResolverService
-      .getVersionForProcessDefinitionId(engineEntity.getProcessDefinitionId())
-      .orElseThrow(() -> {
-        final String message = String.format(
-          "Couldn't obtain version for processDefinitionId [%s]. It hasn't been imported yet",
-          engineEntity.getProcessDefinitionId()
-        );
-        return new OptimizeProcessDefinitionFetchException(message);
-      });
   }
 
 }

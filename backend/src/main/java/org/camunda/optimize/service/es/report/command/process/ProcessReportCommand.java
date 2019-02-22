@@ -27,20 +27,12 @@ public abstract class ProcessReportCommand<T extends ReportResult> extends Repor
   protected BoolQueryBuilder setupBaseQuery(final ProcessReportDataDto processReportData) {
     final String processDefinitionKey = processReportData.getProcessDefinitionKey();
     final String processDefinitionVersion = processReportData.getProcessDefinitionVersion();
-    final BoolQueryBuilder query = boolQuery().must(termQuery(getProcessDefinitionKeyPropertyName(), processDefinitionKey));
+    final BoolQueryBuilder query = boolQuery().must(termQuery(ProcessInstanceType.PROCESS_DEFINITION_KEY, processDefinitionKey));
     if (!ReportConstants.ALL_VERSIONS.equalsIgnoreCase(processDefinitionVersion)) {
-      query.must(termQuery(getProcessDefinitionVersionPropertyName(), processDefinitionVersion));
+      query.must(termQuery(ProcessInstanceType.PROCESS_DEFINITION_VERSION, processDefinitionVersion));
     }
     queryFilterEnhancer.addFilterToQuery(query, processReportData.getFilter());
     return query;
-  }
-
-  protected String getProcessDefinitionKeyPropertyName() {
-    return ProcessInstanceType.PROCESS_DEFINITION_KEY;
-  }
-
-  protected String getProcessDefinitionVersionPropertyName() {
-    return ProcessInstanceType.PROCESS_DEFINITION_VERSION;
   }
 
 }

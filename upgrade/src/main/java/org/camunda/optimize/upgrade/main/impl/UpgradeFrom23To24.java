@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.type.DecisionInstanceType;
+import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.es.schema.type.report.CombinedReportType;
 import org.camunda.optimize.service.es.schema.type.report.SingleDecisionReportType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -29,6 +30,7 @@ import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.camunda.optimize.upgrade.util.ReportUtil.buildDecisionDefinitionXmlByKeyAndVersionMap;
 import static org.camunda.optimize.upgrade.util.ReportUtil.buildSingleReportIdToVisualizationAndViewMap;
 import static org.camunda.optimize.upgrade.util.SchemaUpgradeUtil.createMappingAndSettingsJsonStringFromMapping;
@@ -88,6 +90,16 @@ public class UpgradeFrom23To24 implements Upgrade {
           .addUpgradeStep(buildMatchedRules());
       }
 
+      if (isProcessInstanceIndexPresent()) {
+        upgradePlanBuilder
+          .addUpgradeStep(new UpdateIndexStep(
+            PROC_INSTANCE_TYPE,
+            ProcessInstanceType.VERSION,
+            createMappingAndSettingsJsonStringFromMapping(new ProcessInstanceType())
+          ))
+          .addUpgradeStep(buildMatchedRules());
+      }
+
       ensureSingleDecisionReportIndexIsInitialized();
 
       upgradePlanBuilder
@@ -131,12 +143,16 @@ public class UpgradeFrom23To24 implements Upgrade {
     );
   }
 
+  private boolean isCombinedReportIndexPresent() {
+    return checkIfIndexExists("optimize-combined-report_v1");
+  }
+
   private boolean isDecisionInstanceIndexPresent() {
     return checkIfIndexExists("optimize-decision-instance_v1");
   }
 
-  private boolean isCombinedReportIndexPresent() {
-    return checkIfIndexExists("optimize-combined-report_v1");
+  private boolean isProcessInstanceIndexPresent() {
+    return checkIfIndexExists("optimize-process-instance_v1");
   }
 
   private boolean isTargetValueIndexPresent() {
