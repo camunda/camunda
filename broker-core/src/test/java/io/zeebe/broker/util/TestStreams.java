@@ -53,6 +53,7 @@ import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
+import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.Intent;
@@ -90,6 +91,7 @@ public class TestStreams {
     VALUE_TYPES.put(JobBatchRecord.class, ValueType.JOB_BATCH);
     VALUE_TYPES.put(TimerRecord.class, ValueType.TIMER);
     VALUE_TYPES.put(VariableRecord.class, ValueType.VARIABLE);
+    VALUE_TYPES.put(VariableDocumentRecord.class, ValueType.VARIABLE_DOCUMENT);
 
     VALUE_TYPES.put(UnpackedObject.class, ValueType.NOOP);
   }

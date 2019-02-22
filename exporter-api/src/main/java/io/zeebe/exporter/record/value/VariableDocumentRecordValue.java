@@ -13,19 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.msgpack.spec;
+package io.zeebe.exporter.record.value;
 
-public class MsgPackHelper {
-  public static final byte[] EMTPY_OBJECT = new byte[] {MsgPackCodes.FIXMAP_PREFIX};
-  public static final byte[] EMPTY_ARRAY = new byte[] {MsgPackCodes.FIXARRAY_PREFIX};
-  public static final byte[] NIL = new byte[] {MsgPackCodes.NIL};
+import io.zeebe.exporter.record.RecordValue;
+import io.zeebe.protocol.VariableDocumentUpdateSemantic;
+import java.util.Map;
 
-  static long ensurePositive(long size) {
-    if (size < 0) {
-      throw new MsgpackException(
-          "Negative value should not be accepted by size value and unsigned 64bit integer");
-    } else {
-      return size;
-    }
-  }
+public interface VariableDocumentRecordValue extends RecordValue {
+  long getScopeKey();
+
+  VariableDocumentUpdateSemantic getUpdateSemantics();
+
+  Map<String, Object> getDocument();
 }

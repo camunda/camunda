@@ -32,6 +32,7 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.VariableDocumentUpdateSemantic;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
@@ -40,6 +41,7 @@ import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.protocol.intent.TimerIntent;
+import io.zeebe.protocol.intent.VariableDocumentIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.DeploymentRecordStream;
@@ -185,6 +187,23 @@ public class PartitionTestClient {
         .command()
         .done()
         .sendAndAwait();
+  }
+
+  public void updateVariables(
+      long scopeKey, VariableDocumentUpdateSemantic updateSemantics, Map<String, Object> document) {
+    final ExecuteCommandResponse response =
+        apiRule
+            .createCmdRequest()
+            .type(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATE)
+            .command()
+            .put("scopeKey", scopeKey)
+            .put("updateSemantics", updateSemantics)
+            .put("document", MsgPackUtil.asMsgPack(document).byteArray())
+            .done()
+            .sendAndAwait();
+
+    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.getIntent()).isEqualTo(VariableDocumentIntent.UPDATED);
   }
 
   public void updatePayload(final long elementInstanceKey, final String jsonPayload) {

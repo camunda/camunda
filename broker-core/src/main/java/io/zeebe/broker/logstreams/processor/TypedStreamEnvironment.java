@@ -30,6 +30,7 @@ import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
+import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.transport.ServerOutput;
@@ -56,6 +57,7 @@ public class TypedStreamEnvironment {
     EVENT_REGISTRY.put(ValueType.JOB_BATCH, JobBatchRecord.class);
     EVENT_REGISTRY.put(ValueType.TIMER, TimerRecord.class);
     EVENT_REGISTRY.put(ValueType.VARIABLE, VariableRecord.class);
+    EVENT_REGISTRY.put(ValueType.VARIABLE_DOCUMENT, VariableDocumentRecord.class);
   }
 
   private TypedStreamReader reader;

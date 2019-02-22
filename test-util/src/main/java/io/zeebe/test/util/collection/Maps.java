@@ -13,19 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.msgpack.spec;
+package io.zeebe.test.util.collection;
 
-public class MsgPackHelper {
-  public static final byte[] EMTPY_OBJECT = new byte[] {MsgPackCodes.FIXMAP_PREFIX};
-  public static final byte[] EMPTY_ARRAY = new byte[] {MsgPackCodes.FIXARRAY_PREFIX};
-  public static final byte[] NIL = new byte[] {MsgPackCodes.NIL};
+import java.util.HashMap;
+import java.util.Map;
 
-  static long ensurePositive(long size) {
-    if (size < 0) {
-      throw new MsgpackException(
-          "Negative value should not be accepted by size value and unsigned 64bit integer");
-    } else {
-      return size;
+public class Maps {
+  public static <K, V> Map<K, V> of(Map.Entry<K, V>... entries) {
+    final Map<K, V> map = new HashMap<>();
+
+    for (final Map.Entry<K, V> entry : entries) {
+      map.put(entry.getKey(), entry.getValue());
     }
+
+    return map;
   }
 }

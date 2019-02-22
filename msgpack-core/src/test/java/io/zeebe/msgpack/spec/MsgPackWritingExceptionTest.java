@@ -35,11 +35,11 @@ public class MsgPackWritingExceptionTest {
   protected static final int WRITE_OFFSET = 123;
   protected MutableDirectBuffer actualValueBuffer = new UnsafeBuffer(new byte[BUFFER_CAPACITY]);
   protected static final String NEGATIVE_BUF_SIZE_EXCEPTION_MSG =
-      "Negative value should not be accepted by size value and unsiged 64bit integer";
+      "Negative value should not be accepted by size value and unsigned 64bit integer";
 
   @Rule public ExpectedException exception = ExpectedException.none();
 
-  @Parameters(name = "{0}")
+  @Parameters
   public static Iterable<Object[]> data() {
     return Arrays.asList(
         new Object[][] {
@@ -68,7 +68,7 @@ public class MsgPackWritingExceptionTest {
     writer.wrap(actualValueBuffer, WRITE_OFFSET);
 
     // then
-    exception.expect(RuntimeException.class);
+    exception.expect(MsgpackWriterException.class);
     exception.expectMessage(expectedExceptionMessage);
 
     // when
