@@ -23,10 +23,13 @@ export default class PopoverOverlay extends React.Component {
   renderModal = () => {
     const {metadata, selectedFlowNodeName} = this.props;
 
+    const headerTitleSuffix = !metadata.isSingleRowPeterCase
+      ? ''
+      : `Instance ${metadata.data.activityInstanceId}`;
+
     return (
       <Modal onModalClose={this.handleModalClose}>
-        <Modal.Header>{`Flow Node Instance "${selectedFlowNodeName ||
-          metadata.data['activityInstanceId']}" Metadata`}</Modal.Header>
+        <Modal.Header>{`Flow Node "${selectedFlowNodeName}" ${headerTitleSuffix} Metadata`}</Modal.Header>
         <Styled.ModalBody>
           <pre>
             <Styled.LinesSeparator />
