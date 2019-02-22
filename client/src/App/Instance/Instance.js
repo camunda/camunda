@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import SplitPane from 'modules/components/SplitPane';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 import Diagram from 'modules/components/Diagram';
-import {PAGE_TITLE} from 'modules/constants';
+import {PAGE_TITLE, UNNAMED_ACTIVITY} from 'modules/constants';
 import {compactObject} from 'modules/utils';
 import {getWorkflowName} from 'modules/utils/instance';
 import {parseDiagramXML} from 'modules/utils/bpmn';
@@ -92,7 +92,8 @@ export default class Instance extends Component {
           ...activitiesInstancesTree,
           id: instance.id,
           type: 'WORKFLOW',
-          state: instance.state
+          state: instance.state,
+          endDate: instance.endDate
         },
         activityIdToActivityInstanceMap,
         selection: {
@@ -256,7 +257,8 @@ export default class Instance extends Component {
     const name =
       node.id === instance.id
         ? getWorkflowName(instance)
-        : this.state.activityIdToNameMap.get(node.activityId);
+        : this.state.activityIdToNameMap.get(node.activityId) ||
+          UNNAMED_ACTIVITY;
 
     return {
       ...node,
@@ -270,7 +272,8 @@ export default class Instance extends Component {
       diagramDefinitions,
       instance,
       selection,
-      activityIdToActivityInstanceMap
+      activityIdToActivityInstanceMap,
+      activityIdToNameMap
     } = this.state;
 
     if (!loaded) {
@@ -286,6 +289,9 @@ export default class Instance extends Component {
 
     const metadata = !selection.flowNodeId ? null : this.getCurrentMetadata();
 
+    const selectedFlowNodeName =
+      selection.flowNodeId && activityIdToNameMap.get(selection.flowNodeId);
+
     return (
       <Fragment>
         <Header detail={<InstanceDetail instance={instance} />} />
@@ -300,6 +306,7 @@ export default class Instance extends Component {
                   onFlowNodeSelection={this.handleFlowNodeSelection}
                   selectableFlowNodes={selectableFlowNodes}
                   selectedFlowNodeId={selection.flowNodeId}
+                  selectedFlowNodeName={selectedFlowNodeName}
                   flowNodeStateOverlays={flowNodeStateOverlays}
                   definitions={diagramDefinitions}
                   metadata={metadata}
@@ -310,10 +317,7 @@ export default class Instance extends Component {
               <Styled.FlowNodeInstanceLog>
                 <Styled.NodeContainer>
                   <FlowNodeInstancesTree
-                    node={{
-                      ...this.state.activityInstancesTree,
-                      endDate: instance.endDate
-                    }}
+                    node={this.state.activityInstancesTree}
                     getNodeWithName={this.getNodeWithName}
                     treeDepth={1}
                     selectedTreeRowIds={this.state.selection.treeRowIds}

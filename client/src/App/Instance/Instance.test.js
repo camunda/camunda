@@ -361,16 +361,19 @@ describe('Instance', () => {
     let mockEvents;
     let treeRowId;
     let activityId;
+    let flowNodeName;
     let treeNode;
 
     beforeEach(async () => {
-      activityId = 'Task123';
-      treeRowId = 'activityInstanceOfTask123';
+      activityId = 'taskD';
+      flowNodeName = diagramUtils.parsedDiagram.bpmnElements[activityId].name;
+      treeRowId = 'activityInstanceOfTaskD';
 
       mockEvents = [createEvent({activityId, activityInstanceId: treeRowId})];
       treeNode = createRawTreeNode({
         id: treeRowId,
-        activityId
+        activityId,
+        name: flowNodeName
       });
       mockTree = {
         children: [treeNode]
@@ -413,7 +416,7 @@ describe('Instance', () => {
       expect(node.find(Diagram).prop('definitions')).toEqual(mockDefinition);
     });
 
-    it('should receive a flow node id, when a related activity instance is selected', async () => {
+    it('should receive a flow node id and name, when a related activity instance is selected', async () => {
       // when
       node
         .find(Instance)
@@ -423,12 +426,9 @@ describe('Instance', () => {
       node.update();
 
       // then
-      expect(
-        node
-          .find(Instance)
-          .find(Diagram)
-          .prop('selectedFlowNodeId')
-      ).toEqual(activityId);
+      const DiagramNode = node.find(Instance).find(Diagram);
+      expect(DiagramNode.prop('selectedFlowNodeId')).toEqual(activityId);
+      expect(DiagramNode.prop('selectedFlowNodeName')).toEqual(flowNodeName);
     });
 
     describe('Metadata', () => {
@@ -446,7 +446,7 @@ describe('Instance', () => {
         expect(node.find('Diagram').prop('metadata')).toEqual({
           data: {
             endDate: '12 Dec 2018 00:00:00',
-            activityInstanceId: 'activityInstanceOfTask123',
+            activityInstanceId: 'activityInstanceOfTaskD',
             jobId: '66',
             startDate: '12 Dec 2018 00:00:00',
             jobCustomHeaders: {},
@@ -460,10 +460,10 @@ describe('Instance', () => {
 
       it("should pass the right metadata if it's a peter case with multiple rows selected", async () => {
         // Demo Data
-        activityId = 'Task123';
+        activityId = 'taskD';
         const matchingTreeRowIds = [
-          'firstActivityInstanceOfTask123',
-          'secondActivityInstanceOfTask123'
+          'firstActivityInstanceOfTaskD',
+          'secondActivityInstanceOfTaskD'
         ];
         const expectedMetadata = {
           isMultiRowPeterCase: true,
@@ -507,12 +507,12 @@ describe('Instance', () => {
         expect(node.find('Diagram').prop('metadata')).toEqual(expectedMetadata);
       });
 
-      it.only("should pass the right metadata if it's a peter case with a single row selected", async () => {
+      it("should pass the right metadata if it's a peter case with a single row selected", async () => {
         // Demo Data
-        activityId = 'Task123';
+        activityId = 'taskD';
         const matchingTreeRowIds = [
-          'firstActivityInstanceOfTask123',
-          'secondActivityInstanceOfTask123'
+          'firstActivityInstanceOfTaskD',
+          'secondActivityInstanceOfTaskD'
         ];
         mockEvents = [
           createEvent({activityId, activityInstanceId: matchingTreeRowIds[0]}),
@@ -522,7 +522,7 @@ describe('Instance', () => {
           isSingleRowPeterCase: true,
           data: {
             endDate: '12 Dec 2018 00:00:00',
-            activityInstanceId: 'firstActivityInstanceOfTask123',
+            activityInstanceId: 'firstActivityInstanceOfTaskD',
             jobId: '66',
             startDate: '12 Dec 2018 00:00:00',
             jobCustomHeaders: {},
@@ -595,16 +595,17 @@ describe('Instance', () => {
         children: rawTree.children,
         id: INSTANCE.id,
         type: 'WORKFLOW',
-        state: INSTANCE.state
+        state: INSTANCE.state,
+        endDate: INSTANCE.endDate
       });
     });
 
     it('should receive id(s) of selected activity instances', async () => {
       // given
-      const activityId = 'Task123';
+      const activityId = 'taskD';
       const treeRowIds = [
-        'firstActivityInstanceOfTask123',
-        'secondActivityInstanceOfTask123'
+        'firstActivityInstanceOfTaskD',
+        'secondActivityInstanceOfTaskD'
       ];
 
       const rawTreeData = {

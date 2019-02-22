@@ -1,4 +1,4 @@
-import {STATE, UNNAMED_ACTIVITY} from 'modules/constants';
+import {STATE} from 'modules/constants';
 
 /**
  * @returns activityId -> name map
@@ -6,7 +6,10 @@ import {STATE, UNNAMED_ACTIVITY} from 'modules/constants';
  */
 export function getActivityIdToNameMap(elements) {
   return Object.entries(elements).reduce((map, [id, element]) => {
-    map.set(id, element.name || UNNAMED_ACTIVITY);
+    if (element.name) {
+      map.set(id, element.name);
+    }
+
     return map;
   }, new Map());
 }
