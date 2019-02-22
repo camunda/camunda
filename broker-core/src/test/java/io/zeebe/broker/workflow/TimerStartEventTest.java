@@ -142,25 +142,27 @@ public class TimerStartEventTest {
         .hasVersion(workflow.getVersion())
         .hasWorkflowKey(workflow.getWorkflowKey());
 
-    final Record startEventOccured =
-        RecordingExporter.getRecords().stream()
-            .filter(r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.EVENT_OCCURRED)
-            .findFirst()
-            .get();
-    assertThat(startEventOccured.getKey())
+    final Record<WorkflowInstanceRecordValue> startEventOccurred =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_OCCURRED).getFirst();
+    assertThat(startEventOccurred.getKey())
         .isLessThan(startEventActivating.getWorkflowInstanceKey());
 
     final long triggerRecordPosition =
         RecordingExporter.timerRecords(TimerIntent.TRIGGER).getFirst().getPosition();
 
     assertThat(
-            RecordingExporter.getRecords().stream()
-                .filter(r -> r.getPosition() >= triggerRecordPosition)
-                .limit(6)
-                .map(r -> r.getMetadata().getIntent()))
+            RecordingExporter.timerRecords()
+                .skipUntil(r -> r.getPosition() >= triggerRecordPosition)
+                .limit(2))
+        .extracting(r -> r.getMetadata().getIntent())
+        .containsExactly(TimerIntent.TRIGGER, TimerIntent.TRIGGERED);
+
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .skipUntil(r -> r.getPosition() >= triggerRecordPosition)
+                .limit(4))
+        .extracting(r -> r.getMetadata().getIntent())
         .containsExactly(
-            TimerIntent.TRIGGER,
-            TimerIntent.TRIGGERED,
             WorkflowInstanceIntent.EVENT_OCCURRED, // causes the instance creation
             WorkflowInstanceIntent.ELEMENT_ACTIVATING, // causes the flow node activation
             WorkflowInstanceIntent.ELEMENT_ACTIVATED, // input mappings applied
