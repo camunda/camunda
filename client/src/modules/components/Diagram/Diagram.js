@@ -12,7 +12,7 @@ import DiagramControls from './DiagramControls';
 import StateOverlay from './StateOverlay';
 import StatisticOverlay from './StatisticOverlay';
 import PopoverOverlay from './PopoverOverlay';
-import {getDiagramColors} from './service';
+import {getDiagramColors, getPopoverPostion} from './service';
 
 class Diagram extends React.PureComponent {
   static propTypes = {
@@ -250,66 +250,12 @@ class Diagram extends React.PureComponent {
     });
   };
 
-  getFlowNodePosition = flowNodeId => {
-    const MIN_HEIGHT = 70;
-    const MIN_WIDTH = 190;
+  getPopoverPostion = () => {
+    const flowNode = this.Viewer.get('elementRegistry').getGraphics(
+      this.props.selectedFlowNodeId
+    );
 
-    const containerBoundary = this.myRef.current.getBoundingClientRect();
-
-    const element = this.Viewer.get('elementRegistry').getGraphics(flowNodeId);
-    const elementBoudary = element.getBoundingClientRect();
-    const elementBBox = element.getBBox();
-
-    const spaceToBottom =
-      containerBoundary.top +
-      containerBoundary.height -
-      elementBoudary.top -
-      elementBoudary.height;
-
-    if (spaceToBottom > MIN_HEIGHT) {
-      return {
-        bottom: -16,
-        left: elementBBox.width / 2,
-        side: 'BOTTOM'
-      };
-    }
-
-    const spaceToLeft = elementBoudary.left - containerBoundary.left;
-
-    if (spaceToLeft > MIN_WIDTH) {
-      return {
-        left: -25,
-        top: elementBBox.height / 2,
-        side: 'LEFT'
-      };
-    }
-
-    const spaceToTop = elementBoudary.top - containerBoundary.top;
-
-    if (spaceToTop > MIN_HEIGHT) {
-      return {
-        top: -16,
-        left: elementBBox.width / 2,
-        side: 'TOP'
-      };
-    }
-
-    const spaceToRight =
-      containerBoundary.width - spaceToLeft - elementBoudary.width;
-
-    if (spaceToRight > MIN_WIDTH) {
-      return {
-        top: elementBBox.height / 2,
-        right: -16,
-        side: 'RIGHT'
-      };
-    }
-
-    return {
-      bottom: +16,
-      left: elementBBox.width / 2,
-      side: 'BOTTOM_MIRROR'
-    };
+    return getPopoverPostion({diagramContainer: this.myRef.current, flowNode});
   };
 
   render() {
@@ -328,17 +274,19 @@ class Diagram extends React.PureComponent {
           handleZoomOut={this.handleZoomOut}
           handleZoomReset={this.handleZoomReset}
         />
-        {this.props.selectedFlowNodeId && this.props.metadata && (
-          <PopoverOverlay
-            key={this.props.selectedFlowNodeId}
-            selectedFlowNodeId={this.props.selectedFlowNodeId}
-            selectedFlowNodeName={this.props.selectedFlowNodeName}
-            metadata={this.props.metadata}
-            onFlowNodeSelection={this.props.onFlowNodeSelection}
-            position={this.getFlowNodePosition(this.props.selectedFlowNodeId)}
-            {...overlayProps}
-          />
-        )}
+        {this.props.selectedFlowNodeId &&
+          this.props.metadata &&
+          this.Viewer && (
+            <PopoverOverlay
+              key={this.props.selectedFlowNodeId}
+              selectedFlowNodeId={this.props.selectedFlowNodeId}
+              selectedFlowNodeName={this.props.selectedFlowNodeName}
+              metadata={this.props.metadata}
+              onFlowNodeSelection={this.props.onFlowNodeSelection}
+              position={this.getPopoverPostion()}
+              {...overlayProps}
+            />
+          )}
         {this.renderFlowNodeStateOverlays(overlayProps)}
         {this.renderStatisticsOverlays(overlayProps)}
       </Styled.Diagram>

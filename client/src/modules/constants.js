@@ -151,3 +151,11 @@ export const PAGE_TITLE = {
 export const PILL_TYPE = {
   TIMESTAMP: 'TIMESTAMP'
 };
+
+export const POPOVER_SIDE = {
+  TOP: 'TOP',
+  RIGHT: 'RIGHT',
+  BOTTOM: 'BOTTOM',
+  LEFT: 'LEFT',
+  BOTTOM_MIRROR: 'BOTTOM_MIRROR'
+};

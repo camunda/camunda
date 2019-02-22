@@ -1,146 +1,147 @@
 import styled, {css} from 'styled-components';
+import {POPOVER_SIDE} from 'modules/constants';
 
 import Modal from 'modules/components/Modal';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
-const arrowStyle = ({position}) => {
-  if (position.side === 'BOTTOM') {
-    return css`
-      &:before,
-      &:after {
-        position: absolute;
-        content: ' ';
-        pointer-events: none;
-        color: transparent;
-        border-style: solid;
-        border-width: 9px;
-        bottom: 100%;
-      }
+const arrowStyle = ({side}) => {
+  switch (side) {
+    case POPOVER_SIDE.BOTTOM:
+      return css`
+        &:before,
+        &:after {
+          position: absolute;
+          content: ' ';
+          pointer-events: none;
+          color: transparent;
+          border-style: solid;
+          border-width: 9px;
+          bottom: 100%;
+        }
 
-      &:before {
-        border-bottom-color: ${themeStyle({
-          dark: Colors.uiDark06,
-          light: Colors.uiLight05
-        })};
-        left: calc(50% - 9px);
-      }
+        &:before {
+          border-bottom-color: ${themeStyle({
+            dark: Colors.uiDark06,
+            light: Colors.uiLight05
+          })};
+          left: calc(50% - 9px);
+        }
 
-      &:after {
-        border-bottom-color: ${themeStyle({
-          dark: Colors.uiDark04,
-          light: Colors.uiLight02
-        })};
-        left: calc(50% - 8px);
-      }
-    `;
+        &:after {
+          border-bottom-color: ${themeStyle({
+            dark: Colors.uiDark04,
+            light: Colors.uiLight02
+          })};
+          left: calc(50% - 8px);
+        }
+      `;
+
+    case POPOVER_SIDE.LEFT:
+      return css`
+        &:before,
+        &:after {
+          position: absolute;
+          content: ' ';
+          pointer-events: none;
+          color: transparent;
+          border-style: solid;
+          border-width: 9px;
+          left: 100%;
+        }
+
+        &:before {
+          border-left-color: ${themeStyle({
+            dark: Colors.uiDark06,
+            light: Colors.uiLight05
+          })};
+          top: calc(50% - 9px);
+        }
+
+        &:after {
+          border-left-color: ${themeStyle({
+            dark: Colors.uiDark04,
+            light: Colors.uiLight02
+          })};
+          top: calc(50% - 8px);
+        }
+      `;
+
+    case POPOVER_SIDE.RIGHT:
+      return css`
+        &:before,
+        &:after {
+          position: absolute;
+          content: ' ';
+          pointer-events: none;
+          color: transparent;
+          border-style: solid;
+          border-width: 9px;
+          right: 100%;
+        }
+
+        &:before {
+          border-right-color: ${themeStyle({
+            dark: Colors.uiDark06,
+            light: Colors.uiLight05
+          })};
+          top: calc(50% - 9px);
+        }
+
+        &:after {
+          border-right-color: ${themeStyle({
+            dark: Colors.uiDark04,
+            light: Colors.uiLight02
+          })};
+          top: calc(50% - 8px);
+        }
+      `;
+
+    default:
+      return css`
+        &:before,
+        &:after {
+          position: absolute;
+          content: ' ';
+          pointer-events: none;
+          color: transparent;
+          border-style: solid;
+          border-width: 9px;
+          top: 100%;
+        }
+
+        &:before {
+          border-top-color: ${themeStyle({
+            dark: Colors.uiDark06,
+            light: Colors.uiLight05
+          })};
+          left: calc(50% - 9px);
+        }
+
+        &:after {
+          border-top-color: ${themeStyle({
+            dark: Colors.uiDark04,
+            light: Colors.uiLight02
+          })};
+          left: calc(50% - 8px);
+        }
+      `;
   }
-
-  if (position.side === 'LEFT') {
-    return css`
-      &:before,
-      &:after {
-        position: absolute;
-        content: ' ';
-        pointer-events: none;
-        color: transparent;
-        border-style: solid;
-        border-width: 9px;
-        left: 100%;
-      }
-
-      &:before {
-        border-left-color: ${themeStyle({
-          dark: Colors.uiDark06,
-          light: Colors.uiLight05
-        })};
-        top: calc(50% - 9px);
-      }
-
-      &:after {
-        border-left-color: ${themeStyle({
-          dark: Colors.uiDark04,
-          light: Colors.uiLight02
-        })};
-        top: calc(50% - 8px);
-      }
-    `;
-  }
-
-  if (position.side === 'RIGHT') {
-    return css`
-      &:before,
-      &:after {
-        position: absolute;
-        content: ' ';
-        pointer-events: none;
-        color: transparent;
-        border-style: solid;
-        border-width: 9px;
-        right: 100%;
-      }
-
-      &:before {
-        border-right-color: ${themeStyle({
-          dark: Colors.uiDark06,
-          light: Colors.uiLight05
-        })};
-        top: calc(50% - 9px);
-      }
-
-      &:after {
-        border-right-color: ${themeStyle({
-          dark: Colors.uiDark04,
-          light: Colors.uiLight02
-        })};
-        top: calc(50% - 8px);
-      }
-    `;
-  }
-
-  return css`
-    &:before,
-    &:after {
-      position: absolute;
-      content: ' ';
-      pointer-events: none;
-      color: transparent;
-      border-style: solid;
-      border-width: 9px;
-      top: 100%;
-    }
-
-    &:before {
-      border-top-color: ${themeStyle({
-        dark: Colors.uiDark06,
-        light: Colors.uiLight05
-      })};
-      left: calc(50% - 9px);
-    }
-
-    &:after {
-      border-top-color: ${themeStyle({
-        dark: Colors.uiDark04,
-        light: Colors.uiLight02
-      })};
-      left: calc(50% - 8px);
-    }
-  `;
 };
 
-const transformStyle = ({position}) => {
-  if (position.side === 'RIGHT') {
+const transformStyle = ({side}) => {
+  if (side === 'RIGHT') {
     return css`
       transform: translate(0, -50%);
     `;
   }
 
-  if (position.side === 'BOTTOM') {
+  if (side === 'BOTTOM') {
     return css`
       transform: translate(-50%, 0);
     `;
   }
 
-  if (position.side === 'LEFT') {
+  if (side === 'LEFT') {
     return css`
       transform: translate(-100%, -50%);
     `;

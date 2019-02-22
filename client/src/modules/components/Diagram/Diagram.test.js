@@ -325,7 +325,7 @@ describe('Diagram', () => {
     });
   });
 
-  describe.skip('metadata popover', () => {
+  describe('metadata popover', () => {
     const {activityId} = createActivity();
     const mockMetadata = {data: createMetadata(activityId)};
     const summary = {
@@ -338,8 +338,9 @@ describe('Diagram', () => {
     it('should render a popover containing the summary of the metadata', () => {
       // given
       const node = mountNode({
+        metadata: mockMetadata,
         selectedFlowNodeId: activityId,
-        metadata: mockMetadata
+        selectedFlowNodeName: activityId
       });
 
       // then
@@ -356,6 +357,7 @@ describe('Diagram', () => {
       // given
       const node = mountNode({
         selectedFlowNodeId: activityId,
+        selectedFlowNodeName: activityId,
         metadata: mockMetadata
       });
       const overlayNode = node.find('Overlay');
@@ -379,6 +381,7 @@ describe('Diagram', () => {
       // given
       const node = mountNode({
         selectedFlowNodeId: activityId,
+        selectedFlowNodeName: activityId,
         metadata: {...mockMetadata, isSingleRowPeterCase: true}
       });
       const overlayNode = node.find('Overlay');
@@ -406,6 +409,7 @@ describe('Diagram', () => {
       // given
       const node = mountNode({
         selectedFlowNodeId: activityId,
+        selectedFlowNodeName: activityId,
         metadata: {isMultiRowPeterCase: true, instancesCount: 2}
       });
 
