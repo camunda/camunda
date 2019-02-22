@@ -3,45 +3,41 @@ import React from 'react';
 import Typeahead from './Typeahead';
 import {Dropdown, Input} from 'components';
 
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
 
 it('should display available options if dropdown is open', () => {
-  const node = mount(<Typeahead values={['foo', 'bar']} />);
+  const node = shallow(<Typeahead values={['foo', 'bar']} />);
 
   node.setState({
     optionsVisible: true
   });
 
-  expect(node.find(Dropdown.Option).at(0)).toIncludeText('foo');
-  expect(node.find(Dropdown.Option).at(1)).toIncludeText('bar');
+  expect(node).toMatchSnapshot();
 });
 
 it('should format the data based on the provided formatter', () => {
-  const node = mount(<Typeahead values={['foo', 'bar']} formatter={v => v + v} />);
+  const node = shallow(<Typeahead values={['foo', 'bar']} formatter={v => v + v} />);
 
   node.setState({
     optionsVisible: true
   });
 
-  expect(node.find(Dropdown.Option).at(0)).toIncludeText('foofoo');
-  expect(node.find(Dropdown.Option).at(1)).toIncludeText('barbar');
+  expect(node).toMatchSnapshot();
 });
 
 it('should only display entries that match the typeahead value', () => {
-  const node = mount(<Typeahead values={['varFoo', 'varBar', 'varFoobar']} />);
+  const node = shallow(<Typeahead values={['varFoo', 'varBar', 'varFoobar']} />);
 
   node.setState({
     optionsVisible: true,
     query: 'foo'
   });
 
-  expect(node.find(Dropdown.Option).at(0)).toIncludeText('varFoo');
-  expect(node.find(Dropdown.Option).at(1)).toIncludeText('varFoobar');
-  expect(node).not.toIncludeText('varBar');
+  expect(node).toMatchSnapshot();
 });
 
 it('should only display entries that match the typeahead value, even if there is a formatter', () => {
-  const node = mount(
+  const node = shallow(
     <Typeahead values={['varFoo', 'varBar', 'varFoobar']} formatter={v => v + v} />
   );
 
@@ -50,12 +46,12 @@ it('should only display entries that match the typeahead value, even if there is
     query: 'foobarvar'
   });
 
-  expect(node.find(Dropdown.Option).at(0)).toIncludeText('varFoobarvarFoobar');
+  expect(node).toMatchSnapshot();
 });
 
 it('should call the provided onSelect method when a selection is done', () => {
   const spy = jest.fn();
-  const node = mount(<Typeahead values={['foo', 'bar']} onSelect={spy} />);
+  const node = shallow(<Typeahead values={['foo', 'bar']} onSelect={spy} />);
 
   node.setState({
     optionsVisible: true
@@ -70,7 +66,7 @@ it('should call the provided onSelect method when a selection is done', () => {
 });
 
 it('should reset the query to the latest committed state when the input field blurs', () => {
-  const node = mount(<Typeahead values={['foo', 'bar']} />);
+  const node = shallow(<Typeahead values={['foo', 'bar']} />);
 
   node.setState({
     optionsVisible: true,
@@ -84,14 +80,21 @@ it('should reset the query to the latest committed state when the input field bl
 });
 
 it('should disable the input field when disabled prop is set to true', () => {
-  const node = mount(<Typeahead values={['foo', 'bar']} disabled={true} />);
+  const node = shallow(<Typeahead values={['foo', 'bar']} disabled={true} />);
 
   expect(node.find(Input)).toHaveProp('disabled', true);
 });
 
 it('should show the dropdown menu options on input focus', () => {
-  const node = mount(<Typeahead values={['foo', 'bar']} />);
+  const node = shallow(<Typeahead values={['foo', 'bar']} />);
   node.find(Input).prop('onFocus')();
 
   expect(node).toHaveState('optionsVisible', true);
+});
+
+it('should show a no results message if no values are provided', () => {
+  const node = shallow(<Typeahead values={[]} />);
+
+  expect(node.find(Input)).toBeDisabled();
+  expect(node.find(Input)).toHaveValue('No results found');
 });

@@ -147,6 +147,12 @@ it('should include variables in the groupby options', () => {
   expect(varDropdown.at(1).prop('children')).toBe('Var2');
 });
 
+it('should disable the variable groupby submenu if there are no variables', () => {
+  const node = shallow(<ReportControlPanel report={report} />);
+
+  expect(node.find('[label="Group by"] Submenu')).toBeDisabled();
+});
+
 it('should only include variables that match the typeahead', () => {
   const node = shallow(<ReportControlPanel report={report} />);
 

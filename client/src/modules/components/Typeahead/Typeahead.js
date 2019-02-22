@@ -219,11 +219,13 @@ export default class Typeahead extends React.Component {
       minWidth: this.input && this.input.clientWidth + 'px'
     };
 
+    const hasNoValues = this.props.values.length === 0;
+
     return (
       <div ref={this.containerRef} className={classnames('Typeahead', this.props.className)}>
         <Input
           className={classnames({isInvalid: this.props.isInvalid})}
-          value={query}
+          value={hasNoValues ? 'No results found' : query}
           onChange={this.updateQuery}
           onClick={this.showOptions}
           onFocus={this.showOptions}
@@ -231,33 +233,32 @@ export default class Typeahead extends React.Component {
           onBlur={this.resetToLastCommitted}
           placeholder={this.props.placeholder}
           ref={this.inputRef}
-          disabled={this.props.disabled}
+          disabled={this.props.disabled || hasNoValues}
         />
-        {optionsVisible &&
-          values.length > 0 && (
-            <div
-              style={searchResultContainerStyle}
-              className="SearchResultsList"
-              ref={this.optionsListRef}
-              onMouseUp={this.returnFocusToInput}
-            >
-              {values.map((value, index) => {
-                return (
-                  <Dropdown.Option
-                    className={classnames('searchResult', {
-                      isActive: index === selectedValueIdx
-                    })}
-                    style={valueStyle}
-                    onMouseDown={evt => evt.preventDefault()}
-                    onClick={this.selectValue(value)}
-                    key={value && value.id ? value.id : formatter(value)}
-                  >
-                    {formatters.getHighlightedText(formatter(value), this.state.query)}
-                  </Dropdown.Option>
-                );
-              })}
-            </div>
-          )}
+        {optionsVisible && values.length > 0 && (
+          <div
+            style={searchResultContainerStyle}
+            className="searchResultsList"
+            ref={this.optionsListRef}
+            onMouseUp={this.returnFocusToInput}
+          >
+            {values.map((value, index) => {
+              return (
+                <Dropdown.Option
+                  className={classnames('searchResult', {
+                    isActive: index === selectedValueIdx
+                  })}
+                  style={valueStyle}
+                  onMouseDown={evt => evt.preventDefault()}
+                  onClick={this.selectValue(value)}
+                  key={value && value.id ? value.id : formatter(value)}
+                >
+                  {formatters.getHighlightedText(formatter(value), this.state.query)}
+                </Dropdown.Option>
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   }

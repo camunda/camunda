@@ -1,0 +1,254 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should display available options if dropdown is open 1`] = `
+<div
+  className="Typeahead"
+>
+  <ForwardRef(Input)
+    className=""
+    disabled={false}
+    onBlur={[Function]}
+    onChange={[Function]}
+    onClick={[Function]}
+    onFocus={[Function]}
+    onKeyDown={[Function]}
+    value=""
+  />
+  <div
+    className="searchResultsList"
+    onMouseUp={[Function]}
+    style={
+      Object {
+        "maxHeight": "300px",
+        "maxWidth": undefined,
+      }
+    }
+  >
+    <DropdownOption
+      className="searchResult isActive"
+      key="foo"
+      onClick={[Function]}
+      onMouseDown={[Function]}
+      style={
+        Object {
+          "height": "30px",
+          "minWidth": undefined,
+        }
+      }
+    >
+      foo
+    </DropdownOption>
+    <DropdownOption
+      className="searchResult"
+      key="bar"
+      onClick={[Function]}
+      onMouseDown={[Function]}
+      style={
+        Object {
+          "height": "30px",
+          "minWidth": undefined,
+        }
+      }
+    >
+      bar
+    </DropdownOption>
+  </div>
+</div>
+`;
+
+exports[`should format the data based on the provided formatter 1`] = `
+<div
+  className="Typeahead"
+>
+  <ForwardRef(Input)
+    className=""
+    disabled={false}
+    onBlur={[Function]}
+    onChange={[Function]}
+    onClick={[Function]}
+    onFocus={[Function]}
+    onKeyDown={[Function]}
+    value=""
+  />
+  <div
+    className="searchResultsList"
+    onMouseUp={[Function]}
+    style={
+      Object {
+        "maxHeight": "300px",
+        "maxWidth": undefined,
+      }
+    }
+  >
+    <DropdownOption
+      className="searchResult isActive"
+      key="foofoo"
+      onClick={[Function]}
+      onMouseDown={[Function]}
+      style={
+        Object {
+          "height": "30px",
+          "minWidth": undefined,
+        }
+      }
+    >
+      foofoo
+    </DropdownOption>
+    <DropdownOption
+      className="searchResult"
+      key="barbar"
+      onClick={[Function]}
+      onMouseDown={[Function]}
+      style={
+        Object {
+          "height": "30px",
+          "minWidth": undefined,
+        }
+      }
+    >
+      barbar
+    </DropdownOption>
+  </div>
+</div>
+`;
+
+exports[`should only display entries that match the typeahead value 1`] = `
+<div
+  className="Typeahead"
+>
+  <ForwardRef(Input)
+    className=""
+    disabled={false}
+    onBlur={[Function]}
+    onChange={[Function]}
+    onClick={[Function]}
+    onFocus={[Function]}
+    onKeyDown={[Function]}
+    value="foo"
+  />
+  <div
+    className="searchResultsList"
+    onMouseUp={[Function]}
+    style={
+      Object {
+        "maxHeight": "300px",
+        "maxWidth": undefined,
+      }
+    }
+  >
+    <DropdownOption
+      className="searchResult isActive"
+      key="varFoo"
+      onClick={[Function]}
+      onMouseDown={[Function]}
+      style={
+        Object {
+          "height": "30px",
+          "minWidth": undefined,
+        }
+      }
+    >
+      <span
+        key="0"
+      >
+        var
+      </span>
+      <span
+        className="textBlue"
+        key="1"
+      >
+        Foo
+      </span>
+      <span
+        key="2"
+      />
+    </DropdownOption>
+    <DropdownOption
+      className="searchResult"
+      key="varFoobar"
+      onClick={[Function]}
+      onMouseDown={[Function]}
+      style={
+        Object {
+          "height": "30px",
+          "minWidth": undefined,
+        }
+      }
+    >
+      <span
+        key="0"
+      >
+        var
+      </span>
+      <span
+        className="textBlue"
+        key="1"
+      >
+        Foo
+      </span>
+      <span
+        key="2"
+      >
+        bar
+      </span>
+    </DropdownOption>
+  </div>
+</div>
+`;
+
+exports[`should only display entries that match the typeahead value, even if there is a formatter 1`] = `
+<div
+  className="Typeahead"
+>
+  <ForwardRef(Input)
+    className=""
+    disabled={false}
+    onBlur={[Function]}
+    onChange={[Function]}
+    onClick={[Function]}
+    onFocus={[Function]}
+    onKeyDown={[Function]}
+    value="foobarvar"
+  />
+  <div
+    className="searchResultsList"
+    onMouseUp={[Function]}
+    style={
+      Object {
+        "maxHeight": "300px",
+        "maxWidth": undefined,
+      }
+    }
+  >
+    <DropdownOption
+      className="searchResult isActive"
+      key="varFoobarvarFoobar"
+      onClick={[Function]}
+      onMouseDown={[Function]}
+      style={
+        Object {
+          "height": "30px",
+          "minWidth": undefined,
+        }
+      }
+    >
+      <span
+        key="0"
+      >
+        var
+      </span>
+      <span
+        className="textBlue"
+        key="1"
+      >
+        Foobarvar
+      </span>
+      <span
+        key="2"
+      >
+        Foobar
+      </span>
+    </DropdownOption>
+  </div>
+</div>
+`;

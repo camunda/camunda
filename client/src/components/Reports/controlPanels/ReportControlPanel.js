@@ -271,8 +271,13 @@ export default class ReportControlPanel extends React.Component {
 
   renderSubmenu = (submenu, type, configData, label, key) => {
     const {data} = this.props.report;
-    const disabled = type === 'groupBy' && !isAllowed(data.view, configData);
+    let disabled = type === 'groupBy' && !isAllowed(data.view, configData);
     const checked = isChecked(configData, data[type]);
+
+    if (type === 'groupBy' && key === 'variable' && this.state.variables.length === 0) {
+      disabled = true;
+    }
+
     return (
       <Dropdown.Submenu
         label={label}

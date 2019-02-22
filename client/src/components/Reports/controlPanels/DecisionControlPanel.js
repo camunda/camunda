@@ -190,13 +190,19 @@ export default class DecisionControlPanel extends React.Component {
 
   renderSubmenu = (submenu, type, configData, label, key) => {
     const {data} = this.props.report;
-    const disabled = type === 'groupBy' && !decisionConfig.isAllowed(data.view, configData);
+    let disabled = type === 'groupBy' && !decisionConfig.isAllowed(data.view, configData);
     const checked = isChecked(configData, data[type]);
 
     let options = configData[submenu];
 
     if (data.decisionDefinitionKey && type === 'groupBy' && key.includes('Variable')) {
-      options = this.state.variables[key].map(({id, name}) => ({
+      const variables = this.state.variables[key];
+
+      if (variables.length === 0) {
+        disabled = true;
+      }
+
+      options = variables.map(({id, name}) => ({
         data: {id},
         label: name
       }));
