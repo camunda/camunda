@@ -1,8 +1,10 @@
+@import 'shared-styles/shared-styles.scss';
+
 .Submenu {
   padding-right: 20px;
 
   &.open {
-    background-color: #008fe6;
+    background-color: darken($cam-blue, 10%);
     color: #fff;
     border: none;
     transition: none;

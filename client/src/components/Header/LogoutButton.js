@@ -3,6 +3,7 @@ import {Redirect} from 'react-router-dom';
 import {get} from 'request';
 import {withErrorHandling} from 'HOC';
 import {Button} from 'components';
+import {addNotification} from 'notifications';
 
 import './LogoutButton.scss';
 
@@ -21,7 +22,7 @@ export default withErrorHandling(
           });
         },
         error => {
-          alert(`Unable to logout: ${error.statusText}`);
+          addNotification({text: 'Logout failed.', type: 'error'});
         }
       );
     };

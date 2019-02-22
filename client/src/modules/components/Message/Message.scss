@@ -1,3 +1,5 @@
+@import 'shared-styles/shared-styles.scss';
+
 .Message {
   font-size: 0.875em;
   background-color: #f2f2f2;
@@ -9,25 +11,25 @@
 }
 
 .Message--blue {
-  border: 1px solid #00a8ff;
-  background-color: #e6f6ff; /* Sass: lighten(#00a8ff, 45) */
+  border: 1px solid $cam-blue;
+  background-color: lighten($cam-blue, 45);
 }
 
 .Message--yellow,
 .Message--warning {
-  border: 1px solid #ffd338;
-  background-color: #fff0bf;
+  border: 1px solid $cam-orange;
+  background-color: lighten($cam-orange, 50);
 }
 
 .Message--red,
 .Message--danger,
 .Message--error {
-  border: 1px solid #b5152b;
-  background-color: #f9d0d5; /* Sass: lighten(#B5152B, 50) */
+  border: 1px solid $cam-red;
+  background-color: lighten($cam-red, 50);
 }
 
 .Message--green,
 .Message--success {
-  border: 1px solid #00c364;
-  background-color: #c3ffe2; /* Sass: lighten(#00c364, 50) */
+  border: 1px solid $cam-green;
+  background-color: lighten($cam-green, 50);
 }

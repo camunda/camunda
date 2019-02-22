@@ -19,6 +19,8 @@ import {
   EntityNameForm
 } from 'components';
 
+import {addNotification} from 'notifications';
+
 import {themed} from 'theme';
 
 import {
@@ -101,6 +103,7 @@ export default themed(
             });
           },
           error => {
+            addNotification({text: 'Dashboard could not be opened.', type: 'error'});
             const serverError = error.status;
             this.setState({
               serverError
@@ -125,18 +128,24 @@ export default themed(
       };
 
       saveChanges = async (evt, name) => {
-        await update(this.id, {
-          name,
-          reports: this.state.reports
-        });
-
-        this.setState({
-          originalName: this.state.name,
-          originalReports: this.state.reports,
-          name,
-          redirect: `/dashboard/${this.id}`,
-          isAuthorizedToShare: await isAuthorizedToShareDashboard(this.id)
-        });
+        await this.props.mightFail(
+          update(this.id, {
+            name,
+            reports: this.state.reports
+          }),
+          async () => {
+            this.setState({
+              originalName: this.state.name,
+              originalReports: this.state.reports,
+              name,
+              redirect: `/dashboard/${this.id}`,
+              isAuthorizedToShare: await isAuthorizedToShareDashboard(this.id)
+            });
+          },
+          () => {
+            addNotification({text: `Dashboard ${name} could not be saved.`, type: 'error'});
+          }
+        );
       };
 
       cancelChanges = async () => {

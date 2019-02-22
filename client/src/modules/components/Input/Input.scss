@@ -1,3 +1,5 @@
+@import 'shared-styles/shared-styles.scss';
+
 .Input[type='text'],
 .Input[type='password'],
 .Input[type='number'],
@@ -11,8 +13,8 @@ textarea {
 
   &:focus {
     outline: none;
-    border: 1px solid #00a8ff;
-    box-shadow: 0 0 5px rgba(#00a8ff, 1);
+    border: 1px solid $cam-blue;
+    box-shadow: 0 0 5px rgba($cam-blue, 1);
   }
 
   &[disabled],
@@ -24,8 +26,8 @@ textarea {
   }
 
   &.isInvalid {
-    border: 1px solid #b5152b;
-    background-color: lighten(#b5152b, 55);
-    color: #b5152b;
+    border: 1px solid $cam-red;
+    background-color: lighten($cam-red, 55);
+    color: $cam-red;
   }
 }

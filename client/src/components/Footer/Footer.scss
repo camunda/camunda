@@ -1,3 +1,5 @@
+@import 'shared-styles/shared-styles.scss';
+
 .Footer {
   line-height: 24px;
   font-size: 0.875em;
@@ -32,11 +34,11 @@
     height: 0.65em;
     border-radius: 100%;
     margin-right: 4px;
-    background-color: #b5152b;
+    background-color: $cam-red;
   }
 
   &.is-connected:before {
-    background-color: #00c364;
+    background-color: $cam-green;
   }
 
   &.is-in-progress:before {

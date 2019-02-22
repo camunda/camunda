@@ -1,3 +1,5 @@
+@import 'shared-styles/shared-styles.scss';
+
 .Reports {
   .createButton {
     & > .Button {
@@ -18,12 +20,12 @@
         border-bottom-left-radius: 0;
 
         color: white;
-        background-color: #00c364;
-        border: 1px solid #00c364;
+        background-color: $cam-green;
+        border: 1px solid $cam-green;
 
         &:hover {
-          background-color: #00aa4b; /* #00c364 -> darken 10% */
-          border: 1px solid #00aa4b;
+          background-color: darken($cam-green, 10%);
+          border: 1px solid darken($cam-green, 10%);
         }
 
         .Icon {

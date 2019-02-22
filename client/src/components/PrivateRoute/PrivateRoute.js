@@ -2,6 +2,8 @@ import React from 'react';
 import {Route, Redirect} from 'react-router-dom';
 import {isLoggedIn} from 'credentials';
 import {addHandler, removeHandler} from 'request';
+import {addNotification} from 'notifications';
+import debounce from 'debounce';
 
 export default class PrivateRoute extends React.Component {
   constructor(props) {
@@ -59,3 +61,15 @@ export default class PrivateRoute extends React.Component {
     removeHandler(this.handleResponse);
   }
 }
+
+// We sometimes trigger multiple requests that all return 401 when the session times out.
+// To prevent multiple messages appearing, we debounce the addNotification function by 500ms
+const debouncedNotification = debounce((...args) => addNotification(...args), 500, true);
+
+addHandler(response => {
+  if (response.status === 401) {
+    debouncedNotification({text: 'Your Session timed out.', type: 'warning'});
+  }
+
+  return response;
+});

@@ -1,0 +1,56 @@
+@import 'shared-styles/shared-styles.scss';
+
+@keyframes appear {
+  from {
+    opacity: 0;
+    margin-top: -60px;
+  }
+}
+
+@keyframes disappear {
+  to {
+    opacity: 0;
+    margin-top: -60px;
+  }
+}
+
+.Notification {
+  pointer-events: auto;
+  margin: auto;
+  width: 731px;
+  border-radius: 3px;
+  background-color: darken($cam-blue, 10%);
+  box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.5);
+  padding: 20px;
+  margin-top: 34px;
+  color: #fff;
+  animation: appear 0.35s ease-in-out;
+
+  .Button.close {
+    background: transparent;
+    float: right;
+    border: none;
+    color: #fff;
+    padding: 1px;
+
+    .Icon {
+      margin-right: 0;
+    }
+  }
+
+  &.success {
+    background-color: $cam-green;
+  }
+
+  &.warning {
+    background-color: $cam-orange;
+  }
+
+  &.error {
+    background-color: $cam-red;
+  }
+
+  &.closing {
+    animation: disappear 0.35s ease-in-out forwards;
+  }
+}

@@ -1,3 +1,5 @@
+@import 'shared-styles/shared-styles.scss';
+
 .HeaderNav__item {
   display: inline-block;
   margin-right: 0.75em;
@@ -12,7 +14,7 @@
   }
 
   &.active {
-    border-bottom: 3px solid #b5152b;
+    border-bottom: 3px solid $cam-red;
 
     a {
       color: #333;

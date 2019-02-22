@@ -1,3 +1,5 @@
+@import 'shared-styles/shared-styles.scss';
+
 /* The switch - the box around the slider */
 .Switch {
   position: relative;
@@ -42,11 +44,11 @@
 }
 
 input:checked + .Switch__Slider--round {
-  background-color: #00c364;
+  background-color: $cam-green;
 }
 
 input:focus + .Switch__Slider--round {
-  box-shadow: 0 0 1px #b5152b;
+  box-shadow: 0 0 1px $cam-red;
 }
 
 input:checked + .Switch__Slider--round:before {

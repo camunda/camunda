@@ -1,3 +1,5 @@
+@import 'shared-styles/shared-styles.scss';
+
 .Typeahead {
   width: 100%;
 
@@ -17,7 +19,7 @@
     .searchResult {
       &.isActive {
         border: none;
-        box-shadow: inset 0 0 2px 2px #00a8ff;
+        box-shadow: inset 0 0 2px 2px $cam-blue;
         outline: none;
       }
     }

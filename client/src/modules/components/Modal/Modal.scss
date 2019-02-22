@@ -1,3 +1,5 @@
+@import 'shared-styles/shared-styles.scss';
+
 $modal-padding-h: 20px;
 
 .Modal {
@@ -98,8 +100,8 @@ $modal-padding-h: 20px;
 
   &:focus {
     outline: none;
-    border: 1px solid #00a8ff;
-    box-shadow: 0 0 5px rgba(#00a8ff, 1);
+    border: 1px solid $cam-blue;
+    box-shadow: 0 0 5px rgba($cam-blue, 1);
   }
 }
 

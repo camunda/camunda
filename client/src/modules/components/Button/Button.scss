@@ -1,3 +1,5 @@
+@import 'shared-styles/shared-styles.scss';
+
 .dark {
   .Button {
     color: #ddd;
@@ -30,8 +32,8 @@ a.Button {
     display: inline;
     align-items: normal;
     background-color: transparent;
-    color: #00a8ff;
-    border-color: #00a8ff;
+    color: $cam-blue;
+    border-color: $cam-blue;
     border-style: none;
     font: inherit;
     padding: 0;
@@ -40,8 +42,8 @@ a.Button {
 
     &:hover {
       background-color: transparent;
-      color: #00a8ff;
-      border-color: #00a8ff;
+      color: $cam-blue;
+      border-color: $cam-blue;
       border-style: none;
       text-decoration: underline;
     }
@@ -67,8 +69,8 @@ a.Button:hover {
 .Button:focus,
 a.Button:focus {
   outline: none;
-  border: 1px solid #00a8ff;
-  box-shadow: 0 0 5px rgba(#00a8ff, 1);
+  border: 1px solid $cam-blue;
+  box-shadow: 0 0 5px rgba($cam-blue, 1);
 }
 
 .Button[disabled]:hover,
@@ -112,20 +114,20 @@ a.Button--primary {
 .Button--blue,
 a.Button--blue {
   color: white;
-  background-color: #00a8ff;
-  border: 1px solid #00a8ff;
+  background-color: $cam-blue;
+  border: 1px solid $cam-blue;
 }
 
 .Button--blue:focus,
 a.Button--blue:focus {
-  border: 1px solid darken(#00a8ff, 12);
+  border: 1px solid darken($cam-blue, 12);
 }
 
 .Button--blue:hover,
 a.Button--blue:hover {
   color: white;
-  background-color: #008fe6; /* #00a8ff -> darken 10% */
-  border: 1px solid #008fe6;
+  background-color: darken($cam-blue, 10%);
+  border: 1px solid darken($cam-blue, 10%);
 }
 
 .Button--blue[disabled]:hover,
@@ -133,22 +135,22 @@ a.Button--blue:hover {
 a.Button--blue[disabled]:hover,
 a.Button--blue[disabled='disabled']:hover {
   color: white;
-  background-color: #00a8ff;
-  border: 1px solid #00a8ff;
+  background-color: $cam-blue;
+  border: 1px solid $cam-blue;
 }
 
 .Button--red,
 a.Button--red {
   color: white;
-  background-color: #b5152b;
-  border: 1px solid #b5152b;
+  background-color: $cam-red;
+  border: 1px solid $cam-red;
 }
 
 .Button--red:hover,
 a.Button--red:hover {
   color: white;
-  background-color: #9c0012; /* #B5152B -> darken 10% */
-  border: 1px solid #9c0012;
+  background-color: darken($cam-red, 10%);
+  border: 1px solid darken($cam-red, 10%);
 }
 
 .Button--red[disabled]:hover,
@@ -156,22 +158,22 @@ a.Button--red:hover {
 a.Button--red[disabled]:hover,
 a.Button--red[disabled='disabled']:hover {
   color: white;
-  background-color: #b5152b;
-  border: 1px solid #b5152b;
+  background-color: $cam-red;
+  border: 1px solid $cam-red;
 }
 
 .Button--green,
 a.Button--green {
   color: white;
-  background-color: #00c364;
-  border: 1px solid #00c364;
+  background-color: $cam-green;
+  border: 1px solid $cam-green;
 }
 
 .Button--green:hover,
 a.Button--green:hover {
   color: white;
-  background-color: #00aa4b; /* #00c364 -> darken 10% */
-  border: 1px solid #00aa4b;
+  background-color: darken($cam-green, 10%);
+  border: 1px solid darken($cam-green, 10%);
 }
 
 .Button--green[disabled]:hover,
@@ -179,8 +181,8 @@ a.Button--green:hover {
 a.Button--green[disabled]:hover,
 a.Button--green[disabled='disabled']:hover {
   color: white;
-  background-color: #00c364;
-  border: 1px solid #00c364;
+  background-color: $cam-green;
+  border: 1px solid $cam-green;
 }
 
 // Modify .Icon when used inside .Button to keep  distance to button label:

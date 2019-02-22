@@ -20,3 +20,9 @@ export {isDurationReport} from './reportService';
 
 // unfortunately, there is no syntax like "export * as formatters from './formatters'"
 export const formatters = formattersImport;
+
+export function getRandomId() {
+  return Math.random()
+    .toString(36)
+    .slice(2);
+}

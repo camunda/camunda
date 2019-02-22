@@ -2,6 +2,7 @@ import React from 'react';
 
 import {withErrorHandling} from 'HOC';
 import {ErrorPage, LoadingIndicator} from 'components';
+import {addNotification} from 'notifications';
 import {loadSingleReport, evaluateReport} from './service';
 
 import ReportEdit from './ReportEdit';
@@ -33,6 +34,7 @@ export default withErrorHandling(
           });
         },
         error => {
+          addNotification({text: 'Report could not be opened.', type: 'error'});
           const serverError = error.status;
           this.setState({
             serverError

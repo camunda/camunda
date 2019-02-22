@@ -1,3 +1,5 @@
+@import 'shared-styles/shared-styles.scss';
+
 .Alerts {
   max-width: 1024px;
   margin: auto;
@@ -79,7 +81,7 @@
               height: 20px;
               font-weight: normal;
               background: #e5f6ff;
-              color: #008fe6;
+              color: darken($cam-blue, 10%);
               padding: 3px 10px;
               margin-left: 5px;
             }

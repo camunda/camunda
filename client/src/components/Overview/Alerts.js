@@ -5,6 +5,7 @@ import AlertModal from './subComponents/AlertModal';
 
 import {withErrorHandling} from 'HOC';
 import {formatters, isDurationReport} from 'services';
+import {addNotification} from 'notifications';
 
 import './Alerts.scss';
 import entityIcons from './entityIcons';
@@ -82,14 +83,24 @@ class Alerts extends React.Component {
 
   updateOrCreateAlert = async entity => {
     const editEntity = this.state.editEntity;
+    let updatePromise;
     if (editEntity.id) {
-      await updateAlert(editEntity.id, entity);
+      updatePromise = updateAlert(editEntity.id, entity);
     } else {
-      await createAlert(entity);
+      updatePromise = createAlert(entity);
     }
-    this.closeEditModal();
 
-    this.loadAlerts();
+    await this.props.mightFail(
+      updatePromise,
+      () => {
+        this.closeEditModal();
+
+        this.loadAlerts();
+      },
+      () => {
+        addNotification({text: `Alert ${entity.name} could not be saved.`, type: 'error'});
+      }
+    );
   };
 
   render() {

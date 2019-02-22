@@ -1,3 +1,5 @@
+@import 'shared-styles/shared-styles.scss';
+
 .ReportControlPanel {
   background-color: #f4f4f4;
   border-radius: 8px;
@@ -98,7 +100,7 @@
         text-overflow: ellipsis;
 
         &:hover {
-          background-color: #008fe6;
+          background-color: darken($cam-blue, 10%);
         }
       }
 

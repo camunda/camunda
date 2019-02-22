@@ -1,4 +1,4 @@
-$color: #008fe6;
+$color: darken($cam-blue, 10%);
 @mixin diagram-highlight {
   .djs-visual {
     rect,

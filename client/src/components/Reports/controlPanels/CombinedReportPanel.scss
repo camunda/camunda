@@ -1,3 +1,5 @@
+@import 'shared-styles/shared-styles.scss';
+
 .CombinedReportPanel {
   width: 30%;
   margin-bottom: 24px;
@@ -57,7 +59,7 @@
             }
 
             &:hover {
-              background: #00a8ff;
+              background: $cam-blue;
             }
 
             label {

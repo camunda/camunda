@@ -1,3 +1,5 @@
+@import 'shared-styles/shared-styles.scss';
+
 .dark {
   .progressLabel {
     color: #ddd;
@@ -15,9 +17,9 @@
   .goalOverlay {
     height: 100%;
     position: absolute;
-    color: #b5152b;
+    color: $cam-red;
     border-radius: 4px;
-    background: linear-gradient(to bottom, #00a8ff 0%, #0082c4 100%);
+    background: linear-gradient(to bottom, $cam-blue 0%, darken($cam-blue, 10%) 100%);
     z-index: 1;
 
     .goalLabel {
@@ -42,7 +44,7 @@
         left: 0;
         right: 0;
         height: 135%;
-        border-right: 2px solid #b5152b;
+        border-right: 2px solid $cam-red;
         z-index: -1;
       }
     }
@@ -64,12 +66,16 @@
 
   .filledOverlay {
     height: 100%;
-    background: linear-gradient(to bottom, #00a8ff 0%, #0082c4 100%);
+    background: linear-gradient(to bottom, $cam-blue 0%, darken($cam-blue, 10%) 100%);
     border-radius: 4px;
     min-width: 5px;
 
     &.goalExceeded {
-      background: linear-gradient(to bottom, #005887 0%, #004568 100%);
+      background: linear-gradient(
+        to bottom,
+        darken($cam-blue, 20%) 0%,
+        darken($cam-blue, 30%) 100%
+      );
     }
   }
 

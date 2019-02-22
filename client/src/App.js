@@ -16,6 +16,8 @@ import {
 
 import {ErrorBoundary} from 'components';
 
+import {Notifications} from 'notifications';
+
 import {Provider as Theme} from 'theme';
 
 const App = () => (
@@ -46,6 +48,7 @@ const App = () => (
         }}
       />
     </Router>
+    <Notifications />
   </Theme>
 );
 

@@ -14,6 +14,7 @@ import {
 import {evaluateReport, saveReport} from './service';
 
 import {loadDefinitions, incompatibleFilters, loadProcessDefinitionXml} from 'services';
+import {addNotification} from 'notifications';
 import ReportControlPanel from './controlPanels/ReportControlPanel';
 import DecisionControlPanel from './controlPanels/DecisionControlPanel';
 import CombinedReportPanel from './controlPanels/CombinedReportPanel';
@@ -89,6 +90,8 @@ export default withErrorHandling(
                 items: conflictData.conflictedItems
               }
             });
+          } else {
+            addNotification({text: `Report ${updatedName} could not be saved.`, type: 'error'});
           }
         }
       );
