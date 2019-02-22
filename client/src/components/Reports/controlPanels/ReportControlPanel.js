@@ -391,7 +391,8 @@ export default class ReportControlPanel extends React.Component {
                 onClick={evt => {
                   evt.nativeEvent.isCloseEvent = true;
                   this.props.updateReport(
-                    update('groupBy', {type: 'variable', value: variable}, this.props)
+                    update('groupBy', {type: 'variable', value: variable}, this.props),
+                    true
                   );
                 }}
               >
