@@ -289,8 +289,11 @@ export default class Instance extends Component {
 
     const metadata = !selection.flowNodeId ? null : this.getCurrentMetadata();
 
-    const selectedFlowNodeName =
-      selection.flowNodeId && activityIdToNameMap.get(selection.flowNodeId);
+    const selectedFlowNodeId = selection.flowNodeId;
+
+    const selectedFlowNodeName = !selectedFlowNodeId
+      ? null
+      : activityIdToNameMap.get(selectedFlowNodeId) || selectedFlowNodeId;
 
     return (
       <Fragment>
@@ -305,7 +308,7 @@ export default class Instance extends Component {
                 <Diagram
                   onFlowNodeSelection={this.handleFlowNodeSelection}
                   selectableFlowNodes={selectableFlowNodes}
-                  selectedFlowNodeId={selection.flowNodeId}
+                  selectedFlowNodeId={selectedFlowNodeId}
                   selectedFlowNodeName={selectedFlowNodeName}
                   flowNodeStateOverlays={flowNodeStateOverlays}
                   definitions={diagramDefinitions}

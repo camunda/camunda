@@ -331,11 +331,8 @@ class Diagram extends React.PureComponent {
         {this.props.selectedFlowNodeId && this.props.metadata && (
           <PopoverOverlay
             key={this.props.selectedFlowNodeId}
-            selectedFlowNode={{
-              id: this.props.selectedFlowNodeId,
-              name:
-                this.props.selectedFlowNodeName || this.props.selectedFlowNodeId
-            }}
+            selectedFlowNodeId={this.props.selectedFlowNodeId}
+            selectedFlowNodeName={this.props.selectedFlowNodeName}
             metadata={this.props.metadata}
             onFlowNodeSelection={this.props.onFlowNodeSelection}
             position={this.getFlowNodePosition(this.props.selectedFlowNodeId)}

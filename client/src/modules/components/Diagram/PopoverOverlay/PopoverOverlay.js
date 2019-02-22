@@ -21,11 +21,11 @@ export default class PopoverOverlay extends React.Component {
   };
 
   renderModal = () => {
-    const {metadata, selectedFlowNode} = this.props;
+    const {metadata, selectedFlowNodeName} = this.props;
 
     return (
       <Modal onModalClose={this.handleModalClose}>
-        <Modal.Header>{`Flow Node Instance "${selectedFlowNode.name ||
+        <Modal.Header>{`Flow Node Instance "${selectedFlowNodeName ||
           metadata.data['activityInstanceId']}" Metadata`}</Modal.Header>
         <Styled.ModalBody>
           <pre>
@@ -52,7 +52,12 @@ export default class PopoverOverlay extends React.Component {
   };
 
   renderSummary = () => {
-    const {metadata, selectedFlowNode, onFlowNodeSelection} = this.props;
+    const {
+      metadata,
+      selectedFlowNodeId,
+      selectedFlowNodeName,
+      onFlowNodeSelection
+    } = this.props;
 
     if (metadata.isMultiRowPeterCase) {
       return (
@@ -76,9 +81,9 @@ export default class PopoverOverlay extends React.Component {
           <Styled.SummaryHeader>
             <Styled.Button
               data-test="select-flownode"
-              onClick={() => onFlowNodeSelection(selectedFlowNode.id)}
+              onClick={() => onFlowNodeSelection(selectedFlowNodeId)}
             >
-              {selectedFlowNode.name}
+              {selectedFlowNodeName}
             </Styled.Button>
             <span> › {metadata.data.activityInstanceId}</span>
           </Styled.SummaryHeader>
@@ -105,7 +110,7 @@ export default class PopoverOverlay extends React.Component {
       onOverlayAdd,
       onOverlayClear,
       isViewerLoaded,
-      selectedFlowNode,
+      selectedFlowNodeId,
       theme
     } = this.props;
 
@@ -114,7 +119,7 @@ export default class PopoverOverlay extends React.Component {
         onOverlayAdd={onOverlayAdd}
         onOverlayClear={onOverlayClear}
         isViewerLoaded={isViewerLoaded}
-        id={selectedFlowNode.id}
+        id={selectedFlowNodeId}
         type={'popover'}
         position={this.props.position}
       >
@@ -138,10 +143,8 @@ export default class PopoverOverlay extends React.Component {
 
 PopoverOverlay.propTypes = {
   metadata: PropTypes.object,
-  selectedFlowNode: PropTypes.shape({
-    id: PropTypes.string.isRequired,
-    name: PropTypes.string.isRequired
-  }),
+  selectedFlowNodeId: PropTypes.string.isRequired,
+  selectedFlowNodeName: PropTypes.string.isRequired,
   onOverlayAdd: PropTypes.func.isRequired,
   onOverlayClear: PropTypes.func.isRequired,
   onFlowNodeSelection: PropTypes.func.isRequired,
