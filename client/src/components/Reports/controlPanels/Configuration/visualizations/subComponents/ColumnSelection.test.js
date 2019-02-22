@@ -70,3 +70,14 @@ it('should provde a sane interface for decision tables', () => {
 
   expect(node).toMatchSnapshot();
 });
+
+it('should not crash if the report result is empty', () => {
+  shallow(
+    <ColumnSelection
+      report={{
+        data: {configuration: {}},
+        result: []
+      }}
+    />
+  );
+});
