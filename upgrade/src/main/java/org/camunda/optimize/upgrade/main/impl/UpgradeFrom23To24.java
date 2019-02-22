@@ -78,7 +78,7 @@ public class UpgradeFrom23To24 implements Upgrade {
           .addUpgradeStep(buildMatchedRules());
       }
 
-      if (isDecisionInstanceIndexPresent()) {
+      if (isCombinedReportIndexPresent()) {
         upgradePlanBuilder
           .addUpgradeStep(new UpdateIndexStep(
             COMBINED_REPORT_TYPE,
