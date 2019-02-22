@@ -20,7 +20,7 @@ import java.lang.reflect.Method;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksIterator;
 
-class RocksDbIterator extends RocksIterator {
+public class RocksDbIterator extends RocksIterator {
   private static final Method SEEK_METHOD;
 
   static {
@@ -34,15 +34,20 @@ class RocksDbIterator extends RocksIterator {
     }
   }
 
-  RocksDbIterator(final RocksDB rocksDB, final long nativeHandle) {
+  public RocksDbIterator(final RocksDB rocksDB, final long nativeHandle) {
     super(rocksDB, nativeHandle);
   }
 
-  public void seek(byte[] target, int targetLength) {
+  public static void seek(
+      RocksIterator iterator, long nativeHandle, byte[] target, int targetLength) {
     try {
-      SEEK_METHOD.invoke(this, nativeHandle_, target, targetLength);
+      SEEK_METHOD.invoke(iterator, nativeHandle, target, targetLength);
     } catch (IllegalAccessException | InvocationTargetException e) {
       throw new RuntimeException("Unexpected error occurred trying to seek with RocksIterator", e);
     }
+  }
+
+  public void seek(byte[] target, int targetLength) {
+    seek(this, nativeHandle_, target, targetLength);
   }
 }

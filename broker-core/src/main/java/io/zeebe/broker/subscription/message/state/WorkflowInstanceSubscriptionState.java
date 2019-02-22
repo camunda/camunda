@@ -69,7 +69,7 @@ public class WorkflowInstanceSubscriptionState {
   }
 
   public void put(final WorkflowInstanceSubscription subscription) {
-    zeebeDb.batch(
+    zeebeDb.transaction(
         () -> {
           wrapSubscriptionKeys(subscription.getElementInstanceKey(), subscription.getMessageName());
 
@@ -130,7 +130,7 @@ public class WorkflowInstanceSubscriptionState {
   }
 
   public void updateSentTime(final WorkflowInstanceSubscription subscription, long sentTime) {
-    zeebeDb.batch(
+    zeebeDb.transaction(
         () -> {
           wrapSubscriptionKeys(subscription.getElementInstanceKey(), subscription.getMessageName());
 
@@ -167,7 +167,7 @@ public class WorkflowInstanceSubscriptionState {
   }
 
   public void remove(final WorkflowInstanceSubscription subscription) {
-    zeebeDb.batch(
+    zeebeDb.transaction(
         () -> {
           wrapSubscriptionKeys(subscription.getElementInstanceKey(), subscription.getMessageName());
 

@@ -29,7 +29,9 @@ import static org.mockito.Mockito.when;
 
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.job.JobEventProcessors;
+import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
+import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
@@ -51,6 +53,7 @@ import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.util.sched.ActorControl;
 import java.io.ByteArrayOutputStream;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
@@ -59,7 +62,8 @@ import org.junit.Rule;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 
-public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
+public class WorkflowInstanceStreamProcessorRule extends ExternalResource
+    implements StreamProcessorLifecycleAware {
 
   public static final int VERSION = 1;
   public static final int WORKFLOW_KEY = 123;
@@ -74,6 +78,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
   private StreamProcessorControl streamProcessor;
   private WorkflowState workflowState;
   private ZeebeState zeebeState;
+  private ActorControl actor;
 
   public WorkflowInstanceStreamProcessorRule(StreamProcessorRule streamProcessorRule) {
     this.environmentRule = streamProcessorRule;
@@ -84,7 +89,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
   }
 
   @Override
-  protected void before() {
+  protected void before() throws Exception {
     mockSubscriptionCommandSender = mock(SubscriptionCommandSender.class);
     mockTopologyManager = mock(TopologyManager.class);
 
@@ -112,7 +117,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
                   1);
 
               JobEventProcessors.addJobProcessors(typedEventStreamProcessorBuilder, zeebeState);
-
+              typedEventStreamProcessorBuilder.withListener(this);
               return typedEventStreamProcessorBuilder.build();
             });
   }
@@ -146,7 +151,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
         .setBpmnProcessId(BufferUtil.wrapString(process.getId()))
         .setVersion(version);
 
-    workflowState.putDeployment(deploymentKey, record);
+    actor.call(() -> workflowState.putDeployment(deploymentKey, record)).join();
   }
 
   public void deploy(final BpmnModelInstance modelInstance) {
@@ -264,5 +269,20 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
 
     waitUntil(() -> lookupStream.get().findFirst().isPresent());
     return lookupStream.get().findFirst().get();
+  }
+
+  @Override
+  public void onOpen(TypedStreamProcessor streamProcessor) {
+    actor = streamProcessor.getActor();
+  }
+
+  @Override
+  public void onRecovered(TypedStreamProcessor streamProcessor) {
+    // recovered
+  }
+
+  @Override
+  public void onClose() {
+    actor = null;
   }
 }

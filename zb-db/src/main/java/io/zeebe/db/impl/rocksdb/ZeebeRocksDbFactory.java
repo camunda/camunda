@@ -16,6 +16,7 @@
 package io.zeebe.db.impl.rocksdb;
 
 import io.zeebe.db.ZeebeDbFactory;
+import io.zeebe.db.impl.rocksdb.transaction.ZeebeTransactionDb;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,7 +47,7 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
   }
 
   @Override
-  public ZeebeRocksDb<ColumnFamilyType> createDb(File pathName) {
+  public ZeebeTransactionDb<ColumnFamilyType> createDb(File pathName) {
     return open(
         pathName,
         Arrays.stream(columnFamilyTypeClass.getEnumConstants())
@@ -54,10 +55,10 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
             .collect(Collectors.toList()));
   }
 
-  protected ZeebeRocksDb<ColumnFamilyType> open(
+  protected ZeebeTransactionDb<ColumnFamilyType> open(
       final File dbDirectory, List<byte[]> columnFamilyNames) {
 
-    final ZeebeRocksDb<ColumnFamilyType> db;
+    final ZeebeTransactionDb<ColumnFamilyType> db;
     try {
       final List<AutoCloseable> closeables = new ArrayList<>();
       final ColumnFamilyOptions columnFamilyOptions = createColumnFamilyOptions();
@@ -74,7 +75,7 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
       closeables.add(dbOptions);
 
       db =
-          ZeebeRocksDb.openZbDb(
+          ZeebeTransactionDb.openTransactionalDb(
               dbOptions,
               dbDirectory.getAbsolutePath(),
               columnFamilyDescriptors,

@@ -306,11 +306,9 @@ public class ExporterStreamProcessorTest {
   }
 
   @Test
-  public void shouldExecuteScheduledTask() throws InterruptedException {
+  public void shouldExecuteScheduledTask() throws Exception {
     // given
-    final StreamProcessorControl control =
-        rule.runStreamProcessor((db) -> createStreamProcessor(db, 1));
-
+    final List<ExporterDescriptor> mockedExporters = createMockedExporters(1);
     final CountDownLatch latch = new CountDownLatch(1);
     final Duration delay = Duration.ofSeconds(10);
 
@@ -318,16 +316,17 @@ public class ExporterStreamProcessorTest {
     controlledTestExporter.onExport(
         r -> controlledTestExporter.getController().scheduleTask(delay, latch::countDown));
 
-    control.blockAfterEvent(e -> true);
-    writeEvent();
+    final StreamProcessorControl control =
+        rule.runStreamProcessor((db) -> createStreamProcessor(db, mockedExporters));
+    final long position = writeEvent();
+    control.blockAfterEvent(e -> e.getPosition() >= position);
     TestUtil.waitUntil(control::isBlocked);
 
     // when
     rule.getClock().addTime(delay.plusSeconds(20));
-    final boolean wasExecuted = latch.await(1, TimeUnit.SECONDS);
+    latch.await();
 
     // then
-    assertThat(wasExecuted).isTrue();
   }
 
   @Test
@@ -741,6 +740,11 @@ public class ExporterStreamProcessorTest {
     final List<Record> secondRecords = secondExporter.getExportedRecords();
     assertThat(secondRecords).hasSize(1);
     assertThat(secondRecords.get(0).getPosition()).isEqualTo(secondPosition);
+  }
+
+  private ExporterStreamProcessor createStreamProcessor(
+      ZeebeDb db, final List<ExporterDescriptor> exporterDescriptors) {
+    return new ExporterStreamProcessor(db, PARTITION_ID, exporterDescriptors);
   }
 
   private ExporterStreamProcessor createStreamProcessor(ZeebeDb db, final int count) {

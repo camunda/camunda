@@ -75,7 +75,7 @@ public class MessageStartEventSubscriptionState {
     subscriptionRecord.setMessageName(subscription.getMessageName());
     subscriptionRecord.setWorkflowKey(subscription.getWorkflowKey());
 
-    zeebeDb.batch(
+    zeebeDb.transaction(
         () -> {
           messageName.wrapBuffer(subscription.getMessageName());
           workflowKey.wrapLong(subscription.getWorkflowKey());
