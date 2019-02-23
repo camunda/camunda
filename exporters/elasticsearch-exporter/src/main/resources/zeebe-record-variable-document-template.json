@@ -1,0 +1,32 @@
+{
+  "index_patterns": [
+    "zeebe-record-variable-document_*"
+  ],
+  "order": 20,
+  "aliases": {
+    "zeebe-record-variable-document": {}
+  },
+  "mappings": {
+    "_doc": {
+      "properties": {
+        "value": {
+          "dynamic": "strict",
+          "properties": {
+            "scopeKey": {
+              "type": "long"
+            },
+            "document": {
+              "type": "object",
+              "dynamic": false,
+              "store": true,
+              "index": true
+            },
+            "updateSemantics": {
+              "type": "keyword"
+            }
+          }
+        }
+      }
+    }
+  }
+}
