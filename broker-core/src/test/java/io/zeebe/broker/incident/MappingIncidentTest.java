@@ -28,6 +28,7 @@ import static io.zeebe.protocol.intent.IncidentIntent.RESOLVE;
 import static io.zeebe.protocol.intent.IncidentIntent.RESOLVED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.UnstableTest;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
@@ -37,7 +38,6 @@ import io.zeebe.exporter.record.value.IncidentRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.impl.record.value.incident.ErrorType;
 import io.zeebe.protocol.intent.IncidentIntent;
@@ -45,7 +45,9 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.MsgPackUtil;
-import org.agrona.DirectBuffer;
+import io.zeebe.test.util.collection.Maps;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -73,19 +75,7 @@ public class MappingIncidentTest {
           .serviceTask("failingTask", t -> t.zeebeTaskType("test").zeebeOutput("$.foo", "$.foo"))
           .done();
 
-  private static final byte[] PAYLOAD;
-
-  static {
-    final DirectBuffer buffer =
-        MsgPackUtil.encodeMsgPack(
-            p -> {
-              p.packMapHeader(1);
-              p.packString("foo");
-              p.packString("bar");
-            });
-    PAYLOAD = new byte[buffer.capacity()];
-    buffer.getBytes(0, PAYLOAD);
-  }
+  private static final Map<String, Object> PAYLOAD = Maps.of(entry("foo", "bar"));
 
   @Before
   public void init() {
@@ -190,7 +180,7 @@ public class MappingIncidentTest {
         testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     // when
-    testClient.updatePayload(failureEvent.getValue().getFlowScopeKey(), PAYLOAD);
+    testClient.updateVariables(failureEvent.getValue().getFlowScopeKey(), PAYLOAD);
     testClient.resolveIncident(incidentEvent.getKey());
 
     // then
@@ -224,7 +214,7 @@ public class MappingIncidentTest {
     final Record incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     // when
-    testClient.updatePayload(failureEvent.getKey(), PAYLOAD);
+    testClient.updateVariables(failureEvent.getKey(), PAYLOAD);
     testClient.resolveIncident(incidentEvent.getKey());
 
     // then
@@ -284,8 +274,9 @@ public class MappingIncidentTest {
         testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     // when
-    testClient.updatePayload(
-        failureEvent.getValue().getFlowScopeKey(), "{'string':{'obj':'test'}}");
+    testClient.updateVariables(
+        failureEvent.getValue().getFlowScopeKey(),
+        Maps.of(entry("string", Maps.of(entry("obj", "test")))));
     testClient.resolveIncident(incidentEvent.getKey());
 
     // then
@@ -362,7 +353,8 @@ public class MappingIncidentTest {
     final Record incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     // when
-    testClient.updatePayload(failureEvent.getKey(), "{'testAttr':{'obj':'test'}}");
+    testClient.updateVariables(
+        failureEvent.getKey(), Maps.of(entry("testAttr", Maps.of(entry("obj", "test")))));
     testClient.resolveIncident(incidentEvent.getKey());
 
     // then
@@ -433,7 +425,8 @@ public class MappingIncidentTest {
     final Record incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     // when
-    testClient.updatePayload(failureEvent.getKey(), "{'foo':{'obj':'test'}}");
+    testClient.updateVariables(
+        failureEvent.getKey(), Maps.of(entry("foo", Maps.of(entry("obj", "test")))));
     testClient.resolveIncident(incidentEvent.getKey());
 
     // then
@@ -490,7 +483,8 @@ public class MappingIncidentTest {
     final Record incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     // when
-    testClient.updatePayload(failureEvent.getKey(), "{'testAttr':{'obj':'test'}}");
+    testClient.updateVariables(
+        failureEvent.getKey(), Maps.of(entry("testAttr", Maps.of(entry("obj", "test")))));
     testClient.resolveIncident(incidentEvent.getKey());
 
     // then
@@ -537,7 +531,7 @@ public class MappingIncidentTest {
         .hasErrorMessage("No data found for query $.foo.");
 
     // when
-    testClient.updatePayload(failureEvent.getKey(), PAYLOAD);
+    testClient.updateVariables(failureEvent.getKey(), PAYLOAD);
     testClient.resolveIncident(incidentEvent.getKey());
 
     // then
@@ -570,7 +564,7 @@ public class MappingIncidentTest {
     final Record failureEvent =
         testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     final Record firstIncident = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
-    testClient.updatePayload(failureEvent.getKey(), MsgPackHelper.EMTPY_OBJECT);
+    testClient.updateVariables(failureEvent.getKey(), new HashMap<>());
     testClient.resolveIncident(firstIncident.getKey());
     testClient.receiveFirstIncidentEvent(RESOLVED);
     final Record<IncidentRecordValue> secondIncident =
@@ -581,7 +575,7 @@ public class MappingIncidentTest {
             .getFirst();
 
     // when
-    testClient.updatePayload(failureEvent.getKey(), PAYLOAD);
+    testClient.updateVariables(failureEvent.getKey(), PAYLOAD);
     testClient.resolveIncident(secondIncident.getKey());
 
     // then
@@ -613,7 +607,7 @@ public class MappingIncidentTest {
     Record failureEvent =
         testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
     final Record<IncidentRecordValue> firstIncident = testClient.receiveFirstIncidentEvent(CREATED);
-    testClient.updatePayload(failureEvent.getKey(), PAYLOAD);
+    testClient.updateVariables(failureEvent.getKey(), PAYLOAD);
     testClient.resolveIncident(firstIncident.getKey());
 
     // create a second incident
@@ -625,7 +619,7 @@ public class MappingIncidentTest {
         testClient.receiveFirstIncidentEvent(workflowInstanceKey, IncidentIntent.CREATED);
 
     // when
-    testClient.updatePayload(failureEvent.getKey(), PAYLOAD);
+    testClient.updateVariables(failureEvent.getKey(), PAYLOAD);
     testClient.resolveIncident(secondIncidentEvent.getKey());
 
     // then
@@ -678,7 +672,8 @@ public class MappingIncidentTest {
     testClient.cancelWorkflowInstance(workflowInstanceKey);
 
     // create and cancel instance without incident
-    workflowInstanceKey = testClient.createWorkflowInstance("process", PAYLOAD);
+    workflowInstanceKey =
+        testClient.createWorkflowInstance("process", MsgPackUtil.asMsgPack(PAYLOAD).byteArray());
     testClient.cancelWorkflowInstance(workflowInstanceKey);
 
     // create another instance which creates an incident

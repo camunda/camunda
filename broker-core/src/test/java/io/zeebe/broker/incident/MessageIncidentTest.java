@@ -19,6 +19,7 @@ package io.zeebe.broker.incident;
 
 import static io.zeebe.protocol.intent.IncidentIntent.RESOLVED;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.record.Assertions;
@@ -34,6 +35,7 @@ import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.MsgPackUtil;
+import io.zeebe.test.util.collection.Maps;
 import io.zeebe.test.util.record.RecordingExporter;
 import org.junit.Before;
 import org.junit.Rule;
@@ -127,8 +129,9 @@ public class MessageIncidentTest {
     final Record<IncidentRecordValue> incidentCreatedRecord =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();
 
-    testClient.updatePayload(
-        incidentCreatedRecord.getValue().getElementInstanceKey(), "{\"orderId\":\"order123\"}");
+    testClient.updateVariables(
+        incidentCreatedRecord.getValue().getElementInstanceKey(),
+        Maps.of(entry("orderId", "order123")));
 
     // when
     testClient.resolveIncident(incidentCreatedRecord.getKey());

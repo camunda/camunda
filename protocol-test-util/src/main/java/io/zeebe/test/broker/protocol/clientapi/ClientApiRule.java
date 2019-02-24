@@ -352,22 +352,6 @@ public class ClientApiRule extends ExternalResource {
     assertThat(response.getIntent()).isEqualTo(JobIntent.COMPLETED);
   }
 
-  public void updatePayload(long elementInstanceKey, DirectBuffer payload) {
-
-    final ExecuteCommandResponse response =
-        createCmdRequest()
-            .partitionId(Protocol.decodePartitionId(elementInstanceKey))
-            .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.UPDATE_PAYLOAD)
-            .key(elementInstanceKey)
-            .command()
-            .put("payload", BufferUtil.bufferAsArray(payload))
-            .done()
-            .sendAndAwait();
-
-    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.PAYLOAD_UPDATED);
-  }
-
   public ExecuteCommandResponse resolveIncident(long incidentKey) {
     return createCmdRequest()
         .partitionId(Protocol.decodePartitionId(incidentKey))

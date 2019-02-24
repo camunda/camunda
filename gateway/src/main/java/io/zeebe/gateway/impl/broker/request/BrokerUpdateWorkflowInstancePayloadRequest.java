@@ -15,38 +15,47 @@
  */
 package io.zeebe.gateway.impl.broker.request;
 
+import io.zeebe.protocol.VariableDocumentUpdateSemantic;
 import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+import io.zeebe.protocol.intent.VariableDocumentIntent;
 import org.agrona.DirectBuffer;
 
 public class BrokerUpdateWorkflowInstancePayloadRequest
-    extends BrokerExecuteCommand<WorkflowInstanceRecord> {
+    extends BrokerExecuteCommand<VariableDocumentRecord> {
 
-  private final WorkflowInstanceRecord requestDto = new WorkflowInstanceRecord();
+  private final VariableDocumentRecord requestDto = new VariableDocumentRecord();
 
   public BrokerUpdateWorkflowInstancePayloadRequest() {
-    super(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.UPDATE_PAYLOAD);
+    super(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATE);
   }
 
   public BrokerUpdateWorkflowInstancePayloadRequest setElementInstanceKey(long elementInstanceKey) {
-    request.setKey(elementInstanceKey);
+    requestDto.setScopeKey(elementInstanceKey);
     return this;
   }
 
-  public BrokerUpdateWorkflowInstancePayloadRequest setPayload(DirectBuffer payload) {
-    requestDto.setPayload(payload);
+  public BrokerUpdateWorkflowInstancePayloadRequest setPayload(DirectBuffer document) {
+    requestDto.setDocument(document);
+    return this;
+  }
+
+  public BrokerUpdateWorkflowInstancePayloadRequest setLocal(boolean local) {
+    final VariableDocumentUpdateSemantic updateSemantics =
+        local ? VariableDocumentUpdateSemantic.LOCAL : VariableDocumentUpdateSemantic.PROPAGATE;
+
+    requestDto.setUpdateSemantics(updateSemantics);
     return this;
   }
 
   @Override
-  public WorkflowInstanceRecord getRequestWriter() {
+  public VariableDocumentRecord getRequestWriter() {
     return requestDto;
   }
 
   @Override
-  protected WorkflowInstanceRecord toResponseDto(DirectBuffer buffer) {
-    final WorkflowInstanceRecord responseDto = new WorkflowInstanceRecord();
+  protected VariableDocumentRecord toResponseDto(DirectBuffer buffer) {
+    final VariableDocumentRecord responseDto = new VariableDocumentRecord();
     responseDto.wrap(buffer);
     return responseDto;
   }

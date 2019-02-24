@@ -19,6 +19,7 @@ package io.zeebe.broker.workflow.variables;
 
 import static io.zeebe.broker.workflow.gateway.ParallelGatewayStreamProcessorTest.PROCESS_ID;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
@@ -30,6 +31,7 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.intent.VariableIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
+import io.zeebe.test.util.collection.Maps;
 import io.zeebe.test.util.record.RecordingExporter;
 import org.junit.Before;
 import org.junit.Rule;
@@ -125,7 +127,7 @@ public class WorkflowInstanceVariableTest {
     final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
 
     // when
-    testClient.updatePayload(workflowInstanceKey, "{'x':1}");
+    testClient.updateVariables(workflowInstanceKey, Maps.of(entry("x", 1)));
 
     // then
     final Record<VariableRecordValue> variableRecord =
@@ -203,7 +205,7 @@ public class WorkflowInstanceVariableTest {
     final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID, "{'x':1}");
 
     // when
-    testClient.updatePayload(workflowInstanceKey, "{'x':2}");
+    testClient.updateVariables(workflowInstanceKey, Maps.of(entry("x", 2)));
 
     // then
     final Record<VariableRecordValue> variableRecord =
@@ -243,7 +245,7 @@ public class WorkflowInstanceVariableTest {
         RecordingExporter.variableRecords(VariableIntent.CREATED).getFirst();
 
     // when
-    testClient.updatePayload(workflowInstanceKey, "{'x':2, 'y':3}");
+    testClient.updateVariables(workflowInstanceKey, Maps.of(entry("x", 2), entry("y", 3)));
 
     // then
     assertThat(

@@ -17,8 +17,8 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.workflow.gateway.ParallelGatewayStreamProcessorTest.PROCESS_ID;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.record.Record;
@@ -29,74 +29,84 @@ import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
+import io.zeebe.test.util.Strings;
+import io.zeebe.test.util.collection.Maps;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class WorkflowInstanceTokenTest {
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
+  private static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  private static ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
 
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+  @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+
+  @Rule
+  public RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   private PartitionTestClient testClient;
+  private String processId;
 
   @Before
-  public void init() {
+  public void setUp() {
     testClient = apiRule.partitionClient();
+    processId = Strings.newRandomValidBpmnId();
   }
 
   @Test
   public void shouldCompleteInstanceAfterEndEvent() {
     // given
-    testClient.deploy(Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent("end").done());
+    testClient.deploy(Bpmn.createExecutableProcess(processId).startEvent().endEvent("end").done());
 
     // when
-    testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey = testClient.createWorkflowInstance(processId);
 
     // then
-    assertThatWorkflowInstanceCompletedAfter("end", WorkflowInstanceIntent.ELEMENT_COMPLETED);
+    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end");
   }
 
   @Test
   public void shouldCompleteInstanceAfterEventWithoutOutgoingSequenceFlows() {
     // given
-    testClient.deploy(Bpmn.createExecutableProcess(PROCESS_ID).startEvent("start").done());
+    testClient.deploy(Bpmn.createExecutableProcess(processId).startEvent("start").done());
 
     // when
-    testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey = testClient.createWorkflowInstance(processId);
 
     // then
-    assertThatWorkflowInstanceCompletedAfter("start", WorkflowInstanceIntent.ELEMENT_COMPLETED);
+    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "start");
   }
 
   @Test
   public void shouldCompleteInstanceAfterActivityWithoutOutgoingSequenceFlows() {
     // given
     testClient.deploy(
-        Bpmn.createExecutableProcess(PROCESS_ID)
+        Bpmn.createExecutableProcess(processId)
             .startEvent()
             .serviceTask("task", t -> t.zeebeTaskType("task"))
             .done());
 
-    testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey = testClient.createWorkflowInstance(processId);
 
     // when
-    testClient.completeJobOfType("task");
+    testClient.completeJobOfType(workflowInstanceKey, "task");
 
     // then
-    assertThatWorkflowInstanceCompletedAfter("task", WorkflowInstanceIntent.ELEMENT_COMPLETED);
+    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "task");
   }
 
   @Test
   public void shouldCompleteInstanceAfterParallelSplit() {
     // given
     testClient.deploy(
-        Bpmn.createExecutableProcess(PROCESS_ID)
+        Bpmn.createExecutableProcess(processId)
             .startEvent()
             .parallelGateway()
             .serviceTask("task-1", t -> t.zeebeTaskType("task-1"))
@@ -106,21 +116,21 @@ public class WorkflowInstanceTokenTest {
             .endEvent("end-2")
             .done());
 
-    testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey = testClient.createWorkflowInstance(processId);
 
     // when
-    testClient.completeJobOfType("task-1");
-    testClient.completeJobOfType("task-2");
+    testClient.completeJobOfType(workflowInstanceKey, "task-1");
+    testClient.completeJobOfType(workflowInstanceKey, "task-2");
 
     // then
-    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.ELEMENT_COMPLETED);
+    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end-2");
   }
 
   @Test
   public void shouldCompleteInstanceAfterParallelJoin() {
     // given
     testClient.deploy(
-        Bpmn.createExecutableProcess(PROCESS_ID)
+        Bpmn.createExecutableProcess(processId)
             .startEvent()
             .parallelGateway("fork")
             .serviceTask("task-1", t -> t.zeebeTaskType("task-1"))
@@ -131,21 +141,21 @@ public class WorkflowInstanceTokenTest {
             .connectTo("join")
             .done());
 
-    testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey = testClient.createWorkflowInstance(processId);
 
     // when
-    testClient.completeJobOfType("task-1");
-    testClient.completeJobOfType("task-2");
+    testClient.completeJobOfType(workflowInstanceKey, "task-1");
+    testClient.completeJobOfType(workflowInstanceKey, "task-2");
 
     // then
-    assertThatWorkflowInstanceCompletedAfter("end", WorkflowInstanceIntent.ELEMENT_COMPLETED);
+    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end");
   }
 
   @Test
   public void shouldCompleteInstanceAfterMessageIntermediateCatchEvent() {
     // given
     testClient.deploy(
-        Bpmn.createExecutableProcess(PROCESS_ID)
+        Bpmn.createExecutableProcess(processId)
             .startEvent()
             .parallelGateway()
             .serviceTask("task", t -> t.zeebeTaskType("task"))
@@ -156,14 +166,14 @@ public class WorkflowInstanceTokenTest {
             .endEvent("end-2")
             .done());
 
-    testClient.createWorkflowInstance(PROCESS_ID, "{'key':'123'}");
+    final long workflowInstanceKey = testClient.createWorkflowInstance(processId, "{'key':'123'}");
 
     // when
-    testClient.completeJobOfType("task");
+    testClient.completeJobOfType(workflowInstanceKey, "task");
     testClient.publishMessage("msg", "123");
 
     // then
-    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.ELEMENT_COMPLETED);
+    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end-2");
   }
 
   @Test
@@ -172,7 +182,7 @@ public class WorkflowInstanceTokenTest {
     brokerRule.getClock().pinCurrentTime();
 
     testClient.deploy(
-        Bpmn.createExecutableProcess(PROCESS_ID)
+        Bpmn.createExecutableProcess(processId)
             .startEvent()
             .parallelGateway()
             .serviceTask("task", t -> t.zeebeTaskType("task"))
@@ -182,22 +192,22 @@ public class WorkflowInstanceTokenTest {
             .endEvent("end-2")
             .done());
 
-    testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey = testClient.createWorkflowInstance(processId);
 
     // when
-    testClient.completeJobOfType("task");
+    testClient.completeJobOfType(workflowInstanceKey, "task");
 
     brokerRule.getClock().addTime(Duration.ofSeconds(1));
 
     // then
-    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.ELEMENT_COMPLETED);
+    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end-2");
   }
 
   @Test
   public void shouldCompleteInstanceAfterSubProcessEnded() {
     // given
     testClient.deploy(
-        Bpmn.createExecutableProcess(PROCESS_ID)
+        Bpmn.createExecutableProcess(processId)
             .startEvent()
             .parallelGateway()
             .serviceTask("task-1", t -> t.zeebeTaskType("task-1"))
@@ -213,21 +223,21 @@ public class WorkflowInstanceTokenTest {
             .endEvent("end-2")
             .done());
 
-    testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey = testClient.createWorkflowInstance(processId);
 
     // when
-    testClient.completeJobOfType("task-1");
-    testClient.completeJobOfType("task-2");
+    testClient.completeJobOfType(workflowInstanceKey, "task-1");
+    testClient.completeJobOfType(workflowInstanceKey, "task-2");
 
     // then
-    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.ELEMENT_COMPLETED);
+    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end-2");
   }
 
   @Test
   public void shouldCompleteInstanceAfterEventBasedGateway() {
     // given
     testClient.deploy(
-        Bpmn.createExecutableProcess(PROCESS_ID)
+        Bpmn.createExecutableProcess(processId)
             .startEvent()
             .parallelGateway()
             .serviceTask("task", t -> t.zeebeTaskType("task"))
@@ -243,21 +253,21 @@ public class WorkflowInstanceTokenTest {
             .endEvent("end-3")
             .done());
 
-    testClient.createWorkflowInstance(PROCESS_ID, "{'key':'123'}");
+    final long workflowInstanceKey = testClient.createWorkflowInstance(processId, "{'key':'123'}");
 
     // when
-    testClient.completeJobOfType("task");
+    testClient.completeJobOfType(workflowInstanceKey, "task");
     testClient.publishMessage("msg-1", "123");
 
     // then
-    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.ELEMENT_COMPLETED);
+    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end-2");
   }
 
   @Test
   public void shouldCompleteInstanceAfterInterruptingBoundaryEventTriggered() {
     // given
     testClient.deploy(
-        Bpmn.createExecutableProcess(PROCESS_ID)
+        Bpmn.createExecutableProcess(processId)
             .startEvent()
             .serviceTask("task", t -> t.zeebeTaskType("task"))
             .endEvent("end-1")
@@ -266,20 +276,22 @@ public class WorkflowInstanceTokenTest {
             .endEvent("end-2")
             .done());
 
-    testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey = testClient.createWorkflowInstance(processId);
 
     // when
+    testClient.receiveElementInState(
+        workflowInstanceKey, "task", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
     brokerRule.getClock().addTime(Duration.ofSeconds(1));
 
     // then
-    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.ELEMENT_COMPLETED);
+    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end-2");
   }
 
   @Test
   public void shouldCompleteInstanceAfterNonInterruptingBoundaryEventTriggered() {
     // given
     testClient.deploy(
-        Bpmn.createExecutableProcess(PROCESS_ID)
+        Bpmn.createExecutableProcess(processId)
             .startEvent()
             .serviceTask("task-1", t -> t.zeebeTaskType("task-1"))
             .endEvent("end-1")
@@ -289,22 +301,25 @@ public class WorkflowInstanceTokenTest {
             .endEvent("end-2")
             .done());
 
-    testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey = testClient.createWorkflowInstance(processId);
 
     // when
-    testClient.completeJobOfType("task-2");
-    testClient.completeJobOfType("task-1");
+    testClient.receiveElementInState(
+        workflowInstanceKey, "task-1", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+    brokerRule.getClock().addTime(Duration.ofSeconds(1));
+    testClient.completeJobOfType(workflowInstanceKey, "task-2");
+    testClient.completeJobOfType(workflowInstanceKey, "task-1");
 
     // then
-    assertThatWorkflowInstanceCompletedAfter("end-1", WorkflowInstanceIntent.ELEMENT_COMPLETED);
-    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.ELEMENT_COMPLETED);
+    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end-1");
+    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end-2");
   }
 
   @Test
   public void shouldNotCompleteInstanceAfterIncidentIsRaisedOnEvent() {
     // given
     testClient.deploy(
-        Bpmn.createExecutableProcess(PROCESS_ID)
+        Bpmn.createExecutableProcess(processId)
             .startEvent()
             .parallelGateway()
             .serviceTask("task", t -> t.zeebeTaskType("task"))
@@ -315,28 +330,31 @@ public class WorkflowInstanceTokenTest {
             .endEvent("end-2")
             .done());
 
-    testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey = testClient.createWorkflowInstance(processId);
 
     // when
     final Record<IncidentRecordValue> incident =
-        RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .getFirst();
 
-    testClient.completeJobOfType("task");
+    testClient.completeJobOfType(workflowInstanceKey, "task");
 
-    testClient.updatePayload(incident.getValue().getElementInstanceKey(), "{'key':'123'}");
+    testClient.updateVariables(
+        incident.getValue().getElementInstanceKey(), Maps.of(entry("key", "123")));
     testClient.resolveIncident(incident.getKey());
 
     testClient.publishMessage("msg", "123");
 
     // then
-    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.ELEMENT_COMPLETED);
+    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end-2");
   }
 
   @Test
   public void shouldNotCompleteInstanceAfterIncidentIsRaisedOnActivity() {
     // given
     testClient.deploy(
-        Bpmn.createExecutableProcess(PROCESS_ID)
+        Bpmn.createExecutableProcess(processId)
             .startEvent()
             .parallelGateway()
             .serviceTask("task-1", t -> t.zeebeTaskType("task-1"))
@@ -346,28 +364,31 @@ public class WorkflowInstanceTokenTest {
             .endEvent("end-2")
             .done());
 
-    testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey = testClient.createWorkflowInstance(processId);
 
     // when
-    testClient.completeJobOfType("task-2");
+    testClient.completeJobOfType(workflowInstanceKey, "task-2");
 
     final Record<IncidentRecordValue> incident =
-        RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .getFirst();
 
-    testClient.completeJobOfType("task-1");
+    testClient.completeJobOfType(workflowInstanceKey, "task-1");
 
-    testClient.updatePayload(incident.getValue().getElementInstanceKey(), "{'result':'123'}");
+    testClient.updateVariables(
+        incident.getValue().getElementInstanceKey(), Maps.of(entry("result", "123")));
     testClient.resolveIncident(incident.getKey());
 
     // then
-    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.ELEMENT_COMPLETED);
+    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end-2");
   }
 
   @Test
   public void shouldNotCompleteInstanceAfterIncidentIsRaisedOnExclusiveGateway() {
     // given
     testClient.deploy(
-        Bpmn.createExecutableProcess(PROCESS_ID)
+        Bpmn.createExecutableProcess(processId)
             .startEvent()
             .parallelGateway()
             .serviceTask("task", t -> t.zeebeTaskType("task"))
@@ -382,29 +403,36 @@ public class WorkflowInstanceTokenTest {
             .endEvent("end-3")
             .done());
 
-    testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey = testClient.createWorkflowInstance(processId);
 
     // when
     final Record<IncidentRecordValue> incident =
-        RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .getFirst();
 
-    testClient.completeJobOfType("task");
+    testClient.completeJobOfType(workflowInstanceKey, "task");
 
-    testClient.updatePayload(incident.getValue().getElementInstanceKey(), "{'x':123}");
+    testClient.updateVariables(
+        incident.getValue().getElementInstanceKey(), Maps.of(entry("x", 123)));
     testClient.resolveIncident(incident.getKey());
 
     // then
-    assertThatWorkflowInstanceCompletedAfter("end-2", WorkflowInstanceIntent.ELEMENT_COMPLETED);
+    assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end-2");
   }
 
   private void assertThatWorkflowInstanceCompletedAfter(
-      String elementId, WorkflowInstanceIntent intent) {
+      long workflowInstanceKey, String elementId) {
     final Record<WorkflowInstanceRecordValue> lastEvent =
-        RecordingExporter.workflowInstanceRecords(intent).withElementId(elementId).getFirst();
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withElementId(elementId)
+            .getFirst();
 
     final Record<WorkflowInstanceRecordValue> completedEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withElementId(PROCESS_ID)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withElementId(processId)
             .getFirst();
 
     assertThat(completedEvent.getPosition()).isGreaterThan(lastEvent.getPosition());
