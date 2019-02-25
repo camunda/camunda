@@ -50,12 +50,12 @@ public class SchedulerMetrics {
                 value -= TimeUnit.MILLISECONDS.toNanos(millis);
                 final long micros = TimeUnit.NANOSECONDS.toMicros(value);
                 ps.format(
-                    "%s:\t %dh %dm %02ds %03dms %03dμs\n",
+                    "%s:\t %dh %dm %02ds %03dms %03dμs%n",
                     label, hours, minutes, seconds, millis, micros);
                 break;
 
               default:
-                ps.format("%s: %d\n", label, value);
+                ps.format("%s: %d%n", label, value);
                 break;
             }
           }

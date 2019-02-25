@@ -20,7 +20,6 @@ import static io.zeebe.util.StringUtil.getBytes;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -108,43 +107,6 @@ public class StreamUtil {
     final String targetFileName = String.format("%s.%s", file.getAbsolutePath(), algorithm);
 
     write(new File(targetFileName), content);
-  }
-
-  public static boolean canRead(final File file, final MessageDigest messageDigest) {
-    boolean isReadable = false;
-
-    final File checksum =
-        new File(file.getAbsolutePath() + "." + messageDigest.getAlgorithm().toLowerCase());
-
-    if (file.exists() && checksum.exists()) {
-      String checksumDigest = null;
-      String checksumFileName = null;
-
-      try (InputStream is = new FileInputStream(checksum)) {
-        final byte[] data = new byte[(int) checksum.length()];
-        read(is, data);
-        final String content = fromBytes(data);
-        final String[] parts = content.split(" ");
-        checksumDigest = parts[0];
-        checksumFileName = parts[1];
-      } catch (final IOException e) {
-        // ignore
-      }
-
-      if (checksumFileName.equals(file.getName())) {
-        try (InputStream is = new FileInputStream(file)) {
-          updateDigest(messageDigest, is);
-        } catch (final IOException e) {
-          // ignore
-        }
-
-        final String digest = digestAsHex(messageDigest);
-
-        isReadable = digest.equals(checksumDigest);
-      }
-    }
-
-    return isReadable;
   }
 
   public static int read(final InputStream input, final byte[] dst) throws IOException {
