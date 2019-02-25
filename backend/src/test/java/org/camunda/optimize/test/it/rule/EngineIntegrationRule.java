@@ -177,8 +177,7 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   public void finishAllUserTasks(final String user, final String password, final String processInstanceId) {
-    final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-    credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(user, password));
+    final BasicCredentialsProvider credentialsProvider = getBasicCredentialsProvider(user, password);
     try (final CloseableHttpClient httpClient = HttpClientBuilder.create()
       .setDefaultCredentialsProvider(credentialsProvider).build()
     ) {
@@ -189,6 +188,30 @@ public class EngineIntegrationRule extends TestWatcher {
     } catch (IOException e) {
       logger.error("Error while trying to create http client auth authentication!", e);
     }
+  }
+
+  public void completeUserTaskWithoutClaim(final String processInstanceId) {
+    completeUserTaskWithoutClaim(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceId);
+  }
+
+  public void completeUserTaskWithoutClaim(final String user, final String password, final String processInstanceId) {
+    final BasicCredentialsProvider credentialsProvider = getBasicCredentialsProvider(user, password);
+    try (final CloseableHttpClient httpClient = HttpClientBuilder.create()
+      .setDefaultCredentialsProvider(credentialsProvider).build()
+    ) {
+      final List<TaskDto> tasks = getUserTasks(httpClient, processInstanceId);
+      for (TaskDto task : tasks) {
+        completeUserTask(httpClient, task);
+      }
+    } catch (IOException e) {
+      logger.error("Error while trying to complete user task!", e);
+    }
+  }
+
+  private BasicCredentialsProvider getBasicCredentialsProvider(final String user, final String password) {
+    final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+    credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(user, password));
+    return credentialsProvider;
   }
 
   private List<TaskDto> getUserTasks(final CloseableHttpClient authenticatingClient,

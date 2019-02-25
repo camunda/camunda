@@ -21,6 +21,8 @@ public class SimpleUserTaskInstanceDto implements OptimizeDto {
   private String deleteReason;
 
   private Long totalDurationInMs;
+  private Long idleDurationInMs;
+  private Long workDurationInMs;
 
   private Set<UserOperationDto> userOperations = new HashSet<>();
 
@@ -85,6 +87,14 @@ public class SimpleUserTaskInstanceDto implements OptimizeDto {
 
   public Long getTotalDurationInMs() {
     return totalDurationInMs;
+  }
+
+  public Long getIdleDurationInMs() {
+    return idleDurationInMs;
+  }
+
+  public Long getWorkDurationInMs() {
+    return workDurationInMs;
   }
 
   public Set<UserOperationDto> getUserOperations() {
