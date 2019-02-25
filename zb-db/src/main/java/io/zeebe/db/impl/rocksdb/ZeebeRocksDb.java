@@ -386,10 +386,12 @@ class ZeebeRocksDb<ColumnFamilyNames extends Enum<ColumnFamilyNames>> extends Ro
           iterator.isValid() && shouldVisitNext;
           iterator.next()) {
         final byte[] keyBytes = iterator.key();
-        if (startsWith(
+        if (!startsWith(
             prefixKeyBuffer.byteArray(), 0, prefix.getLength(), keyBytes, 0, keyBytes.length)) {
-          shouldVisitNext = visit(keyInstance, valueInstance, visitor, iterator);
+          break;
         }
+
+        shouldVisitNext = visit(keyInstance, valueInstance, visitor, iterator);
       }
     } finally {
       activePrefixIteration = false;
