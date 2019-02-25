@@ -94,8 +94,8 @@ public class IncidentTest {
     // when
     clientRule
         .getClient()
-        .newUpdatePayloadCommand(workflowInstanceEvent.getWorkflowInstanceKey())
-        .payload(PAYLOAD)
+        .newSetVariablesCommand(workflowInstanceEvent.getWorkflowInstanceKey())
+        .variables(PAYLOAD)
         .send()
         .join();
     clientRule.getClient().newResolveIncidentCommand(incident.getKey()).send();
@@ -125,8 +125,8 @@ public class IncidentTest {
     // when
     clientRule
         .getClient()
-        .newUpdatePayloadCommand(workflowInstanceEvent.getWorkflowInstanceKey())
-        .payload(PAYLOAD)
+        .newSetVariablesCommand(workflowInstanceEvent.getWorkflowInstanceKey())
+        .variables(PAYLOAD)
         .send()
         .join();
     clientRule.getClient().newResolveIncidentCommand(incident.getKey()).send();

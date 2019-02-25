@@ -68,8 +68,8 @@ func (client *ZBClientImpl) NewUpdateJobRetriesCommand() commands.UpdateJobRetri
 	return commands.NewUpdateJobRetriesCommand(client.gateway, client.requestTimeout)
 }
 
-func (client *ZBClientImpl) NewUpdatePayloadCommand() commands.UpdatePayloadCommandStep1 {
-	return commands.NewUpdatePayloadCommand(client.gateway, client.requestTimeout)
+func (client *ZBClientImpl) NewSetVariablesCommand() commands.SetVariablesCommandStep1 {
+	return commands.NewSetVariablesCommand(client.gateway, client.requestTimeout)
 }
 
 func (client *ZBClientImpl) NewActivateJobsCommand() commands.ActivateJobsCommandStep1 {

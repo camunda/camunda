@@ -25,9 +25,9 @@ import io.zeebe.gateway.impl.broker.request.BrokerGetWorkflowRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerListWorkflowsRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest;
+import io.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerTopologyRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerUpdateJobRetriesRequest;
-import io.zeebe.gateway.impl.broker.request.BrokerUpdateWorkflowInstancePayloadRequest;
 import io.zeebe.gateway.impl.data.MsgPackConverter;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest;
@@ -39,9 +39,9 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.GetWorkflowRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ListWorkflowsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowRequestObject;
 import io.zeebe.msgpack.value.DocumentValue;
 import org.agrona.DirectBuffer;
@@ -119,13 +119,11 @@ public class RequestMapper {
     return brokerRequest;
   }
 
-  public static BrokerUpdateWorkflowInstancePayloadRequest toUpdateWorkflowInstancePayloadRequest(
-      UpdateWorkflowInstancePayloadRequest grpcRequest) {
-    final BrokerUpdateWorkflowInstancePayloadRequest brokerRequest =
-        new BrokerUpdateWorkflowInstancePayloadRequest();
+  public static BrokerSetVariablesRequest toSetVariablesRequest(SetVariablesRequest grpcRequest) {
+    final BrokerSetVariablesRequest brokerRequest = new BrokerSetVariablesRequest();
 
     brokerRequest.setElementInstanceKey(grpcRequest.getElementInstanceKey());
-    brokerRequest.setPayload(ensureJsonSet(grpcRequest.getPayload()));
+    brokerRequest.setDocument(ensureJsonSet(grpcRequest.getVariables()));
     brokerRequest.setLocal(grpcRequest.getLocal());
 
     return brokerRequest;

@@ -51,12 +51,12 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadResponse;
 import io.zeebe.msgpack.MsgpackPropertyException;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
@@ -139,13 +139,12 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
   }
 
   @Override
-  public void updateWorkflowInstancePayload(
-      UpdateWorkflowInstancePayloadRequest request,
-      StreamObserver<UpdateWorkflowInstancePayloadResponse> responseObserver) {
+  public void setVariables(
+      SetVariablesRequest request, StreamObserver<SetVariablesResponse> responseObserver) {
     sendRequest(
         request,
-        RequestMapper::toUpdateWorkflowInstancePayloadRequest,
-        ResponseMapper::toUpdateWorkflowInstancePayloadResponse,
+        RequestMapper::toSetVariablesRequest,
+        ResponseMapper::toSetVariablesResponse,
         responseObserver);
   }
 

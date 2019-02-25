@@ -23,33 +23,11 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
-type Partition_PartitionBrokerRole int32
-
-const (
-	Partition_LEADER   Partition_PartitionBrokerRole = 0
-	Partition_FOLLOWER Partition_PartitionBrokerRole = 1
-)
-
-var Partition_PartitionBrokerRole_name = map[int32]string{
-	0: "LEADER",
-	1: "FOLLOWER",
-}
-var Partition_PartitionBrokerRole_value = map[string]int32{
-	"LEADER":   0,
-	"FOLLOWER": 1,
-}
-
-func (x Partition_PartitionBrokerRole) String() string {
-	return proto.EnumName(Partition_PartitionBrokerRole_name, int32(x))
-}
-func (Partition_PartitionBrokerRole) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{1, 0}
-}
-
 type WorkflowRequestObject_ResourceType int32
 
 const (
-	// FILE type means the gateway will try to detect the resource type using the file extension of the name
+	// FILE type means the gateway will try to detect the resource type
+	// using the file extension of the name field
 	WorkflowRequestObject_FILE WorkflowRequestObject_ResourceType = 0
 	WorkflowRequestObject_BPMN WorkflowRequestObject_ResourceType = 1
 	WorkflowRequestObject_YAML WorkflowRequestObject_ResourceType = 2
@@ -70,1226 +48,46 @@ func (x WorkflowRequestObject_ResourceType) String() string {
 	return proto.EnumName(WorkflowRequestObject_ResourceType_name, int32(x))
 }
 func (WorkflowRequestObject_ResourceType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{4, 0}
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{11, 0}
 }
 
-type TopologyRequest struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *TopologyRequest) Reset()         { *m = TopologyRequest{} }
-func (m *TopologyRequest) String() string { return proto.CompactTextString(m) }
-func (*TopologyRequest) ProtoMessage()    {}
-func (*TopologyRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{0}
-}
-func (m *TopologyRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_TopologyRequest.Unmarshal(m, b)
-}
-func (m *TopologyRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_TopologyRequest.Marshal(b, m, deterministic)
-}
-func (dst *TopologyRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_TopologyRequest.Merge(dst, src)
-}
-func (m *TopologyRequest) XXX_Size() int {
-	return xxx_messageInfo_TopologyRequest.Size(m)
-}
-func (m *TopologyRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_TopologyRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_TopologyRequest proto.InternalMessageInfo
-
-type Partition struct {
-	PartitionId          int32                         `protobuf:"varint,1,opt,name=partitionId,proto3" json:"partitionId,omitempty"`
-	Role                 Partition_PartitionBrokerRole `protobuf:"varint,3,opt,name=role,proto3,enum=gateway_protocol.Partition_PartitionBrokerRole" json:"role,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                      `json:"-"`
-	XXX_unrecognized     []byte                        `json:"-"`
-	XXX_sizecache        int32                         `json:"-"`
-}
-
-func (m *Partition) Reset()         { *m = Partition{} }
-func (m *Partition) String() string { return proto.CompactTextString(m) }
-func (*Partition) ProtoMessage()    {}
-func (*Partition) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{1}
-}
-func (m *Partition) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Partition.Unmarshal(m, b)
-}
-func (m *Partition) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Partition.Marshal(b, m, deterministic)
-}
-func (dst *Partition) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Partition.Merge(dst, src)
-}
-func (m *Partition) XXX_Size() int {
-	return xxx_messageInfo_Partition.Size(m)
-}
-func (m *Partition) XXX_DiscardUnknown() {
-	xxx_messageInfo_Partition.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Partition proto.InternalMessageInfo
-
-func (m *Partition) GetPartitionId() int32 {
-	if m != nil {
-		return m.PartitionId
-	}
-	return 0
-}
-
-func (m *Partition) GetRole() Partition_PartitionBrokerRole {
-	if m != nil {
-		return m.Role
-	}
-	return Partition_LEADER
-}
-
-type BrokerInfo struct {
-	NodeId               int32        `protobuf:"varint,1,opt,name=nodeId,proto3" json:"nodeId,omitempty"`
-	Host                 string       `protobuf:"bytes,2,opt,name=host,proto3" json:"host,omitempty"`
-	Port                 int32        `protobuf:"varint,3,opt,name=port,proto3" json:"port,omitempty"`
-	Partitions           []*Partition `protobuf:"bytes,4,rep,name=partitions,proto3" json:"partitions,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
-	XXX_unrecognized     []byte       `json:"-"`
-	XXX_sizecache        int32        `json:"-"`
-}
-
-func (m *BrokerInfo) Reset()         { *m = BrokerInfo{} }
-func (m *BrokerInfo) String() string { return proto.CompactTextString(m) }
-func (*BrokerInfo) ProtoMessage()    {}
-func (*BrokerInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{2}
-}
-func (m *BrokerInfo) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_BrokerInfo.Unmarshal(m, b)
-}
-func (m *BrokerInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_BrokerInfo.Marshal(b, m, deterministic)
-}
-func (dst *BrokerInfo) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_BrokerInfo.Merge(dst, src)
-}
-func (m *BrokerInfo) XXX_Size() int {
-	return xxx_messageInfo_BrokerInfo.Size(m)
-}
-func (m *BrokerInfo) XXX_DiscardUnknown() {
-	xxx_messageInfo_BrokerInfo.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_BrokerInfo proto.InternalMessageInfo
-
-func (m *BrokerInfo) GetNodeId() int32 {
-	if m != nil {
-		return m.NodeId
-	}
-	return 0
-}
-
-func (m *BrokerInfo) GetHost() string {
-	if m != nil {
-		return m.Host
-	}
-	return ""
-}
-
-func (m *BrokerInfo) GetPort() int32 {
-	if m != nil {
-		return m.Port
-	}
-	return 0
-}
-
-func (m *BrokerInfo) GetPartitions() []*Partition {
-	if m != nil {
-		return m.Partitions
-	}
-	return nil
-}
-
-type TopologyResponse struct {
-	Brokers              []*BrokerInfo `protobuf:"bytes,1,rep,name=brokers,proto3" json:"brokers,omitempty"`
-	ClusterSize          int32         `protobuf:"varint,2,opt,name=clusterSize,proto3" json:"clusterSize,omitempty"`
-	PartitionsCount      int32         `protobuf:"varint,3,opt,name=partitionsCount,proto3" json:"partitionsCount,omitempty"`
-	ReplicationFactor    int32         `protobuf:"varint,4,opt,name=replicationFactor,proto3" json:"replicationFactor,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
-	XXX_unrecognized     []byte        `json:"-"`
-	XXX_sizecache        int32         `json:"-"`
-}
-
-func (m *TopologyResponse) Reset()         { *m = TopologyResponse{} }
-func (m *TopologyResponse) String() string { return proto.CompactTextString(m) }
-func (*TopologyResponse) ProtoMessage()    {}
-func (*TopologyResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{3}
-}
-func (m *TopologyResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_TopologyResponse.Unmarshal(m, b)
-}
-func (m *TopologyResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_TopologyResponse.Marshal(b, m, deterministic)
-}
-func (dst *TopologyResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_TopologyResponse.Merge(dst, src)
-}
-func (m *TopologyResponse) XXX_Size() int {
-	return xxx_messageInfo_TopologyResponse.Size(m)
-}
-func (m *TopologyResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_TopologyResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_TopologyResponse proto.InternalMessageInfo
-
-func (m *TopologyResponse) GetBrokers() []*BrokerInfo {
-	if m != nil {
-		return m.Brokers
-	}
-	return nil
-}
-
-func (m *TopologyResponse) GetClusterSize() int32 {
-	if m != nil {
-		return m.ClusterSize
-	}
-	return 0
-}
-
-func (m *TopologyResponse) GetPartitionsCount() int32 {
-	if m != nil {
-		return m.PartitionsCount
-	}
-	return 0
-}
-
-func (m *TopologyResponse) GetReplicationFactor() int32 {
-	if m != nil {
-		return m.ReplicationFactor
-	}
-	return 0
-}
-
-type WorkflowRequestObject struct {
-	Name                 string                             `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Type                 WorkflowRequestObject_ResourceType `protobuf:"varint,2,opt,name=type,proto3,enum=gateway_protocol.WorkflowRequestObject_ResourceType" json:"type,omitempty"`
-	Definition           []byte                             `protobuf:"bytes,3,opt,name=definition,proto3" json:"definition,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                           `json:"-"`
-	XXX_unrecognized     []byte                             `json:"-"`
-	XXX_sizecache        int32                              `json:"-"`
-}
-
-func (m *WorkflowRequestObject) Reset()         { *m = WorkflowRequestObject{} }
-func (m *WorkflowRequestObject) String() string { return proto.CompactTextString(m) }
-func (*WorkflowRequestObject) ProtoMessage()    {}
-func (*WorkflowRequestObject) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{4}
-}
-func (m *WorkflowRequestObject) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_WorkflowRequestObject.Unmarshal(m, b)
-}
-func (m *WorkflowRequestObject) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_WorkflowRequestObject.Marshal(b, m, deterministic)
-}
-func (dst *WorkflowRequestObject) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_WorkflowRequestObject.Merge(dst, src)
-}
-func (m *WorkflowRequestObject) XXX_Size() int {
-	return xxx_messageInfo_WorkflowRequestObject.Size(m)
-}
-func (m *WorkflowRequestObject) XXX_DiscardUnknown() {
-	xxx_messageInfo_WorkflowRequestObject.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_WorkflowRequestObject proto.InternalMessageInfo
-
-func (m *WorkflowRequestObject) GetName() string {
-	if m != nil {
-		return m.Name
-	}
-	return ""
-}
-
-func (m *WorkflowRequestObject) GetType() WorkflowRequestObject_ResourceType {
-	if m != nil {
-		return m.Type
-	}
-	return WorkflowRequestObject_FILE
-}
-
-func (m *WorkflowRequestObject) GetDefinition() []byte {
-	if m != nil {
-		return m.Definition
-	}
-	return nil
-}
-
-type DeployWorkflowRequest struct {
-	Workflows            []*WorkflowRequestObject `protobuf:"bytes,1,rep,name=workflows,proto3" json:"workflows,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                 `json:"-"`
-	XXX_unrecognized     []byte                   `json:"-"`
-	XXX_sizecache        int32                    `json:"-"`
-}
-
-func (m *DeployWorkflowRequest) Reset()         { *m = DeployWorkflowRequest{} }
-func (m *DeployWorkflowRequest) String() string { return proto.CompactTextString(m) }
-func (*DeployWorkflowRequest) ProtoMessage()    {}
-func (*DeployWorkflowRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{5}
-}
-func (m *DeployWorkflowRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_DeployWorkflowRequest.Unmarshal(m, b)
-}
-func (m *DeployWorkflowRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_DeployWorkflowRequest.Marshal(b, m, deterministic)
-}
-func (dst *DeployWorkflowRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DeployWorkflowRequest.Merge(dst, src)
-}
-func (m *DeployWorkflowRequest) XXX_Size() int {
-	return xxx_messageInfo_DeployWorkflowRequest.Size(m)
-}
-func (m *DeployWorkflowRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_DeployWorkflowRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_DeployWorkflowRequest proto.InternalMessageInfo
-
-func (m *DeployWorkflowRequest) GetWorkflows() []*WorkflowRequestObject {
-	if m != nil {
-		return m.Workflows
-	}
-	return nil
-}
-
-type WorkflowMetadata struct {
-	BpmnProcessId        string   `protobuf:"bytes,1,opt,name=bpmnProcessId,proto3" json:"bpmnProcessId,omitempty"`
-	Version              int32    `protobuf:"varint,2,opt,name=version,proto3" json:"version,omitempty"`
-	WorkflowKey          int64    `protobuf:"varint,3,opt,name=workflowKey,proto3" json:"workflowKey,omitempty"`
-	ResourceName         string   `protobuf:"bytes,4,opt,name=resourceName,proto3" json:"resourceName,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *WorkflowMetadata) Reset()         { *m = WorkflowMetadata{} }
-func (m *WorkflowMetadata) String() string { return proto.CompactTextString(m) }
-func (*WorkflowMetadata) ProtoMessage()    {}
-func (*WorkflowMetadata) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{6}
-}
-func (m *WorkflowMetadata) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_WorkflowMetadata.Unmarshal(m, b)
-}
-func (m *WorkflowMetadata) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_WorkflowMetadata.Marshal(b, m, deterministic)
-}
-func (dst *WorkflowMetadata) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_WorkflowMetadata.Merge(dst, src)
-}
-func (m *WorkflowMetadata) XXX_Size() int {
-	return xxx_messageInfo_WorkflowMetadata.Size(m)
-}
-func (m *WorkflowMetadata) XXX_DiscardUnknown() {
-	xxx_messageInfo_WorkflowMetadata.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_WorkflowMetadata proto.InternalMessageInfo
-
-func (m *WorkflowMetadata) GetBpmnProcessId() string {
-	if m != nil {
-		return m.BpmnProcessId
-	}
-	return ""
-}
-
-func (m *WorkflowMetadata) GetVersion() int32 {
-	if m != nil {
-		return m.Version
-	}
-	return 0
-}
-
-func (m *WorkflowMetadata) GetWorkflowKey() int64 {
-	if m != nil {
-		return m.WorkflowKey
-	}
-	return 0
-}
-
-func (m *WorkflowMetadata) GetResourceName() string {
-	if m != nil {
-		return m.ResourceName
-	}
-	return ""
-}
-
-type DeployWorkflowResponse struct {
-	Key                  int64               `protobuf:"varint,1,opt,name=key,proto3" json:"key,omitempty"`
-	Workflows            []*WorkflowMetadata `protobuf:"bytes,2,rep,name=workflows,proto3" json:"workflows,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
-	XXX_unrecognized     []byte              `json:"-"`
-	XXX_sizecache        int32               `json:"-"`
-}
-
-func (m *DeployWorkflowResponse) Reset()         { *m = DeployWorkflowResponse{} }
-func (m *DeployWorkflowResponse) String() string { return proto.CompactTextString(m) }
-func (*DeployWorkflowResponse) ProtoMessage()    {}
-func (*DeployWorkflowResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{7}
-}
-func (m *DeployWorkflowResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_DeployWorkflowResponse.Unmarshal(m, b)
-}
-func (m *DeployWorkflowResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_DeployWorkflowResponse.Marshal(b, m, deterministic)
-}
-func (dst *DeployWorkflowResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DeployWorkflowResponse.Merge(dst, src)
-}
-func (m *DeployWorkflowResponse) XXX_Size() int {
-	return xxx_messageInfo_DeployWorkflowResponse.Size(m)
-}
-func (m *DeployWorkflowResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_DeployWorkflowResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_DeployWorkflowResponse proto.InternalMessageInfo
-
-func (m *DeployWorkflowResponse) GetKey() int64 {
-	if m != nil {
-		return m.Key
-	}
-	return 0
-}
-
-func (m *DeployWorkflowResponse) GetWorkflows() []*WorkflowMetadata {
-	if m != nil {
-		return m.Workflows
-	}
-	return nil
-}
-
-type PublishMessageRequest struct {
-	Name           string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	CorrelationKey string `protobuf:"bytes,2,opt,name=correlationKey,proto3" json:"correlationKey,omitempty"`
-	TimeToLive     int64  `protobuf:"varint,3,opt,name=timeToLive,proto3" json:"timeToLive,omitempty"`
-	MessageId      string `protobuf:"bytes,4,opt,name=messageId,proto3" json:"messageId,omitempty"`
-	// payload has to be a valid json object as string
-	Payload              string   `protobuf:"bytes,5,opt,name=payload,proto3" json:"payload,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *PublishMessageRequest) Reset()         { *m = PublishMessageRequest{} }
-func (m *PublishMessageRequest) String() string { return proto.CompactTextString(m) }
-func (*PublishMessageRequest) ProtoMessage()    {}
-func (*PublishMessageRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{8}
-}
-func (m *PublishMessageRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_PublishMessageRequest.Unmarshal(m, b)
-}
-func (m *PublishMessageRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_PublishMessageRequest.Marshal(b, m, deterministic)
-}
-func (dst *PublishMessageRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_PublishMessageRequest.Merge(dst, src)
-}
-func (m *PublishMessageRequest) XXX_Size() int {
-	return xxx_messageInfo_PublishMessageRequest.Size(m)
-}
-func (m *PublishMessageRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_PublishMessageRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_PublishMessageRequest proto.InternalMessageInfo
-
-func (m *PublishMessageRequest) GetName() string {
-	if m != nil {
-		return m.Name
-	}
-	return ""
-}
-
-func (m *PublishMessageRequest) GetCorrelationKey() string {
-	if m != nil {
-		return m.CorrelationKey
-	}
-	return ""
-}
-
-func (m *PublishMessageRequest) GetTimeToLive() int64 {
-	if m != nil {
-		return m.TimeToLive
-	}
-	return 0
-}
-
-func (m *PublishMessageRequest) GetMessageId() string {
-	if m != nil {
-		return m.MessageId
-	}
-	return ""
-}
-
-func (m *PublishMessageRequest) GetPayload() string {
-	if m != nil {
-		return m.Payload
-	}
-	return ""
-}
-
-type PublishMessageResponse struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *PublishMessageResponse) Reset()         { *m = PublishMessageResponse{} }
-func (m *PublishMessageResponse) String() string { return proto.CompactTextString(m) }
-func (*PublishMessageResponse) ProtoMessage()    {}
-func (*PublishMessageResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{9}
-}
-func (m *PublishMessageResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_PublishMessageResponse.Unmarshal(m, b)
-}
-func (m *PublishMessageResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_PublishMessageResponse.Marshal(b, m, deterministic)
-}
-func (dst *PublishMessageResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_PublishMessageResponse.Merge(dst, src)
-}
-func (m *PublishMessageResponse) XXX_Size() int {
-	return xxx_messageInfo_PublishMessageResponse.Size(m)
-}
-func (m *PublishMessageResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_PublishMessageResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_PublishMessageResponse proto.InternalMessageInfo
-
-type UpdateJobRetriesRequest struct {
-	JobKey               int64    `protobuf:"varint,1,opt,name=jobKey,proto3" json:"jobKey,omitempty"`
-	Retries              int32    `protobuf:"varint,2,opt,name=retries,proto3" json:"retries,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *UpdateJobRetriesRequest) Reset()         { *m = UpdateJobRetriesRequest{} }
-func (m *UpdateJobRetriesRequest) String() string { return proto.CompactTextString(m) }
-func (*UpdateJobRetriesRequest) ProtoMessage()    {}
-func (*UpdateJobRetriesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{10}
-}
-func (m *UpdateJobRetriesRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_UpdateJobRetriesRequest.Unmarshal(m, b)
-}
-func (m *UpdateJobRetriesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_UpdateJobRetriesRequest.Marshal(b, m, deterministic)
-}
-func (dst *UpdateJobRetriesRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UpdateJobRetriesRequest.Merge(dst, src)
-}
-func (m *UpdateJobRetriesRequest) XXX_Size() int {
-	return xxx_messageInfo_UpdateJobRetriesRequest.Size(m)
-}
-func (m *UpdateJobRetriesRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_UpdateJobRetriesRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_UpdateJobRetriesRequest proto.InternalMessageInfo
-
-func (m *UpdateJobRetriesRequest) GetJobKey() int64 {
-	if m != nil {
-		return m.JobKey
-	}
-	return 0
-}
-
-func (m *UpdateJobRetriesRequest) GetRetries() int32 {
-	if m != nil {
-		return m.Retries
-	}
-	return 0
-}
-
-type UpdateJobRetriesResponse struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *UpdateJobRetriesResponse) Reset()         { *m = UpdateJobRetriesResponse{} }
-func (m *UpdateJobRetriesResponse) String() string { return proto.CompactTextString(m) }
-func (*UpdateJobRetriesResponse) ProtoMessage()    {}
-func (*UpdateJobRetriesResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{11}
-}
-func (m *UpdateJobRetriesResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_UpdateJobRetriesResponse.Unmarshal(m, b)
-}
-func (m *UpdateJobRetriesResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_UpdateJobRetriesResponse.Marshal(b, m, deterministic)
-}
-func (dst *UpdateJobRetriesResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UpdateJobRetriesResponse.Merge(dst, src)
-}
-func (m *UpdateJobRetriesResponse) XXX_Size() int {
-	return xxx_messageInfo_UpdateJobRetriesResponse.Size(m)
-}
-func (m *UpdateJobRetriesResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_UpdateJobRetriesResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_UpdateJobRetriesResponse proto.InternalMessageInfo
-
-type FailJobRequest struct {
-	JobKey               int64    `protobuf:"varint,1,opt,name=jobKey,proto3" json:"jobKey,omitempty"`
-	Retries              int32    `protobuf:"varint,2,opt,name=retries,proto3" json:"retries,omitempty"`
-	ErrorMessage         string   `protobuf:"bytes,3,opt,name=errorMessage,proto3" json:"errorMessage,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *FailJobRequest) Reset()         { *m = FailJobRequest{} }
-func (m *FailJobRequest) String() string { return proto.CompactTextString(m) }
-func (*FailJobRequest) ProtoMessage()    {}
-func (*FailJobRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{12}
-}
-func (m *FailJobRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_FailJobRequest.Unmarshal(m, b)
-}
-func (m *FailJobRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_FailJobRequest.Marshal(b, m, deterministic)
-}
-func (dst *FailJobRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_FailJobRequest.Merge(dst, src)
-}
-func (m *FailJobRequest) XXX_Size() int {
-	return xxx_messageInfo_FailJobRequest.Size(m)
-}
-func (m *FailJobRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_FailJobRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_FailJobRequest proto.InternalMessageInfo
-
-func (m *FailJobRequest) GetJobKey() int64 {
-	if m != nil {
-		return m.JobKey
-	}
-	return 0
-}
-
-func (m *FailJobRequest) GetRetries() int32 {
-	if m != nil {
-		return m.Retries
-	}
-	return 0
-}
-
-func (m *FailJobRequest) GetErrorMessage() string {
-	if m != nil {
-		return m.ErrorMessage
-	}
-	return ""
-}
-
-type FailJobResponse struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *FailJobResponse) Reset()         { *m = FailJobResponse{} }
-func (m *FailJobResponse) String() string { return proto.CompactTextString(m) }
-func (*FailJobResponse) ProtoMessage()    {}
-func (*FailJobResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{13}
-}
-func (m *FailJobResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_FailJobResponse.Unmarshal(m, b)
-}
-func (m *FailJobResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_FailJobResponse.Marshal(b, m, deterministic)
-}
-func (dst *FailJobResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_FailJobResponse.Merge(dst, src)
-}
-func (m *FailJobResponse) XXX_Size() int {
-	return xxx_messageInfo_FailJobResponse.Size(m)
-}
-func (m *FailJobResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_FailJobResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_FailJobResponse proto.InternalMessageInfo
-
-type CompleteJobRequest struct {
-	JobKey int64 `protobuf:"varint,1,opt,name=jobKey,proto3" json:"jobKey,omitempty"`
-	// payload has to be a valid json object as string
-	Payload              string   `protobuf:"bytes,2,opt,name=payload,proto3" json:"payload,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *CompleteJobRequest) Reset()         { *m = CompleteJobRequest{} }
-func (m *CompleteJobRequest) String() string { return proto.CompactTextString(m) }
-func (*CompleteJobRequest) ProtoMessage()    {}
-func (*CompleteJobRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{14}
-}
-func (m *CompleteJobRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_CompleteJobRequest.Unmarshal(m, b)
-}
-func (m *CompleteJobRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_CompleteJobRequest.Marshal(b, m, deterministic)
-}
-func (dst *CompleteJobRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CompleteJobRequest.Merge(dst, src)
-}
-func (m *CompleteJobRequest) XXX_Size() int {
-	return xxx_messageInfo_CompleteJobRequest.Size(m)
-}
-func (m *CompleteJobRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_CompleteJobRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CompleteJobRequest proto.InternalMessageInfo
-
-func (m *CompleteJobRequest) GetJobKey() int64 {
-	if m != nil {
-		return m.JobKey
-	}
-	return 0
-}
-
-func (m *CompleteJobRequest) GetPayload() string {
-	if m != nil {
-		return m.Payload
-	}
-	return ""
-}
-
-type CompleteJobResponse struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *CompleteJobResponse) Reset()         { *m = CompleteJobResponse{} }
-func (m *CompleteJobResponse) String() string { return proto.CompactTextString(m) }
-func (*CompleteJobResponse) ProtoMessage()    {}
-func (*CompleteJobResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{15}
-}
-func (m *CompleteJobResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_CompleteJobResponse.Unmarshal(m, b)
-}
-func (m *CompleteJobResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_CompleteJobResponse.Marshal(b, m, deterministic)
-}
-func (dst *CompleteJobResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CompleteJobResponse.Merge(dst, src)
-}
-func (m *CompleteJobResponse) XXX_Size() int {
-	return xxx_messageInfo_CompleteJobResponse.Size(m)
-}
-func (m *CompleteJobResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_CompleteJobResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CompleteJobResponse proto.InternalMessageInfo
-
-type CreateWorkflowInstanceRequest struct {
-	WorkflowKey   int64  `protobuf:"varint,1,opt,name=workflowKey,proto3" json:"workflowKey,omitempty"`
-	BpmnProcessId string `protobuf:"bytes,2,opt,name=bpmnProcessId,proto3" json:"bpmnProcessId,omitempty"`
-	// if bpmnProcessId is set version = -1 indicates to use the latest version
-	Version int32 `protobuf:"varint,3,opt,name=version,proto3" json:"version,omitempty"`
-	// payload has to be a valid json object as string
-	Payload              string   `protobuf:"bytes,4,opt,name=payload,proto3" json:"payload,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *CreateWorkflowInstanceRequest) Reset()         { *m = CreateWorkflowInstanceRequest{} }
-func (m *CreateWorkflowInstanceRequest) String() string { return proto.CompactTextString(m) }
-func (*CreateWorkflowInstanceRequest) ProtoMessage()    {}
-func (*CreateWorkflowInstanceRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{16}
-}
-func (m *CreateWorkflowInstanceRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_CreateWorkflowInstanceRequest.Unmarshal(m, b)
-}
-func (m *CreateWorkflowInstanceRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_CreateWorkflowInstanceRequest.Marshal(b, m, deterministic)
-}
-func (dst *CreateWorkflowInstanceRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CreateWorkflowInstanceRequest.Merge(dst, src)
-}
-func (m *CreateWorkflowInstanceRequest) XXX_Size() int {
-	return xxx_messageInfo_CreateWorkflowInstanceRequest.Size(m)
-}
-func (m *CreateWorkflowInstanceRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_CreateWorkflowInstanceRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CreateWorkflowInstanceRequest proto.InternalMessageInfo
-
-func (m *CreateWorkflowInstanceRequest) GetWorkflowKey() int64 {
-	if m != nil {
-		return m.WorkflowKey
-	}
-	return 0
-}
-
-func (m *CreateWorkflowInstanceRequest) GetBpmnProcessId() string {
-	if m != nil {
-		return m.BpmnProcessId
-	}
-	return ""
-}
-
-func (m *CreateWorkflowInstanceRequest) GetVersion() int32 {
-	if m != nil {
-		return m.Version
-	}
-	return 0
-}
-
-func (m *CreateWorkflowInstanceRequest) GetPayload() string {
-	if m != nil {
-		return m.Payload
-	}
-	return ""
-}
-
-type CreateWorkflowInstanceResponse struct {
-	WorkflowKey          int64    `protobuf:"varint,1,opt,name=workflowKey,proto3" json:"workflowKey,omitempty"`
-	BpmnProcessId        string   `protobuf:"bytes,2,opt,name=bpmnProcessId,proto3" json:"bpmnProcessId,omitempty"`
-	Version              int32    `protobuf:"varint,3,opt,name=version,proto3" json:"version,omitempty"`
-	WorkflowInstanceKey  int64    `protobuf:"varint,5,opt,name=workflowInstanceKey,proto3" json:"workflowInstanceKey,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *CreateWorkflowInstanceResponse) Reset()         { *m = CreateWorkflowInstanceResponse{} }
-func (m *CreateWorkflowInstanceResponse) String() string { return proto.CompactTextString(m) }
-func (*CreateWorkflowInstanceResponse) ProtoMessage()    {}
-func (*CreateWorkflowInstanceResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{17}
-}
-func (m *CreateWorkflowInstanceResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_CreateWorkflowInstanceResponse.Unmarshal(m, b)
-}
-func (m *CreateWorkflowInstanceResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_CreateWorkflowInstanceResponse.Marshal(b, m, deterministic)
-}
-func (dst *CreateWorkflowInstanceResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CreateWorkflowInstanceResponse.Merge(dst, src)
-}
-func (m *CreateWorkflowInstanceResponse) XXX_Size() int {
-	return xxx_messageInfo_CreateWorkflowInstanceResponse.Size(m)
-}
-func (m *CreateWorkflowInstanceResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_CreateWorkflowInstanceResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CreateWorkflowInstanceResponse proto.InternalMessageInfo
-
-func (m *CreateWorkflowInstanceResponse) GetWorkflowKey() int64 {
-	if m != nil {
-		return m.WorkflowKey
-	}
-	return 0
-}
-
-func (m *CreateWorkflowInstanceResponse) GetBpmnProcessId() string {
-	if m != nil {
-		return m.BpmnProcessId
-	}
-	return ""
-}
-
-func (m *CreateWorkflowInstanceResponse) GetVersion() int32 {
-	if m != nil {
-		return m.Version
-	}
-	return 0
-}
-
-func (m *CreateWorkflowInstanceResponse) GetWorkflowInstanceKey() int64 {
-	if m != nil {
-		return m.WorkflowInstanceKey
-	}
-	return 0
-}
-
-type CancelWorkflowInstanceRequest struct {
-	WorkflowInstanceKey  int64    `protobuf:"varint,1,opt,name=workflowInstanceKey,proto3" json:"workflowInstanceKey,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *CancelWorkflowInstanceRequest) Reset()         { *m = CancelWorkflowInstanceRequest{} }
-func (m *CancelWorkflowInstanceRequest) String() string { return proto.CompactTextString(m) }
-func (*CancelWorkflowInstanceRequest) ProtoMessage()    {}
-func (*CancelWorkflowInstanceRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{18}
-}
-func (m *CancelWorkflowInstanceRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_CancelWorkflowInstanceRequest.Unmarshal(m, b)
-}
-func (m *CancelWorkflowInstanceRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_CancelWorkflowInstanceRequest.Marshal(b, m, deterministic)
-}
-func (dst *CancelWorkflowInstanceRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CancelWorkflowInstanceRequest.Merge(dst, src)
-}
-func (m *CancelWorkflowInstanceRequest) XXX_Size() int {
-	return xxx_messageInfo_CancelWorkflowInstanceRequest.Size(m)
-}
-func (m *CancelWorkflowInstanceRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_CancelWorkflowInstanceRequest.DiscardUnknown(m)
-}
+// Describes the Raft role of the broker for a given partition
+type Partition_PartitionBrokerRole int32
 
-var xxx_messageInfo_CancelWorkflowInstanceRequest proto.InternalMessageInfo
+const (
+	Partition_LEADER   Partition_PartitionBrokerRole = 0
+	Partition_FOLLOWER Partition_PartitionBrokerRole = 1
+)
 
-func (m *CancelWorkflowInstanceRequest) GetWorkflowInstanceKey() int64 {
-	if m != nil {
-		return m.WorkflowInstanceKey
-	}
-	return 0
+var Partition_PartitionBrokerRole_name = map[int32]string{
+	0: "LEADER",
+	1: "FOLLOWER",
 }
-
-type CancelWorkflowInstanceResponse struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *CancelWorkflowInstanceResponse) Reset()         { *m = CancelWorkflowInstanceResponse{} }
-func (m *CancelWorkflowInstanceResponse) String() string { return proto.CompactTextString(m) }
-func (*CancelWorkflowInstanceResponse) ProtoMessage()    {}
-func (*CancelWorkflowInstanceResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{19}
-}
-func (m *CancelWorkflowInstanceResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_CancelWorkflowInstanceResponse.Unmarshal(m, b)
-}
-func (m *CancelWorkflowInstanceResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_CancelWorkflowInstanceResponse.Marshal(b, m, deterministic)
-}
-func (dst *CancelWorkflowInstanceResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CancelWorkflowInstanceResponse.Merge(dst, src)
-}
-func (m *CancelWorkflowInstanceResponse) XXX_Size() int {
-	return xxx_messageInfo_CancelWorkflowInstanceResponse.Size(m)
-}
-func (m *CancelWorkflowInstanceResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_CancelWorkflowInstanceResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CancelWorkflowInstanceResponse proto.InternalMessageInfo
-
-type UpdateWorkflowInstancePayloadRequest struct {
-	ElementInstanceKey int64 `protobuf:"varint,1,opt,name=elementInstanceKey,proto3" json:"elementInstanceKey,omitempty"`
-	// payload has to be a valid json object as string
-	Payload              string   `protobuf:"bytes,2,opt,name=payload,proto3" json:"payload,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *UpdateWorkflowInstancePayloadRequest) Reset()         { *m = UpdateWorkflowInstancePayloadRequest{} }
-func (m *UpdateWorkflowInstancePayloadRequest) String() string { return proto.CompactTextString(m) }
-func (*UpdateWorkflowInstancePayloadRequest) ProtoMessage()    {}
-func (*UpdateWorkflowInstancePayloadRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{20}
-}
-func (m *UpdateWorkflowInstancePayloadRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_UpdateWorkflowInstancePayloadRequest.Unmarshal(m, b)
-}
-func (m *UpdateWorkflowInstancePayloadRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_UpdateWorkflowInstancePayloadRequest.Marshal(b, m, deterministic)
-}
-func (dst *UpdateWorkflowInstancePayloadRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UpdateWorkflowInstancePayloadRequest.Merge(dst, src)
-}
-func (m *UpdateWorkflowInstancePayloadRequest) XXX_Size() int {
-	return xxx_messageInfo_UpdateWorkflowInstancePayloadRequest.Size(m)
-}
-func (m *UpdateWorkflowInstancePayloadRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_UpdateWorkflowInstancePayloadRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_UpdateWorkflowInstancePayloadRequest proto.InternalMessageInfo
-
-func (m *UpdateWorkflowInstancePayloadRequest) GetElementInstanceKey() int64 {
-	if m != nil {
-		return m.ElementInstanceKey
-	}
-	return 0
-}
-
-func (m *UpdateWorkflowInstancePayloadRequest) GetPayload() string {
-	if m != nil {
-		return m.Payload
-	}
-	return ""
-}
-
-type UpdateWorkflowInstancePayloadResponse struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *UpdateWorkflowInstancePayloadResponse) Reset()         { *m = UpdateWorkflowInstancePayloadResponse{} }
-func (m *UpdateWorkflowInstancePayloadResponse) String() string { return proto.CompactTextString(m) }
-func (*UpdateWorkflowInstancePayloadResponse) ProtoMessage()    {}
-func (*UpdateWorkflowInstancePayloadResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{21}
-}
-func (m *UpdateWorkflowInstancePayloadResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_UpdateWorkflowInstancePayloadResponse.Unmarshal(m, b)
-}
-func (m *UpdateWorkflowInstancePayloadResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_UpdateWorkflowInstancePayloadResponse.Marshal(b, m, deterministic)
-}
-func (dst *UpdateWorkflowInstancePayloadResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UpdateWorkflowInstancePayloadResponse.Merge(dst, src)
-}
-func (m *UpdateWorkflowInstancePayloadResponse) XXX_Size() int {
-	return xxx_messageInfo_UpdateWorkflowInstancePayloadResponse.Size(m)
-}
-func (m *UpdateWorkflowInstancePayloadResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_UpdateWorkflowInstancePayloadResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_UpdateWorkflowInstancePayloadResponse proto.InternalMessageInfo
-
-type ListWorkflowsRequest struct {
-	// optional filter by BPMN process id, if empty all workflows are returned
-	BpmnProcessId        string   `protobuf:"bytes,1,opt,name=bpmnProcessId,proto3" json:"bpmnProcessId,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *ListWorkflowsRequest) Reset()         { *m = ListWorkflowsRequest{} }
-func (m *ListWorkflowsRequest) String() string { return proto.CompactTextString(m) }
-func (*ListWorkflowsRequest) ProtoMessage()    {}
-func (*ListWorkflowsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{22}
-}
-func (m *ListWorkflowsRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_ListWorkflowsRequest.Unmarshal(m, b)
-}
-func (m *ListWorkflowsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_ListWorkflowsRequest.Marshal(b, m, deterministic)
-}
-func (dst *ListWorkflowsRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ListWorkflowsRequest.Merge(dst, src)
-}
-func (m *ListWorkflowsRequest) XXX_Size() int {
-	return xxx_messageInfo_ListWorkflowsRequest.Size(m)
-}
-func (m *ListWorkflowsRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_ListWorkflowsRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ListWorkflowsRequest proto.InternalMessageInfo
-
-func (m *ListWorkflowsRequest) GetBpmnProcessId() string {
-	if m != nil {
-		return m.BpmnProcessId
-	}
-	return ""
+var Partition_PartitionBrokerRole_value = map[string]int32{
+	"LEADER":   0,
+	"FOLLOWER": 1,
 }
 
-type ListWorkflowsResponse struct {
-	Workflows            []*WorkflowMetadata `protobuf:"bytes,1,rep,name=workflows,proto3" json:"workflows,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
-	XXX_unrecognized     []byte              `json:"-"`
-	XXX_sizecache        int32               `json:"-"`
+func (x Partition_PartitionBrokerRole) String() string {
+	return proto.EnumName(Partition_PartitionBrokerRole_name, int32(x))
 }
-
-func (m *ListWorkflowsResponse) Reset()         { *m = ListWorkflowsResponse{} }
-func (m *ListWorkflowsResponse) String() string { return proto.CompactTextString(m) }
-func (*ListWorkflowsResponse) ProtoMessage()    {}
-func (*ListWorkflowsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{23}
-}
-func (m *ListWorkflowsResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_ListWorkflowsResponse.Unmarshal(m, b)
-}
-func (m *ListWorkflowsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_ListWorkflowsResponse.Marshal(b, m, deterministic)
-}
-func (dst *ListWorkflowsResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ListWorkflowsResponse.Merge(dst, src)
-}
-func (m *ListWorkflowsResponse) XXX_Size() int {
-	return xxx_messageInfo_ListWorkflowsResponse.Size(m)
-}
-func (m *ListWorkflowsResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_ListWorkflowsResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ListWorkflowsResponse proto.InternalMessageInfo
-
-func (m *ListWorkflowsResponse) GetWorkflows() []*WorkflowMetadata {
-	if m != nil {
-		return m.Workflows
-	}
-	return nil
-}
-
-// either workflow key or bpmn process id and version has to be specified
-type GetWorkflowRequest struct {
-	WorkflowKey int64 `protobuf:"varint,1,opt,name=workflowKey,proto3" json:"workflowKey,omitempty"`
-	// if bpmnProcessId is set version = -1 indicates to use the latest version
-	Version              int32    `protobuf:"varint,2,opt,name=version,proto3" json:"version,omitempty"`
-	BpmnProcessId        string   `protobuf:"bytes,3,opt,name=bpmnProcessId,proto3" json:"bpmnProcessId,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *GetWorkflowRequest) Reset()         { *m = GetWorkflowRequest{} }
-func (m *GetWorkflowRequest) String() string { return proto.CompactTextString(m) }
-func (*GetWorkflowRequest) ProtoMessage()    {}
-func (*GetWorkflowRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{24}
-}
-func (m *GetWorkflowRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_GetWorkflowRequest.Unmarshal(m, b)
-}
-func (m *GetWorkflowRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_GetWorkflowRequest.Marshal(b, m, deterministic)
-}
-func (dst *GetWorkflowRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GetWorkflowRequest.Merge(dst, src)
-}
-func (m *GetWorkflowRequest) XXX_Size() int {
-	return xxx_messageInfo_GetWorkflowRequest.Size(m)
-}
-func (m *GetWorkflowRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_GetWorkflowRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_GetWorkflowRequest proto.InternalMessageInfo
-
-func (m *GetWorkflowRequest) GetWorkflowKey() int64 {
-	if m != nil {
-		return m.WorkflowKey
-	}
-	return 0
-}
-
-func (m *GetWorkflowRequest) GetVersion() int32 {
-	if m != nil {
-		return m.Version
-	}
-	return 0
-}
-
-func (m *GetWorkflowRequest) GetBpmnProcessId() string {
-	if m != nil {
-		return m.BpmnProcessId
-	}
-	return ""
-}
-
-type GetWorkflowResponse struct {
-	WorkflowKey          int64    `protobuf:"varint,1,opt,name=workflowKey,proto3" json:"workflowKey,omitempty"`
-	Version              int32    `protobuf:"varint,2,opt,name=version,proto3" json:"version,omitempty"`
-	BpmnProcessId        string   `protobuf:"bytes,3,opt,name=bpmnProcessId,proto3" json:"bpmnProcessId,omitempty"`
-	ResourceName         string   `protobuf:"bytes,4,opt,name=resourceName,proto3" json:"resourceName,omitempty"`
-	BpmnXml              string   `protobuf:"bytes,5,opt,name=bpmnXml,proto3" json:"bpmnXml,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *GetWorkflowResponse) Reset()         { *m = GetWorkflowResponse{} }
-func (m *GetWorkflowResponse) String() string { return proto.CompactTextString(m) }
-func (*GetWorkflowResponse) ProtoMessage()    {}
-func (*GetWorkflowResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{25}
-}
-func (m *GetWorkflowResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_GetWorkflowResponse.Unmarshal(m, b)
-}
-func (m *GetWorkflowResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_GetWorkflowResponse.Marshal(b, m, deterministic)
-}
-func (dst *GetWorkflowResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GetWorkflowResponse.Merge(dst, src)
-}
-func (m *GetWorkflowResponse) XXX_Size() int {
-	return xxx_messageInfo_GetWorkflowResponse.Size(m)
-}
-func (m *GetWorkflowResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_GetWorkflowResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_GetWorkflowResponse proto.InternalMessageInfo
-
-func (m *GetWorkflowResponse) GetWorkflowKey() int64 {
-	if m != nil {
-		return m.WorkflowKey
-	}
-	return 0
-}
-
-func (m *GetWorkflowResponse) GetVersion() int32 {
-	if m != nil {
-		return m.Version
-	}
-	return 0
-}
-
-func (m *GetWorkflowResponse) GetBpmnProcessId() string {
-	if m != nil {
-		return m.BpmnProcessId
-	}
-	return ""
-}
-
-func (m *GetWorkflowResponse) GetResourceName() string {
-	if m != nil {
-		return m.ResourceName
-	}
-	return ""
-}
-
-func (m *GetWorkflowResponse) GetBpmnXml() string {
-	if m != nil {
-		return m.BpmnXml
-	}
-	return ""
+func (Partition_PartitionBrokerRole) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{27, 0}
 }
 
 type ActivateJobsRequest struct {
-	Type                 string   `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
-	Worker               string   `protobuf:"bytes,2,opt,name=worker,proto3" json:"worker,omitempty"`
-	Timeout              int64    `protobuf:"varint,3,opt,name=timeout,proto3" json:"timeout,omitempty"`
-	Amount               int32    `protobuf:"varint,4,opt,name=amount,proto3" json:"amount,omitempty"`
+	// the job type, as defined in the BPMN process (e.g. <zeebe:taskDefinition
+	// type="payment-service" />)
+	Type string `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
+	// the name of the worker activating the jobs, mostly used for logging purposes
+	Worker string `protobuf:"bytes,2,opt,name=worker,proto3" json:"worker,omitempty"`
+	// a job returned after this call will not be activated by another call until the
+	// timeout has been reached
+	Timeout int64 `protobuf:"varint,3,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	// the maximum number of jobs to fetch in a single call
+	Amount int32 `protobuf:"varint,4,opt,name=amount,proto3" json:"amount,omitempty"`
+	// a list of variables to fetch as the job payload; if empty, all visible variables at
+	// the time of activation for the scope of the job will be returned as the job payload
 	FetchVariable        []string `protobuf:"bytes,5,rep,name=fetchVariable,proto3" json:"fetchVariable,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -1300,7 +98,7 @@ func (m *ActivateJobsRequest) Reset()         { *m = ActivateJobsRequest{} }
 func (m *ActivateJobsRequest) String() string { return proto.CompactTextString(m) }
 func (*ActivateJobsRequest) ProtoMessage()    {}
 func (*ActivateJobsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{26}
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{0}
 }
 func (m *ActivateJobsRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ActivateJobsRequest.Unmarshal(m, b)
@@ -1355,95 +153,63 @@ func (m *ActivateJobsRequest) GetFetchVariable() []string {
 	return nil
 }
 
-type JobHeaders struct {
-	WorkflowInstanceKey       int64    `protobuf:"varint,1,opt,name=workflowInstanceKey,proto3" json:"workflowInstanceKey,omitempty"`
-	BpmnProcessId             string   `protobuf:"bytes,2,opt,name=bpmnProcessId,proto3" json:"bpmnProcessId,omitempty"`
-	WorkflowDefinitionVersion int32    `protobuf:"varint,3,opt,name=workflowDefinitionVersion,proto3" json:"workflowDefinitionVersion,omitempty"`
-	WorkflowKey               int64    `protobuf:"varint,4,opt,name=workflowKey,proto3" json:"workflowKey,omitempty"`
-	ElementId                 string   `protobuf:"bytes,5,opt,name=elementId,proto3" json:"elementId,omitempty"`
-	ElementInstanceKey        int64    `protobuf:"varint,6,opt,name=elementInstanceKey,proto3" json:"elementInstanceKey,omitempty"`
-	XXX_NoUnkeyedLiteral      struct{} `json:"-"`
-	XXX_unrecognized          []byte   `json:"-"`
-	XXX_sizecache             int32    `json:"-"`
+type ActivateJobsResponse struct {
+	// list of activated jobs
+	Jobs                 []*ActivatedJob `protobuf:"bytes,1,rep,name=jobs,proto3" json:"jobs,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
+	XXX_unrecognized     []byte          `json:"-"`
+	XXX_sizecache        int32           `json:"-"`
 }
 
-func (m *JobHeaders) Reset()         { *m = JobHeaders{} }
-func (m *JobHeaders) String() string { return proto.CompactTextString(m) }
-func (*JobHeaders) ProtoMessage()    {}
-func (*JobHeaders) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{27}
+func (m *ActivateJobsResponse) Reset()         { *m = ActivateJobsResponse{} }
+func (m *ActivateJobsResponse) String() string { return proto.CompactTextString(m) }
+func (*ActivateJobsResponse) ProtoMessage()    {}
+func (*ActivateJobsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{1}
 }
-func (m *JobHeaders) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_JobHeaders.Unmarshal(m, b)
+func (m *ActivateJobsResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ActivateJobsResponse.Unmarshal(m, b)
 }
-func (m *JobHeaders) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_JobHeaders.Marshal(b, m, deterministic)
+func (m *ActivateJobsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ActivateJobsResponse.Marshal(b, m, deterministic)
 }
-func (dst *JobHeaders) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_JobHeaders.Merge(dst, src)
+func (dst *ActivateJobsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ActivateJobsResponse.Merge(dst, src)
 }
-func (m *JobHeaders) XXX_Size() int {
-	return xxx_messageInfo_JobHeaders.Size(m)
+func (m *ActivateJobsResponse) XXX_Size() int {
+	return xxx_messageInfo_ActivateJobsResponse.Size(m)
 }
-func (m *JobHeaders) XXX_DiscardUnknown() {
-	xxx_messageInfo_JobHeaders.DiscardUnknown(m)
+func (m *ActivateJobsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ActivateJobsResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_JobHeaders proto.InternalMessageInfo
+var xxx_messageInfo_ActivateJobsResponse proto.InternalMessageInfo
 
-func (m *JobHeaders) GetWorkflowInstanceKey() int64 {
+func (m *ActivateJobsResponse) GetJobs() []*ActivatedJob {
 	if m != nil {
-		return m.WorkflowInstanceKey
+		return m.Jobs
 	}
-	return 0
-}
-
-func (m *JobHeaders) GetBpmnProcessId() string {
-	if m != nil {
-		return m.BpmnProcessId
-	}
-	return ""
-}
-
-func (m *JobHeaders) GetWorkflowDefinitionVersion() int32 {
-	if m != nil {
-		return m.WorkflowDefinitionVersion
-	}
-	return 0
-}
-
-func (m *JobHeaders) GetWorkflowKey() int64 {
-	if m != nil {
-		return m.WorkflowKey
-	}
-	return 0
-}
-
-func (m *JobHeaders) GetElementId() string {
-	if m != nil {
-		return m.ElementId
-	}
-	return ""
-}
-
-func (m *JobHeaders) GetElementInstanceKey() int64 {
-	if m != nil {
-		return m.ElementInstanceKey
-	}
-	return 0
+	return nil
 }
 
 type ActivatedJob struct {
-	Key        int64       `protobuf:"varint,1,opt,name=key,proto3" json:"key,omitempty"`
-	Type       string      `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	// the key, a unique identifier for the job
+	Key int64 `protobuf:"varint,1,opt,name=key,proto3" json:"key,omitempty"`
+	// the type of the job (should match what was requested)
+	Type string `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	// a set of headers tying the job to a workflow instance/task instance
 	JobHeaders *JobHeaders `protobuf:"bytes,3,opt,name=jobHeaders,proto3" json:"jobHeaders,omitempty"`
-	// json object as string
+	// a set of custom headers defined during modelling; returned as a serialized
+	// JSON document
 	CustomHeaders string `protobuf:"bytes,4,opt,name=customHeaders,proto3" json:"customHeaders,omitempty"`
-	Worker        string `protobuf:"bytes,5,opt,name=worker,proto3" json:"worker,omitempty"`
-	Retries       int32  `protobuf:"varint,6,opt,name=retries,proto3" json:"retries,omitempty"`
-	// epoch milliseconds
+	// the name of the worker which activated this job
+	Worker string `protobuf:"bytes,5,opt,name=worker,proto3" json:"worker,omitempty"`
+	// the amount of retries left to this job (should always be positive)
+	Retries int32 `protobuf:"varint,6,opt,name=retries,proto3" json:"retries,omitempty"`
+	// when the job can be activated again, sent as a UNIX epoch timestamp
 	Deadline int64 `protobuf:"varint,7,opt,name=deadline,proto3" json:"deadline,omitempty"`
-	// json object as string
+	// JSON document, computed at activation time, consisting of all visible variables to
+	// the task scope
 	Payload              string   `protobuf:"bytes,8,opt,name=payload,proto3" json:"payload,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -1454,7 +220,7 @@ func (m *ActivatedJob) Reset()         { *m = ActivatedJob{} }
 func (m *ActivatedJob) String() string { return proto.CompactTextString(m) }
 func (*ActivatedJob) ProtoMessage()    {}
 func (*ActivatedJob) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{28}
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{2}
 }
 func (m *ActivatedJob) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ActivatedJob.Unmarshal(m, b)
@@ -1530,45 +296,1002 @@ func (m *ActivatedJob) GetPayload() string {
 	return ""
 }
 
-type ActivateJobsResponse struct {
-	Jobs                 []*ActivatedJob `protobuf:"bytes,1,rep,name=jobs,proto3" json:"jobs,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_unrecognized     []byte          `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
+type JobHeaders struct {
+	// the job's workflow instance key
+	WorkflowInstanceKey int64 `protobuf:"varint,1,opt,name=workflowInstanceKey,proto3" json:"workflowInstanceKey,omitempty"`
+	// the bpmn process ID of the job workflow definition
+	BpmnProcessId string `protobuf:"bytes,2,opt,name=bpmnProcessId,proto3" json:"bpmnProcessId,omitempty"`
+	// the version of the job workflow definition
+	WorkflowDefinitionVersion int32 `protobuf:"varint,3,opt,name=workflowDefinitionVersion,proto3" json:"workflowDefinitionVersion,omitempty"`
+	// the key of the job workflow definition
+	WorkflowKey int64 `protobuf:"varint,4,opt,name=workflowKey,proto3" json:"workflowKey,omitempty"`
+	// the associated task element ID
+	ElementId string `protobuf:"bytes,5,opt,name=elementId,proto3" json:"elementId,omitempty"`
+	// the unique key identifying the associated task, unique within the scope of the
+	// workflow instance
+	ElementInstanceKey   int64    `protobuf:"varint,6,opt,name=elementInstanceKey,proto3" json:"elementInstanceKey,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *ActivateJobsResponse) Reset()         { *m = ActivateJobsResponse{} }
-func (m *ActivateJobsResponse) String() string { return proto.CompactTextString(m) }
-func (*ActivateJobsResponse) ProtoMessage()    {}
-func (*ActivateJobsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{29}
+func (m *JobHeaders) Reset()         { *m = JobHeaders{} }
+func (m *JobHeaders) String() string { return proto.CompactTextString(m) }
+func (*JobHeaders) ProtoMessage()    {}
+func (*JobHeaders) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{3}
 }
-func (m *ActivateJobsResponse) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_ActivateJobsResponse.Unmarshal(m, b)
+func (m *JobHeaders) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_JobHeaders.Unmarshal(m, b)
 }
-func (m *ActivateJobsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_ActivateJobsResponse.Marshal(b, m, deterministic)
+func (m *JobHeaders) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_JobHeaders.Marshal(b, m, deterministic)
 }
-func (dst *ActivateJobsResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ActivateJobsResponse.Merge(dst, src)
+func (dst *JobHeaders) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_JobHeaders.Merge(dst, src)
 }
-func (m *ActivateJobsResponse) XXX_Size() int {
-	return xxx_messageInfo_ActivateJobsResponse.Size(m)
+func (m *JobHeaders) XXX_Size() int {
+	return xxx_messageInfo_JobHeaders.Size(m)
 }
-func (m *ActivateJobsResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_ActivateJobsResponse.DiscardUnknown(m)
+func (m *JobHeaders) XXX_DiscardUnknown() {
+	xxx_messageInfo_JobHeaders.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_ActivateJobsResponse proto.InternalMessageInfo
+var xxx_messageInfo_JobHeaders proto.InternalMessageInfo
 
-func (m *ActivateJobsResponse) GetJobs() []*ActivatedJob {
+func (m *JobHeaders) GetWorkflowInstanceKey() int64 {
 	if m != nil {
-		return m.Jobs
+		return m.WorkflowInstanceKey
+	}
+	return 0
+}
+
+func (m *JobHeaders) GetBpmnProcessId() string {
+	if m != nil {
+		return m.BpmnProcessId
+	}
+	return ""
+}
+
+func (m *JobHeaders) GetWorkflowDefinitionVersion() int32 {
+	if m != nil {
+		return m.WorkflowDefinitionVersion
+	}
+	return 0
+}
+
+func (m *JobHeaders) GetWorkflowKey() int64 {
+	if m != nil {
+		return m.WorkflowKey
+	}
+	return 0
+}
+
+func (m *JobHeaders) GetElementId() string {
+	if m != nil {
+		return m.ElementId
+	}
+	return ""
+}
+
+func (m *JobHeaders) GetElementInstanceKey() int64 {
+	if m != nil {
+		return m.ElementInstanceKey
+	}
+	return 0
+}
+
+type CancelWorkflowInstanceRequest struct {
+	// the workflow instance key (as, for example, obtained from
+	// CreateWorkflowInstanceResponse)
+	WorkflowInstanceKey  int64    `protobuf:"varint,1,opt,name=workflowInstanceKey,proto3" json:"workflowInstanceKey,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *CancelWorkflowInstanceRequest) Reset()         { *m = CancelWorkflowInstanceRequest{} }
+func (m *CancelWorkflowInstanceRequest) String() string { return proto.CompactTextString(m) }
+func (*CancelWorkflowInstanceRequest) ProtoMessage()    {}
+func (*CancelWorkflowInstanceRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{4}
+}
+func (m *CancelWorkflowInstanceRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CancelWorkflowInstanceRequest.Unmarshal(m, b)
+}
+func (m *CancelWorkflowInstanceRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CancelWorkflowInstanceRequest.Marshal(b, m, deterministic)
+}
+func (dst *CancelWorkflowInstanceRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CancelWorkflowInstanceRequest.Merge(dst, src)
+}
+func (m *CancelWorkflowInstanceRequest) XXX_Size() int {
+	return xxx_messageInfo_CancelWorkflowInstanceRequest.Size(m)
+}
+func (m *CancelWorkflowInstanceRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_CancelWorkflowInstanceRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CancelWorkflowInstanceRequest proto.InternalMessageInfo
+
+func (m *CancelWorkflowInstanceRequest) GetWorkflowInstanceKey() int64 {
+	if m != nil {
+		return m.WorkflowInstanceKey
+	}
+	return 0
+}
+
+type CancelWorkflowInstanceResponse struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *CancelWorkflowInstanceResponse) Reset()         { *m = CancelWorkflowInstanceResponse{} }
+func (m *CancelWorkflowInstanceResponse) String() string { return proto.CompactTextString(m) }
+func (*CancelWorkflowInstanceResponse) ProtoMessage()    {}
+func (*CancelWorkflowInstanceResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{5}
+}
+func (m *CancelWorkflowInstanceResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CancelWorkflowInstanceResponse.Unmarshal(m, b)
+}
+func (m *CancelWorkflowInstanceResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CancelWorkflowInstanceResponse.Marshal(b, m, deterministic)
+}
+func (dst *CancelWorkflowInstanceResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CancelWorkflowInstanceResponse.Merge(dst, src)
+}
+func (m *CancelWorkflowInstanceResponse) XXX_Size() int {
+	return xxx_messageInfo_CancelWorkflowInstanceResponse.Size(m)
+}
+func (m *CancelWorkflowInstanceResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_CancelWorkflowInstanceResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CancelWorkflowInstanceResponse proto.InternalMessageInfo
+
+type CompleteJobRequest struct {
+	// the unique job identifier, as obtained from ActivateJobsResponse
+	JobKey int64 `protobuf:"varint,1,opt,name=jobKey,proto3" json:"jobKey,omitempty"`
+	// a JSON document representing the variables in the current task scope
+	Payload              string   `protobuf:"bytes,2,opt,name=payload,proto3" json:"payload,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *CompleteJobRequest) Reset()         { *m = CompleteJobRequest{} }
+func (m *CompleteJobRequest) String() string { return proto.CompactTextString(m) }
+func (*CompleteJobRequest) ProtoMessage()    {}
+func (*CompleteJobRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{6}
+}
+func (m *CompleteJobRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CompleteJobRequest.Unmarshal(m, b)
+}
+func (m *CompleteJobRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CompleteJobRequest.Marshal(b, m, deterministic)
+}
+func (dst *CompleteJobRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CompleteJobRequest.Merge(dst, src)
+}
+func (m *CompleteJobRequest) XXX_Size() int {
+	return xxx_messageInfo_CompleteJobRequest.Size(m)
+}
+func (m *CompleteJobRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_CompleteJobRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CompleteJobRequest proto.InternalMessageInfo
+
+func (m *CompleteJobRequest) GetJobKey() int64 {
+	if m != nil {
+		return m.JobKey
+	}
+	return 0
+}
+
+func (m *CompleteJobRequest) GetPayload() string {
+	if m != nil {
+		return m.Payload
+	}
+	return ""
+}
+
+type CompleteJobResponse struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *CompleteJobResponse) Reset()         { *m = CompleteJobResponse{} }
+func (m *CompleteJobResponse) String() string { return proto.CompactTextString(m) }
+func (*CompleteJobResponse) ProtoMessage()    {}
+func (*CompleteJobResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{7}
+}
+func (m *CompleteJobResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CompleteJobResponse.Unmarshal(m, b)
+}
+func (m *CompleteJobResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CompleteJobResponse.Marshal(b, m, deterministic)
+}
+func (dst *CompleteJobResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CompleteJobResponse.Merge(dst, src)
+}
+func (m *CompleteJobResponse) XXX_Size() int {
+	return xxx_messageInfo_CompleteJobResponse.Size(m)
+}
+func (m *CompleteJobResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_CompleteJobResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CompleteJobResponse proto.InternalMessageInfo
+
+type CreateWorkflowInstanceRequest struct {
+	// the unique key identifying the workflow definition (e.g. returned from a workflow
+	// in the DeployWorkflowResponse message)
+	WorkflowKey int64 `protobuf:"varint,1,opt,name=workflowKey,proto3" json:"workflowKey,omitempty"`
+	// the BPMN process ID of the workflow definition
+	BpmnProcessId string `protobuf:"bytes,2,opt,name=bpmnProcessId,proto3" json:"bpmnProcessId,omitempty"`
+	// the version of the process; set to -1 to use the latest version
+	Version int32 `protobuf:"varint,3,opt,name=version,proto3" json:"version,omitempty"`
+	// JSON document that will instantiate the variables for the root variable scope of the
+	// workflow instance; it must be a JSON object, as variables will be mapped in a
+	// key-value fashion. e.g. { "a": 1, "b": 2 } will create two variables, named "a" and
+	// "b" respectively, with their associated values. [{ "a": 1, "b": 2 }] would not be a
+	// valid payload, as the root of the JSON document is an array and not an object.
+	Payload              string   `protobuf:"bytes,4,opt,name=payload,proto3" json:"payload,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *CreateWorkflowInstanceRequest) Reset()         { *m = CreateWorkflowInstanceRequest{} }
+func (m *CreateWorkflowInstanceRequest) String() string { return proto.CompactTextString(m) }
+func (*CreateWorkflowInstanceRequest) ProtoMessage()    {}
+func (*CreateWorkflowInstanceRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{8}
+}
+func (m *CreateWorkflowInstanceRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CreateWorkflowInstanceRequest.Unmarshal(m, b)
+}
+func (m *CreateWorkflowInstanceRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CreateWorkflowInstanceRequest.Marshal(b, m, deterministic)
+}
+func (dst *CreateWorkflowInstanceRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateWorkflowInstanceRequest.Merge(dst, src)
+}
+func (m *CreateWorkflowInstanceRequest) XXX_Size() int {
+	return xxx_messageInfo_CreateWorkflowInstanceRequest.Size(m)
+}
+func (m *CreateWorkflowInstanceRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreateWorkflowInstanceRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CreateWorkflowInstanceRequest proto.InternalMessageInfo
+
+func (m *CreateWorkflowInstanceRequest) GetWorkflowKey() int64 {
+	if m != nil {
+		return m.WorkflowKey
+	}
+	return 0
+}
+
+func (m *CreateWorkflowInstanceRequest) GetBpmnProcessId() string {
+	if m != nil {
+		return m.BpmnProcessId
+	}
+	return ""
+}
+
+func (m *CreateWorkflowInstanceRequest) GetVersion() int32 {
+	if m != nil {
+		return m.Version
+	}
+	return 0
+}
+
+func (m *CreateWorkflowInstanceRequest) GetPayload() string {
+	if m != nil {
+		return m.Payload
+	}
+	return ""
+}
+
+type CreateWorkflowInstanceResponse struct {
+	// the key of the workflow definition which was used to create the workflow instance
+	WorkflowKey int64 `protobuf:"varint,1,opt,name=workflowKey,proto3" json:"workflowKey,omitempty"`
+	// the BPMN process ID of the workflow definition which was used to create the workflow
+	// instance
+	BpmnProcessId string `protobuf:"bytes,2,opt,name=bpmnProcessId,proto3" json:"bpmnProcessId,omitempty"`
+	// the version of the workflow definition which was used to create the workflow instance
+	Version int32 `protobuf:"varint,3,opt,name=version,proto3" json:"version,omitempty"`
+	// the unique identifier of the created workflow instance; to be used wherever a request
+	// needs a workflow instance key (e.g. CancelWorkflowInstanceRequest)
+	WorkflowInstanceKey  int64    `protobuf:"varint,5,opt,name=workflowInstanceKey,proto3" json:"workflowInstanceKey,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *CreateWorkflowInstanceResponse) Reset()         { *m = CreateWorkflowInstanceResponse{} }
+func (m *CreateWorkflowInstanceResponse) String() string { return proto.CompactTextString(m) }
+func (*CreateWorkflowInstanceResponse) ProtoMessage()    {}
+func (*CreateWorkflowInstanceResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{9}
+}
+func (m *CreateWorkflowInstanceResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CreateWorkflowInstanceResponse.Unmarshal(m, b)
+}
+func (m *CreateWorkflowInstanceResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CreateWorkflowInstanceResponse.Marshal(b, m, deterministic)
+}
+func (dst *CreateWorkflowInstanceResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateWorkflowInstanceResponse.Merge(dst, src)
+}
+func (m *CreateWorkflowInstanceResponse) XXX_Size() int {
+	return xxx_messageInfo_CreateWorkflowInstanceResponse.Size(m)
+}
+func (m *CreateWorkflowInstanceResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreateWorkflowInstanceResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CreateWorkflowInstanceResponse proto.InternalMessageInfo
+
+func (m *CreateWorkflowInstanceResponse) GetWorkflowKey() int64 {
+	if m != nil {
+		return m.WorkflowKey
+	}
+	return 0
+}
+
+func (m *CreateWorkflowInstanceResponse) GetBpmnProcessId() string {
+	if m != nil {
+		return m.BpmnProcessId
+	}
+	return ""
+}
+
+func (m *CreateWorkflowInstanceResponse) GetVersion() int32 {
+	if m != nil {
+		return m.Version
+	}
+	return 0
+}
+
+func (m *CreateWorkflowInstanceResponse) GetWorkflowInstanceKey() int64 {
+	if m != nil {
+		return m.WorkflowInstanceKey
+	}
+	return 0
+}
+
+type DeployWorkflowRequest struct {
+	// List of workflow resources to deploy
+	Workflows            []*WorkflowRequestObject `protobuf:"bytes,1,rep,name=workflows,proto3" json:"workflows,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                 `json:"-"`
+	XXX_unrecognized     []byte                   `json:"-"`
+	XXX_sizecache        int32                    `json:"-"`
+}
+
+func (m *DeployWorkflowRequest) Reset()         { *m = DeployWorkflowRequest{} }
+func (m *DeployWorkflowRequest) String() string { return proto.CompactTextString(m) }
+func (*DeployWorkflowRequest) ProtoMessage()    {}
+func (*DeployWorkflowRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{10}
+}
+func (m *DeployWorkflowRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DeployWorkflowRequest.Unmarshal(m, b)
+}
+func (m *DeployWorkflowRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DeployWorkflowRequest.Marshal(b, m, deterministic)
+}
+func (dst *DeployWorkflowRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeployWorkflowRequest.Merge(dst, src)
+}
+func (m *DeployWorkflowRequest) XXX_Size() int {
+	return xxx_messageInfo_DeployWorkflowRequest.Size(m)
+}
+func (m *DeployWorkflowRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeployWorkflowRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeployWorkflowRequest proto.InternalMessageInfo
+
+func (m *DeployWorkflowRequest) GetWorkflows() []*WorkflowRequestObject {
+	if m != nil {
+		return m.Workflows
 	}
 	return nil
 }
 
+type WorkflowRequestObject struct {
+	// the resource basename, e.g. myProcess.bpmn
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// the resource type; if set to BPMN or YAML then the file extension
+	// is ignored
+	Type WorkflowRequestObject_ResourceType `protobuf:"varint,2,opt,name=type,proto3,enum=gateway_protocol.WorkflowRequestObject_ResourceType" json:"type,omitempty"`
+	// the process definition as a UTF8-encoded string
+	Definition           []byte   `protobuf:"bytes,3,opt,name=definition,proto3" json:"definition,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *WorkflowRequestObject) Reset()         { *m = WorkflowRequestObject{} }
+func (m *WorkflowRequestObject) String() string { return proto.CompactTextString(m) }
+func (*WorkflowRequestObject) ProtoMessage()    {}
+func (*WorkflowRequestObject) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{11}
+}
+func (m *WorkflowRequestObject) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_WorkflowRequestObject.Unmarshal(m, b)
+}
+func (m *WorkflowRequestObject) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_WorkflowRequestObject.Marshal(b, m, deterministic)
+}
+func (dst *WorkflowRequestObject) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_WorkflowRequestObject.Merge(dst, src)
+}
+func (m *WorkflowRequestObject) XXX_Size() int {
+	return xxx_messageInfo_WorkflowRequestObject.Size(m)
+}
+func (m *WorkflowRequestObject) XXX_DiscardUnknown() {
+	xxx_messageInfo_WorkflowRequestObject.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_WorkflowRequestObject proto.InternalMessageInfo
+
+func (m *WorkflowRequestObject) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *WorkflowRequestObject) GetType() WorkflowRequestObject_ResourceType {
+	if m != nil {
+		return m.Type
+	}
+	return WorkflowRequestObject_FILE
+}
+
+func (m *WorkflowRequestObject) GetDefinition() []byte {
+	if m != nil {
+		return m.Definition
+	}
+	return nil
+}
+
+type DeployWorkflowResponse struct {
+	// the unique key identifying the deployment
+	Key int64 `protobuf:"varint,1,opt,name=key,proto3" json:"key,omitempty"`
+	// a list of deployed workflows
+	Workflows            []*WorkflowMetadata `protobuf:"bytes,2,rep,name=workflows,proto3" json:"workflows,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
+	XXX_unrecognized     []byte              `json:"-"`
+	XXX_sizecache        int32               `json:"-"`
+}
+
+func (m *DeployWorkflowResponse) Reset()         { *m = DeployWorkflowResponse{} }
+func (m *DeployWorkflowResponse) String() string { return proto.CompactTextString(m) }
+func (*DeployWorkflowResponse) ProtoMessage()    {}
+func (*DeployWorkflowResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{12}
+}
+func (m *DeployWorkflowResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DeployWorkflowResponse.Unmarshal(m, b)
+}
+func (m *DeployWorkflowResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DeployWorkflowResponse.Marshal(b, m, deterministic)
+}
+func (dst *DeployWorkflowResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeployWorkflowResponse.Merge(dst, src)
+}
+func (m *DeployWorkflowResponse) XXX_Size() int {
+	return xxx_messageInfo_DeployWorkflowResponse.Size(m)
+}
+func (m *DeployWorkflowResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeployWorkflowResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeployWorkflowResponse proto.InternalMessageInfo
+
+func (m *DeployWorkflowResponse) GetKey() int64 {
+	if m != nil {
+		return m.Key
+	}
+	return 0
+}
+
+func (m *DeployWorkflowResponse) GetWorkflows() []*WorkflowMetadata {
+	if m != nil {
+		return m.Workflows
+	}
+	return nil
+}
+
+type WorkflowMetadata struct {
+	// the bpmn process ID, as parsed during deployment; together with the version forms a
+	// unique identifier for a specific workflow definition
+	BpmnProcessId string `protobuf:"bytes,1,opt,name=bpmnProcessId,proto3" json:"bpmnProcessId,omitempty"`
+	// the assigned process version
+	Version int32 `protobuf:"varint,2,opt,name=version,proto3" json:"version,omitempty"`
+	// the assigned key, which acts as a unique identifier for this workflow
+	WorkflowKey int64 `protobuf:"varint,3,opt,name=workflowKey,proto3" json:"workflowKey,omitempty"`
+	// the resource name (see: WorkflowRequestObject.name) from which this workflow was
+	// parsed
+	ResourceName         string   `protobuf:"bytes,4,opt,name=resourceName,proto3" json:"resourceName,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *WorkflowMetadata) Reset()         { *m = WorkflowMetadata{} }
+func (m *WorkflowMetadata) String() string { return proto.CompactTextString(m) }
+func (*WorkflowMetadata) ProtoMessage()    {}
+func (*WorkflowMetadata) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{13}
+}
+func (m *WorkflowMetadata) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_WorkflowMetadata.Unmarshal(m, b)
+}
+func (m *WorkflowMetadata) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_WorkflowMetadata.Marshal(b, m, deterministic)
+}
+func (dst *WorkflowMetadata) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_WorkflowMetadata.Merge(dst, src)
+}
+func (m *WorkflowMetadata) XXX_Size() int {
+	return xxx_messageInfo_WorkflowMetadata.Size(m)
+}
+func (m *WorkflowMetadata) XXX_DiscardUnknown() {
+	xxx_messageInfo_WorkflowMetadata.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_WorkflowMetadata proto.InternalMessageInfo
+
+func (m *WorkflowMetadata) GetBpmnProcessId() string {
+	if m != nil {
+		return m.BpmnProcessId
+	}
+	return ""
+}
+
+func (m *WorkflowMetadata) GetVersion() int32 {
+	if m != nil {
+		return m.Version
+	}
+	return 0
+}
+
+func (m *WorkflowMetadata) GetWorkflowKey() int64 {
+	if m != nil {
+		return m.WorkflowKey
+	}
+	return 0
+}
+
+func (m *WorkflowMetadata) GetResourceName() string {
+	if m != nil {
+		return m.ResourceName
+	}
+	return ""
+}
+
+type FailJobRequest struct {
+	// the unique job identifier, as obtained when activating the job
+	JobKey int64 `protobuf:"varint,1,opt,name=jobKey,proto3" json:"jobKey,omitempty"`
+	// the amount of retries the job should have left
+	Retries int32 `protobuf:"varint,2,opt,name=retries,proto3" json:"retries,omitempty"`
+	// an optional message describing why the job failed
+	// this is particularly useful if a job runs out of retries and an incident is raised,
+	// as it this message can help explain why an incident was raised
+	ErrorMessage         string   `protobuf:"bytes,3,opt,name=errorMessage,proto3" json:"errorMessage,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *FailJobRequest) Reset()         { *m = FailJobRequest{} }
+func (m *FailJobRequest) String() string { return proto.CompactTextString(m) }
+func (*FailJobRequest) ProtoMessage()    {}
+func (*FailJobRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{14}
+}
+func (m *FailJobRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_FailJobRequest.Unmarshal(m, b)
+}
+func (m *FailJobRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_FailJobRequest.Marshal(b, m, deterministic)
+}
+func (dst *FailJobRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FailJobRequest.Merge(dst, src)
+}
+func (m *FailJobRequest) XXX_Size() int {
+	return xxx_messageInfo_FailJobRequest.Size(m)
+}
+func (m *FailJobRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_FailJobRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_FailJobRequest proto.InternalMessageInfo
+
+func (m *FailJobRequest) GetJobKey() int64 {
+	if m != nil {
+		return m.JobKey
+	}
+	return 0
+}
+
+func (m *FailJobRequest) GetRetries() int32 {
+	if m != nil {
+		return m.Retries
+	}
+	return 0
+}
+
+func (m *FailJobRequest) GetErrorMessage() string {
+	if m != nil {
+		return m.ErrorMessage
+	}
+	return ""
+}
+
+type FailJobResponse struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *FailJobResponse) Reset()         { *m = FailJobResponse{} }
+func (m *FailJobResponse) String() string { return proto.CompactTextString(m) }
+func (*FailJobResponse) ProtoMessage()    {}
+func (*FailJobResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{15}
+}
+func (m *FailJobResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_FailJobResponse.Unmarshal(m, b)
+}
+func (m *FailJobResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_FailJobResponse.Marshal(b, m, deterministic)
+}
+func (dst *FailJobResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FailJobResponse.Merge(dst, src)
+}
+func (m *FailJobResponse) XXX_Size() int {
+	return xxx_messageInfo_FailJobResponse.Size(m)
+}
+func (m *FailJobResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_FailJobResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_FailJobResponse proto.InternalMessageInfo
+
+type GetWorkflowRequest struct {
+	// the unique key identifying the workflow definition (e.g. returned from a workflow in
+	// the DeployWorkflowResponse message)
+	WorkflowKey int64 `protobuf:"varint,1,opt,name=workflowKey,proto3" json:"workflowKey,omitempty"`
+	// the version of the process; set to -1 to use the latest version
+	Version int32 `protobuf:"varint,2,opt,name=version,proto3" json:"version,omitempty"`
+	// the BPMN process ID of the workflow definition
+	BpmnProcessId        string   `protobuf:"bytes,3,opt,name=bpmnProcessId,proto3" json:"bpmnProcessId,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *GetWorkflowRequest) Reset()         { *m = GetWorkflowRequest{} }
+func (m *GetWorkflowRequest) String() string { return proto.CompactTextString(m) }
+func (*GetWorkflowRequest) ProtoMessage()    {}
+func (*GetWorkflowRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{16}
+}
+func (m *GetWorkflowRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GetWorkflowRequest.Unmarshal(m, b)
+}
+func (m *GetWorkflowRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GetWorkflowRequest.Marshal(b, m, deterministic)
+}
+func (dst *GetWorkflowRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetWorkflowRequest.Merge(dst, src)
+}
+func (m *GetWorkflowRequest) XXX_Size() int {
+	return xxx_messageInfo_GetWorkflowRequest.Size(m)
+}
+func (m *GetWorkflowRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetWorkflowRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetWorkflowRequest proto.InternalMessageInfo
+
+func (m *GetWorkflowRequest) GetWorkflowKey() int64 {
+	if m != nil {
+		return m.WorkflowKey
+	}
+	return 0
+}
+
+func (m *GetWorkflowRequest) GetVersion() int32 {
+	if m != nil {
+		return m.Version
+	}
+	return 0
+}
+
+func (m *GetWorkflowRequest) GetBpmnProcessId() string {
+	if m != nil {
+		return m.BpmnProcessId
+	}
+	return ""
+}
+
+type GetWorkflowResponse struct {
+	// the unique key identifying the workflow definition (e.g. returned from a workflow in
+	// the DeployWorkflowResponse message)
+	WorkflowKey int64 `protobuf:"varint,1,opt,name=workflowKey,proto3" json:"workflowKey,omitempty"`
+	// the version of the process
+	Version int32 `protobuf:"varint,2,opt,name=version,proto3" json:"version,omitempty"`
+	// the BPMN process ID of the workflow definition
+	BpmnProcessId string `protobuf:"bytes,3,opt,name=bpmnProcessId,proto3" json:"bpmnProcessId,omitempty"`
+	// the name of the resource used to deployed the workflow
+	ResourceName string `protobuf:"bytes,4,opt,name=resourceName,proto3" json:"resourceName,omitempty"`
+	// a BPMN XML representation of the workflow
+	BpmnXml              string   `protobuf:"bytes,5,opt,name=bpmnXml,proto3" json:"bpmnXml,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *GetWorkflowResponse) Reset()         { *m = GetWorkflowResponse{} }
+func (m *GetWorkflowResponse) String() string { return proto.CompactTextString(m) }
+func (*GetWorkflowResponse) ProtoMessage()    {}
+func (*GetWorkflowResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{17}
+}
+func (m *GetWorkflowResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GetWorkflowResponse.Unmarshal(m, b)
+}
+func (m *GetWorkflowResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GetWorkflowResponse.Marshal(b, m, deterministic)
+}
+func (dst *GetWorkflowResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetWorkflowResponse.Merge(dst, src)
+}
+func (m *GetWorkflowResponse) XXX_Size() int {
+	return xxx_messageInfo_GetWorkflowResponse.Size(m)
+}
+func (m *GetWorkflowResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetWorkflowResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetWorkflowResponse proto.InternalMessageInfo
+
+func (m *GetWorkflowResponse) GetWorkflowKey() int64 {
+	if m != nil {
+		return m.WorkflowKey
+	}
+	return 0
+}
+
+func (m *GetWorkflowResponse) GetVersion() int32 {
+	if m != nil {
+		return m.Version
+	}
+	return 0
+}
+
+func (m *GetWorkflowResponse) GetBpmnProcessId() string {
+	if m != nil {
+		return m.BpmnProcessId
+	}
+	return ""
+}
+
+func (m *GetWorkflowResponse) GetResourceName() string {
+	if m != nil {
+		return m.ResourceName
+	}
+	return ""
+}
+
+func (m *GetWorkflowResponse) GetBpmnXml() string {
+	if m != nil {
+		return m.BpmnXml
+	}
+	return ""
+}
+
+type ListWorkflowsRequest struct {
+	// optional filter: if specified, only the workflows with this given process ID will be
+	// returned
+	BpmnProcessId        string   `protobuf:"bytes,1,opt,name=bpmnProcessId,proto3" json:"bpmnProcessId,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ListWorkflowsRequest) Reset()         { *m = ListWorkflowsRequest{} }
+func (m *ListWorkflowsRequest) String() string { return proto.CompactTextString(m) }
+func (*ListWorkflowsRequest) ProtoMessage()    {}
+func (*ListWorkflowsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{18}
+}
+func (m *ListWorkflowsRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ListWorkflowsRequest.Unmarshal(m, b)
+}
+func (m *ListWorkflowsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ListWorkflowsRequest.Marshal(b, m, deterministic)
+}
+func (dst *ListWorkflowsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListWorkflowsRequest.Merge(dst, src)
+}
+func (m *ListWorkflowsRequest) XXX_Size() int {
+	return xxx_messageInfo_ListWorkflowsRequest.Size(m)
+}
+func (m *ListWorkflowsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListWorkflowsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListWorkflowsRequest proto.InternalMessageInfo
+
+func (m *ListWorkflowsRequest) GetBpmnProcessId() string {
+	if m != nil {
+		return m.BpmnProcessId
+	}
+	return ""
+}
+
+type ListWorkflowsResponse struct {
+	// a list of deployed workflows matching the request criteria (if any)
+	Workflows            []*WorkflowMetadata `protobuf:"bytes,1,rep,name=workflows,proto3" json:"workflows,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
+	XXX_unrecognized     []byte              `json:"-"`
+	XXX_sizecache        int32               `json:"-"`
+}
+
+func (m *ListWorkflowsResponse) Reset()         { *m = ListWorkflowsResponse{} }
+func (m *ListWorkflowsResponse) String() string { return proto.CompactTextString(m) }
+func (*ListWorkflowsResponse) ProtoMessage()    {}
+func (*ListWorkflowsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{19}
+}
+func (m *ListWorkflowsResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ListWorkflowsResponse.Unmarshal(m, b)
+}
+func (m *ListWorkflowsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ListWorkflowsResponse.Marshal(b, m, deterministic)
+}
+func (dst *ListWorkflowsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListWorkflowsResponse.Merge(dst, src)
+}
+func (m *ListWorkflowsResponse) XXX_Size() int {
+	return xxx_messageInfo_ListWorkflowsResponse.Size(m)
+}
+func (m *ListWorkflowsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListWorkflowsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListWorkflowsResponse proto.InternalMessageInfo
+
+func (m *ListWorkflowsResponse) GetWorkflows() []*WorkflowMetadata {
+	if m != nil {
+		return m.Workflows
+	}
+	return nil
+}
+
+type PublishMessageRequest struct {
+	// the name of the message
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// the correlation key of the message
+	CorrelationKey string `protobuf:"bytes,2,opt,name=correlationKey,proto3" json:"correlationKey,omitempty"`
+	// how long the message should be buffered on the broker, in milliseconds
+	TimeToLive int64 `protobuf:"varint,3,opt,name=timeToLive,proto3" json:"timeToLive,omitempty"`
+	// the unique ID of the message; can be omitted. only useful to ensure only one message
+	// with the given ID will ever be published (during its lifetime)
+	MessageId string `protobuf:"bytes,4,opt,name=messageId,proto3" json:"messageId,omitempty"`
+	// the message payload as a JSON document; see CreateWorkflowInstanceRequest for the
+	// rules about payloads
+	Payload              string   `protobuf:"bytes,5,opt,name=payload,proto3" json:"payload,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *PublishMessageRequest) Reset()         { *m = PublishMessageRequest{} }
+func (m *PublishMessageRequest) String() string { return proto.CompactTextString(m) }
+func (*PublishMessageRequest) ProtoMessage()    {}
+func (*PublishMessageRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{20}
+}
+func (m *PublishMessageRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_PublishMessageRequest.Unmarshal(m, b)
+}
+func (m *PublishMessageRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_PublishMessageRequest.Marshal(b, m, deterministic)
+}
+func (dst *PublishMessageRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PublishMessageRequest.Merge(dst, src)
+}
+func (m *PublishMessageRequest) XXX_Size() int {
+	return xxx_messageInfo_PublishMessageRequest.Size(m)
+}
+func (m *PublishMessageRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_PublishMessageRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_PublishMessageRequest proto.InternalMessageInfo
+
+func (m *PublishMessageRequest) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *PublishMessageRequest) GetCorrelationKey() string {
+	if m != nil {
+		return m.CorrelationKey
+	}
+	return ""
+}
+
+func (m *PublishMessageRequest) GetTimeToLive() int64 {
+	if m != nil {
+		return m.TimeToLive
+	}
+	return 0
+}
+
+func (m *PublishMessageRequest) GetMessageId() string {
+	if m != nil {
+		return m.MessageId
+	}
+	return ""
+}
+
+func (m *PublishMessageRequest) GetPayload() string {
+	if m != nil {
+		return m.Payload
+	}
+	return ""
+}
+
+type PublishMessageResponse struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *PublishMessageResponse) Reset()         { *m = PublishMessageResponse{} }
+func (m *PublishMessageResponse) String() string { return proto.CompactTextString(m) }
+func (*PublishMessageResponse) ProtoMessage()    {}
+func (*PublishMessageResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{21}
+}
+func (m *PublishMessageResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_PublishMessageResponse.Unmarshal(m, b)
+}
+func (m *PublishMessageResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_PublishMessageResponse.Marshal(b, m, deterministic)
+}
+func (dst *PublishMessageResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PublishMessageResponse.Merge(dst, src)
+}
+func (m *PublishMessageResponse) XXX_Size() int {
+	return xxx_messageInfo_PublishMessageResponse.Size(m)
+}
+func (m *PublishMessageResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_PublishMessageResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_PublishMessageResponse proto.InternalMessageInfo
+
 type ResolveIncidentRequest struct {
+	// the unique ID of the incident to resolve
 	IncidentKey          int64    `protobuf:"varint,1,opt,name=incidentKey,proto3" json:"incidentKey,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -1579,7 +1302,7 @@ func (m *ResolveIncidentRequest) Reset()         { *m = ResolveIncidentRequest{}
 func (m *ResolveIncidentRequest) String() string { return proto.CompactTextString(m) }
 func (*ResolveIncidentRequest) ProtoMessage()    {}
 func (*ResolveIncidentRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{30}
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{22}
 }
 func (m *ResolveIncidentRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ResolveIncidentRequest.Unmarshal(m, b)
@@ -1616,7 +1339,7 @@ func (m *ResolveIncidentResponse) Reset()         { *m = ResolveIncidentResponse
 func (m *ResolveIncidentResponse) String() string { return proto.CompactTextString(m) }
 func (*ResolveIncidentResponse) ProtoMessage()    {}
 func (*ResolveIncidentResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_6af7beda0809ab1f, []int{31}
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{23}
 }
 func (m *ResolveIncidentResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ResolveIncidentResponse.Unmarshal(m, b)
@@ -1636,41 +1359,425 @@ func (m *ResolveIncidentResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ResolveIncidentResponse proto.InternalMessageInfo
 
+type TopologyRequest struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *TopologyRequest) Reset()         { *m = TopologyRequest{} }
+func (m *TopologyRequest) String() string { return proto.CompactTextString(m) }
+func (*TopologyRequest) ProtoMessage()    {}
+func (*TopologyRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{24}
+}
+func (m *TopologyRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_TopologyRequest.Unmarshal(m, b)
+}
+func (m *TopologyRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_TopologyRequest.Marshal(b, m, deterministic)
+}
+func (dst *TopologyRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TopologyRequest.Merge(dst, src)
+}
+func (m *TopologyRequest) XXX_Size() int {
+	return xxx_messageInfo_TopologyRequest.Size(m)
+}
+func (m *TopologyRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_TopologyRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_TopologyRequest proto.InternalMessageInfo
+
+type TopologyResponse struct {
+	// list of brokers part of this cluster
+	Brokers []*BrokerInfo `protobuf:"bytes,1,rep,name=brokers,proto3" json:"brokers,omitempty"`
+	// how many nodes are in the cluster
+	ClusterSize int32 `protobuf:"varint,2,opt,name=clusterSize,proto3" json:"clusterSize,omitempty"`
+	// how many partitions are spread across the cluster
+	PartitionsCount int32 `protobuf:"varint,3,opt,name=partitionsCount,proto3" json:"partitionsCount,omitempty"`
+	// configured replication factor for this cluster
+	ReplicationFactor    int32    `protobuf:"varint,4,opt,name=replicationFactor,proto3" json:"replicationFactor,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *TopologyResponse) Reset()         { *m = TopologyResponse{} }
+func (m *TopologyResponse) String() string { return proto.CompactTextString(m) }
+func (*TopologyResponse) ProtoMessage()    {}
+func (*TopologyResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{25}
+}
+func (m *TopologyResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_TopologyResponse.Unmarshal(m, b)
+}
+func (m *TopologyResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_TopologyResponse.Marshal(b, m, deterministic)
+}
+func (dst *TopologyResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TopologyResponse.Merge(dst, src)
+}
+func (m *TopologyResponse) XXX_Size() int {
+	return xxx_messageInfo_TopologyResponse.Size(m)
+}
+func (m *TopologyResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_TopologyResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_TopologyResponse proto.InternalMessageInfo
+
+func (m *TopologyResponse) GetBrokers() []*BrokerInfo {
+	if m != nil {
+		return m.Brokers
+	}
+	return nil
+}
+
+func (m *TopologyResponse) GetClusterSize() int32 {
+	if m != nil {
+		return m.ClusterSize
+	}
+	return 0
+}
+
+func (m *TopologyResponse) GetPartitionsCount() int32 {
+	if m != nil {
+		return m.PartitionsCount
+	}
+	return 0
+}
+
+func (m *TopologyResponse) GetReplicationFactor() int32 {
+	if m != nil {
+		return m.ReplicationFactor
+	}
+	return 0
+}
+
+type BrokerInfo struct {
+	// unique (within a cluster) node ID for the broker
+	NodeId int32 `protobuf:"varint,1,opt,name=nodeId,proto3" json:"nodeId,omitempty"`
+	// hostname of the broker
+	Host string `protobuf:"bytes,2,opt,name=host,proto3" json:"host,omitempty"`
+	// port for the broker
+	Port int32 `protobuf:"varint,3,opt,name=port,proto3" json:"port,omitempty"`
+	// list of partitions managed or replicated on this broker
+	Partitions           []*Partition `protobuf:"bytes,4,rep,name=partitions,proto3" json:"partitions,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
+	XXX_unrecognized     []byte       `json:"-"`
+	XXX_sizecache        int32        `json:"-"`
+}
+
+func (m *BrokerInfo) Reset()         { *m = BrokerInfo{} }
+func (m *BrokerInfo) String() string { return proto.CompactTextString(m) }
+func (*BrokerInfo) ProtoMessage()    {}
+func (*BrokerInfo) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{26}
+}
+func (m *BrokerInfo) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_BrokerInfo.Unmarshal(m, b)
+}
+func (m *BrokerInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_BrokerInfo.Marshal(b, m, deterministic)
+}
+func (dst *BrokerInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_BrokerInfo.Merge(dst, src)
+}
+func (m *BrokerInfo) XXX_Size() int {
+	return xxx_messageInfo_BrokerInfo.Size(m)
+}
+func (m *BrokerInfo) XXX_DiscardUnknown() {
+	xxx_messageInfo_BrokerInfo.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_BrokerInfo proto.InternalMessageInfo
+
+func (m *BrokerInfo) GetNodeId() int32 {
+	if m != nil {
+		return m.NodeId
+	}
+	return 0
+}
+
+func (m *BrokerInfo) GetHost() string {
+	if m != nil {
+		return m.Host
+	}
+	return ""
+}
+
+func (m *BrokerInfo) GetPort() int32 {
+	if m != nil {
+		return m.Port
+	}
+	return 0
+}
+
+func (m *BrokerInfo) GetPartitions() []*Partition {
+	if m != nil {
+		return m.Partitions
+	}
+	return nil
+}
+
+type Partition struct {
+	// the unique ID of this partition
+	PartitionId int32 `protobuf:"varint,1,opt,name=partitionId,proto3" json:"partitionId,omitempty"`
+	// the role of the broker for this partition
+	Role                 Partition_PartitionBrokerRole `protobuf:"varint,3,opt,name=role,proto3,enum=gateway_protocol.Partition_PartitionBrokerRole" json:"role,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                      `json:"-"`
+	XXX_unrecognized     []byte                        `json:"-"`
+	XXX_sizecache        int32                         `json:"-"`
+}
+
+func (m *Partition) Reset()         { *m = Partition{} }
+func (m *Partition) String() string { return proto.CompactTextString(m) }
+func (*Partition) ProtoMessage()    {}
+func (*Partition) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{27}
+}
+func (m *Partition) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Partition.Unmarshal(m, b)
+}
+func (m *Partition) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Partition.Marshal(b, m, deterministic)
+}
+func (dst *Partition) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Partition.Merge(dst, src)
+}
+func (m *Partition) XXX_Size() int {
+	return xxx_messageInfo_Partition.Size(m)
+}
+func (m *Partition) XXX_DiscardUnknown() {
+	xxx_messageInfo_Partition.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Partition proto.InternalMessageInfo
+
+func (m *Partition) GetPartitionId() int32 {
+	if m != nil {
+		return m.PartitionId
+	}
+	return 0
+}
+
+func (m *Partition) GetRole() Partition_PartitionBrokerRole {
+	if m != nil {
+		return m.Role
+	}
+	return Partition_LEADER
+}
+
+type UpdateJobRetriesRequest struct {
+	// the unique job identifier, as obtained through ActivateJobs
+	JobKey int64 `protobuf:"varint,1,opt,name=jobKey,proto3" json:"jobKey,omitempty"`
+	// the new amount of retries for the job; must be positive
+	Retries              int32    `protobuf:"varint,2,opt,name=retries,proto3" json:"retries,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *UpdateJobRetriesRequest) Reset()         { *m = UpdateJobRetriesRequest{} }
+func (m *UpdateJobRetriesRequest) String() string { return proto.CompactTextString(m) }
+func (*UpdateJobRetriesRequest) ProtoMessage()    {}
+func (*UpdateJobRetriesRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{28}
+}
+func (m *UpdateJobRetriesRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_UpdateJobRetriesRequest.Unmarshal(m, b)
+}
+func (m *UpdateJobRetriesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_UpdateJobRetriesRequest.Marshal(b, m, deterministic)
+}
+func (dst *UpdateJobRetriesRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UpdateJobRetriesRequest.Merge(dst, src)
+}
+func (m *UpdateJobRetriesRequest) XXX_Size() int {
+	return xxx_messageInfo_UpdateJobRetriesRequest.Size(m)
+}
+func (m *UpdateJobRetriesRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_UpdateJobRetriesRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UpdateJobRetriesRequest proto.InternalMessageInfo
+
+func (m *UpdateJobRetriesRequest) GetJobKey() int64 {
+	if m != nil {
+		return m.JobKey
+	}
+	return 0
+}
+
+func (m *UpdateJobRetriesRequest) GetRetries() int32 {
+	if m != nil {
+		return m.Retries
+	}
+	return 0
+}
+
+type UpdateJobRetriesResponse struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *UpdateJobRetriesResponse) Reset()         { *m = UpdateJobRetriesResponse{} }
+func (m *UpdateJobRetriesResponse) String() string { return proto.CompactTextString(m) }
+func (*UpdateJobRetriesResponse) ProtoMessage()    {}
+func (*UpdateJobRetriesResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{29}
+}
+func (m *UpdateJobRetriesResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_UpdateJobRetriesResponse.Unmarshal(m, b)
+}
+func (m *UpdateJobRetriesResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_UpdateJobRetriesResponse.Marshal(b, m, deterministic)
+}
+func (dst *UpdateJobRetriesResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UpdateJobRetriesResponse.Merge(dst, src)
+}
+func (m *UpdateJobRetriesResponse) XXX_Size() int {
+	return xxx_messageInfo_UpdateJobRetriesResponse.Size(m)
+}
+func (m *UpdateJobRetriesResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_UpdateJobRetriesResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UpdateJobRetriesResponse proto.InternalMessageInfo
+
+type SetVariablesRequest struct {
+	// the unique identifier of a particular element; can be the workflow instance key (as
+	// obtained during instance creation), or a given element, such as a service task (see
+	// elementInstanceKey on the JobHeaders message)
+	ElementInstanceKey int64 `protobuf:"varint,1,opt,name=elementInstanceKey,proto3" json:"elementInstanceKey,omitempty"`
+	// a JSON serialized document describing variables as key value pairs; the root of the document
+	// must be an object
+	Variables string `protobuf:"bytes,2,opt,name=variables,proto3" json:"variables,omitempty"`
+	// if true, the payload will be merged strictly into the local scope (as indicated by
+	// elementInstanceKey); this means the payload is not propagated to upper scopes.
+	// for example, let's say we have two scopes, '1' and '2', with each having effective payloads as:
+	// 1 => `{ "foo" : 2 }`, and 2 => `{ "bar" : 1 }`. if we send an update request with
+	// elementInstanceKey = 2, a new payload of `{ "foo" : 5 }`, and local is true, then scope 1 will
+	// be unchanged, and scope 2 will now be `{ "bar" : 1, "foo" 5 }`. if local was false, however,
+	// then scope 1 would be `{ "foo": 5 }`, and scope 2 would be `{ "bar" : 1 }`.
+	Local                bool     `protobuf:"varint,3,opt,name=local,proto3" json:"local,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *SetVariablesRequest) Reset()         { *m = SetVariablesRequest{} }
+func (m *SetVariablesRequest) String() string { return proto.CompactTextString(m) }
+func (*SetVariablesRequest) ProtoMessage()    {}
+func (*SetVariablesRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{30}
+}
+func (m *SetVariablesRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_SetVariablesRequest.Unmarshal(m, b)
+}
+func (m *SetVariablesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_SetVariablesRequest.Marshal(b, m, deterministic)
+}
+func (dst *SetVariablesRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SetVariablesRequest.Merge(dst, src)
+}
+func (m *SetVariablesRequest) XXX_Size() int {
+	return xxx_messageInfo_SetVariablesRequest.Size(m)
+}
+func (m *SetVariablesRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_SetVariablesRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_SetVariablesRequest proto.InternalMessageInfo
+
+func (m *SetVariablesRequest) GetElementInstanceKey() int64 {
+	if m != nil {
+		return m.ElementInstanceKey
+	}
+	return 0
+}
+
+func (m *SetVariablesRequest) GetVariables() string {
+	if m != nil {
+		return m.Variables
+	}
+	return ""
+}
+
+func (m *SetVariablesRequest) GetLocal() bool {
+	if m != nil {
+		return m.Local
+	}
+	return false
+}
+
+type SetVariablesResponse struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *SetVariablesResponse) Reset()         { *m = SetVariablesResponse{} }
+func (m *SetVariablesResponse) String() string { return proto.CompactTextString(m) }
+func (*SetVariablesResponse) ProtoMessage()    {}
+func (*SetVariablesResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_1ef3c0425690f430, []int{31}
+}
+func (m *SetVariablesResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_SetVariablesResponse.Unmarshal(m, b)
+}
+func (m *SetVariablesResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_SetVariablesResponse.Marshal(b, m, deterministic)
+}
+func (dst *SetVariablesResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SetVariablesResponse.Merge(dst, src)
+}
+func (m *SetVariablesResponse) XXX_Size() int {
+	return xxx_messageInfo_SetVariablesResponse.Size(m)
+}
+func (m *SetVariablesResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_SetVariablesResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_SetVariablesResponse proto.InternalMessageInfo
+
 func init() {
-	proto.RegisterType((*TopologyRequest)(nil), "gateway_protocol.TopologyRequest")
-	proto.RegisterType((*Partition)(nil), "gateway_protocol.Partition")
-	proto.RegisterType((*BrokerInfo)(nil), "gateway_protocol.BrokerInfo")
-	proto.RegisterType((*TopologyResponse)(nil), "gateway_protocol.TopologyResponse")
-	proto.RegisterType((*WorkflowRequestObject)(nil), "gateway_protocol.WorkflowRequestObject")
-	proto.RegisterType((*DeployWorkflowRequest)(nil), "gateway_protocol.DeployWorkflowRequest")
-	proto.RegisterType((*WorkflowMetadata)(nil), "gateway_protocol.WorkflowMetadata")
-	proto.RegisterType((*DeployWorkflowResponse)(nil), "gateway_protocol.DeployWorkflowResponse")
-	proto.RegisterType((*PublishMessageRequest)(nil), "gateway_protocol.PublishMessageRequest")
-	proto.RegisterType((*PublishMessageResponse)(nil), "gateway_protocol.PublishMessageResponse")
-	proto.RegisterType((*UpdateJobRetriesRequest)(nil), "gateway_protocol.UpdateJobRetriesRequest")
-	proto.RegisterType((*UpdateJobRetriesResponse)(nil), "gateway_protocol.UpdateJobRetriesResponse")
-	proto.RegisterType((*FailJobRequest)(nil), "gateway_protocol.FailJobRequest")
-	proto.RegisterType((*FailJobResponse)(nil), "gateway_protocol.FailJobResponse")
+	proto.RegisterType((*ActivateJobsRequest)(nil), "gateway_protocol.ActivateJobsRequest")
+	proto.RegisterType((*ActivateJobsResponse)(nil), "gateway_protocol.ActivateJobsResponse")
+	proto.RegisterType((*ActivatedJob)(nil), "gateway_protocol.ActivatedJob")
+	proto.RegisterType((*JobHeaders)(nil), "gateway_protocol.JobHeaders")
+	proto.RegisterType((*CancelWorkflowInstanceRequest)(nil), "gateway_protocol.CancelWorkflowInstanceRequest")
+	proto.RegisterType((*CancelWorkflowInstanceResponse)(nil), "gateway_protocol.CancelWorkflowInstanceResponse")
 	proto.RegisterType((*CompleteJobRequest)(nil), "gateway_protocol.CompleteJobRequest")
 	proto.RegisterType((*CompleteJobResponse)(nil), "gateway_protocol.CompleteJobResponse")
 	proto.RegisterType((*CreateWorkflowInstanceRequest)(nil), "gateway_protocol.CreateWorkflowInstanceRequest")
 	proto.RegisterType((*CreateWorkflowInstanceResponse)(nil), "gateway_protocol.CreateWorkflowInstanceResponse")
-	proto.RegisterType((*CancelWorkflowInstanceRequest)(nil), "gateway_protocol.CancelWorkflowInstanceRequest")
-	proto.RegisterType((*CancelWorkflowInstanceResponse)(nil), "gateway_protocol.CancelWorkflowInstanceResponse")
-	proto.RegisterType((*UpdateWorkflowInstancePayloadRequest)(nil), "gateway_protocol.UpdateWorkflowInstancePayloadRequest")
-	proto.RegisterType((*UpdateWorkflowInstancePayloadResponse)(nil), "gateway_protocol.UpdateWorkflowInstancePayloadResponse")
-	proto.RegisterType((*ListWorkflowsRequest)(nil), "gateway_protocol.ListWorkflowsRequest")
-	proto.RegisterType((*ListWorkflowsResponse)(nil), "gateway_protocol.ListWorkflowsResponse")
+	proto.RegisterType((*DeployWorkflowRequest)(nil), "gateway_protocol.DeployWorkflowRequest")
+	proto.RegisterType((*WorkflowRequestObject)(nil), "gateway_protocol.WorkflowRequestObject")
+	proto.RegisterType((*DeployWorkflowResponse)(nil), "gateway_protocol.DeployWorkflowResponse")
+	proto.RegisterType((*WorkflowMetadata)(nil), "gateway_protocol.WorkflowMetadata")
+	proto.RegisterType((*FailJobRequest)(nil), "gateway_protocol.FailJobRequest")
+	proto.RegisterType((*FailJobResponse)(nil), "gateway_protocol.FailJobResponse")
 	proto.RegisterType((*GetWorkflowRequest)(nil), "gateway_protocol.GetWorkflowRequest")
 	proto.RegisterType((*GetWorkflowResponse)(nil), "gateway_protocol.GetWorkflowResponse")
-	proto.RegisterType((*ActivateJobsRequest)(nil), "gateway_protocol.ActivateJobsRequest")
-	proto.RegisterType((*JobHeaders)(nil), "gateway_protocol.JobHeaders")
-	proto.RegisterType((*ActivatedJob)(nil), "gateway_protocol.ActivatedJob")
-	proto.RegisterType((*ActivateJobsResponse)(nil), "gateway_protocol.ActivateJobsResponse")
+	proto.RegisterType((*ListWorkflowsRequest)(nil), "gateway_protocol.ListWorkflowsRequest")
+	proto.RegisterType((*ListWorkflowsResponse)(nil), "gateway_protocol.ListWorkflowsResponse")
+	proto.RegisterType((*PublishMessageRequest)(nil), "gateway_protocol.PublishMessageRequest")
+	proto.RegisterType((*PublishMessageResponse)(nil), "gateway_protocol.PublishMessageResponse")
 	proto.RegisterType((*ResolveIncidentRequest)(nil), "gateway_protocol.ResolveIncidentRequest")
 	proto.RegisterType((*ResolveIncidentResponse)(nil), "gateway_protocol.ResolveIncidentResponse")
-	proto.RegisterEnum("gateway_protocol.Partition_PartitionBrokerRole", Partition_PartitionBrokerRole_name, Partition_PartitionBrokerRole_value)
+	proto.RegisterType((*TopologyRequest)(nil), "gateway_protocol.TopologyRequest")
+	proto.RegisterType((*TopologyResponse)(nil), "gateway_protocol.TopologyResponse")
+	proto.RegisterType((*BrokerInfo)(nil), "gateway_protocol.BrokerInfo")
+	proto.RegisterType((*Partition)(nil), "gateway_protocol.Partition")
+	proto.RegisterType((*UpdateJobRetriesRequest)(nil), "gateway_protocol.UpdateJobRetriesRequest")
+	proto.RegisterType((*UpdateJobRetriesResponse)(nil), "gateway_protocol.UpdateJobRetriesResponse")
+	proto.RegisterType((*SetVariablesRequest)(nil), "gateway_protocol.SetVariablesRequest")
+	proto.RegisterType((*SetVariablesResponse)(nil), "gateway_protocol.SetVariablesResponse")
 	proto.RegisterEnum("gateway_protocol.WorkflowRequestObject_ResourceType", WorkflowRequestObject_ResourceType_name, WorkflowRequestObject_ResourceType_value)
+	proto.RegisterEnum("gateway_protocol.Partition_PartitionBrokerRole", Partition_PartitionBrokerRole_name, Partition_PartitionBrokerRole_value)
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -1685,19 +1792,143 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type GatewayClient interface {
-	Topology(ctx context.Context, in *TopologyRequest, opts ...grpc.CallOption) (*TopologyResponse, error)
-	DeployWorkflow(ctx context.Context, in *DeployWorkflowRequest, opts ...grpc.CallOption) (*DeployWorkflowResponse, error)
-	PublishMessage(ctx context.Context, in *PublishMessageRequest, opts ...grpc.CallOption) (*PublishMessageResponse, error)
-	UpdateJobRetries(ctx context.Context, in *UpdateJobRetriesRequest, opts ...grpc.CallOption) (*UpdateJobRetriesResponse, error)
-	FailJob(ctx context.Context, in *FailJobRequest, opts ...grpc.CallOption) (*FailJobResponse, error)
-	CompleteJob(ctx context.Context, in *CompleteJobRequest, opts ...grpc.CallOption) (*CompleteJobResponse, error)
-	CreateWorkflowInstance(ctx context.Context, in *CreateWorkflowInstanceRequest, opts ...grpc.CallOption) (*CreateWorkflowInstanceResponse, error)
-	CancelWorkflowInstance(ctx context.Context, in *CancelWorkflowInstanceRequest, opts ...grpc.CallOption) (*CancelWorkflowInstanceResponse, error)
-	UpdateWorkflowInstancePayload(ctx context.Context, in *UpdateWorkflowInstancePayloadRequest, opts ...grpc.CallOption) (*UpdateWorkflowInstancePayloadResponse, error)
+	//
+	// Iterates through all known partitions in a round-robin and activates up to the requested amount
+	// of jobs and streams them back to the client as they are activated.
+	//
+	// Errors:
+	// INVALID_ARGUMENT:
+	// - type is blank (empty string, null)
+	// - worker is blank (empty string, null)
+	// - timeout less than 1
+	// - amount is less than 1
 	ActivateJobs(ctx context.Context, in *ActivateJobsRequest, opts ...grpc.CallOption) (Gateway_ActivateJobsClient, error)
-	ListWorkflows(ctx context.Context, in *ListWorkflowsRequest, opts ...grpc.CallOption) (*ListWorkflowsResponse, error)
+	//
+	// Cancels a running workflow instance
+	//
+	// Errors:
+	// NOT_FOUND:
+	// - no workflow instance exists with the given key
+	CancelWorkflowInstance(ctx context.Context, in *CancelWorkflowInstanceRequest, opts ...grpc.CallOption) (*CancelWorkflowInstanceResponse, error)
+	//
+	// Completes a job with the given payload, which allows completing the associated service task.
+	//
+	// Errors:
+	// NOT_FOUND:
+	// - no job exists with the given job key. Note that since jobs are removed once completed,
+	// it could be that this job did exist at some point.
+	//
+	// FAILED_PRECONDITION:
+	// - the job was marked as failed. In that case, the related incident must be resolved before
+	// the job can be activated again and completed.
+	CompleteJob(ctx context.Context, in *CompleteJobRequest, opts ...grpc.CallOption) (*CompleteJobResponse, error)
+	//
+	// Creates and starts an instance of the specified workflow. The workflow definition to use to
+	// create the instance can be specified either using its unique key (as returned by
+	// DeployWorkflow), or using the BPMN process ID and a version. Pass -1 as the version to use the
+	// latest deployed version. Note that only workflows with none start events can be started through
+	// this command.
+	//
+	// Errors:
+	// NOT_FOUND:
+	// - no workflow with the given key exists (if workflowKey was given)
+	// - no workflow with the given process ID exists (if bpmnProcessId was given but version was -1)
+	// - no workflow with the given process ID and version exists (if both bpmnProcessId and version were given)
+	//
+	// FAILED_PRECONDITION:
+	// - the workflow definition does not contain a none start event; only workflows with none
+	// start event can be started manually.
+	//
+	// INVALID_ARGUMENT:
+	// - the given payload is not a valid JSON document; all payloads are expected to be
+	// valid JSON documents where the root node is an object.
+	CreateWorkflowInstance(ctx context.Context, in *CreateWorkflowInstanceRequest, opts ...grpc.CallOption) (*CreateWorkflowInstanceResponse, error)
+	//
+	// Deploys one or more workflows to Zeebe. Note that this is an atomic call,
+	// i.e. either all workflows are deployed, or none of them are.
+	//
+	// Errors:
+	// INVALID_ARGUMENT:
+	// - no resources given.
+	// - if at least one resource is invalid. A resource is considered invalid if:
+	// - it is not a BPMN or YAML file (currently detected through the file extension)
+	// - the resource data is not deserializable (e.g. detected as BPMN, but it's broken XML)
+	// - the workflow is invalid (e.g. an event-based gateway has an outgoing sequence flow to a task)
+	DeployWorkflow(ctx context.Context, in *DeployWorkflowRequest, opts ...grpc.CallOption) (*DeployWorkflowResponse, error)
+	//
+	// Marks the job as failed; if the retries argument is positive, then the job will be immediately
+	// activatable again, and a worker could try again to process it. If it is zero or negative however,
+	// an incident will be raised, tagged with the given errorMessage, and the job will not be
+	// activatable until the incident is resolved.
+	//
+	// Errors:
+	// NOT_FOUND:
+	// - no job was found with the given key
+	//
+	// FAILED_PRECONDITION:
+	// - the job was not activated
+	// - the job is already in a failed state, i.e. ran out of retries
+	FailJob(ctx context.Context, in *FailJobRequest, opts ...grpc.CallOption) (*FailJobResponse, error)
+	//
+	// Fetches the workflow definition either by workflow key, or BPMN process ID and version.
+	// At least one of workflowKey or bpmnProcessId must be specified.
+	//
+	// Errors:
+	// NOT_FOUND:
+	// - no workflow with the given key exists (if workflowKey was given)
+	// - no workflow with the given process ID exists (if bpmnProcessId was given but version was -1)
+	// - no workflow with the given process ID and version exists (if both bpmnProcessId and version were given)
 	GetWorkflow(ctx context.Context, in *GetWorkflowRequest, opts ...grpc.CallOption) (*GetWorkflowResponse, error)
+	//
+	// Lists all workflows matching the request criteria currently deployed in the cluster.
+	//
+	// Errors:
+	// NOT_FOUND:
+	// - no workflows have been deployed yet (if no bpmnProcessId was given)
+	// - no workflow with the given process ID exists (if bpmnProcessId was given)
+	ListWorkflows(ctx context.Context, in *ListWorkflowsRequest, opts ...grpc.CallOption) (*ListWorkflowsResponse, error)
+	//
+	// Publishes a single message. Messages are published to specific partitions computed from their
+	// correlation keys.
+	//
+	// Errors:
+	// ALREADY_EXISTS:
+	// - a message with the same ID was previously published (and is still alive)
+	PublishMessage(ctx context.Context, in *PublishMessageRequest, opts ...grpc.CallOption) (*PublishMessageResponse, error)
+	//
+	// Resolves a given incident. This simply marks the incident as resolved; most likely a call to
+	// UpdateJobRetries or SetVariables will be necessary to actually resolve the
+	// problem, following by this call.
+	//
+	// Errors:
+	// NOT_FOUND:
+	// - no incident with the given key exists
 	ResolveIncident(ctx context.Context, in *ResolveIncidentRequest, opts ...grpc.CallOption) (*ResolveIncidentResponse, error)
+	//
+	// Updates all the variables of a particular scope (e.g. workflow instance, flow element instance)
+	// from the given JSON document.
+	//
+	// Errors:
+	// NOT_FOUND:
+	// - no element with the given elementInstanceKey exists
+	// INVALID_ARGUMENT:
+	// - the given variables document is not a valid JSON document; valid documents are expected to
+	// be JSON documents where the root node is an object.
+	SetVariables(ctx context.Context, in *SetVariablesRequest, opts ...grpc.CallOption) (*SetVariablesResponse, error)
+	//
+	// Obtains the current topology of the cluster the gateway is part of.
+	Topology(ctx context.Context, in *TopologyRequest, opts ...grpc.CallOption) (*TopologyResponse, error)
+	//
+	// Updates the number of retries a job has left. This is mostly useful for jobs that have run out of
+	// retries, should the underlying problem be solved.
+	//
+	// Errors:
+	// NOT_FOUND:
+	// - no job exists with the given key
+	//
+	// INVALID_ARGUMENT:
+	// - retries is not greater than 0
+	UpdateJobRetries(ctx context.Context, in *UpdateJobRetriesRequest, opts ...grpc.CallOption) (*UpdateJobRetriesResponse, error)
 }
 
 type gatewayClient struct {
@@ -1706,87 +1937,6 @@ type gatewayClient struct {
 
 func NewGatewayClient(cc *grpc.ClientConn) GatewayClient {
 	return &gatewayClient{cc}
-}
-
-func (c *gatewayClient) Topology(ctx context.Context, in *TopologyRequest, opts ...grpc.CallOption) (*TopologyResponse, error) {
-	out := new(TopologyResponse)
-	err := c.cc.Invoke(ctx, "/gateway_protocol.Gateway/Topology", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *gatewayClient) DeployWorkflow(ctx context.Context, in *DeployWorkflowRequest, opts ...grpc.CallOption) (*DeployWorkflowResponse, error) {
-	out := new(DeployWorkflowResponse)
-	err := c.cc.Invoke(ctx, "/gateway_protocol.Gateway/DeployWorkflow", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *gatewayClient) PublishMessage(ctx context.Context, in *PublishMessageRequest, opts ...grpc.CallOption) (*PublishMessageResponse, error) {
-	out := new(PublishMessageResponse)
-	err := c.cc.Invoke(ctx, "/gateway_protocol.Gateway/PublishMessage", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *gatewayClient) UpdateJobRetries(ctx context.Context, in *UpdateJobRetriesRequest, opts ...grpc.CallOption) (*UpdateJobRetriesResponse, error) {
-	out := new(UpdateJobRetriesResponse)
-	err := c.cc.Invoke(ctx, "/gateway_protocol.Gateway/UpdateJobRetries", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *gatewayClient) FailJob(ctx context.Context, in *FailJobRequest, opts ...grpc.CallOption) (*FailJobResponse, error) {
-	out := new(FailJobResponse)
-	err := c.cc.Invoke(ctx, "/gateway_protocol.Gateway/FailJob", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *gatewayClient) CompleteJob(ctx context.Context, in *CompleteJobRequest, opts ...grpc.CallOption) (*CompleteJobResponse, error) {
-	out := new(CompleteJobResponse)
-	err := c.cc.Invoke(ctx, "/gateway_protocol.Gateway/CompleteJob", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *gatewayClient) CreateWorkflowInstance(ctx context.Context, in *CreateWorkflowInstanceRequest, opts ...grpc.CallOption) (*CreateWorkflowInstanceResponse, error) {
-	out := new(CreateWorkflowInstanceResponse)
-	err := c.cc.Invoke(ctx, "/gateway_protocol.Gateway/CreateWorkflowInstance", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *gatewayClient) CancelWorkflowInstance(ctx context.Context, in *CancelWorkflowInstanceRequest, opts ...grpc.CallOption) (*CancelWorkflowInstanceResponse, error) {
-	out := new(CancelWorkflowInstanceResponse)
-	err := c.cc.Invoke(ctx, "/gateway_protocol.Gateway/CancelWorkflowInstance", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *gatewayClient) UpdateWorkflowInstancePayload(ctx context.Context, in *UpdateWorkflowInstancePayloadRequest, opts ...grpc.CallOption) (*UpdateWorkflowInstancePayloadResponse, error) {
-	out := new(UpdateWorkflowInstancePayloadResponse)
-	err := c.cc.Invoke(ctx, "/gateway_protocol.Gateway/UpdateWorkflowInstancePayload", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *gatewayClient) ActivateJobs(ctx context.Context, in *ActivateJobsRequest, opts ...grpc.CallOption) (Gateway_ActivateJobsClient, error) {
@@ -1821,9 +1971,45 @@ func (x *gatewayActivateJobsClient) Recv() (*ActivateJobsResponse, error) {
 	return m, nil
 }
 
-func (c *gatewayClient) ListWorkflows(ctx context.Context, in *ListWorkflowsRequest, opts ...grpc.CallOption) (*ListWorkflowsResponse, error) {
-	out := new(ListWorkflowsResponse)
-	err := c.cc.Invoke(ctx, "/gateway_protocol.Gateway/ListWorkflows", in, out, opts...)
+func (c *gatewayClient) CancelWorkflowInstance(ctx context.Context, in *CancelWorkflowInstanceRequest, opts ...grpc.CallOption) (*CancelWorkflowInstanceResponse, error) {
+	out := new(CancelWorkflowInstanceResponse)
+	err := c.cc.Invoke(ctx, "/gateway_protocol.Gateway/CancelWorkflowInstance", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *gatewayClient) CompleteJob(ctx context.Context, in *CompleteJobRequest, opts ...grpc.CallOption) (*CompleteJobResponse, error) {
+	out := new(CompleteJobResponse)
+	err := c.cc.Invoke(ctx, "/gateway_protocol.Gateway/CompleteJob", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *gatewayClient) CreateWorkflowInstance(ctx context.Context, in *CreateWorkflowInstanceRequest, opts ...grpc.CallOption) (*CreateWorkflowInstanceResponse, error) {
+	out := new(CreateWorkflowInstanceResponse)
+	err := c.cc.Invoke(ctx, "/gateway_protocol.Gateway/CreateWorkflowInstance", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *gatewayClient) DeployWorkflow(ctx context.Context, in *DeployWorkflowRequest, opts ...grpc.CallOption) (*DeployWorkflowResponse, error) {
+	out := new(DeployWorkflowResponse)
+	err := c.cc.Invoke(ctx, "/gateway_protocol.Gateway/DeployWorkflow", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *gatewayClient) FailJob(ctx context.Context, in *FailJobRequest, opts ...grpc.CallOption) (*FailJobResponse, error) {
+	out := new(FailJobResponse)
+	err := c.cc.Invoke(ctx, "/gateway_protocol.Gateway/FailJob", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1839,6 +2025,24 @@ func (c *gatewayClient) GetWorkflow(ctx context.Context, in *GetWorkflowRequest,
 	return out, nil
 }
 
+func (c *gatewayClient) ListWorkflows(ctx context.Context, in *ListWorkflowsRequest, opts ...grpc.CallOption) (*ListWorkflowsResponse, error) {
+	out := new(ListWorkflowsResponse)
+	err := c.cc.Invoke(ctx, "/gateway_protocol.Gateway/ListWorkflows", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *gatewayClient) PublishMessage(ctx context.Context, in *PublishMessageRequest, opts ...grpc.CallOption) (*PublishMessageResponse, error) {
+	out := new(PublishMessageResponse)
+	err := c.cc.Invoke(ctx, "/gateway_protocol.Gateway/PublishMessage", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *gatewayClient) ResolveIncident(ctx context.Context, in *ResolveIncidentRequest, opts ...grpc.CallOption) (*ResolveIncidentResponse, error) {
 	out := new(ResolveIncidentResponse)
 	err := c.cc.Invoke(ctx, "/gateway_protocol.Gateway/ResolveIncident", in, out, opts...)
@@ -1848,113 +2052,213 @@ func (c *gatewayClient) ResolveIncident(ctx context.Context, in *ResolveIncident
 	return out, nil
 }
 
+func (c *gatewayClient) SetVariables(ctx context.Context, in *SetVariablesRequest, opts ...grpc.CallOption) (*SetVariablesResponse, error) {
+	out := new(SetVariablesResponse)
+	err := c.cc.Invoke(ctx, "/gateway_protocol.Gateway/SetVariables", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *gatewayClient) Topology(ctx context.Context, in *TopologyRequest, opts ...grpc.CallOption) (*TopologyResponse, error) {
+	out := new(TopologyResponse)
+	err := c.cc.Invoke(ctx, "/gateway_protocol.Gateway/Topology", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *gatewayClient) UpdateJobRetries(ctx context.Context, in *UpdateJobRetriesRequest, opts ...grpc.CallOption) (*UpdateJobRetriesResponse, error) {
+	out := new(UpdateJobRetriesResponse)
+	err := c.cc.Invoke(ctx, "/gateway_protocol.Gateway/UpdateJobRetries", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GatewayServer is the server API for Gateway service.
 type GatewayServer interface {
-	Topology(context.Context, *TopologyRequest) (*TopologyResponse, error)
-	DeployWorkflow(context.Context, *DeployWorkflowRequest) (*DeployWorkflowResponse, error)
-	PublishMessage(context.Context, *PublishMessageRequest) (*PublishMessageResponse, error)
-	UpdateJobRetries(context.Context, *UpdateJobRetriesRequest) (*UpdateJobRetriesResponse, error)
-	FailJob(context.Context, *FailJobRequest) (*FailJobResponse, error)
-	CompleteJob(context.Context, *CompleteJobRequest) (*CompleteJobResponse, error)
-	CreateWorkflowInstance(context.Context, *CreateWorkflowInstanceRequest) (*CreateWorkflowInstanceResponse, error)
-	CancelWorkflowInstance(context.Context, *CancelWorkflowInstanceRequest) (*CancelWorkflowInstanceResponse, error)
-	UpdateWorkflowInstancePayload(context.Context, *UpdateWorkflowInstancePayloadRequest) (*UpdateWorkflowInstancePayloadResponse, error)
+	//
+	// Iterates through all known partitions in a round-robin and activates up to the requested amount
+	// of jobs and streams them back to the client as they are activated.
+	//
+	// Errors:
+	// INVALID_ARGUMENT:
+	// - type is blank (empty string, null)
+	// - worker is blank (empty string, null)
+	// - timeout less than 1
+	// - amount is less than 1
 	ActivateJobs(*ActivateJobsRequest, Gateway_ActivateJobsServer) error
-	ListWorkflows(context.Context, *ListWorkflowsRequest) (*ListWorkflowsResponse, error)
+	//
+	// Cancels a running workflow instance
+	//
+	// Errors:
+	// NOT_FOUND:
+	// - no workflow instance exists with the given key
+	CancelWorkflowInstance(context.Context, *CancelWorkflowInstanceRequest) (*CancelWorkflowInstanceResponse, error)
+	//
+	// Completes a job with the given payload, which allows completing the associated service task.
+	//
+	// Errors:
+	// NOT_FOUND:
+	// - no job exists with the given job key. Note that since jobs are removed once completed,
+	// it could be that this job did exist at some point.
+	//
+	// FAILED_PRECONDITION:
+	// - the job was marked as failed. In that case, the related incident must be resolved before
+	// the job can be activated again and completed.
+	CompleteJob(context.Context, *CompleteJobRequest) (*CompleteJobResponse, error)
+	//
+	// Creates and starts an instance of the specified workflow. The workflow definition to use to
+	// create the instance can be specified either using its unique key (as returned by
+	// DeployWorkflow), or using the BPMN process ID and a version. Pass -1 as the version to use the
+	// latest deployed version. Note that only workflows with none start events can be started through
+	// this command.
+	//
+	// Errors:
+	// NOT_FOUND:
+	// - no workflow with the given key exists (if workflowKey was given)
+	// - no workflow with the given process ID exists (if bpmnProcessId was given but version was -1)
+	// - no workflow with the given process ID and version exists (if both bpmnProcessId and version were given)
+	//
+	// FAILED_PRECONDITION:
+	// - the workflow definition does not contain a none start event; only workflows with none
+	// start event can be started manually.
+	//
+	// INVALID_ARGUMENT:
+	// - the given payload is not a valid JSON document; all payloads are expected to be
+	// valid JSON documents where the root node is an object.
+	CreateWorkflowInstance(context.Context, *CreateWorkflowInstanceRequest) (*CreateWorkflowInstanceResponse, error)
+	//
+	// Deploys one or more workflows to Zeebe. Note that this is an atomic call,
+	// i.e. either all workflows are deployed, or none of them are.
+	//
+	// Errors:
+	// INVALID_ARGUMENT:
+	// - no resources given.
+	// - if at least one resource is invalid. A resource is considered invalid if:
+	// - it is not a BPMN or YAML file (currently detected through the file extension)
+	// - the resource data is not deserializable (e.g. detected as BPMN, but it's broken XML)
+	// - the workflow is invalid (e.g. an event-based gateway has an outgoing sequence flow to a task)
+	DeployWorkflow(context.Context, *DeployWorkflowRequest) (*DeployWorkflowResponse, error)
+	//
+	// Marks the job as failed; if the retries argument is positive, then the job will be immediately
+	// activatable again, and a worker could try again to process it. If it is zero or negative however,
+	// an incident will be raised, tagged with the given errorMessage, and the job will not be
+	// activatable until the incident is resolved.
+	//
+	// Errors:
+	// NOT_FOUND:
+	// - no job was found with the given key
+	//
+	// FAILED_PRECONDITION:
+	// - the job was not activated
+	// - the job is already in a failed state, i.e. ran out of retries
+	FailJob(context.Context, *FailJobRequest) (*FailJobResponse, error)
+	//
+	// Fetches the workflow definition either by workflow key, or BPMN process ID and version.
+	// At least one of workflowKey or bpmnProcessId must be specified.
+	//
+	// Errors:
+	// NOT_FOUND:
+	// - no workflow with the given key exists (if workflowKey was given)
+	// - no workflow with the given process ID exists (if bpmnProcessId was given but version was -1)
+	// - no workflow with the given process ID and version exists (if both bpmnProcessId and version were given)
 	GetWorkflow(context.Context, *GetWorkflowRequest) (*GetWorkflowResponse, error)
+	//
+	// Lists all workflows matching the request criteria currently deployed in the cluster.
+	//
+	// Errors:
+	// NOT_FOUND:
+	// - no workflows have been deployed yet (if no bpmnProcessId was given)
+	// - no workflow with the given process ID exists (if bpmnProcessId was given)
+	ListWorkflows(context.Context, *ListWorkflowsRequest) (*ListWorkflowsResponse, error)
+	//
+	// Publishes a single message. Messages are published to specific partitions computed from their
+	// correlation keys.
+	//
+	// Errors:
+	// ALREADY_EXISTS:
+	// - a message with the same ID was previously published (and is still alive)
+	PublishMessage(context.Context, *PublishMessageRequest) (*PublishMessageResponse, error)
+	//
+	// Resolves a given incident. This simply marks the incident as resolved; most likely a call to
+	// UpdateJobRetries or SetVariables will be necessary to actually resolve the
+	// problem, following by this call.
+	//
+	// Errors:
+	// NOT_FOUND:
+	// - no incident with the given key exists
 	ResolveIncident(context.Context, *ResolveIncidentRequest) (*ResolveIncidentResponse, error)
+	//
+	// Updates all the variables of a particular scope (e.g. workflow instance, flow element instance)
+	// from the given JSON document.
+	//
+	// Errors:
+	// NOT_FOUND:
+	// - no element with the given elementInstanceKey exists
+	// INVALID_ARGUMENT:
+	// - the given variables document is not a valid JSON document; valid documents are expected to
+	// be JSON documents where the root node is an object.
+	SetVariables(context.Context, *SetVariablesRequest) (*SetVariablesResponse, error)
+	//
+	// Obtains the current topology of the cluster the gateway is part of.
+	Topology(context.Context, *TopologyRequest) (*TopologyResponse, error)
+	//
+	// Updates the number of retries a job has left. This is mostly useful for jobs that have run out of
+	// retries, should the underlying problem be solved.
+	//
+	// Errors:
+	// NOT_FOUND:
+	// - no job exists with the given key
+	//
+	// INVALID_ARGUMENT:
+	// - retries is not greater than 0
+	UpdateJobRetries(context.Context, *UpdateJobRetriesRequest) (*UpdateJobRetriesResponse, error)
 }
 
 func RegisterGatewayServer(s *grpc.Server, srv GatewayServer) {
 	s.RegisterService(&_Gateway_serviceDesc, srv)
 }
 
-func _Gateway_Topology_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TopologyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
+func _Gateway_ActivateJobs_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ActivateJobsRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
 	}
-	if interceptor == nil {
-		return srv.(GatewayServer).Topology(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/gateway_protocol.Gateway/Topology",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GatewayServer).Topology(ctx, req.(*TopologyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+	return srv.(GatewayServer).ActivateJobs(m, &gatewayActivateJobsServer{stream})
 }
 
-func _Gateway_DeployWorkflow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeployWorkflowRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GatewayServer).DeployWorkflow(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/gateway_protocol.Gateway/DeployWorkflow",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GatewayServer).DeployWorkflow(ctx, req.(*DeployWorkflowRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+type Gateway_ActivateJobsServer interface {
+	Send(*ActivateJobsResponse) error
+	grpc.ServerStream
 }
 
-func _Gateway_PublishMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PublishMessageRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GatewayServer).PublishMessage(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/gateway_protocol.Gateway/PublishMessage",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GatewayServer).PublishMessage(ctx, req.(*PublishMessageRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+type gatewayActivateJobsServer struct {
+	grpc.ServerStream
 }
 
-func _Gateway_UpdateJobRetries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateJobRetriesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GatewayServer).UpdateJobRetries(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/gateway_protocol.Gateway/UpdateJobRetries",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GatewayServer).UpdateJobRetries(ctx, req.(*UpdateJobRetriesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+func (x *gatewayActivateJobsServer) Send(m *ActivateJobsResponse) error {
+	return x.ServerStream.SendMsg(m)
 }
 
-func _Gateway_FailJob_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FailJobRequest)
+func _Gateway_CancelWorkflowInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CancelWorkflowInstanceRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GatewayServer).FailJob(ctx, in)
+		return srv.(GatewayServer).CancelWorkflowInstance(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/gateway_protocol.Gateway/FailJob",
+		FullMethod: "/gateway_protocol.Gateway/CancelWorkflowInstance",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GatewayServer).FailJob(ctx, req.(*FailJobRequest))
+		return srv.(GatewayServer).CancelWorkflowInstance(ctx, req.(*CancelWorkflowInstanceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1995,77 +2299,38 @@ func _Gateway_CreateWorkflowInstance_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Gateway_CancelWorkflowInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CancelWorkflowInstanceRequest)
+func _Gateway_DeployWorkflow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeployWorkflowRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GatewayServer).CancelWorkflowInstance(ctx, in)
+		return srv.(GatewayServer).DeployWorkflow(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/gateway_protocol.Gateway/CancelWorkflowInstance",
+		FullMethod: "/gateway_protocol.Gateway/DeployWorkflow",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GatewayServer).CancelWorkflowInstance(ctx, req.(*CancelWorkflowInstanceRequest))
+		return srv.(GatewayServer).DeployWorkflow(ctx, req.(*DeployWorkflowRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Gateway_UpdateWorkflowInstancePayload_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateWorkflowInstancePayloadRequest)
+func _Gateway_FailJob_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FailJobRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GatewayServer).UpdateWorkflowInstancePayload(ctx, in)
+		return srv.(GatewayServer).FailJob(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/gateway_protocol.Gateway/UpdateWorkflowInstancePayload",
+		FullMethod: "/gateway_protocol.Gateway/FailJob",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GatewayServer).UpdateWorkflowInstancePayload(ctx, req.(*UpdateWorkflowInstancePayloadRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Gateway_ActivateJobs_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(ActivateJobsRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(GatewayServer).ActivateJobs(m, &gatewayActivateJobsServer{stream})
-}
-
-type Gateway_ActivateJobsServer interface {
-	Send(*ActivateJobsResponse) error
-	grpc.ServerStream
-}
-
-type gatewayActivateJobsServer struct {
-	grpc.ServerStream
-}
-
-func (x *gatewayActivateJobsServer) Send(m *ActivateJobsResponse) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func _Gateway_ListWorkflows_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListWorkflowsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GatewayServer).ListWorkflows(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/gateway_protocol.Gateway/ListWorkflows",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GatewayServer).ListWorkflows(ctx, req.(*ListWorkflowsRequest))
+		return srv.(GatewayServer).FailJob(ctx, req.(*FailJobRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2088,6 +2353,42 @@ func _Gateway_GetWorkflow_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Gateway_ListWorkflows_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListWorkflowsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GatewayServer).ListWorkflows(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/gateway_protocol.Gateway/ListWorkflows",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GatewayServer).ListWorkflows(ctx, req.(*ListWorkflowsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Gateway_PublishMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PublishMessageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GatewayServer).PublishMessage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/gateway_protocol.Gateway/PublishMessage",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GatewayServer).PublishMessage(ctx, req.(*PublishMessageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Gateway_ResolveIncident_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ResolveIncidentRequest)
 	if err := dec(in); err != nil {
@@ -2106,29 +2407,67 @@ func _Gateway_ResolveIncident_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Gateway_SetVariables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetVariablesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GatewayServer).SetVariables(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/gateway_protocol.Gateway/SetVariables",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GatewayServer).SetVariables(ctx, req.(*SetVariablesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Gateway_Topology_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TopologyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GatewayServer).Topology(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/gateway_protocol.Gateway/Topology",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GatewayServer).Topology(ctx, req.(*TopologyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Gateway_UpdateJobRetries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateJobRetriesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GatewayServer).UpdateJobRetries(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/gateway_protocol.Gateway/UpdateJobRetries",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GatewayServer).UpdateJobRetries(ctx, req.(*UpdateJobRetriesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Gateway_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "gateway_protocol.Gateway",
 	HandlerType: (*GatewayServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Topology",
-			Handler:    _Gateway_Topology_Handler,
-		},
-		{
-			MethodName: "DeployWorkflow",
-			Handler:    _Gateway_DeployWorkflow_Handler,
-		},
-		{
-			MethodName: "PublishMessage",
-			Handler:    _Gateway_PublishMessage_Handler,
-		},
-		{
-			MethodName: "UpdateJobRetries",
-			Handler:    _Gateway_UpdateJobRetries_Handler,
-		},
-		{
-			MethodName: "FailJob",
-			Handler:    _Gateway_FailJob_Handler,
+			MethodName: "CancelWorkflowInstance",
+			Handler:    _Gateway_CancelWorkflowInstance_Handler,
 		},
 		{
 			MethodName: "CompleteJob",
@@ -2139,24 +2478,40 @@ var _Gateway_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Gateway_CreateWorkflowInstance_Handler,
 		},
 		{
-			MethodName: "CancelWorkflowInstance",
-			Handler:    _Gateway_CancelWorkflowInstance_Handler,
+			MethodName: "DeployWorkflow",
+			Handler:    _Gateway_DeployWorkflow_Handler,
 		},
 		{
-			MethodName: "UpdateWorkflowInstancePayload",
-			Handler:    _Gateway_UpdateWorkflowInstancePayload_Handler,
-		},
-		{
-			MethodName: "ListWorkflows",
-			Handler:    _Gateway_ListWorkflows_Handler,
+			MethodName: "FailJob",
+			Handler:    _Gateway_FailJob_Handler,
 		},
 		{
 			MethodName: "GetWorkflow",
 			Handler:    _Gateway_GetWorkflow_Handler,
 		},
 		{
+			MethodName: "ListWorkflows",
+			Handler:    _Gateway_ListWorkflows_Handler,
+		},
+		{
+			MethodName: "PublishMessage",
+			Handler:    _Gateway_PublishMessage_Handler,
+		},
+		{
 			MethodName: "ResolveIncident",
 			Handler:    _Gateway_ResolveIncident_Handler,
+		},
+		{
+			MethodName: "SetVariables",
+			Handler:    _Gateway_SetVariables_Handler,
+		},
+		{
+			MethodName: "Topology",
+			Handler:    _Gateway_Topology_Handler,
+		},
+		{
+			MethodName: "UpdateJobRetries",
+			Handler:    _Gateway_UpdateJobRetries_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
@@ -2169,98 +2524,99 @@ var _Gateway_serviceDesc = grpc.ServiceDesc{
 	Metadata: "gateway.proto",
 }
 
-func init() { proto.RegisterFile("gateway.proto", fileDescriptor_gateway_6af7beda0809ab1f) }
+func init() { proto.RegisterFile("gateway.proto", fileDescriptor_gateway_1ef3c0425690f430) }
 
-var fileDescriptor_gateway_6af7beda0809ab1f = []byte{
-	// 1440 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x58, 0x5f, 0x6f, 0x13, 0x47,
-	0x10, 0xcf, 0xd9, 0x8e, 0x13, 0x0f, 0x21, 0x98, 0x0d, 0x31, 0xc6, 0x85, 0xc8, 0x9c, 0xf8, 0x13,
-	0x2a, 0x64, 0x50, 0x5a, 0x51, 0xa9, 0xe5, 0x01, 0x08, 0x09, 0x24, 0x38, 0xe0, 0x1e, 0x14, 0x4a,
-	0x55, 0xb5, 0xba, 0x3b, 0x4f, 0xc8, 0x25, 0xe7, 0xdb, 0xeb, 0xdd, 0x39, 0x91, 0x91, 0x2a, 0xf5,
-	0xb5, 0xaf, 0x3c, 0xb5, 0xea, 0x63, 0x1f, 0xfb, 0xda, 0x7e, 0x82, 0xf6, 0xdb, 0xf4, 0x4b, 0x54,
-	0xbb, 0xb7, 0x7b, 0xbe, 0xbf, 0xb6, 0x69, 0xd5, 0xb7, 0xdd, 0xb9, 0x99, 0xf9, 0xcd, 0xcc, 0xce,
-	0xce, 0xfe, 0x6c, 0x38, 0xfd, 0x46, 0x0f, 0xf0, 0x44, 0x1f, 0x75, 0x5c, 0x8f, 0x06, 0x94, 0xd4,
-	0xc5, 0xf6, 0x5b, 0xbe, 0x35, 0xa9, 0xad, 0x9e, 0x85, 0x33, 0x2f, 0xa8, 0x4b, 0x6d, 0xfa, 0x66,
-	0xa4, 0xe1, 0x77, 0x43, 0xf4, 0x03, 0xf5, 0x57, 0x05, 0x6a, 0x3d, 0xdd, 0x0b, 0xac, 0xc0, 0xa2,
-	0x0e, 0x69, 0xc3, 0x29, 0x57, 0x6e, 0x76, 0xfa, 0x4d, 0xa5, 0xad, 0xac, 0xcf, 0x6b, 0x71, 0x11,
-	0xd9, 0x84, 0x8a, 0x47, 0x6d, 0x6c, 0x96, 0xdb, 0xca, 0xfa, 0xf2, 0xc6, 0xad, 0x4e, 0x1a, 0xa3,
-	0x13, 0x39, 0x1b, 0xaf, 0x1e, 0x78, 0xf4, 0x08, 0x3d, 0x8d, 0xda, 0xa8, 0x71, 0x63, 0xf5, 0x16,
-	0xac, 0xe4, 0x7c, 0x24, 0x00, 0xd5, 0xee, 0xd6, 0xfd, 0x87, 0x5b, 0x5a, 0x7d, 0x8e, 0x2c, 0xc1,
-	0xe2, 0xf6, 0xb3, 0x6e, 0xf7, 0xd9, 0xab, 0x2d, 0xad, 0xae, 0xa8, 0x3f, 0x2a, 0x00, 0xa1, 0xe2,
-	0x8e, 0xb3, 0x4f, 0x49, 0x03, 0xaa, 0x0e, 0xed, 0x63, 0x14, 0xa1, 0xd8, 0x11, 0x02, 0x95, 0x03,
-	0xea, 0x07, 0xcd, 0x52, 0x5b, 0x59, 0xaf, 0x69, 0x7c, 0xcd, 0x64, 0x2e, 0xf5, 0x02, 0x1e, 0xf0,
-	0xbc, 0xc6, 0xd7, 0xe4, 0x33, 0x80, 0x28, 0x27, 0xbf, 0x59, 0x69, 0x97, 0xd7, 0x4f, 0x6d, 0x7c,
-	0x30, 0x21, 0x15, 0x2d, 0xa6, 0xae, 0xfe, 0xa5, 0x40, 0x7d, 0x5c, 0x45, 0xdf, 0xa5, 0x8e, 0x8f,
-	0xe4, 0x0e, 0x2c, 0x18, 0x3c, 0x3e, 0xbf, 0xa9, 0x70, 0x77, 0x17, 0xb3, 0xee, 0xc6, 0x09, 0x68,
-	0x52, 0x99, 0x15, 0xdc, 0xb4, 0x87, 0x7e, 0x80, 0xde, 0x73, 0xeb, 0x2d, 0xf2, 0xc0, 0xe7, 0xb5,
-	0xb8, 0x88, 0xac, 0xc3, 0x99, 0x31, 0xf8, 0x26, 0x1d, 0x3a, 0x32, 0x95, 0xb4, 0x98, 0xdc, 0x84,
-	0xb3, 0x1e, 0xba, 0xb6, 0x65, 0xea, 0x4c, 0xb8, 0xad, 0x9b, 0x01, 0xf5, 0x9a, 0x15, 0xae, 0x9b,
-	0xfd, 0xa0, 0xfe, 0xa9, 0xc0, 0xea, 0x2b, 0xea, 0x1d, 0xed, 0xdb, 0xf4, 0x44, 0x34, 0xc3, 0x33,
-	0xe3, 0x10, 0x4d, 0x5e, 0x31, 0x47, 0x1f, 0x20, 0xaf, 0x6d, 0x4d, 0xe3, 0x6b, 0xf2, 0x18, 0x2a,
-	0xc1, 0xc8, 0x0d, 0x03, 0x5c, 0xde, 0xf8, 0x38, 0x9b, 0x5c, 0xae, 0xab, 0x8e, 0x86, 0x3e, 0x1d,
-	0x7a, 0x26, 0xbe, 0x18, 0xb9, 0xa8, 0x71, 0x0f, 0x64, 0x0d, 0xa0, 0x8f, 0xfb, 0x96, 0xc3, 0x23,
-	0xe7, 0xa9, 0x2c, 0x69, 0x31, 0x89, 0x7a, 0x13, 0x96, 0xe2, 0x56, 0x64, 0x11, 0x2a, 0xdb, 0x3b,
-	0xdd, 0xad, 0xfa, 0x1c, 0x5b, 0x3d, 0xe8, 0xed, 0x3d, 0xad, 0x2b, 0x6c, 0xf5, 0xfa, 0xfe, 0x5e,
-	0xb7, 0x5e, 0x52, 0xbf, 0x81, 0xd5, 0x87, 0xe8, 0xda, 0x74, 0x94, 0xc2, 0x27, 0x5b, 0x50, 0x3b,
-	0x11, 0x22, 0x79, 0x24, 0xd7, 0x67, 0x8c, 0x5a, 0x1b, 0x5b, 0xaa, 0x3f, 0x29, 0x50, 0x97, 0x4a,
-	0x7b, 0x18, 0xe8, 0x7d, 0x3d, 0xd0, 0xc9, 0x15, 0x38, 0x6d, 0xb8, 0x03, 0xa7, 0xe7, 0x51, 0x13,
-	0x7d, 0x5f, 0x74, 0x61, 0x4d, 0x4b, 0x0a, 0x49, 0x13, 0x16, 0x8e, 0xd1, 0xf3, 0x59, 0x96, 0xe1,
-	0xb1, 0xca, 0x2d, 0x3b, 0x74, 0x89, 0xf0, 0x04, 0x47, 0xbc, 0x06, 0x65, 0x2d, 0x2e, 0x22, 0x2a,
-	0x2c, 0x79, 0xa2, 0x08, 0x4f, 0xd9, 0x51, 0x54, 0x38, 0x40, 0x42, 0xa6, 0xda, 0xd0, 0x48, 0xa7,
-	0x2e, 0x9a, 0xb1, 0x0e, 0xe5, 0x23, 0x1c, 0xf1, 0xa8, 0xca, 0x1a, 0x5b, 0x92, 0x7b, 0xf1, 0x6a,
-	0x94, 0x78, 0x35, 0xd4, 0xe2, 0x6a, 0xc8, 0x44, 0xe3, 0x85, 0xf8, 0x4d, 0x81, 0xd5, 0xde, 0xd0,
-	0xb0, 0x2d, 0xff, 0x60, 0x0f, 0x7d, 0x5f, 0x7f, 0x83, 0xb2, 0xd2, 0x79, 0xed, 0x72, 0x0d, 0x96,
-	0x4d, 0xea, 0x79, 0x68, 0xf3, 0x8e, 0x63, 0x49, 0x86, 0x57, 0x32, 0x25, 0x65, 0xcd, 0x10, 0x58,
-	0x03, 0x7c, 0x41, 0xbb, 0xd6, 0x31, 0x8a, 0x42, 0xc4, 0x24, 0xe4, 0x22, 0xd4, 0x06, 0x21, 0xda,
-	0x4e, 0x5f, 0x14, 0x61, 0x2c, 0x60, 0x15, 0x76, 0xf5, 0x91, 0x4d, 0xf5, 0x7e, 0x73, 0x9e, 0x7f,
-	0x93, 0x5b, 0xb5, 0x09, 0x8d, 0x74, 0xb0, 0x61, 0x6d, 0xd4, 0x27, 0x70, 0xfe, 0x0b, 0xb7, 0xaf,
-	0x07, 0xb8, 0x4b, 0x0d, 0x0d, 0x03, 0xcf, 0x42, 0x5f, 0x26, 0xd2, 0x80, 0xea, 0x21, 0x35, 0x9e,
-	0x44, 0x95, 0x13, 0x3b, 0x06, 0xe3, 0x85, 0x9a, 0xf2, 0x20, 0xc5, 0x56, 0x6d, 0x41, 0x33, 0xeb,
-	0x4c, 0x00, 0xed, 0xc3, 0xf2, 0xb6, 0x6e, 0xd9, 0xfc, 0xcb, 0xbf, 0xf4, 0xcf, 0xda, 0x00, 0x3d,
-	0x8f, 0x7a, 0x22, 0x09, 0x5e, 0xa0, 0x9a, 0x96, 0x90, 0xb1, 0x99, 0x1e, 0xe1, 0x08, 0xe8, 0x6d,
-	0x20, 0x9b, 0x74, 0xe0, 0xda, 0x28, 0x02, 0x9b, 0x0a, 0x2f, 0xab, 0x58, 0x4a, 0x56, 0x71, 0x15,
-	0x56, 0x12, 0x7e, 0x84, 0xfb, 0x5f, 0x14, 0xb8, 0xb4, 0xe9, 0xa1, 0x1e, 0xa0, 0x6c, 0x98, 0x1d,
-	0xc7, 0x0f, 0x74, 0xc7, 0x8c, 0x5a, 0x22, 0xd5, 0xe0, 0x4a, 0xb6, 0xc1, 0x33, 0x57, 0xa8, 0x34,
-	0xe5, 0x0a, 0x95, 0x93, 0x57, 0x28, 0x16, 0x74, 0x25, 0x19, 0xf4, 0xef, 0x0a, 0xac, 0x15, 0x45,
-	0x27, 0xee, 0xc7, 0xff, 0x1f, 0xde, 0x6d, 0x58, 0x39, 0x49, 0xa1, 0x33, 0xa4, 0x79, 0x8e, 0x94,
-	0xf7, 0x49, 0xfd, 0x1c, 0x2e, 0x6d, 0xb2, 0xb5, 0x5d, 0x54, 0xd3, 0x02, 0x97, 0x4a, 0xb1, 0xcb,
-	0x36, 0xac, 0x15, 0xb9, 0x14, 0x27, 0xe9, 0xc2, 0x95, 0xb0, 0x7f, 0xd3, 0x1a, 0xbd, 0xb0, 0x98,
-	0x12, 0xbb, 0x03, 0x04, 0x6d, 0x1c, 0xa0, 0x13, 0x64, 0xa1, 0x73, 0xbe, 0x4c, 0x68, 0xa9, 0xeb,
-	0x70, 0x75, 0x0a, 0xa2, 0x08, 0xed, 0x2e, 0x9c, 0xeb, 0x5a, 0x7e, 0x20, 0xd5, 0xa2, 0x4b, 0x3a,
-	0xd3, 0xec, 0x55, 0x5f, 0xc3, 0x6a, 0xca, 0x5a, 0x1c, 0xfd, 0xbd, 0xec, 0xb3, 0xf0, 0x9e, 0x83,
-	0xf0, 0x18, 0xc8, 0x23, 0x0c, 0xd2, 0xcf, 0xcd, 0xf4, 0x96, 0x2a, 0x7e, 0x0e, 0x32, 0x29, 0x95,
-	0xf3, 0x52, 0xfa, 0x43, 0x81, 0x95, 0x04, 0xf0, 0xcc, 0xcd, 0xfc, 0x1f, 0x91, 0x67, 0x79, 0x8c,
-	0x18, 0x06, 0x33, 0xfa, 0x72, 0x60, 0xcb, 0x51, 0x2c, 0xb6, 0xea, 0xcf, 0x0a, 0xac, 0xdc, 0x37,
-	0x03, 0xeb, 0x38, 0x1c, 0x93, 0x7e, 0xec, 0xd9, 0xe0, 0x8c, 0x42, 0x3c, 0x1b, 0x9c, 0x1b, 0x34,
-	0xa0, 0xca, 0x02, 0x47, 0x4f, 0xb4, 0x8d, 0xd8, 0x31, 0xef, 0xec, 0x51, 0xa0, 0xc3, 0x40, 0xbc,
-	0x11, 0x72, 0xcb, 0x2c, 0xf4, 0x01, 0x27, 0x45, 0x21, 0xd1, 0x11, 0x3b, 0x96, 0xd9, 0x3e, 0x06,
-	0xe6, 0xc1, 0x4b, 0xdd, 0xb3, 0x74, 0xc3, 0xc6, 0xe6, 0x7c, 0xbb, 0xcc, 0x32, 0x4b, 0x08, 0xd5,
-	0x77, 0x25, 0x80, 0x5d, 0x6a, 0x3c, 0x46, 0xbd, 0xcf, 0xc8, 0xd8, 0x7b, 0x5f, 0xb1, 0x19, 0xe7,
-	0xc4, 0x5d, 0xb8, 0x20, 0x8d, 0x1f, 0x46, 0x44, 0xe7, 0x65, 0x62, 0x72, 0x14, 0x2b, 0xa4, 0x0f,
-	0xb8, 0x92, 0x3d, 0xe0, 0x8b, 0x50, 0x93, 0x97, 0x50, 0xbe, 0x84, 0x63, 0x41, 0xc1, 0xe5, 0xad,
-	0x16, 0x5d, 0x5e, 0xf5, 0x87, 0x12, 0x2c, 0xc9, 0x03, 0xeb, 0xef, 0x52, 0x23, 0x87, 0x4e, 0x90,
-	0x18, 0x1b, 0x94, 0x67, 0x77, 0x17, 0xe0, 0x30, 0x2a, 0x25, 0xcf, 0x2a, 0x97, 0x04, 0x8f, 0xcb,
-	0xad, 0xc5, 0xf4, 0x59, 0x21, 0xcd, 0xa1, 0x1f, 0xd0, 0x81, 0x74, 0x10, 0x36, 0x59, 0x52, 0x18,
-	0xeb, 0x8f, 0xf9, 0x74, 0x7f, 0xc8, 0x17, 0xb4, 0x9a, 0x7c, 0x41, 0x5b, 0xb0, 0xd8, 0x47, 0xbd,
-	0x6f, 0x5b, 0x0e, 0x36, 0x17, 0x78, 0x02, 0xd1, 0x3e, 0x3e, 0xa5, 0x16, 0x93, 0x53, 0x6a, 0x17,
-	0xce, 0x25, 0x5b, 0x56, 0xdc, 0xb5, 0x0d, 0xa8, 0x1c, 0x52, 0x43, 0x0e, 0x8e, 0xb5, 0x6c, 0x76,
-	0xf1, 0xba, 0x69, 0x5c, 0x57, 0xfd, 0x14, 0x1a, 0x8c, 0xcf, 0xda, 0xc7, 0xb8, 0xe3, 0x98, 0x56,
-	0x1f, 0x9d, 0x20, 0x36, 0x33, 0x2c, 0x21, 0x8a, 0xdd, 0xdc, 0x98, 0x48, 0xbd, 0x00, 0xe7, 0x33,
-	0xb6, 0x61, 0x28, 0x1b, 0x7f, 0x03, 0x2c, 0x3c, 0x0a, 0xe1, 0xc9, 0x73, 0x58, 0x94, 0x3f, 0x48,
-	0xc8, 0xe5, 0x6c, 0x50, 0xa9, 0x9f, 0x7c, 0x2d, 0x75, 0x92, 0x8a, 0x18, 0xbf, 0x73, 0x04, 0x61,
-	0x39, 0x49, 0x2f, 0x49, 0x0e, 0x7f, 0xce, 0xe5, 0xde, 0xad, 0xf5, 0xe9, 0x8a, 0x71, 0x98, 0x24,
-	0x53, 0xcb, 0x83, 0xc9, 0x25, 0x9e, 0x79, 0x30, 0x05, 0xa4, 0x6f, 0x8e, 0x1c, 0x41, 0x3d, 0xcd,
-	0xd4, 0xc8, 0x8d, 0xac, 0x7d, 0x01, 0x35, 0x6c, 0x7d, 0x38, 0x8b, 0x6a, 0x04, 0xd6, 0x83, 0x05,
-	0x41, 0xc9, 0x48, 0x3b, 0x6b, 0x98, 0x64, 0x85, 0xad, 0xcb, 0x13, 0x34, 0x22, 0x8f, 0x5f, 0xc3,
-	0xa9, 0x18, 0x13, 0x23, 0x57, 0xb2, 0x36, 0x59, 0xc2, 0xd7, 0xba, 0x3a, 0x45, 0x2b, 0xf2, 0xfe,
-	0x3d, 0x34, 0xf2, 0x19, 0x13, 0xc9, 0xf9, 0x7d, 0x3f, 0x91, 0xf9, 0xb5, 0x6e, 0xcf, 0x6e, 0x90,
-	0x80, 0xcf, 0xe5, 0x29, 0xb9, 0xf0, 0x93, 0x48, 0x52, 0x2e, 0xfc, 0x64, 0x0a, 0x34, 0x47, 0xde,
-	0x29, 0x70, 0x69, 0x22, 0x27, 0x21, 0x77, 0x8a, 0x4e, 0x7f, 0x32, 0x6d, 0x6a, 0x7d, 0xf2, 0xde,
-	0x76, 0x51, 0x50, 0xfa, 0x78, 0x06, 0xb3, 0x09, 0x44, 0xae, 0x16, 0xcf, 0x9a, 0xd8, 0xa3, 0xda,
-	0xba, 0x36, 0x4d, 0x4d, 0x02, 0xdc, 0x56, 0x88, 0x01, 0xa7, 0x13, 0x1c, 0x89, 0xe4, 0x18, 0xe7,
-	0x51, 0xb0, 0xd6, 0xf5, 0xa9, 0x7a, 0xf1, 0xbe, 0x8d, 0x71, 0x96, 0xbc, 0xbe, 0xcd, 0x72, 0xa9,
-	0xbc, 0xbe, 0xcd, 0x21, 0x3e, 0xea, 0x1c, 0x39, 0x80, 0x33, 0xa9, 0xf1, 0x48, 0x72, 0x66, 0x42,
-	0xfe, 0xf4, 0x6d, 0xdd, 0x98, 0x41, 0x53, 0x22, 0x3d, 0xb8, 0x0c, 0x17, 0x2c, 0xda, 0x79, 0x8b,
-	0x68, 0x60, 0x27, 0xf1, 0x27, 0x9b, 0x49, 0xed, 0xde, 0xdc, 0x57, 0x25, 0xd7, 0x30, 0xaa, 0x7c,
-	0xff, 0xd1, 0x3f, 0x01, 0x00, 0x00, 0xff, 0xff, 0x6a, 0xfa, 0x8f, 0x7f, 0x85, 0x13, 0x00, 0x00,
+var fileDescriptor_gateway_1ef3c0425690f430 = []byte{
+	// 1451 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x58, 0x4b, 0x6f, 0xdb, 0xc6,
+	0x13, 0x17, 0xf5, 0xf0, 0x63, 0xec, 0xd8, 0xca, 0xfa, 0x11, 0x46, 0xff, 0xc4, 0x50, 0x16, 0x79,
+	0xe8, 0x5f, 0x04, 0x4a, 0xe0, 0x16, 0x3d, 0xb4, 0x39, 0x24, 0x71, 0xec, 0x44, 0x8e, 0x9c, 0xb8,
+	0x4c, 0x9a, 0x34, 0x45, 0xd1, 0x80, 0xa4, 0xd6, 0x31, 0x6d, 0x8a, 0xcb, 0x92, 0x94, 0x03, 0x05,
+	0x28, 0xd0, 0x6b, 0xaf, 0x3d, 0xb5, 0xe8, 0xb1, 0xc7, 0x5e, 0x5b, 0xf4, 0x03, 0xb4, 0x1f, 0xac,
+	0xd8, 0xd5, 0x2e, 0xb5, 0x24, 0x57, 0xb6, 0xd2, 0xa2, 0xb7, 0x9d, 0xe1, 0x3c, 0x7f, 0x33, 0x3b,
+	0x3b, 0x12, 0x9c, 0x7b, 0x63, 0x27, 0xe4, 0xad, 0x3d, 0x6c, 0x87, 0x11, 0x4d, 0x28, 0xaa, 0x0b,
+	0xf2, 0x35, 0x27, 0x5d, 0xea, 0xe3, 0x9f, 0x0c, 0x58, 0xb9, 0xe7, 0x26, 0xde, 0x89, 0x9d, 0x90,
+	0x5d, 0xea, 0xc4, 0x16, 0xf9, 0x66, 0x40, 0xe2, 0x04, 0x21, 0xa8, 0x26, 0xc3, 0x90, 0x98, 0x46,
+	0xd3, 0x68, 0xcd, 0x5b, 0xfc, 0x8c, 0xd6, 0x61, 0xe6, 0x2d, 0x8d, 0x8e, 0x49, 0x64, 0x96, 0x39,
+	0x57, 0x50, 0xc8, 0x84, 0xd9, 0xc4, 0xeb, 0x13, 0x3a, 0x48, 0xcc, 0x4a, 0xd3, 0x68, 0x55, 0x2c,
+	0x49, 0x32, 0x0d, 0xbb, 0x4f, 0x07, 0x41, 0x62, 0x56, 0x9b, 0x46, 0xab, 0x66, 0x09, 0x0a, 0x5d,
+	0x85, 0x73, 0x07, 0x24, 0x71, 0x0f, 0x5f, 0xd8, 0x91, 0x67, 0x3b, 0x3e, 0x31, 0x6b, 0xcd, 0x4a,
+	0x6b, 0xde, 0xca, 0x32, 0xf1, 0x2e, 0xac, 0x66, 0x43, 0x8b, 0x43, 0x1a, 0xc4, 0x04, 0x6d, 0x42,
+	0xf5, 0x88, 0x3a, 0xb1, 0x69, 0x34, 0x2b, 0xad, 0x85, 0xcd, 0x8d, 0x76, 0x3e, 0xa9, 0xb6, 0xd4,
+	0xea, 0xed, 0x52, 0xc7, 0xe2, 0xb2, 0xf8, 0xbb, 0x32, 0x2c, 0xaa, 0x6c, 0x54, 0x87, 0xca, 0x31,
+	0x19, 0xf2, 0xfc, 0x2a, 0x16, 0x3b, 0xa6, 0x29, 0x97, 0x95, 0x94, 0xef, 0x00, 0x1c, 0x51, 0xe7,
+	0x11, 0xb1, 0x7b, 0x24, 0x8a, 0x79, 0x76, 0x0b, 0x9b, 0x97, 0x8a, 0x0e, 0x77, 0x53, 0x19, 0x4b,
+	0x91, 0x67, 0x69, 0xba, 0x83, 0x38, 0xa1, 0x7d, 0x69, 0xa0, 0xca, 0x4d, 0x67, 0x99, 0x0a, 0xac,
+	0xb5, 0x3c, 0xac, 0x11, 0x49, 0x22, 0x8f, 0xc4, 0xe6, 0x0c, 0x47, 0x4f, 0x92, 0xa8, 0x01, 0x73,
+	0x3d, 0x62, 0xf7, 0x7c, 0x2f, 0x20, 0xe6, 0x2c, 0x4f, 0x20, 0xa5, 0x99, 0x56, 0x68, 0x0f, 0x7d,
+	0x6a, 0xf7, 0xcc, 0x39, 0x6e, 0x4e, 0x92, 0xf8, 0x87, 0x32, 0xc0, 0x38, 0x50, 0x74, 0x1b, 0x56,
+	0x98, 0xa3, 0x03, 0x9f, 0xbe, 0xed, 0x04, 0x71, 0x62, 0x07, 0x2e, 0x79, 0x9c, 0x02, 0xa2, 0xfb,
+	0xc4, 0xd2, 0x71, 0xc2, 0x7e, 0xb0, 0x1f, 0x51, 0x97, 0xc4, 0x71, 0xa7, 0x27, 0x90, 0xca, 0x32,
+	0xd1, 0x1d, 0xb8, 0x28, 0x95, 0x1f, 0x90, 0x03, 0x2f, 0xf0, 0x12, 0x8f, 0x06, 0x2f, 0x48, 0x14,
+	0x7b, 0x34, 0xe0, 0x08, 0xd6, 0xac, 0xc9, 0x02, 0xa8, 0x09, 0x0b, 0xf2, 0x23, 0x8b, 0xa6, 0xca,
+	0xa3, 0x51, 0x59, 0xe8, 0x12, 0xcc, 0x13, 0x9f, 0xf4, 0x49, 0x90, 0x74, 0x7a, 0x02, 0xb1, 0x31,
+	0x03, 0xb5, 0x01, 0x49, 0x42, 0x49, 0x6a, 0x86, 0x9b, 0xd1, 0x7c, 0xc1, 0x9f, 0xc1, 0xe5, 0x2d,
+	0x76, 0xf6, 0x5f, 0xe6, 0x12, 0x96, 0x17, 0xe1, 0xbd, 0x61, 0xc2, 0x4d, 0xd8, 0x98, 0x64, 0x72,
+	0xd4, 0xc0, 0x78, 0x07, 0xd0, 0x16, 0xed, 0x87, 0x3e, 0xe1, 0x8d, 0x2d, 0x3d, 0xad, 0xc3, 0xcc,
+	0x11, 0x75, 0xc6, 0xc6, 0x05, 0xa5, 0x56, 0xb4, 0x9c, 0xad, 0xe8, 0x1a, 0xac, 0x64, 0xec, 0x08,
+	0xf3, 0x3f, 0x1b, 0x70, 0x79, 0x2b, 0x22, 0x76, 0x42, 0x26, 0x25, 0x95, 0x43, 0xd9, 0x28, 0xa2,
+	0x3c, 0x5d, 0xad, 0x4d, 0x98, 0x3d, 0xc9, 0x54, 0x56, 0x92, 0x6a, 0xd0, 0xd5, 0x6c, 0xd0, 0xbf,
+	0x19, 0xb0, 0x31, 0x29, 0x3a, 0x71, 0xc1, 0xff, 0xfb, 0xf0, 0x26, 0x54, 0xb5, 0x36, 0xb9, 0xaa,
+	0x5f, 0xc3, 0xda, 0x03, 0x12, 0xfa, 0x74, 0x28, 0xa3, 0x96, 0x58, 0x6e, 0xc3, 0xbc, 0x94, 0x97,
+	0x23, 0xe9, 0x46, 0x71, 0x42, 0xe4, 0xb4, 0x9e, 0x3a, 0x47, 0xc4, 0x4d, 0xac, 0xb1, 0x26, 0xfe,
+	0xd3, 0x80, 0x35, 0xad, 0x10, 0x9b, 0x4b, 0x81, 0xdd, 0x4f, 0x47, 0x31, 0x3b, 0xa3, 0x47, 0xca,
+	0xac, 0x5a, 0xda, 0xfc, 0x68, 0x4a, 0x7f, 0x6d, 0x8b, 0xc4, 0x74, 0x10, 0xb9, 0xe4, 0xf9, 0x30,
+	0x24, 0x62, 0xc2, 0x6d, 0x00, 0xf4, 0xd2, 0x5b, 0xc8, 0x61, 0x5a, 0xb4, 0x14, 0x0e, 0xbe, 0x09,
+	0x8b, 0xaa, 0x16, 0x9a, 0x83, 0xea, 0x4e, 0xa7, 0xbb, 0x5d, 0x2f, 0xb1, 0xd3, 0xfd, 0xfd, 0xbd,
+	0x27, 0x75, 0x83, 0x9d, 0x5e, 0xdd, 0xdb, 0xeb, 0xd6, 0xcb, 0xd8, 0x87, 0xf5, 0x3c, 0x4a, 0xa2,
+	0xa6, 0xc5, 0x79, 0x7b, 0x57, 0x05, 0xae, 0xcc, 0x81, 0xc3, 0x93, 0x13, 0xd9, 0x23, 0x89, 0xdd,
+	0xb3, 0x13, 0x5b, 0xc5, 0xec, 0x47, 0x03, 0xea, 0xf9, 0xef, 0xc5, 0xd6, 0x30, 0xce, 0x68, 0x8d,
+	0x72, 0xb6, 0x35, 0x72, 0xcd, 0x57, 0x29, 0x36, 0x1f, 0x86, 0xc5, 0x48, 0x40, 0xf2, 0x84, 0x15,
+	0x66, 0xd4, 0xe0, 0x19, 0x1e, 0x3e, 0x80, 0xa5, 0x1d, 0xdb, 0xf3, 0xa7, 0xbb, 0xde, 0x72, 0xcc,
+	0x97, 0xb3, 0x63, 0x1e, 0xc3, 0x22, 0x89, 0x22, 0x1a, 0xed, 0x91, 0x38, 0xb6, 0xdf, 0x10, 0x1e,
+	0xca, 0xbc, 0x95, 0xe1, 0xe1, 0xf3, 0xb0, 0x9c, 0xfa, 0x11, 0xd7, 0xff, 0x04, 0xd0, 0x43, 0x92,
+	0xe4, 0xdb, 0xf4, 0xec, 0x3b, 0x35, 0x19, 0x92, 0x02, 0xa4, 0x15, 0x0d, 0xa4, 0xf8, 0x77, 0x03,
+	0x56, 0x32, 0x8e, 0xa7, 0xbe, 0xcd, 0xff, 0xd2, 0xf3, 0x34, 0x05, 0x61, 0x3e, 0x98, 0xd2, 0x17,
+	0x7d, 0x5f, 0x3c, 0x1a, 0x92, 0xc4, 0x77, 0x60, 0xb5, 0xeb, 0xc5, 0x69, 0xdc, 0xe9, 0x0a, 0x34,
+	0x55, 0x23, 0xe1, 0x57, 0xb0, 0x96, 0xd3, 0x16, 0x69, 0xdf, 0x2d, 0xce, 0x85, 0xf7, 0x6c, 0xef,
+	0x5f, 0x0d, 0x58, 0xdb, 0x1f, 0x38, 0xbe, 0x17, 0x1f, 0x8a, 0x72, 0x2b, 0xdb, 0x59, 0x61, 0x24,
+	0x5c, 0x87, 0x25, 0x97, 0x46, 0x11, 0xf1, 0x6d, 0x76, 0x6f, 0x19, 0xd2, 0xa3, 0x99, 0x98, 0xe3,
+	0xb2, 0x0b, 0xcf, 0xd6, 0xb3, 0xe7, 0xb4, 0xeb, 0x9d, 0x10, 0xd1, 0xde, 0x0a, 0x87, 0xbd, 0xaf,
+	0xfd, 0x91, 0xb7, 0x8e, 0x9c, 0xdd, 0x63, 0x86, 0x3a, 0xd7, 0x6b, 0xd9, 0xb9, 0x6e, 0xc2, 0x7a,
+	0x3e, 0x58, 0xd1, 0x90, 0x9f, 0xc0, 0x3a, 0x1b, 0x21, 0xfe, 0x09, 0xe9, 0x04, 0xae, 0xd7, 0x23,
+	0x41, 0xa2, 0x34, 0xa5, 0x27, 0x58, 0x4a, 0x6b, 0x28, 0x2c, 0x7c, 0x11, 0x2e, 0x14, 0x74, 0x85,
+	0xd9, 0xf3, 0xb0, 0xfc, 0x9c, 0x86, 0xd4, 0xa7, 0x6f, 0x86, 0xc2, 0x1e, 0xfe, 0xcb, 0x80, 0xfa,
+	0x98, 0x27, 0x0a, 0xf1, 0x31, 0xcc, 0x3a, 0x11, 0x3d, 0x66, 0xfb, 0xd7, 0xa8, 0x0c, 0x9a, 0x05,
+	0xee, 0x3e, 0x17, 0xe8, 0x04, 0x07, 0xd4, 0x92, 0xc2, 0x2c, 0x38, 0xd7, 0x1f, 0xc4, 0x09, 0x89,
+	0x9e, 0x79, 0xef, 0x88, 0xe8, 0x4c, 0x95, 0x85, 0x5a, 0xb0, 0x1c, 0xda, 0x51, 0xc2, 0x07, 0x65,
+	0xbc, 0xc5, 0xf7, 0xdc, 0xd1, 0x3b, 0x93, 0x67, 0xa3, 0x9b, 0x70, 0x3e, 0x22, 0xa1, 0xef, 0xb9,
+	0xbc, 0x0c, 0x3b, 0xb6, 0x9b, 0xd0, 0x48, 0xec, 0xc4, 0xc5, 0x0f, 0xf8, 0x7b, 0x03, 0x60, 0x1c,
+	0x11, 0x9b, 0x1c, 0x01, 0xed, 0x11, 0xd1, 0x81, 0x35, 0x4b, 0x50, 0xac, 0x0b, 0x0e, 0x69, 0x9c,
+	0xc8, 0x85, 0x95, 0x9d, 0x19, 0x2f, 0xa4, 0x91, 0x8c, 0x83, 0x9f, 0xd1, 0xa7, 0x00, 0xe3, 0x78,
+	0xcc, 0x2a, 0xc7, 0xe0, 0x7f, 0x45, 0x0c, 0xf6, 0xa5, 0x8c, 0xa5, 0x88, 0xe3, 0x5f, 0x0c, 0x98,
+	0x4f, 0xbf, 0x30, 0x4c, 0xd2, 0x6f, 0x69, 0x3c, 0x2a, 0x0b, 0x6d, 0x41, 0x35, 0xa2, 0xfe, 0xa8,
+	0xb1, 0x96, 0x36, 0x6f, 0x9d, 0xe2, 0x66, 0x7c, 0x1a, 0xe5, 0x6a, 0x51, 0x9f, 0x58, 0x5c, 0x19,
+	0xdf, 0x82, 0x15, 0xcd, 0x47, 0x04, 0x30, 0xd3, 0xdd, 0xbe, 0xf7, 0x60, 0xdb, 0xaa, 0x97, 0xd0,
+	0x22, 0xcc, 0xed, 0x3c, 0xed, 0x76, 0x9f, 0xbe, 0xdc, 0xb6, 0xea, 0x06, 0x7e, 0x0c, 0x17, 0x3e,
+	0x0f, 0x7b, 0xb6, 0xd8, 0x83, 0xf8, 0xf8, 0xfc, 0xc7, 0x73, 0x17, 0x37, 0xc0, 0x2c, 0x1a, 0x13,
+	0x4d, 0x37, 0x84, 0x95, 0x67, 0x24, 0x91, 0x3f, 0x51, 0x52, 0x27, 0xfa, 0xb5, 0xd3, 0x98, 0xb4,
+	0x76, 0xb2, 0x4b, 0x76, 0x22, 0x6d, 0x88, 0xfa, 0x8d, 0x19, 0x68, 0x15, 0x6a, 0x3e, 0x75, 0x6d,
+	0x9f, 0x83, 0x38, 0x67, 0x8d, 0x08, 0xbc, 0x0e, 0xab, 0x59, 0xd7, 0xa3, 0x90, 0x36, 0xff, 0x00,
+	0x98, 0x7d, 0x38, 0x42, 0x19, 0xd9, 0xe3, 0x5f, 0x39, 0xec, 0x27, 0x13, 0xba, 0x36, 0xf9, 0xc7,
+	0x91, 0xf2, 0x6b, 0xaf, 0x71, 0xfd, 0x2c, 0x31, 0x91, 0x7d, 0xe9, 0xb6, 0x81, 0xbe, 0x85, 0x75,
+	0xfd, 0x7a, 0x8b, 0x34, 0xc5, 0x3e, 0x75, 0xb7, 0x6e, 0xdc, 0x9e, 0x5e, 0x41, 0x06, 0x80, 0xbe,
+	0x82, 0x05, 0x65, 0xe7, 0x45, 0x57, 0x35, 0x26, 0x0a, 0xab, 0x75, 0xe3, 0xda, 0x19, 0x52, 0xa9,
+	0x75, 0x96, 0x9c, 0x76, 0x37, 0xd5, 0x26, 0x77, 0xda, 0x8e, 0xad, 0x4d, 0xee, 0xd4, 0xb5, 0x17,
+	0x97, 0x10, 0x81, 0xa5, 0xec, 0xfa, 0x84, 0x34, 0xab, 0xa4, 0x76, 0x0d, 0x6d, 0xb4, 0xce, 0x16,
+	0x4c, 0xdd, 0xec, 0xc3, 0xac, 0x58, 0x1a, 0x50, 0xb3, 0xa8, 0x96, 0xdd, 0x5b, 0x1a, 0x57, 0x4e,
+	0x91, 0x50, 0xab, 0xa2, 0x3c, 0xfd, 0xba, 0xaa, 0x14, 0x57, 0x12, 0x5d, 0x55, 0x34, 0xfb, 0x03,
+	0x2e, 0x21, 0x07, 0xce, 0x65, 0xde, 0x58, 0xa4, 0xe9, 0x57, 0xdd, 0x13, 0xde, 0xb8, 0x71, 0xa6,
+	0x9c, 0x0a, 0x7d, 0xf6, 0xf9, 0xd2, 0x41, 0xaf, 0x7d, 0x8d, 0x75, 0xd0, 0x4f, 0x78, 0x09, 0x4b,
+	0xe8, 0x10, 0x96, 0x73, 0xef, 0x19, 0xd2, 0xa8, 0xeb, 0x9f, 0xcb, 0xc6, 0xff, 0xa7, 0x90, 0x4c,
+	0x3d, 0xbd, 0x86, 0x45, 0x75, 0x5c, 0xe8, 0x46, 0x81, 0x66, 0x92, 0xe9, 0x46, 0x81, 0x6e, 0xea,
+	0xe0, 0x12, 0x7a, 0x06, 0x73, 0xf2, 0xad, 0x45, 0x9a, 0x26, 0xc9, 0xbd, 0xcd, 0x0d, 0x7c, 0x9a,
+	0x48, 0x6a, 0xf4, 0x18, 0xea, 0xf9, 0xd9, 0x8b, 0x34, 0x69, 0x4f, 0x18, 0xf6, 0x8d, 0x0f, 0xa6,
+	0x11, 0x95, 0xce, 0xee, 0x5f, 0x81, 0x8b, 0x1e, 0x6d, 0xbf, 0x23, 0xc4, 0x21, 0xed, 0xcc, 0x1f,
+	0x65, 0x2e, 0xf5, 0xf7, 0x4b, 0x5f, 0x96, 0x43, 0xc7, 0x99, 0xe1, 0xf4, 0x87, 0x7f, 0x07, 0x00,
+	0x00, 0xff, 0xff, 0xb5, 0x0f, 0xa8, 0xae, 0x49, 0x13, 0x00, 0x00,
 }

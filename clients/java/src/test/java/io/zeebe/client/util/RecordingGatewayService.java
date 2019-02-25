@@ -44,12 +44,12 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowMetadata;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -78,9 +78,7 @@ public class RecordingGatewayService extends GatewayImplBase {
     addRequestHandler(
         CancelWorkflowInstanceRequest.class,
         r -> CancelWorkflowInstanceResponse.getDefaultInstance());
-    addRequestHandler(
-        UpdateWorkflowInstancePayloadRequest.class,
-        r -> UpdateWorkflowInstancePayloadResponse.getDefaultInstance());
+    addRequestHandler(SetVariablesRequest.class, r -> SetVariablesResponse.getDefaultInstance());
     addRequestHandler(
         UpdateJobRetriesRequest.class, r -> UpdateJobRetriesResponse.getDefaultInstance());
     addRequestHandler(FailJobRequest.class, r -> FailJobResponse.getDefaultInstance());
@@ -124,9 +122,8 @@ public class RecordingGatewayService extends GatewayImplBase {
   }
 
   @Override
-  public void updateWorkflowInstancePayload(
-      UpdateWorkflowInstancePayloadRequest request,
-      StreamObserver<UpdateWorkflowInstancePayloadResponse> responseObserver) {
+  public void setVariables(
+      SetVariablesRequest request, StreamObserver<SetVariablesResponse> responseObserver) {
     handle(request, responseObserver);
   }
 

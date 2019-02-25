@@ -29,8 +29,8 @@ import io.zeebe.client.api.commands.DeployWorkflowCommandStep1;
 import io.zeebe.client.api.commands.FailJobCommandStep1;
 import io.zeebe.client.api.commands.PublishMessageCommandStep1;
 import io.zeebe.client.api.commands.ResolveIncidentCommandStep1;
+import io.zeebe.client.api.commands.SetVariablesCommandStep1;
 import io.zeebe.client.api.commands.TopologyRequestStep1;
-import io.zeebe.client.api.commands.UpdatePayloadWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.commands.UpdateRetriesJobCommandStep1;
 import io.zeebe.client.api.commands.WorkflowRequestStep1;
 import io.zeebe.client.api.commands.WorkflowResourceRequestStep1;
@@ -46,7 +46,7 @@ import io.zeebe.client.impl.workflow.GetWorkflowCommandImpl;
 import io.zeebe.client.impl.workflow.ListWorkflowsCommandImpl;
 import io.zeebe.client.impl.workflow.PublishMessageCommandImpl;
 import io.zeebe.client.impl.workflow.ResolveIncidentCommandImpl;
-import io.zeebe.client.impl.workflow.UpdateWorkflowInstancePayloadCommandImpl;
+import io.zeebe.client.impl.workflow.SetVariablesCommandImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.util.CloseableSilently;
@@ -164,10 +164,8 @@ public class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public UpdatePayloadWorkflowInstanceCommandStep1 newUpdatePayloadCommand(
-      final long elementInstanceKey) {
-    return new UpdateWorkflowInstancePayloadCommandImpl(
-        asyncStub, objectMapper, elementInstanceKey);
+  public SetVariablesCommandStep1 newSetVariablesCommand(final long elementInstanceKey) {
+    return new SetVariablesCommandImpl(asyncStub, objectMapper, elementInstanceKey);
   }
 
   @Override

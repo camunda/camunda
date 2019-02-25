@@ -279,14 +279,14 @@ message UpdateJobRetriesRequest {
 message UpdateJobRetriesResponse {
 }
 
-message UpdateWorkflowInstancePayloadRequest {
+message SetVariablesRequest {
   // the unique identifier of a particular element; can be the workflow instance key (as
   // obtained during instance creation), or a given element, such as a service task (see
   // elementInstanceKey on the JobHeaders message)
   int64 elementInstanceKey = 1;
-  // the new payload as a JSON document; see CreateWorkflowInstanceRequest for the rules
-  // about payloads
-  string payload = 2;
+  // a JSON serialized document describing variables as key value pairs; the root of the document
+  // must be an object
+  string variables = 2;
   // if true, the payload will be merged strictly into the local scope (as indicated by
   // elementInstanceKey); this means the payload is not propagated to upper scopes.
   // for example, let's say we have two scopes, '1' and '2', with each having effective payloads as:
@@ -297,7 +297,7 @@ message UpdateWorkflowInstancePayloadRequest {
   bool local = 3;
 }
 
-message UpdateWorkflowInstancePayloadResponse {
+message SetVariablesResponse {
 }
 
 service Gateway {
@@ -433,7 +433,7 @@ service Gateway {
 
   /*
     Resolves a given incident. This simply marks the incident as resolved; most likely a call to
-    UpdateJobRetries or UpdateWorkflowInstancePayload will be necessary to actually resolve the
+    UpdateJobRetries or SetVariables will be necessary to actually resolve the
     problem, following by this call.
 
     Errors:
@@ -441,6 +441,20 @@ service Gateway {
         - no incident with the given key exists
    */
   rpc ResolveIncident (ResolveIncidentRequest) returns (ResolveIncidentResponse) {
+  }
+
+  /*
+    Updates all the variables of a particular scope (e.g. workflow instance, flow element instance)
+    from the given JSON document.
+
+    Errors:
+      NOT_FOUND:
+        - no element with the given elementInstanceKey exists
+      INVALID_ARGUMENT:
+        - the given variables document is not a valid JSON document; valid documents are expected to
+          be JSON documents where the root node is an object.
+   */
+  rpc SetVariables (SetVariablesRequest) returns (SetVariablesResponse) {
   }
 
   /*
@@ -461,18 +475,5 @@ service Gateway {
         - retries is not greater than 0
    */
   rpc UpdateJobRetries (UpdateJobRetriesRequest) returns (UpdateJobRetriesResponse) {
-  }
-
-  /*
-    Updates all the variables in the workflow instance scope from the given JSON document.
-
-    Errors:
-      NOT_FOUND:
-        - no element with the given elementInstanceKey exists
-      INVALID_ARGUMENT:
-        - the given payload is not a valid JSON document; all payloads are expected to be
-          valid JSON documents where the root node is an object.
-   */
-  rpc UpdateWorkflowInstancePayload (UpdateWorkflowInstancePayloadRequest) returns (UpdateWorkflowInstancePayloadResponse) {
   }
 }
