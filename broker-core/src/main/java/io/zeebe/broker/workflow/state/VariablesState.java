@@ -76,7 +76,7 @@ public class VariablesState {
   private final ObjectHashSet<DirectBuffer> variablesToCollect = new ObjectHashSet<>();;
 
   // setting variables
-  private IndexedDocument indexedDocument = new IndexedDocument();
+  private final IndexedDocument indexedDocument = new IndexedDocument();
 
   private VariableListener listener;
 
@@ -445,8 +445,8 @@ public class VariablesState {
 
   private class IndexedDocument implements Iterable<Void> {
     // variable name offset -> variable value offset
-    private Int2IntHashMap entries = new Int2IntHashMap(-1);
-    private DocumentEntryIterator iterator = new DocumentEntryIterator();
+    private final Int2IntHashMap entries = new Int2IntHashMap(-1);
+    private final DocumentEntryIterator iterator = new DocumentEntryIterator();
     private DirectBuffer document;
 
     public void index(DirectBuffer document) {
