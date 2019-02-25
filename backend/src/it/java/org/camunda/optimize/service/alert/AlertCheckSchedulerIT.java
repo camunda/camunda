@@ -14,19 +14,16 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.quartz.JobDetail;
-import org.quartz.JobExecutionContext;
 import org.quartz.Trigger;
 import org.quartz.TriggerKey;
-import org.quartz.listeners.TriggerListenerSupport;
 
 import javax.mail.internet.MimeMessage;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.TimeZone;
 import java.util.UUID;
 
 import static junit.framework.TestCase.assertTrue;
@@ -191,7 +188,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     assertThat(
       getNextFireTime(trigger).truncatedTo(ChronoUnit.SECONDS),
       is(
-        OffsetDateTime.now().plus(1,ChronoUnit.SECONDS).truncatedTo(ChronoUnit.SECONDS)
+        Instant.now().plus(1,ChronoUnit.SECONDS).truncatedTo(ChronoUnit.SECONDS)
       )
     );
 
@@ -219,11 +216,11 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     // time is running while we check for the supposed next trigger time
     // and then the check might be by one second off. Thus we check if the
     // the next trigger is within +/- 1 second bound.
-    OffsetDateTime nextTimeToFire = getNextFireTime(trigger);
-    OffsetDateTime lowerBound = OffsetDateTime.now()
+    Instant nextTimeToFire = getNextFireTime(trigger);
+    Instant lowerBound = Instant.now()
       .plus(secondsUntilItShouldFireNext - 1, ChronoUnit.SECONDS)
       .truncatedTo(ChronoUnit.SECONDS);
-    OffsetDateTime upperBound = OffsetDateTime.now()
+    Instant upperBound = Instant.now()
       .plus(secondsUntilItShouldFireNext + 1, ChronoUnit.SECONDS)
       .truncatedTo(ChronoUnit.SECONDS);
     assertTrue(lowerBound.isBefore(nextTimeToFire));
@@ -283,11 +280,11 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
     JobDetail jobDetail = alertService.createStatusCheckJobDetails(fakeReportAlert);
     Trigger trigger = alertService.createStatusCheckTrigger(fakeReportAlert, jobDetail);
-    OffsetDateTime now = OffsetDateTime.now();
+    Instant now = Instant.now();
     alertService.getScheduler().scheduleJob(jobDetail, trigger);
-    OffsetDateTime nextFireTime = getNextFireTime(trigger).truncatedTo(ChronoUnit.MINUTES);
+    Instant nextFireTime = getNextFireTime(trigger).truncatedTo(ChronoUnit.MINUTES);
 
-    assertThat(nextFireTime, is(now.truncatedTo(ChronoUnit.MINUTES).plusMinutes(intervalValue).truncatedTo(ChronoUnit.MINUTES)));
+    assertThat(nextFireTime, is(now.truncatedTo(ChronoUnit.MINUTES).plus(intervalValue, ChronoUnit.MINUTES).truncatedTo(ChronoUnit.MINUTES)));
   }
 
   @Test
@@ -299,11 +296,11 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
     JobDetail jobDetail = alertService.createStatusCheckJobDetails(fakeReportAlert);
     Trigger trigger = alertService.createStatusCheckTrigger(fakeReportAlert, jobDetail);
-    OffsetDateTime now = OffsetDateTime.now();
+    Instant now = Instant.now();
     alertService.getScheduler().scheduleJob(jobDetail, trigger);
-    OffsetDateTime nextFireTime = getNextFireTime(trigger);
+    Instant nextFireTime = getNextFireTime(trigger);
 
-    OffsetDateTime targetTime = now.plusHours(intervalValue).truncatedTo(ChronoUnit.HOURS);
+    Instant targetTime = now.plus(intervalValue, ChronoUnit.HOURS).truncatedTo(ChronoUnit.HOURS);
 
     assertThat(nextFireTime.truncatedTo(ChronoUnit.HOURS), is(targetTime));
   }
@@ -317,13 +314,13 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
     JobDetail jobDetail = alertService.createStatusCheckJobDetails(fakeReportAlert);
     Trigger trigger = alertService.createStatusCheckTrigger(fakeReportAlert, jobDetail);
-    OffsetDateTime now = OffsetDateTime.now();
+    Instant now = Instant.now();
     alertService.getScheduler().scheduleJob(jobDetail, trigger);
-    OffsetDateTime nextFireTime = getNextFireTime(trigger);
+    Instant nextFireTime = getNextFireTime(trigger);
 
-    OffsetDateTime targetTime = now.truncatedTo(ChronoUnit.DAYS).plusDays(intervalValue);
+    Instant targetTime = now.truncatedTo(ChronoUnit.DAYS).plus(intervalValue, ChronoUnit.DAYS);
 
-    assertThat(nextFireTime.withOffsetSameInstant(OffsetDateTime.now().getOffset()).truncatedTo(ChronoUnit.DAYS), is(targetTime));
+    assertThat(nextFireTime.truncatedTo(ChronoUnit.DAYS), is(targetTime));
   }
 
   @Test
@@ -336,17 +333,17 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     JobDetail jobDetail = alertService.createStatusCheckJobDetails(fakeReportAlert);
     Trigger trigger = alertService.createStatusCheckTrigger(fakeReportAlert, jobDetail);
     alertService.getScheduler().scheduleJob(jobDetail, trigger);
-    OffsetDateTime nextFireTime = getNextFireTime(trigger);
+    Instant nextFireTime = getNextFireTime(trigger);
 
     assertThat(
         nextFireTime.truncatedTo(ChronoUnit.SECONDS),
-        is(OffsetDateTime.now().plus(intervalValue*7, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS))
+        is(Instant.now().plus(intervalValue*7, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS))
     );
   }
 
 
-  private OffsetDateTime getNextFireTime(Trigger cronTrigger) {
-    return OffsetDateTime.ofInstant(cronTrigger.getNextFireTime().toInstant(), TimeZone.getDefault().toZoneId());
+  private Instant getNextFireTime(Trigger cronTrigger) {
+    return cronTrigger.getNextFireTime().toInstant();
   }
 
   private AlertDefinitionDto getAlertDefinitionDto(int intervalValue, String intervalUnit) {
@@ -362,21 +359,6 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
     AlertUtil.mapBasicFields(fakeReportAlert, result);
     return result;
-  }
-
-  class TestListener extends TriggerListenerSupport {
-    private int fireCounter = 0;
-
-    @Override
-    public String getName() {
-      return "test-listener";
-    }
-
-    @Override
-    public void triggerFired(Trigger trigger, JobExecutionContext context) {
-      super.triggerFired(trigger, context);
-      this.fireCounter = this.fireCounter + 1;
-    }
   }
 
   private List<AlertDefinitionDto> getAllAlerts() {
