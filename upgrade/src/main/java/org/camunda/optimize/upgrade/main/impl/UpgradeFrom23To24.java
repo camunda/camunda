@@ -33,7 +33,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_IN
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 import static org.camunda.optimize.upgrade.util.ReportUtil.buildDecisionDefinitionXmlByKeyAndVersionMap;
 import static org.camunda.optimize.upgrade.util.ReportUtil.buildSingleReportIdToVisualizationAndViewMap;
-import static org.camunda.optimize.upgrade.util.SchemaUpgradeUtil.createMappingAndSettingsJsonStringFromMapping;
+import static org.camunda.optimize.upgrade.util.SchemaUpgradeUtil.createMappingStringFromMapping;
 import static org.camunda.optimize.upgrade.util.SchemaUpgradeUtil.getDefaultCombinedReportConfigurationAsMap;
 import static org.camunda.optimize.upgrade.util.SchemaUpgradeUtil.getDefaultSingleReportConfigurationAsMap;
 
@@ -75,19 +75,24 @@ public class UpgradeFrom23To24 implements Upgrade {
           .addUpgradeStep(new UpdateIndexStep(
             DECISION_INSTANCE_TYPE,
             DecisionInstanceType.VERSION,
-            createMappingAndSettingsJsonStringFromMapping(new DecisionInstanceType())
+            createMappingStringFromMapping(new DecisionInstanceType())
           ))
           .addUpgradeStep(buildMatchedRules());
       }
 
       if (isCombinedReportIndexPresent()) {
+        final CombinedReportType combinedReportType = new CombinedReportType();
+        // we set dynamic mappings to false to keep deprecated properties
+        // that are required by the migrateConfigurationInCombinedProcessReport step
+        // it will be reset to the default ('strict') the next call of schemaManager.initializeSchema(client);
+        // which happens in the UpgradePlan#execute
+        combinedReportType.setDynamicMappingsValue("false");
         upgradePlanBuilder
           .addUpgradeStep(new UpdateIndexStep(
             COMBINED_REPORT_TYPE,
             CombinedReportType.VERSION,
-            createMappingAndSettingsJsonStringFromMapping(new CombinedReportType())
-          ))
-          .addUpgradeStep(buildMatchedRules());
+            createMappingStringFromMapping(combinedReportType)
+          ));
       }
 
       if (isProcessInstanceIndexPresent()) {
@@ -95,9 +100,8 @@ public class UpgradeFrom23To24 implements Upgrade {
           .addUpgradeStep(new UpdateIndexStep(
             PROC_INSTANCE_TYPE,
             ProcessInstanceType.VERSION,
-            createMappingAndSettingsJsonStringFromMapping(new ProcessInstanceType())
-          ))
-          .addUpgradeStep(buildMatchedRules());
+            createMappingStringFromMapping(new ProcessInstanceType())
+          ));
       }
 
       ensureSingleDecisionReportIndexIsInitialized();

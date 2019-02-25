@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.retrieval;
 
+import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
@@ -96,7 +97,7 @@ public class SingleReportHandlingIT {
     assertThat(data.getConfiguration(), equalTo(new SingleReportConfigurationDto()));
     assertThat(
       data.getConfiguration().getColor(),
-      is(SingleReportConfigurationDto.DEFAULT_CONFIGURATION_COLOR)
+      is(ReportConstants.DEFAULT_CONFIGURATION_COLOR)
     );
   }
 

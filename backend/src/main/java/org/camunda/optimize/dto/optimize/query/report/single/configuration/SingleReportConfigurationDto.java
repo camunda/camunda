@@ -1,5 +1,6 @@
 package org.camunda.optimize.dto.optimize.query.report.single.configuration;
 
+import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value.HeatmapTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
 
@@ -9,9 +10,7 @@ import java.util.Objects;
 
 public class SingleReportConfigurationDto {
 
-  public static final String DEFAULT_CONFIGURATION_COLOR = "#1991c8";
-
-  private String color = DEFAULT_CONFIGURATION_COLOR;
+  private String color = ReportConstants.DEFAULT_CONFIGURATION_COLOR;
   private Boolean showInstanceCount = false;
   private Boolean pointMarkers = true;
   private Integer precision = null;

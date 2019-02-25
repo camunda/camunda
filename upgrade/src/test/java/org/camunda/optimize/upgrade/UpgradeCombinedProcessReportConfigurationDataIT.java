@@ -1,7 +1,10 @@
 package org.camunda.optimize.upgrade;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
@@ -22,7 +25,9 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.Response;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -34,6 +39,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getVersionedOptimizeIndexNameForTypeMapping;
 import static org.camunda.optimize.upgrade.util.ReportUtil.buildSingleReportIdToVisualizationAndViewMap;
 import static org.camunda.optimize.upgrade.util.SchemaUpgradeUtil.getDefaultCombinedReportConfigurationAsMap;
 import static org.hamcrest.CoreMatchers.is;
@@ -66,6 +72,8 @@ public class UpgradeCombinedProcessReportConfigurationDataIT extends AbstractUpg
   public void setUp() throws Exception {
     super.setUp();
 
+    COMBINED_REPORT_TYPE.setDynamicMappingsValue("false");
+
     initSchema(Lists.newArrayList(METADATA_TYPE, SINGLE_PROCESS_REPORT_TYPE, COMBINED_REPORT_TYPE));
     addVersionToElasticsearch(FROM_VERSION);
 
@@ -73,6 +81,19 @@ public class UpgradeCombinedProcessReportConfigurationDataIT extends AbstractUpg
     executeBulk("steps/configuration_upgrade/23-single-process-report-bulk");
     executeBulk("steps/configuration_upgrade/22-combined-report-bulk");
     executeBulk("steps/configuration_upgrade/23-combined-report-bulk");
+  }
+
+  @Test
+  public void combinedReportDynamicSettingIsStrictAfterUpgrade() throws Exception {
+    //given
+    UpgradePlan upgradePlan = getReportConfigurationUpgradePlan();
+    assertThat(getDynamicMappingValue(), is("false"));
+
+    // when
+    upgradePlan.execute();
+
+    // then
+    assertThat(getDynamicMappingValue(), is("strict"));
   }
 
   @Test
@@ -296,6 +317,16 @@ public class UpgradeCombinedProcessReportConfigurationDataIT extends AbstractUpg
     // then
     final SearchResponse search = restClient.search(new SearchRequest(getReportIndexAlias()), RequestOptions.DEFAULT);
     assertThat(search.getHits().getTotalHits(), is(8L));
+  }
+
+  private String getDynamicMappingValue() throws IOException {
+    final String indexName = getVersionedOptimizeIndexNameForTypeMapping(COMBINED_REPORT_TYPE);
+    final Response response = restClient.getLowLevelClient().performRequest(
+            new Request(HttpGet.METHOD_NAME, indexName + "/_mapping")
+    );
+    final String mappingWithIndexName = EntityUtils.toString(response.getEntity());
+    final JsonNode mapping = objectMapper.readTree(mappingWithIndexName);
+    return mapping.get(indexName).get("mappings").get(COMBINED_REPORT_TYPE.getType()).get("dynamic").asText();
   }
 
   private String getReportIndexAlias() {

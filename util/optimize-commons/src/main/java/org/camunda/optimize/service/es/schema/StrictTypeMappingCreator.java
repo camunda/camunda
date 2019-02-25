@@ -6,17 +6,20 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.service.es.schema.DynamicMappingsBuilder.DYNAMIC_MAPPINGS_VALUE_DEFAULT;
 import static org.camunda.optimize.service.es.schema.DynamicMappingsBuilder.createDynamicSettings;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 
 public abstract class StrictTypeMappingCreator implements TypeMappingCreator, PropertiesAppender {
   private Logger logger = LoggerFactory.getLogger(StrictTypeMappingCreator.class);
 
+  private String dynamicMappingsValue = DYNAMIC_MAPPINGS_VALUE_DEFAULT;
+
   @Override
   public XContentBuilder getSource() {
     XContentBuilder source = null;
     try {
-      source = createDynamicSettings(this);
+      source = createDynamicSettings(this, dynamicMappingsValue);
     } catch (IOException e) {
       String message = "Could not add mapping to the index '" + getOptimizeIndexAliasForType(getType()) +
         "' , type '" + getType() + "'!";
@@ -25,4 +28,11 @@ public abstract class StrictTypeMappingCreator implements TypeMappingCreator, Pr
     return source;
   }
 
+  public String getDynamicMappingsValue() {
+    return dynamicMappingsValue;
+  }
+
+  public void setDynamicMappingsValue(final String dynamicMappingsValue) {
+    this.dynamicMappingsValue = dynamicMappingsValue;
+  }
 }

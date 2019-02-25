@@ -178,22 +178,6 @@ public class SchemaInitializerIT {
   }
 
   @Test
-  public void dynamicPropertiesAreAccepted() {
-    // given schema is created
-    initializeSchema();
-
-    // when we add an event with an undefined type in schema
-    ExtendedFlowNodeEventDto extendedEventDto = new ExtendedFlowNodeEventDto();
-    elasticSearchRule.addEntryToElasticsearch(
-      ElasticsearchConstants.METADATA_TYPE,
-      "12312412",
-      extendedEventDto
-    );
-
-    // then nothing fails
-  }
-
-  @Test
   public void newIndexIsNotAddedDynamically() {
     // given schema is created
     initializeSchema();
@@ -204,6 +188,23 @@ public class SchemaInitializerIT {
     // when I add a document to an unknown type
     FlowNodeEventDto flowNodeEventDto = new FlowNodeEventDto();
     elasticSearchRule.addEntryToElasticsearch("myAwesomeNewIndex", "12312412", flowNodeEventDto);
+  }
+
+  @Test
+  public void onlyAcceptDocumentsThatComplyWithTheSchema() {
+    // given schema is created
+    initializeSchema();
+
+    // then
+    thrown.expect(ElasticsearchStatusException.class);
+
+    // when we add an event with an undefined type in schema
+    ExtendedFlowNodeEventDto extendedEventDto = new ExtendedFlowNodeEventDto();
+    elasticSearchRule.addEntryToElasticsearch(
+            ElasticsearchConstants.METADATA_TYPE,
+            "12312412",
+            extendedEventDto
+    );
   }
 
   private void assertDynamicSettingsComplyWithDefault(final List<TypeMappingCreator> mappings,

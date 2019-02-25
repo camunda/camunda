@@ -10,7 +10,6 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
 import org.apache.http.util.EntityUtils;
-import org.camunda.optimize.service.es.schema.DynamicMappingsBuilder;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
@@ -275,16 +274,7 @@ public class ESIndexAdjuster {
         HashMap.class
       );
 
-      HashMap dynamics = objectMapper.readValue(
-        buildDynamicMappings(),
-        HashMap.class
-      );
-
       mapping.putAll(settings);
-      Map<String, Map> mappings = (Map) mapping.get("mappings");
-      for (String key : mappings.keySet()) {
-        mappings.get(key).putAll(dynamics);
-      }
 
       if (indexAlias != null) {
         final HashMap<String, HashMap<String, Object>> aliases = new HashMap<>();
@@ -297,22 +287,6 @@ public class ESIndexAdjuster {
       logger.error("can't apply defaults to mapping", e);
     }
     return result;
-  }
-
-  private String buildDynamicMappings() {
-    String dynamicSettings = "";
-    try {
-      String dynamicSettingsWithPropertyField = DynamicMappingsBuilder.createDynamicSettingsAsString();
-      // we need to remove the properties here since they added later with
-      // whole schmema information.
-      dynamicSettings =
-        JsonPath.parse(dynamicSettingsWithPropertyField)
-          .delete("$.properties")
-          .jsonString();
-    } catch (IOException e) {
-      logger.error("Can't create default dynamic settings", e);
-    }
-    return dynamicSettings;
   }
 
   public void insertDataByTypeName(final String typeName, final String data) {

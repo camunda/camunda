@@ -1,6 +1,6 @@
 package org.camunda.optimize.dto.optimize.query.report.combined;
 
-import static org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto.DEFAULT_CONFIGURATION_COLOR;
+import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_CONFIGURATION_COLOR;
 
 public class CombinedReportItemDto {
 

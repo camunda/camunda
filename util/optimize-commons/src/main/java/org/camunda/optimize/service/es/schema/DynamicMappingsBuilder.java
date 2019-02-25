@@ -1,6 +1,5 @@
 package org.camunda.optimize.service.es.schema;
 
-import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 
@@ -8,13 +7,14 @@ import java.io.IOException;
 
 
 public class DynamicMappingsBuilder {
+  protected final static String DYNAMIC_MAPPINGS_VALUE_DEFAULT = "strict";
 
-  public static XContentBuilder createDynamicSettings(PropertiesAppender appender) throws IOException {
+  public static XContentBuilder createDynamicSettings(final PropertiesAppender appender,
+                                                      final String dynamicMappingsValue) throws IOException {
     // @formatter:off
     XContentBuilder content = XContentFactory.jsonBuilder()
       .startObject()
-        // false allows us to seamlessly upgrade the schema while keeping old properties to be migrated by a dedicated step
-        .field("dynamic", "false")
+        .field("dynamic", dynamicMappingsValue)
         .startObject("properties");
           appender.addProperties(content)
         .endObject()
@@ -36,11 +36,6 @@ public class DynamicMappingsBuilder {
       .endObject();
     // @formatter:on
     return content;
-  }
-
-  public static String createDynamicSettingsAsString() throws IOException {
-    XContentBuilder dynamicSettings = createDynamicSettings(a -> a);
-    return Strings.toString(dynamicSettings);
   }
 
 }

@@ -19,18 +19,18 @@ import java.util.Map;
 public class SchemaUpgradeUtil {
   protected static Logger logger = LoggerFactory.getLogger(SchemaUpgradeUtil.class);
 
-  public static String createMappingAndSettingsJsonStringFromMapping(final TypeMappingCreator type) {
+  public static String createMappingStringFromMapping(final TypeMappingCreator type) {
     return "{ \"mappings\": {\"" + type.getType() + "\": " + Strings.toString(type.getSource()) + "} }";
   }
 
   public static Map getDefaultSingleReportConfigurationAsMap() {
     String pathToMapping = "upgrade/main/UpgradeFrom23To24/default-single-report-configuration.json";
-    return getDefaultSingleReportConfigurationAsMap(pathToMapping);
+    return getDefaultReportConfigurationAsMap(pathToMapping);
   }
 
   public static Map getDefaultCombinedReportConfigurationAsMap() {
     String pathToMapping = "upgrade/main/UpgradeFrom23To24/default-combined-report-configuration.json";
-    return getDefaultSingleReportConfigurationAsMap(pathToMapping);
+    return getDefaultReportConfigurationAsMap(pathToMapping);
   }
 
   public static String readClasspathFileAsString(String filePath) {
@@ -44,7 +44,7 @@ public class SchemaUpgradeUtil {
     return data;
   }
 
-  private static Map getDefaultSingleReportConfigurationAsMap(String pathToMapping) {
+  private static Map getDefaultReportConfigurationAsMap(String pathToMapping) {
     String reportConfigurationStructureAsJson = SchemaUpgradeUtil.readClasspathFileAsString(pathToMapping);
     ObjectMapper objectMapper = new ObjectMapper();
     Map reportConfigurationAsMap;

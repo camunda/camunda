@@ -2,7 +2,7 @@ package org.camunda.optimize.dto.optimize;
 
 public class ReportConstants {
 
-  public static final String REPORT_DEFINITION_COMBINED_FIELD = "combined";
+  public static final String DEFAULT_CONFIGURATION_COLOR = "#1991c8";
 
   public static final String VIEW_RAW_DATA_OPERATION = "rawData";
   public static final String VIEW_COUNT_OPERATION = "count";
