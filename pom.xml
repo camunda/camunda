@@ -31,8 +31,8 @@
     <elasticsearch.version>6.5.4</elasticsearch.version>
     <!--The least supported elasticsearch version we should test against-->
     <elasticsearch.test.version>6.2.0</elasticsearch.test.version>
-    <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.0/_using_another_logger.html -->
-    <elasticsearch.log4j.version>2.9.1</elasticsearch.log4j.version>
+    <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
+    <elasticsearch.log4j.version>2.11.1</elasticsearch.log4j.version>
     <guava.version>27.0.1-jre</guava.version>
     <spring.version>5.1.5.RELEASE</spring.version>
     <mockito.version>2.24.0</mockito.version>
