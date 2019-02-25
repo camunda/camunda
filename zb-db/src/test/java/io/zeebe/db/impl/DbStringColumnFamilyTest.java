@@ -207,8 +207,9 @@ public class DbStringColumnFamilyTest {
                     (key, value) -> {
                       columnFamily.whileEqualPrefix(key, (k, v) -> {});
                     }))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessage(
+        .hasCauseInstanceOf(IllegalStateException.class)
+        .hasMessage("Unexpected error occurred during RocksDB transaction.")
+        .hasStackTraceContaining(
             "Currently nested prefix iterations are not supported! This will cause unexpected behavior.");
   }
 

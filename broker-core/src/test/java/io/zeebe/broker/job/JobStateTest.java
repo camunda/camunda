@@ -325,7 +325,7 @@ public class JobStateTest {
 
     // create
     assertThatThrownBy(() -> jobState.create(1L, jobWithoutType))
-        .hasMessage("type must not be empty");
+        .hasStackTraceContaining("type must not be empty");
 
     // activate
     assertThatThrownBy(() -> jobState.activate(1L, jobWithoutType))
@@ -341,7 +341,7 @@ public class JobStateTest {
 
     // resolve
     assertThatThrownBy(() -> jobState.resolve(1L, jobWithoutType))
-        .hasMessage("type must not be empty");
+        .hasStackTraceContaining("type must not be empty");
 
     // timeout
     assertThatThrownBy(() -> jobState.timeout(1L, jobWithoutType))
@@ -351,7 +351,7 @@ public class JobStateTest {
 
     // delete
     assertThatThrownBy(() -> jobState.delete(1L, jobWithoutType))
-        .hasMessage("type must not be empty");
+        .hasStackTraceContaining("type must not be empty");
 
     // should not throw any exception
     jobState.activate(1L, newJobRecord());

@@ -39,7 +39,7 @@ public interface ZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType>> extend
    *
    * @param operations the operations
    */
-  void transaction(Runnable operations);
+  void transaction(TransactionOperation operations);
 
   /**
    * Creates an instance of a specific column family to access and store key-value pairs in that
