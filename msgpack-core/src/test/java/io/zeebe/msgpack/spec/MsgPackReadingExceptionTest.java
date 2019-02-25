@@ -48,7 +48,7 @@ public class MsgPackReadingExceptionTest {
           {String.format(template, "float"), codeUnderTest(MsgPackReader::readFloat)},
           {String.format(template, "map"), codeUnderTest(MsgPackReader::readMapHeader)},
           {String.format(template, "string"), codeUnderTest(MsgPackReader::readStringLength)},
-          {"Unsupported token format", codeUnderTest(MsgPackReader::readToken)}
+          {"Unknown token format 'NEVER_USED'", codeUnderTest(MsgPackReader::readToken)}
         });
   }
 
@@ -71,7 +71,7 @@ public class MsgPackReadingExceptionTest {
     reader.wrap(NEVER_USED_BUF, 0, NEVER_USED_BUF.capacity());
 
     // then
-    exception.expect(RuntimeException.class);
+    exception.expect(MsgpackReaderException.class);
     exception.expectMessage(expectedExceptionMessage);
 
     // when

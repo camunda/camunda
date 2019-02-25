@@ -13,19 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.msgpack.spec;
+package io.zeebe.protocol.intent;
 
-public class MsgPackHelper {
-  public static final byte[] EMTPY_OBJECT = new byte[] {MsgPackCodes.FIXMAP_PREFIX};
-  public static final byte[] EMPTY_ARRAY = new byte[] {MsgPackCodes.FIXARRAY_PREFIX};
-  public static final byte[] NIL = new byte[] {MsgPackCodes.NIL};
+public enum VariableDocumentIntent implements Intent {
+  UPDATE(0),
+  UPDATED(1);
 
-  static long ensurePositive(long size) {
-    if (size < 0) {
-      throw new MsgpackException(
-          "Negative value should not be accepted by size value and unsigned 64bit integer");
-    } else {
-      return size;
+  private short value;
+
+  VariableDocumentIntent(int value) {
+    this((short) value);
+  }
+
+  VariableDocumentIntent(short value) {
+    this.value = value;
+  }
+
+  @Override
+  public short value() {
+    return value;
+  }
+
+  public static Intent from(short value) {
+    switch (value) {
+      case 0:
+        return UPDATE;
+      case 1:
+        return UPDATED;
+      default:
+        return Intent.UNKNOWN;
     }
   }
 }

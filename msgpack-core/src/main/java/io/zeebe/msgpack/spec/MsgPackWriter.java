@@ -42,7 +42,6 @@ import static io.zeebe.msgpack.spec.MsgPackCodes.UINT16;
 import static io.zeebe.msgpack.spec.MsgPackCodes.UINT32;
 import static io.zeebe.msgpack.spec.MsgPackCodes.UINT64;
 import static io.zeebe.msgpack.spec.MsgPackCodes.UINT8;
-import static io.zeebe.msgpack.spec.MsgPackHelper.ensurePositive;
 import static org.agrona.BitUtil.SIZE_OF_BYTE;
 import static org.agrona.BitUtil.SIZE_OF_DOUBLE;
 import static org.agrona.BitUtil.SIZE_OF_FLOAT;
@@ -93,6 +92,7 @@ public class MsgPackWriter {
 
   public MsgPackWriter writeMapHeader(int size) {
     ensurePositive(size);
+
     if (size < (1 << 4)) {
       buffer.putByte(offset, (byte) (FIXMAP_PREFIX | size));
       ++offset;
@@ -427,5 +427,13 @@ public class MsgPackWriter {
     }
 
     return headerLength + len;
+  }
+
+  private void ensurePositive(long size) {
+    try {
+      MsgPackHelper.ensurePositive(size);
+    } catch (MsgpackException e) {
+      throw new MsgpackWriterException(e);
+    }
   }
 }

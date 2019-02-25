@@ -46,6 +46,7 @@
       <validValue name="TIMER">15</validValue>
       <validValue name="MESSAGE_START_EVENT_SUBSCRIPTION">16</validValue>
       <validValue name="VARIABLE">17</validValue>
+      <validValue name="VARIABLE_DOCUMENT">18</validValue>
     </enum>
 
     <enum name="ControlMessageType" encodingType="uint8"

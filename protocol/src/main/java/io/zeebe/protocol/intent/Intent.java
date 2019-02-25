@@ -83,6 +83,8 @@ public interface Intent {
         return TimerIntent.from(intent);
       case VARIABLE:
         return VariableIntent.from(intent);
+      case VARIABLE_DOCUMENT:
+        return VariableDocumentIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
@@ -124,6 +126,8 @@ public interface Intent {
         return TimerIntent.valueOf(intent);
       case VARIABLE:
         return VariableIntent.valueOf(intent);
+      case VARIABLE_DOCUMENT:
+        return VariableDocumentIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

@@ -29,10 +29,13 @@ import io.zeebe.broker.workflow.processor.timer.CancelTimerProcessor;
 import io.zeebe.broker.workflow.processor.timer.CreateTimerProcessor;
 import io.zeebe.broker.workflow.processor.timer.DueDateTimerChecker;
 import io.zeebe.broker.workflow.processor.timer.TriggerTimerProcessor;
+import io.zeebe.broker.workflow.processor.variable.UpdateVariableDocumentProcessor;
+import io.zeebe.broker.workflow.state.ElementInstanceState;
 import io.zeebe.broker.workflow.state.WorkflowEngineState;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.TimerIntent;
+import io.zeebe.protocol.intent.VariableDocumentIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import java.util.Arrays;
@@ -80,6 +83,8 @@ public class WorkflowEventProcessors {
         subscriptionCommandSender,
         workflowState);
     addTimerStreamProcessors(typedProcessorBuilder, timerChecker, workflowState, catchEventOutput);
+    addVariableDocumentStreamProcessors(typedProcessorBuilder, zeebeState);
+
     return bpmnStepProcessor;
   }
 
@@ -143,5 +148,17 @@ public class WorkflowEventProcessors {
             new TriggerTimerProcessor(workflowState, catchEventOutput))
         .onCommand(ValueType.TIMER, TimerIntent.CANCEL, new CancelTimerProcessor(workflowState))
         .withListener(timerChecker);
+  }
+
+  private static void addVariableDocumentStreamProcessors(
+      TypedEventStreamProcessorBuilder builder, ZeebeState zeebeState) {
+    final ElementInstanceState elementInstanceState =
+        zeebeState.getWorkflowState().getElementInstanceState();
+
+    builder.onCommand(
+        ValueType.VARIABLE_DOCUMENT,
+        VariableDocumentIntent.UPDATE,
+        new UpdateVariableDocumentProcessor(
+            elementInstanceState, elementInstanceState.getVariablesState()));
   }
 }

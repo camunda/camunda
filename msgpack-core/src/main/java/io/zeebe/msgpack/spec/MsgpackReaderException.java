@@ -15,17 +15,23 @@
  */
 package io.zeebe.msgpack.spec;
 
-public class MsgPackHelper {
-  public static final byte[] EMTPY_OBJECT = new byte[] {MsgPackCodes.FIXMAP_PREFIX};
-  public static final byte[] EMPTY_ARRAY = new byte[] {MsgPackCodes.FIXARRAY_PREFIX};
-  public static final byte[] NIL = new byte[] {MsgPackCodes.NIL};
+public class MsgpackReaderException extends MsgpackException {
+  private static final long serialVersionUID = 4909839783275678015L;
 
-  static long ensurePositive(long size) {
-    if (size < 0) {
-      throw new MsgpackException(
-          "Negative value should not be accepted by size value and unsigned 64bit integer");
-    } else {
-      return size;
-    }
+  public MsgpackReaderException(String message) {
+    super(message);
+  }
+
+  public MsgpackReaderException(String message, Throwable cause) {
+    super(message, cause);
+  }
+
+  public MsgpackReaderException(Throwable cause) {
+    super(cause);
+  }
+
+  public MsgpackReaderException(
+      String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    super(message, cause, enableSuppression, writableStackTrace);
   }
 }

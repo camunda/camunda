@@ -42,7 +42,6 @@ import static io.zeebe.msgpack.spec.MsgPackCodes.isFixInt;
 import static io.zeebe.msgpack.spec.MsgPackCodes.isFixStr;
 import static io.zeebe.msgpack.spec.MsgPackCodes.isFixedArray;
 import static io.zeebe.msgpack.spec.MsgPackCodes.isFixedMap;
-import static io.zeebe.msgpack.spec.MsgPackHelper.ensurePositive;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_SHORT;
 
@@ -337,7 +336,8 @@ public class MsgPackReader {
         break;
       case EXTENSION:
       case NEVER_USED:
-        throw new RuntimeException("Unsupported token format");
+        throw new MsgpackReaderException(
+            String.format("Unknown token format '%s'", format.getType().name()));
     }
 
     token.setTotalLength(offset - currentOffset);
@@ -460,7 +460,7 @@ public class MsgPackReader {
           offset += 4;
           break;
         case NEVER_USED:
-          throw new RuntimeException("Encountered 0xC1 \"NEVER_USED\" byte");
+          throw new MsgpackReaderException("Encountered 0xC1 \"NEVER_USED\" byte");
       }
 
       count--;
@@ -475,10 +475,19 @@ public class MsgPackReader {
     return offset < buffer.capacity();
   }
 
-  protected RuntimeException exceptionOnUnknownHeader(final String name, final byte headerByte) {
-    return new RuntimeException(
+  protected MsgpackReaderException exceptionOnUnknownHeader(
+      final String name, final byte headerByte) {
+    return new MsgpackReaderException(
         String.format(
             "Unable to determine %s type, found unknown header byte 0x%02x at reader offset %d",
             name, headerByte, offset - 1));
+  }
+
+  private long ensurePositive(long size) {
+    try {
+      return MsgPackHelper.ensurePositive(size);
+    } catch (MsgpackException e) {
+      throw new MsgpackReaderException(e);
+    }
   }
 }
