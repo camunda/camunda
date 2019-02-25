@@ -1,6 +1,8 @@
 package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
+import org.apache.commons.text.StringSubstitutor;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
@@ -40,6 +42,7 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.report.CombinedReportType.DATA;
@@ -346,16 +349,23 @@ public class ReportWriter {
   }
 
   private Script buildUpdateScript(final ReportDefinitionUpdateDto updateDto) {
+    final Map<String, Object> parameterMap = mapToParameterSet(updateDto);
     return new Script(
       ScriptType.INLINE,
       Script.DEFAULT_SCRIPT_LANG,
-      "ctx._source.name = params.name != null ? params.name : ctx._source.name; " +
-        "ctx._source.lastModified = params.lastModified != null ? params.lastModified : ctx._source.lastModified; " +
-        "ctx._source.lastModifier = params.lastModifier != null ? params.lastModifier : ctx._source.lastModifier; " +
-        "ctx._source.owner = params.owner != null ? params.owner : ctx._source.owner; " +
-        "ctx._source.data = params.data != null ? params.data : ctx._source.data; ",
-      mapToParameterSet(updateDto)
+      createUpdateAllParameterEntriesAsFieldsScript(parameterMap),
+      parameterMap
     );
+  }
+
+  private String createUpdateAllParameterEntriesAsFieldsScript(final Map<String, Object> parameterMap) {
+    return parameterMap.keySet().stream()
+      .filter(parameterName -> !"id".equals(parameterName))
+      .map(parameterName -> new StringSubstitutor(ImmutableMap.of("fieldName", parameterName))
+        .replace(
+          "ctx._source.${fieldName} = params.${fieldName} != null ? params.${fieldName} : ctx._source.${fieldName};"
+        )
+      ).collect(Collectors.joining());
   }
 
   @SuppressWarnings(value = "unchecked")
