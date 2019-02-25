@@ -106,18 +106,6 @@ public class FileUtil {
     return fileChannel;
   }
 
-  public static File createTempDirectory(String prefix) {
-    Path path = null;
-
-    try {
-      path = Files.createTempDirectory(prefix);
-    } catch (IOException e) {
-      LangUtil.rethrowUnchecked(e);
-    }
-
-    return path.toFile();
-  }
-
   public static void moveFile(String source, String target, CopyOption... options) {
     final Path sourcePath = Paths.get(source);
     final Path targetPath = Paths.get(target);
@@ -144,24 +132,6 @@ public class FileUtil {
       // failed with atomic move, lets try again with normal replace move
       Files.move(src, dest, REPLACE_EXISTING);
     }
-  }
-
-  public static String getCanonicalPath(String directory) {
-    final File file = new File(directory);
-    String path = null;
-
-    try {
-      path = file.getCanonicalPath();
-
-      if (!path.endsWith(File.separator)) {
-        path += File.separator;
-      }
-
-    } catch (Exception e) {
-      LangUtil.rethrowUnchecked(e);
-    }
-
-    return path;
   }
 
   public static void deleteFile(File file) {
