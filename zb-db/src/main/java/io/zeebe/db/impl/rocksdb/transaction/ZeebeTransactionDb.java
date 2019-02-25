@@ -236,7 +236,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
   //////////////////////////// ITERATION /////////////////////////////
   ////////////////////////////////////////////////////////////////////
 
-  private RocksIterator newIterator(long columnFamilyHandle, ReadOptions options) {
+  RocksIterator newIterator(long columnFamilyHandle, ReadOptions options) {
     final ColumnFamilyHandle handle = handelToEnumMap.get(columnFamilyHandle);
     return currentTransaction.newIterator(options, handle);
   }
@@ -350,15 +350,17 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
                 iterator.isValid() && shouldVisitNext;
                 iterator.next()) {
               final byte[] keyBytes = iterator.key();
-              if (startsWith(
+              if (!startsWith(
                   prefixKeyBuffer.byteArray(),
                   0,
                   prefix.getLength(),
                   keyBytes,
                   0,
                   keyBytes.length)) {
-                shouldVisitNext = visit(keyInstance, valueInstance, visitor, iterator);
+                break;
               }
+
+              shouldVisitNext = visit(keyInstance, valueInstance, visitor, iterator);
             }
           } finally {
             activePrefixIteration = false;
