@@ -6,7 +6,6 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.UserTaskInstanceDto;
-import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -30,6 +29,9 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.START_DATE;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_OPERATIONS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASKS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_ACTIVITY_ID;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.USER_TASK_ACTIVITY_INSTANCE_ID;
@@ -131,10 +133,6 @@ public class CompletedUserTaskInstanceWriter {
                 USER_TASK_TOTAL_DURATION, USER_TASK_WORK_DURATION, USER_TASK_IDLE_DURATION,
                 USER_TASK_START_DATE, USER_TASK_END_DATE, USER_TASK_DUE_DATE, USER_TASK_DELETE_REASON
               )) +
-          // idle time defaults to 0, it get's eventually updated on user operation import
-          "existingTask." + USER_TASK_IDLE_DURATION + " = 0;\n" +
-          // by default work duration equals total duration, it get's eventually updated on user operation import
-          "existingTask." + USER_TASK_WORK_DURATION + " = existingTask." + USER_TASK_TOTAL_DURATION +";\n" +
         "} else {\n" +
           "if (ctx._source.userTasks == null) ctx._source.userTasks = [];\n" +
           "ctx._source.userTasks.add(newUserTask);\n" +
@@ -150,9 +148,12 @@ public class CompletedUserTaskInstanceWriter {
     final StringSubstitutor substitutor = new StringSubstitutor(
       ImmutableMap.<String, String>builder()
       .put("userTasksField", USER_TASKS)
-      .put("userOperationsField", ProcessInstanceType.USER_OPERATIONS)
-      .put("startDateField", ProcessInstanceType.START_DATE)
-      .put("endDateField", ProcessInstanceType.END_DATE)
+      .put("userOperationsField", USER_OPERATIONS)
+      .put("startDateField", START_DATE)
+      .put("endDateField", END_DATE)
+      .put("idleDurationInMsField", USER_TASK_IDLE_DURATION)
+      .put("workDurationInMsField", USER_TASK_WORK_DURATION)
+      .put("totalDurationInMsField", USER_TASK_TOTAL_DURATION)
       .put("claimTypeValue", "Claim")
       .put("dateFormatPattern", OPTIMIZE_DATE_FORMAT)
       .build()
@@ -160,6 +161,10 @@ public class CompletedUserTaskInstanceWriter {
     return substitutor.replace(
       "if (ctx._source.${userTasksField} != null) {\n" +
         "for (def currentTask : ctx._source.${userTasksField}) {\n" +
+          // idle time defaults to 0, it get's eventually updated if a claim operation exists
+          "currentTask.${idleDurationInMsField} = 0;\n" +
+          // by default work duration equals total duration, it get's eventually updated if a claim operation exists
+          "currentTask.${workDurationInMsField} = currentTask.${totalDurationInMsField};\n" +
           "if (currentTask.${userOperationsField} != null) {\n" +
             "def dateFormatter = new SimpleDateFormat(\"${dateFormatPattern}\");\n" +
             "def optionalFirstClaimDate = currentTask.${userOperationsField}.stream()\n" +
@@ -172,10 +177,10 @@ public class CompletedUserTaskInstanceWriter {
               "def optionalStartDate = Optional.ofNullable(currentTask.${startDateField}).map(dateFormatter::parse);\n" +
               "def optionalEndDate = Optional.ofNullable(currentTask.${endDateField}).map(dateFormatter::parse);\n" +
               "optionalStartDate.ifPresent(startDate -> {\n" +
-                  "currentTask.idleDurationInMs = claimDateInMs - startDate.getTime();\n" +
+                  "currentTask.${idleDurationInMsField} = claimDateInMs - startDate.getTime();\n" +
               "});\n" +
               "optionalEndDate.ifPresent(endDate -> {\n" +
-                  "currentTask.workDurationInMs = endDate.getTime() - claimDateInMs;\n" +
+                  "currentTask.${workDurationInMsField} = endDate.getTime() - claimDateInMs;\n" +
               "});\n" +
             "});\n" +
           "}\n" +
