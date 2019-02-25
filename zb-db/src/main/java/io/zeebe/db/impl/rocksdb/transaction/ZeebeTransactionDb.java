@@ -22,7 +22,6 @@ import io.zeebe.db.DbKey;
 import io.zeebe.db.DbValue;
 import io.zeebe.db.KeyValuePairVisitor;
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.db.impl.rocksdb.RocksDbIterator;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -349,7 +348,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
 
       boolean shouldVisitNext = true;
 
-      for (RocksDbIterator.seek(
+      for (RocksDbInternal.seek(
               iterator, getNativeHandle(iterator), prefixKeyBuffer.byteArray(), prefixLength);
           iterator.isValid() && shouldVisitNext;
           iterator.next()) {
