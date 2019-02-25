@@ -114,6 +114,7 @@ public class WorkflowInstanceStreamProcessorTest {
 
   @Before
   public void setUp() {
+
     streamProcessor = streamProcessorRule.getStreamProcessor();
   }
 

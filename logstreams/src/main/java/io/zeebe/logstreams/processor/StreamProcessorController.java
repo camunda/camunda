@@ -81,6 +81,7 @@ public class StreamProcessorController extends Actor {
   private boolean suspended = false;
 
   private StreamProcessorMetrics metrics;
+  private ZeebeDb zeebeDb;
 
   public StreamProcessorController(final StreamProcessorContext context) {
     this.streamProcessorContext = context;
@@ -132,7 +133,7 @@ public class StreamProcessorController extends Actor {
       snapshotPosition = recoverFromSnapshot(logStream.getCommitPosition(), logStream.getTerm());
       lastSourceEventPosition = seekFromSnapshotPositionToLastSourceEvent();
 
-      final ZeebeDb zeebeDb = snapshotController.openDb();
+      zeebeDb = snapshotController.openDb();
       streamProcessor = streamProcessorFactory.createProcessor(zeebeDb);
       streamProcessor.onOpen(streamProcessorContext);
     } catch (final Exception e) {
@@ -241,7 +242,7 @@ public class StreamProcessorController extends Actor {
 
         if (eventProcessor != null) {
           // don't execute side effects or write events
-          eventProcessor.processEvent();
+          zeebeDb.transaction(eventProcessor::processEvent);
           onRecordReprocessed(currentEvent);
         } else {
           onRecordReprocessed(currentEvent);
@@ -300,7 +301,7 @@ public class StreamProcessorController extends Actor {
       try {
         metrics.incrementEventsProcessedCount();
 
-        eventProcessor.processEvent();
+        zeebeDb.transaction(eventProcessor::processEvent);
         actor.runUntilDone(this::executeSideEffects);
       } catch (final Exception e) {
         LOG.error(ERROR_MESSAGE_PROCESSING_FAILED, getName(), e);

@@ -91,7 +91,7 @@ public class MessageSubscriptionState {
   }
 
   public void put(final MessageSubscription subscription) {
-    zeebeDb.batch(
+    zeebeDb.transaction(
         () -> {
           elementInstanceKey.wrapLong(subscription.getElementInstanceKey());
           messageName.wrapBuffer(subscription.getMessageName());
@@ -145,7 +145,7 @@ public class MessageSubscriptionState {
   }
 
   public void updateSentTime(final MessageSubscription subscription, long sentTime) {
-    zeebeDb.batch(
+    zeebeDb.transaction(
         () -> {
           elementInstanceKey.wrapLong(subscription.getElementInstanceKey());
           messageName.wrapBuffer(subscription.getMessageName());
@@ -196,7 +196,7 @@ public class MessageSubscriptionState {
   }
 
   public void remove(final MessageSubscription subscription) {
-    zeebeDb.batch(
+    zeebeDb.transaction(
         () -> {
           subscriptionColumnFamily.delete(elementKeyAndMessageName);
 

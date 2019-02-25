@@ -60,7 +60,7 @@ public class TimerInstanceState {
   }
 
   public void put(TimerInstance timer) {
-    zeebeDb.batch(
+    zeebeDb.transaction(
         () -> {
           timerKey.wrapLong(timer.getKey());
           elementInstanceKey.wrapLong(timer.getElementInstanceKey());
@@ -119,7 +119,7 @@ public class TimerInstanceState {
 
   public void remove(TimerInstance timer) {
 
-    zeebeDb.batch(
+    zeebeDb.transaction(
         () -> {
           elementInstanceKey.wrapLong(timer.getElementInstanceKey());
           timerKey.wrapLong(timer.getKey());

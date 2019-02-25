@@ -117,7 +117,7 @@ public class MessageState {
   }
 
   public void put(final Message message) {
-    zeebeDb.batch(
+    zeebeDb.transaction(
         () -> {
           messageKey.wrapLong(message.getKey());
           messageColumnFamily.put(messageKey, message);
@@ -198,7 +198,7 @@ public class MessageState {
       return;
     }
 
-    zeebeDb.batch(
+    zeebeDb.transaction(
         () -> {
           messageKey.wrapLong(message.getKey());
           messageColumnFamily.delete(messageKey);
