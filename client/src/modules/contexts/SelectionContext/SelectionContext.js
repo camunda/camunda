@@ -58,8 +58,7 @@ class BasicSelectionProvider extends React.Component {
       rollingSelectionIndex: rollingSelectionIndex || 0,
       selectedInstances: DEFAULT_SELECTED_INSTANCES,
       selectionCount: selectionCount || 0,
-      selections: deserializeInstancesMaps(selections) || [],
-      selectionsFetchCounter: 0
+      selections: deserializeInstancesMaps(selections) || []
     };
   }
 
@@ -293,7 +292,6 @@ class BasicSelectionProvider extends React.Component {
 
     this.setState(prevState => {
       return {
-        selectionsFetchCounter: prevState.selectionsFetchCounter + 1,
         selections
       };
     });

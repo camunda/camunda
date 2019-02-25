@@ -35,7 +35,6 @@ const mountSelection = isOpen => {
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
         onDelete={mockOnDelete}
-        selectionsFetchCounter={0}
       />
     </ThemeProvider>
   );
@@ -137,7 +136,6 @@ describe('Selection', () => {
         onRetry={mockOnRetry}
         onCancel={mockOnCancel}
         onDelete={mockOnDelete}
-        selectionsFetchCounter={0}
       />
     );
 
@@ -151,7 +149,7 @@ describe('Selection', () => {
     );
 
     // simulate list update
-    node.setProps({selectionsFetchCounter: 1});
+    node.setProps({instances: new Map(mockMap)});
     node.update();
 
     // remove spinner and show state of last operation

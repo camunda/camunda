@@ -25,8 +25,7 @@ export default class Selection extends React.Component {
     onToggle: PropTypes.func.isRequired,
     onRetry: PropTypes.func.isRequired,
     onCancel: PropTypes.func.isRequired,
-    onDelete: PropTypes.func.isRequired,
-    selectionsFetchCounter: PropTypes.number.isRequired
+    onDelete: PropTypes.func.isRequired
   };
 
   state = {
@@ -34,8 +33,7 @@ export default class Selection extends React.Component {
   };
 
   componentDidUpdate(prevProps, prevState) {
-    const isNewInstancesList =
-      prevProps.selectionsFetchCounter !== this.props.selectionsFetchCounter;
+    const isNewInstancesList = prevProps.instances !== this.props.instances;
 
     // detect if the list has been updated since the operation and reset the spinner
     if (isNewInstancesList) {
