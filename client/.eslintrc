@@ -5,5 +5,8 @@
     "react/sort-comp": [2],
     "react/prop-types": [2]
   },
-  "extends": "react-app"
+  "extends": [
+    "react-app",
+    "plugin:camunda-licensed/commercial"
+  ]
 }
