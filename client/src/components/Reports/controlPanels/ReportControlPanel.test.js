@@ -100,9 +100,9 @@ it('should disable options, which would create wrong combination', () => {
 
   expect(
     node
-      .find('Dropdown')
+      .find(Dropdown)
       .at(1)
-      .find('DropdownOption')
+      .find(Dropdown.Option)
   ).toBeDisabled();
 });
 
@@ -141,7 +141,7 @@ it('should include variables in the groupby options', () => {
 
   node.setState({variables: [{name: 'Var1'}, {name: 'Var2'}]});
 
-  const varDropdown = node.find('[label="Group by"] Submenu DropdownOption');
+  const varDropdown = node.find('[label="Group by"] Submenu').find(Dropdown.Option);
 
   expect(varDropdown.at(0).prop('children')).toBe('Var1');
   expect(varDropdown.at(1).prop('children')).toBe('Var2');
@@ -161,7 +161,7 @@ it('should only include variables that match the typeahead', () => {
     variableTypeaheadValue: 'foo'
   });
 
-  const varDropdown = node.find('[label="Group by"] Submenu DropdownOption');
+  const varDropdown = node.find('[label="Group by"] Submenu').find(Dropdown.Option);
 
   expect(varDropdown).toHaveLength(2);
   expect(varDropdown.at(0).prop('children')).toBe('Foo');
@@ -183,7 +183,7 @@ it('should show pagination for many variables', () => {
     ]
   });
 
-  const varDropdown = node.find('[label="Group by"] Submenu DropdownOption');
+  const varDropdown = node.find('[label="Group by"] Submenu').find(Dropdown.Option);
 
   expect(varDropdown).toHaveLength(5);
   expect(node.find('.loadMore')).toBePresent();

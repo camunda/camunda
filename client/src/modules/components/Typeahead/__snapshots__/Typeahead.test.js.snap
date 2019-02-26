@@ -24,7 +24,7 @@ exports[`should display available options if dropdown is open 1`] = `
       }
     }
   >
-    <DropdownOption
+    <ForwardRef(DropdownOption)
       className="searchResult isActive"
       key="foo"
       onClick={[Function]}
@@ -37,8 +37,8 @@ exports[`should display available options if dropdown is open 1`] = `
       }
     >
       foo
-    </DropdownOption>
-    <DropdownOption
+    </ForwardRef(DropdownOption)>
+    <ForwardRef(DropdownOption)
       className="searchResult"
       key="bar"
       onClick={[Function]}
@@ -51,7 +51,7 @@ exports[`should display available options if dropdown is open 1`] = `
       }
     >
       bar
-    </DropdownOption>
+    </ForwardRef(DropdownOption)>
   </div>
 </div>
 `;
@@ -80,7 +80,7 @@ exports[`should format the data based on the provided formatter 1`] = `
       }
     }
   >
-    <DropdownOption
+    <ForwardRef(DropdownOption)
       className="searchResult isActive"
       key="foofoo"
       onClick={[Function]}
@@ -93,8 +93,8 @@ exports[`should format the data based on the provided formatter 1`] = `
       }
     >
       foofoo
-    </DropdownOption>
-    <DropdownOption
+    </ForwardRef(DropdownOption)>
+    <ForwardRef(DropdownOption)
       className="searchResult"
       key="barbar"
       onClick={[Function]}
@@ -107,7 +107,7 @@ exports[`should format the data based on the provided formatter 1`] = `
       }
     >
       barbar
-    </DropdownOption>
+    </ForwardRef(DropdownOption)>
   </div>
 </div>
 `;
@@ -136,7 +136,7 @@ exports[`should only display entries that match the typeahead value 1`] = `
       }
     }
   >
-    <DropdownOption
+    <ForwardRef(DropdownOption)
       className="searchResult isActive"
       key="varFoo"
       onClick={[Function]}
@@ -162,8 +162,8 @@ exports[`should only display entries that match the typeahead value 1`] = `
       <span
         key="2"
       />
-    </DropdownOption>
-    <DropdownOption
+    </ForwardRef(DropdownOption)>
+    <ForwardRef(DropdownOption)
       className="searchResult"
       key="varFoobar"
       onClick={[Function]}
@@ -191,7 +191,7 @@ exports[`should only display entries that match the typeahead value 1`] = `
       >
         bar
       </span>
-    </DropdownOption>
+    </ForwardRef(DropdownOption)>
   </div>
 </div>
 `;
@@ -220,7 +220,7 @@ exports[`should only display entries that match the typeahead value, even if the
       }
     }
   >
-    <DropdownOption
+    <ForwardRef(DropdownOption)
       className="searchResult isActive"
       key="varFoobarvarFoobar"
       onClick={[Function]}
@@ -248,7 +248,7 @@ exports[`should only display entries that match the typeahead value, even if the
       >
         Foobar
       </span>
-    </DropdownOption>
+    </ForwardRef(DropdownOption)>
   </div>
 </div>
 `;

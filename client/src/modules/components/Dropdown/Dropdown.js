@@ -16,7 +16,8 @@ export default class Dropdown extends React.Component {
     this.state = {
       open: false,
       openSubmenu: null,
-      fixedSubmenu: null
+      fixedSubmenu: null,
+      menuStyle: {}
     };
   }
 
@@ -35,7 +36,26 @@ export default class Dropdown extends React.Component {
 
   componentDidMount() {
     document.body.addEventListener('click', this.close, true);
+    this.calculateMenuStyle();
+    window.addEventListener('resize', this.calculateMenuStyle);
   }
+
+  calculateMenuStyle = () => {
+    const container = this.container;
+    const menuStyle = {minWidth: container.clientWidth + 'px'};
+
+    const overlayWidth = this.menuContainer.current.clientWidth;
+    const buttonPosition = container.querySelector('.activateButton').getBoundingClientRect().left;
+    const bodyWidth = document.body.clientWidth;
+
+    if (buttonPosition + overlayWidth > bodyWidth) {
+      menuStyle.right = 0;
+    } else {
+      menuStyle.left = 0;
+    }
+
+    this.setState({menuStyle});
+  };
 
   handleKeyPress = evt => {
     const dropdownButton = this.container.children[0];
@@ -113,7 +133,7 @@ export default class Dropdown extends React.Component {
           className="menu"
           aria-labelledby={this.props.id ? this.props.id + '-button' : ''}
           ref={this.menuContainer}
-          style={{minWidth: (this.container && this.container.clientWidth) + 'px'}}
+          style={this.state.menuStyle}
         >
           <ul>
             {React.Children.map(this.props.children, (child, idx) => (
@@ -160,6 +180,7 @@ export default class Dropdown extends React.Component {
 
   componentWillUnmount() {
     document.body.removeEventListener('click', this.close, true);
+    window.removeEventListener('resize', this.calculateMenuStyle);
   }
 }
 

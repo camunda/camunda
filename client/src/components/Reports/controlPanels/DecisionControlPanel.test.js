@@ -79,7 +79,7 @@ it('should not disable the groupBy and visualization Selects if view is selected
 it('should include variables in the groupby options', () => {
   const node = shallow(<DecisionControlPanel report={report} />);
 
-  const varDropdown = node.find('[label="Group by"] Submenu DropdownOption');
+  const varDropdown = node.find('[label="Group by"] Submenu').find(Dropdown.Option);
 
   expect(varDropdown.at(0).prop('children')).toBe('aName');
   expect(varDropdown.at(1).prop('children')).toBe('anotherName');

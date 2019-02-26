@@ -5,7 +5,7 @@ import Dropdown from './Dropdown';
 
 jest.mock('components', () => {
   return {
-    Button: ({children}) => <button>{children}</button>,
+    Button: props => <button {...props} />,
     Icon: () => <span />
   };
 });
@@ -39,7 +39,7 @@ it('should display the child elements when clicking the trigger', () => {
     </Dropdown>
   );
 
-  node.find('.activateButton').simulate('click');
+  node.find('button.activateButton').simulate('click');
 
   expect(node.find('.Dropdown')).toMatchSelector('.is-open');
 });
@@ -83,7 +83,9 @@ it('should set aria-haspopup to true', () => {
     </Dropdown>
   );
 
-  expect(node.find('.activateButton')).toMatchSelector('.activateButton[aria-haspopup="true"]');
+  expect(node.find('button.activateButton')).toMatchSelector(
+    '.activateButton[aria-haspopup="true"]'
+  );
 });
 
 it('should set aria-expanded to false by default', () => {
@@ -93,7 +95,9 @@ it('should set aria-expanded to false by default', () => {
     </Dropdown>
   );
 
-  expect(node.find('.activateButton')).toMatchSelector('.activateButton[aria-expanded="false"]');
+  expect(node.find('button.activateButton')).toMatchSelector(
+    '.activateButton[aria-expanded="false"]'
+  );
 });
 
 it('should set aria-expanded to true when open', () => {
@@ -106,7 +110,9 @@ it('should set aria-expanded to true when open', () => {
   node.simulate('click');
 
   expect(node.state('open')).toBe(true);
-  expect(node.find('.activateButton')).toMatchSelector('.activateButton[aria-expanded="true"]');
+  expect(node.find('button.activateButton')).toMatchSelector(
+    '.activateButton[aria-expanded="true"]'
+  );
 });
 
 it('should set aria-expanded to false when closed', () => {
@@ -121,7 +127,9 @@ it('should set aria-expanded to false when closed', () => {
   node.simulate('click');
 
   expect(node.state('open')).toBe(false);
-  expect(node.find('.activateButton')).toMatchSelector('.activateButton[aria-expanded="false"]');
+  expect(node.find('button.activateButton')).toMatchSelector(
+    '.activateButton[aria-expanded="false"]'
+  );
 });
 
 it('should set aria-labelledby on the menu as provided as a prop, amended by "-button"', () => {

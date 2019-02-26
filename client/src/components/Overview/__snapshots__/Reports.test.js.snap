@@ -8,20 +8,20 @@ exports[`should have a Dropdown with more creation options 1`] = `
     />
   }
 >
-  <DropdownOption
+  <ForwardRef(DropdownOption)
     onClick={[Function]}
   >
     Create Process Report
-  </DropdownOption>
-  <DropdownOption
+  </ForwardRef(DropdownOption)>
+  <ForwardRef(DropdownOption)
     onClick={[Function]}
   >
     Create Combined Process Report
-  </DropdownOption>
-  <DropdownOption
+  </ForwardRef(DropdownOption)>
+  <ForwardRef(DropdownOption)
     onClick={[Function]}
   >
     Create Decision Report
-  </DropdownOption>
+  </ForwardRef(DropdownOption)>
 </Dropdown>
 `;
