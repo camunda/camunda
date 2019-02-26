@@ -73,6 +73,7 @@ public class ElasticsearchExporterTest {
     config.index.messageSubscription = true;
     config.index.raft = true;
     config.index.variable = true;
+    config.index.variableDocument = true;
     config.index.workflowInstance = true;
     config.index.workflowInstanceSubscription = true;
 
@@ -91,6 +92,7 @@ public class ElasticsearchExporterTest {
     verify(esClient).putIndexTemplate(ValueType.MESSAGE_SUBSCRIPTION);
     verify(esClient).putIndexTemplate(ValueType.RAFT);
     verify(esClient).putIndexTemplate(ValueType.VARIABLE);
+    verify(esClient).putIndexTemplate(ValueType.VARIABLE_DOCUMENT);
     verify(esClient).putIndexTemplate(ValueType.WORKFLOW_INSTANCE);
     verify(esClient).putIndexTemplate(ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
   }
@@ -107,6 +109,7 @@ public class ElasticsearchExporterTest {
     config.index.messageSubscription = true;
     config.index.raft = true;
     config.index.variable = true;
+    config.index.variableDocument = true;
     config.index.workflowInstance = true;
     config.index.workflowInstanceSubscription = true;
 
@@ -122,6 +125,7 @@ public class ElasticsearchExporterTest {
           ValueType.MESSAGE_SUBSCRIPTION,
           ValueType.RAFT,
           ValueType.VARIABLE,
+          ValueType.VARIABLE_DOCUMENT,
           ValueType.WORKFLOW_INSTANCE,
           ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION
         };
@@ -147,6 +151,7 @@ public class ElasticsearchExporterTest {
     config.index.messageSubscription = false;
     config.index.raft = false;
     config.index.variable = false;
+    config.index.variableDocument = false;
     config.index.workflowInstance = false;
     config.index.workflowInstanceSubscription = false;
 
@@ -162,6 +167,7 @@ public class ElasticsearchExporterTest {
           ValueType.MESSAGE_SUBSCRIPTION,
           ValueType.RAFT,
           ValueType.VARIABLE,
+          ValueType.VARIABLE_DOCUMENT,
           ValueType.WORKFLOW_INSTANCE,
           ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION
         };

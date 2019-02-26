@@ -134,6 +134,9 @@ public class ElasticsearchExporter implements Exporter {
       if (index.variable) {
         createValueIndexTemplate(ValueType.VARIABLE);
       }
+      if (index.variableDocument) {
+        createValueIndexTemplate(ValueType.VARIABLE_DOCUMENT);
+      }
       if (index.workflowInstance) {
         createValueIndexTemplate(ValueType.WORKFLOW_INSTANCE);
       }
