@@ -1,3 +1,13 @@
+<a name="0.15.1"></a>
+## 0.15.1 (2019-02-26)
+
+
+#### Bug Fixes
+
+* **zb-db:**  stop iterating after prefix was exceeded ([0e873c6a](https://github.com/zeebe-io/zeebe/commit/0e873c6a90708be762ca40119f839d3efef2cb87))
+
+
+
 <a name="0.15.0"></a>
 ## 0.15.0 (2019-02-12)
 
