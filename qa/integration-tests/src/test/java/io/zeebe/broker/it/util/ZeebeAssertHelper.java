@@ -43,7 +43,7 @@ public class ZeebeAssertHelper {
   public static void assertWorkflowInstanceCreated(long workflowInstanceKey) {
     assertThat(
             RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
-                .withKey(workflowInstanceKey)
+                .withRecordKey(workflowInstanceKey)
                 .withWorkflowInstanceKey(workflowInstanceKey)
                 .exists())
         .isTrue();
@@ -74,7 +74,7 @@ public class ZeebeAssertHelper {
       long workflowInstanceKey, Consumer<WorkflowInstanceRecordValue> consumer) {
     final Record<WorkflowInstanceRecordValue> record =
         RecordingExporter.workflowInstanceRecords(ELEMENT_COMPLETED)
-            .withKey(workflowInstanceKey)
+            .withRecordKey(workflowInstanceKey)
             .getFirst();
 
     assertThat(record).isNotNull();

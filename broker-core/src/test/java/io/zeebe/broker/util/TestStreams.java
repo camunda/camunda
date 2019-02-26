@@ -55,6 +55,7 @@ import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.raft.event.RaftConfigurationEvent;
@@ -92,6 +93,7 @@ public class TestStreams {
     VALUE_TYPES.put(TimerRecord.class, ValueType.TIMER);
     VALUE_TYPES.put(VariableRecord.class, ValueType.VARIABLE);
     VALUE_TYPES.put(VariableDocumentRecord.class, ValueType.VARIABLE_DOCUMENT);
+    VALUE_TYPES.put(WorkflowInstanceCreationRecord.class, ValueType.WORKFLOW_INSTANCE_CREATION);
 
     VALUE_TYPES.put(UnpackedObject.class, ValueType.NOOP);
   }
@@ -300,6 +302,16 @@ public class TestStreams {
           e ->
               Records.isWorkflowInstanceRecord(e)
                   && test.test(CopiedTypedEvent.toTypedEvent(e, WorkflowInstanceRecord.class)));
+    }
+
+    @Override
+    public void blockAfterWorkflowInstanceCreationRecord(
+        final Predicate<TypedRecord<WorkflowInstanceCreationRecord>> test) {
+      blockAfterEvent(
+          e ->
+              Records.isWorkflowInstanceCreationRecord(e)
+                  && test.test(
+                      CopiedTypedEvent.toTypedEvent(e, WorkflowInstanceCreationRecord.class)));
     }
 
     @Override

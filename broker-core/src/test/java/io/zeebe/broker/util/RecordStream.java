@@ -25,6 +25,7 @@ import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -101,6 +102,12 @@ public class RecordStream extends StreamWrapper<LoggedEvent, RecordStream> {
     return new TypedRecordStream<>(
         filter(Records::isTimerRecord)
             .map(e -> CopiedTypedEvent.toTypedEvent(e, TimerRecord.class)));
+  }
+
+  public TypedRecordStream<WorkflowInstanceCreationRecord> onlyWorkflowInstanceCreationRecords() {
+    return new TypedRecordStream<>(
+        filter(Records::isWorkflowInstanceCreationRecord)
+            .map(e -> CopiedTypedEvent.toTypedEvent(e, WorkflowInstanceCreationRecord.class)));
   }
 
   /**

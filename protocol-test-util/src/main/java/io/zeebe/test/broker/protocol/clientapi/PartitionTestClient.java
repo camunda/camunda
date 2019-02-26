@@ -422,7 +422,7 @@ public class PartitionTestClient {
 
   public Record<DeploymentRecordValue> receiveFirstDeploymentEvent(
       final DeploymentIntent intent, final long deploymentKey) {
-    return receiveDeployments().withIntent(intent).withKey(deploymentKey).getFirst();
+    return receiveDeployments().withIntent(intent).withRecordKey(deploymentKey).getFirst();
   }
 
   /////////////////////////////////////////////
