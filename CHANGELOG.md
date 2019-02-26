@@ -1,3 +1,13 @@
+<a name="0.15.1"></a>
+## 0.15.1 (2019-02-26)
+
+
+#### Bug Fixes
+
+* **broker:**  stop iterating after prefix was exceeded ([0e873c6a](https://github.com/zeebe-io/zeebe/commit/0e873c6a90708be762ca40119f839d3efef2cb87))
+
+
+
 <a name="0.15.0"></a>
 ## 0.15.0 (2019-02-12)
 
@@ -44,7 +54,7 @@
   * allow non-strict condtions ([c8f4480d](https://github.com/zeebe-io/zeebe/commit/c8f4480d707048ad9ae4dfcda685483485cda2e0))
   *  provide integration test utitilities for exporter authors ([5cbbcfc9](https://github.com/zeebe-io/zeebe/commit/5cbbcfc948b7d16e6a9f7f4641774675f60ac219))
   *  adds a slew of Exporter test utilities ([899221ea](https://github.com/zeebe-io/zeebe/commit/899221ead4b03a2c017fcb410ba22bc4367a6985))
-* **clients/go:**  
+* **clients/go:**
   * add optional list of variables to activate jobs/job worker ([911aeea5](https://github.com/zeebe-io/zeebe/commit/911aeea5f08bcd02239236d18b140a43c1031f4a))
   * Add omitempty-ignoring object marshaller method to go api ([4823b42b](https://github.com/zeebe-io/zeebe/commit/4823b42b865bdc4e14be96c6d55cdd4e6dc4502b))
 * **clients/java:**

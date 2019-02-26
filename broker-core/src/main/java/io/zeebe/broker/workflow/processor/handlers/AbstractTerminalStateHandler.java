@@ -41,7 +41,6 @@ public class AbstractTerminalStateHandler<T extends ExecutableFlowElement>
     // currently we always cleanup whether or not the state was successfully handled, which is fine
     // as by convention we shouldn't perform anything in terminal state which might fail
     context.getStateDb().getEventScopeInstanceState().deleteInstance(context.getRecord().getKey());
-    context.getElementInstanceState().getVariablesState().removeScope(context.getRecord().getKey());
     context.getElementInstanceState().removeInstance(context.getRecord().getKey());
   }
 
