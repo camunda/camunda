@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.service.util.VersionChecker.checkEngineVersionSupport;
+import static org.camunda.optimize.service.util.EngineVersionChecker.checkEngineVersionSupport;
 
 
 @Component

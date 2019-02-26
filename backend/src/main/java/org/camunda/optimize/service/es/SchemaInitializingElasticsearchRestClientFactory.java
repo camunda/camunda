@@ -16,7 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.service.util.VersionChecker.checkESVersionSupport;
+import static org.camunda.optimize.service.util.ESVersionChecker.checkESVersionSupport;
 
 
 public class SchemaInitializingElasticsearchRestClientFactory

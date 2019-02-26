@@ -12,7 +12,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
 
-public class VersionCheckerIT {
+public class EngineVersionCheckerIT {
   private EngineIntegrationRule engineRule = new EngineIntegrationRule();
   private ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   private EmbeddedOptimizeRule embeddedOptimizeRule2 =
