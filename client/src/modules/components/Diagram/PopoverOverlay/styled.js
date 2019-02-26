@@ -131,24 +131,24 @@ const arrowStyle = ({side}) => {
 const transformStyle = ({side}) => {
   if (side === 'RIGHT') {
     return css`
-      transform: translate(0, -50%);
+      transform: translate(0, calc(-6px - 50%));
     `;
   }
 
   if (side === 'BOTTOM') {
     return css`
-      transform: translate(-50%, 0);
+      transform: translate(calc(-6px - 50%), 0);
     `;
   }
 
   if (side === 'LEFT') {
     return css`
-      transform: translate(-100%, -50%);
+      transform: translate(-100%, calc(-6px - 50%));
     `;
   }
 
   return css`
-    transform: translate(-50%, -100%);
+    transform: translate(calc(-6px - 50%), -100%);
   `;
 };
 
@@ -203,11 +203,20 @@ export const SummaryHeader = styled.div`
   white-space: nowrap;
 `;
 
-export const SummaryDataCell = styled.div`
+export const SummaryDataKey = styled.dt`
   white-space: nowrap;
+  line-height: 18px;
+  text-align: right;
+  font-weight: normal;
 `;
 
-export const SummaryData = styled.div`
+export const SummaryDataValue = styled.dd`
+  white-space: nowrap;
+  line-height: 18px;
+  margin: 0;
+`;
+
+export const SummaryData = styled.dl`
   margin: 0;
   padding: 0;
   font-weight: 600;
@@ -216,11 +225,7 @@ export const SummaryData = styled.div`
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   grid-column-gap: 6px;
-
-  ${SummaryDataCell}:nth-child(odd) {
-    text-align: right;
-    font-weight: normal;
-  }
+  margin-bottom: 23px;
 `;
 
 export const Button = themed(styled.button`

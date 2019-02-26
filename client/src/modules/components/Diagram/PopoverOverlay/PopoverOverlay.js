@@ -95,10 +95,10 @@ export default class PopoverOverlay extends React.Component {
           {Object.entries(summary).map(([key, value]) => {
             return (
               <React.Fragment key={key}>
-                <Styled.SummaryDataCell>{key}:</Styled.SummaryDataCell>
-                <Styled.SummaryDataCell>
+                <Styled.SummaryDataKey>{key}:</Styled.SummaryDataKey>
+                <Styled.SummaryDataValue>
                   {typeof value === 'string' ? value : JSON.stringify(value)}
-                </Styled.SummaryDataCell>
+                </Styled.SummaryDataValue>
               </React.Fragment>
             );
           })}
