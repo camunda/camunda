@@ -14,21 +14,50 @@ export function getDiagramColors(theme) {
   };
 }
 
-export function getPopoverPostion({diagramContainer, flowNode}) {
-  const MIN_HEIGHT = 70;
-  const MIN_WIDTH = 190;
-
+export function getPopoverPostion({
+  diagramContainer,
+  flowNode,
+  minHeight,
+  minWidth
+}) {
   const containerBoundary = diagramContainer.getBoundingClientRect();
   const flowNodeBoundary = flowNode.getBoundingClientRect();
   const flowNodeBBox = flowNode.getBBox();
 
-  const spaceToBottom =
-    containerBoundary.top +
-    containerBoundary.height -
-    flowNodeBoundary.top -
-    flowNodeBoundary.height;
+  // space between the bottom of the flow node and the end of the diagram container
+  const spaceToBottom = containerBoundary.bottom - flowNodeBoundary.bottom;
+  // space between the left of the flow node and the end of the diagram container
+  const spaceToLeft = flowNodeBoundary.left - containerBoundary.left;
+  // space between the top of the flow node and the end of the diagram container
+  const spaceToTop = flowNodeBoundary.top - containerBoundary.top;
+  // space between the right of the flow node and the end of the diagram container
+  const spaceToRight =
+    containerBoundary.width - spaceToLeft - flowNodeBoundary.width;
 
-  if (spaceToBottom > MIN_HEIGHT) {
+  // space to the left of the popover, if it gets position at the bottom/top of the flow node
+  const veritcalPopoverSpaceToLeft =
+    flowNodeBoundary.left + flowNodeBoundary.width / 2;
+
+  // space to the right of the popover, if it gets position at the bottom/top of the flow node
+  const verticalPopoverSpaceToRight =
+    flowNodeBoundary.right + flowNodeBoundary.width / 2;
+
+  // space to the bottom of the popover, if it gets position at the left/right of the flow node
+  const horizontalPopoverSpaceToBottom =
+    containerBoundary.bottom -
+    flowNodeBoundary.bottom +
+    flowNodeBoundary.height / 2;
+
+  // space to the top of the popover, if it gets position at the left/right of the flow node
+  const horizontalPopoverSpaceToTOP =
+    flowNodeBoundary.top + flowNodeBoundary.height / 2;
+
+  // can the popover be positioned at the bottom of the flow node?
+  if (
+    spaceToBottom > minHeight &&
+    veritcalPopoverSpaceToLeft > minWidth / 2 &&
+    verticalPopoverSpaceToRight > minWidth / 2
+  ) {
     return {
       bottom: -16,
       left: flowNodeBBox.width / 2,
@@ -36,9 +65,12 @@ export function getPopoverPostion({diagramContainer, flowNode}) {
     };
   }
 
-  const spaceToLeft = flowNodeBoundary.left - containerBoundary.left;
-
-  if (spaceToLeft > MIN_WIDTH) {
+  // can the popover be positioned at the left of the flow node?
+  if (
+    spaceToLeft > minWidth &&
+    horizontalPopoverSpaceToBottom > minHeight / 2 &&
+    horizontalPopoverSpaceToTOP > minHeight / 2
+  ) {
     return {
       left: -16,
       top: flowNodeBBox.height / 2,
@@ -46,9 +78,12 @@ export function getPopoverPostion({diagramContainer, flowNode}) {
     };
   }
 
-  const spaceToTop = flowNodeBoundary.top - containerBoundary.top;
-
-  if (spaceToTop > MIN_HEIGHT) {
+  // can the popover be positioned at the top of the flow node?
+  if (
+    spaceToTop > minHeight &&
+    veritcalPopoverSpaceToLeft > minWidth / 2 &&
+    verticalPopoverSpaceToRight > minWidth / 2
+  ) {
     return {
       top: -16,
       left: flowNodeBBox.width / 2,
@@ -56,10 +91,13 @@ export function getPopoverPostion({diagramContainer, flowNode}) {
     };
   }
 
-  const spaceToRight =
-    containerBoundary.width - spaceToLeft - flowNodeBoundary.width;
+  // can the popover be positioned at the right of the flow node?
 
-  if (spaceToRight > MIN_WIDTH) {
+  if (
+    spaceToRight > minWidth &&
+    horizontalPopoverSpaceToBottom > minHeight &&
+    horizontalPopoverSpaceToTOP > minHeight
+  ) {
     return {
       top: flowNodeBBox.height / 2,
       right: -16,
@@ -67,6 +105,7 @@ export function getPopoverPostion({diagramContainer, flowNode}) {
     };
   }
 
+  // position the popover in a mirrored position (from bottom to top) at the bottom of the flow node
   return {
     bottom: 16,
     left: flowNodeBBox.width / 2,

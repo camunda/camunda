@@ -1,31 +1,38 @@
 import {getPopoverPostion} from './service';
 import {POPOVER_SIDE} from 'modules/constants';
 
+function generateBoundary({top, left, height, width}) {
+  return {
+    top,
+    left,
+    height,
+    width,
+    bottom: top + height,
+    right: left + width
+  };
+}
+
 describe('diagram service', () => {
   describe('getPopoverPostion', () => {
     it('should give BOTTOM position', () => {
       // given
-      const diagramContainerBoundary = {
+      const diagramContainerBoundary = generateBoundary({
         top: 20,
-        left: 20,
-        right: 20,
-        bottom: 20,
+        left: 100,
         height: 400,
         width: 400
-      };
+      });
 
       const diagramContainer = {
         getBoundingClientRect: () => diagramContainerBoundary
       };
 
-      const flowNodeBoundary = {
+      const flowNodeBoundary = generateBoundary({
         top: 40,
         left: 100,
-        right: 300,
-        bottom: 360,
         height: 50,
         width: 50
-      };
+      });
 
       const flowNodeBBox = {
         width: 50,
@@ -38,7 +45,12 @@ describe('diagram service', () => {
       };
 
       // when
-      const position = getPopoverPostion({diagramContainer, flowNode});
+      const position = getPopoverPostion({
+        diagramContainer,
+        flowNode,
+        minHeight: 100,
+        minWidth: 190
+      });
 
       // then
       expect(position.bottom).toBe(-16);
@@ -48,27 +60,23 @@ describe('diagram service', () => {
 
     it('should give LEFT position', () => {
       // given
-      const diagramContainerBoundary = {
+      const diagramContainerBoundary = generateBoundary({
         top: 20,
         left: 20,
-        right: 20,
-        bottom: 20,
         height: 400,
         width: 400
-      };
+      });
 
       const diagramContainer = {
         getBoundingClientRect: () => diagramContainerBoundary
       };
 
-      const flowNodeBoundary = {
-        top: 10,
-        left: 300,
-        right: 100,
-        bottom: 10,
+      const flowNodeBoundary = generateBoundary({
+        top: 50,
+        left: 500,
         height: 380,
         width: 50
-      };
+      });
 
       const flowNodeBBox = {
         width: 50,
@@ -81,7 +89,12 @@ describe('diagram service', () => {
       };
 
       // when
-      const position = getPopoverPostion({diagramContainer, flowNode});
+      const position = getPopoverPostion({
+        diagramContainer,
+        flowNode,
+        minHeight: 100,
+        minWidth: 190
+      });
 
       // then
       expect(position.left).toBe(-16);
@@ -91,27 +104,23 @@ describe('diagram service', () => {
 
     it('should give TOP position', () => {
       // given
-      const diagramContainerBoundary = {
+      const diagramContainerBoundary = generateBoundary({
         top: 20,
         left: 20,
-        right: 20,
-        bottom: 20,
         height: 400,
         width: 400
-      };
+      });
 
       const diagramContainer = {
         getBoundingClientRect: () => diagramContainerBoundary
       };
 
-      const flowNodeBoundary = {
+      const flowNodeBoundary = generateBoundary({
         top: 350,
         left: 100,
-        right: 300,
-        bottom: 50,
         height: 50,
         width: 50
-      };
+      });
 
       const flowNodeBBox = {
         width: 50,
@@ -124,7 +133,12 @@ describe('diagram service', () => {
       };
 
       // when
-      const position = getPopoverPostion({diagramContainer, flowNode});
+      const position = getPopoverPostion({
+        diagramContainer,
+        flowNode,
+        minHeight: 100,
+        minWidth: 190
+      });
 
       // then
       expect(position.top).toBe(-16);
@@ -134,27 +148,23 @@ describe('diagram service', () => {
 
     it('should give RIGHT position', () => {
       // given
-      const diagramContainerBoundary = {
+      const diagramContainerBoundary = generateBoundary({
         top: 20,
         left: 20,
-        right: 20,
-        bottom: 20,
         height: 400,
         width: 400
-      };
+      });
 
       const diagramContainer = {
         getBoundingClientRect: () => diagramContainerBoundary
       };
 
-      const flowNodeBoundary = {
+      const flowNodeBoundary = generateBoundary({
         top: 10,
         left: 100,
-        right: 300,
-        bottom: 10,
         height: 380,
         width: 50
-      };
+      });
 
       const flowNodeBBox = {
         width: 50,
@@ -167,7 +177,12 @@ describe('diagram service', () => {
       };
 
       // when
-      const position = getPopoverPostion({diagramContainer, flowNode});
+      const position = getPopoverPostion({
+        diagramContainer,
+        flowNode,
+        minHeight: 100,
+        minWidth: 190
+      });
 
       // then
       expect(position.right).toBe(-16);
@@ -177,27 +192,23 @@ describe('diagram service', () => {
 
     it('should give BOTTOM MIRROR position', () => {
       // given
-      const diagramContainerBoundary = {
+      const diagramContainerBoundary = generateBoundary({
         top: 20,
         left: 20,
-        right: 20,
-        bottom: 20,
         height: 400,
         width: 400
-      };
+      });
 
       const diagramContainer = {
         getBoundingClientRect: () => diagramContainerBoundary
       };
 
-      const flowNodeBoundary = {
+      const flowNodeBoundary = generateBoundary({
         top: 10,
         left: 10,
-        right: 10,
-        bottom: 10,
         height: 380,
         width: 380
-      };
+      });
 
       const flowNodeBBox = {
         width: 380,
@@ -210,7 +221,12 @@ describe('diagram service', () => {
       };
 
       // when
-      const position = getPopoverPostion({diagramContainer, flowNode});
+      const position = getPopoverPostion({
+        diagramContainer,
+        flowNode,
+        minHeight: 100,
+        minWidth: 190
+      });
 
       // then
       expect(position.bottom).toBe(16);

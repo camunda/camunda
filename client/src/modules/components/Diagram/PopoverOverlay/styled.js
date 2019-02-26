@@ -225,7 +225,7 @@ export const SummaryData = styled.dl`
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   grid-column-gap: 6px;
-  margin-bottom: 23px;
+  margin-bottom: 8px;
 `;
 
 export const Button = themed(styled.button`
