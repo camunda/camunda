@@ -22,6 +22,34 @@ class SelectionList extends React.Component {
     polling: PropTypes.object
   };
 
+  componentDidUpdate(prevProps, prevState) {
+    // https://app.camunda.com/jira/browse/OPE-434
+    // the logic should normaly stay in componentDidMount
+    // as we only want to check when it renders the first time;
+    // Because first render is with outdated data from localStorage (see SelectionContext)
+    // we added here the code as a quick fix
+    if (prevProps.selections !== this.props.selections) {
+      const ids = this.getInstancesWithActiveOperation();
+      Boolean(ids.length) && this.props.polling.addIds(ids);
+    }
+  }
+
+  getInstancesWithActiveOperation = () => {
+    let instancesWithActiveOperations = [];
+
+    this.props.selections.forEach(selection => {
+      const activeInstances = [...selection.instancesMap.values()].filter(
+        item => item.hasActiveOperation
+      );
+      instancesWithActiveOperations = [
+        ...instancesWithActiveOperations,
+        ...activeInstances
+      ];
+    });
+
+    return instancesWithActiveOperations.map(item => item.id);
+  };
+
   executeBatchOperation = async (openSelectionId, operation) => {
     const {selections} = this.props;
     const selectionById = getSelectionById(selections, openSelectionId);

@@ -3,6 +3,7 @@ import {mount} from 'enzyme';
 
 import {
   createSelection,
+  createInstance,
   mockResolvedAsyncFn,
   groupedWorkflowsMock,
   flushPromises
@@ -206,6 +207,27 @@ describe('SelectionList', () => {
     // then
     expect(node.find('InstancesPollProvider').state().ids).toEqual([
       ...selections[0].instancesMap.keys()
+    ]);
+  });
+
+  it('should send active ids for polling if already present in selections', async () => {
+    const instanceId = '100';
+    const selections = [
+      createSelection({
+        selectionId: 1,
+        instancesMap: new Map([
+          [
+            instanceId,
+            createInstance({id: instanceId, hasActiveOperation: true})
+          ]
+        ])
+      })
+    ];
+
+    node.find('BasicSelectionProvider').setState({selections});
+    node.update();
+    expect(node.find('InstancesPollProvider').state().ids).toEqual([
+      instanceId
     ]);
   });
 });
