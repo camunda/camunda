@@ -250,20 +250,18 @@ class Diagram extends React.PureComponent {
     });
   };
 
-  getPopoverPostion = metadata => {
+  getPopoverPostion = isSummaryPopover => {
     const flowNode = this.Viewer.get('elementRegistry').getGraphics(
       this.props.selectedFlowNodeId
     );
 
-    const minHeight = metadata.isMultiRowPeterCase ? 50 : 100;
-    const minWidth = 190;
-
-    return getPopoverPostion({
-      diagramContainer: this.myRef.current,
-      flowNode,
-      minHeight,
-      minWidth
-    });
+    return getPopoverPostion(
+      {
+        diagramContainer: this.myRef.current,
+        flowNode
+      },
+      isSummaryPopover
+    );
   };
 
   render() {
@@ -291,7 +289,9 @@ class Diagram extends React.PureComponent {
               selectedFlowNodeName={this.props.selectedFlowNodeName}
               metadata={this.props.metadata}
               onFlowNodeSelection={this.props.onFlowNodeSelection}
-              position={this.getPopoverPostion(this.props.metadata)}
+              position={this.getPopoverPostion(
+                this.props.metadata.isMultiRowPeterCase
+              )}
               {...overlayProps}
             />
           )}

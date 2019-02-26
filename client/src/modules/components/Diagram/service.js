@@ -1,6 +1,8 @@
 import {Colors, themeStyle} from 'modules/theme';
 import {POPOVER_SIDE} from 'modules/constants';
 
+const POPOVER_TO_FLOWNODE_SPACE = 16;
+
 export function getDiagramColors(theme) {
   return {
     defaultFillColor: themeStyle({
@@ -14,12 +16,16 @@ export function getDiagramColors(theme) {
   };
 }
 
-export function getPopoverPostion({
-  diagramContainer,
-  flowNode,
-  minHeight,
-  minWidth
-}) {
+export function getPopoverPostion(
+  {diagramContainer, flowNode},
+  isSummaryPopover
+) {
+  // we only know the popover dimensions after it's render, so we approximate
+  const POPOVER_APROXIMATE_HEIGHT = isSummaryPopover
+    ? POPOVER_TO_FLOWNODE_SPACE + 54 // 80
+    : POPOVER_TO_FLOWNODE_SPACE + 104; // 120
+  const POPOVER_APROXIMATE_WIDTH = 190;
+
   const containerBoundary = diagramContainer.getBoundingClientRect();
   const flowNodeBoundary = flowNode.getBoundingClientRect();
   const flowNodeBBox = flowNode.getBBox();
@@ -31,11 +37,10 @@ export function getPopoverPostion({
   // space between the top of the flow node and the end of the diagram container
   const spaceToTop = flowNodeBoundary.top - containerBoundary.top;
   // space between the right of the flow node and the end of the diagram container
-  const spaceToRight =
-    containerBoundary.width - spaceToLeft - flowNodeBoundary.width;
+  const spaceToRight = containerBoundary.right - flowNodeBoundary.right;
 
   // space to the left of the popover, if it gets position at the bottom/top of the flow node
-  const veritcalPopoverSpaceToLeft =
+  const verticalPopoverSpaceToLeft =
     flowNodeBoundary.left + flowNodeBoundary.width / 2;
 
   // space to the right of the popover, if it gets position at the bottom/top of the flow node
@@ -54,12 +59,12 @@ export function getPopoverPostion({
 
   // can the popover be positioned at the bottom of the flow node?
   if (
-    spaceToBottom > minHeight &&
-    veritcalPopoverSpaceToLeft > minWidth / 2 &&
-    verticalPopoverSpaceToRight > minWidth / 2
+    spaceToBottom > POPOVER_APROXIMATE_HEIGHT &&
+    verticalPopoverSpaceToLeft > POPOVER_APROXIMATE_WIDTH / 2 &&
+    verticalPopoverSpaceToRight > POPOVER_APROXIMATE_WIDTH / 2
   ) {
     return {
-      bottom: -16,
+      bottom: -POPOVER_TO_FLOWNODE_SPACE,
       left: flowNodeBBox.width / 2,
       side: POPOVER_SIDE.BOTTOM
     };
@@ -67,12 +72,12 @@ export function getPopoverPostion({
 
   // can the popover be positioned at the left of the flow node?
   if (
-    spaceToLeft > minWidth &&
-    horizontalPopoverSpaceToBottom > minHeight / 2 &&
-    horizontalPopoverSpaceToTOP > minHeight / 2
+    spaceToLeft > POPOVER_APROXIMATE_WIDTH &&
+    horizontalPopoverSpaceToBottom > POPOVER_APROXIMATE_HEIGHT / 2 &&
+    horizontalPopoverSpaceToTOP > POPOVER_APROXIMATE_HEIGHT / 2
   ) {
     return {
-      left: -16,
+      left: -POPOVER_TO_FLOWNODE_SPACE,
       top: flowNodeBBox.height / 2,
       side: POPOVER_SIDE.LEFT
     };
@@ -80,34 +85,33 @@ export function getPopoverPostion({
 
   // can the popover be positioned at the top of the flow node?
   if (
-    spaceToTop > minHeight &&
-    veritcalPopoverSpaceToLeft > minWidth / 2 &&
-    verticalPopoverSpaceToRight > minWidth / 2
+    spaceToTop > POPOVER_APROXIMATE_HEIGHT &&
+    verticalPopoverSpaceToLeft > POPOVER_APROXIMATE_WIDTH / 2 &&
+    verticalPopoverSpaceToRight > POPOVER_APROXIMATE_WIDTH / 2
   ) {
     return {
-      top: -16,
+      top: -POPOVER_TO_FLOWNODE_SPACE,
       left: flowNodeBBox.width / 2,
       side: POPOVER_SIDE.TOP
     };
   }
 
   // can the popover be positioned at the right of the flow node?
-
   if (
-    spaceToRight > minWidth &&
-    horizontalPopoverSpaceToBottom > minHeight &&
-    horizontalPopoverSpaceToTOP > minHeight
+    spaceToRight > POPOVER_APROXIMATE_WIDTH &&
+    horizontalPopoverSpaceToBottom > POPOVER_APROXIMATE_HEIGHT &&
+    horizontalPopoverSpaceToTOP > POPOVER_APROXIMATE_HEIGHT
   ) {
     return {
       top: flowNodeBBox.height / 2,
-      right: -16,
+      right: -POPOVER_TO_FLOWNODE_SPACE,
       side: POPOVER_SIDE.RIGHT
     };
   }
 
   // position the popover in a mirrored position (from bottom to top) at the bottom of the flow node
   return {
-    bottom: 16,
+    bottom: POPOVER_TO_FLOWNODE_SPACE,
     left: flowNodeBBox.width / 2,
     side: POPOVER_SIDE.BOTTOM_MIRROR
   };
