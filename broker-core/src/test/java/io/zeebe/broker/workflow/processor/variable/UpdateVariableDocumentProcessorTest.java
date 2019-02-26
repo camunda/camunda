@@ -17,103 +17,79 @@
  */
 package io.zeebe.broker.workflow.processor.variable;
 
-import static io.zeebe.msgpack.value.DocumentValue.EMPTY_DOCUMENT;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import io.zeebe.broker.logstreams.processor.CommandProcessor.CommandControl;
+import io.zeebe.broker.logstreams.processor.CommandProcessorTestCase;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
-import io.zeebe.broker.util.MockTypedRecord;
-import io.zeebe.broker.util.ZeebeStateRule;
+import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.ElementInstanceState;
 import io.zeebe.broker.workflow.state.VariablesState;
-import io.zeebe.msgpack.spec.MsgpackReaderException;
 import io.zeebe.protocol.VariableDocumentUpdateSemantic;
-import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
-import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.VariableDocumentIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.junit.MockitoJUnitRunner;
 
-@SuppressWarnings("unchecked")
-public class UpdateVariableDocumentProcessorTest {
-  @Rule public ZeebeStateRule zeebeStateRule = new ZeebeStateRule();
-
-  private final CommandControl<VariableDocumentRecord> controller = mock(CommandControl.class);
+@RunWith(MockitoJUnitRunner.StrictStubs.class)
+public class UpdateVariableDocumentProcessorTest
+    extends CommandProcessorTestCase<VariableDocumentRecord> {
   private ElementInstanceState elementInstanceState;
   private VariablesState variablesState;
   private UpdateVariableDocumentProcessor processor;
 
   @Before
   public void setUp() {
-    elementInstanceState =
-        zeebeStateRule.getZeebeState().getWorkflowState().getElementInstanceState();
-    variablesState =
-        spy(
-            zeebeStateRule
-                .getZeebeState()
-                .getWorkflowState()
-                .getElementInstanceState()
-                .getVariablesState());
+    final ZeebeState state = zeebeStateRule.getZeebeState();
+    elementInstanceState = state.getWorkflowState().getElementInstanceState();
+    variablesState = spy(elementInstanceState.getVariablesState());
     processor = new UpdateVariableDocumentProcessor(elementInstanceState, variablesState);
-  }
-
-  @After
-  public void tearDown() {
-    reset(variablesState, controller);
   }
 
   @Test
   public void shouldRejectIfNoScopeFound() {
     // given
-    final TypedRecord<VariableDocumentRecord> command = newCommand();
+    final TypedRecord<VariableDocumentRecord> command = newCommand(VariableDocumentRecord.class);
+    command.getValue().setScopeKey(1);
 
     // when
     processor.onCommand(command, controller);
 
     // then
-    assertRejection(RejectionType.NOT_FOUND);
+    refuteAccepted();
+    assertRejected(RejectionType.NOT_FOUND);
   }
 
   @Test
   public void shouldRejectOnMsgpackReadError() {
     // given
     final ElementInstance instance = newElementInstance();
-    final TypedRecord<VariableDocumentRecord> command = newCommand();
+    final TypedRecord<VariableDocumentRecord> command = newCommand(VariableDocumentRecord.class);
+    final MutableDirectBuffer badDocument = new UnsafeBuffer(asMsgPack("{}"));
     command
         .getValue()
         .setScopeKey(instance.getKey())
         .setUpdateSemantics(VariableDocumentUpdateSemantic.PROPAGATE)
-        .setDocument(new UnsafeBuffer());
+        .setDocument(badDocument);
+    badDocument.putByte(0, (byte) 0); // overwrite map header
 
     // when
-    doThrow(MsgpackReaderException.class)
-        .when(variablesState)
-        .setVariablesFromDocument(anyLong(), any());
     processor.onCommand(command, controller);
 
     // then
-    assertRejection(RejectionType.INVALID_ARGUMENT);
+    refuteAccepted();
+    assertRejected(RejectionType.INVALID_ARGUMENT);
   }
 
   @Test
@@ -121,7 +97,7 @@ public class UpdateVariableDocumentProcessorTest {
     // given
     final DirectBuffer document = asMsgPack("a", 1);
     final ElementInstance instance = newElementInstance();
-    final TypedRecord<VariableDocumentRecord> command = newCommand();
+    final TypedRecord<VariableDocumentRecord> command = newCommand(VariableDocumentRecord.class);
     command
         .getValue()
         .setScopeKey(instance.getKey())
@@ -140,7 +116,7 @@ public class UpdateVariableDocumentProcessorTest {
     // given
     final DirectBuffer document = asMsgPack("a", 1);
     final ElementInstance instance = newElementInstance();
-    final TypedRecord<VariableDocumentRecord> command = newCommand();
+    final TypedRecord<VariableDocumentRecord> command = newCommand(VariableDocumentRecord.class);
     command
         .getValue()
         .setScopeKey(instance.getKey())
@@ -159,7 +135,7 @@ public class UpdateVariableDocumentProcessorTest {
     // given
     final DirectBuffer document = asMsgPack("a", 1);
     final ElementInstance instance = newElementInstance();
-    final TypedRecord<VariableDocumentRecord> command = newCommand();
+    final TypedRecord<VariableDocumentRecord> command = newCommand(VariableDocumentRecord.class);
     command
         .getValue()
         .setScopeKey(instance.getKey())
@@ -170,33 +146,12 @@ public class UpdateVariableDocumentProcessorTest {
     processor.onCommand(command, controller);
 
     // then
-    assertAccepted(command);
+    refuteRejected();
+    assertAccepted(VariableDocumentIntent.UPDATED, command.getValue());
   }
 
   private ElementInstance newElementInstance() {
     return elementInstanceState.newInstance(
         1, new WorkflowInstanceRecord(), WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-  }
-
-  private void assertAccepted(TypedRecord<VariableDocumentRecord> command) {
-    verify(controller, times(1)).accept(VariableDocumentIntent.UPDATED, command.getValue());
-    verify(controller, never()).reject(any(), anyString());
-  }
-
-  private void assertRejection(RejectionType type) {
-    verify(controller, never()).accept(any(), any());
-    verify(controller, times(1)).reject(eq(type), anyString());
-  }
-
-  private TypedRecord<VariableDocumentRecord> newCommand() {
-    final RecordMetadata metadata =
-        new RecordMetadata()
-            .intent(VariableDocumentIntent.UPDATE)
-            .valueType(ValueType.VARIABLE_DOCUMENT)
-            .recordType(RecordType.COMMAND);
-    final VariableDocumentRecord value =
-        new VariableDocumentRecord().setScopeKey(-1).setDocument(EMPTY_DOCUMENT);
-
-    return new MockTypedRecord<>(-1, metadata, value);
   }
 }

@@ -28,6 +28,7 @@ import io.zeebe.broker.exporter.record.value.RaftRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.TimerRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.VariableDocumentRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.VariableRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.WorkflowInstanceCreationRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.WorkflowInstanceRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.WorkflowInstanceSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.deployment.DeployedWorkflowImpl;
@@ -48,6 +49,7 @@ import io.zeebe.exporter.record.value.MessageSubscriptionRecordValue;
 import io.zeebe.exporter.record.value.RaftRecordValue;
 import io.zeebe.exporter.record.value.VariableDocumentRecordValue;
 import io.zeebe.exporter.record.value.VariableRecordValue;
+import io.zeebe.exporter.record.value.WorkflowInstanceCreationRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.exporter.record.value.deployment.DeployedWorkflow;
@@ -67,6 +69,7 @@ import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.raft.event.RaftConfigurationEventMember;
@@ -132,6 +135,9 @@ public class ExporterRecordMapper {
         break;
       case VARIABLE_DOCUMENT:
         valueSupplier = this::ofVariableDocumentRecord;
+        break;
+      case WORKFLOW_INSTANCE_CREATION:
+        valueSupplier = this::ofWorkflowInstanceCreationRecord;
         break;
       default:
         return null;
@@ -374,6 +380,19 @@ public class ExporterRecordMapper {
         record.getScopeKey(),
         record.getUpdateSemantics(),
         asMsgPackMap(record.getDocument()));
+  }
+
+  private WorkflowInstanceCreationRecordValue ofWorkflowInstanceCreationRecord(LoggedEvent event) {
+    final WorkflowInstanceCreationRecord record = new WorkflowInstanceCreationRecord();
+    event.readValue(record);
+
+    return new WorkflowInstanceCreationRecordValueImpl(
+        objectMapper,
+        asString(record.getBpmnProcessId()),
+        record.getVersion(),
+        record.getKey(),
+        record.getInstanceKey(),
+        asMsgPackMap(record.getVariables()));
   }
 
   private byte[] asByteArray(final DirectBuffer buffer) {

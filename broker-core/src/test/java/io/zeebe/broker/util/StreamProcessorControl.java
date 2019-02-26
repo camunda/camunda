@@ -26,6 +26,7 @@ import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import java.util.function.Predicate;
 
@@ -40,6 +41,9 @@ public interface StreamProcessorControl {
   void blockAfterDeploymentEvent(Predicate<TypedRecord<DeploymentRecord>> test);
 
   void blockAfterWorkflowInstanceRecord(Predicate<TypedRecord<WorkflowInstanceRecord>> test);
+
+  void blockAfterWorkflowInstanceCreationRecord(
+      final Predicate<TypedRecord<WorkflowInstanceCreationRecord>> test);
 
   void blockAfterIncidentEvent(Predicate<TypedRecord<IncidentRecord>> test);
 
