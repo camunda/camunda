@@ -18,7 +18,7 @@
 .Message--yellow,
 .Message--warning {
   border: 1px solid $cam-orange;
-  background-color: lighten($cam-orange, 50);
+  background-color: lighten($cam-orange, 25);
 }
 
 .Message--red,
