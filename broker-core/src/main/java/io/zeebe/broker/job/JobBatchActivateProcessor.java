@@ -118,6 +118,15 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
           final long deadline = currentTimeMillis() + value.getTimeout();
           jobRecord.setDeadline(deadline).setWorker(value.getWorker());
 
+          // fetch and set payload, required here to already have the full size of the job record
+          final long elementInstanceKey = jobRecord.getHeaders().getElementInstanceKey();
+          if (elementInstanceKey >= 0) {
+            final DirectBuffer payload = collectPayload(variableNames, elementInstanceKey);
+            jobRecord.setPayload(payload);
+          } else {
+            jobRecord.setPayload(WorkflowInstanceRecord.EMPTY_PAYLOAD);
+          }
+
           if (remainingAmount >= 0
               && value.getLength() + Long.BYTES + jobRecord.getLength()
                   <= record.getMaxValueLength()) {
@@ -146,15 +155,6 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
       final long key = next1.getValue();
 
       // update state and write follow up event for job record
-      final long elementInstanceKey = jobRecord.getHeaders().getElementInstanceKey();
-
-      if (elementInstanceKey >= 0) {
-        final DirectBuffer payload = collectPayload(variableNames, elementInstanceKey);
-        jobRecord.setPayload(payload);
-      } else {
-        jobRecord.setPayload(WorkflowInstanceRecord.EMPTY_PAYLOAD);
-      }
-
       // we have to copy the job record because #write will reset the iterator state
       final ExpandableArrayBuffer copy = new ExpandableArrayBuffer();
       jobRecord.write(copy, 0);
