@@ -264,6 +264,7 @@ export const CodeLine = themed(styled.p`
   margin: 3px;
   line-height: 14px;
   font-family: IBMPlexMono;
+  font-size: 14px;
 
   &:before {
     counter-increment: line;
@@ -275,7 +276,6 @@ export const CodeLine = themed(styled.p`
       dark: '#ffffff',
       light: '#000000'
     })};
-    font-size: 14px;
   }
 `);
 
