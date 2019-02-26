@@ -344,11 +344,12 @@ public class EventSubscriptionIncidentTest {
             .getFirst();
 
     // when
-    final Map<String, Object> payload = new HashMap<>();
-    payload.put(CORRELATION_VARIABLE_1, correlationKey1);
-    payload.put(CORRELATION_VARIABLE_2, correlationKey2);
-    apiRule.updatePayload(
-        incidentCreatedRecord.getValue().getElementInstanceKey(), MsgPackUtil.asMsgPack(payload));
+    final Map<String, Object> document = new HashMap<>();
+    document.put(CORRELATION_VARIABLE_1, correlationKey1);
+    document.put(CORRELATION_VARIABLE_2, correlationKey2);
+    apiRule
+        .partitionClient()
+        .updateVariables(incidentCreatedRecord.getValue().getElementInstanceKey(), document);
 
     apiRule.resolveIncident(incidentCreatedRecord.getKey());
 
@@ -386,12 +387,13 @@ public class EventSubscriptionIncidentTest {
             .getFirst();
 
     // when
-    final Map<String, Object> payload = new HashMap<>();
-    payload.put(CORRELATION_VARIABLE_1, correlationKey1);
-    payload.put(CORRELATION_VARIABLE_2, correlationKey2);
+    final Map<String, Object> document = new HashMap<>();
+    document.put(CORRELATION_VARIABLE_1, correlationKey1);
+    document.put(CORRELATION_VARIABLE_2, correlationKey2);
 
-    apiRule.updatePayload(
-        incidentCreatedRecord.getValue().getElementInstanceKey(), MsgPackUtil.asMsgPack(payload));
+    apiRule
+        .partitionClient()
+        .updateVariables(incidentCreatedRecord.getValue().getElementInstanceKey(), document);
 
     apiRule.resolveIncident(incidentCreatedRecord.getKey());
 

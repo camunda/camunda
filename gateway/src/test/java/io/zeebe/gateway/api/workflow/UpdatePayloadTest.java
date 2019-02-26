@@ -22,8 +22,8 @@ import io.zeebe.gateway.impl.broker.request.BrokerUpdateWorkflowInstancePayloadR
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadResponse;
 import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+import io.zeebe.protocol.intent.VariableDocumentIntent;
 import io.zeebe.test.util.JsonUtil;
 import io.zeebe.test.util.MsgPackUtil;
 import java.util.Collections;
@@ -54,11 +54,12 @@ public class UpdatePayloadTest extends GatewayTest {
 
     final BrokerUpdateWorkflowInstancePayloadRequest brokerRequest =
         gateway.getSingleBrokerRequest();
-    assertThat(brokerRequest.getKey()).isEqualTo(123);
-    assertThat(brokerRequest.getIntent()).isEqualTo(WorkflowInstanceIntent.UPDATE_PAYLOAD);
-    assertThat(brokerRequest.getValueType()).isEqualTo(ValueType.WORKFLOW_INSTANCE);
+    assertThat(brokerRequest.getKey()).isEqualTo(-1);
+    assertThat(brokerRequest.getIntent()).isEqualTo(VariableDocumentIntent.UPDATE);
+    assertThat(brokerRequest.getValueType()).isEqualTo(ValueType.VARIABLE_DOCUMENT);
 
-    final WorkflowInstanceRecord brokerRequestValue = brokerRequest.getRequestWriter();
-    MsgPackUtil.assertEqualityExcluding(brokerRequestValue.getPayload(), payload);
+    final VariableDocumentRecord brokerRequestValue = brokerRequest.getRequestWriter();
+    MsgPackUtil.assertEqualityExcluding(brokerRequestValue.getDocument(), payload);
+    assertThat(brokerRequestValue.getScopeKey()).isEqualTo(123);
   }
 }

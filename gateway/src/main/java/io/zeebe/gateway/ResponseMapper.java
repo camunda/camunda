@@ -47,6 +47,7 @@ import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -155,7 +156,7 @@ public class ResponseMapper {
   }
 
   public static UpdateWorkflowInstancePayloadResponse toUpdateWorkflowInstancePayloadResponse(
-      long key, WorkflowInstanceRecord brokerResponse) {
+      long key, VariableDocumentRecord brokerResponse) {
     return UpdateWorkflowInstancePayloadResponse.getDefaultInstance();
   }
 

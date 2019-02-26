@@ -126,6 +126,7 @@ public class RequestMapper {
 
     brokerRequest.setElementInstanceKey(grpcRequest.getElementInstanceKey());
     brokerRequest.setPayload(ensureJsonSet(grpcRequest.getPayload()));
+    brokerRequest.setLocal(grpcRequest.getLocal());
 
     return brokerRequest;
   }

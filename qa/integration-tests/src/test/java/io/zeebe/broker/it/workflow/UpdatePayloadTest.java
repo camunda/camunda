@@ -17,8 +17,9 @@ package io.zeebe.broker.it.workflow;
 
 import static io.zeebe.broker.it.util.StatusCodeMatcher.hasStatusCode;
 import static io.zeebe.broker.it.util.StatusDescriptionMatcher.descriptionContains;
+import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertElementInState;
+import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertVariableDocumentUpdated;
 import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertWorkflowInstanceCompleted;
-import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertWorkflowInstancePayloadUpdated;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
@@ -27,14 +28,13 @@ import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.cmd.ClientStatusException;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Collections;
-import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -50,15 +50,18 @@ public class UpdatePayloadTest {
           .endEvent("end")
           .done();
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
+  public static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public static GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
+  @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
+  @Rule
+  public RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   @Rule public ExpectedException thrown = ExpectedException.none();
 
-  @Before
-  public void init() {
+  @BeforeClass
+  public static void init() {
     final DeploymentEvent deploymentEvent =
         clientRule
             .getClient()
@@ -68,26 +71,12 @@ public class UpdatePayloadTest {
             .join();
 
     clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
-
-    clientRule
-        .getClient()
-        .newCreateInstanceCommand()
-        .bpmnProcessId("process")
-        .latestVersion()
-        .send()
-        .join();
   }
 
   @Test
   public void shouldUpdatePayloadWhenActivityIsActivated() {
     // given
-    final long workflowInstanceKey =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withElementId("task-1")
-            .findFirst()
-            .get()
-            .getValue()
-            .getWorkflowInstanceKey();
+    final long workflowInstanceKey = createWorkflowInstanceAndAwaitTaskActivation();
 
     // when
     clientRule
@@ -98,23 +87,16 @@ public class UpdatePayloadTest {
         .join();
 
     // then
-    assertWorkflowInstancePayloadUpdated(
-        (payloadUpdatedEvent) -> {
-          assertThat(payloadUpdatedEvent.getPayload()).isEqualTo(PAYLOAD);
-          assertThat(payloadUpdatedEvent.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+    assertVariableDocumentUpdated(
+        (variableDocument) -> {
+          assertThat(variableDocument.getDocument()).containsOnly(entry("foo", "bar"));
         });
   }
 
   @Test
   public void shouldUpdateWithNullPayload() {
     // given
-    final long workflowInstanceKey =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withElementId("task-1")
-            .findFirst()
-            .get()
-            .getValue()
-            .getWorkflowInstanceKey();
+    final long workflowInstanceKey = createWorkflowInstanceAndAwaitTaskActivation();
 
     // when
     clientRule
@@ -125,58 +107,42 @@ public class UpdatePayloadTest {
         .join();
 
     // then
-    assertWorkflowInstancePayloadUpdated(
-        (payloadUpdatedEvent) -> {
-          assertThat(payloadUpdatedEvent.getPayload()).isEqualTo("{}");
-          assertThat(payloadUpdatedEvent.getPayloadAsMap()).isEmpty();
+    assertVariableDocumentUpdated(
+        (variableDocument) -> {
+          assertThat(variableDocument.getDocument()).isEmpty();
         });
   }
 
   @Test
   public void shouldThrowExceptionOnUpdateWithInvalidPayload() {
     // given
-    final Record<WorkflowInstanceRecordValue> workflowInstanceRecordValueRecord =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withElementId("task-1")
-            .findFirst()
-            .get();
+    final long workflowInstanceKey = createWorkflowInstanceAndAwaitTaskActivation();
 
     // expect
     thrown.expect(ClientStatusException.class);
     thrown.expect(hasStatusCode(Code.INVALID_ARGUMENT));
     thrown.expect(
         descriptionContains(
-            "Property 'payload' is invalid: Expected document to be a root level object, but was 'ARRAY'"));
+            "Property 'document' is invalid: Expected document to be a root level object, but was 'ARRAY'"));
 
     // when
-    clientRule
-        .getClient()
-        .newUpdatePayloadCommand(
-            workflowInstanceRecordValueRecord.getValue().getWorkflowInstanceKey())
-        .payload("[]")
-        .send()
-        .join();
+    clientRule.getClient().newUpdatePayloadCommand(workflowInstanceKey).payload("[]").send().join();
   }
 
   @Test
   public void shouldUpdatePayloadAndCompleteJobAfterwards() {
     // given
-    final Record<WorkflowInstanceRecordValue> workflowInstanceRecordValueRecord =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withElementId("task-1")
-            .findFirst()
-            .get();
+    final long workflowInstanceKey = createWorkflowInstanceAndAwaitTaskActivation();
 
+    // when
     clientRule
         .getClient()
-        .newUpdatePayloadCommand(
-            workflowInstanceRecordValueRecord.getValue().getWorkflowInstanceKey())
+        .newUpdatePayloadCommand(workflowInstanceKey)
         .payload(PAYLOAD)
         .send()
         .join();
-    assertWorkflowInstancePayloadUpdated();
+    assertVariableDocumentUpdated();
 
-    // when
     clientRule
         .getClient()
         .newWorker()
@@ -188,27 +154,18 @@ public class UpdatePayloadTest {
 
     // then
     assertWorkflowInstanceCompleted(
-        "process",
-        (wfEvent) -> {
-          //          assertThat(wfEvent.getPayload()).isEqualTo("{\"foo\":
-          // \"bar\",\"result\":\"ok\"}");
-          assertThat(wfEvent.getPayloadAsMap())
-              .hasSize(2)
-              .contains(entry("foo", "bar"))
-              .contains(entry("result", "ok"));
-        });
+        workflowInstanceKey,
+        record ->
+            assertThat(record.getPayloadAsMap())
+                .hasSize(2)
+                .contains(entry("foo", "bar"))
+                .contains(entry("result", "ok")));
   }
 
   @Test
   public void shouldUpdatePayloadWithMap() {
     // given
-    final long workflowInstanceKey =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withElementId("task-1")
-            .findFirst()
-            .get()
-            .getValue()
-            .getWorkflowInstanceKey();
+    final long workflowInstanceKey = createWorkflowInstanceAndAwaitTaskActivation();
 
     // when
     clientRule
@@ -219,26 +176,18 @@ public class UpdatePayloadTest {
         .join();
 
     // then
-    assertWorkflowInstancePayloadUpdated(
-        (payloadUpdatedEvent) -> {
-          assertThat(payloadUpdatedEvent.getPayload()).isEqualTo(PAYLOAD);
-          assertThat(payloadUpdatedEvent.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+    assertVariableDocumentUpdated(
+        (variableDocument) -> {
+          assertThat(variableDocument.getDocument()).containsOnly(entry("foo", "bar"));
         });
   }
 
   @Test
   public void shouldUpdatePayloadWithObject() {
     // given
+    final long workflowInstanceKey = createWorkflowInstanceAndAwaitTaskActivation();
     final PayloadObject newPayload = new PayloadObject();
     newPayload.foo = "bar";
-
-    final long workflowInstanceKey =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withElementId("task-1")
-            .findFirst()
-            .get()
-            .getValue()
-            .getWorkflowInstanceKey();
 
     // when
     clientRule
@@ -249,16 +198,16 @@ public class UpdatePayloadTest {
         .join();
 
     // then
-    assertWorkflowInstancePayloadUpdated(
-        (payloadUpdatedEvent) -> {
-          assertThat(payloadUpdatedEvent.getPayload()).isEqualTo(PAYLOAD);
-          assertThat(payloadUpdatedEvent.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+    assertVariableDocumentUpdated(
+        (variableDocument) -> {
+          assertThat(variableDocument.getDocument()).containsOnly(entry("foo", "bar"));
         });
   }
 
   @Test
   public void shouldFailUpdatePayloadIfWorkflowInstanceIsCompleted() {
     // given
+    final long workflowInstanceKey = createWorkflowInstanceAndAwaitTaskActivation();
     clientRule
         .getClient()
         .newWorker()
@@ -268,14 +217,6 @@ public class UpdatePayloadTest {
                 client.newCompleteCommand(job.getKey()).payload("{\"result\": \"done\"}").send())
         .open();
     assertWorkflowInstanceCompleted("process");
-
-    final long workflowInstanceKey =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withElementId("task-1")
-            .findFirst()
-            .get()
-            .getValue()
-            .getWorkflowInstanceKey();
 
     // then
     thrown.expect(ClientStatusException.class);
@@ -288,6 +229,21 @@ public class UpdatePayloadTest {
         .payload(PAYLOAD)
         .send()
         .join();
+  }
+
+  private long createWorkflowInstanceAndAwaitTaskActivation() {
+    final long workflowInstanceKey =
+        clientRule
+            .getClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId("process")
+            .latestVersion()
+            .send()
+            .join()
+            .getWorkflowInstanceKey();
+    assertElementInState(workflowInstanceKey, "task-1", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+
+    return workflowInstanceKey;
   }
 
   public static class PayloadObject {

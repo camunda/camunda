@@ -44,14 +44,10 @@ import java.util.List;
 public class WorkflowEventProcessors {
 
   private static final List<WorkflowInstanceIntent> WORKFLOW_INSTANCE_COMMANDS =
-      Arrays.asList(
-          WorkflowInstanceIntent.CREATE,
-          WorkflowInstanceIntent.CANCEL,
-          WorkflowInstanceIntent.UPDATE_PAYLOAD);
+      Arrays.asList(WorkflowInstanceIntent.CREATE, WorkflowInstanceIntent.CANCEL);
 
   private static boolean isWorkflowInstanceEvent(WorkflowInstanceIntent intent) {
-    return !WORKFLOW_INSTANCE_COMMANDS.contains(intent)
-        && intent != WorkflowInstanceIntent.PAYLOAD_UPDATED;
+    return !WORKFLOW_INSTANCE_COMMANDS.contains(intent);
   }
 
   public static BpmnStepProcessor addWorkflowProcessors(

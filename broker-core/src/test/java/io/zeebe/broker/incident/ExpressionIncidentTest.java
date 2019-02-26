@@ -21,6 +21,7 @@ import static io.zeebe.broker.incident.IncidentAssert.assertIncidentRecordValue;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
@@ -37,6 +38,7 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.MsgPackUtil;
+import io.zeebe.test.util.collection.Maps;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
@@ -146,7 +148,7 @@ public class ExpressionIncidentTest {
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
 
     // when correct payload is used
-    testClient.updatePayload(failureEvent.getKey(), asMsgPack("foo", 7).byteArray());
+    testClient.updateVariables(failureEvent.getKey(), Maps.of(entry("foo", 7)));
     testClient.resolveIncident(incidentEvent.getKey());
 
     // then
@@ -196,7 +198,7 @@ public class ExpressionIncidentTest {
             .receiveFirstWorkflowInstanceEvent(
                 WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnElementType.EXCLUSIVE_GATEWAY)
             .getKey();
-    testClient.updatePayload(failedEventKey, asMsgPack("foo", 10).byteArray());
+    testClient.updateVariables(failedEventKey, Maps.of(entry("foo", 10)));
     testClient.resolveIncident(incidentKey);
 
     final Record<IncidentRecordValue> secondIncident =
@@ -207,7 +209,7 @@ public class ExpressionIncidentTest {
             .getFirst();
 
     // when correct payload is used
-    testClient.updatePayload(failedEventKey, asMsgPack("foo", 7).byteArray());
+    testClient.updateVariables(failedEventKey, Maps.of(entry("foo", 7)));
     testClient.resolveIncident(secondIncident.getKey());
 
     // then
@@ -265,7 +267,7 @@ public class ExpressionIncidentTest {
             WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnElementType.EXCLUSIVE_GATEWAY);
 
     // when
-    testClient.updatePayload(failureEvent.getKey(), asMsgPack("foo", 7).byteArray());
+    testClient.updateVariables(failureEvent.getKey(), Maps.of(entry("foo", 7)));
     testClient.resolveIncident(incidentEvent.getKey());
 
     // then

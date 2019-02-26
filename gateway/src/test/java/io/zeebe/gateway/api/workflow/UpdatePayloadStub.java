@@ -19,11 +19,11 @@ import io.zeebe.gateway.api.util.StubbedGateway;
 import io.zeebe.gateway.api.util.StubbedGateway.RequestStub;
 import io.zeebe.gateway.impl.broker.request.BrokerUpdateWorkflowInstancePayloadRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 
 public class UpdatePayloadStub
     implements RequestStub<
-        BrokerUpdateWorkflowInstancePayloadRequest, BrokerResponse<WorkflowInstanceRecord>> {
+        BrokerUpdateWorkflowInstancePayloadRequest, BrokerResponse<VariableDocumentRecord>> {
 
   @Override
   public void registerWith(StubbedGateway gateway) {
@@ -31,9 +31,9 @@ public class UpdatePayloadStub
   }
 
   @Override
-  public BrokerResponse<WorkflowInstanceRecord> handle(
+  public BrokerResponse<VariableDocumentRecord> handle(
       BrokerUpdateWorkflowInstancePayloadRequest request) throws Exception {
     return new BrokerResponse<>(
-        new WorkflowInstanceRecord(), request.getPartitionId(), request.getKey());
+        new VariableDocumentRecord(), request.getPartitionId(), request.getKey());
   }
 }

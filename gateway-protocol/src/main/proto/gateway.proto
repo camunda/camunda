@@ -287,6 +287,14 @@ message UpdateWorkflowInstancePayloadRequest {
   // the new payload as a JSON document; see CreateWorkflowInstanceRequest for the rules
   // about payloads
   string payload = 2;
+  // if true, the payload will be merged strictly into the local scope (as indicated by
+  // elementInstanceKey); this means the payload is not propagated to upper scopes.
+  // for example, let's say we have two scopes, '1' and '2', with each having effective payloads as:
+  // 1 => `{ "foo" : 2 }`, and 2 => `{ "bar" : 1 }`. if we send an update request with
+  // elementInstanceKey = 2, a new payload of `{ "foo" : 5 }`, and local is true, then scope 1 will
+  // be unchanged, and scope 2 will now be `{ "bar" : 1, "foo" 5 }`. if local was false, however,
+  // then scope 1 would be `{ "foo": 5 }`, and scope 2 would be `{ "bar" : 1 }`.
+  bool local = 3;
 }
 
 message UpdateWorkflowInstancePayloadResponse {

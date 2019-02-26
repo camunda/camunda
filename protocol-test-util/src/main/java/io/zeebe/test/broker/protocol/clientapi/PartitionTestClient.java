@@ -189,6 +189,10 @@ public class PartitionTestClient {
         .sendAndAwait();
   }
 
+  public void updateVariables(long scopeKey, Map<String, Object> document) {
+    updateVariables(scopeKey, VariableDocumentUpdateSemantic.PROPAGATE, document);
+  }
+
   public void updateVariables(
       long scopeKey, VariableDocumentUpdateSemantic updateSemantics, Map<String, Object> document) {
     final ExecuteCommandResponse response =
@@ -204,25 +208,6 @@ public class PartitionTestClient {
 
     assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
     assertThat(response.getIntent()).isEqualTo(VariableDocumentIntent.UPDATED);
-  }
-
-  public void updatePayload(final long elementInstanceKey, final String jsonPayload) {
-    updatePayload(elementInstanceKey, MsgPackUtil.asMsgPackReturnArray(jsonPayload));
-  }
-
-  public void updatePayload(final long elementInstanceKey, final byte[] payload) {
-    final ExecuteCommandResponse response =
-        apiRule
-            .createCmdRequest()
-            .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.UPDATE_PAYLOAD)
-            .key(elementInstanceKey)
-            .command()
-            .put("payload", payload)
-            .done()
-            .sendAndAwait();
-
-    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.PAYLOAD_UPDATED);
   }
 
   public long createJob(final String type) {
@@ -248,6 +233,13 @@ public class PartitionTestClient {
         .filter(j -> j.getValue().getHeaders().getWorkflowInstanceKey() == workflowInstance)
         .getFirst()
         .getKey();
+  }
+
+  public void completeJobOfType(long workflowInstanceKey, String jobType) {
+    completeJob(
+        jobType,
+        MsgPackUtil.asMsgPackReturnArray("{}"),
+        r -> r.getValue().getHeaders().getWorkflowInstanceKey() == workflowInstanceKey);
   }
 
   public void completeJobOfType(final String jobType) {

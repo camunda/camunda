@@ -19,7 +19,6 @@ package io.zeebe.broker.workflow.processor;
 
 import io.zeebe.broker.workflow.processor.instance.CancelWorkflowInstanceHandler;
 import io.zeebe.broker.workflow.processor.instance.CreateWorkflowInstanceHandler;
-import io.zeebe.broker.workflow.processor.instance.UpdatePayloadHandler;
 import io.zeebe.broker.workflow.state.WorkflowEngineState;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.HashMap;
@@ -32,8 +31,6 @@ public class WorkflowInstanceCommandHandlers {
 
   public WorkflowInstanceCommandHandlers(WorkflowEngineState state) {
     handlers.put(WorkflowInstanceIntent.CANCEL, new CancelWorkflowInstanceHandler());
-    handlers.put(
-        WorkflowInstanceIntent.UPDATE_PAYLOAD, new UpdatePayloadHandler(state.getWorkflowState()));
     handlers.put(
         WorkflowInstanceIntent.CREATE, new CreateWorkflowInstanceHandler(state.getWorkflowState()));
   }
