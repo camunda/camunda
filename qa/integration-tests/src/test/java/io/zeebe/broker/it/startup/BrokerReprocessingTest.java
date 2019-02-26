@@ -417,8 +417,8 @@ public class BrokerReprocessingTest {
 
     clientRule
         .getClient()
-        .newUpdatePayloadCommand(instanceEvent.getWorkflowInstanceKey())
-        .payload("{\"foo\":\"bar\"}")
+        .newSetVariablesCommand(instanceEvent.getWorkflowInstanceKey())
+        .variables("{\"foo\":\"bar\"}")
         .send()
         .join();
 
@@ -451,8 +451,8 @@ public class BrokerReprocessingTest {
 
     clientRule
         .getClient()
-        .newUpdatePayloadCommand(instanceEvent.getWorkflowInstanceKey())
-        .payload("{\"x\":\"y\"}")
+        .newSetVariablesCommand(instanceEvent.getWorkflowInstanceKey())
+        .variables("{\"x\":\"y\"}")
         .send()
         .join();
 
@@ -467,8 +467,8 @@ public class BrokerReprocessingTest {
 
     clientRule
         .getClient()
-        .newUpdatePayloadCommand(instanceEvent.getWorkflowInstanceKey())
-        .payload("{\"foo\":\"bar\"}")
+        .newSetVariablesCommand(instanceEvent.getWorkflowInstanceKey())
+        .variables("{\"foo\":\"bar\"}")
         .send()
         .join();
 

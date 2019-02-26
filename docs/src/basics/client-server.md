@@ -8,7 +8,7 @@ There are four main components in Zeebe's architecture: the client, the gateway,
 
 Clients are libraries that you embed in an application (e.g. a microservice that executes your business logic) to connect to a Zeebe cluster. Clients have two primary uses:
 * Carrying out business logic (starting workflow instances, publishing messages, working on tasks)
-* Handling operational issues (updating workflow instance payloads, resolving incidents)
+* Handling operational issues (updating workflow instance variables, resolving incidents)
 
 More about Zeebe clients:
 * Clients connect to the Zeebe gateway via [gRPC](https://grpc.io), which uses http/2-based transport. To learn more about gRPC in Zeebe, check out the [gRPC section of the docs](/grpc/README.html).

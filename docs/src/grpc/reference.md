@@ -12,9 +12,9 @@
   * [ListWorkflows RPC](#listworkflows-rpc)
   * [PublishMessage RPC](#publishmessage-rpc)
   * [ResolveIncident RPC](#resolveincident-rpc)
+  * [SetVariables RPC](#setvariables-rpc)
   * [Topology RPC](#topology-rpc)
   * [UpdateJobRetries RPC](#updatejobretries-rpc)
-  * [UpdateWorkflowInstancePayload RPC](#updateworkflowinstancepayload-rpc)
 
 
 ## Error handling
@@ -548,6 +548,55 @@ Returned if:
   - no incident with the given key exists
 
 
+### SetVariables RPC
+
+Updates all the variables of a particular scope (e.g. workflow instance, flow element instance) from the given JSON document.
+
+#### Input: Request
+
+```protobuf
+message SetVariablesRequest {
+  // the unique identifier of a particular element; can be the workflow instance key (as
+  // obtained during instance creation), or a given element, such as a service task (see
+  // elementInstanceKey on the JobHeaders message)
+  int64 elementInstanceKey = 1;
+  // a JSON serialized document describing variables as key value pairs; the root of the document
+  // must be an object
+  string variables = 2;
+  // if true, the payload will be merged strictly into the local scope (as indicated by
+  // elementInstanceKey); this means the payload is not propagated to upper scopes.
+  // for example, let's say we have two scopes, '1' and '2', with each having effective payloads as:
+  // 1 => `{ "foo" : 2 }`, and 2 => `{ "bar" : 1 }`. if we send an update request with
+  // elementInstanceKey = 2, a new payload of `{ "foo" : 5 }`, and local is true, then scope 1 will
+  // be unchanged, and scope 2 will now be `{ "bar" : 1, "foo" 5 }`. if local was false, however,
+  // then scope 1 would be `{ "foo": 5 }`, and scope 2 would be `{ "bar" : 1 }`.
+  bool local = 3;
+}
+```
+
+#### Output: Response
+
+```protobuf
+message SetVariablesResponse {
+}
+```
+
+#### Errors
+
+##### GRPC_STATUS_NOT_FOUND
+
+Returned if:
+
+  - no element with the given `elementInstanceKey` was exists
+
+##### GRPC_STATUS_INVALID_ARGUMENT
+
+Returned if:
+
+  - the given payload is not a valid JSON document; all payloads are expected to be
+    valid JSON documents where the root node is an object.
+
+
 ### Topology RPC
 
 Obtains the current topology of the cluster the gateway is part of.
@@ -638,44 +687,3 @@ Returned if:
 Returned if:
 
   - retries is not greater than 0
-
-
-### UpdateWorkflowInstancePayload RPC
-
-Updates all the variables in the workflow instance scope from the given JSON document.
-
-#### Input: Request
-
-```protobuf
-message UpdateWorkflowInstancePayloadRequest {
-  // the unique identifier of a particular element; can be the workflow instance key (as
-  // obtained during instance creation), or a given element, such as a service task (see
-  // elementInstanceKey on the JobHeaders message)
-  int64 elementInstanceKey = 1;
-  // the new payload as a JSON document; see CreateWorkflowInstanceRequest for the rules
-  // about payloads
-  string payload = 2;
-}
-```
-
-#### Output: Response
-
-```protobuf
-message UpdateWorkflowInstancePayloadResponse {
-}
-```
-
-#### Errors
-
-##### GRPC_STATUS_NOT_FOUND
-
-Returned if:
-
-  - no element with the given `elementInstanceKey` was exists
-
-##### GRPC_STATUS_INVALID_ARGUMENT
-
-Returned if:
-
-  - the given payload is not a valid JSON document; all payloads are expected to be
-    valid JSON documents where the root node is an object.

@@ -24,6 +24,10 @@
 #   go-tests = true
 #   unused-packages = true
 
+required = [
+    "github.com/golang/protobuf/protoc-gen-go",
+    "github.com/golang/mock/mockgen"
+]
 
 [[constraint]]
   name = "github.com/golang/protobuf"
@@ -40,6 +44,10 @@
 [[constraint]]
   name = "google.golang.org/grpc"
   version = "=1.18.0"
+
+[[constraint]]
+  name = "github.com/golang/mock"
+  version = ">=1.2.0"
 
 [prune]
   go-tests = true

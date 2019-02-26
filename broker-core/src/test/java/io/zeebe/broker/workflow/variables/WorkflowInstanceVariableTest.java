@@ -120,7 +120,7 @@ public class WorkflowInstanceVariableTest {
   }
 
   @Test
-  public void shouldCreateVariableByUpdatePayload() {
+  public void shouldCreateVariableByUpdateVariables() {
     // given
     testClient.deploy(WORKFLOW);
 
@@ -198,7 +198,7 @@ public class WorkflowInstanceVariableTest {
   }
 
   @Test
-  public void shouldUpdateVariableByUpdatePayload() {
+  public void shouldUpdateVariableByUpdateVariables() {
     // given
     testClient.deploy(WORKFLOW);
 

@@ -36,9 +36,9 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadResponse;
 import io.zeebe.msgpack.value.LongValue;
 import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
 import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto.PartitionDto;
@@ -155,9 +155,9 @@ public class ResponseMapper {
     return CancelWorkflowInstanceResponse.getDefaultInstance();
   }
 
-  public static UpdateWorkflowInstancePayloadResponse toUpdateWorkflowInstancePayloadResponse(
+  public static SetVariablesResponse toSetVariablesResponse(
       long key, VariableDocumentRecord brokerResponse) {
-    return UpdateWorkflowInstancePayloadResponse.getDefaultInstance();
+    return SetVariablesResponse.getDefaultInstance();
   }
 
   public static ListWorkflowsResponse toListWorkflowsResponse(
