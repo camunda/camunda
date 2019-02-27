@@ -8,6 +8,7 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import java.time.OffsetDateTime;
@@ -23,8 +24,12 @@ public class DecisionInstanceFetcher extends RetryBackoffEngineEntityFetcher<His
   private static final String EVALUATED_AFTER = "evaluatedAfter";
   private static final String EVALUATED_AT = "evaluatedAt";
 
-  @Autowired
   private DateTimeFormatter dateTimeFormatter;
+
+  @PostConstruct
+  public void init() {
+    dateTimeFormatter = DateTimeFormatter.ofPattern(configurationService.getEngineDateFormat());
+  }
 
   public DecisionInstanceFetcher(final EngineContext engineContext) {
     super(engineContext);

@@ -3,11 +3,11 @@ package org.camunda.optimize.service.engine.importing.fetcher.instance;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.page.TimestampBasedImportPage;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import java.time.OffsetDateTime;
@@ -24,9 +24,12 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 public class CompletedActivityInstanceFetcher
   extends RetryBackoffEngineEntityFetcher<HistoricActivityInstanceEngineDto> {
 
-  @Autowired
   private DateTimeFormatter dateTimeFormatter;
 
+  @PostConstruct
+  public void init() {
+    dateTimeFormatter = DateTimeFormatter.ofPattern(configurationService.getEngineDateFormat());
+  }
   public CompletedActivityInstanceFetcher(EngineContext engineContext) {
     super(engineContext);
   }

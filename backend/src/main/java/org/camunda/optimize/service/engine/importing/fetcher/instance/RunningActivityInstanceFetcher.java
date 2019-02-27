@@ -8,6 +8,7 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import java.time.OffsetDateTime;
@@ -24,8 +25,12 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 public class RunningActivityInstanceFetcher
   extends RetryBackoffEngineEntityFetcher<HistoricActivityInstanceEngineDto> {
 
-  @Autowired
   private DateTimeFormatter dateTimeFormatter;
+
+  @PostConstruct
+  public void init() {
+    dateTimeFormatter = DateTimeFormatter.ofPattern(configurationService.getEngineDateFormat());
+  }
 
   public RunningActivityInstanceFetcher(EngineContext engineContext) {
     super(engineContext);
