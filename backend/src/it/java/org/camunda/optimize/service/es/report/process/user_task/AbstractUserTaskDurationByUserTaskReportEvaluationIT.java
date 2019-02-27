@@ -68,7 +68,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
   }
 
   @Test
-  public void reportEvaluationForOneProcess() throws Exception {
+  public void reportEvaluationForOneProcess() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
@@ -100,7 +100,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
   }
 
   @Test
-  public void reportEvaluationForSeveralProcesses() throws Exception {
+  public void reportEvaluationForSeveralProcesses() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition.getId());
@@ -128,7 +128,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
   }
 
   @Test
-  public void evaluateReportForMultipleEvents() throws Exception {
+  public void evaluateReportForMultipleEvents() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
@@ -158,7 +158,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
   }
 
   @Test
-  public void allVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() throws Exception {
+  public void allVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() {
     //given
     final ProcessDefinitionEngineDto firstDefinition = deployOneUserTasksDefinition();
     final ProcessDefinitionEngineDto latestDefinition = deployTwoUserTasksDefinition();
@@ -187,7 +187,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
   }
 
   @Test
-  public void allVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() throws Exception {
+  public void allVersionsRespectLatestNodesOnlyWhereLatestHasLessNodes() {
     //given
     final ProcessDefinitionEngineDto firstDefinition = deployTwoUserTasksDefinition();
     final ProcessDefinitionEngineDto latestDefinition = deployOneUserTasksDefinition();
@@ -215,7 +215,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
   }
 
   @Test
-  public void reportAcrossAllVersions() throws Exception {
+  public void reportAcrossAllVersions() {
     //given
     final ProcessDefinitionEngineDto processDefinition1 = deployOneUserTasksDefinition();
     final ProcessDefinitionEngineDto processDefinition2 = deployOneUserTasksDefinition();
@@ -242,7 +242,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
   }
 
   @Test
-  public void otherProcessDefinitionsDoNotInfluenceResult() throws Exception {
+  public void otherProcessDefinitionsDoNotInfluenceResult() {
     // given
     final ProcessDefinitionEngineDto processDefinition1 = deployOneUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition1.getId());
@@ -280,7 +280,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
   }
 
   @Test
-  public void evaluateReportWithIrrationalAverageNumberAsResult() throws Exception {
+  public void evaluateReportWithIrrationalNumberAsResult() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
     ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
@@ -320,7 +320,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
   }
 
   @Test
-  public void runningUserTasksAreNotConsidered() throws Exception {
+  public void runningUserTasksAreNotConsidered() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
@@ -342,7 +342,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
   }
 
   @Test
-  public void processDefinitionContainsMultiInstanceBody() throws Exception {
+  public void processDefinitionContainsMultiInstanceBody() {
     // given
     BpmnModelInstance processWithMultiInstanceUserTask = Bpmn
       // @formatter:off
@@ -374,7 +374,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT {
   }
 
   @Test
-  public void evaluateReportForMoreThenTenEvents() throws Exception {
+  public void evaluateReportForMoreThenTenEvents() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
 
