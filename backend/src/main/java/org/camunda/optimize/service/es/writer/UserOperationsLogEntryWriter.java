@@ -28,24 +28,21 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
-import static org.camunda.optimize.service.es.writer.CompletedUserTaskInstanceWriter.createUpdateUserTaskMetricsScript;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROC_INSTANCE_TYPE;
 
 @Component
-public class UserOperationsLogEntryWriter {
+public class UserOperationsLogEntryWriter extends AbstractUserTaskWriter  {
   private static final Logger logger = LoggerFactory.getLogger(UserOperationsLogEntryWriter.class);
 
   private final RestHighLevelClient esClient;
-  private final ObjectMapper objectMapper;
 
   @Autowired
   public UserOperationsLogEntryWriter(final RestHighLevelClient esClient,
                                       final ObjectMapper objectMapper) {
+    super(objectMapper);
     this.esClient = esClient;
-    this.objectMapper = objectMapper;
   }
 
   public void importUserOperationLogEntries(final List<UserOperationLogEntryDto> userOperationLogEntries) throws
@@ -158,14 +155,6 @@ public class UserOperationsLogEntryWriter {
         "userTasks", mapToParameterSet(userTasksWithOperations)
       )
     );
-  }
-
-
-  @SuppressWarnings("unchecked")
-  private List<Map<String, String>> mapToParameterSet(final List<UserTaskInstanceDto> operationsByTask) {
-    return operationsByTask.stream()
-      .map(value -> (Map<String, String>) objectMapper.convertValue(value, Map.class))
-      .collect(toList());
   }
 
 }
