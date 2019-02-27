@@ -54,6 +54,10 @@ metadata:
 spec:
   nodeSelector:
     cloud.google.com/gke-nodepool: ${NODE_POOL()}
+  tolerations:
+    - key: "${NODE_POOL()}"
+      operator: "Exists"
+      effect: "NoSchedule"
   containers:
   - name: maven
     image: ${MAVEN_DOCKER_IMAGE()}

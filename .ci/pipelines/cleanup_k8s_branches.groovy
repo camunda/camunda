@@ -14,6 +14,10 @@ metadata:
 spec:
   nodeSelector:
     cloud.google.com/gke-nodepool: ${NODE_POOL()}
+  tolerations:
+    - key: "${NODE_POOL()}"
+      operator: "Exists"
+      effect: "NoSchedule"
   serviceAccountName: ci-operate-camunda-cloud
   containers:
   - name: gcloud

@@ -7,6 +7,10 @@ metadata:
 spec:
   nodeSelector:
     cloud.google.com/gke-nodepool: slaves
+  tolerations:
+    - key: "slaves"
+      operator: "Exists"
+      effect: "NoSchedule"
   initContainers:
     - name: init-sysctl
       image: busybox
