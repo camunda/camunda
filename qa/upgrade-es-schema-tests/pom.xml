@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>qa</artifactId>
-    <version>2.4.0-alpha2</version>
+    <version>2.4.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>upgrade-es-schema-tests</artifactId>
@@ -55,7 +55,7 @@
                     </ac:if>
                     <exec dir="${project.build.directory}/../../../" executable="/bin/bash" failonerror="true">
                       <arg value="-c" />
-                      <arg value="mvn dependency:unpack ${maven-settings} -pl qa/upgrade-es-schema-tests                             -Dartifact=org.camunda.optimize:camunda-optimize:@{currentVersion}:tar.gz:${optimize.classifier}                             -DoutputDirectory=./target/@{currentVersion}                             -DoverWriteReleases=true                             -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" />
+                      <arg value="mvn dependency:unpack ${maven-settings} -pl qa/upgrade-es-schema-tests -Dartifact=org.camunda.optimize:camunda-optimize:@{currentVersion}:tar.gz:${optimize.classifier}                             -DoutputDirectory=./target/@{currentVersion}                             -DoverWriteReleases=true                             -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn" />
                     </exec>
                   </sequential>
                 </ac:for>
@@ -149,7 +149,7 @@
                             <property name="curl.data.prefix" value="@@" />
                             <exec dir="${project.build.directory}/../src/test/resources/@{currentVersion}" executable="/bin/bash" failonerror="true">
                               <arg value="-c" />
-                              <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f -H 'Content-Type: application/json'                                 -XPOST localhost:9200/_bulk                                 --data-binary '${curl.data.prefix}@{bulkFile}'" />
+                              <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f -H 'Content-Type: application/json' -XPOST localhost:9200/_bulk                                 --data-binary '${curl.data.prefix}@{bulkFile}'" />
                             </exec>
                           </sequential>
                         </ac:for>
@@ -160,14 +160,14 @@
                     <!-- Note: writing authResponse and using it in the auth header is for backwardscompatibility < 2.3.0 -->
                     <exec dir="${project.build.directory}/@{currentVersion}" executable="/bin/bash" failonerror="true">
                       <arg value="-c" />
-                      <arg value="curl -s -w &quot;%{http_code}&quot; -f -H 'Content-Type: application/json' -XPOST localhost:8090/api/authentication                         --data-binary '{&quot;username&quot;:&quot;demo&quot;, &quot;password&quot;:&quot;demo&quot;}'                         -c authCookie                         -o authResponse" />
+                      <arg value="curl -s -w &quot;%{http_code}&quot; -f -H 'Content-Type: application/json' -XPOST localhost:8090/api/authentication --data-binary '{&quot;username&quot;:&quot;demo&quot;, &quot;password&quot;:&quot;demo&quot;}'                         -c authCookie                         -o authResponse" />
                     </exec>
                     <loadfile property="optimize.authToken.@{currentVersion}" srcFile="${project.build.directory}/@{currentVersion}/authResponse" />
 
                     <echo message="Reading all reports from optimize api... ${optimize.authToken.@{currentVersion}}" />
                     <exec dir="${project.build.directory}/@{currentVersion}" executable="/bin/bash" failonerror="true">
                       <arg value="-c" />
-                      <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f http://localhost:8090/api/report?orderBy=lastModified                         -b authCookie                         -H 'X-Optimize-Authorization: Bearer ${optimize.authToken.@{currentVersion}}'" />
+                      <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f http://localhost:8090/api/report?orderBy=lastModified -b authCookie                         -H 'X-Optimize-Authorization: Bearer ${optimize.authToken.@{currentVersion}}'" />
                     </exec>
 
                     <echo message="Killing Optimize @{currentVersion}..." />
