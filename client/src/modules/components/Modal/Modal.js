@@ -35,7 +35,12 @@ export default class Modal extends React.Component {
 
   constructor(props) {
     super(props);
-    this.keyHandlers = new Map([[27, this.props.onModalClose]]);
+    this.keyHandlers = new Map([
+      [27, this.props.onModalClose],
+      [9, this.handleTabKeyDown]
+    ]);
+    this.modalRef = React.createRef();
+    this.prevActiveElement = document.activeElement;
   }
 
   componentDidMount() {
@@ -45,11 +50,31 @@ export default class Modal extends React.Component {
 
   componentWillUnmount() {
     document.removeEventListener('keydown', this.handleKeyDown);
+    this.prevActiveElement.focus();
   }
 
   handleKeyDown = e => {
     const keyHandler = this.keyHandlers.get(e.keyCode);
-    return keyHandler && keyHandler();
+    return keyHandler && keyHandler(e);
+  };
+
+  handleTabKeyDown = e => {
+    const focusableModalElements = this.modalRef.current.querySelectorAll(
+      'a[href], button, textarea, input[type="text"], input[type="radio"], input[type="checkbox"], select'
+    );
+    const firstElement = focusableModalElements[0];
+    const lastElement =
+      focusableModalElements[focusableModalElements.length - 1];
+
+    if (!e.shiftKey && document.activeElement !== firstElement) {
+      firstElement.focus();
+      return e.preventDefault();
+    }
+
+    if (e.shiftKey && document.activeElement !== lastElement) {
+      lastElement.focus();
+      e.preventDefault();
+    }
   };
 
   addKeyHandler = (keyCode, handler) => this.keyHandlers.set(keyCode, handler);
@@ -57,7 +82,7 @@ export default class Modal extends React.Component {
   render() {
     const {onModalClose, children, className} = this.props;
     return createPortal(
-      <Styled.ModalRoot className={className} role="dialog">
+      <Styled.ModalRoot className={className} ref={this.modalRef} role="dialog">
         <Styled.ModalContent>
           <ModalContext.Provider
             value={{
@@ -125,7 +150,8 @@ class ModalPrimaryButton extends React.Component {
 
   primaryButtonRef = React.createRef();
 
-  handleReturnKeyPress = () => {
+  handleReturnKeyPress = e => {
+    e.preventDefault();
     this.primaryButtonRef.current.click();
   };
 
