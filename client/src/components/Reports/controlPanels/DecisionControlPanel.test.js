@@ -148,7 +148,12 @@ it('should not crash when no decisionDefinition is selected', () => {
   shallow(
     <DecisionControlPanel
       report={{
-        data: {...report.data, decisionDefinitionKey: null, decisionDefinitionVersion: null}
+        data: {
+          ...report.data,
+          decisionDefinitionKey: null,
+          decisionDefinitionVersion: null,
+          configuration: {...report.data.configuration, xml: null}
+        }
       }}
     />
   );

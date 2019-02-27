@@ -47,7 +47,7 @@ export default function reportConfig({view, groupBy, visualization}) {
       if (data.type === 'inputVariable' || data.type === 'outputVariable') {
         return `${label}: ${new DOMParser()
           .parseFromString(xml, 'text/xml')
-          .getElementById(entry.value.id)
+          .querySelector(`[id="${entry.value.id}"]`)
           .getAttribute('label')}`;
       }
 

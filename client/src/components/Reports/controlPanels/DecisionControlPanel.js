@@ -25,19 +25,19 @@ export default class DecisionControlPanel extends React.Component {
       }
     }
   }) {
-    const definitions = new DOMParser()
-      .parseFromString(xml, 'text/xml')
-      .querySelector(`decision[id="${decisionDefinitionKey}"]`);
+    if (xml) {
+      const definitions = new DOMParser()
+        .parseFromString(xml, 'text/xml')
+        .querySelector(`decision[id="${decisionDefinitionKey}"]`);
 
-    if (definitions) {
       return {
         variables: {
-          inputVariable: [...definitions.querySelectorAll('input')].map(node => ({
+          inputVariable: Array.from(definitions.querySelectorAll('input')).map(node => ({
             id: node.getAttribute('id'),
             name: node.getAttribute('label'),
             type: node.querySelector('inputExpression').getAttribute('typeRef')
           })),
-          outputVariable: [...definitions.querySelectorAll('output')].map(node => ({
+          outputVariable: Array.from(definitions.querySelectorAll('output')).map(node => ({
             id: node.getAttribute('id'),
             name: node.getAttribute('label'),
             type: node.getAttribute('typeRef')

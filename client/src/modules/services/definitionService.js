@@ -3,7 +3,7 @@ import {get} from 'request';
 export function extractDefinitionName(key, xml) {
   return new DOMParser()
     .parseFromString(xml, 'text/xml')
-    .getElementById(key)
+    .querySelector(`[id="${key}"]`)
     .getAttribute('name');
 }
 
