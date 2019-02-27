@@ -13,6 +13,8 @@ import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
 import java.util.List;
 
+import static org.camunda.optimize.rest.util.AuthenticationUtil.OPTIMIZE_AUTHORIZATION;
+import static org.camunda.optimize.rest.util.AuthenticationUtil.createOptimizeAuthCookieValue;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -36,7 +38,7 @@ public class PostMigrationTests {
   public void retrieveAllReports() {
     Response response = client.target("http://localhost:8090/api/report")
       .request()
-      .cookie("X-Optimize-Authorization", authHeader)
+      .cookie(OPTIMIZE_AUTHORIZATION, authHeader)
       .get();
 
     List<Object> objects = response.readEntity(new GenericType<List<Object>>() {
@@ -49,7 +51,7 @@ public class PostMigrationTests {
   public void retrieveDashboards() {
     Response response = client.target("http://localhost:8090/api/dashboard")
       .request()
-      .cookie("X-Optimize-Authorization", authHeader)
+      .cookie(OPTIMIZE_AUTHORIZATION, authHeader)
       .get();
 
     List<Object> objects = response.readEntity(new GenericType<List<Object>>() {
@@ -62,7 +64,7 @@ public class PostMigrationTests {
   public void retrieveAlerts() {
     Response response = client.target("http://localhost:8090/api/alert")
       .request()
-      .cookie("X-Optimize-Authorization", authHeader)
+      .cookie(OPTIMIZE_AUTHORIZATION, authHeader)
       .get();
 
     List<Object> objects = response.readEntity(new GenericType<List<Object>>() {
@@ -79,6 +81,6 @@ public class PostMigrationTests {
     Response response = client.target("http://localhost:8090/api/authentication")
       .request().post(Entity.json(credentials));
 
-    authHeader = "Bearer " + response.readEntity(String.class);
+    authHeader = createOptimizeAuthCookieValue(response.readEntity(String.class));
   }
 }

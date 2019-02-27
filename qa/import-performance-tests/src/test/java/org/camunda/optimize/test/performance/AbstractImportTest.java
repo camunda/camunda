@@ -59,12 +59,12 @@ public abstract class AbstractImportTest {
       logger.info(
         "The Camunda Platform contains {} process definitions. Optimize: {}",
         (engineDatabaseRule.countProcessDefinitions()),
-        elasticSearchRule.getImportedCountOf(ElasticsearchConstants.PROC_DEF_TYPE, configurationService)
+        elasticSearchRule.getDocumentCountOf(ElasticsearchConstants.PROC_DEF_TYPE)
       );
       logger.info(
         "The Camunda Platform contains {} historic process instances. Optimize: {}",
         engineDatabaseRule.countHistoricProcessInstances(),
-        elasticSearchRule.getImportedCountOf(ElasticsearchConstants.PROC_INSTANCE_TYPE, configurationService)
+        elasticSearchRule.getDocumentCountOf(ElasticsearchConstants.PROC_INSTANCE_TYPE)
       );
       logger.info(
         "The Camunda Platform contains {} historic variable instances. Optimize: {}",
@@ -95,8 +95,8 @@ public abstract class AbstractImportTest {
 
   private long computeImportProgress() {
     // assumption: we know how many process instances have been generated
-    Integer processInstancesImported = elasticSearchRule.getImportedCountOf(
-      ElasticsearchConstants.PROC_INSTANCE_TYPE, configurationService
+    Integer processInstancesImported = elasticSearchRule.getDocumentCountOf(
+      ElasticsearchConstants.PROC_INSTANCE_TYPE
     );
     Long totalInstances;
     try {
@@ -111,14 +111,14 @@ public abstract class AbstractImportTest {
   protected void assertThatEngineAndElasticDataMatch() throws SQLException {
     assertThat(
       "processDefinitionsCount",
-      elasticSearchRule.getImportedCountOf(
-        ElasticsearchConstants.PROC_DEF_TYPE, configurationService
+      elasticSearchRule.getDocumentCountOf(
+        ElasticsearchConstants.PROC_DEF_TYPE
       ),
       is(engineDatabaseRule.countProcessDefinitions())
     );
     assertThat(
       "processInstanceTypeCount",
-      elasticSearchRule.getImportedCountOf(ElasticsearchConstants.PROC_INSTANCE_TYPE, configurationService),
+      elasticSearchRule.getDocumentCountOf(ElasticsearchConstants.PROC_INSTANCE_TYPE),
       is(engineDatabaseRule.countHistoricProcessInstances())
     );
     assertThat(
@@ -134,12 +134,12 @@ public abstract class AbstractImportTest {
 
     assertThat(
       "decisionDefinitionsCount",
-      elasticSearchRule.getImportedCountOf(DECISION_DEFINITION_TYPE, configurationService),
+      elasticSearchRule.getDocumentCountOf(DECISION_DEFINITION_TYPE),
       is(engineDatabaseRule.countDecisionDefinitions())
     );
     assertThat(
       "decisionInstancesCount",
-      elasticSearchRule.getImportedCountOf(DECISION_INSTANCE_TYPE, configurationService),
+      elasticSearchRule.getDocumentCountOf(DECISION_INSTANCE_TYPE),
       is(engineDatabaseRule.countHistoricDecisionInstances())
     );
   }

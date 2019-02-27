@@ -1,565 +1,285 @@
 package org.camunda.optimize.service.security;
 
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.bpm.model.dmn.DmnModelInstance;
-import org.camunda.optimize.dto.engine.AuthorizationDto;
-import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.definition.KeyDefinitionOptimizeDto;
+import org.camunda.optimize.service.es.schema.type.TerminatedUserSessionType;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import javax.ws.rs.core.NewCookie;
+import javax.ws.rs.core.Response;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_RESOURCES_RESOURCE_ID;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GLOBAL;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_REVOKE;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.READ_HISTORY_PERMISSION;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
-import static org.camunda.optimize.test.util.DmnHelper.createSimpleDmnModel;
+import static org.camunda.optimize.rest.util.AuthenticationUtil.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
+import static org.camunda.optimize.rest.util.AuthenticationUtil.OPTIMIZE_AUTHORIZATION;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TERMINATED_USER_SESSION_TYPE;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 
-@RunWith(JUnitParamsRunner.class)
 public class SessionServiceIT {
-
-  public static final String GROUP_ID = "kermitGroup";
-  public static final String PROCESS_KEY = "aprocess";
-  public static final String DECISION_KEY = "aDecision";
-  public static final String KERMIT_USER = "kermit";
-
-  private static final Object[] definitionType() {
-    return new Object[]{RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION};
-  }
-
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+  public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
 
   @Rule
   public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule).around(engineDatabaseRule);
 
   @Test
-  @Parameters(method = "definitionType")
-  public void grantGlobalAccessForAllDefinitions(int definitionResourceType) throws IOException {
-    //given
-    addKermitUserAndGrantAccessToOptimize();
-    addGlobalAuthorizationForAllDefinitions(definitionResourceType);
+  public void verifyTerminatedSessionCleanupIsScheduledAfterStartup() {
+    assertThat(getTerminatedSessionService().isCleanupScheduled(), is(true));
+  }
 
-    deployAndImportDefinition(definitionResourceType);
+  @Test
+  public void verifyTerminatedSessionsGetCleanedUp() {
+    // given
+    addAdminUserAndGrantAccessPermission();
 
-    //when
-    List<KeyDefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+    final String token = authenticateAdminUser();
+
+    // when
+    embeddedOptimizeRule.getRequestExecutor().buildLogOutRequest().withGivenAuthToken(token).execute();
+
+    LocalDateUtil.setCurrentTime(OffsetDateTime.now().plus(
+      embeddedOptimizeRule.getConfigurationService().getTokenLifeTimeMinutes(),
+      ChronoUnit.MINUTES
+    ));
+    getTerminatedSessionService().cleanup();
+
+    // then
+    assertThat(elasticSearchRule.getDocumentCountOf(TERMINATED_USER_SESSION_TYPE), is(0));
+  }
+
+  @Test
+  public void authenticatingSameUserTwiceCreatesNewIndependentSession() {
+    // given
+    addAdminUserAndGrantAccessPermission();
+
+    final String firstToken = authenticateAdminUser();
+    final String secondToken = authenticateAdminUser();
+
+    // when
+    final Response logoutResponse =
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildLogOutRequest()
+        .withGivenAuthToken(firstToken)
+        .execute();
+    Assert.assertThat(logoutResponse.getStatus(), is(200));
+
+    // then
+    final Response getReportsResponse =
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildGetAllReportsRequest()
+        .withGivenAuthToken(secondToken)
+        .execute();
+
+    Assert.assertThat(getReportsResponse.getStatus(), is(200));
+  }
+
+  @Test
+  public void logoutCreatesTerminatedSessionEntry() {
+    // given
+    addAdminUserAndGrantAccessPermission();
+
+    final String token = authenticateAdminUser();
+
+    // when
+    embeddedOptimizeRule.getRequestExecutor().buildLogOutRequest().withGivenAuthToken(token).execute();
+
+    // then
+    assertThat(elasticSearchRule.getDocumentCountOf(TERMINATED_USER_SESSION_TYPE), is(1));
+  }
+
+  @Test
+  public void logoutInvalidatesToken() {
+    // given
+    addAdminUserAndGrantAccessPermission();
+
+    final String token = authenticateAdminUser();
+
+    // when
+    final Response logoutResponse =
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildLogOutRequest()
+        .withGivenAuthToken(token)
+        .execute();
+    Assert.assertThat(logoutResponse.getStatus(), is(200));
+
+    // then
+    final Response getReportsResponse =
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildGetAllReportsRequest()
+        .withGivenAuthToken(token)
+        .execute();
+
+    Assert.assertThat(getReportsResponse.getStatus(), is(401));
+  }
+
+  @Test
+  public void logoutInvalidatesAllTokensOfASession() {
+    // given
+    int expiryMinutes = embeddedOptimizeRule.getConfigurationService().getTokenLifeTimeMinutes();
+    engineRule.addUser("genzo", "genzo");
+    engineRule.grantUserOptimizeAccess("genzo");
+
+    String firstToken = embeddedOptimizeRule.authenticateUser("genzo", "genzo");
+
+    // when
+    // modify time to get a new token for same session
+    LocalDateUtil.setCurrentTime(LocalDateUtil.getCurrentDateTime().plusMinutes(expiryMinutes * 2 / 3));
+    final Response getNewAuthTokenForSameSessionResponse = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildAuthTestRequest()
+      .withGivenAuthToken(firstToken)
+      .execute();
+
+    Assert.assertThat(getNewAuthTokenForSameSessionResponse.getStatus(), is(200));
+    LocalDateUtil.reset();
+
+    final NewCookie newAuthCookie = getNewAuthTokenForSameSessionResponse.getCookies().get(OPTIMIZE_AUTHORIZATION);
+    final String newToken = newAuthCookie.getValue().replace(AUTH_COOKIE_TOKEN_VALUE_PREFIX, "");
+
+    final Response logoutResponse =
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildLogOutRequest()
+        .withGivenAuthToken(firstToken)
+        .execute();
+    Assert.assertThat(logoutResponse.getStatus(), is(200));
 
     //then
-    assertThat(definitions.size(), is(1));
+    final Response getReportsResponse =
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildGetAllReportsRequest()
+        .withGivenAuthToken(newToken)
+        .execute();
+
+    Assert.assertThat(getReportsResponse.getStatus(), is(401));
   }
 
   @Test
-  @Parameters(method = "definitionType")
-  public void revokeAllDefinitionAuthorizationsForGroup(int definitionResourceType) throws Exception {
+  public void tokenShouldExpireAfterConfiguredTime() {
     // given
-    addKermitUserAndGrantAccessToOptimize();
-    createKermitGroupAndAddKermitToThatGroup();
-    addGlobalAuthorizationForAllDefinitions(definitionResourceType);
-    revokeAllDefinitionAuthorizationsForKermitGroup(definitionResourceType);
+    int expiryTime = embeddedOptimizeRule.getConfigurationService().getTokenLifeTimeMinutes();
+    engineRule.addUser("genzo", "genzo");
+    engineRule.grantUserOptimizeAccess("genzo");
+    String firstToken = embeddedOptimizeRule.authenticateUser("genzo", "genzo");
 
-    deployAndImportDefinition(definitionResourceType);
+    Response testAuthenticationResponse = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildAuthTestRequest()
+      .withGivenAuthToken(firstToken)
+      .execute();
+    Assert.assertThat(testAuthenticationResponse.getStatus(), is(200));
 
     // when
-    List<KeyDefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
-
-    // then
-    assertThat(definitions.size(), is(0));
-  }
-
-  @Test
-  @Parameters(method = "definitionType")
-  public void grantAllDefinitionAuthorizationsForGroup(int definitionResourceType) throws Exception {
-    // given
-    addKermitUserAndGrantAccessToOptimize();
-    createKermitGroupAndAddKermitToThatGroup();
-    grantAllDefinitionAuthorizationsForKermitGroup(definitionResourceType);
-
-    deployAndImportDefinition(definitionResourceType);
-
-    // when
-    List<KeyDefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
-
-    // then
-    assertThat(definitions.size(), is(1));
-  }
-
-  @Test
-  @Parameters(method = "definitionType")
-  public void revokeSingleDefinitionAuthorizationForGroup(int definitionResourceType) throws Exception {
-    // given
-    addKermitUserAndGrantAccessToOptimize();
-    createKermitGroupAndAddKermitToThatGroup();
-    grantAllDefinitionAuthorizationsForKermitGroup(definitionResourceType);
-    revokeSingleDefinitionAuthorizationsForKermitGroup(
-      getDefinitionKey(definitionResourceType),
-      definitionResourceType
-    );
-
-    deployAndImportDefinition(definitionResourceType);
-
-    // when
-    List<KeyDefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
-
-    // then
-    assertThat(definitions.size(), is(0));
-  }
-
-  @Test
-  @Parameters(method = "definitionType")
-  public void grantSingleDefinitionAuthorizationsForGroup(int definitionResourceType) throws Exception {
-    // given
-    addKermitUserAndGrantAccessToOptimize();
-    createKermitGroupAndAddKermitToThatGroup();
-    grantSingleDefinitionAuthorizationForKermitGroup(getDefinitionKey(definitionResourceType), definitionResourceType);
-
-    deployAndImportDefinition(definitionResourceType);
-
-    // when
-    List<KeyDefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
-
-    // then
-    assertThat(definitions.size(), is(1));
-  }
-
-  @Test
-  @Parameters(method = "definitionType")
-  public void revokeAllDefinitionAuthorizationsForUser(int definitionResourceType) throws Exception {
-    // given
-    addKermitUserAndGrantAccessToOptimize();
-    addGlobalAuthorizationForAllDefinitions(definitionResourceType);
-    revokeAllDefinitionAuthorizationsForKermit(definitionResourceType);
-
-    deployAndImportDefinition(definitionResourceType);
-
-    // when
-    List<KeyDefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
-
-    // then
-    assertThat(definitions.size(), is(0));
-  }
-
-  @Test
-  @Parameters(method = "definitionType")
-  public void grantAllDefinitionAuthorizationsForUser(int definitionResourceType) throws Exception {
-    // given
-    addKermitUserAndGrantAccessToOptimize();
-    grantAllDefinitionAuthorizationsForKermit(definitionResourceType);
-
-    deployAndImportDefinition(definitionResourceType);
-
-    // when
-    List<KeyDefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
-
-    // then
-    assertThat(definitions.size(), is(1));
-  }
-
-  @Test
-  @Parameters(method = "definitionType")
-  public void revokeSingleDefinitionAuthorizationForUser(int definitionResourceType) throws Exception {
-    // given
-    addKermitUserAndGrantAccessToOptimize();
-    grantAllDefinitionAuthorizationsForKermit(definitionResourceType);
-    revokeSingleDefinitionAuthorizationsForKermit(getDefinitionKey(definitionResourceType), definitionResourceType);
-
-    deployAndImportDefinition(definitionResourceType);
-
-    // when
-    List<KeyDefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
-
-    // then
-    assertThat(definitions.size(), is(0));
-  }
-
-  @Test
-  @Parameters(method = "definitionType")
-  public void grantSingleDefinitionAuthorizationsForUser(int definitionResourceType) throws Exception {
-    // given
-    addKermitUserAndGrantAccessToOptimize();
-    grantSingleDefinitionAuthorizationForKermit(getDefinitionKey(definitionResourceType), definitionResourceType);
-
-    deployAndImportDefinition(definitionResourceType);
-
-    // when
-    List<KeyDefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
-
-    // then
-    assertThat(definitions.size(), is(1));
-  }
-
-  @Test
-  @Parameters(method = "definitionType")
-  public void grantAndRevokeSeveralTimes(int definitionResourceType) throws IOException {
-    //given
-    addKermitUserAndGrantAccessToOptimize();
-    createKermitGroupAndAddKermitToThatGroup();
-    addGlobalAuthorizationForAllDefinitions(definitionResourceType);
-
-    deployAndImportDefinition(definitionResourceType);
-
-    //when
-    List<KeyDefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+    LocalDateUtil.setCurrentTime(get1MinuteAfterExpiryTime(expiryTime));
+    testAuthenticationResponse = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildAuthTestRequest()
+      .withGivenAuthToken(firstToken)
+      .execute();
 
     //then
-    assertThat(definitions.size(), is(1));
-
-    // when
-    revokeAllDefinitionAuthorizationsForKermitGroup(definitionResourceType);
-    definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
-
-    // then
-    assertThat(definitions.size(), is(0));
-
-    // when
-    grantAllDefinitionAuthorizationsForKermitGroup(definitionResourceType);
-    definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
-
-    // then
-    assertThat(definitions.size(), is(1));
-
-    // when
-    revokeSingleDefinitionAuthorizationsForKermitGroup(
-      getDefinitionKey(definitionResourceType),
-      definitionResourceType
-    );
-    definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
-
-    // then
-    assertThat(definitions.size(), is(0));
-
-    // when
-    grantSingleDefinitionAuthorizationForKermitGroup(getDefinitionKey(definitionResourceType), definitionResourceType);
-    definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
-
-    // then
-    assertThat(definitions.size(), is(1));
-
-    // when
-    revokeAllDefinitionAuthorizationsForKermit(definitionResourceType);
-    definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
-
-    // then
-    assertThat(definitions.size(), is(0));
-
-    // when
-    grantAllDefinitionAuthorizationsForKermit(definitionResourceType);
-    definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
-
-    // then
-    assertThat(definitions.size(), is(1));
-
-    // when
-    revokeSingleDefinitionAuthorizationsForKermit(getDefinitionKey(definitionResourceType), definitionResourceType);
-    definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
-
-    // then
-    assertThat(definitions.size(), is(0));
-
-    // when
-    grantSingleDefinitionAuthorizationForKermit(getDefinitionKey(definitionResourceType), definitionResourceType);
-    definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
-
-    // then
-    assertThat(definitions.size(), is(1));
+    Assert.assertThat(testAuthenticationResponse.getStatus(), is(401));
   }
 
-
   @Test
-  @Parameters(method = "definitionType")
-  public void authorizationForOneGroupIsNotTransferredToOtherGroups(int definitionResourceType) throws Exception {
+  public void authCookieIsExtendedByRequestInLastThirdOfLifeTime() {
     // given
-    final String genzoUser = "genzo";
-    addKermitUserAndGrantAccessToOptimize();
-    createKermitGroupAndAddKermitToThatGroup();
-    grantAllDefinitionAuthorizationsForKermitGroup(definitionResourceType);
-    engineRule.addUser(genzoUser, genzoUser);
-    engineRule.grantUserOptimizeAccess(genzoUser);
-    engineRule.createGroup("genzoGroup", "Group", "foo");
-    engineRule.addUserToGroup(genzoUser, "genzoGroup");
+    int expiryMinutes = embeddedOptimizeRule.getConfigurationService().getTokenLifeTimeMinutes();
+    engineRule.addUser("genzo", "genzo");
+    engineRule.grantUserOptimizeAccess("genzo");
+    String firstToken = embeddedOptimizeRule.authenticateUser("genzo", "genzo");
 
-    deployAndImportDefinition(definitionResourceType);
+    Response testAuthenticationResponse = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildAuthTestRequest()
+      .withGivenAuthToken(firstToken)
+      .execute();
+    Assert.assertThat(testAuthenticationResponse.getStatus(), is(200));
 
     // when
-    List<KeyDefinitionOptimizeDto> genzosDefinitions = retrieveDefinitionsAsUser(
-      definitionResourceType, genzoUser, genzoUser
+    final OffsetDateTime dateTimeBeforeRefresh = LocalDateUtil.getCurrentDateTime();
+    LocalDateUtil.setCurrentTime(LocalDateUtil.getCurrentDateTime().plusMinutes(expiryMinutes * 2 / 3));
+    testAuthenticationResponse = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildAuthTestRequest()
+      .withGivenAuthToken(firstToken)
+      .execute();
+
+    //then
+    Assert.assertThat(testAuthenticationResponse.getStatus(), is(200));
+    Assert.assertThat(testAuthenticationResponse.getCookies().keySet(), hasItem(OPTIMIZE_AUTHORIZATION));
+    final NewCookie newAuthCookie = testAuthenticationResponse.getCookies().get(OPTIMIZE_AUTHORIZATION);
+    final String newToken = newAuthCookie.getValue().replace(AUTH_COOKIE_TOKEN_VALUE_PREFIX, "");
+    Assert.assertThat(newToken, is(not(equalTo(firstToken))));
+    Assert.assertThat(
+      newAuthCookie.getExpiry().toInstant(),
+      is(greaterThan(dateTimeBeforeRefresh.plusMinutes(expiryMinutes).toInstant()))
     );
 
-    // then
-    assertThat(genzosDefinitions.size(), is(0));
   }
 
   @Test
-  @Parameters(method = "definitionType")
-  public void readAndReadHistoryPermissionsGrandDefinitionAccess(int definitionResourceType) throws Exception {
-    // given
-    addKermitUserAndGrantAccessToOptimize();
-    grantAllDefinitionAuthorizationsForUserWithReadPermission(KERMIT_USER, definitionResourceType);
+  public void tokenStillValidIfTerminatedSessionsCannotBeRead() {
+    try {
+      // given
+      addAdminUserAndGrantAccessPermission();
 
-    deployAndImportDefinition(definitionResourceType);
+      final String token = authenticateAdminUser();
 
-    // when
-    List<KeyDefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
+      // when
+      // provoke failure for terminated session check
+      elasticSearchRule.deleteIndexOfType(new TerminatedUserSessionType());
 
-    // then
-    assertThat(definitions.size(), is(1));
-  }
+      final Response getReportsResponse =
+        embeddedOptimizeRule
+          .getRequestExecutor()
+          .buildGetAllReportsRequest()
+          .withGivenAuthToken(token)
+          .execute();
 
-  @Test
-  @Parameters(method = "definitionType")
-  public void grantAuthorizationToSingleDefinitionTransfersToAllVersions(int definitionResourceType) throws Exception {
-    // given
-    addKermitUserAndGrantAccessToOptimize();
-    grantSingleDefinitionAuthorizationForKermit(getDefinitionKey(definitionResourceType), definitionResourceType);
+      // then
 
-    deployAndImportDefinition(definitionResourceType);
-    deployAndImportDefinition(definitionResourceType);
-
-    // when
-    List<KeyDefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
-
-    // then
-    assertThat(definitions.size(), is(2));
-  }
-
-  private void deployAndImportDefinition(int definitionResourceType) throws IOException {
-    switch (definitionResourceType) {
-      case RESOURCE_TYPE_PROCESS_DEFINITION:
-        deploySimpleProcessDefinition(PROCESS_KEY);
-        break;
-      case RESOURCE_TYPE_DECISION_DEFINITION:
-        deploySimpleDecisionDefinition(DECISION_KEY);
-        break;
-      default:
-        throw new IllegalStateException("Uncovered definitionResourceType: " + definitionResourceType);
-    }
-
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-  }
-
-  private void addGlobalAuthorizationForAllDefinitions(int definitionResourceType) {
-    AuthorizationDto authorizationDto = new AuthorizationDto();
-    authorizationDto.setResourceType(definitionResourceType);
-    authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
-    authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
-    authorizationDto.setType(AUTHORIZATION_TYPE_GLOBAL);
-    authorizationDto.setUserId("*");
-    engineRule.createAuthorization(authorizationDto);
-  }
-
-  private void grantAllDefinitionAuthorizationsForKermitGroup(int definitionResourceType) {
-    grantAllDefinitionAuthorizationsForGroup(GROUP_ID, definitionResourceType);
-  }
-
-  private void grantSingleDefinitionAuthorizationForKermitGroup(String definitionKey, int definitionResourceType) {
-    grantSingleDefinitionAuthorizationsForGroup(GROUP_ID, definitionKey, definitionResourceType);
-  }
-
-  private void revokeAllDefinitionAuthorizationsForKermitGroup(int definitionResourceType) {
-    revokeAllDefinitionAuthorizationsForGroup(GROUP_ID, definitionResourceType);
-  }
-
-  private void revokeSingleDefinitionAuthorizationsForKermitGroup(String definitionKey, int definitionResourceType) {
-    revokeSingleDefinitionAuthorizationsForGroup(GROUP_ID, definitionKey, definitionResourceType);
-  }
-
-  private void grantAllDefinitionAuthorizationsForGroup(String groupId, int definitionResourceType) {
-    AuthorizationDto authorizationDto = new AuthorizationDto();
-    authorizationDto.setResourceType(definitionResourceType);
-    authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
-    authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
-    authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
-    authorizationDto.setGroupId(groupId);
-    engineRule.createAuthorization(authorizationDto);
-  }
-
-  private void grantSingleDefinitionAuthorizationsForGroup(String groupId,
-                                                           String definitionKey,
-                                                           int definitionResourceType) {
-    AuthorizationDto authorizationDto = new AuthorizationDto();
-    authorizationDto.setResourceType(definitionResourceType);
-    authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
-    authorizationDto.setResourceId(definitionKey);
-    authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
-    authorizationDto.setGroupId(groupId);
-    engineRule.createAuthorization(authorizationDto);
-  }
-
-  private void revokeAllDefinitionAuthorizationsForGroup(String groupId, int definitionResourceType) {
-    AuthorizationDto authorizationDto = new AuthorizationDto();
-    authorizationDto.setResourceType(definitionResourceType);
-    authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
-    authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
-    authorizationDto.setType(AUTHORIZATION_TYPE_REVOKE);
-    authorizationDto.setGroupId(groupId);
-    engineRule.createAuthorization(authorizationDto);
-  }
-
-  private void revokeSingleDefinitionAuthorizationsForGroup(String groupId,
-                                                            String definitionKey,
-                                                            int definitionResourceType) {
-    AuthorizationDto authorizationDto = new AuthorizationDto();
-    authorizationDto.setResourceType(definitionResourceType);
-    authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
-    authorizationDto.setResourceId(definitionKey);
-    authorizationDto.setType(AUTHORIZATION_TYPE_REVOKE);
-    authorizationDto.setGroupId(groupId);
-    engineRule.createAuthorization(authorizationDto);
-  }
-
-  private void grantAllDefinitionAuthorizationsForKermit(int definitionResourceType) {
-    grantAllDefinitionAuthorizationsForUser(KERMIT_USER, definitionResourceType);
-  }
-
-  private void grantSingleDefinitionAuthorizationForKermit(String definitionKey, int definitionResourceType) {
-    grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, definitionKey, definitionResourceType);
-  }
-
-  private void revokeAllDefinitionAuthorizationsForKermit(int definitionResourceType) {
-    revokeAllDefinitionAuthorizationsForUser(KERMIT_USER, definitionResourceType);
-  }
-
-  private void revokeSingleDefinitionAuthorizationsForKermit(String definitionKey, int definitionResourceType) {
-    revokeSingleDefinitionAuthorizationsForUser(KERMIT_USER, definitionKey, definitionResourceType);
-  }
-
-  private void grantAllDefinitionAuthorizationsForUser(String userId, int definitionResourceType) {
-    AuthorizationDto authorizationDto = new AuthorizationDto();
-    authorizationDto.setResourceType(definitionResourceType);
-    authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
-    authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
-    authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
-    authorizationDto.setUserId(userId);
-    engineRule.createAuthorization(authorizationDto);
-  }
-
-  private void grantSingleDefinitionAuthorizationsForUser(String userId,
-                                                          String definitionKey,
-                                                          int definitionResourceType) {
-    AuthorizationDto authorizationDto = new AuthorizationDto();
-    authorizationDto.setResourceType(definitionResourceType);
-    authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
-    authorizationDto.setResourceId(definitionKey);
-    authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
-    authorizationDto.setUserId(userId);
-    engineRule.createAuthorization(authorizationDto);
-  }
-
-  private void grantAllDefinitionAuthorizationsForUserWithReadPermission(String userId, int definitionResourceType) {
-    AuthorizationDto authorizationDto = new AuthorizationDto();
-    authorizationDto.setResourceType(definitionResourceType);
-    List<String> permissions = new ArrayList<>();
-    permissions.add(READ_HISTORY_PERMISSION);
-    authorizationDto.setPermissions(permissions);
-    authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
-    authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
-    authorizationDto.setUserId(userId);
-    engineRule.createAuthorization(authorizationDto);
-  }
-
-  private void revokeAllDefinitionAuthorizationsForUser(String userId, int definitionResourceType) {
-    AuthorizationDto authorizationDto = new AuthorizationDto();
-    authorizationDto.setResourceType(definitionResourceType);
-    authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
-    authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
-    authorizationDto.setType(AUTHORIZATION_TYPE_REVOKE);
-    authorizationDto.setUserId(userId);
-    engineRule.createAuthorization(authorizationDto);
-  }
-
-  private void revokeSingleDefinitionAuthorizationsForUser(String userId,
-                                                           String definitionKey,
-                                                           int definitionResourceType) {
-    AuthorizationDto authorizationDto = new AuthorizationDto();
-    authorizationDto.setResourceType(definitionResourceType);
-    authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
-    authorizationDto.setResourceId(definitionKey);
-    authorizationDto.setType(AUTHORIZATION_TYPE_REVOKE);
-    authorizationDto.setUserId(userId);
-    engineRule.createAuthorization(authorizationDto);
-  }
-
-  private void addKermitUserAndGrantAccessToOptimize() {
-    engineRule.addUser(KERMIT_USER, KERMIT_USER);
-    engineRule.grantUserOptimizeAccess(KERMIT_USER);
-  }
-
-  private String getDefinitionKey(final int definitionResourceType) {
-    return definitionResourceType == RESOURCE_TYPE_PROCESS_DEFINITION ? PROCESS_KEY : DECISION_KEY;
-  }
-
-  private <T extends KeyDefinitionOptimizeDto> List<T> retrieveDefinitionsAsKermitUser(int resourceType) {
-    return retrieveDefinitionsAsUser(resourceType, KERMIT_USER, KERMIT_USER);
-  }
-
-  private <T extends KeyDefinitionOptimizeDto> List<T> retrieveDefinitionsAsUser(final int resourceType,
-                                                                                 final String userName,
-                                                                                 final String password) {
-    switch (resourceType) {
-      case RESOURCE_TYPE_PROCESS_DEFINITION:
-        return (List<T>) retrieveProcessDefinitionsAsUser(userName, password);
-      case RESOURCE_TYPE_DECISION_DEFINITION:
-        return (List<T>) retrieveDecisionDefinitionsAsUser(userName, password);
-      default:
-        throw new IllegalArgumentException("Unhandled resourceType: " + resourceType);
+      Assert.assertThat(getReportsResponse.getStatus(), is(200));
+    } finally {
+      embeddedOptimizeRule.getElasticSearchSchemaManager().initializeSchema(
+        embeddedOptimizeRule.getElasticsearchClient()
+      );
     }
   }
 
-  private List<ProcessDefinitionOptimizeDto> retrieveProcessDefinitionsAsUser(String name, String password) {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildGetProcessDefinitionsRequest()
-      .withUserAuthentication(name, password)
-      .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
+  private OffsetDateTime get1MinuteAfterExpiryTime(int expiryTime) {
+    return LocalDateUtil.getCurrentDateTime().plusMinutes(expiryTime + 1);
   }
 
-  private List<DecisionDefinitionOptimizeDto> retrieveDecisionDefinitionsAsUser(String name, String password) {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildGetDecisionDefinitionsRequest()
-      .withUserAuthentication(name, password)
-      .executeAndReturnList(DecisionDefinitionOptimizeDto.class, 200);
+  private String authenticateAdminUser() {
+    return embeddedOptimizeRule.authenticateUser("admin", "admin");
   }
 
-  private String deploySimpleProcessDefinition(final String processId) {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(processId)
-      .startEvent()
-      .endEvent()
-      .done();
-    return engineRule.deployProcessAndGetId(modelInstance);
+  private void addAdminUserAndGrantAccessPermission() {
+    engineRule.addUser("admin", "admin");
+    engineRule.grantUserOptimizeAccess("admin");
   }
 
-  private String deploySimpleDecisionDefinition(final String decisionKey) {
-    final DmnModelInstance modelInstance = createSimpleDmnModel(decisionKey);
-    return engineRule.deployDecisionDefinition(modelInstance).getId();
+  private TerminatedSessionService getTerminatedSessionService() {
+    return embeddedOptimizeRule.getApplicationContext().getBean(TerminatedSessionService.class);
   }
-
-  private void createKermitGroupAndAddKermitToThatGroup() {
-    engineRule.createGroup(GROUP_ID, "Group", "foo");
-    engineRule.addUserToGroup(KERMIT_USER, GROUP_ID);
-  }
-
 }
-

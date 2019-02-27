@@ -55,6 +55,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.rest.util.AuthenticationUtil.OPTIMIZE_AUTHORIZATION;
+import static org.camunda.optimize.rest.util.AuthenticationUtil.createOptimizeAuthCookieValue;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createAverageProcessInstanceDurationGroupByStartDateReport;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createAverageProcessInstanceDurationGroupByVariableWithProcessPart;
@@ -206,7 +207,7 @@ public class OptimizeDataGenerator {
     Response response = client.target("http://localhost:8090/api/authentication")
       .request().post(Entity.json(credentials));
 
-    authCookie = "Bearer " + response.readEntity(String.class);
+    authCookie = createOptimizeAuthCookieValue(response.readEntity(String.class));
   }
 
   private static String readFileToString() throws IOException, URISyntaxException {

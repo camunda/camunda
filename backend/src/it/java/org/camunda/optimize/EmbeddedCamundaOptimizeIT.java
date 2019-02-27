@@ -63,6 +63,7 @@ public class EmbeddedCamundaOptimizeIT {
     return Thread.getAllStackTraces().keySet().stream()
       .filter(thread -> thread.getThreadGroup() != null
         && !thread.getThreadGroup().getName().equals("system")
+        && !thread.getName().contains("WebSocketClient")
       )
       .collect(Collectors.toSet());
   }

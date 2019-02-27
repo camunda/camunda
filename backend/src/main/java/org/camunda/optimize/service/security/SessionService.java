@@ -6,6 +6,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
@@ -25,8 +26,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-
-import static org.camunda.optimize.rest.util.AuthenticationUtil.getTokenSubject;
+import java.util.UUID;
 
 @Component
 public class SessionService implements ConfigurationReloadable {
@@ -35,6 +35,7 @@ public class SessionService implements ConfigurationReloadable {
   private static final String ISSUER = "Optimize-" + Version.RAW_VERSION;
   private static final byte[] DEFAULT_SECRET_BYTES = new byte[64];
 
+  private final TerminatedSessionService terminatedSessionService;
   private final ConfigurationService configurationService;
   private final List<SessionListener> sessionListeners;
 
@@ -46,8 +47,10 @@ public class SessionService implements ConfigurationReloadable {
   }
 
   @Autowired
-  public SessionService(final ConfigurationService configurationService,
+  public SessionService(final TerminatedSessionService terminatedSessionService,
+                        final ConfigurationService configurationService,
                         final List<SessionListener> sessionListeners) {
+    this.terminatedSessionService = terminatedSessionService;
     this.configurationService = configurationService;
     this.sessionListeners = sessionListeners;
 
@@ -55,7 +58,7 @@ public class SessionService implements ConfigurationReloadable {
   }
 
   public String createAuthToken(String userId) {
-    final String token = generateAuthToken(userId);
+    final String token = generateAuthToken(UUID.randomUUID().toString(), userId);
 
     notifyOnSessionCreateOrRefresh(userId);
 
@@ -81,7 +84,7 @@ public class SessionService implements ConfigurationReloadable {
       final DecodedJWT decodedJWT = jwtVerifier.verify(currentToken);
 
       if (isStillValid(decodedJWT)) {
-        newToken = generateAuthToken(decodedJWT.getSubject());
+        newToken = generateAuthToken(decodedJWT.getId(), decodedJWT.getSubject());
         notifyOnSessionCreateOrRefresh(decodedJWT.getSubject());
       }
 
@@ -97,8 +100,15 @@ public class SessionService implements ConfigurationReloadable {
   }
 
   public void invalidateAuthToken(final String token) {
-    Optional<String> username = getTokenSubject(token);
-    username.ifPresent(user -> sessionListeners.forEach(sessionListener -> sessionListener.onSessionDestroy(user)));
+    try {
+      final DecodedJWT decodedJwt = JWT.decode(token);
+      terminatedSessionService.terminateUserSession(decodedJwt.getId());
+      sessionListeners.forEach(sessionListener -> sessionListener.onSessionDestroy(decodedJwt.getSubject()));
+    } catch (Exception e) {
+      final String message = "Could not decode security token for invalidation!";
+      logger.debug(message, e);
+      throw new IllegalArgumentException(message, e);
+    }
   }
 
   public Optional<LocalDateTime> getExpiresAtLocalDateTime(final String token) {
@@ -125,14 +135,28 @@ public class SessionService implements ConfigurationReloadable {
   }
 
   private boolean isStillValid(final DecodedJWT decodedJWT) {
-    boolean isValid = false;
+    boolean isValid = true;
 
     final Optional<LocalDateTime> dynamicExpiresAtDate = getDynamicExpiresAtLocalDateTime(decodedJWT);
-    if (dynamicExpiresAtDate.isPresent() && LocalDateUtil.getCurrentLocalDateTime()
-      .isBefore(dynamicExpiresAtDate.get())) {
-      isValid = true;
-    } else {
+    if (dynamicExpiresAtDate.map(date -> LocalDateUtil.getCurrentLocalDateTime().isAfter(date)).orElse(false)) {
       logger.debug("Authentication token [{}] has expired at {}!", decodedJWT.getToken(), dynamicExpiresAtDate);
+      isValid = false;
+    }
+
+    try {
+      if (terminatedSessionService.isSessionTerminated(decodedJWT.getId())) {
+        logger.warn(
+          "Authentication token [{}] of already terminated session {} was used!",
+          decodedJWT.getToken(),
+          decodedJWT.getId()
+        );
+        isValid = false;
+      }
+    } catch (OptimizeRuntimeException e) {
+      logger.warn(
+        "Failed checking if session {} is a terminated session, defaulting to handle it as not terminated",
+        e
+      );
     }
 
     return isValid;
@@ -147,9 +171,10 @@ public class SessionService implements ConfigurationReloadable {
       .map(localDateTime -> localDateTime.plus(configurationService.getTokenLifeTimeMinutes(), ChronoUnit.MINUTES));
   }
 
-  private String generateAuthToken(final String userId) {
+  private String generateAuthToken(final String sessionId, final String userId) {
     final Instant issuedAt = LocalDateUtil.getCurrentDateTime().toInstant();
     return JWT.create()
+      .withJWTId(sessionId)
       .withIssuer(ISSUER)
       .withSubject(userId)
       .withIssuedAt(Date.from(issuedAt))

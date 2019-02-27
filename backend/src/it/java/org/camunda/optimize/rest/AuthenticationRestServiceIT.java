@@ -47,7 +47,7 @@ public class AuthenticationRestServiceIT {
     Response logoutResponse = embeddedOptimizeRule
             .getRequestExecutor()
             .buildLogOutRequest()
-            .withGivenAuthCookie("Bearer " + token)
+            .withGivenAuthToken(token)
             .execute();
 
     //then
@@ -63,7 +63,7 @@ public class AuthenticationRestServiceIT {
     Response logoutResponse = embeddedOptimizeRule
             .getRequestExecutor()
             .buildLogOutRequest()
-            .withGivenAuthCookie("Bearer randomToken")
+            .withGivenAuthToken("randomToken")
             .execute();
 
     //then

@@ -104,11 +104,10 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor withGivenAuthCookie(String authCookie) {
-    this.authCookie = authCookie;
+  public OptimizeRequestExecutor withGivenAuthToken(String authToken) {
+    this.authCookie = createOptimizeAuthCookieValue(authToken);
     return this;
   }
-
 
   public Response execute() {
     Invocation.Builder builder = prepareRequest();

@@ -5,7 +5,6 @@ import org.camunda.optimize.service.util.configuration.OptimizeCleanupConfigurat
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
@@ -23,7 +22,7 @@ public class OptimizeCleanupScheduler {
   private final ConfigurationService configurationService;
   private final List<OptimizeCleanupService> cleanupServices;
 
-  private TaskScheduler taskScheduler;
+  private ThreadPoolTaskScheduler taskScheduler;
   private ScheduledFuture<?> scheduledTrigger;
 
   @Autowired
@@ -44,12 +43,12 @@ public class OptimizeCleanupScheduler {
 
   public synchronized void startCleanupScheduling() {
     logger.info("Starting cleanup scheduling");
-    if (taskScheduler == null) {
+    if (this.taskScheduler == null) {
       this.taskScheduler = new ThreadPoolTaskScheduler();
-      ((ThreadPoolTaskScheduler) this.taskScheduler).initialize();
+      this.taskScheduler.initialize();
     }
-    if (scheduledTrigger == null) {
-      this.scheduledTrigger = taskScheduler.schedule(this::runCleanup, getCronTrigger());
+    if (this.scheduledTrigger == null) {
+      this.scheduledTrigger = this.taskScheduler.schedule(this::runCleanup, getCronTrigger());
     }
   }
 
@@ -63,6 +62,10 @@ public class OptimizeCleanupScheduler {
     if (scheduledTrigger != null) {
       this.scheduledTrigger.cancel(true);
       this.scheduledTrigger = null;
+    }
+    if (this.taskScheduler != null) {
+      this.taskScheduler.destroy();
+      this.taskScheduler = null;
     }
   }
 

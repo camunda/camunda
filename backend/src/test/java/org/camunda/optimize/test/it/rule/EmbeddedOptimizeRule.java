@@ -219,20 +219,6 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     return getOptimize().getNewAuthenticationToken();
   }
 
-  public String getAuthenticationHeaderForUser(String user, String password) {
-    String token = authenticateUser(user, password);
-    return "Bearer " + token;
-  }
-
-  public String authenticateDemo() {
-    Response tokenResponse = authenticateDemoRequest();
-    return tokenResponse.readEntity(String.class);
-  }
-
-  private Response authenticateDemoRequest() {
-    return authenticateUserRequest("demo", "demo");
-  }
-
   public String authenticateUser(String username, String password) {
     Response tokenResponse = authenticateUserRequest(username, password);
     return tokenResponse.readEntity(String.class);

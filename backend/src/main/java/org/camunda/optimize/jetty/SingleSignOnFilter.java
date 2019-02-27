@@ -7,6 +7,7 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.security.ApplicationAuthorizationService;
 import org.camunda.optimize.service.security.SessionService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,10 +21,12 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.NewCookie;
 import java.io.IOException;
 import java.util.Optional;
 
 import static org.camunda.optimize.rest.util.AuthenticationUtil.OPTIMIZE_AUTHORIZATION;
+import static org.camunda.optimize.rest.util.AuthenticationUtil.createNewOptimizeAuthCookie;
 import static org.camunda.optimize.rest.util.AuthenticationUtil.extractTokenFromAuthorizationValueOrFailNotAuthorized;
 
 public class SingleSignOnFilter implements Filter {
@@ -36,6 +39,7 @@ public class SingleSignOnFilter implements Filter {
   private EngineContextFactory engineContextFactory;
   private ApplicationAuthorizationService applicationAuthorizationService;
   private SessionService sessionService;
+  private ConfigurationService configurationService;
 
   public SingleSignOnFilter(SpringAwareServletConfiguration awareDelegate) {
     this.awareDelegate = awareDelegate;
@@ -82,6 +86,9 @@ public class SingleSignOnFilter implements Filter {
     }
     if (sessionService == null) {
       sessionService = awareDelegate.getApplicationContext().getBean(SessionService.class);
+    }
+    if (configurationService == null) {
+      configurationService = awareDelegate.getApplicationContext().getBean(ConfigurationService.class);
     }
   }
 
@@ -146,14 +153,13 @@ public class SingleSignOnFilter implements Filter {
 
   private void setOptimizeAuthCookie(HttpServletRequest servletRequest,
                                      HttpServletResponse servletResponse,
-                                     String securityToken) {
-    final String bearerTokenValue = "Bearer " + securityToken;
-    // for direct access by request filters
-    servletRequest.setAttribute(OPTIMIZE_AUTHORIZATION, bearerTokenValue);
-    servletResponse.addHeader(
-      "set-cookie",
-      OPTIMIZE_AUTHORIZATION + "=" + "\"" + bearerTokenValue + "\";Version=1;Path=/"
+                                     String token) {
+    final NewCookie optimizeAuthCookie = createNewOptimizeAuthCookie(
+      token, configurationService.getTokenLifeTimeMinutes()
     );
+    // for direct access by request filters
+    servletRequest.setAttribute(OPTIMIZE_AUTHORIZATION, optimizeAuthCookie.getValue());
+    servletResponse.addHeader(HttpHeaders.SET_COOKIE, optimizeAuthCookie.toString());
   }
 
   private Optional<Cookie> retrieveOptimizeAuthCookie(HttpServletRequest servletRequest) {

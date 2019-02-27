@@ -115,10 +115,9 @@ public abstract class AbstractRollingDateFilterIT {
   }
 
   protected Response evaluateReportAndReturnResponseWithNewToken(ProcessReportDataDto reportData) {
-    String header = "Bearer " + embeddedOptimizeRule.getNewAuthenticationToken();
     return embeddedOptimizeRule
             .getRequestExecutor()
-            .withGivenAuthCookie(header)
+            .withGivenAuthToken(embeddedOptimizeRule.getNewAuthenticationToken())
             .buildEvaluateSingleUnsavedReportRequest(reportData)
             .execute();
   }

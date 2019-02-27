@@ -71,7 +71,7 @@ public class QueryPerformanceTest {
   public static RuleChain chain = RuleChain
     .outerRule(elasticSearchRule).around(embeddedOptimizeRule).around(engineRule);
 
-  private static String authenticationHeader;
+  private static String authenticationToken;
 
   @BeforeClass
   public static void init() throws TimeoutException, InterruptedException {
@@ -83,7 +83,7 @@ public class QueryPerformanceTest {
     // will time out and the requests will fail with a 401.
     // Therefore, we need to make sure that renew the auth header
     // after the import and before we start the tests
-    authenticationHeader = "Bearer " + embeddedOptimizeRule.getNewAuthenticationToken();
+    authenticationToken = embeddedOptimizeRule.getNewAuthenticationToken();
   }
 
   private static List<ProcessReportDataDto> createAllPossibleReports() {
@@ -197,7 +197,7 @@ public class QueryPerformanceTest {
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(report)
-      .withGivenAuthCookie(authenticationHeader)
+      .withGivenAuthToken(authenticationToken)
       .execute();
     assertThat(response.getStatus(), is(200));
     Instant finish = Instant.now();

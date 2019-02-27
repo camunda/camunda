@@ -18,6 +18,7 @@ import java.util.function.Function;
 public class AuthenticationUtil {
 
   private static final Logger logger = LoggerFactory.getLogger(AuthenticationUtil.class);
+  public static final String AUTH_COOKIE_TOKEN_VALUE_PREFIX = "Bearer ";
 
   public static String OPTIMIZE_AUTHORIZATION = "X-Optimize-Authorization";
 
@@ -67,12 +68,12 @@ public class AuthenticationUtil {
 
   public static String extractTokenFromAuthorizationValueOrFailNotAuthorized(String authorizationHeader) {
     // Check if the HTTP Authorization header is present and formatted correctly
-    if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+    if (authorizationHeader == null || !authorizationHeader.startsWith(AUTH_COOKIE_TOKEN_VALUE_PREFIX)) {
       throw new NotAuthorizedException("Authorization header must be provided");
     }
 
     // Extract the token from the HTTP Authorization header
-    return authorizationHeader.substring("Bearer".length()).trim();
+    return authorizationHeader.substring(AUTH_COOKIE_TOKEN_VALUE_PREFIX.length()).trim();
   }
 
   public static NewCookie createDeleteOptimizeAuthCookie() {
@@ -102,8 +103,8 @@ public class AuthenticationUtil {
     );
   }
 
-  public static String createOptimizeAuthCookieValue(String securityToken) {
-    return String.format("Bearer %s", securityToken);
+  public static String createOptimizeAuthCookieValue(final String securityToken) {
+    return AUTH_COOKIE_TOKEN_VALUE_PREFIX + securityToken;
   }
 
 }
