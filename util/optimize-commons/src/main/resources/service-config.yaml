@@ -45,11 +45,13 @@ engines:
     # Determines whether this instance of Optimize should import definition & historical data from this engine.
     importEnabled: true
     authentication:
-      #Toggles basic authentication on or off. When enabling basic
-      #authentication, please be aware that you also need to adjust the values
-      #of the user and password
-      #Also note, when enabled, it is required that the user has read history permission
-      #on the process/decision definition resources to enable Optimize to import the engine data.
+      # Toggles basic authentication on or off. When enabling basic
+      # authentication, please be aware that you also need to adjust the values
+      # of the user and password.
+      # Also note, when enabled, it is required that the user has
+      # * READ_HISTORY permission on the Process/Decision Definition resources
+      # * READ permission on the Authorizations and Users resources
+      # to enable users to log in and Optimize to import the engine data.
       enabled: false
       #When basic authentication is enabled, this password is used to
       #authenticate against the engine.
