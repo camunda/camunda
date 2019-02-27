@@ -1,5 +1,6 @@
 #!/usr/bin/env groovy
 
+def static NODE_POOL() { return "slaves-stable" }
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.5.3-jdk-8-slim" }
 
 static String gcloudAgent() {
@@ -12,7 +13,11 @@ metadata:
     agent: optimize-ci-build
 spec:
   nodeSelector:
-    cloud.google.com/gke-nodepool: services
+    cloud.google.com/gke-nodepool: ${NODE_POOL()}
+  tolerations:
+    - key: "${NODE_POOL()}"
+      operator: "Exists"
+      effect: "NoSchedule"
   serviceAccountName: ci-optimize-camunda-cloud
   containers:
   - name: gcloud

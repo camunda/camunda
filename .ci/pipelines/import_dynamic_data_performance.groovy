@@ -17,6 +17,10 @@ metadata:
 spec:
   nodeSelector:
     cloud.google.com/gke-nodepool: ${NODE_POOL()}
+  tolerations:
+   - key: "${NODE_POOL()}"
+     operator: "Exists"
+     effect: "NoSchedule"
   securityContext:
     fsGroup: 1000
   volumes:

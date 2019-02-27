@@ -1,10 +1,9 @@
 #!/usr/bin/env groovy
 
 // general properties for CI execution
+def static NODE_POOL() { return "slaves" }
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.5.3-jdk-8-slim" }
-
 def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) { return "registry.camunda.cloud/camunda-bpm-platform-ee:${cambpmVersion}" }
-
 def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) {
   return "docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}"
 }
@@ -18,7 +17,11 @@ metadata:
     agent: optimize-ci-build
 spec:
   nodeSelector:
-    cloud.google.com/gke-nodepool: slaves
+    cloud.google.com/gke-nodepool: ${NODE_POOL()}
+  tolerations:
+    - key: "${NODE_POOL()}"
+      operator: "Exists"
+      effect: "NoSchedule"
   imagePullSecrets:
     - name: registry-camunda-cloud-secret
   volumes:

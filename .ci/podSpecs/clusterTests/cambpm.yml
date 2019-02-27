@@ -18,6 +18,10 @@ spec:
       automountServiceAccountToken: false
       nodeSelector:
         cloud.google.com/gke-nodepool: slaves
+      tolerations:
+        - key: "slaves"
+          operator: "Exists"
+          effect: "NoSchedule"
       containers:
         - name: cambpm
           image: camunda/camunda-bpm-platform:7.10.0

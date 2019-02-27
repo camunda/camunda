@@ -34,6 +34,10 @@ metadata:
 spec:
   nodeSelector:
     cloud.google.com/gke-nodepool: slaves
+  tolerations:
+    - key: "slaves"
+      operator: "Exists"
+      effect: "NoSchedule"
   volumes:
   - name: cambpm-config
     configMap:
