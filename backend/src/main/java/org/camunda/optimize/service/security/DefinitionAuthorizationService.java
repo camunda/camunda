@@ -33,7 +33,6 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 @Component
 public class DefinitionAuthorizationService implements SessionListener, ConfigurationReloadable {
   private static final int CACHE_MAXIMUM_SIZE = 1000;
-  private static final int MAX_INACTIVE_MINUTES_TIMEOUT = 5;
 
   private final ApplicationAuthorizationService applicationAuthorizationService;
   private final EngineContextFactory engineContextFactory;
@@ -88,8 +87,7 @@ public class DefinitionAuthorizationService implements SessionListener, Configur
   private void initAuthorizationsCache(final ConfigurationService configurationService) {
     authorizationLoadingCache = Caffeine.newBuilder()
       .maximumSize(CACHE_MAXIMUM_SIZE)
-      .expireAfterWrite(configurationService.getTokenLifeTimeMinutes(), TimeUnit.MINUTES)
-      .expireAfterAccess(getAccessRefreshTime(configurationService), TimeUnit.MINUTES)
+      .expireAfterAccess(configurationService.getTokenLifeTimeMinutes(), TimeUnit.MINUTES)
       .build(this::fetchDefinitionAuthorizationsForUserId);
   }
 
@@ -138,11 +136,6 @@ public class DefinitionAuthorizationService implements SessionListener, Configur
       });
 
     return authorizations;
-  }
-
-  private static int getAccessRefreshTime(final ConfigurationService configurationService) {
-    // refresh authorizations after inactivity of 1/3 of session time or after 5 minutes inactivity whatever is smaller
-    return Math.min(configurationService.getTokenLifeTimeMinutes() / 3, MAX_INACTIVE_MINUTES_TIMEOUT);
   }
 
   private static DefinitionAuthorizations retrieveDefinitionAuthorizations(String username, EngineContext engineContext) {
