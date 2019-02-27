@@ -66,13 +66,13 @@ public class JobInputMappingTest {
       {"{}", mapping(b -> {}), "{}"},
       {"{'x': 1, 'y': 2}", mapping(b -> {}), "{'x': 1, 'y': 2}"},
       {"{'x': {'y': 2}}", mapping(b -> {}), "{'x': {'y': 2}}"},
-      {"{'x': 1}", mapping(b -> b.zeebeInput("$.x", "$.y")), "{'y': 1}"},
+      {"{'x': 1}", mapping(b -> b.zeebeInput("$.x", "$.y")), "{'x': 1, 'y': 1}"},
       {
         "{'x': 1}",
         mapping(b -> b.zeebeInput("$.x", "$.y").zeebeInput("$.x", "$.z")),
-        "{'y': 1, 'z': 1}"
+        "{'x': 1, 'y': 1, 'z': 1}"
       },
-      {"{'x': {'y': 2}}", mapping(b -> b.zeebeInput("$.x.y", "$.y")), "{'y': 2}"},
+      {"{'x': {'y': 2}}", mapping(b -> b.zeebeInput("$.x.y", "$.y")), "{'x': {'y': 2}, 'y': 2}"},
     };
   }
 
@@ -99,10 +99,12 @@ public class JobInputMappingTest {
 
     // when
     final long workflowInstanceKey = apiRule.createWorkflowInstance(workflowKey, initialPayload);
+    RecordingExporter.jobRecords(JobIntent.CREATED).await();
+    apiRule.activateJobs("test");
 
     // then
     final Record<JobRecordValue> jobCreated =
-        RecordingExporter.jobRecords(JobIntent.CREATED)
+        RecordingExporter.jobRecords(JobIntent.ACTIVATED)
             .withWorkflowInstanceKey(workflowInstanceKey)
             .getFirst();
 
