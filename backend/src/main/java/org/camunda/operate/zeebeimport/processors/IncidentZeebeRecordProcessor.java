@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.operate.zeebeimport;
+package org.camunda.operate.zeebeimport.processors;
 
 import java.io.IOException;
 import org.camunda.operate.entities.ErrorType;
@@ -42,7 +42,6 @@ public class IncidentZeebeRecordProcessor {
 
   @Autowired
   private IncidentTemplate incidentTemplate;
-
 
   public void processIncidentRecord(Record record, BulkRequestBuilder bulkRequestBuilder) throws PersistenceException {
     IncidentRecordValueImpl recordValue = (IncidentRecordValueImpl)record.getValue();

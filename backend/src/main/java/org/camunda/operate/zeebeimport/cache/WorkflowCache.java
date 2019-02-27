@@ -10,8 +10,7 @@ import java.util.LinkedHashMap;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.es.reader.WorkflowReader;
 import org.camunda.operate.rest.exception.NotFoundException;
-import org.camunda.operate.util.IdUtil;
-import org.camunda.operate.zeebeimport.transformers.DeploymentEventTransformer;
+import org.camunda.operate.zeebeimport.processors.DeploymentZeebeRecordProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import io.zeebe.client.ZeebeClient;
@@ -33,7 +32,7 @@ public class WorkflowCache {
   private WorkflowReader workflowReader;
 
   @Autowired
-  private DeploymentEventTransformer deploymentEventTransformer;
+  private DeploymentZeebeRecordProcessor deploymentZeebeRecordProcessor;
 
   public WorkflowEntity getWorkflow(String workflowId, String bpmnProcessId) {
     final WorkflowEntity cachedWorkflowData = cache.get(workflowId);
@@ -92,7 +91,7 @@ public class WorkflowCache {
         if (workflowFromZeebe.getWorkflowKey() == Long.valueOf(workflowId)) {
           //get BPMN XML
           final WorkflowResource workflowResource = zeebeClient.newResourceRequest().workflowKey(workflowFromZeebe.getWorkflowKey()).send().join();
-          workflow = deploymentEventTransformer.extractDiagramData(workflowResource.getBpmnXmlAsStream());
+          workflow = deploymentZeebeRecordProcessor.extractDiagramData(workflowResource.getBpmnXmlAsStream());
           workflow.setKey(workflowFromZeebe.getWorkflowKey());
           workflow.setVersion(workflowFromZeebe.getVersion());
           workflow.setBpmnProcessId(workflowFromZeebe.getBpmnProcessId());

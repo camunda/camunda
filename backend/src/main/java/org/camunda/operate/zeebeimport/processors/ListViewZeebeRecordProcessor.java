@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.operate.zeebeimport;
+package org.camunda.operate.zeebeimport.processors;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -12,14 +12,15 @@ import java.util.Map;
 import java.util.Set;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
-import org.camunda.operate.entities.detailview.ActivityInstanceForDetailViewEntity;
-import org.camunda.operate.es.schema.templates.ActivityInstanceTemplate;
+import org.camunda.operate.entities.listview.WorkflowInstanceState;
+import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
+import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.zeebeimport.cache.WorkflowCache;
-import org.camunda.operate.zeebeimport.record.Intent;
 import org.camunda.operate.zeebeimport.record.value.IncidentRecordValueImpl;
 import org.camunda.operate.zeebeimport.record.value.WorkflowInstanceRecordValueImpl;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
@@ -34,23 +35,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.IncidentIntent;
+import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
+import static io.zeebe.protocol.intent.WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN;
 
 @Component
-public class DetailViewZeebeRecordProcessor {
+public class ListViewZeebeRecordProcessor {
 
-  private static final Logger logger = LoggerFactory.getLogger(DetailViewZeebeRecordProcessor.class);
+  private static final Logger logger = LoggerFactory.getLogger(ListViewZeebeRecordProcessor.class);
 
   private static final Set<String> AI_FINISH_STATES = new HashSet<>();
-  private static final Set<String> AI_START_STATES = new HashSet<>();
 
   static {
     AI_FINISH_STATES.add(ELEMENT_COMPLETED.name());
     AI_FINISH_STATES.add(ELEMENT_TERMINATED.name());
-
-    AI_START_STATES.add(ELEMENT_ACTIVATING.name());
   }
 
   @Autowired
@@ -60,7 +60,7 @@ public class DetailViewZeebeRecordProcessor {
   private TransportClient esClient;
 
   @Autowired
-  private ActivityInstanceTemplate activityInstanceTemplate;
+  private ListViewTemplate listViewTemplate;
 
   @Autowired
   private WorkflowCache workflowCache;
@@ -79,106 +79,78 @@ public class DetailViewZeebeRecordProcessor {
     final String intentStr = record.getMetadata().getIntent().name();
     WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
 
-    if (!isProcessEvent(recordValue) && !intentStr.equals(Intent.SEQUENCE_FLOW_TAKEN.name()) && !intentStr.equals(Intent.UNKNOWN.name())){
+    if (isProcessEvent(recordValue)) {
+      bulkRequestBuilder.add(persistWorkflowInstance(record, intentStr, recordValue));
+    } else if (!intentStr.equals(SEQUENCE_FLOW_TAKEN.name())){
       bulkRequestBuilder.add(persistActivityInstance(record, intentStr, recordValue));
     }
   }
 
   private UpdateRequestBuilder persistActivityInstanceFromIncident(Record record, String intentStr, IncidentRecordValueImpl recordValue) throws PersistenceException {
-    ActivityInstanceForDetailViewEntity entity = new ActivityInstanceForDetailViewEntity();
+    ActivityInstanceForListViewEntity entity = new ActivityInstanceForListViewEntity();
     entity.setId(IdUtil.getId(recordValue.getElementInstanceKey(), record));
     entity.setKey(recordValue.getElementInstanceKey());
     entity.setPartitionId(record.getMetadata().getPartitionId());
     entity.setActivityId(recordValue.getElementId());
     entity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
     if (intentStr.equals(IncidentIntent.CREATED.name())) {
+      entity.setErrorMessage(recordValue.getErrorMessage());
       entity.setIncidentKey(record.getKey());
+      entity.setIncidentJobKey(recordValue.getJobKey());
     } else if (intentStr.equals(IncidentIntent.CREATED.name())) {
+      entity.setErrorMessage(null);
       entity.setIncidentKey(null);
+      entity.setIncidentJobKey(null);
     }
 
     //set parent
     String workflowInstanceId = IdUtil.getId(recordValue.getWorkflowInstanceKey(), record);
+    entity.getJoinRelation().setParent(workflowInstanceId);
 
     return getActivityInstanceFromIncidentQuery(entity, workflowInstanceId);
   }
 
   private UpdateRequestBuilder persistActivityInstance(Record record, String intentStr, WorkflowInstanceRecordValueImpl recordValue) throws PersistenceException {
-    ActivityInstanceForDetailViewEntity entity = new ActivityInstanceForDetailViewEntity();
+    ActivityInstanceForListViewEntity entity = new ActivityInstanceForListViewEntity();
     entity.setId(IdUtil.getId(record.getKey(), record));
     entity.setPartitionId(record.getMetadata().getPartitionId());
     entity.setActivityId(recordValue.getElementId());
     entity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
-    entity.setScopeId(IdUtil.getId(recordValue.getFlowScopeKey(), record));
 
     if (AI_FINISH_STATES.contains(intentStr)) {
       if (intentStr.equals(ELEMENT_TERMINATED.name())) {
-        entity.setState(ActivityState.TERMINATED);
+        entity.setActivityState(ActivityState.TERMINATED);
       } else {
-        entity.setState(ActivityState.COMPLETED);
+        entity.setActivityState(ActivityState.COMPLETED);
       }
-      entity.setEndDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
     } else {
-      entity.setState(ActivityState.ACTIVE);
-      if (AI_START_STATES.contains(intentStr)) {
-        entity.setStartDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
-        entity.setPosition(record.getPosition());
-      }
+      entity.setActivityState(ActivityState.ACTIVE);
     }
 
-    entity.setType(ActivityType.fromZeebeBpmnElementType(recordValue.getBpmnElementType()));
+    entity.setActivityType(ActivityType.fromZeebeBpmnElementType(recordValue.getBpmnElementType()));
 
     //set parent
     String workflowInstanceId = IdUtil.getId(recordValue.getWorkflowInstanceKey(), record);
+    entity.getJoinRelation().setParent(workflowInstanceId);
 
-    return getActivityInstanceQuery(entity);
+    return getActivityInstanceQuery(entity, workflowInstanceId);
 
   }
 
-  private UpdateRequestBuilder getActivityInstanceQuery(ActivityInstanceForDetailViewEntity entity) throws PersistenceException {
+  private UpdateRequestBuilder getActivityInstanceQuery(ActivityInstanceForListViewEntity entity, String workflowInstanceId) throws PersistenceException {
     try {
       logger.debug("Activity instance for list view: id {}", entity.getId());
       Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(ActivityInstanceTemplate.ID, entity.getId());
-      updateFields.put(ActivityInstanceTemplate.PARTITION_ID, entity.getPartitionId());
-      updateFields.put(ActivityInstanceTemplate.TYPE, entity.getType());
-      updateFields.put(ActivityInstanceTemplate.STATE, entity.getState());
-      updateFields.put(ActivityInstanceTemplate.SCOPE_ID, entity.getScopeId());
-      if (entity.getStartDate() != null) {
-        updateFields.put(ActivityInstanceTemplate.START_DATE, entity.getStartDate());
-      }
-      if (entity.getEndDate() != null) {
-        updateFields.put(ActivityInstanceTemplate.END_DATE, entity.getEndDate());
-      }
-      if (entity.getPosition() != null) {
-        updateFields.put(ActivityInstanceTemplate.POSITION, entity.getPosition());
-      }
+      updateFields.put(ListViewTemplate.ID, entity.getId());
+      updateFields.put(ListViewTemplate.PARTITION_ID, entity.getPartitionId());
+      updateFields.put(ListViewTemplate.ACTIVITY_TYPE, entity.getActivityType());
+      updateFields.put(ListViewTemplate.ACTIVITY_STATE, entity.getActivityState());
 
       //TODO some weird not efficient magic is needed here, in order to format date fields properly, may be this can be improved
       Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
 
       return esClient
-        .prepareUpdate(activityInstanceTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
-        .setUpsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-        .setDoc(jsonMap);
-
-    } catch (IOException e) {
-      logger.error("Error preparing the query to upsert activity instance for list view", e);
-      throw new PersistenceException(String.format("Error preparing the query to upsert activity instance [%s]  for list view", entity.getId()), e);
-    }
-  }
-
-  private UpdateRequestBuilder getActivityInstanceFromIncidentQuery(ActivityInstanceForDetailViewEntity entity, String workflowInstanceId) throws PersistenceException {
-    try {
-      logger.debug("Activity instance for list view: id {}", entity.getId());
-      Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(ActivityInstanceTemplate.INCIDENT_KEY, entity.getIncidentKey());
-
-      //TODO some weird not efficient magic is needed here, in order to format date fields properly, may be this can be improved
-      Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
-
-      return esClient
-        .prepareUpdate(activityInstanceTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+        .prepareUpdate(listViewTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
         .setUpsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
         .setDoc(jsonMap)
         .setRouting(workflowInstanceId);
@@ -186,6 +158,89 @@ public class DetailViewZeebeRecordProcessor {
     } catch (IOException e) {
       logger.error("Error preparing the query to upsert activity instance for list view", e);
       throw new PersistenceException(String.format("Error preparing the query to upsert activity instance [%s]  for list view", entity.getId()), e);
+    }
+  }
+
+  private UpdateRequestBuilder getActivityInstanceFromIncidentQuery(ActivityInstanceForListViewEntity entity, String workflowInstanceId) throws PersistenceException {
+    try {
+      logger.debug("Activity instance for list view: id {}", entity.getId());
+      Map<String, Object> updateFields = new HashMap<>();
+      updateFields.put(ListViewTemplate.ERROR_MSG, entity.getErrorMessage());
+      updateFields.put(ListViewTemplate.INCIDENT_KEY, entity.getIncidentKey());
+      updateFields.put(ListViewTemplate.INCIDENT_JOB_KEY, entity.getIncidentJobKey());
+
+      //TODO some weird not efficient magic is needed here, in order to format date fields properly, may be this can be improved
+      Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
+
+      return esClient
+        .prepareUpdate(listViewTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+        .setUpsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
+        .setDoc(jsonMap)
+        .setRouting(workflowInstanceId);
+
+    } catch (IOException e) {
+      logger.error("Error preparing the query to upsert activity instance for list view", e);
+      throw new PersistenceException(String.format("Error preparing the query to upsert activity instance [%s]  for list view", entity.getId()), e);
+    }
+  }
+
+  private UpdateRequestBuilder persistWorkflowInstance(Record record, String intentStr, WorkflowInstanceRecordValueImpl recordValue) throws PersistenceException {
+    WorkflowInstanceForListViewEntity wiEntity = new WorkflowInstanceForListViewEntity();
+    wiEntity.setId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
+    wiEntity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
+    wiEntity.setKey(recordValue.getWorkflowInstanceKey());
+    wiEntity.setPartitionId(record.getMetadata().getPartitionId());
+    wiEntity.setWorkflowId(String.valueOf(recordValue.getWorkflowKey()));
+    wiEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
+
+    //find out workflow name and version
+    wiEntity.setWorkflowName(workflowCache.getWorkflowName(wiEntity.getWorkflowId(), recordValue.getBpmnProcessId()));
+    wiEntity.setWorkflowVersion(workflowCache.getWorkflowVersion(wiEntity.getWorkflowId(), recordValue.getBpmnProcessId()));
+
+    if (intentStr.equals(ELEMENT_COMPLETED.name()) || intentStr.equals(ELEMENT_TERMINATED.name())) {
+      wiEntity.setEndDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
+      if (intentStr.equals(ELEMENT_TERMINATED.name())) {
+        wiEntity.setState(WorkflowInstanceState.CANCELED);
+      } else {
+        wiEntity.setState(WorkflowInstanceState.COMPLETED);
+      }
+    } else if (intentStr.equals(ELEMENT_ACTIVATING.name())) {
+      wiEntity.setStartDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
+      wiEntity.setState(WorkflowInstanceState.ACTIVE);
+    } else {
+      wiEntity.setState(WorkflowInstanceState.ACTIVE);
+    }
+
+    return getWorfklowInstanceQuery(wiEntity);
+  }
+
+  private UpdateRequestBuilder getWorfklowInstanceQuery(WorkflowInstanceForListViewEntity wiEntity) throws PersistenceException {
+    try {
+      logger.debug("Workflow instance for list view: id {}", wiEntity.getId());
+      Map<String, Object> updateFields = new HashMap<>();
+      if (wiEntity.getStartDate() != null) {
+        updateFields.put(ListViewTemplate.START_DATE, wiEntity.getStartDate());
+      }
+      if (wiEntity.getEndDate() != null) {
+        updateFields.put(ListViewTemplate.END_DATE, wiEntity.getEndDate());
+      }
+      updateFields.put(ListViewTemplate.WORKFLOW_NAME, wiEntity.getWorkflowName());
+      updateFields.put(ListViewTemplate.WORKFLOW_VERSION, wiEntity.getWorkflowVersion());
+      if (wiEntity.getState() != null) {
+        updateFields.put(ListViewTemplate.STATE, wiEntity.getState());
+      }
+
+      //TODO some weird not efficient magic is needed here, in order to format date fields properly, may be this can be improved
+      Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
+
+      return esClient
+        .prepareUpdate(listViewTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, wiEntity.getId())
+        .setUpsert(objectMapper.writeValueAsString(wiEntity), XContentType.JSON)
+        .setDoc(jsonMap);
+
+    } catch (IOException e) {
+      logger.error("Error preparing the query to upsert workflow instance for list view", e);
+      throw new PersistenceException(String.format("Error preparing the query to upsert workflow instance [%s]  for list view", wiEntity.getId()), e);
     }
   }
 

@@ -6,20 +6,21 @@
 package org.camunda.operate.zeebeimport;
 
 import java.util.List;
-import java.util.Map;
-import org.camunda.operate.entities.OperateEntity;
-import org.camunda.operate.entities.OperateZeebeEntity;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ElasticsearchUtil;
+import org.camunda.operate.zeebeimport.processors.DeploymentZeebeRecordProcessor;
+import org.camunda.operate.zeebeimport.processors.DetailViewZeebeRecordProcessor;
+import org.camunda.operate.zeebeimport.processors.EventZeebeRecordProcessor;
+import org.camunda.operate.zeebeimport.processors.IncidentZeebeRecordProcessor;
+import org.camunda.operate.zeebeimport.processors.ListViewZeebeRecordProcessor;
+import org.camunda.operate.zeebeimport.processors.VariableZeebeRecordProcessor;
 import org.camunda.operate.zeebeimport.record.RecordImpl;
-import org.camunda.operate.zeebeimport.transformers.AbstractRecordTransformer;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.client.transport.TransportClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import io.zeebe.protocol.clientapi.ValueType;
 
 @Component
 public class ElasticsearchBulkProcessor extends Thread {
@@ -28,12 +29,6 @@ public class ElasticsearchBulkProcessor extends Thread {
 
   @Autowired
   private TransportClient esClient;
-
-  @Autowired
-  private Map<Class<? extends OperateEntity>, ElasticsearchRequestCreator> esRequestCreatorsMap;
-
-  @Autowired
-  private Map<ValueType, AbstractRecordTransformer> zeebeRecordTransformersMap;
 
   @Autowired
   private ListViewZeebeRecordProcessor listViewZeebeRecordProcessor;
@@ -47,44 +42,43 @@ public class ElasticsearchBulkProcessor extends Thread {
   @Autowired
   private IncidentZeebeRecordProcessor incidentZeebeRecordProcessor;
 
+  @Autowired
+  private DeploymentZeebeRecordProcessor deploymentZeebeRecordProcessor;
+
+  @Autowired
+  private EventZeebeRecordProcessor eventZeebeRecordProcessor;
+
   public void persistZeebeRecords(List<? extends RecordImpl> zeebeRecords) throws PersistenceException {
 
       logger.debug("Writing [{}] Zeebe records to Elasticsearch", zeebeRecords.size());
 
       BulkRequestBuilder bulkRequest = esClient.prepareBulk();
       for (RecordImpl record : zeebeRecords) {
-        final AbstractRecordTransformer transformer = zeebeRecordTransformersMap.get(record.getMetadata().getValueType());
-        if (transformer != null) {
-          final List<OperateZeebeEntity> operateEntities = transformer.convert(record);
-          bulkRequest = addToBulk(bulkRequest, operateEntities);
-        }
-
-        //TODO new processing
-        if (record.getMetadata().getValueType().equals(ValueType.WORKFLOW_INSTANCE)) {
+        switch (record.getMetadata().getValueType()) {
+        case WORKFLOW_INSTANCE:
           listViewZeebeRecordProcessor.processWorkflowInstanceRecord(record, bulkRequest);
           detailViewZeebeRecordProcessor.processWorkflowInstanceRecord(record, bulkRequest);
-        } else if (record.getMetadata().getValueType().equals(ValueType.INCIDENT)) {
+          eventZeebeRecordProcessor.processWorkflowInstanceRecord(record, bulkRequest);
+          break;
+        case INCIDENT:
           listViewZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
           detailViewZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
           incidentZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
-        } if (record.getMetadata().getValueType().equals(ValueType.VARIABLE)) {
+          eventZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
+          break;
+        case VARIABLE:
           variableZeebeRecordProcessor.processVariableRecord(record, bulkRequest);
+          break;
+        case DEPLOYMENT:
+          deploymentZeebeRecordProcessor.processDeploymentRecord(record, bulkRequest);
+          break;
+        case JOB:
+          eventZeebeRecordProcessor.processJobRecord(record, bulkRequest);
+          break;
         }
       }
       ElasticsearchUtil.processBulkRequest(bulkRequest, true);
 
-  }
-
-  private BulkRequestBuilder addToBulk(BulkRequestBuilder bulkRequest, List<? extends OperateEntity> operateEntities) throws PersistenceException {
-    for (OperateEntity operateEntity : operateEntities) {
-      final ElasticsearchRequestCreator esRequestCreator = esRequestCreatorsMap.get(operateEntity.getClass());
-      if (esRequestCreator == null) {
-        logger.warn("Unable to persist entity of type [{}]", operateEntity.getClass());
-      } else {
-        bulkRequest = esRequestCreator.addRequestToBulkQuery(bulkRequest, operateEntity);
-      }
-    }
-    return bulkRequest;
   }
 
 }
