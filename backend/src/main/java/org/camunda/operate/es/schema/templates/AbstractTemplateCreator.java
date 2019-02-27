@@ -6,9 +6,11 @@
 package org.camunda.operate.es.schema.templates;
 
 import java.io.IOException;
+import org.camunda.operate.property.OperateProperties;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
@@ -18,6 +20,9 @@ public abstract class AbstractTemplateCreator implements TemplateCreator {
   private static final Logger logger = LoggerFactory.getLogger(AbstractTemplateCreator.class);
 
   public static final String PARTITION_ID = "partitionId";
+
+  @Autowired
+  private OperateProperties operateProperties;
 
   @Override
   public XContentBuilder getSource() throws IOException {
@@ -51,6 +56,11 @@ public abstract class AbstractTemplateCreator implements TemplateCreator {
   }
 
   @Override
+  public String getMainIndexName() {
+    return String.format("%s-%s_", operateProperties.getElasticsearch().getIndexPrefix(), getIndexNameFormat());
+  }
+
+  @Override
   public String getTemplateName() {
     return getMainIndexName() + "template";
   }
@@ -64,6 +74,8 @@ public abstract class AbstractTemplateCreator implements TemplateCreator {
   public String getIndexPattern() {
     return getMainIndexName() + "*";
   }
+
+  protected abstract String getIndexNameFormat();
 
   protected abstract XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException;
 }

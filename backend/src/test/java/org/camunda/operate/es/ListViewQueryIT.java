@@ -15,10 +15,11 @@ import java.util.Random;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.OperateEntity;
-import org.camunda.operate.entities.WorkflowInstanceState;
+import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
-import org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate;
+import org.camunda.operate.es.schema.templates.IncidentTemplate;
+import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.rest.dto.SortingDto;
 import org.camunda.operate.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
@@ -178,7 +179,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() { });
 
-    assertThat(response.getWorkflowInstances()).as(testCaseName).extracting(WorkflowInstanceTemplate.ID).containsExactlyInAnyOrder(ids);
+    assertThat(response.getWorkflowInstances()).as(testCaseName).extracting(ListViewTemplate.ID).containsExactlyInAnyOrder(ids);
   }
 
   @Test
@@ -560,121 +561,8 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     assertThat(response.getWorkflowInstances()).hasSize(2);
 
-    assertThat(response.getWorkflowInstances()).extracting(WorkflowInstanceTemplate.ID).containsExactlyInAnyOrder(workflowInstance1.getId(), workflowInstance2.getId());
+    assertThat(response.getWorkflowInstances()).extracting(ListViewTemplate.ID).containsExactlyInAnyOrder(workflowInstance1.getId(), workflowInstance2.getId());
   }
-//
-//  @Test
-//  public void testQueryByVariableValues() throws Exception {
-//    //given
-//    final String strName = "str1";
-//    final String stringValue = "strValue1";
-//    final String nullName = "null1";
-//    final String intName = "int1";
-//    final long intValue = 111L;
-//    final String longName = "long1";
-//    final long longValue = Long.valueOf(Integer.MAX_VALUE) + 1L;
-//    final String boolName = "bool1";
-//    final boolean boolValue = true;
-//    final String floatName = "float1";
-//    final float floatValue = .5f;
-//    final String doubleName = "double1";
-//    final double doubleValue = Double.valueOf(Float.MAX_VALUE) + 1;
-//
-//    final WorkflowInstanceEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
-//    addVariableEntity(workflowInstance1, strName, stringValue);
-//    addVariableEntity(workflowInstance1, nullName, (String)null);
-//    addVariableEntity(workflowInstance1, intName, intValue);
-//    addVariableEntity(workflowInstance1, longName, longValue);
-//    addVariableEntity(workflowInstance1, boolName, boolValue);
-//    addVariableEntity(workflowInstance1, floatName, (double).1f);
-//    addVariableEntity(workflowInstance1, doubleName, doubleValue);
-//
-//    final WorkflowInstanceEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.CANCELED);
-//    addVariableEntity(workflowInstance2, strName, "strValue2");
-//    addVariableEntity(workflowInstance2, intName, 222L);
-//    addVariableEntity(workflowInstance2, longName, longValue);
-//    addVariableEntity(workflowInstance2, boolName, false);
-//    addVariableEntity(workflowInstance2, floatName, (double)floatValue);
-//    addVariableEntity(workflowInstance2, doubleName, .555);
-//
-//    final WorkflowInstanceEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
-//    addVariableEntity(workflowInstance3, strName, stringValue);
-//    addVariableEntity(workflowInstance3, intName, intValue);
-//    addVariableEntity(workflowInstance3, longName, Long.valueOf(Integer.MAX_VALUE) + 2L);
-//    addVariableEntity(workflowInstance3, boolName, boolValue);
-//    addVariableEntity(workflowInstance3, floatName, (double)floatValue);
-//    addVariableEntity(workflowInstance3, doubleName, doubleValue);
-//
-//    elasticsearchTestRule.persistNew(workflowInstance1, workflowInstance2, workflowInstance3);
-//
-//    //when
-//    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery(q ->
-//      q.setVariablesQuery(new VariablesQueryDto(strName, stringValue))
-//    );
-//    //then
-//    requestAndAssertIds(query, "TEST CASE #1", workflowInstance1.getId(), workflowInstance3.getId());
-//
-//    //when
-//    query = TestUtil.createGetAllWorkflowInstancesQuery(q ->
-//      q.setVariablesQuery(new VariablesQueryDto(intName, intValue))
-//    );
-//    //then
-//    requestAndAssertIds(query, "TEST CASE #2", workflowInstance1.getId(), workflowInstance3.getId());
-//
-//    //when
-//    query = TestUtil.createGetAllWorkflowInstancesQuery(q ->
-//      q.setVariablesQuery(new VariablesQueryDto(longName, longValue))
-//    );
-//    //then
-//    requestAndAssertIds(query, "TEST CASE #3", workflowInstance1.getId(), workflowInstance2.getId());
-//
-//    //when
-//    query = TestUtil.createGetAllWorkflowInstancesQuery(q ->
-//      q.setVariablesQuery(new VariablesQueryDto(boolName, boolValue))
-//    );
-//    //then
-//    requestAndAssertIds(query, "TEST CASE #4", workflowInstance1.getId(), workflowInstance3.getId());
-//
-//    //when
-//    query = TestUtil.createGetAllWorkflowInstancesQuery(q ->
-//      q.setVariablesQuery(new VariablesQueryDto(floatName, floatValue))
-//    );
-//    //then
-//    requestAndAssertIds(query, "TEST CASE #5", workflowInstance2.getId(), workflowInstance3.getId());
-//
-//    //when
-//    query = TestUtil.createGetAllWorkflowInstancesQuery(q ->
-//      q.setVariablesQuery(new VariablesQueryDto(doubleName, doubleValue))
-//    );
-//    //then
-//    requestAndAssertIds(query, "TEST CASE #6", workflowInstance1.getId(), workflowInstance3.getId());
-//
-//    //when
-//    query = TestUtil.createGetAllWorkflowInstancesQuery(q ->
-//      q.setVariablesQuery(new VariablesQueryDto(nullName, null))
-//    );
-//    //then
-//    requestAndAssertIds(query, "TEST CASE #7", workflowInstance1.getId());
-//  }
-//
-//  @Test
-//  public void testQueryByVariableValuesFailOnNullVariableName() throws Exception {
-//    //when
-//    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery(q ->
-//      q.setVariablesQuery(new VariablesQueryDto(null, "someValue"))
-//    );
-//    MockHttpServletRequestBuilder request = post(query(0, 100))
-//      .content(mockMvcTestRule.json(query))
-//      .contentType(mockMvcTestRule.getContentType());
-//
-//    //then
-//    MvcResult mvcResult = mockMvc.perform(request)
-//      .andExpect(status().isBadRequest())
-//      .andReturn();
-//
-//    assertThat(mvcResult.getResolvedException().getMessage()).contains("Variables query must provide not-null variable name.");
-//
-//  }
 
   @Test
   public void testQueryByExcludeIds() throws Exception {
@@ -704,7 +592,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     assertThat(response.getWorkflowInstances()).hasSize(2);
 
-    assertThat(response.getWorkflowInstances()).extracting(WorkflowInstanceTemplate.ID).containsExactlyInAnyOrder(workflowInstance2.getId(), workflowInstance4.getId());
+    assertThat(response.getWorkflowInstances()).extracting(ListViewTemplate.ID).containsExactlyInAnyOrder(workflowInstance2.getId(), workflowInstance4.getId());
   }
 
   @Test
@@ -741,7 +629,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     assertThat(response.getWorkflowInstances()).hasSize(3);
 
-    assertThat(response.getWorkflowInstances()).extracting(WorkflowInstanceTemplate.ID)
+    assertThat(response.getWorkflowInstances()).extracting(ListViewTemplate.ID)
       .containsExactlyInAnyOrder(workflowInstance1.getId(), workflowInstance3.getId(), workflowInstance4.getId());
   }
 
@@ -784,7 +672,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     assertThat(response.getWorkflowInstances()).hasSize(1);
 
-    assertThat(response.getWorkflowInstances()).extracting(WorkflowInstanceTemplate.ID)
+    assertThat(response.getWorkflowInstances()).extracting(ListViewTemplate.ID)
       .containsExactly(workflowInstance1.getId());
   }
 
@@ -843,7 +731,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     assertThat(response.getWorkflowInstances()).hasSize(2);
 
-    assertThat(response.getWorkflowInstances()).extracting(WorkflowInstanceTemplate.ID)
+    assertThat(response.getWorkflowInstances()).extracting(ListViewTemplate.ID)
       .containsExactlyInAnyOrder(workflowInstance1.getId(), workflowInstance2.getId());
   }
 

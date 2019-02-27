@@ -14,18 +14,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Predicate;
-import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.entities.WorkflowInstanceEntity;
+import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.es.archiver.Archiver;
 import org.camunda.operate.es.archiver.ArchiverHelper;
 import org.camunda.operate.es.reader.ListViewReader;
-import org.camunda.operate.es.schema.templates.ActivityInstanceTemplate;
-import org.camunda.operate.es.schema.templates.EventTemplate;
+import org.camunda.operate.es.schema.templates.IncidentTemplate;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
-import org.camunda.operate.es.schema.templates.OperationTemplate;
+import org.camunda.operate.es.schema.templates.SequenceFlowTemplate;
 import org.camunda.operate.es.schema.templates.WorkflowInstanceDependant;
-import org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate;
 import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.exceptions.ReindexException;
@@ -38,9 +35,11 @@ import org.camunda.operate.util.IdTestUtil;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
+import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.IdsQueryBuilder;
+import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.junit.Before;
 import org.junit.Test;
@@ -51,7 +50,12 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
+import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 public class ArchiverIT extends OperateZeebeIntegrationTest {
@@ -88,19 +92,10 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   private Predicate<Object[]> workflowInstancesAreStartedCheck;
 
   @Autowired
-  private WorkflowInstanceTemplate workflowInstanceTemplate;
-
-  @Autowired
-  private EventTemplate eventTemplate;
+  private ListViewTemplate workflowInstanceTemplate;
 
   @Autowired
   private ListViewTemplate listViewTemplate;
-
-  @Autowired
-  private OperationTemplate operationTemplate;
-
-  @Autowired
-  private ActivityInstanceTemplate activityInstanceTemplate;
 
   @Autowired
   private BatchOperationWriter batchOperationWriter;
@@ -179,7 +174,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     final List<ListViewQueryDto> queries = TestUtil.createGetAllWorkflowInstancesQuery().getQueries();
     queries.get(0).setIds(ids1);
     WorkflowInstanceBatchOperationDto batchOperationRequest = new WorkflowInstanceBatchOperationDto(queries);
-    batchOperationRequest.setOperationType(OperationType.UPDATE_RETRIES); //the type does not matter
+    batchOperationRequest.setOperationType(OperationType.UPDATE_JOB_RETRIES); //the type does not matter
     batchOperationWriter.scheduleBatchOperation(batchOperationRequest);
   }
 
@@ -244,7 +239,9 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   private void assertInstancesInCorrectIndex(int instancesCount, List<String> ids, Instant endDate) {
     assertWorkflowInstanceIndex(instancesCount, ids, endDate);
     for (WorkflowInstanceDependant template : workflowInstanceDependantTemplates) {
-      assertDependentIndex(template.getMainIndexName(), WorkflowInstanceDependant.WORKFLOW_INSTANCE_ID, ids, endDate);
+      if (! (template instanceof IncidentTemplate || template instanceof SequenceFlowTemplate)) {
+        assertDependentIndex(template.getMainIndexName(), WorkflowInstanceDependant.WORKFLOW_INSTANCE_ID, ids, endDate);
+      }
     }
   }
 
@@ -255,18 +252,21 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     } else {
       destinationIndexName = reindexHelper.getDestinationIndexName(workflowInstanceTemplate.getMainIndexName(), "");
     }
-    final IdsQueryBuilder q = idsQuery().addIds(ids.toArray(new String[]{}));
+    final IdsQueryBuilder idsQ = idsQuery().addIds(ids.toArray(new String[]{}));
+    final TermQueryBuilder isWorkflowInstanceQuery = termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION);
+
     final SearchResponse response = esClient.prepareSearch(destinationIndexName)
-      .setQuery(q)
+      .setQuery(constantScoreQuery(joinWithAnd(idsQ, isWorkflowInstanceQuery)))
       .setSize(100)
       .get();
-    final List<WorkflowInstanceEntity> workflowInstances = ElasticsearchUtil
-      .mapSearchHits(response.getHits().getHits(), objectMapper, WorkflowInstanceEntity.class);
+    final List<WorkflowInstanceForListViewEntity> workflowInstances = ElasticsearchUtil
+      .mapSearchHits(response.getHits().getHits(), objectMapper, WorkflowInstanceForListViewEntity.class);
     assertThat(workflowInstances).hasSize(instancesCount);
-    assertThat(workflowInstances).extracting(WorkflowInstanceTemplate.ID).containsExactlyInAnyOrderElementsOf(ids);
+    assertThat(workflowInstances).extracting(ListViewTemplate.WORKFLOW_INSTANCE_ID).containsExactlyInAnyOrderElementsOf(ids);
     if (endDate != null) {
-      assertThat(workflowInstances).extracting(WorkflowInstanceTemplate.END_DATE).allMatch(ed -> ((OffsetDateTime) ed).toInstant().equals(endDate));
+      assertThat(workflowInstances).extracting(ListViewTemplate.END_DATE).allMatch(ed -> ((OffsetDateTime) ed).toInstant().equals(endDate));
     }
+    //TODO assert children records - activities
   }
 
   private void assertDependentIndex(String mainIndexName, String idFieldName, List<String> ids, Instant endDate) {
@@ -277,13 +277,11 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
       destinationIndexName = reindexHelper.getDestinationIndexName(mainIndexName, "");
     }
     final TermsQueryBuilder q = termsQuery(idFieldName, ids.toArray(new String[] {}));
-    final SearchResponse response = esClient.prepareSearch(destinationIndexName)
+    final SearchRequestBuilder queryBuilder = esClient.prepareSearch(destinationIndexName)
       .setQuery(q)
-      .setSize(100)
-      .get();
-    final List<EventEntity> events = ElasticsearchUtil
-      .mapSearchHits(response.getHits().getHits(), objectMapper, EventEntity.class);
-    assertThat(events).extracting(idFieldName).isSubsetOf(ids);
+      .setSize(100);
+    final List<String> idsFromEls = ElasticsearchUtil.scrollFieldToList(queryBuilder, idFieldName, esClient);
+    assertThat(idsFromEls).as(mainIndexName).isSubsetOf(ids);
   }
 
   private void finishInstances(int count, Instant currentTime, String taskId) {

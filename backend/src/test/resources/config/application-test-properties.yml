@@ -7,12 +7,6 @@ camunda.bpm.operate:
     port: 12345
     dateFormat: yyyy-MM-dd
     batchSize: 111
-    importPositionIndexName: importPositionI
-    eventIndexName: eventI
-    workflowInstanceIndexName: workflowInstanceI
-    workflowIndexName: workflowI
-    importPositionAlias: importPositionA
-    workflowAlias: workflowA
     templateOrder: 50
   zeebeElasticsearch:
     clusterName: zeebeElasticClusterName

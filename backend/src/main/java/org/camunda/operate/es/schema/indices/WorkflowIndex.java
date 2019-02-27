@@ -14,6 +14,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class WorkflowIndex extends AbstractIndexCreator {
 
+  public static final String INDEX_NAME = "workflow";
+
   public static final String ID = "id";
   public static final String KEY = "key";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
@@ -30,12 +32,7 @@ public class WorkflowIndex extends AbstractIndexCreator {
 
   @Override
   public String getIndexName() {
-    return operateProperties.getElasticsearch().getWorkflowIndexName();
-  }
-
-  @Override
-  public String getAlias() {
-    return operateProperties.getElasticsearch().getWorkflowAlias();
+    return String.format("%s-%s_", operateProperties.getElasticsearch().getIndexPrefix(), INDEX_NAME);
   }
 
   @Override

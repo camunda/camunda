@@ -5,7 +5,7 @@
  */
 package org.camunda.operate.rest.dto.listview;
 
-import org.camunda.operate.entities.WorkflowInstanceState;
+import org.camunda.operate.entities.listview.WorkflowInstanceState;
 
 public enum WorkflowInstanceStateDto {
 

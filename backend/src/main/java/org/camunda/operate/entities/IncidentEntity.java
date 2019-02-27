@@ -5,36 +5,31 @@
  */
 package org.camunda.operate.entities;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
+import java.time.OffsetDateTime;
 
 public class IncidentEntity extends OperateZeebeEntity {
 
-  public static String UNKNOWN_ERROR_TYPE = "UNKNOWN";
-
-  public static String JOB_NO_RETRIES_ERROR_TYPE = "JOB_NO_RETRIES";
-
-  public static String CONDITION_ERROR_ERROR_TYPE = "CONDITION_ERROR";
-
-  private String errorType;
+  private ErrorType errorType;
 
   private String errorMessage;
 
   private IncidentState state;
 
-  private String activityId;
+  private String flowNodeId;
 
-  private String activityInstanceId;
+  private String flowNodeInstanceId;
 
-  private Long jobId;
+  private Long jobKey;
 
   private String workflowInstanceId;
 
-  public String getErrorType() {
+  private OffsetDateTime creationTime;
+
+  public ErrorType getErrorType() {
     return errorType;
   }
 
-  public void setErrorType(String errorType) {
+  public void setErrorType(ErrorType errorType) {
     this.errorType = errorType;
   }
 
@@ -54,37 +49,44 @@ public class IncidentEntity extends OperateZeebeEntity {
     this.state = state;
   }
 
-  public String getActivityId() {
-    return activityId;
+  public String getFlowNodeId() {
+    return flowNodeId;
   }
 
-  public void setActivityId(String activityId) {
-    this.activityId = activityId;
+  public void setFlowNodeId(String flowNodeId) {
+    this.flowNodeId = flowNodeId;
   }
 
-  public String getActivityInstanceId() {
-    return activityInstanceId;
+  public String getFlowNodeInstanceId() {
+    return flowNodeInstanceId;
   }
 
-  public void setActivityInstanceId(String activityInstanceId) {
-    this.activityInstanceId = activityInstanceId;
+  public void setFlowNodeInstanceId(String flowNodeInstanceId) {
+    this.flowNodeInstanceId = flowNodeInstanceId;
   }
 
-  public Long getJobId() {
-    return jobId;
+  public Long getJobKey() {
+    return jobKey;
   }
 
-  public void setJobId(Long jobId) {
-    this.jobId = jobId;
+  public void setJobKey(Long jobKey) {
+    this.jobKey = jobKey;
   }
 
-  @JsonIgnore
   public String getWorkflowInstanceId() {
     return workflowInstanceId;
   }
 
   public void setWorkflowInstanceId(String workflowInstanceId) {
     this.workflowInstanceId = workflowInstanceId;
+  }
+
+  public OffsetDateTime getCreationTime() {
+    return creationTime;
+  }
+
+  public void setCreationTime(OffsetDateTime creationTime) {
+    this.creationTime = creationTime;
   }
 
   @Override
@@ -98,19 +100,21 @@ public class IncidentEntity extends OperateZeebeEntity {
 
     IncidentEntity that = (IncidentEntity) o;
 
-    if (errorType != null ? !errorType.equals(that.errorType) : that.errorType != null)
+    if (errorType != that.errorType)
       return false;
     if (errorMessage != null ? !errorMessage.equals(that.errorMessage) : that.errorMessage != null)
       return false;
     if (state != that.state)
       return false;
-    if (activityId != null ? !activityId.equals(that.activityId) : that.activityId != null)
+    if (flowNodeId != null ? !flowNodeId.equals(that.flowNodeId) : that.flowNodeId != null)
       return false;
-    if (activityInstanceId != null ? !activityInstanceId.equals(that.activityInstanceId) : that.activityInstanceId != null)
+    if (flowNodeInstanceId != null ? !flowNodeInstanceId.equals(that.flowNodeInstanceId) : that.flowNodeInstanceId != null)
       return false;
-    if (jobId != null ? !jobId.equals(that.jobId) : that.jobId != null)
+    if (jobKey != null ? !jobKey.equals(that.jobKey) : that.jobKey != null)
       return false;
-    return workflowInstanceId != null ? workflowInstanceId.equals(that.workflowInstanceId) : that.workflowInstanceId == null;
+    if (workflowInstanceId != null ? !workflowInstanceId.equals(that.workflowInstanceId) : that.workflowInstanceId != null)
+      return false;
+    return creationTime != null ? creationTime.equals(that.creationTime) : that.creationTime == null;
   }
 
   @Override
@@ -119,10 +123,11 @@ public class IncidentEntity extends OperateZeebeEntity {
     result = 31 * result + (errorType != null ? errorType.hashCode() : 0);
     result = 31 * result + (errorMessage != null ? errorMessage.hashCode() : 0);
     result = 31 * result + (state != null ? state.hashCode() : 0);
-    result = 31 * result + (activityId != null ? activityId.hashCode() : 0);
-    result = 31 * result + (activityInstanceId != null ? activityInstanceId.hashCode() : 0);
-    result = 31 * result + (jobId != null ? jobId.hashCode() : 0);
+    result = 31 * result + (flowNodeId != null ? flowNodeId.hashCode() : 0);
+    result = 31 * result + (flowNodeInstanceId != null ? flowNodeInstanceId.hashCode() : 0);
+    result = 31 * result + (jobKey != null ? jobKey.hashCode() : 0);
     result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
+    result = 31 * result + (creationTime != null ? creationTime.hashCode() : 0);
     return result;
   }
 }

@@ -8,7 +8,6 @@ package org.camunda.operate.zeebe.operation;
 import java.time.OffsetDateTime;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
-import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
@@ -25,33 +24,27 @@ public abstract class AbstractOperationHandler implements OperationHandler {
   @Autowired
   protected OperateProperties operateProperties;
 
-  protected void failOperationsOfCurrentType(WorkflowInstanceEntity workflowInstance, String errorMsg) throws PersistenceException {
-    for (OperationEntity operation: workflowInstance.getOperations()) {
-      if (operation.getState().equals(OperationState.LOCKED) && operation.getLockOwner().equals(operateProperties.getOperationExecutor().getWorkerId())
-        && operation.getType().equals(getType())) {
-        operation.setState(OperationState.FAILED);
-        operation.setLockExpirationTime(null);
-        operation.setLockOwner(null);
-        operation.setEndDate(OffsetDateTime.now());
-        operation.setErrorMessage(errorMsg);
-        batchOperationWriter.updateOperation(operation);
-        logger.debug("Operation {} failed with message: {} ", operation.getId(), operation.getErrorMessage());
-        break;
-      }
+  protected void failOperation(OperationEntity operation, String errorMsg) throws PersistenceException {
+    if (operation.getState().equals(OperationState.LOCKED) && operation.getLockOwner().equals(operateProperties.getOperationExecutor().getWorkerId())
+      && operation.getType().equals(getType())) {
+      operation.setState(OperationState.FAILED);
+      operation.setLockExpirationTime(null);
+      operation.setLockOwner(null);
+      operation.setEndDate(OffsetDateTime.now());
+      operation.setErrorMessage(errorMsg);
+      batchOperationWriter.updateOperation(operation);
+      logger.debug("Operation {} failed with message: {} ", operation.getId(), operation.getErrorMessage());
     }
   }
 
-  protected void markAsSentOperationsOfCurrentType(WorkflowInstanceEntity workflowInstance) throws PersistenceException {
-    for (OperationEntity operation: workflowInstance.getOperations()) {
-      if (operation.getState().equals(OperationState.LOCKED) && operation.getLockOwner().equals(operateProperties.getOperationExecutor().getWorkerId())
-        && operation.getType().equals(getType())) {
-        operation.setState(OperationState.SENT);
-        operation.setLockExpirationTime(null);
-        operation.setLockOwner(null);
-        batchOperationWriter.updateOperation(operation);
-        logger.debug("Operation {} was sent to Zeebe", operation.getId());
-        break;
-      }
+  protected void markAsSent(OperationEntity operation) throws PersistenceException {
+    if (operation.getState().equals(OperationState.LOCKED) && operation.getLockOwner().equals(operateProperties.getOperationExecutor().getWorkerId())
+      && operation.getType().equals(getType())) {
+      operation.setState(OperationState.SENT);
+      operation.setLockExpirationTime(null);
+      operation.setLockOwner(null);
+      batchOperationWriter.updateOperation(operation);
+      logger.debug("Operation {} was sent to Zeebe", operation.getId());
     }
   }
 }

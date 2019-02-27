@@ -6,21 +6,21 @@
 package org.camunda.operate.it;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.function.Predicate;
-import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
-import org.camunda.operate.entities.WorkflowInstanceEntity;
-import org.camunda.operate.entities.WorkflowInstanceState;
+import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.es.reader.DetailViewReader;
 import org.camunda.operate.es.reader.ListViewReader;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
-import org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate;
 import org.camunda.operate.rest.dto.detailview.ActivityInstanceTreeDto;
 import org.camunda.operate.rest.dto.detailview.ActivityInstanceTreeRequestDto;
 import org.camunda.operate.rest.dto.detailview.DetailViewActivityInstanceDto;
+import org.camunda.operate.rest.dto.incidents.IncidentResponseDto;
 import org.camunda.operate.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.rest.dto.listview.WorkflowInstanceStateDto;
@@ -32,6 +32,7 @@ import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.zeebeimport.cache.WorkflowCache;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -121,7 +122,7 @@ public class WorkflowInstanceImportIT extends OperateZeebeIntegrationTest {
 
     //then
     final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
-    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
+    final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
     assertThat(workflowInstanceEntity.getWorkflowId()).isEqualTo(workflowId);
     assertThat(workflowInstanceEntity.getWorkflowName()).isEqualTo("Demo process");
     assertThat(workflowInstanceEntity.getWorkflowVersion()).isEqualTo(1);
@@ -181,7 +182,7 @@ public class WorkflowInstanceImportIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCompletedCheck, workflowInstanceKey);
 
     //then
-    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
+    final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
     assertThat(workflowInstanceEntity.getState()).isEqualTo(WorkflowInstanceState.COMPLETED);
 
     //assert list view data
@@ -217,7 +218,7 @@ public class WorkflowInstanceImportIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCompletedCheck, workflowInstanceKey);
 
     //then
-    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
+    final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
     assertThat(workflowInstanceEntity.getState()).isEqualTo(WorkflowInstanceState.COMPLETED);
     //assert start date did not change
     assertThat(workflowInstanceEntity.getStartDate()).isEqualTo(startDate);
@@ -229,6 +230,7 @@ public class WorkflowInstanceImportIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
+  @Ignore("OPE-437")
   public void testSequenceFlowsPersisted() {
     // having
     String processId = "demoProcess";
@@ -252,74 +254,13 @@ public class WorkflowInstanceImportIT extends OperateZeebeIntegrationTest {
 
     elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCompletedCheck, workflowInstanceKey);
 
-    WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
-    assertThat(workflowInstanceEntity.getSequenceFlows()).hasSize(3)
-      .extracting(WorkflowInstanceTemplate.ACTIVITY_ID).containsOnly("sf1", "sf2", "sf3");
+    WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
+    //TODO
+//    assertThat(workflowInstanceEntity.getSequenceFlows()).hasSize(3)
+//      .extracting(IncidentTemplate.FLOW_NODE_ID).containsOnly("sf1", "sf2", "sf3");
 
   }
 
-/*
-  @Test
-  public void testVariablesCreated() throws URISyntaxException, IOException {
-    // having
-    String payload = new String(Files.readAllBytes(Paths.get(WorkflowInstanceImportIT.class.getResource("/payload.json").toURI())));
-    String processId = "demoProcess";
-    String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
-
-    //when
-    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, payload);
-    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskA");
-
-    //then
-    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
-
-    assertThat(workflowInstanceEntity.countVariables()).isEqualTo(23);
-
-    assertVariable(workflowInstanceEntity, "objectLevel1.stringFieldL1","stringValue1");
-    assertVariable(workflowInstanceEntity, "objectLevel1.stringFieldL1", "stringValue1");
-    assertVariable(workflowInstanceEntity, "objectLevel1.intFieldL1", 111L);
-    assertVariable(workflowInstanceEntity, "objectLevel1.longFieldL1", 2147483648L);
-    assertVariable(workflowInstanceEntity, "objectLevel1.doubleFieldL1", 0.555);
-    assertVariable(workflowInstanceEntity, "objectLevel1.booleanFieldL1", true);
-    assertVariable(workflowInstanceEntity, "objectLevel1.arrayFieldL1[0]", 1L);
-    assertVariable(workflowInstanceEntity, "objectLevel1.arrayFieldL1[1]", 2L);
-    assertVariable(workflowInstanceEntity, "objectLevel1.arrayFieldL1[2]", 3L);
-    assertVariable(workflowInstanceEntity, "objectLevel1.objectLevel2.stringFieldL2", "stringValue2");
-    assertVariable(workflowInstanceEntity, "objectLevel1.objectLevel2.intFieldL2", 222L);
-    assertVariable(workflowInstanceEntity, "objectLevel1.objectLevel2.booleanFieldL2", false);
-    assertVariable(workflowInstanceEntity, "objectLevel1.objectLevel2.arrayFieldL2[0]", "1");
-    assertVariable(workflowInstanceEntity, "objectLevel1.objectLevel2.arrayFieldL2[1]", "2");
-    assertVariable(workflowInstanceEntity, "objectLevel1.objectLevel2.arrayFieldL2[2]", "3");
-    assertVariable(workflowInstanceEntity, "objectLevel1.arrayOfObjects[0].stringArrayField", "strArr1");
-    assertVariable(workflowInstanceEntity, "objectLevel1.arrayOfObjects[0].intArrayField", 123L);
-    assertVariable(workflowInstanceEntity, "objectLevel1.arrayOfObjects[0].booleanArrayField", true);
-    assertVariable(workflowInstanceEntity, "objectLevel1.arrayOfObjects[1].stringArrayField", "strArr1");
-    assertVariable(workflowInstanceEntity, "objectLevel1.arrayOfObjects[1].intArrayField", 321L);
-    assertVariable(workflowInstanceEntity, "objectLevel1.arrayOfObjects[1].booleanArrayField", false);
-    assertVariable(workflowInstanceEntity, "stringField", "someString");
-    assertVariable(workflowInstanceEntity, "intField", 7L);
-    assertVariable(workflowInstanceEntity, "nullField", null);
-
-  }
-
-  private void assertVariable(WorkflowInstanceEntity workflowInstanceEntity, String name, Object value) {
-    if (value instanceof String || value == null) {
-      assertThat(workflowInstanceEntity.getStringVariables()).filteredOn(v -> v.getName().equals(name)).hasSize(1)
-        .first().matches(v -> v.getValue() == null ? value == null : v.getValue().equals(value));
-    } else if (value instanceof Long) {
-      assertThat(workflowInstanceEntity.getLongVariables()).filteredOn(v -> v.getName().equals(name)).hasSize(1)
-        .first().matches(v -> v.getValue().equals(value));
-    } else if (value instanceof Double) {
-      assertThat(workflowInstanceEntity.getDoubleVariables()).filteredOn(v -> v.getName().equals(name)).hasSize(1)
-        .first().matches(v -> v.getValue().equals(value));
-    } else if (value instanceof Boolean) {
-      assertThat(workflowInstanceEntity.getBooleanVariables()).filteredOn(v -> v.getName().equals(name)).hasSize(1)
-        .first().matches(v -> v.getValue().equals(value));
-    } else {
-      fail("Variable %s must be present in one of the collections", name);
-    }
-  }
-*/
   @Test
   public void testIncidentDeleted() {
     // having
@@ -334,16 +275,14 @@ public class WorkflowInstanceImportIT extends OperateZeebeIntegrationTest {
 
     //when update retries
     final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
-    final WorkflowInstanceEntity workflowInstance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
-    assertThat(workflowInstance.getIncidents().size()).isEqualTo(1);
-    ZeebeTestUtil.resolveIncident(zeebeClient, workflowInstance.getIncidents().get(0).getJobId(), workflowInstance.getIncidents().get(0).getKey());
-    elasticsearchTestRule.processAllEvents(19);
+    List<IncidentEntity> allIncidents = detailViewReader.getAllIncidents(workflowInstanceId);
+    assertThat(allIncidents).hasSize(1);
+    ZeebeTestUtil.resolveIncident(zeebeClient, allIncidents.get(0).getJobKey(), allIncidents.get(0).getKey());
+    elasticsearchTestRule.processAllEventsAndWait(incidentIsResolvedCheck, workflowInstanceKey);
 
     //then
-    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
-    assertThat(workflowInstanceEntity.getIncidents().size()).isEqualTo(1);
-    IncidentEntity incidentEntity = workflowInstanceEntity.getIncidents().get(0);
-    assertThat(incidentEntity.getState()).isEqualTo(IncidentState.RESOLVED);
+    allIncidents = detailViewReader.getAllIncidents(workflowInstanceId);
+    assertThat(allIncidents).hasSize(0);
 
     //assert list view data
     final ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView();
@@ -373,14 +312,13 @@ public class WorkflowInstanceImportIT extends OperateZeebeIntegrationTest {
     failTaskWithNoRetriesLeft(activityId, workflowInstanceKey, errorMessage);
 
     //then
-    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
-    assertThat(workflowInstanceEntity.getIncidents().size()).isEqualTo(1);
-    IncidentEntity incidentEntity = workflowInstanceEntity.getIncidents().get(0);
-    assertThat(incidentEntity.getActivityId()).isEqualTo(activityId);
-    assertThat(incidentEntity.getActivityInstanceId()).isNotEmpty();
+    final List<IncidentEntity> allIncidents = detailViewReader.getAllIncidents(IdTestUtil.getId(workflowInstanceKey));
+    assertThat(allIncidents).hasSize(1);
+    IncidentEntity incidentEntity = allIncidents.get(0);
+    assertThat(incidentEntity.getFlowNodeId()).isEqualTo(activityId);
+    assertThat(incidentEntity.getFlowNodeInstanceId()).isNotEmpty();
     assertThat(incidentEntity.getErrorMessage()).isEqualTo(errorMessage);
-    assertThat(incidentEntity.getErrorType()).isNotEmpty();
-    //TODO OPE-400
+    assertThat(incidentEntity.getErrorType()).isNotNull();
     assertThat(incidentEntity.getState()).isEqualTo(IncidentState.ACTIVE);
 
     //assert list view data
@@ -421,19 +359,18 @@ public class WorkflowInstanceImportIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceKey, "task1");
 
     //then incident created, activity in INCIDENT state
-    WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
-    assertThat(workflowInstanceEntity.getIncidents().size()).isEqualTo(1);
-    IncidentEntity incidentEntity = workflowInstanceEntity.getIncidents().get(0);
-    assertThat(incidentEntity.getActivityId()).isEqualTo(activityId);
-    assertThat(incidentEntity.getActivityInstanceId()).isNotEmpty();
+    final List<IncidentEntity> allIncidents = detailViewReader.getAllIncidents(IdTestUtil.getId(workflowInstanceKey));
+    assertThat(allIncidents).hasSize(1);
+    IncidentEntity incidentEntity = allIncidents.get(0);
+    assertThat(incidentEntity.getFlowNodeId()).isEqualTo(activityId);
+    assertThat(incidentEntity.getFlowNodeInstanceId()).isNotEmpty();
     assertThat(incidentEntity.getErrorMessage()).isNotEmpty();
-    assertThat(incidentEntity.getErrorType()).isNotEmpty();
+    assertThat(incidentEntity.getErrorType()).isNotNull();
     assertThat(incidentEntity.getState()).isEqualTo(IncidentState.ACTIVE);
 
     //assert list view data
     final ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView();
     assertThat(wi.getState()).isEqualTo(WorkflowInstanceStateDto.INCIDENT);
-
 
     //assert activity instance tree
     final ActivityInstanceTreeDto tree = getActivityInstanceTree(workflowInstanceKey);
@@ -485,9 +422,9 @@ public class WorkflowInstanceImportIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.processAllEventsAndWait(incidentIsActiveCheck, workflowInstanceKey);
 
     //then incident created, activity in INCIDENT state
-    WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
-    assertThat(workflowInstanceEntity.getIncidents().size()).isEqualTo(1);
-    IncidentEntity incidentEntity = workflowInstanceEntity.getIncidents().get(0);
+    List<IncidentEntity> allIncidents = detailViewReader.getAllIncidents(IdTestUtil.getId(workflowInstanceKey));
+    assertThat(allIncidents).hasSize(1);
+    IncidentEntity incidentEntity = allIncidents.get(0);
     assertThat(incidentEntity.getState()).isEqualTo(IncidentState.ACTIVE);
 
     //when I cancel workflow instance
@@ -496,12 +433,10 @@ public class WorkflowInstanceImportIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.processAllEventsAndWait(incidentIsResolvedCheck, workflowInstanceKey);
 
     //then incident is deleted
-    workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
+    WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
     assertThat(workflowInstanceEntity.getState()).isEqualTo(WorkflowInstanceState.CANCELED);
-    assertThat(workflowInstanceEntity.getIncidents().size()).isEqualTo(1);
-    incidentEntity = workflowInstanceEntity.getIncidents().get(0);
-    assertThat(incidentEntity.getActivityId()).isEqualTo(activityId);
-    assertThat(incidentEntity.getState()).isEqualTo(IncidentState.RESOLVED);
+    allIncidents = detailViewReader.getAllIncidents(IdTestUtil.getId(workflowInstanceKey));
+    assertThat(allIncidents).hasSize(0);
 
     //assert list view data
     final ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView();
@@ -599,7 +534,7 @@ public class WorkflowInstanceImportIT extends OperateZeebeIntegrationTest {
     cancelWorkflowInstance(workflowInstanceKey);
 
     //then
-    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
+    final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
     assertThat(workflowInstanceEntity.getId()).isEqualTo(IdTestUtil.getId(workflowInstanceKey));
     assertThat(workflowInstanceEntity.getKey()).isEqualTo(workflowInstanceKey);
     assertThat(workflowInstanceEntity.getState()).isEqualTo(WorkflowInstanceState.CANCELED);
@@ -646,7 +581,7 @@ public class WorkflowInstanceImportIT extends OperateZeebeIntegrationTest {
     cancelWorkflowInstance(workflowInstanceKey);
 
     //then
-    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
+    final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
     assertThat(workflowInstanceEntity.getId()).isEqualTo(IdTestUtil.getId(workflowInstanceKey));
     assertThat(workflowInstanceEntity.getKey()).isEqualTo(workflowInstanceKey);
     assertThat(workflowInstanceEntity.getState()).isEqualTo(WorkflowInstanceState.CANCELED);
@@ -680,7 +615,7 @@ public class WorkflowInstanceImportIT extends OperateZeebeIntegrationTest {
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCreatedCheck, workflowInstanceKey);
 
-    final WorkflowInstanceEntity workflowInstanceById = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
+    final WorkflowInstanceForListViewEntity workflowInstanceById = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
     assertThat(workflowInstanceById).isNotNull();
     assertThat(workflowInstanceById.getState()).isEqualTo(WorkflowInstanceState.ACTIVE);
   }
@@ -698,7 +633,7 @@ public class WorkflowInstanceImportIT extends OperateZeebeIntegrationTest {
     failTaskWithNoRetriesLeft(activityId, workflowInstanceKey, errorMessage);
     elasticsearchTestRule.processAllEventsAndWait(incidentIsActiveCheck, workflowInstanceKey);
 
-    final WorkflowInstanceEntity workflowInstanceById = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
+    final WorkflowInstanceForListViewEntity workflowInstanceById = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
     assertThat(workflowInstanceById).isNotNull();
     assertThat(workflowInstanceById.getState()).isEqualTo(WorkflowInstanceState.INCIDENT);
   }
@@ -710,7 +645,7 @@ public class WorkflowInstanceImportIT extends OperateZeebeIntegrationTest {
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCreatedCheck, workflowInstanceKey);
 
-    final WorkflowInstanceEntity workflowInstanceById = workflowInstanceReader.getWorkflowInstanceById("wrongId");
+    final WorkflowInstanceForListViewEntity workflowInstanceById = workflowInstanceReader.getWorkflowInstanceById("wrongId");
   }
 
   private void assertStartActivityCompleted(DetailViewActivityInstanceDto startActivity) {
@@ -729,13 +664,6 @@ public class WorkflowInstanceImportIT extends OperateZeebeIntegrationTest {
     assertThat(activity.getStartDate()).isAfterOrEqualTo(testStartTime);
     assertThat(activity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
     assertThat(activity.getEndDate()).isNull();
-  }
-
-  private void assertActivityIsInIncidentState(ActivityInstanceEntity activity, String activityId) {
-    assertThat(activity.getActivityId()).isEqualTo(activityId);
-    assertThat(activity.getState()).isEqualTo(ActivityState.INCIDENT);
-    assertThat(activity.getStartDate()).isAfterOrEqualTo(testStartTime);
-    assertThat(activity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
   }
 
 }

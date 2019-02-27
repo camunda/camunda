@@ -5,26 +5,23 @@
  */
 package org.camunda.operate.es.reader;
 
-import java.util.List;
-import org.camunda.operate.entities.IncidentEntity;
-import org.camunda.operate.entities.IncidentState;
-import org.camunda.operate.entities.WorkflowInstanceEntity;
-import org.camunda.operate.entities.WorkflowInstanceState;
-import org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate;
+import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.WorkflowInstanceState;
+import org.camunda.operate.es.schema.templates.ListViewTemplate;
+import org.camunda.operate.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.rest.exception.NotFoundException;
 import org.camunda.operate.util.ElasticsearchUtil;
-import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.index.query.ExistsQueryBuilder;
 import org.elasticsearch.index.query.IdsQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.TermQueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
@@ -42,7 +39,7 @@ public class WorkflowInstanceReader {
   private ObjectMapper objectMapper;
 
   @Autowired
-  private WorkflowInstanceTemplate workflowInstanceTemplate;
+  private ListViewTemplate listViewTemplate;
 
   @Autowired
   private OperationReader operationReader;
@@ -52,22 +49,50 @@ public class WorkflowInstanceReader {
    * @param workflowId
    * @return
    */
-  public List<String> queryWorkflowInstancesWithEmptyWorkflowVersion(long workflowId) {
+  //TODO
+//  public List<String> queryWorkflowInstancesWithEmptyWorkflowVersion(long workflowId) {
+//
+//    final QueryBuilder queryBuilder =
+//      joinWithAnd(
+//        termQuery(IncidentTemplate.WORKFLOW_ID, workflowId),
+//        boolQuery()
+//          .mustNot(existsQuery(IncidentTemplate.WORKFLOW_VERSION)));
+////    workflow name can be null, as some workflows does not have name
+//
+//
+//    final SearchRequestBuilder searchRequestBuilder =
+//      esClient.prepareSearch(workflowInstanceTemplate.getAlias())
+//        .setQuery(constantScoreQuery(queryBuilder))
+//        .setFetchSource(false);
+//
+//    return ElasticsearchUtil.scrollIdsToList(searchRequestBuilder, esClient);
+//  }
 
-    final QueryBuilder queryBuilder =
-      joinWithAnd(
-        termQuery(WorkflowInstanceTemplate.WORKFLOW_ID, workflowId),
-        boolQuery()
-          .mustNot(existsQuery(WorkflowInstanceTemplate.WORKFLOW_VERSION)));
-    //workflow name can be null, as some workflows does not have name
+  /**
+   * Searches for workflow instance by id.
+   * @param workflowInstanceId
+   * @return
+   */
+  public ListViewWorkflowInstanceDto getWorkflowInstanceWithOperationsById(String workflowInstanceId) {
+    final IdsQueryBuilder q = idsQuery().addIds(workflowInstanceId);
 
+    final SearchResponse response = esClient.prepareSearch(listViewTemplate.getAlias())
+      .setQuery(q)
+      .get();
 
-    final SearchRequestBuilder searchRequestBuilder =
-      esClient.prepareSearch(workflowInstanceTemplate.getAlias())
-        .setQuery(constantScoreQuery(queryBuilder))
-        .setFetchSource(false);
+    if (response.getHits().totalHits == 1) {
+      final WorkflowInstanceForListViewEntity workflowInstance = ElasticsearchUtil
+        .fromSearchHit(response.getHits().getHits()[0].getSourceAsString(), objectMapper, WorkflowInstanceForListViewEntity.class);
 
-    return ElasticsearchUtil.scrollIdsToList(searchRequestBuilder, esClient);
+      return ListViewWorkflowInstanceDto.createFrom(workflowInstance,
+        activityInstanceWithIncidentExists(workflowInstanceId),
+        operationReader.getOperations(workflowInstance.getId()));
+
+    } else if (response.getHits().totalHits > 1) {
+      throw new NotFoundException(String.format("Could not find unique workflow instance with id '%s'.", workflowInstanceId));
+    } else {
+      throw new NotFoundException(String.format("Could not find workflow instance with id '%s'.", workflowInstanceId));
+    }
   }
 
   /**
@@ -75,32 +100,40 @@ public class WorkflowInstanceReader {
    * @param workflowInstanceId
    * @return
    */
-  public WorkflowInstanceEntity getWorkflowInstanceById(String workflowInstanceId) {
+  public WorkflowInstanceForListViewEntity getWorkflowInstanceById(String workflowInstanceId) {
     final IdsQueryBuilder q = idsQuery().addIds(workflowInstanceId);
 
-    final SearchResponse response = esClient.prepareSearch(workflowInstanceTemplate.getAlias())
+    final SearchResponse response = esClient.prepareSearch(listViewTemplate.getAlias())
       .setQuery(q)
       .get();
 
     if (response.getHits().totalHits == 1) {
-      final WorkflowInstanceEntity workflowInstance = ElasticsearchUtil
-        .fromSearchHit(response.getHits().getHits()[0].getSourceAsString(), objectMapper, WorkflowInstanceEntity.class);
-      workflowInstance.setOperations(operationReader.getOperations(workflowInstance.getId()));
-      //OPE-400
-      if (workflowInstance.getIncidents() != null) {
-        for (IncidentEntity incident: workflowInstance.getIncidents()) {
-          if (incident.getState().equals(IncidentState.ACTIVE)) {
-            workflowInstance.setState(WorkflowInstanceState.INCIDENT);
-            break;
-          }
-        }
+      final WorkflowInstanceForListViewEntity workflowInstance = ElasticsearchUtil
+        .fromSearchHit(response.getHits().getHits()[0].getSourceAsString(), objectMapper, WorkflowInstanceForListViewEntity.class);
+
+      if (activityInstanceWithIncidentExists(workflowInstanceId)) {
+        workflowInstance.setState(WorkflowInstanceState.INCIDENT);
       }
+
       return workflowInstance;
     } else if (response.getHits().totalHits > 1) {
       throw new NotFoundException(String.format("Could not find unique workflow instance with id '%s'.", workflowInstanceId));
     } else {
       throw new NotFoundException(String.format("Could not find workflow instance with id '%s'.", workflowInstanceId));
     }
+  }
+
+  private boolean activityInstanceWithIncidentExists(String workflowInstanceId) {
+
+    final TermQueryBuilder workflowInstanceIdQ = termQuery(ListViewTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId);
+    final ExistsQueryBuilder existsIncidentQ = existsQuery(ListViewTemplate.INCIDENT_KEY);
+
+    final SearchResponse response = esClient.prepareSearch(listViewTemplate.getAlias())
+      .setQuery(constantScoreQuery(joinWithAnd(workflowInstanceIdQ, existsIncidentQ)))
+      .setFetchSource(ListViewTemplate.ID, null)
+      .get();
+
+    return response.getHits().getTotalHits() > 0;
   }
 
 }

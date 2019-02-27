@@ -10,20 +10,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
+import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.OperationEntity;
+import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.es.ElasticsearchSchemaManager;
 import org.camunda.operate.es.schema.indices.IndexCreator;
+import org.camunda.operate.es.schema.indices.WorkflowIndex;
+import org.camunda.operate.es.schema.templates.IncidentTemplate;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
-import org.camunda.operate.property.OperateElasticsearchProperties;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.zeebeimport.ElasticsearchBulkProcessor;
 import org.camunda.operate.zeebeimport.ZeebeESImporter;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.client.transport.TransportClient;
@@ -35,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.camunda.operate.property.OperateElasticsearchProperties.DEFAULT_INDEX_PREFIX;
 
 public class ElasticsearchTestRule extends ExternalResource {
 
@@ -54,7 +57,13 @@ public class ElasticsearchTestRule extends ExternalResource {
   private ListViewTemplate listViewTemplate;
 
   @Autowired
+  private WorkflowIndex workflowIndex;
+
+  @Autowired
   private OperationTemplate operationTemplate;
+
+  @Autowired
+  private IncidentTemplate incidentTemplate;
 
   @Autowired
   private OperateProperties operateProperties;
@@ -73,41 +82,11 @@ public class ElasticsearchTestRule extends ExternalResource {
 
   private boolean haveToClean = true;
 
-  private String workflowIndexName;
-  private String workflowInstanceIndexName;
-  private String operationIndexName;
-  private String activityInstanceIndexName;
-  private String variableIndexName;
-  private String listViewIndexName;
-  private String eventIndexName;
-  private String importPositionIndexName;
-
   Map<Class<? extends OperateEntity>, String> entityToESAliasMap;
 
   @Override
   public void before() {
-    final String indexSuffix = TestUtil.createRandomString(10);
-    workflowIndexName = OperateElasticsearchProperties.WORKFLOW_INDEX_PATTERN + indexSuffix + "_";
-    workflowInstanceIndexName = OperateElasticsearchProperties.WORKFLOW_INSTANCE_INDEX_PATTERN + indexSuffix + "_";
-    listViewIndexName = OperateElasticsearchProperties.LIST_VIEW_INDEX_PATTERN + indexSuffix + "_";
-    activityInstanceIndexName = OperateElasticsearchProperties.ACTIVITY_INSTANCE_INDEX_PATTERN + indexSuffix + "_";
-    variableIndexName = OperateElasticsearchProperties.VARIABLE_INDEX_PATTERN + indexSuffix + "_";
-    operationIndexName = OperateElasticsearchProperties.OPERATION_INDEX_PATTERN + indexSuffix + "_";
-    eventIndexName = OperateElasticsearchProperties.EVENT_INDEX_PATTERN + indexSuffix + "_";
-    importPositionIndexName = OperateElasticsearchProperties.IMPORT_POSITION_INDEX_PATTERN + indexSuffix + "_";
-    operateProperties.getElasticsearch().setWorkflowIndexName(workflowIndexName);
-    operateProperties.getElasticsearch().setWorkflowInstanceIndexName(workflowInstanceIndexName);
-    operateProperties.getElasticsearch().setListViewIndexName(listViewIndexName);
-    operateProperties.getElasticsearch().setActivityInstanceIndexName(activityInstanceIndexName);
-    operateProperties.getElasticsearch().setVariableIndexName(variableIndexName);
-    operateProperties.getElasticsearch().setOperationIndexName(operationIndexName);
-    operateProperties.getElasticsearch().setEventIndexName(eventIndexName);
-    operateProperties.getElasticsearch().setImportPositionIndexName(importPositionIndexName);
-
-    //make aliases differ from index names
-    operateProperties.getElasticsearch().setWorkflowAlias(workflowIndexName + "alias");
-    operateProperties.getElasticsearch().setImportPositionAlias(importPositionIndexName + "alias");
-
+    operateProperties.getElasticsearch().setIndexPrefix(TestUtil.createRandomString(10) + "-operate");
     elasticsearchSchemaManager.createIndices();
     elasticsearchSchemaManager.createTemplates();
 
@@ -116,16 +95,7 @@ public class ElasticsearchTestRule extends ExternalResource {
   @Override
   public void after() {
     removeAllIndices();
-    operateProperties.getElasticsearch().setWorkflowIndexName(OperateElasticsearchProperties.WORKFLOW_INDEX_PATTERN + "_");
-    operateProperties.getElasticsearch().setWorkflowInstanceIndexName(OperateElasticsearchProperties.WORKFLOW_INSTANCE_INDEX_PATTERN + "_");
-    operateProperties.getElasticsearch().setEventIndexName(OperateElasticsearchProperties.EVENT_INDEX_PATTERN + "_");
-    operateProperties.getElasticsearch().setListViewIndexName(OperateElasticsearchProperties.LIST_VIEW_INDEX_PATTERN + "_");
-    operateProperties.getElasticsearch().setActivityInstanceIndexName(OperateElasticsearchProperties.ACTIVITY_INSTANCE_INDEX_PATTERN + "_");
-    operateProperties.getElasticsearch().setVariableIndexName(OperateElasticsearchProperties.VARIABLE_INDEX_PATTERN + "_");
-    operateProperties.getElasticsearch().setOperationIndexName(OperateElasticsearchProperties.OPERATION_INDEX_PATTERN + "_");
-
-    operateProperties.getElasticsearch().setWorkflowAlias(OperateElasticsearchProperties.WORKFLOW_INDEX_PATTERN + "_alias");
-    operateProperties.getElasticsearch().setImportPositionAlias(OperateElasticsearchProperties.IMPORT_POSITION_INDEX_PATTERN + "_alias");
+    operateProperties.getElasticsearch().setIndexPrefix(DEFAULT_INDEX_PREFIX);
 
 //    if (haveToClean) {
 //      logger.info("cleaning up elasticsearch on finish");
@@ -136,7 +106,8 @@ public class ElasticsearchTestRule extends ExternalResource {
 
   public void removeAllIndices() {
     logger.info("Removing indices");
-    esClient.admin().indices().delete(new DeleteIndexRequest(workflowIndexName, workflowInstanceIndexName, eventIndexName, importPositionIndexName));
+    //TODO remove indices
+//    esClient.admin().indices().delete(new DeleteIndexRequest(workflowIndexName, workflowInstanceIndexName, eventIndexName, importPositionIndexName));
   }
 
 //  public void cleanAndVerify() {
@@ -254,16 +225,6 @@ public class ElasticsearchTestRule extends ExternalResource {
     refreshIndexesInElasticsearch();
   }
 
-  public void persist(OperateEntity... entitiesToPersist) {
-    try {
-      elasticsearchBulkProcessor.persistOperateEntities(Arrays.asList(entitiesToPersist));
-    } catch (PersistenceException e) {
-      logger.error("Unable to persist entities: " + e.getMessage(), e);
-      throw new RuntimeException(e);
-    }
-    refreshIndexesInElasticsearch();
-  }
-
 //  private void assureElasticsearchIsClean() {
 //    try {
 //      SearchResponse response = esClient
@@ -287,6 +248,9 @@ public class ElasticsearchTestRule extends ExternalResource {
       BulkRequestBuilder bulkRequest = esClient.prepareBulk();
       for (OperateEntity entity : operateEntities) {
         final String alias = getEntityToESAliasMap().get(entity.getClass());
+        if (alias == null) {
+          throw new RuntimeException("Index not configured for " + entity.getClass().getName());
+        }
         final IndexRequestBuilder indexRequestBuilder =
           esClient
             .prepareIndex(alias, ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
@@ -306,6 +270,8 @@ public class ElasticsearchTestRule extends ExternalResource {
   public Map<Class<? extends OperateEntity>, String> getEntityToESAliasMap(){
     if (entityToESAliasMap == null) {
       entityToESAliasMap = new HashMap<>();
+      entityToESAliasMap.put(WorkflowEntity.class, workflowIndex.getAlias());
+      entityToESAliasMap.put(IncidentEntity.class, incidentTemplate.getAlias());
       entityToESAliasMap.put(WorkflowInstanceForListViewEntity.class, listViewTemplate.getAlias());
       entityToESAliasMap.put(ActivityInstanceForListViewEntity.class, listViewTemplate.getAlias());
       entityToESAliasMap.put(OperationEntity.class, operationTemplate.getAlias());

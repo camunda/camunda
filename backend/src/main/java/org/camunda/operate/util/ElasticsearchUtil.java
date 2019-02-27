@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.elasticsearch.ElasticsearchException;
@@ -186,10 +187,22 @@ public abstract class ElasticsearchUtil {
   }
 
   public static <T extends OperateEntity> List<T> scroll(SearchRequestBuilder builder, Class<T> clazz, ObjectMapper objectMapper, TransportClient esClient) {
+    return scroll(builder, clazz, objectMapper, esClient, null);
+  }
+
+
+  public static <T extends OperateEntity> List<T> scroll(SearchRequestBuilder builder, Class<T> clazz, ObjectMapper objectMapper, TransportClient esClient,
+    Consumer<SearchResponse> responseProcessor) {
     TimeValue keepAlive = new TimeValue(SCROLL_KEEP_ALIVE_MS);
     SearchResponse response = builder
       .setScroll(keepAlive)
       .get();
+
+    //call response processor
+    if (responseProcessor != null) {
+      responseProcessor.accept(response);
+    }
+
     List<T> result = new ArrayList<>();
     do {
       SearchHits hits = response.getHits();
@@ -203,6 +216,7 @@ public abstract class ElasticsearchUtil {
         .get();
 
     } while (response.getHits().getHits().length != 0);
+
     return result;
   }
 
@@ -217,6 +231,27 @@ public abstract class ElasticsearchUtil {
       String scrollId = response.getScrollId();
 
       result.addAll(Arrays.stream(hits.getHits()).collect(ArrayList::new, (list, hit) -> list.add(hit.getId()), (list1, list2) -> list1.addAll(list2)));
+
+      response = esClient
+          .prepareSearchScroll(scrollId)
+          .setScroll(keepAlive)
+          .get();
+
+    } while (response.getHits().getHits().length != 0);
+    return result;
+  }
+
+  public static List<String> scrollFieldToList(SearchRequestBuilder builder, String fieldName, TransportClient esClient) {
+    List<String> result = new ArrayList<>();
+    TimeValue keepAlive = new TimeValue(5000);
+    SearchResponse response = builder
+      .setScroll(keepAlive)
+      .get();
+    do {
+      SearchHits hits = response.getHits();
+      String scrollId = response.getScrollId();
+
+      result.addAll(Arrays.stream(hits.getHits()).collect(ArrayList::new, (list, hit) -> list.add(hit.getSourceAsMap().get(fieldName).toString()), (list1, list2) -> list1.addAll(list2)));
 
       response = esClient
           .prepareSearchScroll(scrollId)

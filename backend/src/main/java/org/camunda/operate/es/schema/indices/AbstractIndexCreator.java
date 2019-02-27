@@ -51,4 +51,10 @@ public abstract class AbstractIndexCreator implements IndexCreator {
   }
 
   protected abstract XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException;
+
+  @Override
+  public String getAlias() {
+    return  getIndexName() + "alias";
+  }
+
 }

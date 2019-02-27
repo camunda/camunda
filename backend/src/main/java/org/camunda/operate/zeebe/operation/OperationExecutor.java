@@ -91,7 +91,7 @@ public class OperationExecutor extends Thread {
         if (handler == null) {
           logger.info("Operation {} on worflowInstanceId {} won't be processed, as no suitable handler was found.", operation.getType(), wiOperations.getKey());
         } else {
-          handler.handle(wiOperations.getKey());
+          handler.handle(operation);
         }
       }
     }

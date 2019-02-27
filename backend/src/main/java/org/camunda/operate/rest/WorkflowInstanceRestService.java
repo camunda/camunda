@@ -7,19 +7,18 @@ package org.camunda.operate.rest;
 
 import java.util.Collection;
 import java.util.List;
-import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
-
-import org.camunda.operate.entities.WorkflowInstanceEntity;
+import org.camunda.operate.es.reader.DetailViewReader;
 import org.camunda.operate.es.reader.ListViewReader;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.rest.dto.ActivityStatisticsDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceBatchOperationDto;
-import org.camunda.operate.rest.dto.WorkflowInstanceDto;
+import org.camunda.operate.rest.dto.incidents.IncidentResponseDto;
 import org.camunda.operate.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.rest.dto.listview.ListViewResponseDto;
+import org.camunda.operate.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.rest.exception.InvalidRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,6 +32,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.SwaggerDefinition;
 import io.swagger.annotations.Tag;
+import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
 
 @Api(tags = {"Workflow instances"})
 @SwaggerDefinition(tags = {
@@ -52,6 +52,9 @@ public class WorkflowInstanceRestService {
 
   @Autowired
   private ListViewReader listViewReader;
+
+  @Autowired
+  private DetailViewReader detailViewReader;
 
   @ApiOperation("Query workflow instances by different parameters")
   @PostMapping
@@ -76,9 +79,14 @@ public class WorkflowInstanceRestService {
 
   @ApiOperation("Get workflow instance by id")
   @GetMapping("/{id}")
-  public WorkflowInstanceDto queryWorkflowInstanceById(@PathVariable String id) {
-    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(id);
-    return WorkflowInstanceDto.createFrom(workflowInstanceEntity);
+  public ListViewWorkflowInstanceDto queryWorkflowInstanceById(@PathVariable String id) {
+    return workflowInstanceReader.getWorkflowInstanceWithOperationsById(id);
+  }
+
+  @ApiOperation("Get incidents by workflow instance id")
+  @GetMapping("/{id}/incidents")
+  public IncidentResponseDto queryIncidentsByWorkflowInstanceId(@PathVariable String id) {
+    return detailViewReader.getIncidents(id);
   }
 
   @ApiOperation("Get activity instance statistics")

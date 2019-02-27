@@ -12,20 +12,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ActivityInstanceTemplate extends AbstractTemplateCreator implements WorkflowInstanceDependant {
+public class IncidentTemplate extends AbstractTemplateCreator implements WorkflowInstanceDependant {
 
-  public static final String INDEX_NAME = "activity-instance";
+  public static final String INDEX_NAME = "incident";
 
   public static final String ID = "id";
   public static final String KEY = "key";
-  public static final String POSITION = "position";
-  public static final String START_DATE = "startDate";
-  public static final String END_DATE = "endDate";
-  public static final String ACTIVITY_ID = "activityId";
-  public static final String INCIDENT_KEY = "incidentKey";
+  public static final String WORKFLOW_INSTANCE_ID = "workflowInstanceId";
+  public static final String FLOW_NODE_ID = "flowNodeId";
+  public static final String FLOW_NODE_INSTANCE_ID = "flowNodeInstanceId";
+  public static final String JOB_KEY = "jobKey";
+  public static final String ERROR_TYPE = "errorType";
+  public static final String ERROR_MSG = "errorMessage";
   public static final String STATE = "state";
-  public static final String TYPE = "type";
-  public static final String SCOPE_ID = "scopeId";
+  public static final String CREATION_TIME = "creationTime";
 
   @Autowired
   private OperateProperties operateProperties;
@@ -44,36 +44,32 @@ public class ActivityInstanceTemplate extends AbstractTemplateCreator implements
       .startObject(PARTITION_ID)
         .field("type", "integer")
       .endObject()
-      .startObject(POSITION)
-        .field("type", "long")
-      .endObject()
-      .startObject(WORKFLOW_INSTANCE_ID)
-        .field("type", "keyword")
-      .endObject()
       .startObject(KEY)
         .field("type", "long")
       .endObject()
-      .startObject(INCIDENT_KEY)
-        .field("type", "long")
+      .startObject(CREATION_TIME)
+        .field("type", "date")
+        .field("format", operateProperties.getElasticsearch().getDateFormat())
+      .endObject()
+      .startObject(ERROR_MSG)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(ERROR_TYPE)
+        .field("type", "keyword")
       .endObject()
       .startObject(STATE)
+       .field("type", "keyword")
+      .endObject()
+      .startObject(FLOW_NODE_ID)
         .field("type", "keyword")
       .endObject()
-      .startObject(TYPE)
+      .startObject(FLOW_NODE_INSTANCE_ID)
         .field("type", "keyword")
       .endObject()
-      .startObject(ACTIVITY_ID)
-        .field("type", "keyword")
+      .startObject(JOB_KEY)
+        .field("type", "long")
       .endObject()
-      .startObject(START_DATE)
-        .field("type", "date")
-        .field("format", operateProperties.getElasticsearch().getDateFormat())
-      .endObject()
-      .startObject(END_DATE)
-        .field("type", "date")
-        .field("format", operateProperties.getElasticsearch().getDateFormat())
-      .endObject()
-      .startObject(SCOPE_ID)
+      .startObject(WORKFLOW_INSTANCE_ID)
         .field("type", "keyword")
       .endObject();
     return newBuilder;

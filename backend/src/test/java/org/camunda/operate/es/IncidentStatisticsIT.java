@@ -8,11 +8,12 @@ package org.camunda.operate.es;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import org.camunda.operate.entities.IncidentState;
+import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.WorkflowEntity;
-import org.camunda.operate.entities.WorkflowInstanceEntity;
-import org.camunda.operate.entities.WorkflowInstanceState;
+import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.es.reader.WorkflowReader;
 import org.camunda.operate.rest.dto.incidents.IncidentByWorkflowStatisticsDto;
 import org.camunda.operate.rest.dto.incidents.IncidentsByErrorMsgStatisticsDto;
@@ -30,6 +31,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.rest.IncidentRestService.INCIDENT_URL;
+import static org.camunda.operate.util.TestUtil.createActivityInstance;
 import static org.camunda.operate.util.TestUtil.createIncident;
 import static org.camunda.operate.util.TestUtil.createWorkflowInstanceEntity;
 import static org.camunda.operate.util.TestUtil.createWorkflowVersions;
@@ -177,99 +179,104 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
    */
   private void createData() {
     List<WorkflowEntity> workflowVersions = createWorkflowVersions(DEMO_BPMN_PROCESS_ID, DEMO_PROCESS_NAME, 2);
-    elasticsearchTestRule.persist(workflowVersions.toArray(new OperateEntity[workflowVersions.size()]));
+    elasticsearchTestRule.persistNew(workflowVersions.toArray(new OperateEntity[workflowVersions.size()]));
 
-    List<WorkflowInstanceEntity> instances = new ArrayList<>();
+    List<OperateEntity> entities = new ArrayList<>();
 
     //Demo process v1
     String workflowId = workflowVersions.get(0).getId();
     //instance #1
-    WorkflowInstanceEntity workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId);
-    createIncidents(workflowInstance, 1, 1);
-    instances.add(workflowInstance);
+    WorkflowInstanceForListViewEntity workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId);
+    entities.add(workflowInstance);
+    entities.addAll(createIncidents(workflowInstance, 1, 1));
     //instance #2
     workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId);
-    createIncidents(workflowInstance, 1, 1, true);
-    instances.add(workflowInstance);
+    entities.add(workflowInstance);
+    entities.addAll(createIncidents(workflowInstance, 1, 1, true));
     //instance #3
     workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId);
-    createIncidents(workflowInstance, 1, 0);
-    instances.add(workflowInstance);
-    //instances #4,5,6
+    entities.add(workflowInstance);
+    entities.addAll(createIncidents(workflowInstance, 1, 0));
+    //entities #4,5,6
     for (int i = 4; i<=6; i++) {
-      instances.add(createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId));
+      entities.add(createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId));
     }
 
     //Demo process v2
     workflowId = workflowVersions.get(1).getId();
     //instance #1
     workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId);
-    createIncidents(workflowInstance, 2, 0, true);
-    instances.add(workflowInstance);
-    //instances #2-7
+    entities.add(workflowInstance);
+    entities.addAll(createIncidents(workflowInstance, 2, 0, true));
+    //entities #2-7
     for (int i = 2; i<=7; i++) {
-      instances.add(createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId));
+      entities.add(createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId));
     }
-    //instances #8-9
+    //entities #8-9
     for (int i = 8; i<=9; i++) {
-      instances.add(createWorkflowInstanceEntity(WorkflowInstanceState.COMPLETED, workflowId));
+      entities.add(createWorkflowInstanceEntity(WorkflowInstanceState.COMPLETED, workflowId));
     }
 
     workflowVersions = createWorkflowVersions(ORDER_BPMN_PROCESS_ID, ORDER_PROCESS_NAME, 2);
-    elasticsearchTestRule.persist(workflowVersions.toArray(new OperateEntity[workflowVersions.size()]));
+    elasticsearchTestRule.persistNew(workflowVersions.toArray(new OperateEntity[workflowVersions.size()]));
 
     //Order process v1
     workflowId = workflowVersions.get(0).getId();
-    //instances #1-5
+    //entities #1-5
     for (int i = 1; i<=5; i++) {
-      instances.add(createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId));
+      entities.add(createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId));
     }
 
     //Order process v2
     workflowId = workflowVersions.get(1).getId();
     //instance #1
     workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId);
-    createIncidents(workflowInstance, 0, 1);
-    instances.add(workflowInstance);
+    entities.add(workflowInstance);
+    entities.addAll(createIncidents(workflowInstance, 0, 1));
     //instance #2
     workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId);
-    createIncidents(workflowInstance, 2, 0);
-    instances.add(workflowInstance);
-    //instances #3,4
+    entities.add(workflowInstance);
+    entities.addAll(createIncidents(workflowInstance, 2, 0));
+    //entities #3,4
     for (int i = 3; i<=4; i++) {
-      instances.add(createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId));
+      entities.add(createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId));
     }
 
     //Loan process v1
     workflowVersions = createWorkflowVersions("loanProcess", "Loan process", 1);
-    elasticsearchTestRule.persist(workflowVersions.get(0));
+    elasticsearchTestRule.persistNew(workflowVersions.get(0));
     workflowId = workflowVersions.get(0).getId();
-    //instances #1-3
+    //entities #1-3
     for (int i = 1; i<=3; i++) {
       workflowInstance = createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId);
-      createIncidents(workflowInstance, 0, 2);
-      instances.add(workflowInstance);
+      entities.add(workflowInstance);
+      entities.addAll(createIncidents(workflowInstance, 0, 2));
     }
-    //instances #4-5
+    //entities #4-5
     for (int i = 4; i<=5; i++) {
-      instances.add(createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId));
+      entities.add(createWorkflowInstanceEntity(WorkflowInstanceState.ACTIVE, workflowId));
     }
 
-    elasticsearchTestRule.persist(instances.toArray(new OperateEntity[instances.size()]));
+    elasticsearchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
   }
 
-  private void createIncidents(WorkflowInstanceEntity workflowInstance, int activeIncidentsCount, int resolvedIncidentsCount) {
-    createIncidents(workflowInstance, activeIncidentsCount, resolvedIncidentsCount, false);
+  private List<OperateEntity> createIncidents(WorkflowInstanceForListViewEntity workflowInstance, int activeIncidentsCount, int resolvedIncidentsCount) {
+    return createIncidents(workflowInstance, activeIncidentsCount, resolvedIncidentsCount, false);
   }
 
-  private void createIncidents(WorkflowInstanceEntity workflowInstance, int activeIncidentsCount, int resolvedIncidentsCount,
+  private List<OperateEntity> createIncidents(WorkflowInstanceForListViewEntity workflowInstance, int activeIncidentsCount, int resolvedIncidentsCount,
     boolean withOtherMsg) {
+    List<OperateEntity> entities = new ArrayList<>();
     for (int i = 0; i < activeIncidentsCount; i++) {
-      workflowInstance.getIncidents().add(createIncident(IncidentState.ACTIVE, withOtherMsg ? ERRMSG_OTHER : null));
+      final ActivityInstanceForListViewEntity activityInstance = createActivityInstance(workflowInstance.getId(), ActivityState.ACTIVE);
+      createIncident(activityInstance, withOtherMsg ? ERRMSG_OTHER : null, null);
+      entities.add(activityInstance);
     }
     for (int i = 0; i < resolvedIncidentsCount; i++) {
-      workflowInstance.getIncidents().add(createIncident(IncidentState.RESOLVED, ERRMSG_OTHER));
+      final ActivityInstanceForListViewEntity activityInstance = createActivityInstance(workflowInstance.getId(), ActivityState.ACTIVE);
+      entities.add(activityInstance);
     }
+    return entities;
   }
 
 }

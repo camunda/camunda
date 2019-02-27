@@ -11,7 +11,8 @@ import java.util.function.Predicate;
 import org.apache.http.HttpStatus;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate;
+import org.camunda.operate.es.schema.templates.IncidentTemplate;
+import org.camunda.operate.es.schema.templates.OperationTemplate;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.OperationDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceBatchOperationDto;
@@ -28,6 +29,7 @@ import org.camunda.operate.zeebe.operation.OperationExecutor;
 import org.camunda.operate.zeebe.operation.UpdateRetriesHandler;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
@@ -114,31 +116,32 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     //when
     final ListViewQueryDto allRunningQuery = createAllRunningQuery();
-    postOperationWithOKResponse(allRunningQuery, OperationType.UPDATE_RETRIES);
+    postOperationWithOKResponse(allRunningQuery, OperationType.UPDATE_JOB_RETRIES);
 
     //then
     ListViewResponseDto response = getWorkflowInstances(allRunningQuery);
 
     assertThat(response.getWorkflowInstances()).hasSize(instanceCount);
     assertThat(response.getWorkflowInstances()).allMatch(wi -> wi.isHasActiveOperation() == true);
-    assertThat(response.getWorkflowInstances()).flatExtracting("operations").extracting(WorkflowInstanceTemplate.TYPE).containsOnly(OperationType.UPDATE_RETRIES);
-    assertThat(response.getWorkflowInstances()).flatExtracting("operations").extracting(WorkflowInstanceTemplate.STATE).containsOnly(
+    assertThat(response.getWorkflowInstances()).flatExtracting("operations").extracting(OperationTemplate.TYPE).containsOnly(OperationType.UPDATE_JOB_RETRIES);
+    assertThat(response.getWorkflowInstances()).flatExtracting("operations").extracting(OperationTemplate.STATE).containsOnly(
       OperationState.SCHEDULED);
-    assertThat(response.getWorkflowInstances()).flatExtracting("operations").extracting(WorkflowInstanceTemplate.START_DATE).doesNotContainNull();
-    assertThat(response.getWorkflowInstances()).flatExtracting("operations").extracting(WorkflowInstanceTemplate.END_DATE).containsOnlyNulls();
+    assertThat(response.getWorkflowInstances()).flatExtracting("operations").extracting(OperationTemplate.START_DATE).doesNotContainNull();
+    assertThat(response.getWorkflowInstances()).flatExtracting("operations").extracting(OperationTemplate.END_DATE).containsOnlyNulls();
   }
 
   @Test
+  @Ignore("OPE-436")
   public void testUpdateRetriesExecutedOnOneInstance() throws Exception {
     // given
     final long workflowInstanceKey = startDemoWorkflowInstance();
     failTaskWithNoRetriesLeft("taskA", workflowInstanceKey, "Some error");
 
     //when
-    //we call UPDATE_RETRIES operation on instance
+    //we call UPDATE_JOB_RETRIES operation on instance
     final ListViewQueryDto workflowInstanceQuery = createAllRunningQuery();
     workflowInstanceQuery.setIds(Collections.singletonList(IdTestUtil.getId(workflowInstanceKey)));
-    postOperationWithOKResponse(workflowInstanceQuery, OperationType.UPDATE_RETRIES);
+    postOperationWithOKResponse(workflowInstanceQuery, OperationType.UPDATE_JOB_RETRIES);
 
     //and execute the operation
     operationExecutor.executeOneBatch();
@@ -151,7 +154,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(workflowInstances.getWorkflowInstances().get(0).isHasActiveOperation()).isEqualTo(true);
     assertThat(workflowInstances.getWorkflowInstances().get(0).getOperations()).hasSize(1);
     OperationDto operation = workflowInstances.getWorkflowInstances().get(0).getOperations().get(0);
-    assertThat(operation.getType()).isEqualTo(OperationType.UPDATE_RETRIES);
+    assertThat(operation.getType()).isEqualTo(OperationType.UPDATE_JOB_RETRIES);
     assertThat(operation.getState()).isEqualTo(OperationState.SENT);
     assertThat(operation.getStartDate()).isNotNull();
     assertThat(operation.getEndDate()).isNull();
@@ -163,7 +166,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(workflowInstances.getWorkflowInstances().get(0).isHasActiveOperation()).isEqualTo(false);
     assertThat(workflowInstances.getWorkflowInstances().get(0).getOperations()).hasSize(1);
     operation = workflowInstances.getWorkflowInstances().get(0).getOperations().get(0);
-    assertThat(operation.getType()).isEqualTo(OperationType.UPDATE_RETRIES);
+    assertThat(operation.getType()).isEqualTo(OperationType.UPDATE_JOB_RETRIES);
     assertThat(operation.getState()).isEqualTo(OperationState.COMPLETED);
     assertThat(operation.getStartDate()).isNotNull();
     assertThat(operation.getEndDate()).isNotNull();
@@ -177,10 +180,10 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     final long workflowInstanceKey = startDemoWorkflowInstance();
 
     //when
-    //we call CANCEL operation on instance
+    //we call CANCEL_WORKFLOW_INSTANCE operation on instance
     final ListViewQueryDto workflowInstanceQuery = createAllQuery();
     workflowInstanceQuery.setIds(Collections.singletonList(IdTestUtil.getId(workflowInstanceKey)));
-    postOperationWithOKResponse(workflowInstanceQuery, OperationType.CANCEL);
+    postOperationWithOKResponse(workflowInstanceQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);
 
     //and execute the operation
     operationExecutor.executeOneBatch();
@@ -194,7 +197,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(workflowInstances.getWorkflowInstances().get(0).isHasActiveOperation()).isEqualTo(true);
     assertThat(workflowInstances.getWorkflowInstances().get(0).getOperations()).hasSize(1);
     OperationDto operation = workflowInstances.getWorkflowInstances().get(0).getOperations().get(0);
-    assertThat(operation.getType()).isEqualTo(OperationType.CANCEL);
+    assertThat(operation.getType()).isEqualTo(OperationType.CANCEL_WORKFLOW_INSTANCE);
     assertThat(operation.getState()).isEqualTo(OperationState.SENT);
     assertThat(operation.getStartDate()).isNotNull();
     assertThat(operation.getEndDate()).isNull();
@@ -207,7 +210,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(workflowInstances.getWorkflowInstances().get(0).isHasActiveOperation()).isEqualTo(false);
     assertThat(workflowInstances.getWorkflowInstances().get(0).getOperations()).hasSize(1);
     operation = workflowInstances.getWorkflowInstances().get(0).getOperations().get(0);
-    assertThat(operation.getType()).isEqualTo(OperationType.CANCEL);
+    assertThat(operation.getType()).isEqualTo(OperationType.CANCEL_WORKFLOW_INSTANCE);
     assertThat(operation.getState()).isEqualTo(OperationState.COMPLETED);
     assertThat(operation.getStartDate()).isNotNull();
     assertThat(operation.getEndDate()).isNotNull();
@@ -216,16 +219,17 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
+  @Ignore("OPE-436")
   public void testTwoOperationsOnOneInstance() throws Exception {
     // given
     final long workflowInstanceId = startDemoWorkflowInstance();
     failTaskWithNoRetriesLeft("taskA", workflowInstanceId, "Some error");
 
-    //when we call UPDATE_RETRIES operation two times on one instance
+    //when we call UPDATE_JOB_RETRIES operation two times on one instance
     final ListViewQueryDto workflowInstanceQuery = createAllRunningQuery();
     workflowInstanceQuery.setIds(Collections.singletonList(IdTestUtil.getId(workflowInstanceId)));
-    postOperationWithOKResponse(workflowInstanceQuery, OperationType.UPDATE_RETRIES);  //#1
-    postOperationWithOKResponse(workflowInstanceQuery, OperationType.UPDATE_RETRIES);  //#2
+    postOperationWithOKResponse(workflowInstanceQuery, OperationType.UPDATE_JOB_RETRIES);  //#1
+    postOperationWithOKResponse(workflowInstanceQuery, OperationType.UPDATE_JOB_RETRIES);  //#2
 
     //and execute the operation
     operationExecutor.executeOneBatch();
@@ -245,16 +249,17 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
+  @Ignore("OPE-436")
   public void testTwoDifferentOperationsOnOneInstance() throws Exception {
     // given
     final long workflowInstanceKey = startDemoWorkflowInstance();
     failTaskWithNoRetriesLeft("taskA", workflowInstanceKey, "Some error");
 
-    //when we call CANCEL and then UPDATE_RETRIES operation on one instance
+    //when we call CANCEL_WORKFLOW_INSTANCE and then UPDATE_JOB_RETRIES operation on one instance
     final ListViewQueryDto workflowInstanceQuery = createAllQuery();
     workflowInstanceQuery.setIds(Collections.singletonList(IdTestUtil.getId(workflowInstanceKey)));
-    postOperationWithOKResponse(workflowInstanceQuery, OperationType.CANCEL);  //#1
-    postOperationWithOKResponse(workflowInstanceQuery, OperationType.UPDATE_RETRIES);  //#2
+    postOperationWithOKResponse(workflowInstanceQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);  //#1
+    postOperationWithOKResponse(workflowInstanceQuery, OperationType.UPDATE_JOB_RETRIES);  //#2
 
     //and execute the operation
     operationExecutor.executeOneBatch();
@@ -270,21 +275,22 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     final List<OperationDto> operations = workflowInstances.getWorkflowInstances().get(0).getOperations();
     assertThat(operations).hasSize(2);
     assertThat(operations).filteredOn(op -> op.getState().equals(OperationState.COMPLETED)).hasSize(1)
-        .anyMatch(op -> op.getType().equals(OperationType.CANCEL));
+        .anyMatch(op -> op.getType().equals(OperationType.CANCEL_WORKFLOW_INSTANCE));
     assertThat(operations).filteredOn(op -> op.getState().equals(OperationState.FAILED)).hasSize(1)
-      .anyMatch(op -> op.getType().equals(OperationType.UPDATE_RETRIES));
+      .anyMatch(op -> op.getType().equals(OperationType.UPDATE_JOB_RETRIES));
   }
 
   @Test
+  @Ignore("OPE-436")
   public void testFailUpdateRetriesBecauseOfNoIncidents() throws Exception {
     // given
     final long workflowInstanceKey = startDemoWorkflowInstance();
 
     //when
-    //we call UPDATE_RETRIES operation on instance
+    //we call UPDATE_JOB_RETRIES operation on instance
     final ListViewQueryDto workflowInstanceQuery = createAllRunningQuery();
     workflowInstanceQuery.setIds(Collections.singletonList(IdTestUtil.getId(workflowInstanceKey)));
-    postOperationWithOKResponse(workflowInstanceQuery, OperationType.UPDATE_RETRIES);
+    postOperationWithOKResponse(workflowInstanceQuery, OperationType.UPDATE_JOB_RETRIES);
 
     //and execute the operation
     operationExecutor.executeOneBatch();
@@ -310,10 +316,10 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.processAllEvents(10);
 
     //when
-    //we call CANCEL operation on instance
+    //we call CANCEL_WORKFLOW_INSTANCE operation on instance
     final ListViewQueryDto workflowInstanceQuery = createAllQuery();
     workflowInstanceQuery.setIds(Collections.singletonList(IdTestUtil.getId(workflowInstanceKey)));
-    postOperationWithOKResponse(workflowInstanceQuery, OperationType.CANCEL);
+    postOperationWithOKResponse(workflowInstanceQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);
 
     //and execute the operation
     operationExecutor.executeOneBatch();
@@ -346,10 +352,10 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //when
-    //we call CANCEL operation on instance
+    //we call CANCEL_WORKFLOW_INSTANCE operation on instance
     final ListViewQueryDto workflowInstanceQuery = createAllQuery();
     workflowInstanceQuery.setIds(Collections.singletonList(IdTestUtil.getId(workflowInstanceKey)));
-    postOperationWithOKResponse(workflowInstanceQuery, OperationType.CANCEL);
+    postOperationWithOKResponse(workflowInstanceQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);
 
     //and execute the operation
     operationExecutor.executeOneBatch();
@@ -378,7 +384,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     }
 
     //when
-    final MvcResult mvcResult = postOperation(createAllRunningQuery(), OperationType.UPDATE_RETRIES, HttpStatus.SC_BAD_REQUEST);
+    final MvcResult mvcResult = postOperation(createAllRunningQuery(), OperationType.UPDATE_JOB_RETRIES, HttpStatus.SC_BAD_REQUEST);
 
     final String expectedErrorMsg = String
       .format("Too many workflow instances are selected for batch operation. Maximum possible amount: %s", operateProperties.getBatchOperationMaxSize());

@@ -14,6 +14,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class OperationTemplate extends AbstractTemplateCreator implements WorkflowInstanceDependant {
 
+  public static final String INDEX_NAME = "operation";
+
   public static final String ID = "id";
   public static final String TYPE = "type";
   public static final String START_DATE = "startDate";
@@ -27,8 +29,8 @@ public class OperationTemplate extends AbstractTemplateCreator implements Workfl
   private OperateProperties operateProperties;
 
   @Override
-  public String getMainIndexName() {
-    return operateProperties.getElasticsearch().getOperationIndexName();
+  protected String getIndexNameFormat() {
+    return INDEX_NAME;
   }
 
   @Override

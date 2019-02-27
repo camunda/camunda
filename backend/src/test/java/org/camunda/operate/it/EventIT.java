@@ -11,15 +11,12 @@ import java.util.function.Predicate;
 import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.EventSourceType;
 import org.camunda.operate.entities.EventType;
-import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.es.reader.EventReader;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.rest.dto.EventQueryDto;
-import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.util.IdTestUtil;
 import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
-import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -86,10 +83,11 @@ public class EventIT extends OperateZeebeIntegrationTest {
     //create an incident
     final Long jobKey = failTaskWithNoRetriesLeft(taskA, workflowInstanceKey, errorMessage);
 
-    //update retries to delete the incident
-    final WorkflowInstanceEntity workflowInstanceById = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
-    ZeebeTestUtil.resolveIncident(super.getClient(), jobKey, workflowInstanceById.getIncidents().get(0).getKey());
-    elasticsearchTestRule.processAllEvents(10);
+    //TODO
+//    //update retries to delete the incident
+//    final WorkflowInstanceEntity workflowInstanceById = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
+//    ZeebeTestUtil.resolveIncident(super.getClient(), jobKey, workflowInstanceById.getIncidents().get(0).getKey());
+//    elasticsearchTestRule.processAllEvents(10);
 
     //complete task A
     String taskAPayload = "{\"goToTaskC\":true}";

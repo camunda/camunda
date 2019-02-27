@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.Set;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
-import org.camunda.operate.entities.WorkflowInstanceState;
+import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
@@ -186,6 +186,7 @@ public class ListViewZeebeRecordProcessor {
   private UpdateRequestBuilder persistWorkflowInstance(Record record, String intentStr, WorkflowInstanceRecordValueImpl recordValue) throws PersistenceException {
     WorkflowInstanceForListViewEntity wiEntity = new WorkflowInstanceForListViewEntity();
     wiEntity.setId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
+    wiEntity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
     wiEntity.setKey(recordValue.getWorkflowInstanceKey());
     wiEntity.setPartitionId(record.getMetadata().getPartitionId());
     wiEntity.setWorkflowId(String.valueOf(recordValue.getWorkflowKey()));

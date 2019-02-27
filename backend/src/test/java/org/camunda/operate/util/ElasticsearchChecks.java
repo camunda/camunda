@@ -9,11 +9,10 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.camunda.operate.entities.ActivityState;
-import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.WorkflowEntity;
-import org.camunda.operate.entities.WorkflowInstanceEntity;
-import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.entities.detailview.ActivityInstanceForDetailViewEntity;
+import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.es.reader.DetailViewReader;
 import org.camunda.operate.es.reader.ListViewReader;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
@@ -136,12 +135,8 @@ public class ElasticsearchChecks {
       assertThat(objects[0]).isInstanceOf(Long.class);
       String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
       try {
-        final WorkflowInstanceEntity instance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
-        if (instance.getIncidents().size() == 0) {
-          return false;
-        } else {
-          return instance.getIncidents().get(0).getState().equals(IncidentState.ACTIVE);
-        }
+        final List<ActivityInstanceForDetailViewEntity> allActivityInstances = detailViewReader.getAllActivityInstances(workflowInstanceId);
+        return allActivityInstances.stream().anyMatch(ai -> ai.getIncidentKey() != null);
       } catch (NotFoundException ex) {
         return false;
       }
@@ -155,12 +150,8 @@ public class ElasticsearchChecks {
       assertThat(objects[0]).isInstanceOf(Long.class);
       String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
       try {
-        final WorkflowInstanceEntity instance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
-        if (instance.getIncidents().size() == 0) {
-          return false;
-        } else {
-          return instance.getIncidents().get(0).getState().equals(IncidentState.RESOLVED);
-        }
+        final List<ActivityInstanceForDetailViewEntity> allActivityInstances = detailViewReader.getAllActivityInstances(workflowInstanceId);
+        return allActivityInstances.stream().noneMatch(ai -> ai.getIncidentKey() != null);
       } catch (NotFoundException ex) {
         return false;
       }
@@ -174,7 +165,7 @@ public class ElasticsearchChecks {
       assertThat(objects[0]).isInstanceOf(Long.class);
       String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
       try {
-        final WorkflowInstanceEntity instance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
+        final WorkflowInstanceForListViewEntity instance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
         return instance.getState().equals(WorkflowInstanceState.CANCELED);
       } catch (NotFoundException ex) {
         return false;
@@ -189,7 +180,7 @@ public class ElasticsearchChecks {
       assertThat(objects[0]).isInstanceOf(Long.class);
       String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
       try {
-        final WorkflowInstanceEntity instance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
+        final WorkflowInstanceForListViewEntity instance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
         return true;
       } catch (NotFoundException ex) {
         return false;
@@ -204,7 +195,7 @@ public class ElasticsearchChecks {
       assertThat(objects[0]).isInstanceOf(Long.class);
       String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
       try {
-        final WorkflowInstanceEntity instance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
+        final WorkflowInstanceForListViewEntity instance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
         return instance.getState().equals(WorkflowInstanceState.COMPLETED);
       } catch (NotFoundException ex) {
         return false;

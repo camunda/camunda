@@ -7,17 +7,15 @@ package org.camunda.operate.es.reader;
 
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.OperationEntity;
-import org.camunda.operate.entities.WorkflowInstanceState;
+import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.property.OperateProperties;
@@ -31,7 +29,6 @@ import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.ExistsQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -42,7 +39,6 @@ import org.elasticsearch.join.aggregations.Children;
 import org.elasticsearch.join.aggregations.ChildrenAggregationBuilder;
 import org.elasticsearch.join.aggregations.Parent;
 import org.elasticsearch.join.query.HasChildQueryBuilder;
-import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.sort.SortOrder;
@@ -537,12 +533,12 @@ public class ListViewReader {
     final QueryBuilder q = constantScoreQuery(createQueryFragment(query));
 
     final String activities = "activities";
-    final String activeActivitiesAggName = "active_activities";
+    final String incidentActivitiesAggName = "incident_activities";
     final String uniqueActivitiesAggName = "unique_activities";
     final String activityToWorkflowAggName = "activity_to_workflow";
     final ChildrenAggregationBuilder agg =
       children(activities, ListViewTemplate.ACTIVITIES_JOIN_RELATION)
-        .subAggregation(filter(activeActivitiesAggName, existsQuery(INCIDENT_KEY))
+        .subAggregation(filter(incidentActivitiesAggName, existsQuery(INCIDENT_KEY))
           .subAggregation(terms(uniqueActivitiesAggName).field(ACTIVITY_ID)
               .size(operateProperties.getElasticsearch().getTerms().getMaxFlowNodesInOneWorkflow())
              .subAggregation(parent(activityToWorkflowAggName, ACTIVITIES_JOIN_RELATION))    //we need this to count workflow instances, not the activity instances
@@ -561,7 +557,7 @@ public class ListViewReader {
     ((Terms)
       ((Filter)
         ((Children)(searchResponse.getAggregations().get(activities)))
-          .getAggregations().get(activeActivitiesAggName))
+          .getAggregations().get(incidentActivitiesAggName))
       .getAggregations().get(uniqueActivitiesAggName))
     .getBuckets().stream().forEach(b -> {
       String activityId = b.getKeyAsString();

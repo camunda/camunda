@@ -5,18 +5,12 @@
  */
 package org.camunda.operate.zeebeimport.transformers;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.OperateZeebeEntity;
-import org.camunda.operate.entities.SequenceFlowEntity;
-import org.camunda.operate.entities.WorkflowInstanceEntity;
-import org.camunda.operate.entities.WorkflowInstanceState;
-import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.zeebe.payload.PayloadUtil;
 import org.camunda.operate.zeebeimport.cache.WorkflowCache;
@@ -26,7 +20,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import io.zeebe.exporter.record.Record;
-import io.zeebe.protocol.BpmnElementType;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
@@ -78,38 +71,8 @@ public class WorkflowInstanceRecordTransformer implements AbstractRecordTransfor
       }
     }
 
-    WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
-
-    if (STATES_TO_LOAD.contains(intentStr) && isProcessEvent(recordValue.getBpmnElementType())
-      //we also need 2 activity events to record payload
-      || intentStr.equals(ELEMENT_ACTIVATED.name()) || intentStr.equals(ELEMENT_COMPLETED.name())) {
-      entitiesToPersist.add(convertWorkflowInstanceRecord(record));
-    }
-
-    if (intentStr.equals(SEQUENCE_FLOW_TAKEN.name())) {
-      entitiesToPersist.add(convertSequenceFlowTakenEvent(record));
-    }
-
     return entitiesToPersist;
 
-  }
-
-  private boolean isProcessEvent(BpmnElementType bpmnElementType) {
-    if (bpmnElementType == null) {
-      return false;
-    }
-    return bpmnElementType.equals(BpmnElementType.PROCESS);
-  }
-
-  private OperateZeebeEntity convertSequenceFlowTakenEvent(Record record) {
-    SequenceFlowEntity sequenceFlow = new SequenceFlowEntity();
-    sequenceFlow.setId(IdUtil.getId(record));
-    sequenceFlow.setKey(record.getKey());
-    sequenceFlow.setPartitionId(record.getMetadata().getPartitionId());
-    WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
-    sequenceFlow.setActivityId(recordValue.getElementId());
-    sequenceFlow.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
-    return sequenceFlow;
   }
 
   private OperateZeebeEntity convertEvent(Record record) {
@@ -139,58 +102,6 @@ public class WorkflowInstanceRecordTransformer implements AbstractRecordTransfor
       return eventEntity;
     }
     return null;
-  }
-
-  private OperateZeebeEntity convertWorkflowInstanceRecord(Record record) {
-//TODO    logger.debug(record.toJson());
-
-    WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
-
-    WorkflowInstanceEntity entity = new WorkflowInstanceEntity();
-    entity.setId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
-    entity.setKey(recordValue.getWorkflowInstanceKey());
-    entity.setPartitionId(record.getMetadata().getPartitionId());
-    entity.setWorkflowId(String.valueOf(recordValue.getWorkflowKey()));
-    entity.setBpmnProcessId(recordValue.getBpmnProcessId());
-
-    final String intentStr = record.getMetadata().getIntent().name();
-    if (FINISH_STATES.contains(intentStr) && isProcessEvent(recordValue.getBpmnElementType())) {
-      entity.setEndDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
-      if (intentStr.equals(ELEMENT_TERMINATED.name())) {
-        entity.setState(WorkflowInstanceState.CANCELED);
-      } else {
-        entity.setState(WorkflowInstanceState.COMPLETED);
-      }
-    } else if (START_STATES.equals(intentStr) && isProcessEvent(recordValue.getBpmnElementType())){
-      entity.setState(WorkflowInstanceState.ACTIVE);
-      entity.setStartDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
-    } else {
-      entity.setState(WorkflowInstanceState.ACTIVE);
-    }
-
-    //find out workflow name and version
-    entity.setWorkflowName(workflowCache.getWorkflowName(entity.getWorkflowId(), recordValue.getBpmnProcessId()));
-    entity.setWorkflowVersion(workflowCache.getWorkflowVersion(entity.getWorkflowId(), recordValue.getBpmnProcessId()));
-
-    processPayload(recordValue.getPayload(), entity);
-
-    return entity;
-  }
-
-  private void processPayload(String payload, WorkflowInstanceEntity entity) {
-    try {
-      final Map<String, Object> variablesMap = payloadUtil.parsePayload(payload);
-      entity.setStringVariables(payloadUtil.extractStringVariables(variablesMap));
-      entity.setLongVariables(payloadUtil.extractLongVariables(variablesMap));
-      entity.setDoubleVariables(payloadUtil.extractDoubleVariables(variablesMap));
-      entity.setBooleanVariables(payloadUtil.extractBooleanVariables(variablesMap));
-      //validate number of parsed variables
-      if (entity.countVariables() < variablesMap.size()) {
-        logger.warn("Not all variables were parsed from payload for workflow instance {}.", entity.getId());
-      }
-    } catch (IOException e) {
-      logger.warn(String.format("Unable to parse payload for workflow instance %s.", entity.getId()), e);
-    }
   }
 
 }

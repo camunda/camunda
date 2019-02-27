@@ -43,36 +43,8 @@ public class IncidentEventTransformer implements AbstractRecordTransformer {
     final String intentStr = record.getMetadata().getIntent().name();
 
     if (EVENTS.contains(intentStr)) {
-
       //      logger.debug(event.toJson());
       result.add(convertEvent(record));
-
-      IncidentEntity incidentEntity = new IncidentEntity();
-
-      IncidentRecordValueImpl recordValue = (IncidentRecordValueImpl)record.getValue();
-
-      incidentEntity.setId(IdUtil.getId(record));
-      incidentEntity.setKey(record.getKey());
-      incidentEntity.setPartitionId(record.getMetadata().getPartitionId());
-      incidentEntity.setErrorType(recordValue.getErrorType());
-      incidentEntity.setErrorMessage(recordValue.getErrorMessage());
-      incidentEntity.setActivityId(recordValue.getElementId());
-      if (recordValue.getElementInstanceKey() > 0) {
-        incidentEntity.setActivityInstanceId(IdUtil.getId(recordValue.getElementInstanceKey(), record));
-      }
-      if (recordValue.getJobKey() > 0) {
-        incidentEntity.setJobId(recordValue.getJobKey());
-      }
-      if (recordValue.getWorkflowInstanceKey() > 0) {
-        incidentEntity.setWorkflowInstanceId(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record));
-      }
-
-      org.camunda.operate.entities.IncidentState incidentState = fromZeebeIncidentIntent(intentStr);
-
-      incidentEntity.setState(incidentState);
-
-      result.add(incidentEntity);
-
     }
     return result;
   }

@@ -5,9 +5,11 @@
  */
 package org.camunda.operate.zeebe.operation;
 
+import org.camunda.operate.entities.OperateEntity;
+import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.entities.WorkflowInstanceEntity;
-import org.camunda.operate.entities.WorkflowInstanceState;
+import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.slf4j.Logger;
@@ -32,30 +34,32 @@ public class CancelWorkflowInstanceHandler extends AbstractOperationHandler impl
   private ZeebeClient zeebeClient;
 
   @Override
-  public void handle(String workflowInstanceId) throws PersistenceException {
-    final WorkflowInstanceEntity workflowInstance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
+  public void handle(OperationEntity operation) throws PersistenceException {
+    if (operation.getWorkflowInstanceId() == null) {
+      failOperation(operation, "No workflow instance id is provided.");
+    }
+    final WorkflowInstanceForListViewEntity workflowInstance = workflowInstanceReader.getWorkflowInstanceById(operation.getWorkflowInstanceId());
 
     if (!workflowInstance.getState().equals(WorkflowInstanceState.ACTIVE) && !workflowInstance.getState().equals(WorkflowInstanceState.INCIDENT)) {
       //fail operation
-      failOperationsOfCurrentType(workflowInstance, String.format("Unable to cancel %s workflow instance. Instance must be in ACTIVE or INCIDENT state.", workflowInstance.getState()));
+      failOperation(operation, String.format("Unable to cancel %s workflow instance. Instance must be in ACTIVE or INCIDENT state.", workflowInstance.getState()));
       return;
     }
 
     try {
       zeebeClient.newCancelInstanceCommand(workflowInstance.getKey()).send().join();
       //mark operation as sent
-      markAsSentOperationsOfCurrentType(workflowInstance);
+      markAsSent(operation);
     } catch (ClientException ex) {
       logger.error("Zeebe command rejected: " + ex.getMessage(), ex);
       //fail operation
-      failOperationsOfCurrentType(workflowInstance, ex.getMessage());
+      failOperation(operation, ex.getMessage());
     }
-
 
   }
 
   @Override
   public OperationType getType() {
-    return OperationType.CANCEL;
+    return OperationType.CANCEL_WORKFLOW_INSTANCE;
   }
 }

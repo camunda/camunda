@@ -12,10 +12,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ListViewTemplate extends AbstractTemplateCreator implements WorkflowInstanceDependant{
+public class ListViewTemplate extends AbstractTemplateCreator {
+
+  public static final String INDEX_NAME = "list-view";
 
   public static final String ID = "id";
   public static final String KEY = "key";
+  public static final String WORKFLOW_INSTANCE_ID = "workflowInstanceId";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String WORKFLOW_VERSION = "workflowVersion";
   public static final String WORKFLOW_ID = "workflowId";
@@ -40,8 +43,8 @@ public class ListViewTemplate extends AbstractTemplateCreator implements Workflo
   private OperateProperties operateProperties;
 
   @Override
-  public String getMainIndexName() {
-    return operateProperties.getElasticsearch().getListViewIndexName();
+  protected String getIndexNameFormat() {
+    return INDEX_NAME;
   }
 
   @Override

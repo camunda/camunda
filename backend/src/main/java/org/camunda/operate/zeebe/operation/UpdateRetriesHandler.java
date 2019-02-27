@@ -9,8 +9,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
+import org.camunda.operate.entities.OperateEntity;
+import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.slf4j.Logger;
@@ -35,37 +36,37 @@ public class UpdateRetriesHandler extends AbstractOperationHandler implements Op
   private ZeebeClient zeebeClient;
 
   @Override
-  public void handle(String workflowInstanceId) throws PersistenceException {
-    //TODO may be we should read instance from list view here?
-    final WorkflowInstanceEntity workflowInstance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
-
-    List<IncidentEntity> incidentsToResolve =
-      workflowInstance.getIncidents().stream()
-        .filter(inc -> inc.getState().equals(IncidentState.ACTIVE) && inc.getErrorType().equals(IncidentEntity.JOB_NO_RETRIES_ERROR_TYPE))
-        .collect(Collectors.toList());
-
-    if (incidentsToResolve.size() == 0) {
-      //fail operation
-      failOperationsOfCurrentType(workflowInstance, "No appropriate incidents found.");
-    }
-
-    for (IncidentEntity incident : incidentsToResolve) {
-      try {
-        zeebeClient.newUpdateRetriesCommand(incident.getJobId()).retries(1).send().join();
-        zeebeClient.newResolveIncidentCommand(incident.getKey()).send().join();
-        //mark operation as sent
-        markAsSentOperationsOfCurrentType(workflowInstance);
-      } catch (ClientException ex) {
-        logger.error("Zeebe command rejected: " + ex.getMessage(), ex);
-        //fail operation
-        failOperationsOfCurrentType(workflowInstance, ex.getMessage());
-      }
-    }
+  public void handle(OperationEntity operation) throws PersistenceException {
+    //FIXME
+//    final WorkflowInstanceEntity workflowInstance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
+//
+//    List<IncidentEntity> incidentsToResolve =
+//      workflowInstance.getIncidents().stream()
+//        .filter(inc -> inc.getState().equals(IncidentState.ACTIVE) && inc.getErrorType().equals(IncidentEntity.JOB_NO_RETRIES_ERROR_TYPE))
+//        .collect(Collectors.toList());
+//
+//    if (incidentsToResolve.size() == 0) {
+//      //fail operation
+//      failOperationsOfCurrentType(workflowInstance, "No appropriate incidents found.");
+//    }
+//
+//    for (IncidentEntity incident : incidentsToResolve) {
+//      try {
+//        zeebeClient.newUpdateRetriesCommand(incident.getJobKey()).retries(1).send().join();
+//        zeebeClient.newResolveIncidentCommand(incident.getKey()).send().join();
+//        //mark operation as sent
+//        markAsSentOperationsOfCurrentType(workflowInstance);
+//      } catch (ClientException ex) {
+//        logger.error("Zeebe command rejected: " + ex.getMessage(), ex);
+//        //fail operation
+//        failOperationsOfCurrentType(workflowInstance, ex.getMessage());
+//      }
+//    }
 
   }
 
   @Override
   public OperationType getType() {
-    return OperationType.UPDATE_RETRIES;
+    return OperationType.UPDATE_JOB_RETRIES;
   }
 }

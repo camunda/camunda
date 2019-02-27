@@ -12,8 +12,8 @@ import java.util.stream.Collectors;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
-import org.camunda.operate.entities.WorkflowInstanceEntity;
-import org.camunda.operate.entities.WorkflowInstanceState;
+import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.es.reader.DetailViewReader;
 import org.camunda.operate.es.reader.ListViewReader;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
@@ -112,7 +112,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     processAllEvents(2, ZeebeESImporter.ImportValueType.DEPLOYMENT);
 
     //then
-    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
+    final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
     assertThat(workflowInstanceEntity.getWorkflowId()).isEqualTo(workflowId);
     assertThat(workflowInstanceEntity.getWorkflowName()).isEqualTo("Demo process");
     assertThat(workflowInstanceEntity.getWorkflowVersion()).isEqualTo(1);
@@ -139,7 +139,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     processAllEvents(8, ZeebeESImporter.ImportValueType.WORKFLOW_INSTANCE);
 
     //then
-    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
+    final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
     assertThat(workflowInstanceEntity.getWorkflowId()).isEqualTo(workflowId);
     assertThat(workflowInstanceEntity.getWorkflowName()).isEqualTo("Demo process");
     assertThat(workflowInstanceEntity.getWorkflowVersion()).isEqualTo(1);
@@ -150,12 +150,13 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     assertThat(workflowInstanceEntity.getStartDate()).isAfterOrEqualTo(testStartTime);
     assertThat(workflowInstanceEntity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
 
-    assertThat(workflowInstanceEntity.getIncidents().size()).isEqualTo(1);
-    IncidentEntity incidentEntity = workflowInstanceEntity.getIncidents().get(0);
-    assertThat(incidentEntity.getActivityId()).isEqualTo(activityId);
-    assertThat(incidentEntity.getActivityInstanceId()).isNotEmpty();
+    final List<IncidentEntity> allIncidents = detailViewReader.getAllIncidents(IdTestUtil.getId(workflowInstanceKey));
+    assertThat(allIncidents).hasSize(1);
+    IncidentEntity incidentEntity = allIncidents.get(0);
+    assertThat(incidentEntity.getFlowNodeId()).isEqualTo(activityId);
+    assertThat(incidentEntity.getFlowNodeInstanceId()).isNotEmpty();
     assertThat(incidentEntity.getErrorMessage()).isNotEmpty();
-    assertThat(incidentEntity.getErrorType()).isNotEmpty();
+    assertThat(incidentEntity.getErrorType()).isNotNull();
     assertThat(incidentEntity.getState()).isEqualTo(IncidentState.ACTIVE);
 
     //assert list view data
@@ -257,10 +258,8 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     processAllEvents(2, ZeebeESImporter.ImportValueType.INCIDENT);
 
     //then
-    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
-    assertThat(workflowInstanceEntity.getIncidents().size()).isEqualTo(1);
-    IncidentEntity incidentEntity = workflowInstanceEntity.getIncidents().get(0);
-    assertThat(incidentEntity.getState()).isEqualTo(IncidentState.RESOLVED);
+    final List<IncidentEntity> allIncidents = detailViewReader.getAllIncidents(IdTestUtil.getId(workflowInstanceKey));
+    assertThat(allIncidents).hasSize(0);
 
     //assert list view data
     final ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView();
@@ -313,10 +312,8 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     processAllEvents(2, ZeebeESImporter.ImportValueType.INCIDENT);
 
     //then
-    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(IdTestUtil.getId(workflowInstanceKey));
-    assertThat(workflowInstanceEntity.getIncidents().size()).isEqualTo(1);
-    IncidentEntity incidentEntity = workflowInstanceEntity.getIncidents().get(0);
-    assertThat(incidentEntity.getState()).isEqualTo(IncidentState.RESOLVED);
+    final List<IncidentEntity> allIncidents = detailViewReader.getAllIncidents(IdTestUtil.getId(workflowInstanceKey));
+    assertThat(allIncidents).hasSize(0);
 
     //assert list view data
     final ListViewWorkflowInstanceDto wi = getSingleWorkflowInstanceForListView();

@@ -14,6 +14,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class EventTemplate extends AbstractTemplateCreator implements WorkflowInstanceDependant {
 
+  public static final String INDEX_NAME = "event";
+
   public static final String ID = "id";
 
   public static final String KEY = "key";
@@ -45,8 +47,8 @@ public class EventTemplate extends AbstractTemplateCreator implements WorkflowIn
   private OperateProperties operateProperties;
 
   @Override
-  public String getMainIndexName() {
-    return operateProperties.getElasticsearch().getEventIndexName();
+  protected String getIndexNameFormat() {
+    return INDEX_NAME;
   }
 
   @Override

@@ -11,6 +11,9 @@ import java.util.UUID;
 public class OperationEntity extends OperateEntity {
 
   private String workflowInstanceId;
+  private String incidentId;
+  private String variableId;
+  private Long jobKey;
   private OperationType type;
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;

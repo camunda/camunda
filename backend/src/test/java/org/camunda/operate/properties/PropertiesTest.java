@@ -27,6 +27,7 @@ public class PropertiesTest {
   private OperateProperties operateProperties;
 
   @Test
+  //TODO extend for new properties
   public void testProperties() {
     assertThat(operateProperties.isStartLoadingDataOnStartup()).isFalse();
     assertThat(operateProperties.getBatchOperationMaxSize()).isEqualTo(500);
@@ -35,12 +36,6 @@ public class PropertiesTest {
     assertThat(operateProperties.getElasticsearch().getPort()).isEqualTo(12345);
     assertThat(operateProperties.getElasticsearch().getDateFormat()).isEqualTo("yyyy-MM-dd");
     assertThat(operateProperties.getElasticsearch().getBatchSize()).isEqualTo(111);
-    assertThat(operateProperties.getElasticsearch().getImportPositionIndexName()).isEqualTo("importPositionI");
-    assertThat(operateProperties.getElasticsearch().getEventIndexName()).isEqualTo("eventI");
-    assertThat(operateProperties.getElasticsearch().getWorkflowInstanceIndexName()).isEqualTo("workflowInstanceI");
-    assertThat(operateProperties.getElasticsearch().getWorkflowIndexName()).isEqualTo("workflowI");
-    assertThat(operateProperties.getElasticsearch().getImportPositionAlias()).isEqualTo("importPositionA");
-    assertThat(operateProperties.getElasticsearch().getWorkflowAlias()).isEqualTo("workflowA");
     assertThat(operateProperties.getElasticsearch().getTemplateOrder()).isEqualTo(50);
     assertThat(operateProperties.getZeebeElasticsearch().getClusterName()).isEqualTo("zeebeElasticClusterName");
     assertThat(operateProperties.getZeebeElasticsearch().getHost()).isEqualTo("someOtherHost");

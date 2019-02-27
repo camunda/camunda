@@ -39,7 +39,7 @@ public class VariableRestService {
   @PostMapping
   public List<VariableDto> getVariables(@RequestBody VariablesRequestDto variablesRequest) {
     if (variablesRequest.getWorkflowInstanceId() == null || variablesRequest.getScopeId() == null) {
-      throw new InvalidRequestException("WorkflowInstanceId and ActivityInstanceId must be provided in the request.");
+      throw new InvalidRequestException("WorkflowInstanceId and ScopeId must be provided in the request.");
     }
     final List<VariableEntity> variableEntities = detailViewReader.getVariables(variablesRequest);
     return VariableDto.createFrom(variableEntities);

@@ -17,11 +17,10 @@ import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.entities.WorkflowInstanceEntity;
-import org.camunda.operate.entities.WorkflowInstanceState;
+import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
-import org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate;
+import org.camunda.operate.es.schema.templates.IncidentTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.DateUtil;
@@ -96,7 +95,7 @@ public class OperationExecutorIT extends OperateIntegrationTest {
   private void assertOperationsLocked(Map<String, List<OperationEntity>> lockedOperations, int operationCount, String assertionLabel) {
     final List<OperationEntity> allOperations = lockedOperations.values().stream().flatMap(entry -> entry.stream()).collect(Collectors.toList());
     assertThat(allOperations).as(assertionLabel + ".operations.size").hasSize(operationCount);
-    assertThat(allOperations).extracting(WorkflowInstanceTemplate.STATE).as(assertionLabel + "operation.state").containsOnly(OperationState.LOCKED);
+    assertThat(allOperations).extracting(IncidentTemplate.STATE).as(assertionLabel + "operation.state").containsOnly(OperationState.LOCKED);
     assertThat(allOperations).extracting(OperationTemplate.LOCK_OWNER).as(assertionLabel + "operation.lockOwner").containsOnly(operateProperties.getOperationExecutor().getWorkerId());
     assertThat(allOperations).filteredOn(op -> op.getLockExpirationTime().isBefore(approxLockExpirationTime)).as(assertionLabel + "operation.lockExpirationTime").isEmpty();
   }
@@ -139,7 +138,7 @@ public class OperationExecutorIT extends OperateIntegrationTest {
     operation.generateId();
     operation.setState(state);
     operation.setStartDate(OffsetDateTime.now());
-    operation.setType(OperationType.UPDATE_RETRIES);
+    operation.setType(OperationType.UPDATE_JOB_RETRIES);
     if (state.equals(OperationState.LOCKED)) {
       operation.setLockOwner("otherWorkerId");
       operation.setLockExpirationTime(OffsetDateTime.now().plus(operateProperties.getOperationExecutor().getLockTimeout(), ChronoUnit.MILLIS));

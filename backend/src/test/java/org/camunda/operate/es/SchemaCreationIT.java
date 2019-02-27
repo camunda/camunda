@@ -5,16 +5,18 @@
  */
 package org.camunda.operate.es;
 
+import java.util.List;
 import java.util.concurrent.ExecutionException;
+import org.camunda.operate.es.schema.indices.IndexCreator;
 import org.camunda.operate.es.schema.templates.EventTemplate;
-import org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate;
+import org.camunda.operate.es.schema.templates.IncidentTemplate;
+import org.camunda.operate.es.schema.templates.TemplateCreator;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
 import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
 import org.elasticsearch.action.admin.indices.template.get.GetIndexTemplatesResponse;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.script.mustache.SearchTemplateRequestBuilder;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,20 +34,29 @@ public class SchemaCreationIT extends OperateIntegrationTest {
   private ElasticsearchSchemaManager elasticsearchSchemaManager;
 
   @Autowired
-  private WorkflowInstanceTemplate workflowInstanceTemplate;
+  private IncidentTemplate workflowInstanceTemplate;
 
   @Autowired
   private EventTemplate eventTemplate;
+
+  @Autowired
+  private List<IndexCreator> indexCreators;
+
+  @Autowired
+  private List<TemplateCreator> templateCreators;
 
   @Rule
   public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
 
   @Test
   public void testIndexCreation() throws ExecutionException, InterruptedException {
-    assertIndexAndAlias(operateProperties.getElasticsearch().getWorkflowIndexName(), operateProperties.getElasticsearch().getWorkflowAlias());
-    assertIndexAndAlias(operateProperties.getElasticsearch().getWorkflowInstanceIndexName(), workflowInstanceTemplate.getAlias());
-    assertIndexAndAlias(operateProperties.getElasticsearch().getEventIndexName(), eventTemplate.getAlias());
-    assertIndexAndAlias(operateProperties.getElasticsearch().getImportPositionIndexName(), operateProperties.getElasticsearch().getImportPositionAlias());
+    for (TemplateCreator templateCreator: templateCreators) {
+      assertIndexAndAlias(templateCreator.getMainIndexName(), templateCreator.getAlias());
+    }
+
+    for (IndexCreator indexCreator: indexCreators) {
+      assertIndexAndAlias(indexCreator.getIndexName(), indexCreator.getAlias());
+    }
 
     assertTemplateOrder(workflowInstanceTemplate.getTemplateName(), 30);
     assertTemplateOrder(eventTemplate.getTemplateName(), 30);

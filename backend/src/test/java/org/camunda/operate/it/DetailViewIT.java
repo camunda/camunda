@@ -299,7 +299,7 @@ public class DetailViewIT extends OperateZeebeIntegrationTest {
       .andExpect(status().isBadRequest())
       .andReturn();
 
-    assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo("WorkflowInstanceId and ActivityInstanceId must be provided in the request.");
+    assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo("WorkflowInstanceId and ScopeId must be provided in the request.");
   }
 
   @Test
@@ -312,7 +312,7 @@ public class DetailViewIT extends OperateZeebeIntegrationTest {
       .andExpect(status().isBadRequest())
       .andReturn();
 
-    assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo("WorkflowInstanceId and ActivityInstanceId must be provided in the request.");
+    assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo("WorkflowInstanceId and ScopeId must be provided in the request.");
   }
 
   @Test
@@ -325,7 +325,7 @@ public class DetailViewIT extends OperateZeebeIntegrationTest {
       .andExpect(status().isBadRequest())
       .andReturn();
 
-    assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo("WorkflowInstanceId and ActivityInstanceId must be provided in the request.");
+    assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo("WorkflowInstanceId and ScopeId must be provided in the request.");
   }
 
   private void assertVariable(List<VariableEntity> variables, String name, String value) {

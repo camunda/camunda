@@ -11,17 +11,19 @@ import java.util.Arrays;
 import java.util.List;
 import org.camunda.operate.es.schema.templates.ActivityInstanceTemplate;
 import org.camunda.operate.es.schema.templates.EventTemplate;
+import org.camunda.operate.es.schema.templates.IncidentTemplate;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
 import org.camunda.operate.es.schema.templates.WorkflowInstanceDependant;
-import org.camunda.operate.es.schema.templates.WorkflowInstanceTemplate;
 import org.camunda.operate.exceptions.ReindexException;
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
@@ -35,6 +37,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.dateHistogram;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
 import static org.elasticsearch.search.aggregations.pipeline.PipelineAggregatorBuilders.bucketSort;
@@ -56,7 +59,7 @@ public class Archiver extends Thread {
   private ArchiverHelper reindexHelper;
 
   @Autowired
-  private WorkflowInstanceTemplate workflowInstanceTemplate;
+  private ListViewTemplate workflowInstanceTemplate;
 
   @Autowired
   private EventTemplate eventTemplate;
@@ -125,7 +128,7 @@ public class Archiver extends Thread {
         }
 
         //then remove workflow instances themselves
-        reindexHelper.moveDocuments(workflowInstanceTemplate.getMainIndexName(), WorkflowInstanceTemplate.ID, finishedAtDateIds.getFinishDate(),
+        reindexHelper.moveDocuments(workflowInstanceTemplate.getMainIndexName(), ListViewTemplate.WORKFLOW_INSTANCE_ID, finishedAtDateIds.getFinishDate(),
           finishedAtDateIds.getWorkflowInstanceIds());
         return finishedAtDateIds.getWorkflowInstanceIds().size();
       } catch (ReindexException e) {
@@ -140,17 +143,18 @@ public class Archiver extends Thread {
 
   public FinishedAtDateIds queryFinishedWorkflowInstances() {
 
-    final QueryBuilder queryBuilder =
-      rangeQuery(WorkflowInstanceTemplate.END_DATE)
+    final QueryBuilder endDateQ =
+      rangeQuery(ListViewTemplate.END_DATE)
         .lte("now-1h");
-    final ConstantScoreQueryBuilder q = constantScoreQuery(queryBuilder);
+    final TermQueryBuilder isWorkflowInstanceQ = termQuery(ListViewTemplate.JOIN_RELATION, ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION);
+    final ConstantScoreQueryBuilder q = constantScoreQuery(ElasticsearchUtil.joinWithAnd(endDateQ, isWorkflowInstanceQ));
 
     final String datesAgg = "datesAgg";
     final String instancesAgg = "instancesAgg";
 
     AggregationBuilder agg =
       dateHistogram(datesAgg)
-        .field(WorkflowInstanceTemplate.END_DATE)
+        .field(ListViewTemplate.END_DATE)
         .dateHistogramInterval(new DateHistogramInterval(operateProperties.getElasticsearch().getRolloverInterval()))
         .format(operateProperties.getElasticsearch().getRolloverDateFormat())
         .keyed(true)      //get result as a map (not an array)
@@ -163,8 +167,8 @@ public class Archiver extends Thread {
         .subAggregation(
           topHits(instancesAgg)
             .size(operateProperties.getElasticsearch().getRolloverBatchSize())
-            .sort(WorkflowInstanceTemplate.ID, SortOrder.ASC)
-            .fetchSource(WorkflowInstanceTemplate.ID, null)
+            .sort(ListViewTemplate.ID, SortOrder.ASC)
+            .fetchSource(ListViewTemplate.ID, null)
         );
 
     final SearchRequestBuilder searchRequestBuilder =
@@ -173,7 +177,7 @@ public class Archiver extends Thread {
         .addAggregation(agg)
         .setFetchSource(false)
         .setSize(0)
-        .addSort(WorkflowInstanceTemplate.END_DATE, SortOrder.ASC);
+        .addSort(ListViewTemplate.END_DATE, SortOrder.ASC);
 
     logger.debug("Finished workflow instances for archiving request: \n{}\n and aggregation: \n{}", q.toString(), agg.toString());
 

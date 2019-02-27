@@ -6,13 +6,13 @@
 package org.camunda.operate.es.schema.templates;
 
 import java.io.IOException;
-import org.camunda.operate.property.OperateProperties;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class VariableTemplate extends AbstractTemplateCreator implements WorkflowInstanceDependant {
+
+  public static final String INDEX_NAME = "variable";
 
   public static final String ID = "id";
   public static final String KEY = "key";
@@ -20,15 +20,10 @@ public class VariableTemplate extends AbstractTemplateCreator implements Workflo
   public static final String NAME = "name";
   public static final String VALUE = "value";
 
-
-  @Autowired
-  private OperateProperties operateProperties;
-
   @Override
-  public String getMainIndexName() {
-    return operateProperties.getElasticsearch().getVariableIndexName();
+  protected String getIndexNameFormat() {
+    return INDEX_NAME;
   }
-
   @Override
   protected XContentBuilder addProperties(XContentBuilder builder) throws IOException {
     XContentBuilder newBuilder =  builder

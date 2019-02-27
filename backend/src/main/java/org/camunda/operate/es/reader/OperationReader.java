@@ -73,8 +73,9 @@ public class OperationReader {
 
     ConstantScoreQueryBuilder constantScoreQuery = constantScoreQuery(operationsQuery);
 
-    final SearchRequestBuilder searchRequestBuilder = esClient.prepareSearch(operationTemplate.getAlias());
-    searchRequestBuilder.setQuery(constantScoreQuery);
+    final SearchRequestBuilder searchRequestBuilder = esClient.prepareSearch(operationTemplate.getAlias())
+      .setQuery(constantScoreQuery)
+      .addSort(OperationTemplate.START_DATE, SortOrder.ASC);
 
     SearchResponse response = searchRequestBuilder
       .setFrom(0)

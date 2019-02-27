@@ -11,17 +11,16 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import java.util.function.Consumer;
-import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
+import org.camunda.operate.entities.ErrorType;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.SequenceFlowEntity;
 import org.camunda.operate.entities.WorkflowEntity;
-import org.camunda.operate.entities.WorkflowInstanceEntity;
-import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
 
@@ -118,12 +117,12 @@ public abstract class TestUtil {
   }
 
 
-  public static WorkflowInstanceEntity createWorkflowInstanceEntity(WorkflowInstanceState state) {
+  public static WorkflowInstanceForListViewEntity createWorkflowInstanceEntity(WorkflowInstanceState state) {
     return createWorkflowInstanceEntity(state, null);
   }
 
-  public static WorkflowInstanceEntity createWorkflowInstanceEntity(WorkflowInstanceState state, String workflowId) {
-    WorkflowInstanceEntity workflowInstance = new WorkflowInstanceEntity();
+  public static WorkflowInstanceForListViewEntity createWorkflowInstanceEntity(WorkflowInstanceState state, String workflowId) {
+    WorkflowInstanceForListViewEntity workflowInstance = new WorkflowInstanceForListViewEntity();
     workflowInstance.setId(UUID.randomUUID().toString());
     final int i = random.nextInt(10);
     workflowInstance.setBpmnProcessId("testProcess" + i);
@@ -139,8 +138,8 @@ public abstract class TestUtil {
     return workflowInstance;
   }
 
-  public static WorkflowInstanceEntity createWorkflowInstanceEntity(OffsetDateTime startDate, OffsetDateTime endDate) {
-    WorkflowInstanceEntity workflowInstance = new WorkflowInstanceEntity();
+  public static WorkflowInstanceForListViewEntity createWorkflowInstanceEntity(OffsetDateTime startDate, OffsetDateTime endDate) {
+    WorkflowInstanceForListViewEntity workflowInstance = new WorkflowInstanceForListViewEntity();
     workflowInstance.setId(UUID.randomUUID().toString());
     final int i = random.nextInt(10);
     workflowInstance.setBpmnProcessId("testProcess" + i);
@@ -170,9 +169,9 @@ public abstract class TestUtil {
   public static IncidentEntity createIncident(IncidentState state, String activityId, String activityInstanceId, String errorMsg) {
     IncidentEntity incidentEntity = new IncidentEntity();
     incidentEntity.setId(UUID.randomUUID().toString());
-    incidentEntity.setActivityId(activityId);
-    incidentEntity.setActivityInstanceId(activityInstanceId);
-    incidentEntity.setErrorType("TASK_NO_RETRIES");
+    incidentEntity.setFlowNodeId(activityId);
+    incidentEntity.setFlowNodeInstanceId(activityInstanceId);
+    incidentEntity.setErrorType(ErrorType.JOB_NO_RETRIES);
     if (errorMsg == null) {
       incidentEntity.setErrorMessage(ERROR_MSG);
     } else {
@@ -180,23 +179,6 @@ public abstract class TestUtil {
     }
     incidentEntity.setState(state);
     return incidentEntity;
-  }
-
-  public static ActivityInstanceEntity createActivityInstanceEntity(ActivityState state) {
-    return createActivityInstanceEntity(state, "start", null);
-  }
-
-  public static ActivityInstanceEntity createActivityInstanceEntity(ActivityState state, String activityId, ActivityType activityType) {
-    ActivityInstanceEntity activityInstanceEntity = new ActivityInstanceEntity();
-    activityInstanceEntity.setId(UUID.randomUUID().toString());
-    activityInstanceEntity.setActivityId(activityId);
-    activityInstanceEntity.setType(activityType);
-    activityInstanceEntity.setStartDate(DateUtil.getRandomStartDate());
-    activityInstanceEntity.setState(state);
-    if (state.equals(ActivityState.COMPLETED) || state.equals(ActivityState.TERMINATED)) {
-      activityInstanceEntity.setEndDate(DateUtil.getRandomEndDate());
-    }
-    return activityInstanceEntity;
   }
 
   public static List<WorkflowEntity> createWorkflowVersions(String bpmnProcessId, String name, int versionsCount) {
