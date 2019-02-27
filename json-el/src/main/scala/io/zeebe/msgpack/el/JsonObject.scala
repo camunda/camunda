@@ -67,6 +67,7 @@ case class JsonString(value: DirectBuffer) extends JsonObject with JsonConstant 
 
 case class JsonPath(value: String) extends JsonObject {
   val query: JsonPathQuery = new JsonPathQueryCompiler().compile(value)
+  val variableName = query.getTopLevelVariable
 
   var id_ = -1
 

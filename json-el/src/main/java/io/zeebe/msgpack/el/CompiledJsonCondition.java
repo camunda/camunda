@@ -15,6 +15,10 @@
  */
 package io.zeebe.msgpack.el;
 
+import java.util.Set;
+import org.agrona.DirectBuffer;
+import scala.collection.JavaConverters;
+
 public final class CompiledJsonCondition {
   private final String expression;
   private final JsonCondition condition;
@@ -51,6 +55,10 @@ public final class CompiledJsonCondition {
 
   public String getErrorMessage() {
     return errorMessage;
+  }
+
+  public Set<DirectBuffer> getVariableNames() {
+    return JavaConverters.setAsJavaSet(condition.variableNames());
   }
 
   @Override

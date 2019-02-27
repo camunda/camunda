@@ -23,6 +23,7 @@ import io.zeebe.msgpack.filter.MsgPackFilter;
 import io.zeebe.msgpack.filter.RootCollectionFilter;
 import io.zeebe.msgpack.filter.WildcardFilter;
 import io.zeebe.msgpack.query.MsgPackFilterContext;
+import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.junit.Test;
 
@@ -38,6 +39,7 @@ public class JsonPathQueryCompilerTest {
 
     // then
     assertThat(jsonPathQuery.isValid()).isTrue();
+    assertThat(jsonPathQuery.getTopLevelVariable()).isEqualTo(BufferUtil.wrapString("key1"));
 
     final MsgPackFilter[] filters = jsonPathQuery.getFilters();
     assertThat(filters).hasSize(4);

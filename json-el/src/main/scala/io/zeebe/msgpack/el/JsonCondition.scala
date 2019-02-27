@@ -15,24 +15,60 @@
  */
 package io.zeebe.msgpack.el
 
-trait Comparison {
+import org.agrona.DirectBuffer
+
+import scala.collection.mutable
+
+abstract class Comparison extends JsonCondition {
   val x: JsonObject
   val y: JsonObject
+
+  def variableNames: mutable.HashSet[DirectBuffer] = {
+    val names = mutable.HashSet[DirectBuffer]()
+
+    if (x.isInstanceOf[JsonPath]) {
+      val path = x.asInstanceOf[JsonPath]
+      names += path.variableName;
+    }
+
+    if (y.isInstanceOf[JsonPath]) {
+      val path = y.asInstanceOf[JsonPath]
+      names += path.variableName;
+    }
+
+    return names
+  }
 }
 
-trait Operator {
+abstract class Operator extends JsonCondition {
   val x: JsonCondition
   val y: JsonCondition
+
+  def variableNames: mutable.HashSet[DirectBuffer] = {
+    var set: mutable.HashSet[DirectBuffer] = mutable.HashSet()
+    set ++= x.variableNames
+    set ++= y.variableNames
+    return set
+  }
 }
 
-sealed trait JsonCondition 
+sealed trait JsonCondition {
+  def variableNames: mutable.HashSet[DirectBuffer]
+}
 
-case class Equal(x: JsonObject, y: JsonObject) extends JsonCondition with Comparison
-case class NotEqual(x: JsonObject, y: JsonObject) extends JsonCondition with Comparison
-case class LessThan(x: JsonObject, y: JsonObject) extends JsonCondition with Comparison
-case class LessOrEqual(x: JsonObject, y: JsonObject) extends JsonCondition with Comparison
-case class GreaterThan(x: JsonObject, y: JsonObject) extends JsonCondition with Comparison
-case class GreaterOrEqual(x: JsonObject, y: JsonObject) extends JsonCondition with Comparison
+case class Equal(x: JsonObject, y: JsonObject) extends Comparison
 
-case class Disjunction(x: JsonCondition, y: JsonCondition) extends JsonCondition with Operator
-case class Conjunction(x: JsonCondition, y: JsonCondition) extends JsonCondition with Operator
+case class NotEqual(x: JsonObject, y: JsonObject) extends Comparison
+
+case class LessThan(x: JsonObject, y: JsonObject) extends Comparison
+
+case class LessOrEqual(x: JsonObject, y: JsonObject) extends Comparison
+
+case class GreaterThan(x: JsonObject, y: JsonObject) extends Comparison
+
+case class GreaterOrEqual(x: JsonObject, y: JsonObject) extends Comparison
+
+case class Disjunction(x: JsonCondition, y: JsonCondition) extends Operator
+
+case class Conjunction(x: JsonCondition, y: JsonCondition) extends Operator
+

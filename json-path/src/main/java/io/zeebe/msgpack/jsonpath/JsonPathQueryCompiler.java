@@ -104,6 +104,12 @@ public class JsonPathQueryCompiler implements JsonPathTokenVisitor {
             filterInstances.filterId(ARRAY_INDEX_FILTER_ID);
             ArrayIndexFilter.encodeDynamicContext(filterInstances.dynamicContext(), arrayIndex);
           } else {
+            if (!currentQuery.hasTopLevelVariable()) {
+              final byte[] variable = new byte[valueLength];
+              valueBuffer.getBytes(valueOffset, variable);
+              currentQuery.setTopLevelVariable(variable);
+            }
+
             filterInstances.appendElement();
             filterInstances.filterId(MAP_VALUE_FILTER_ID);
             MapValueWithKeyFilter.encodeDynamicContext(
