@@ -9,6 +9,7 @@ import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.NewCookie;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
@@ -25,8 +26,8 @@ public class AuthenticationUtil {
       .map(AuthenticationUtil::extractTokenFromAuthorizationValueOrFailNotAuthorized);
   }
 
-  public static Optional<Date> getTokenExpiresAt(String token) {
-    return getTokenAttribute(token, DecodedJWT::getExpiresAt);
+  public static Optional<Date> getTokenIssuedAt(String token) {
+    return getTokenAttribute(token, DecodedJWT::getIssuedAt);
   }
 
   public static Optional<String> getTokenSubject(String token) {
@@ -81,7 +82,7 @@ public class AuthenticationUtil {
     );
   }
 
-  public static NewCookie createNewOptimizeAuthCookie(String securityToken) {
+  public static NewCookie createNewOptimizeAuthCookie(final String securityToken, final int lifeTimeMinutes) {
     logger.trace("Creating Optimize authentication cookie.");
     return new NewCookie(
       OPTIMIZE_AUTHORIZATION,
@@ -91,7 +92,11 @@ public class AuthenticationUtil {
       1,
       null,
       -1,
-      getTokenExpiresAt(securityToken).orElse(null),
+      getTokenIssuedAt(securityToken)
+        .map(Date::toInstant)
+        .map(issuedAt -> issuedAt.plus(lifeTimeMinutes, ChronoUnit.MINUTES))
+        .map(Date::from)
+        .orElse(null),
       false,
       false
     );

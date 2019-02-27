@@ -5,6 +5,7 @@ import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.security.AuthenticationService;
 import org.camunda.optimize.service.security.SessionService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -28,11 +29,17 @@ import static org.camunda.optimize.rest.util.AuthenticationUtil.createNewOptimiz
 @Component
 public class AuthenticationRestService {
 
-  @Autowired
-  private AuthenticationService authenticationService;
+  private final AuthenticationService authenticationService;
+  private final ConfigurationService configurationService;
+  private final SessionService sessionService;
 
   @Autowired
-  private SessionService sessionService;
+  public AuthenticationRestService(final AuthenticationService authenticationService,
+                                   final ConfigurationService configurationService, final SessionService sessionService) {
+    this.authenticationService = authenticationService;
+    this.configurationService = configurationService;
+    this.sessionService = sessionService;
+  }
 
   /**
    * Authenticate an user given his credentials.
@@ -47,7 +54,9 @@ public class AuthenticationRestService {
   public Response authenticateUser(CredentialsDto credentials) {
     String securityToken = authenticationService.authenticateUser(credentials);
     // Return the token on the response
-    return Response.ok(securityToken).cookie(createNewOptimizeAuthCookie(securityToken)).build();
+    return Response.ok(securityToken)
+      .cookie(createNewOptimizeAuthCookie(securityToken, configurationService.getTokenLifeTimeMinutes()))
+      .build();
   }
 
   /**
