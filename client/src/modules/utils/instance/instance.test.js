@@ -70,24 +70,6 @@ describe('instance utils', () => {
     });
   });
 
-  describe('getIncidentMessage', () => {
-    it('should return undefined for an instance with no incidents', () => {
-      const message = instanceUtils.getIncidentMessage({
-        incidents: active.incidents
-      });
-
-      expect(message).toEqual(undefined);
-    });
-
-    it('should return a string for an instance with incidents', () => {
-      const message = instanceUtils.getIncidentMessage({
-        incidents: activeWithIncidents.incidents
-      });
-
-      expect(message).toBe(activeWithIncidents.incidents[0].errorMessage);
-    });
-  });
-
   describe('getWorkflowName', () => {
     it('should return workflowName when it exists', () => {
       // given

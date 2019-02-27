@@ -23,3 +23,7 @@ export const Td = styled.td`
 export const ActionsWrapper = styled.div`
   width: 250px;
 `;
+
+export const SplitPaneBody = styled(SplitPane.Pane.Body)`
+  position: relative;
+`;

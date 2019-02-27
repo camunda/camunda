@@ -61,11 +61,16 @@ export default class Instance extends Component {
   async componentDidMount() {
     const id = this.props.match.params.id;
     const instance = await api.fetchWorkflowInstance(id);
+    let incidents = [];
 
     document.title = PAGE_TITLE.INSTANCE(
       instance.id,
       getWorkflowName(instance)
     );
+
+    if (instance.state === 'INCIDENT') {
+      incidents = await api.fetchWorkflowInstanceIncidents(id);
+    }
 
     const [activitiesInstancesTree, diagramXml, events] = await Promise.all([
       fetchActivityInstancesTree(id),
@@ -85,6 +90,7 @@ export default class Instance extends Component {
       {
         loaded: true,
         instance,
+        incidents,
         activityIdToNameMap,
         diagramDefinitions: definitions,
         events,
@@ -303,7 +309,7 @@ export default class Instance extends Component {
             {`Camunda Operate Instance ${this.state.instance.id}`}
           </VisuallyHiddenH1>
           <SplitPane titles={{top: 'Workflow', bottom: 'Instance Details'}}>
-            <DiagramPanel instance={instance}>
+            <DiagramPanel instance={instance} incidents={this.state.incidents}>
               {diagramDefinitions && (
                 <Diagram
                   onFlowNodeSelection={this.handleFlowNodeSelection}

@@ -9,6 +9,11 @@ export async function fetchWorkflowInstance(id) {
   return await response.json();
 }
 
+export async function fetchWorkflowInstanceIncidents(id) {
+  const response = await get(`${URL}/${id}/incidents`);
+  return await response.json();
+}
+
 export async function fetchWorkflowInstances(options) {
   const {firstResult, maxResults, ...payload} = options;
   const url = `${URL}?firstResult=${firstResult}&maxResults=${maxResults}`;

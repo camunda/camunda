@@ -8,9 +8,8 @@ import {formatDate} from 'modules/utils/date';
 import {getWorkflowName, getInstanceState} from 'modules/utils/instance';
 import {ThemeProvider} from 'modules/theme';
 import {createInstance} from 'modules/testUtils';
-
+import * as Styled from './styled';
 import DiagramPanel from './DiagramPanel';
-import DiagramBar from './DiagramBar';
 
 const mockInstance = createInstance();
 
@@ -38,7 +37,6 @@ describe('DiagramPanel', () => {
         </SplitPane>
       </ThemeProvider>
     );
-
     // then
     expect(node.find(Pane)).toHaveLength(1);
 
@@ -49,7 +47,6 @@ describe('DiagramPanel', () => {
     expect(StateIconNode).toHaveLength(1);
     expect(StateIconNode.prop('state')).toBe(instanceState);
     expect(TableNode.text()).toContain(workflowName);
-    expect(node.find(Pane.Body)).toHaveLength(1);
     expect(TableNode.text()).toContain(mockInstance.id);
     expect(TableNode.text()).toContain(
       `Version ${mockInstance.workflowVersion}`
@@ -58,12 +55,9 @@ describe('DiagramPanel', () => {
     expect(TableNode.text()).toContain(formattedEndDate);
 
     // Pane.Body
-    const PaneBodyNode = node.find(Pane.Body);
-    expect(PaneBodyNode).toHaveLength(1);
-    // DiagramBar
-    const DiagramBarNode = PaneBodyNode.find(DiagramBar);
-    expect(DiagramBarNode).toHaveLength(1);
-    expect(DiagramBarNode.prop('instance')).toBe(mockInstance);
+    const PaneBodyNode = node.find(Styled.SplitPaneBody);
+    expect(PaneBodyNode).toExist();
+
     // Child
     expect(PaneBodyNode.find(Foo)).toHaveLength(1);
   });

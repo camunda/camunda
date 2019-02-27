@@ -34,10 +34,6 @@ export function getInstanceState({state, incidents}) {
   return hasActiveIncident ? STATE.INCIDENT : STATE.ACTIVE;
 }
 
-export function getIncidentMessage({incidents}) {
-  return (getActiveIncident(incidents) || {}).errorMessage;
-}
-
 export function getWorkflowName({bpmnProcessId, workflowName}) {
   return workflowName || bpmnProcessId;
 }

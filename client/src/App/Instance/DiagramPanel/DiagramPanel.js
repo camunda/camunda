@@ -5,10 +5,11 @@ import SplitPane from 'modules/components/SplitPane';
 import StateIcon from 'modules/components/StateIcon';
 import {formatDate} from 'modules/utils/date';
 import {getWorkflowName, getInstanceState} from 'modules/utils/instance';
-
 import Actions from 'modules/components/Actions';
 
-import DiagramBar from './DiagramBar';
+import {STATE} from 'modules/constants';
+
+import IncidentsWrapper from './IncidentsWrapper';
 import * as Styled from './styled';
 
 export default class DiagramPanel extends React.PureComponent {
@@ -26,6 +27,7 @@ export default class DiagramPanel extends React.PureComponent {
 
   render() {
     const {instance, ...props} = this.props;
+    const hasActiveIncidents = this.props.instance.state === STATE.INCIDENT;
 
     return (
       <SplitPane.Pane {...props}>
@@ -50,10 +52,15 @@ export default class DiagramPanel extends React.PureComponent {
             </tbody>
           </Styled.Table>
         </Styled.SplitPaneHeader>
-        <SplitPane.Pane.Body>
-          <DiagramBar instance={instance} />
+        <Styled.SplitPaneBody data-test="diagram-panel-body">
+          {hasActiveIncidents && (
+            <IncidentsWrapper
+              incidents={this.props.incidents}
+              instanceId={instance.id}
+            />
+          )}
           {this.props.children}
-        </SplitPane.Pane.Body>
+        </Styled.SplitPaneBody>
       </SplitPane.Pane>
     );
   }

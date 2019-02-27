@@ -113,6 +113,10 @@ const shallowRenderComponent = (customProps = {}) =>
 describe('Instance', () => {
   beforeEach(() => {
     instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(INSTANCE);
+    instancesApi.fetchWorkflowInstanceIncidents = mockResolvedAsyncFn({
+      count: 2,
+      incidents: []
+    });
     diagramApi.fetchWorkflowXML = mockResolvedAsyncFn(xmlMock);
     activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
       mockTree
