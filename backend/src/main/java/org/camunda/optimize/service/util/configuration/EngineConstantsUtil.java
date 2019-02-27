@@ -35,11 +35,14 @@ public class EngineConstantsUtil {
   public static final String ALL_PERMISSION = "ALL";
   public static final String ACCESS_PERMISSION = "ACCESS";
   public static final String READ_HISTORY_PERMISSION = "READ_HISTORY";
+  public static final String READ_PERMISSION = "READ";
 
   public static final String RESOURCE_TYPE = "resourceType";
   public static final int RESOURCE_TYPE_APPLICATION = 0;
   public static final int RESOURCE_TYPE_PROCESS_DEFINITION = 6;
   public static final int RESOURCE_TYPE_DECISION_DEFINITION = 10;
+  public static final int RESOURCE_TYPE_USER = 1;
+  public static final int RESOURCE_TYPE_AUTHORIZATION = 4;
 
   public static final int AUTHORIZATION_TYPE_GLOBAL = 0;
   public static final int AUTHORIZATION_TYPE_GRANT = 1;

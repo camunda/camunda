@@ -7,7 +7,6 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.filter.CanceledInstancesOnlyQueryFilter;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
-import org.camunda.optimize.service.util.configuration.EngineConfiguration;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
@@ -55,7 +54,7 @@ import static org.junit.Assert.assertTrue;
 
 public class ImportIT {
 
-  private static final String HTTP_LOCALHOST = "http://localhost:8080";
+
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
@@ -119,32 +118,7 @@ public class ImportIT {
   }
 
   @Test
-  public void allEventFieldDataOfImportIsAvailableWithAuthentication() throws IOException {
-    //given
-    EngineConfiguration engineConfiguration = embeddedOptimizeRule
-      .getConfigurationService().getConfiguredEngines().get("1");
-    engineConfiguration.getAuthentication().setEnabled(true);
-    engineConfiguration.getAuthentication().setPassword("kermit");
-    engineConfiguration.getAuthentication().setUser("kermit");
-    engineConfiguration.setRest(HTTP_LOCALHOST + "/engine-rest-secure");
-    engineRule.addUser("kermit", "kermit");
-    engineRule.grantAllAuthorizations("kermit");
-    embeddedOptimizeRule.reloadConfiguration();
-    deployAndStartSimpleServiceTask();
-
-    //when
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-
-    engineConfiguration.getAuthentication().setEnabled(false);
-    engineConfiguration.setRest(HTTP_LOCALHOST + "/engine-rest");
-
-    //then
-    allEntriesInElasticsearchHaveAllData(PROC_INSTANCE_TYPE);
-  }
-
-  @Test
-  public void failingJobDoesNotUpdateImportIndex() throws IOException, InterruptedException {
+  public void failingJobDoesNotUpdateImportIndex() throws IOException {
     //given
     ProcessInstanceEngineDto dto1 = deployAndStartSimpleServiceTask();
     OffsetDateTime endTime = engineRule.getHistoricProcessInstance(dto1.getId()).getEndTime();
@@ -157,9 +131,7 @@ public class ImportIT {
 
     ProcessInstanceEngineDto dto2 = deployAndStartSimpleServiceTask();
 
-    Thread thread = new Thread(() -> {
-      embeddedOptimizeRule.importAllEngineEntitiesFromLastIndex();
-    });
+    Thread thread = new Thread(() -> embeddedOptimizeRule.importAllEngineEntitiesFromLastIndex());
     thread.start();
 
     OffsetDateTime lastImportTimestamp = elasticSearchRule.getLastProcessInstanceImportTimestamp();
