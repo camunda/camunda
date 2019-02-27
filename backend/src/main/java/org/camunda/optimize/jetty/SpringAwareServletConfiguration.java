@@ -81,6 +81,7 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
 
     addLicenseFilter(context);
     addSingleSignOnFilter(context);
+    addNoCachingFilter(context);
 
     NotFoundErrorHandler errorMapper = new NotFoundErrorHandler();
     context.setErrorHandler(errorMapper);
@@ -97,6 +98,16 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
   private void addLicenseFilter(ServletContextHandler context) {
     FilterHolder licenseFilterHolder = new FilterHolder();
     licenseFilterHolder.setFilter(new LicenseFilter(this));
+    context.addFilter(
+      licenseFilterHolder,
+      "/*",
+      EnumSet.of(DispatcherType.REQUEST, DispatcherType.FORWARD, DispatcherType.ERROR)
+    );
+  }
+
+  private void addNoCachingFilter(ServletContextHandler context) {
+    FilterHolder licenseFilterHolder = new FilterHolder();
+    licenseFilterHolder.setFilter(new NoCachingFilter());
     context.addFilter(
       licenseFilterHolder,
       "/*",

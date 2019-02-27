@@ -15,15 +15,15 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.ERROR_PAGE;
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.INDEX_HTML_PAGE;
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.INDEX_PAGE;
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.LICENSE_PAGE;
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.LOGIN_PAGE;
+
 public class LicenseFilter implements Filter {
 
-  private Logger logger = LoggerFactory.getLogger(LicenseManager.class);
-
-  private static final String INDEX_PAGE = "/";
-  private static final String INDEX_HTML_PAGE = "/index.html";
-  private static final String LOGIN_PAGE = "/login";
-  private static final String LICENSE_PAGE = "/license.html";
-  private static final String ERROR_PAGE = "/error.html";
+  private static final Logger logger = LoggerFactory.getLogger(LicenseFilter.class);
 
   private LicenseManager licenseManager;
 
@@ -34,7 +34,7 @@ public class LicenseFilter implements Filter {
   }
 
   @Override
-  public void init(FilterConfig filterConfig) throws ServletException {
+  public void init(FilterConfig filterConfig) {
     // nothing to do here
   }
 
