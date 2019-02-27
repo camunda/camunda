@@ -93,7 +93,6 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
 
   private final OptimisticTransactionDB optimisticTransactionDB;
   private ZeebeTransaction currentTransaction;
-  private boolean activePrefixIteration;
   private final List<AutoCloseable> closables;
   private final Class<ColumnFamilyNames> columnFamilyNamesClass;
 
@@ -104,7 +103,9 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
   private final DirectBuffer keyViewBuffer = new UnsafeBuffer(0, 0);
   private final DirectBuffer valueViewBuffer = new UnsafeBuffer(0, 0);
 
-  private final ExpandableArrayBuffer prefixKeyBuffer = new ExpandableArrayBuffer();
+  private int activePrefixIterations = 0;
+  private final ExpandableArrayBuffer[] prefixKeyBuffers =
+      new ExpandableArrayBuffer[] {new ExpandableArrayBuffer(), new ExpandableArrayBuffer()};
 
   private final EnumMap<ColumnFamilyNames, Long> columnFamilyMap;
   private final Long2ObjectHashMap<ColumnFamilyHandle> handelToEnumMap;
@@ -329,14 +330,16 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
       KeyType keyInstance,
       ValueType valueInstance,
       KeyValuePairVisitor<KeyType, ValueType> visitor) {
-    if (activePrefixIteration) {
+    if (activePrefixIterations + 1 > prefixKeyBuffers.length) {
       throw new IllegalStateException(
           "Currently nested prefix iterations are not supported! This will cause unexpected behavior.");
     }
 
     ensureInOpenTransaction(
         () -> {
-          activePrefixIteration = true;
+          activePrefixIterations++;
+          final ExpandableArrayBuffer prefixKeyBuffer =
+              prefixKeyBuffers[activePrefixIterations - 1];
           try (ReadOptions options =
                   new ReadOptions().setPrefixSameAsStart(true).setTotalOrderSeek(false);
               RocksIterator iterator = newIterator(columnFamilyHandle, options)) {
@@ -363,7 +366,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
               shouldVisitNext = visit(keyInstance, valueInstance, visitor, iterator);
             }
           } finally {
-            activePrefixIteration = false;
+            activePrefixIterations--;
           }
         });
   }
