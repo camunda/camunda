@@ -1,5 +1,7 @@
 import React from 'react';
-import {Popover, DefinitionSelection, Button, Dropdown, Input, Labeled} from 'components';
+import {Popover, DefinitionSelection, Labeled} from 'components';
+
+import ReportDropdown from './ReportDropdown';
 
 import {Filter} from './filter';
 import {
@@ -7,26 +9,19 @@ import {
   getFlowNodeNames,
   reportConfig,
   formatters,
-  getDataKeys,
   loadProcessDefinitionXml
 } from 'services';
 
 import {TargetValueComparison} from './targetValue';
 import {ProcessPart} from './ProcessPart';
 
-import {loadVariables, isChecked} from './service';
+import {loadVariables} from './service';
 
 import {Configuration} from './Configuration';
 
 import './ReportControlPanel.scss';
 
-const {
-  options: {view, groupBy, visualization},
-  getLabelFor,
-  isAllowed,
-  update
-} = reportConfig.process;
-const groupByVariablePageSize = 5;
+const {process: processConfig} = reportConfig;
 
 export default class ReportControlPanel extends React.Component {
   constructor(props) {
@@ -34,8 +29,6 @@ export default class ReportControlPanel extends React.Component {
 
     this.state = {
       variables: [],
-      variableTypeaheadValue: '',
-      variableStartIdx: 0,
       flowNodeNames: null
     };
   }
@@ -61,16 +54,6 @@ export default class ReportControlPanel extends React.Component {
         variables: await loadVariables(processDefinitionKey, processDefinitionVersion)
       });
     }
-  };
-
-  definitionConfig = () => {
-    const {
-      data: {processDefinitionKey, processDefinitionVersion}
-    } = this.props.report;
-    return {
-      processDefinitionKey,
-      processDefinitionVersion
-    };
   };
 
   componentDidUpdate(prevProps) {
@@ -135,6 +118,13 @@ export default class ReportControlPanel extends React.Component {
     this.props.updateReport(change, true);
   };
 
+  updateReport = (type, newValue) => {
+    this.props.updateReport(
+      processConfig.update(type, newValue, this.props),
+      type !== 'visualization'
+    );
+  };
+
   render() {
     const {data} = this.props.report;
     return (
@@ -155,23 +145,39 @@ export default class ReportControlPanel extends React.Component {
               </Popover>
             </Labeled>
           </li>
-          <li className="select">
-            <Labeled label="View">{this.renderDropdown('view', view)}</Labeled>
-          </li>
-          <li className="select">
-            <Labeled label="Group by">{this.renderDropdown('groupBy', groupBy)}</Labeled>
-          </li>
-          <li className="select">
-            <Labeled label="Visualize as">
-              {this.renderDropdown('visualization', visualization)}
-            </Labeled>
-          </li>
+          {['view', 'groupBy', 'visualization'].map((field, idx, fields) => {
+            const previous = fields
+              .filter((prev, prevIdx) => prevIdx < idx)
+              .map(prev => data[prev]);
+
+            return (
+              <li className="select" key={field}>
+                <Labeled label={formatters.convertCamelToSpaces(field)}>
+                  <ReportDropdown
+                    type="process"
+                    field={field}
+                    value={data[field]}
+                    xml={data.configuration.xml}
+                    variables={{variable: this.state.variables}}
+                    previous={previous}
+                    disabled={
+                      !data.processDefinitionKey ||
+                      !data.processDefinitionVersion ||
+                      previous.some(entry => !entry)
+                    }
+                    onChange={newValue => this.updateReport(field, newValue)}
+                  />
+                </Labeled>
+              </li>
+            );
+          })}
           <li className="filter">
             <Filter
               flowNodeNames={this.state.flowNodeNames}
               data={data.filter}
               onChange={this.props.updateReport}
-              {...this.definitionConfig()}
+              processDefinitionKey={data.processDefinitionKey}
+              processDefinitionVersion={data.processDefinitionVersion}
               xml={data.configuration.xml}
               instanceCount={this.props.report && this.props.report.processInstanceCount}
             />
@@ -227,209 +233,5 @@ export default class ReportControlPanel extends React.Component {
       processDefinitionKey &&
       processDefinitionVersion
     );
-  };
-
-  renderDropdown = (type, config) => {
-    const {data} = this.props.report;
-    const {
-      processDefinitionKey,
-      processDefinitionVersion,
-      view,
-      groupBy,
-      configuration: {xml}
-    } = data;
-    let disabled = false;
-
-    if (!processDefinitionKey || !processDefinitionVersion) {
-      disabled = true;
-    }
-    if (type === 'groupBy' && !view) {
-      disabled = true;
-    }
-    if (type === 'visualization' && (!view || !groupBy)) {
-      disabled = true;
-    }
-    return (
-      <Dropdown
-        label={getLabelFor(config, data[type], xml) || 'Please Select...'}
-        className="configDropdown"
-        disabled={disabled}
-      >
-        {Object.keys(config).map(key => {
-          const {label, data} = config[key];
-
-          const submenu = getDataKeys(data).find(key => Array.isArray(data[key]));
-          if (submenu) {
-            return this.renderSubmenu(submenu, type, data, label, key);
-          } else {
-            return this.renderNormalOption(type, data, label, key);
-          }
-        })}
-      </Dropdown>
-    );
-  };
-
-  renderSubmenu = (submenu, type, configData, label, key) => {
-    const {data} = this.props.report;
-    let disabled = type === 'groupBy' && !isAllowed(data.view, configData);
-    const checked = isChecked(configData, data[type]);
-
-    if (type === 'groupBy' && key === 'variable' && this.state.variables.length === 0) {
-      disabled = true;
-    }
-
-    return (
-      <Dropdown.Submenu
-        label={label}
-        key={key}
-        disabled={disabled}
-        checked={checked}
-        onOpen={() => this.setState({variableStartIdx: 0, variableTypeaheadValue: ''})}
-      >
-        {type === 'groupBy' && key === 'variable'
-          ? this.renderVariables()
-          : configData[submenu].map((entry, idx) => {
-              const subData = {...configData, [submenu]: entry.data};
-              const checked = isChecked(subData, data[type]);
-              return (
-                <Dropdown.Option
-                  key={idx}
-                  checked={checked}
-                  onClick={() =>
-                    this.props.updateReport(
-                      update(type, subData, this.props),
-                      type !== 'visualization'
-                    )
-                  }
-                >
-                  {entry.label}
-                </Dropdown.Option>
-              );
-            })}
-      </Dropdown.Submenu>
-    );
-  };
-
-  renderNormalOption = (type, configData, label, key) => {
-    const {data} = this.props.report;
-    let disabled = false;
-    if (type === 'groupBy') {
-      disabled = !isAllowed(data.view, configData);
-    } else if (type === 'visualization') {
-      disabled = !isAllowed(data.view, data.groupBy, configData);
-    }
-    const checked = isChecked(configData, data[type]);
-    return (
-      <Dropdown.Option
-        key={key}
-        checked={checked}
-        onClick={() =>
-          this.props.updateReport(update(type, configData, this.props), type !== 'visualization')
-        }
-        disabled={disabled}
-      >
-        {label}
-      </Dropdown.Option>
-    );
-  };
-
-  renderVariables = () => {
-    const {data} = this.props.report;
-    const currentlySelected =
-      data.groupBy && data.groupBy.type === 'variable' && data.groupBy.value;
-    const filteredVars = this.state.variables.filter(
-      ({name, type}) =>
-        name.toLowerCase().includes(this.state.variableTypeaheadValue.toLowerCase()) &&
-        (!currentlySelected || name !== currentlySelected.name || type !== currentlySelected.type)
-    );
-    const remaining = Math.max(
-      filteredVars.length - this.state.variableStartIdx - groupByVariablePageSize,
-      0
-    );
-    return (
-      <div className="variablesGroupby" onClick={this.catchClick}>
-        <div className="inputContainer">
-          <Input
-            value={this.state.variableTypeaheadValue}
-            placeholder="Search for variables here"
-            onKeyDown={evt => evt.stopPropagation()}
-            onChange={evt =>
-              this.setState({variableTypeaheadValue: evt.target.value, variableStartIdx: 0})
-            }
-          />
-        </div>
-        {currentlySelected && (
-          <Dropdown.Option
-            checked
-            title={currentlySelected.name}
-            onClick={evt => (evt.nativeEvent.isCloseEvent = true)}
-          >
-            {currentlySelected.name}
-          </Dropdown.Option>
-        )}
-        {this.state.variableStartIdx > 0 && (
-          <div className="inputContainer">
-            <Button
-              onClick={evt => {
-                evt.preventDefault();
-                this.setState({
-                  variableStartIdx:
-                    this.state.variableStartIdx -
-                    Math.min(groupByVariablePageSize, this.state.variableStartIdx)
-                });
-              }}
-            >
-              Previous items
-            </Button>
-          </div>
-        )}
-        <div className="variableOptionsList">
-          {filteredVars
-            .slice(
-              this.state.variableStartIdx,
-              this.state.variableStartIdx + groupByVariablePageSize
-            )
-            .map((variable, idx) => (
-              <Dropdown.Option
-                key={idx}
-                title={variable.name}
-                onClick={evt => {
-                  evt.nativeEvent.isCloseEvent = true;
-                  this.props.updateReport(
-                    update('groupBy', {type: 'variable', value: variable}, this.props),
-                    true
-                  );
-                }}
-              >
-                {formatters.getHighlightedText(variable.name, this.state.variableTypeaheadValue)}
-              </Dropdown.Option>
-            ))}
-        </div>
-        {remaining > 0 && (
-          <div className="inputContainer loadMore">
-            <span>
-              {remaining} more item{remaining > 1 && 's'}
-            </span>
-            <Button
-              onClick={evt => {
-                evt.preventDefault();
-                this.setState({
-                  variableStartIdx:
-                    this.state.variableStartIdx + Math.min(groupByVariablePageSize, remaining)
-                });
-              }}
-            >
-              Load More
-            </Button>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  catchClick = evt => {
-    if (!evt.nativeEvent.isCloseEvent) {
-      evt.stopPropagation();
-    }
   };
 }

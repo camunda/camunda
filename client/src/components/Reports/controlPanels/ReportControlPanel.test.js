@@ -1,15 +1,10 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {Dropdown} from 'components';
+import ReportDropdown from './ReportDropdown';
 
 import ReportControlPanel from './ReportControlPanel';
-import {
-  extractDefinitionName,
-  reportConfig,
-  getFlowNodeNames,
-  loadProcessDefinitionXml
-} from 'services';
+import {extractDefinitionName, getFlowNodeNames, loadProcessDefinitionXml} from 'services';
 
 import * as service from './service';
 import {DefinitionSelection} from 'components';
@@ -39,9 +34,6 @@ jest.mock('services', () => {
       }
     },
     extractDefinitionName: jest.fn(),
-    formatters: {
-      getHighlightedText: text => text
-    },
     getFlowNodeNames: jest.fn().mockReturnValue({
       a: 'foo',
       b: 'bar'
@@ -69,9 +61,9 @@ it('should call the provided updateReport property function when a setting chang
   const node = shallow(<ReportControlPanel report={report} updateReport={spy} />);
 
   node
-    .find(Dropdown.Option)
+    .find(ReportDropdown)
     .at(0)
-    .simulate('click');
+    .prop('onChange')('newSetting');
 
   expect(spy).toHaveBeenCalled();
 });
@@ -81,29 +73,15 @@ it('should disable the groupBy and visualization Selects if view is not selected
     <ReportControlPanel report={{...report, data: {...report.data, view: ''}}} />
   );
 
-  expect(node.find('.configDropdown').at(1)).toBeDisabled();
-  expect(node.find('.configDropdown').at(2)).toBeDisabled();
+  expect(node.find(ReportDropdown).at(1)).toBeDisabled();
+  expect(node.find(ReportDropdown).at(2)).toBeDisabled();
 });
 
 it('should not disable the groupBy and visualization Selects if view is selected', () => {
   const node = shallow(<ReportControlPanel report={report} />);
 
-  expect(node.find('.configDropdown').at(1)).not.toBeDisabled();
-  expect(node.find('.configDropdown').at(2)).not.toBeDisabled();
-});
-
-it('should disable options, which would create wrong combination', () => {
-  const spy = jest.fn();
-  reportConfig.process.isAllowed.mockReturnValue(false);
-  const node = shallow(<ReportControlPanel report={report} onChange={spy} />);
-  node.setProps({view: 'baz'});
-
-  expect(
-    node
-      .find(Dropdown)
-      .at(1)
-      .find(Dropdown.Option)
-  ).toBeDisabled();
+  expect(node.find(ReportDropdown).at(1)).not.toBeDisabled();
+  expect(node.find(ReportDropdown).at(2)).not.toBeDisabled();
 });
 
 it('should show process definition name', async () => {
@@ -139,54 +117,12 @@ it('should load the variables of the process', () => {
 it('should include variables in the groupby options', () => {
   const node = shallow(<ReportControlPanel report={report} />);
 
-  node.setState({variables: [{name: 'Var1'}, {name: 'Var2'}]});
+  const variables = [{name: 'Var1'}, {name: 'Var2'}];
+  node.setState({variables});
 
-  const varDropdown = node.find('[label="Group by"] Submenu').find(Dropdown.Option);
+  const groupbyDropdown = node.find(ReportDropdown).at(1);
 
-  expect(varDropdown.at(0).prop('children')).toBe('Var1');
-  expect(varDropdown.at(1).prop('children')).toBe('Var2');
-});
-
-it('should disable the variable groupby submenu if there are no variables', () => {
-  const node = shallow(<ReportControlPanel report={report} />);
-
-  expect(node.find('[label="Group by"] Submenu')).toBeDisabled();
-});
-
-it('should only include variables that match the typeahead', () => {
-  const node = shallow(<ReportControlPanel report={report} />);
-
-  node.setState({
-    variables: [{name: 'Foo'}, {name: 'Bar'}, {name: 'Foobar'}],
-    variableTypeaheadValue: 'foo'
-  });
-
-  const varDropdown = node.find('[label="Group by"] Submenu').find(Dropdown.Option);
-
-  expect(varDropdown).toHaveLength(2);
-  expect(varDropdown.at(0).prop('children')).toBe('Foo');
-  expect(varDropdown.at(1).prop('children')).toBe('Foobar');
-});
-
-it('should show pagination for many variables', () => {
-  const node = shallow(<ReportControlPanel report={report} />);
-
-  node.setState({
-    variables: [
-      {name: 'varA'},
-      {name: 'varB'},
-      {name: 'varC'},
-      {name: 'varD'},
-      {name: 'varE'},
-      {name: 'varF'},
-      {name: 'varG'}
-    ]
-  });
-
-  const varDropdown = node.find('[label="Group by"] Submenu').find(Dropdown.Option);
-
-  expect(varDropdown).toHaveLength(5);
-  expect(node.find('.loadMore')).toBePresent();
+  expect(groupbyDropdown.prop('variables')).toEqual({variable: variables});
 });
 
 it('should not show an "Always show tooltips" button for other visualizations', () => {

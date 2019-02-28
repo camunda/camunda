@@ -1,17 +1,13 @@
 import React from 'react';
-import {Popover, DefinitionSelection, Dropdown, Labeled} from 'components';
+import {Popover, DefinitionSelection, Labeled} from 'components';
+import {formatters} from 'services';
 
 import {Configuration} from './Configuration';
+import ReportDropdown from './ReportDropdown';
 
 import {DecisionFilter} from './filter';
 
-import {isChecked} from './service';
-import {
-  getDataKeys,
-  reportConfig,
-  loadDecisionDefinitionXml,
-  extractDefinitionName
-} from 'services';
+import {reportConfig, loadDecisionDefinitionXml, extractDefinitionName} from 'services';
 const {decision: decisionConfig} = reportConfig;
 
 export default class DecisionControlPanel extends React.Component {
@@ -92,11 +88,23 @@ export default class DecisionControlPanel extends React.Component {
     this.props.updateReport(change, true);
   };
 
+  updateReport = (type, newValue) => {
+    this.props.updateReport(
+      decisionConfig.update(type, newValue, this.props),
+      type !== 'visualization'
+    );
+  };
+
   render() {
+    const {data, decisionInstanceCount} = this.props.report;
     const {
-      data: {decisionDefinitionKey, decisionDefinitionVersion, filter, visualization},
-      decisionInstanceCount
-    } = this.props.report;
+      decisionDefinitionKey,
+      decisionDefinitionVersion,
+      filter,
+      visualization,
+      configuration: {xml}
+    } = data;
+
     return (
       <div className="DecisionControlPanel ReportControlPanel">
         <ul>
@@ -113,21 +121,32 @@ export default class DecisionControlPanel extends React.Component {
               </Popover>
             </Labeled>
           </li>
-          <li className="select">
-            <Labeled label="View">
-              {this.renderDropdown('view', decisionConfig.options.view)}
-            </Labeled>
-          </li>
-          <li className="select">
-            <Labeled label="Group by">
-              {this.renderDropdown('groupBy', decisionConfig.options.groupBy)}
-            </Labeled>
-          </li>
-          <li className="select">
-            <Labeled label="Visualize as">
-              {this.renderDropdown('visualization', decisionConfig.options.visualization)}
-            </Labeled>
-          </li>
+          {['view', 'groupBy', 'visualization'].map((field, idx, fields) => {
+            const previous = fields
+              .filter((prev, prevIdx) => prevIdx < idx)
+              .map(prev => data[prev]);
+
+            return (
+              <li className="select" key={field}>
+                <Labeled label={formatters.convertCamelToSpaces(field)}>
+                  <ReportDropdown
+                    type="decision"
+                    field={field}
+                    value={data[field]}
+                    xml={xml}
+                    variables={this.state.variables}
+                    previous={previous}
+                    disabled={
+                      !decisionDefinitionKey ||
+                      !decisionDefinitionVersion ||
+                      previous.some(entry => !entry)
+                    }
+                    onChange={newValue => this.updateReport(field, newValue)}
+                  />
+                </Labeled>
+              </li>
+            );
+          })}
           <li className="filter">
             <DecisionFilter
               data={filter}
@@ -147,114 +166,4 @@ export default class DecisionControlPanel extends React.Component {
       </div>
     );
   }
-
-  renderDropdown = (type, config) => {
-    const {data} = this.props.report;
-    const {
-      decisionDefinitionKey,
-      decisionDefinitionVersion,
-      view,
-      groupBy,
-      configuration: {xml}
-    } = data;
-    let disabled = false;
-
-    if (!decisionDefinitionKey || !decisionDefinitionVersion) {
-      disabled = true;
-    }
-    if (type === 'groupBy' && !view) {
-      disabled = true;
-    }
-    if (type === 'visualization' && (!view || !groupBy)) {
-      disabled = true;
-    }
-    return (
-      <Dropdown
-        label={decisionConfig.getLabelFor(config, data[type], xml) || 'Please Select...'}
-        className="configDropdown"
-        disabled={disabled}
-      >
-        {Object.keys(config).map(key => {
-          const {label, data} = config[key];
-
-          const submenu = getDataKeys(data).find(key => Array.isArray(data[key]));
-          if (submenu) {
-            return this.renderSubmenu(submenu, type, data, label, key);
-          } else {
-            return this.renderNormalOption(type, data, label, key);
-          }
-        })}
-      </Dropdown>
-    );
-  };
-
-  renderSubmenu = (submenu, type, configData, label, key) => {
-    const {data} = this.props.report;
-    let disabled = type === 'groupBy' && !decisionConfig.isAllowed(data.view, configData);
-    const checked = isChecked(configData, data[type]);
-
-    let options = configData[submenu];
-
-    if (data.decisionDefinitionKey && type === 'groupBy' && key.includes('Variable')) {
-      const variables = this.state.variables[key];
-
-      if (variables.length === 0) {
-        disabled = true;
-      }
-
-      options = variables.map(({id, name}) => ({
-        data: {id},
-        label: name
-      }));
-    }
-
-    return (
-      <Dropdown.Submenu label={label} key={key} disabled={disabled} checked={checked}>
-        {options.map((entry, idx) => {
-          const subData = {...configData, [submenu]: entry.data};
-          const checked = isChecked(subData, data[type]);
-          return (
-            <Dropdown.Option
-              key={idx}
-              checked={checked}
-              onClick={() =>
-                this.props.updateReport(
-                  decisionConfig.update(type, subData, this.props),
-                  type !== 'visualization'
-                )
-              }
-            >
-              {entry.label}
-            </Dropdown.Option>
-          );
-        })}
-      </Dropdown.Submenu>
-    );
-  };
-
-  renderNormalOption = (type, configData, label, key) => {
-    const {data} = this.props.report;
-    let disabled = false;
-    if (type === 'groupBy') {
-      disabled = !decisionConfig.isAllowed(data.view, configData);
-    } else if (type === 'visualization') {
-      disabled = !decisionConfig.isAllowed(data.view, data.groupBy, configData);
-    }
-    const checked = isChecked(configData, data[type]);
-    return (
-      <Dropdown.Option
-        key={key}
-        checked={checked}
-        onClick={() =>
-          this.props.updateReport(
-            decisionConfig.update(type, configData, this.props),
-            type !== 'visualization'
-          )
-        }
-        disabled={disabled}
-      >
-        {label}
-      </Dropdown.Option>
-    );
-  };
 }

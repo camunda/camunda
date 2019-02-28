@@ -1,0 +1,10 @@
+.ReportDropdown {
+  width: 100%;
+
+  .activateButton {
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
