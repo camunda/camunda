@@ -152,7 +152,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     return getApplicationContext().getBean(EngineContextFactory.class).getConfiguredEngines();
   }
 
-  private void makeSureAllScheduledJobsAreFinished() {
+  public void makeSureAllScheduledJobsAreFinished() {
 
     CountDownLatch synchronizationObject = new CountDownLatch(2);
     SynchronizationElasticsearchImportJob importJob =
