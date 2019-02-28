@@ -143,6 +143,23 @@ public class ElasticsearchChecks {
     };
   }
 
+  @Bean(name = "incidentsAreActiveCheck")
+  public Predicate<Object[]> getIncidentsAreActiveCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(2);
+      assertThat(objects[0]).isInstanceOf(Long.class);
+      assertThat(objects[1]).isInstanceOf(Integer.class);
+      String workflowInstanceId = IdTestUtil.getId((Long)objects[0]);
+      int incidentsCount = (int)objects[1];
+      try {
+        final List<ActivityInstanceForDetailViewEntity> allActivityInstances = detailViewReader.getAllActivityInstances(workflowInstanceId);
+        return allActivityInstances.stream().filter(ai -> ai.getIncidentKey() != null).count() == incidentsCount;
+      } catch (NotFoundException ex) {
+        return false;
+      }
+    };
+  }
+
   @Bean(name = "incidentIsResolvedCheck")
   public Predicate<Object[]> getIncidentIsResolvedCheck() {
     return objects -> {

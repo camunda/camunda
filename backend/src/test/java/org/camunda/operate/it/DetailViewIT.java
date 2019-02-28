@@ -61,6 +61,10 @@ public class DetailViewIT extends OperateZeebeIntegrationTest {
   private Predicate<Object[]> incidentIsActiveCheck;
 
   @Autowired
+  @Qualifier("incidentsAreActiveCheck")
+  private Predicate<Object[]> incidentsAreActiveCheck;
+
+  @Autowired
   private DetailViewReader detailViewReader;
 
   @Rule
@@ -86,7 +90,8 @@ public class DetailViewIT extends OperateZeebeIntegrationTest {
     final String errorMsg = "some error";
     final String activityId = "alwaysFailingTask";
     ZeebeTestUtil.failTask(zeebeClient, activityId, getWorkerName(), 3, errorMsg);
-    elasticsearchTestRule.processAllEventsAndWait(incidentIsActiveCheck, workflowInstanceKey);
+    elasticsearchTestRule.processAllEventsAndWait(incidentsAreActiveCheck, workflowInstanceKey, 4);
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //when
     MockHttpServletRequestBuilder request = get(getIncidentsURL(workflowInstanceKey));
