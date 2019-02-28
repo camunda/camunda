@@ -142,7 +142,7 @@ public class TimerCatchEventTest {
             .done();
 
     testClient.deploy(workflow);
-    testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
 
     // when
     final Record<WorkflowInstanceRecordValue> activatedEvent =
@@ -154,7 +154,9 @@ public class TimerCatchEventTest {
     final Record<TimerRecordValue> createdEvent =
         RecordingExporter.timerRecords(TimerIntent.CREATED).getFirst();
 
-    Assertions.assertThat(createdEvent.getValue()).hasElementInstanceKey(activatedEvent.getKey());
+    Assertions.assertThat(createdEvent.getValue())
+        .hasElementInstanceKey(activatedEvent.getKey())
+        .hasWorkflowInstanceKey(workflowInstanceKey);
     assertThat(createdEvent.getValue().getDueDate())
         .isGreaterThan(brokerRule.getClock().getCurrentTimeInMillis());
   }

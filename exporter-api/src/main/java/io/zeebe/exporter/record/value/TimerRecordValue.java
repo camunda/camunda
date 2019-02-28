@@ -28,6 +28,9 @@ public interface TimerRecordValue extends RecordValue {
   /** @return the key of the related element instance. */
   long getElementInstanceKey();
 
+  /** @return the key of the related workflow instance */
+  long getWorkflowInstanceKey();
+
   /** @return the due date of the timer as Unix timestamp in millis. */
   long getDueDate();
 

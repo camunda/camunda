@@ -92,6 +92,7 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
   private boolean triggerTimer(TimerInstance timer) {
     timerRecord
         .setElementInstanceKey(timer.getElementInstanceKey())
+        .setWorkflowInstanceKey(timer.getWorkflowInstanceKey())
         .setDueDate(timer.getDueDate())
         .setHandlerNodeId(timer.getHandlerNodeId())
         .setRepetitions(timer.getRepetitions())
