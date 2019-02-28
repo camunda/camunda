@@ -357,7 +357,9 @@ public class ExporterRecordMapper {
         record.getElementInstanceKey(),
         record.getWorkflowInstanceKey(),
         record.getDueDate(),
-        asString(record.getHandlerNodeId()));
+        asString(record.getHandlerNodeId()),
+        record.getRepetitions(),
+        record.getWorkflowKey());
   }
 
   private VariableRecordValue ofVariableRecord(LoggedEvent event) {

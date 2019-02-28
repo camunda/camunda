@@ -114,7 +114,7 @@ public class CatchEventBehavior {
       DirectBuffer handlerNodeId,
       Timer timer,
       TypedStreamWriter writer) {
-
+    timerRecord.reset();
     timerRecord
         .setRepetitions(timer.getRepetitions())
         .setDueDate(timer.getDueDate(ActorClock.currentTimeMillis()))
@@ -134,10 +134,12 @@ public class CatchEventBehavior {
   }
 
   public void unsubscribeFromTimerEvent(TimerInstance timer, TypedStreamWriter writer) {
+    timerRecord.reset();
     timerRecord
         .setElementInstanceKey(timer.getElementInstanceKey())
         .setWorkflowInstanceKey(timer.getWorkflowInstanceKey())
         .setDueDate(timer.getDueDate())
+        .setRepetitions(timer.getRepetitions())
         .setHandlerNodeId(timer.getHandlerNodeId())
         .setWorkflowKey(timer.getWorkflowKey());
 

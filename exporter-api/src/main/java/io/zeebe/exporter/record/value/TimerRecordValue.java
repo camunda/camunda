@@ -25,6 +25,9 @@ import io.zeebe.protocol.intent.TimerIntent;
  */
 public interface TimerRecordValue extends RecordValue {
 
+  /** @return the key of the workflow in which this timer was created */
+  long getWorkflowKey();
+
   /** @return the key of the related element instance. */
   long getElementInstanceKey();
 
@@ -43,4 +46,7 @@ public interface TimerRecordValue extends RecordValue {
    * @return the ID of the flow node which will handle the trigger element
    */
   String getHandlerFlowNodeId();
+
+  /** @return the number of times this timer should trigger */
+  int getRepetitions();
 }
