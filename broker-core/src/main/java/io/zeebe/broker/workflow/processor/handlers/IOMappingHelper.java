@@ -23,6 +23,8 @@ import io.zeebe.broker.workflow.state.VariablesState;
 import io.zeebe.msgpack.mapping.Mapping;
 import io.zeebe.msgpack.mapping.MsgPackMergeTool;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import java.util.HashSet;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 
 public class IOMappingHelper {
@@ -35,7 +37,8 @@ public class IOMappingHelper {
     final WorkflowInstanceRecord record = context.getValue();
     final long elementInstanceKey = context.getRecord().getKey();
     final long flowScopeKey = record.getFlowScopeKey();
-    final boolean hasOutputMappings = element.getOutputMappings().length > 0;
+    final Mapping[] outputMappings = element.getOutputMappings();
+    final boolean hasOutputMappings = outputMappings.length > 0;
 
     final DirectBuffer payload = variablesState.getPayload(elementInstanceKey);
     if (payload != null) {
@@ -51,9 +54,10 @@ public class IOMappingHelper {
     if (hasOutputMappings) {
       mergeTool.reset();
 
-      final DirectBuffer variables = variablesState.getVariablesAsDocument(elementInstanceKey);
+      final DirectBuffer variables =
+          determineVariables(variablesState, elementInstanceKey, outputMappings);
 
-      mergeTool.mergeDocumentStrictly(variables, element.getOutputMappings());
+      mergeTool.mergeDocumentStrictly(variables, outputMappings);
       final DirectBuffer mergedPayload = mergeTool.writeResultToBuffer();
 
       variablesState.setVariablesFromDocument(flowScopeKey, mergedPayload);
@@ -74,11 +78,9 @@ public class IOMappingHelper {
     if (mappings.length > 0) {
       mergeTool.reset();
 
+      final VariablesState variablesState = context.getElementInstanceState().getVariablesState();
       final DirectBuffer scopeVariables =
-          context
-              .getElementInstanceState()
-              .getVariablesState()
-              .getVariablesAsDocument(context.getFlowScopeInstance().getKey());
+          determineVariables(variablesState, context.getFlowScopeInstance().getKey(), mappings);
 
       mergeTool.mergeDocumentStrictly(scopeVariables, mappings);
       final DirectBuffer mappedPayload = mergeTool.writeResultToBuffer();
@@ -90,5 +92,14 @@ public class IOMappingHelper {
 
       context.getValue().setPayload(mappedPayload);
     }
+  }
+
+  private DirectBuffer determineVariables(
+      VariablesState variablesState, long elementInstanceKey, Mapping[] outputMappings) {
+    final Set<DirectBuffer> actualNeededVariables = new HashSet<>();
+    for (Mapping m : outputMappings) {
+      actualNeededVariables.add(m.getSource().getTopLevelVariable());
+    }
+    return variablesState.getVariablesAsDocument(elementInstanceKey, actualNeededVariables);
   }
 }
