@@ -7,12 +7,20 @@ package org.camunda.operate.rest.dto.incidents;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.rest.dto.OperationDto;
 
 public class IncidentDto {
 
+  public static final Comparator<IncidentDto> INCIDENT_DEFAULT_COMPARATOR = (o1, o2) -> {
+    if (o1.getErrorType().equals(o2.getErrorType())) {
+      return o1.getId().compareTo(o2.getId());
+    }
+    return o1.getErrorType().compareTo(o2.getErrorType());
+  };
   private String id;
 
   private String errorType;
@@ -129,6 +137,11 @@ public class IncidentDto {
       }
     }
     return result;
+  }
+
+  public static List<IncidentDto> sortDefault(List<IncidentDto> incidents) {
+    Collections.sort(incidents, INCIDENT_DEFAULT_COMPARATOR);
+    return incidents;
   }
 
   @Override

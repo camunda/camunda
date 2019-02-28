@@ -202,7 +202,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //when
-    //1st load incident and then workflow instance events
+    //load only incidents
     processAllEvents(1, ZeebeESImporter.ImportValueType.INCIDENT);
 
     assertListViewResponse();

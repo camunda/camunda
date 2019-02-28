@@ -176,7 +176,7 @@ public class DetailViewReader {
         incidentResponse.getFlowNodes().add(new IncidentFlowNodeDto(b.getKeyAsString(), (int)b.getDocCount())));
     });
 
-    incidentResponse.setIncidents(IncidentDto.createFrom(incidents));
+    incidentResponse.setIncidents(IncidentDto.sortDefault(IncidentDto.createFrom(incidents)));
     incidentResponse.setCount(incidents.size());
 
     return incidentResponse;

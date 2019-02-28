@@ -6,6 +6,8 @@
 package org.camunda.operate.data.usertest;
 
 import javax.annotation.PreDestroy;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -14,6 +16,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.camunda.operate.data.AbstractDataGenerator;
 import org.camunda.operate.data.util.NameGenerator;
@@ -278,9 +281,11 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     jobWorkers.add(progressFlightRegistrationDetermineWeight());
     jobWorkers.add(progressSimpleTask("processPayment"));
 
+    jobWorkers.add(progressAlwaysFailingTask());
+
     //start more instances after 1 minute
     scheduler.schedule(() ->
-        startWorkflowInstances(2)
+        startWorkflowInstances(3)
       , 1, TimeUnit.MINUTES);
 
     scheduler.schedule(() -> {
@@ -294,6 +299,25 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         cancelSomeInstances(),
       100, TimeUnit.SECONDS);
 
+  }
+
+  private JobWorker progressAlwaysFailingTask() {
+    return client.newWorker()
+      .jobType("alwaysFailingTask")
+      .handler((jobClient, job) ->
+      {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        new Throwable().printStackTrace(pw);
+        String errorMessage = "Something went wrong. \n" + sw.toString();
+        jobClient.newFailCommand(job.getKey())
+          .retries(0)
+          .errorMessage(errorMessage)
+          .send().join();
+      })
+      .name("operate")
+      .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
+      .open();
   }
 
   @PreDestroy
