@@ -69,11 +69,17 @@ class SelectionList extends React.Component {
   };
 
   handleRetrySelection = openSelectionId => {
-    this.executeBatchOperation(openSelectionId, OPERATION_TYPE.UPDATE_RETRIES);
+    this.executeBatchOperation(
+      openSelectionId,
+      OPERATION_TYPE.UPDATE_JOB_RETRIES
+    );
   };
 
   handleCancelSelection = openSelectionId => {
-    this.executeBatchOperation(openSelectionId, OPERATION_TYPE.CANCEL);
+    this.executeBatchOperation(
+      openSelectionId,
+      OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE
+    );
   };
 
   render() {

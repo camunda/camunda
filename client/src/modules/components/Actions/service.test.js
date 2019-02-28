@@ -33,19 +33,25 @@ describe('Action services', () => {
     describe('wrapIdinQuery', () => {
       it('should return cancel-query for active instance', () => {
         expect(
-          wrapIdinQuery(OPERATION_TYPE.CANCEL, mockActiveInstance)
+          wrapIdinQuery(
+            OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE,
+            mockActiveInstance
+          )
         ).toEqual(mockActiveQuery);
       });
 
       it('should return cancel-query for instance with incident ', () => {
         expect(
-          wrapIdinQuery(OPERATION_TYPE.CANCEL, mockIncidentInstance)
+          wrapIdinQuery(
+            OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE,
+            mockIncidentInstance
+          )
         ).toEqual(mockIncidentQuery);
       });
 
       it('should return retry-query for instance with incidents', () => {
         expect(
-          wrapIdinQuery(OPERATION_TYPE.UPDATE_RETRIES, mockIncidentInstance)
+          wrapIdinQuery(OPERATION_TYPE.UPDATE_JOB_RETRIES, mockIncidentInstance)
         ).toEqual(mockIncidentQuery);
       });
     });

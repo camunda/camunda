@@ -53,7 +53,7 @@ describe('Actions', () => {
     // when
     mockOperation = createOperation({
       state: OPERATION_STATE.SCHEDULED,
-      type: OPERATION_TYPE.CANCEL
+      type: OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE
     });
     mockInstance = createInstance({operations: [mockOperation]});
     node = shallow(<Actions instance={mockInstance} />);
@@ -64,7 +64,7 @@ describe('Actions', () => {
     );
 
     expect(node.find(ActionStatus).props().operationType).toBe(
-      OPERATION_TYPE.CANCEL
+      OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE
     );
   });
 
@@ -91,7 +91,7 @@ describe('Actions', () => {
 
       it('should render retry action item', async () => {
         const actionType = node.find(ActionItems.Item).props().type;
-        expect(actionType).toBe(OPERATION_TYPE.UPDATE_RETRIES);
+        expect(actionType).toBe(OPERATION_TYPE.UPDATE_JOB_RETRIES);
       });
 
       it('should call the retry api onClick ', () => {
@@ -103,11 +103,11 @@ describe('Actions', () => {
 
         // then
         expect(service.wrapIdinQuery).toBeCalledWith(
-          OPERATION_TYPE.UPDATE_RETRIES,
+          OPERATION_TYPE.UPDATE_JOB_RETRIES,
           mockInstance
         );
         expect(api.applyOperation).toBeCalledWith(
-          OPERATION_TYPE.UPDATE_RETRIES,
+          OPERATION_TYPE.UPDATE_JOB_RETRIES,
           service.wrapIdinQuery()
         );
       });
@@ -135,7 +135,7 @@ describe('Actions', () => {
       });
       it('should render cancel action item', async () => {
         const actionType = node.find(ActionItems.Item).props().type;
-        expect(actionType).toBe(OPERATION_TYPE.CANCEL);
+        expect(actionType).toBe(OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE);
       });
       it('should call the cancel api onClick ', () => {
         //given
@@ -144,11 +144,11 @@ describe('Actions', () => {
         actionItem.simulate('click');
         // then
         expect(service.wrapIdinQuery).toBeCalledWith(
-          OPERATION_TYPE.CANCEL,
+          OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE,
           mockInstance
         );
         expect(api.applyOperation).toBeCalledWith(
-          OPERATION_TYPE.CANCEL,
+          OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE,
           service.wrapIdinQuery()
         );
       });

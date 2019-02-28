@@ -12,7 +12,7 @@ describe('StatusItems', () => {
   beforeEach(() => {
     node = shallow(
       <StatusItems>
-        <StatusItems.Item type={OPERATION_TYPE.UPDATE_RETRIES} />
+        <StatusItems.Item type={OPERATION_TYPE.UPDATE_JOB_RETRIES} />
       </StatusItems>
     );
   });
@@ -30,7 +30,7 @@ describe('StatusItems', () => {
   it('should render failed retry operation icon', () => {
     // when
     expect(node.find(StatusItems.Item).props().type).toBe(
-      OPERATION_TYPE.UPDATE_RETRIES
+      OPERATION_TYPE.UPDATE_JOB_RETRIES
     );
 
     // then
@@ -47,11 +47,11 @@ describe('StatusItems', () => {
     // when
     node = shallow(
       <StatusItems>
-        <StatusItems.Item type={OPERATION_TYPE.CANCEL} />
+        <StatusItems.Item type={OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE} />
       </StatusItems>
     );
     expect(node.find(StatusItems.Item).props().type).toBe(
-      OPERATION_TYPE.CANCEL
+      OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE
     );
 
     //then

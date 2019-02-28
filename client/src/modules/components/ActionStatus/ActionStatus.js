@@ -10,9 +10,9 @@ import * as Styled from './styled';
 
 const getTitleByOperationType = (instanceId, type) => {
   switch (type) {
-    case OPERATION_TYPE.UPDATE_RETRIES:
+    case OPERATION_TYPE.UPDATE_JOB_RETRIES:
       return `Retrying Instance ${instanceId} failed`;
-    case OPERATION_TYPE.CANCEL:
+    case OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE:
       return `Canceling Instance ${instanceId} failed`;
     default:
       return '';

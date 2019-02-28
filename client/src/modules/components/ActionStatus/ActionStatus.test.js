@@ -53,7 +53,7 @@ describe('ActionStatus', () => {
       node = shallow(
         <ActionStatus
           operationState={OPERATION_STATE.FAILED}
-          operationType={OPERATION_TYPE.UPDATE_RETRIES}
+          operationType={OPERATION_TYPE.UPDATE_JOB_RETRIES}
           instance={{id: 'foo'}}
         />
       );
@@ -61,7 +61,7 @@ describe('ActionStatus', () => {
       expect(node.find(StatusItems)).toExist();
       expect(node.find(StatusItems.Item)).toExist();
       expect(node.find(StatusItems.Item).props().type).toBe(
-        OPERATION_TYPE.UPDATE_RETRIES
+        OPERATION_TYPE.UPDATE_JOB_RETRIES
       );
     });
 
@@ -70,7 +70,7 @@ describe('ActionStatus', () => {
       node = shallow(
         <ActionStatus
           operationState={OPERATION_STATE.FAILED}
-          operationType={OPERATION_TYPE.CANCEL}
+          operationType={OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE}
           instance={{id: 'foo'}}
         />
       );
@@ -79,7 +79,7 @@ describe('ActionStatus', () => {
       expect(node.find(StatusItems)).toExist();
       expect(node.find(StatusItems.Item)).toExist();
       expect(node.find(StatusItems.Item).props().type).toBe(
-        OPERATION_TYPE.CANCEL
+        OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE
       );
     });
   });

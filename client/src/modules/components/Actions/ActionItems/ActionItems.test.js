@@ -14,7 +14,7 @@ describe('ActionItems', () => {
     node = shallow(
       <ActionItems>
         <ActionItems.Item
-          type={OPERATION_TYPE.UPDATE_RETRIES}
+          type={OPERATION_TYPE.UPDATE_JOB_RETRIES}
           onClick={() => mockOnClick()}
         />
       </ActionItems>
@@ -30,7 +30,7 @@ describe('ActionItems', () => {
     beforeEach(() => {
       node = shallow(
         <ActionItems.Item
-          type={OPERATION_TYPE.UPDATE_RETRIES}
+          type={OPERATION_TYPE.UPDATE_JOB_RETRIES}
           onClick={() => mockOnClick()}
           title={'Retry instance 1'}
         />
@@ -39,7 +39,7 @@ describe('ActionItems', () => {
 
     it('should show the correct icon based on the type', () => {
       expect(node.find(Styled.Button).props().type).toBe(
-        OPERATION_TYPE.UPDATE_RETRIES
+        OPERATION_TYPE.UPDATE_JOB_RETRIES
       );
       expect(node.find(Styled.RetryIcon)).toExist();
     });
@@ -58,7 +58,7 @@ describe('ActionItems', () => {
     beforeEach(() => {
       node = shallow(
         <ActionItems.Item
-          type={OPERATION_TYPE.CANCEL}
+          type={OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE}
           onClick={() => mockOnClick()}
           title={'Cancel instance 1'}
         />
@@ -66,7 +66,9 @@ describe('ActionItems', () => {
     });
 
     it('should show the correct icon based on the type', () => {
-      expect(node.find(Styled.Button).props().type).toBe(OPERATION_TYPE.CANCEL);
+      expect(node.find(Styled.Button).props().type).toBe(
+        OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE
+      );
       expect(node.find(Styled.CancelIcon)).toExist();
     });
 

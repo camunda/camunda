@@ -43,12 +43,12 @@ export default class Selection extends React.Component {
   }
 
   operationsMap = {
-    [OPERATION_TYPE.CANCEL]: {
+    [OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE]: {
       action: this.props.onCancel,
       label: 'Cancel',
       icon: <Styled.CancelIcon />
     },
-    [OPERATION_TYPE.UPDATE_RETRIES]: {
+    [OPERATION_TYPE.UPDATE_JOB_RETRIES]: {
       action: this.props.onRetry,
       label: 'Retry',
       icon: <Styled.RetryIcon />

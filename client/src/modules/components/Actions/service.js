@@ -10,10 +10,10 @@ export const wrapIdinQuery = (operationType, instance) => {
   let basicQuery = {ids: [instance.id]};
 
   const queryTypes = {
-    [OPERATION_TYPE.CANCEL]: isWithIncident(instance)
+    [OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE]: isWithIncident(instance)
       ? {running: true, incidents: true}
       : {running: true, active: true},
-    [OPERATION_TYPE.UPDATE_RETRIES]: {running: true, incidents: true}
+    [OPERATION_TYPE.UPDATE_JOB_RETRIES]: {running: true, incidents: true}
   };
 
   return [{...basicQuery, ...queryTypes[operationType]}];

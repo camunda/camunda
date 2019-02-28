@@ -145,7 +145,7 @@ describe('SelectionList', () => {
 
     // then
     expect(instancesApi.applyOperation).toHaveBeenCalledWith(
-      OPERATION_TYPE.UPDATE_RETRIES,
+      OPERATION_TYPE.UPDATE_JOB_RETRIES,
       selections[0].queries
     );
   });
@@ -165,7 +165,7 @@ describe('SelectionList', () => {
 
     // then
     expect(instancesApi.applyOperation).toHaveBeenCalledWith(
-      OPERATION_TYPE.CANCEL,
+      OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE,
       selections[0].queries
     );
   });

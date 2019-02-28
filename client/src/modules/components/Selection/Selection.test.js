@@ -111,7 +111,9 @@ describe('Selection', () => {
       .find("[data-test='dropdown-toggle']")
       .simulate('click');
 
-    node.find('[data-test="UPDATE_RETRIES-dropdown-option"]').simulate('click');
+    node
+      .find('[data-test="UPDATE_JOB_RETRIES-dropdown-option"]')
+      .simulate('click');
     expect(mockOnRetry).toHaveBeenCalled();
   });
 
@@ -121,7 +123,9 @@ describe('Selection', () => {
       .find("[data-test='dropdown-toggle']")
       .simulate('click');
 
-    node.find('[data-test="CANCEL-dropdown-option"]').simulate('click');
+    node
+      .find('[data-test="CANCEL_WORKFLOW_INSTANCE-dropdown-option"]')
+      .simulate('click');
     expect(mockOnCancel).toHaveBeenCalled();
   });
 
@@ -139,7 +143,9 @@ describe('Selection', () => {
       />
     );
 
-    node.find('[data-test="CANCEL-dropdown-option"]').simulate('click');
+    node
+      .find('[data-test="CANCEL_WORKFLOW_INSTANCE-dropdown-option"]')
+      .simulate('click');
 
     await flushPromises();
     node.update();

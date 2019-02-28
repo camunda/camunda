@@ -4,14 +4,14 @@ exports[`StatusItems should match snapshots 1`] = `
 <Themed(styled.ul)>
   <Item
     key=".0"
-    type="UPDATE_RETRIES"
+    type="UPDATE_JOB_RETRIES"
   />
 </Themed(styled.ul)>
 `;
 
 exports[`StatusItems should match snapshots 2`] = `
 <Themed(styled.li)
-  type="UPDATE_RETRIES"
+  type="UPDATE_JOB_RETRIES"
 >
   <Themed(Styled(ReactComponent)) />
 </Themed(styled.li)>
