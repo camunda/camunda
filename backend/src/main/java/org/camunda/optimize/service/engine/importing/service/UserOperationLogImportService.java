@@ -10,8 +10,8 @@ import org.camunda.optimize.service.es.writer.UserOperationsLogEntryWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class UserOperationLogImportService {
   private static final Logger logger = LoggerFactory.getLogger(UserOperationLogImportService.class);
@@ -49,15 +49,12 @@ public class UserOperationLogImportService {
     }
   }
 
-  private List<UserOperationLogEntryDto> mapEngineEntitiesToOptimizeEntities(final
-                                                                             List<UserOperationLogEntryEngineDto>
-                                                                               engineEntities) {
-    List<UserOperationLogEntryDto> list = new ArrayList<>();
-    for (UserOperationLogEntryEngineDto engineEntity : engineEntities) {
-      UserOperationLogEntryDto userOperationLogEntry = mapEngineEntityToOptimizeEntity(engineEntity);
-      list.add(userOperationLogEntry);
-    }
-    return list;
+  private List<UserOperationLogEntryDto> mapEngineEntitiesToOptimizeEntities(
+    final List<UserOperationLogEntryEngineDto> engineEntities) {
+    return engineEntities.stream()
+      .filter(operationLogEntry -> operationLogEntry.getProcessInstanceId() != null)
+      .map(this::mapEngineEntityToOptimizeEntity)
+      .collect(Collectors.toList());
   }
 
   private ElasticsearchImportJob<UserOperationLogEntryDto> createElasticsearchImportJob(final

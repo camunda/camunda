@@ -28,6 +28,7 @@ import org.junit.rules.RuleChain;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
+import java.util.UUID;
 
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
@@ -38,6 +39,7 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.not;
 
 
 public class UserTaskImportIT {
@@ -134,6 +136,36 @@ public class UserTaskImportIT {
   }
 
   @Test
+  public void onlyUserTasksRelatedToProcessInstancesAreImported() throws IOException {
+    // given
+    deployAndStartTwoUserTasksProcess();
+    final UUID independentUserTaskId = engineRule.createIndependentUserTask();
+    engineRule.finishAllUserTasks();
+
+    // when
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // then
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    for (SearchHit searchHitFields : idsResp.getHits()) {
+      final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
+        searchHitFields.getSourceAsString(), ProcessInstanceDto.class
+      );
+      assertThat(processInstanceDto.getUserTasks().size(), is(1));
+      assertThat(
+        processInstanceDto.getUserTasks().stream().map(SimpleUserTaskInstanceDto::getActivityId).collect(toList()),
+        containsInAnyOrder(USER_TASK_1)
+      );
+      assertThat(
+        processInstanceDto.getUserTasks().stream().map(SimpleUserTaskInstanceDto::getId).collect(toList()),
+        not(containsInAnyOrder(independentUserTaskId))
+      );
+    }
+  }
+
+  @Test
   public void noSideEffectsByOtherProcessInstanceUserTasks() throws IOException {
     // given
     final ProcessInstanceEngineDto processInstanceDto1 = deployAndStartTwoUserTasksProcess();
@@ -211,6 +243,30 @@ public class UserTaskImportIT {
             assertThat(userOperationDto.getNewValue(), is(notNullValue()));
           });
         });
+    }
+  }
+
+  @Test
+  public void onlyUserOperationsRelatedToProcessInstancesAreImported() throws IOException {
+    // given
+    deployAndStartTwoUserTasksProcess();
+    engineRule.createIndependentUserTask();
+    engineRule.finishAllUserTasks();
+
+    // when
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // then
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROC_INSTANCE_TYPE);
+    assertThat(idsResp.getHits().getTotalHits(), is(1L));
+    for (SearchHit searchHitFields : idsResp.getHits()) {
+      final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
+        searchHitFields.getSourceAsString(), ProcessInstanceDto.class
+      );
+      assertThat(processInstanceDto.getUserTasks().size(), is(1));
+      processInstanceDto.getUserTasks()
+        .forEach(userTask -> assertThat(userTask.getUserOperations().size(), is(2)));
     }
   }
 

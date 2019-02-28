@@ -66,6 +66,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.UUID;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
@@ -162,6 +163,23 @@ public class EngineIntegrationRule extends TestWatcher {
     } catch (IOException e) {
       logger.error("Error cleaning engine with purge request", e);
     }
+  }
+
+  public UUID createIndependentUserTask() throws IOException {
+    final UUID taskId = UUID.randomUUID();
+    final HttpPost completePost = new HttpPost(getEngineUrl() + "/task/create");
+    completePost.setEntity(new StringEntity(
+      String.format("{\"id\":\"%s\",\"name\":\"name\"}", taskId.toString())
+    ));
+    completePost.addHeader("Content-Type", "application/json");
+    try (CloseableHttpResponse response = getHttpClient().execute(completePost)) {
+      if (response.getStatusLine().getStatusCode() != 204) {
+        throw new RuntimeException(
+          "Could not create user task! Status-code: " + response.getStatusLine().getStatusCode()
+        );
+      }
+    }
+    return taskId;
   }
 
   public void finishAllUserTasks() {

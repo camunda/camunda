@@ -7,12 +7,11 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.CompletedUserTasksElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.CompletedUserTaskInstanceWriter;
-import org.camunda.optimize.service.exceptions.OptimizeProcessDefinitionFetchException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class CompletedUserTaskInstanceImportService {
   private static final Logger logger = LoggerFactory.getLogger(CompletedUserTaskInstanceImportService.class);
@@ -50,12 +49,10 @@ public class CompletedUserTaskInstanceImportService {
   }
 
   private List<UserTaskInstanceDto> mapEngineEntitiesToOptimizeEntities(final List<HistoricUserTaskInstanceDto> engineEntities) {
-    List<UserTaskInstanceDto> list = new ArrayList<>();
-    for (HistoricUserTaskInstanceDto engineEntity : engineEntities) {
-      UserTaskInstanceDto userTaskInstanceDto = mapEngineEntityToOptimizeEntity(engineEntity);
-      list.add(userTaskInstanceDto);
-    }
-    return list;
+    return engineEntities.stream()
+      .filter(instance -> instance.getProcessInstanceId() != null)
+      .map(this::mapEngineEntityToOptimizeEntity)
+      .collect(Collectors.toList());
   }
 
   private ElasticsearchImportJob<UserTaskInstanceDto> createElasticsearchImportJob(final List<UserTaskInstanceDto> userTasks,
