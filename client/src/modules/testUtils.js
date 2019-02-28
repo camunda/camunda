@@ -548,3 +548,10 @@ export const createDeepNestedTree = depth => {
     })
   ];
 };
+
+export const createIncidents = () => {
+  return {
+    count: 1,
+    incidents: [createIncident()]
+  };
+};

@@ -1,4 +1,5 @@
 import styled from 'styled-components';
+import {INCIDENTS_BAR_HEIGHT} from 'modules/constants.js';
 import {Colors} from 'modules/theme';
 import withStrippedProps from 'modules/utils/withStrippedProps';
 import {ReactComponent as Down} from 'modules/components/Icon/down.svg';
@@ -9,7 +10,7 @@ export const IncidentsBar = styled.div`
   position: relative;
   z-index: 5;
 
-  height: 42px;
+  height: ${INCIDENTS_BAR_HEIGHT}px;
   padding: 0 20px;
   font-size: 14px;
   opacity: 1;

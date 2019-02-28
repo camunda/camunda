@@ -1,10 +1,11 @@
 import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
+import {INCIDENTS_BAR_HEIGHT} from 'modules/constants';
 
-export const Wrapper = themed(styled.div`
+export const Overlay = themed(styled.div`
   width: 100%;
   height: 100%;
-  padding-top: 42px;
+  padding-top: ${INCIDENTS_BAR_HEIGHT}px;
   position: absolute;
   z-index: 3;
   top: 0;

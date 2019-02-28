@@ -159,3 +159,5 @@ export const POPOVER_SIDE = {
   LEFT: 'LEFT',
   BOTTOM_MIRROR: 'BOTTOM_MIRROR'
 };
+
+export const INCIDENTS_BAR_HEIGHT = 42;

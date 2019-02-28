@@ -13,7 +13,8 @@ import {
   createRawTreeNode,
   createEvent,
   createEvents,
-  createMinimalProcess
+  createMinimalProcess,
+  createIncidents
 } from 'modules/testUtils';
 
 import {STATE, PAGE_TITLE} from 'modules/constants';
@@ -22,7 +23,6 @@ import * as diagramApi from 'modules/api/diagram/diagram';
 import * as eventsApi from 'modules/api/events/events';
 import * as activityInstanceApi from 'modules/api/activityInstances/activityInstances';
 
-import StateIconIncident from 'modules/components/Icon/state-icon-incident.svg';
 import {getWorkflowName} from 'modules/utils/instance';
 import * as diagramUtils from 'modules/utils/bpmn';
 import {ThemeProvider} from 'modules/theme';
@@ -113,10 +113,9 @@ const shallowRenderComponent = (customProps = {}) =>
 describe('Instance', () => {
   beforeEach(() => {
     instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(INSTANCE);
-    instancesApi.fetchWorkflowInstanceIncidents = mockResolvedAsyncFn({
-      count: 2,
-      incidents: []
-    });
+    instancesApi.fetchWorkflowInstanceIncidents = mockResolvedAsyncFn(
+      createIncidents()
+    );
     diagramApi.fetchWorkflowXML = mockResolvedAsyncFn(xmlMock);
     activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
       mockTree

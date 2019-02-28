@@ -2,11 +2,14 @@ import React from 'react';
 
 import PropTypes from 'prop-types';
 import IncidentsBar from './../IncidentsBar';
-import Incidents from './../Incidents';
+import IncidentsOverlay from './../IncidentsOverlay';
 
 export default class IncidentsWrapper extends React.PureComponent {
   static defaultProps = {
-    incidents: PropTypes.object,
+    incidents: PropTypes.shape({
+      count: PropTypes.number,
+      incidents: PropTypes.array
+    }),
     instanceId: PropTypes.string
   };
   state = {
@@ -29,9 +32,9 @@ export default class IncidentsWrapper extends React.PureComponent {
           isArrowFlipped={this.state.isOpen}
         />
         {this.state.isOpen && (
-          <Incidents>
+          <IncidentsOverlay>
             <div>Incidents table</div>
-          </Incidents>
+          </IncidentsOverlay>
         )}
       </>
     );
