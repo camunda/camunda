@@ -147,9 +147,6 @@ describe('Instance', () => {
     expect(node.find('Header').text()).toEqual(
       expect.stringContaining(INSTANCE.id)
     );
-    expect(node.find('Header').text()).toEqual(
-      expect.stringContaining(StateIconIncident)
-    );
 
     // Diagram
     expect(node.find('DiagramPanel')).toHaveLength(1);

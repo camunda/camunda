@@ -5,11 +5,7 @@ import StateIcon from 'modules/components/StateIcon';
 import Dropdown from 'modules/components/Dropdown';
 
 import {OPERATION_STATE, OPERATION_TYPE} from 'modules/constants';
-import {
-  getWorkflowName,
-  getInstanceState,
-  getLatestOperation
-} from 'modules/utils/instance';
+import {getWorkflowName, getLatestOperation} from 'modules/utils/instance';
 import {ReactComponent as Down} from 'modules/components/Icon/down.svg';
 import {ReactComponent as Right} from 'modules/components/Icon/right.svg';
 import {BADGE_TYPE} from 'modules/constants';
@@ -153,7 +149,7 @@ export default class Selection extends React.Component {
             >
               <Styled.Li key={index} timeout={timeout}>
                 <Styled.StatusCell>
-                  <StateIcon state={getInstanceState(instanceDetails)} />
+                  <StateIcon state={instanceDetails.state} />
                 </Styled.StatusCell>
                 <Styled.NameCell>
                   {getWorkflowName(instanceDetails)}

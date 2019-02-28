@@ -18,22 +18,6 @@ export const getActiveIncident = (incidents = []) => {
   return activeIncident;
 };
 
-export function getInstanceState({state, incidents}) {
-  if (
-    state === STATE.COMPLETED ||
-    state === STATE.CANCELED ||
-    state === STATE.INCIDENT
-  ) {
-    return state;
-  }
-
-  // on Single instance view, instance.state is ACTIVE for active instance & instance with incident
-  // so we look at instance.incidents
-  // https://app.camunda.com/jira/browse/OPE-400
-  const hasActiveIncident = Boolean(getActiveIncident(incidents));
-  return hasActiveIncident ? STATE.INCIDENT : STATE.ACTIVE;
-}
-
 export function getWorkflowName({bpmnProcessId, workflowName}) {
   return workflowName || bpmnProcessId;
 }

@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import SplitPane from 'modules/components/SplitPane';
 import StateIcon from 'modules/components/StateIcon';
 import {formatDate} from 'modules/utils/date';
-import {getWorkflowName, getInstanceState} from 'modules/utils/instance';
+import {getWorkflowName} from 'modules/utils/instance';
 import Actions from 'modules/components/Actions';
 
 import {STATE} from 'modules/constants';
@@ -36,7 +36,7 @@ export default class DiagramPanel extends React.PureComponent {
             <tbody>
               <Styled.Tr>
                 <Styled.Td>
-                  <StateIcon state={getInstanceState(instance)} />
+                  <StateIcon state={instance.state} />
                   {getWorkflowName(instance)}
                 </Styled.Td>
                 <Styled.Td>{instance.id}</Styled.Td>

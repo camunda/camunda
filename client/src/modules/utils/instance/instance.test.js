@@ -4,9 +4,8 @@ import {STATE} from 'modules/constants';
 import * as instanceUtils from './instance';
 import {xTimes, createOperation} from 'modules/testUtils';
 
-const {ACTIVE, INCIDENT, COMPLETED, CANCELED} = STATE;
+const {ACTIVE} = STATE;
 
-const active = {state: ACTIVE, incidents: []};
 const activeWithIncidents = {
   state: ACTIVE,
   incidents: [
@@ -20,9 +19,6 @@ const activeWithIncidents = {
     }
   ]
 };
-const incident = {state: INCIDENT, incidents: []};
-const completed = {state: COMPLETED, incidents: []};
-const canceled = {state: CANCELED, incidents: []};
 
 describe('instance utils', () => {
   describe('getActiveIncident', () => {
@@ -34,39 +30,6 @@ describe('instance utils', () => {
       expect(
         instanceUtils.getActiveIncident(activeWithIncidents.incidents)
       ).toBe(activeWithIncidents.incidents[0]);
-    });
-  });
-
-  describe('getInstanceState', () => {
-    it('should return the state for a completed instance', () => {
-      const state = instanceUtils.getInstanceState(completed);
-
-      expect(state).toEqual(COMPLETED);
-    });
-
-    it('should return the state for a canceled instance', () => {
-      const state = instanceUtils.getInstanceState(canceled);
-
-      expect(state).toEqual(CANCELED);
-    });
-
-    it('should return the state for an active, incident free instance', () => {
-      const state = instanceUtils.getInstanceState(active);
-
-      expect(state).toEqual(ACTIVE);
-    });
-
-    it('should return difrent state for an active instance with incidents', () => {
-      const state = instanceUtils.getInstanceState(activeWithIncidents);
-
-      expect(state).not.toEqual(activeWithIncidents.state);
-      expect(state).toEqual(INCIDENT);
-    });
-
-    it('should return the right state for an instance with state="INCIDENT"', () => {
-      const state = instanceUtils.getInstanceState(incident);
-
-      expect(state).toEqual(INCIDENT);
     });
   });
 

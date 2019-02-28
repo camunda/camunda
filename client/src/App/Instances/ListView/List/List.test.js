@@ -6,7 +6,7 @@ import Checkbox from 'modules/components/Checkbox';
 import Table from 'modules/components/Table';
 import StateIcon from 'modules/components/StateIcon';
 import Actions from 'modules/components/Actions';
-import {getWorkflowName, getInstanceState} from 'modules/utils/instance';
+import {getWorkflowName} from 'modules/utils/instance';
 import {formatDate} from 'modules/utils/date';
 
 import {xTimes, createInstance} from 'modules/testUtils';
@@ -176,9 +176,7 @@ describe('List', () => {
         // State Icon
         const StateIconNode = TDNodes.at(0).find(StateIcon);
         expect(StateIconNode).toHaveLength(1);
-        expect(StateIconNode.prop('state')).toEqual(
-          getInstanceState(currentInstance)
-        );
+        expect(StateIconNode.prop('state')).toEqual(currentInstance.state);
 
         // Instance Id TD Anchor
         const InstanceAnchorNode = TDNodes.at(1).find(Styled.InstanceAnchor);

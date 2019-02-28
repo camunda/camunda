@@ -5,7 +5,7 @@ import SplitPane from 'modules/components/SplitPane';
 import Pane from 'modules/components/SplitPane/Pane';
 import StateIcon from 'modules/components/StateIcon';
 import {formatDate} from 'modules/utils/date';
-import {getWorkflowName, getInstanceState} from 'modules/utils/instance';
+import {getWorkflowName} from 'modules/utils/instance';
 import {ThemeProvider} from 'modules/theme';
 import {createInstance} from 'modules/testUtils';
 import * as Styled from './styled';
@@ -24,7 +24,7 @@ describe('DiagramPanel', () => {
   it('should render pane header and body', () => {
     // given
     const workflowName = getWorkflowName(mockInstance);
-    const instanceState = getInstanceState(mockInstance);
+    const instanceState = mockInstance.state;
     const formattedStartDate = formatDate(mockInstance.startDate);
     const formattedEndDate = formatDate(mockInstance.endDate);
     const node = mount(
