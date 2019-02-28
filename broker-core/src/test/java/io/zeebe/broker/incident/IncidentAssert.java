@@ -21,7 +21,7 @@ import io.zeebe.exporter.record.Assertions;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.IncidentRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.protocol.impl.record.value.incident.ErrorType;
+import io.zeebe.protocol.ErrorType;
 
 public class IncidentAssert {
 

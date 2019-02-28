@@ -19,6 +19,7 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.EnumProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.protocol.ErrorType;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import org.agrona.DirectBuffer;
 

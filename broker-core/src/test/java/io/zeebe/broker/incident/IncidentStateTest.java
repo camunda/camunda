@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.broker.incident.processor.IncidentState;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.util.ZeebeStateRule;
-import io.zeebe.protocol.impl.record.value.incident.ErrorType;
+import io.zeebe.protocol.ErrorType;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import org.junit.Before;
 import org.junit.Rule;
