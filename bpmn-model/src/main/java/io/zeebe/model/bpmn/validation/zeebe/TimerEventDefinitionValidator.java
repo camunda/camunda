@@ -22,11 +22,15 @@ import io.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.zeebe.model.bpmn.util.time.Interval;
 import io.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.zeebe.model.bpmn.util.time.TimeDateTimer;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
 public class TimerEventDefinitionValidator implements ModelElementValidator<TimerEventDefinition> {
+
+  public static final int MAXIMUM_YEARS = 100;
+
   @Override
   public Class<TimerEventDefinition> getElementType() {
     return TimerEventDefinition.class;
@@ -66,6 +70,17 @@ public class TimerEventDefinitionValidator implements ModelElementValidator<Time
       TimeDate timeDate, ValidationResultCollector validationResultCollector) {
     try {
       TimeDateTimer.parse(timeDate.getTextContent());
+
+      final ZonedDateTime specifiedTimeDate = ZonedDateTime.parse(timeDate.getTextContent());
+      final ZonedDateTime currentTimeDate = ZonedDateTime.now();
+      final ZonedDateTime maximumTimeDate = currentTimeDate.plusYears(MAXIMUM_YEARS);
+
+      if (specifiedTimeDate.compareTo(maximumTimeDate) > 0) {
+        validationResultCollector.addError(
+            0, "Time date can't be more than 100 years into the future");
+      } else if (specifiedTimeDate.compareTo(currentTimeDate) < 0) {
+        validationResultCollector.addError(0, "Time date can't have passed already");
+      }
     } catch (DateTimeParseException e) {
       validationResultCollector.addError(0, "Time date is invalid");
     }

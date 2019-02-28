@@ -101,7 +101,45 @@ public class ZeebeTimerValidationTest extends AbstractZeebeValidationTest {
             .endEvent()
             .done(),
         singletonList(expect(TimerEventDefinition.class, "Time cycle is invalid"))
-      }
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .timerWithDate("2218-03-01T13:00:00Z")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                TimerEventDefinition.class,
+                "Time date can't be more than 100 years into the future"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .timerWithDate("9999-03-01T13:00:00Z")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                TimerEventDefinition.class,
+                "Time date can't be more than 100 years into the future"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .timerWithDate("2018-03-01T13:00:00Z")
+            .endEvent()
+            .done(),
+        singletonList(expect(TimerEventDefinition.class, "Time date can't have passed already"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .timerWithDate("0000-03-01T13:00:00Z")
+            .endEvent()
+            .done(),
+        singletonList(expect(TimerEventDefinition.class, "Time date can't have passed already"))
+      },
     };
   }
 }

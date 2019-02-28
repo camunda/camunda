@@ -431,29 +431,6 @@ public class TimerStartEventTest {
   }
 
   @Test
-  public void shouldTriggerIfTimeDatePassedOnDeployment() {
-    // given
-    final Instant triggerTime = brokerRule.getClock().getCurrentTime().minusMillis(2000);
-    final BpmnModelInstance model =
-        Bpmn.createExecutableProcess("process")
-            .startEvent("start_2")
-            .timerWithDate(triggerTime.toString())
-            .endEvent("end_2")
-            .done();
-
-    testClient.deploy(model);
-
-    // then
-    final TimerRecordValue timerRecord =
-        RecordingExporter.timerRecords(TimerIntent.TRIGGERED).getFirst().getValue();
-
-    Assertions.assertThat(timerRecord)
-        .hasDueDate(triggerTime.toEpochMilli())
-        .hasHandlerFlowNodeId("start_2")
-        .hasElementInstanceKey(NO_ELEMENT_INSTANCE);
-  }
-
-  @Test
   public void shouldTriggerTimerAndMessageStartEvent() {
     // given
     testClient.deploy(TIMER_AND_MESSAGE_MODEL);
