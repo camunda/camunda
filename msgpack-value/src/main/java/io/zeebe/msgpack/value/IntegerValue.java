@@ -17,6 +17,7 @@ package io.zeebe.msgpack.value;
 
 import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackWriter;
+import java.util.Objects;
 
 public class IntegerValue extends BaseValue {
   protected int value;
@@ -67,5 +68,24 @@ public class IntegerValue extends BaseValue {
   @Override
   public int getEncodedLength() {
     return MsgPackWriter.getEncodedLongValueLength(value);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+
+    if (!(o instanceof IntegerValue)) {
+      return false;
+    }
+
+    final IntegerValue that = (IntegerValue) o;
+    return getValue() == that.getValue();
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(getValue());
   }
 }

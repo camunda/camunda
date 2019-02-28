@@ -19,6 +19,7 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackWriter;
+import java.util.Objects;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -98,27 +99,6 @@ public class StringValue extends BaseValue {
   }
 
   @Override
-  public boolean equals(Object s) {
-    if (s == null) {
-      return false;
-    } else if (s instanceof StringValue) {
-      final StringValue otherString = (StringValue) s;
-      final MutableDirectBuffer otherBytes = otherString.bytes;
-      return bytes.equals(otherBytes);
-    }
-    return false;
-  }
-
-  @Override
-  public int hashCode() {
-    if (hashCode == 0 && length > 0) {
-      hashCode = bytes.hashCode();
-    }
-
-    return hashCode;
-  }
-
-  @Override
   public void read(MsgPackReader reader) {
     final DirectBuffer buffer = reader.getBuffer();
     final int stringLength = reader.readStringLength();
@@ -137,5 +117,24 @@ public class StringValue extends BaseValue {
   @Override
   public int getEncodedLength() {
     return MsgPackWriter.getEncodedStringLength(length);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+
+    if (!(o instanceof StringValue)) {
+      return false;
+    }
+
+    final StringValue that = (StringValue) o;
+    return getLength() == that.getLength() && Objects.equals(bytes, that.bytes);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(bytes, getLength());
   }
 }

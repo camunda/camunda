@@ -17,6 +17,7 @@ package io.zeebe.msgpack.value;
 
 import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackWriter;
+import java.util.Objects;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -70,5 +71,23 @@ public class PackedValue extends BaseValue {
     builder.append("[packed value (length=");
     builder.append(length);
     builder.append(")]");
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof PackedValue)) {
+      return false;
+    }
+
+    final PackedValue that = (PackedValue) o;
+    return length == that.length && Objects.equals(buffer, that.buffer);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(buffer, length);
   }
 }
