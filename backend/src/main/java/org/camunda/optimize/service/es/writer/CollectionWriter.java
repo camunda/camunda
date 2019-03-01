@@ -51,7 +51,7 @@ import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDI
 @Component
 public class CollectionWriter {
 
-  private static final String DEFAULT_COLLECTION_NAME = "New Collection";
+  public static final String DEFAULT_COLLECTION_NAME = "New Collection";
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private RestHighLevelClient esClient;

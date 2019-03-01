@@ -24,6 +24,7 @@ import java.util.Map;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.service.es.writer.CollectionWriter.DEFAULT_COLLECTION_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_TYPE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -54,7 +55,7 @@ public class CollectionHandlingIT {
   }
 
   @Test
-  public void writeAndThenReadGivesTheSameResult() {
+  public void newCollectionIsCorrectlyInitialized() {
     // given
     String id = createNewCollection();
 
@@ -64,7 +65,12 @@ public class CollectionHandlingIT {
     // then
     assertThat(collections, is(notNullValue()));
     assertThat(collections.size(), is(1));
-    assertThat(collections.get(0).getId(), is(id));
+    ResolvedReportCollectionDefinitionDto collection = collections.get(0);
+    assertThat(collection.getId(), is(id));
+    assertThat(collection.getName(), is(DEFAULT_COLLECTION_NAME));
+    assertThat(collection.getData().getEntities(), notNullValue());
+    assertThat(collection.getData().getEntities().size(), is(0));
+    assertThat(collection.getData().getConfiguration(), notNullValue());
   }
 
   @Test

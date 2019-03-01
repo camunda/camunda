@@ -1,7 +1,6 @@
 package org.camunda.optimize.dto.optimize.query.collection;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 
 public class BaseCollectionDefinitionDto<DATA_TYPE> {
 
@@ -11,7 +10,7 @@ public class BaseCollectionDefinitionDto<DATA_TYPE> {
   protected OffsetDateTime created;
   protected String owner;
   protected String lastModifier;
-  protected CollectionDataDto<DATA_TYPE> data;
+  protected CollectionDataDto<DATA_TYPE> data = new CollectionDataDto<>();
 
   public String getId() {
     return id;
