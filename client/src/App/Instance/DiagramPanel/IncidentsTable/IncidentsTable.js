@@ -107,15 +107,17 @@ export default class IncidentsTable extends React.Component {
                       <Styled.ErrorMessageCell>
                         {incident.errorMessage}
                       </Styled.ErrorMessageCell>
-                      <Button
-                        size="small"
-                        onClick={this.toggleModal.bind(this, {
-                          content: incident.errorMessage,
-                          title: `Flow Node ${incident.flowNodeName} Error`
-                        })}
-                      >
-                        More...
-                      </Button>
+                      {incident.errorMessage.length >= 58 && (
+                        <Button
+                          size="small"
+                          onClick={this.toggleModal.bind(this, {
+                            content: incident.errorMessage,
+                            title: `Flow Node ${incident.flowNodeName} Error`
+                          })}
+                        >
+                          More...
+                        </Button>
+                      )}
                     </Styled.Flex>
                   </TD>
                 </TR>
