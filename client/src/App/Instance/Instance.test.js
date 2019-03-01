@@ -110,7 +110,7 @@ const shallowRenderComponent = (customProps = {}) =>
     />
   );
 
-describe.skip('Instance', () => {
+describe('Instance', () => {
   beforeEach(() => {
     instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(INSTANCE);
     instancesApi.fetchWorkflowInstanceIncidents = mockResolvedAsyncFn(

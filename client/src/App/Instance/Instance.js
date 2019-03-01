@@ -52,7 +52,11 @@ export default class Instance extends Component {
       loaded: false,
       activityInstancesTree: {},
       activityIdToActivityInstanceMap: null,
-      events: []
+      events: [],
+      incidents: {
+        count: 0,
+        incidents: []
+      }
     };
 
     this.pollingTimer = null;
@@ -273,6 +277,10 @@ export default class Instance extends Component {
   };
 
   formatIncidents = () => {
+    if (this.state.instance.state !== 'INCIDENT') {
+      return [];
+    }
+
     return this.state.incidents.incidents.map(item => {
       const clone = Object.assign({}, item);
       clone.flowNodeName =
