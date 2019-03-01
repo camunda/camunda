@@ -54,8 +54,7 @@ public class CommandProcessorImpl<T extends UnpackedObject>
       final TypedStreamWriter streamWriter) {
 
     entityKey = command.getKey();
-
-    wrappedProcessor.onCommand(command, this);
+    wrappedProcessor.onCommand(command, this, streamWriter);
 
     final boolean respond = command.getMetadata().hasRequestMetadata();
 

@@ -83,7 +83,7 @@ public class GrpcClientRule extends ExternalResource {
     waitUntil(
         () ->
             RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
-                .withKey(key)
+                .withRecordKey(key)
                 .exists());
   }
 

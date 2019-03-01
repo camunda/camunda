@@ -117,4 +117,26 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
     builder.append(value.toString());
     return builder.toString();
   }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+
+    if (!(o instanceof BaseProperty)) {
+      return false;
+    }
+
+    final BaseProperty<?> that = (BaseProperty<?>) o;
+    return isSet == that.isSet
+        && Objects.equals(getKey(), that.getKey())
+        && Objects.equals(value, that.value)
+        && Objects.equals(defaultValue, that.defaultValue);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(getKey(), value, defaultValue, isSet);
+  }
 }

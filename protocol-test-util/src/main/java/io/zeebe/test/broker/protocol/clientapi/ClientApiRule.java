@@ -243,7 +243,7 @@ public class ClientApiRule extends ExternalResource {
     assertThat(commandResponse.getIntent()).isEqualTo(DeploymentIntent.CREATED);
 
     return RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
-        .withKey(commandResponse.getKey())
+        .withRecordKey(commandResponse.getKey())
         .getFirst();
   }
 

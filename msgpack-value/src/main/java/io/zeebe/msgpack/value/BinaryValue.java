@@ -19,6 +19,7 @@ import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Objects;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -89,5 +90,24 @@ public class BinaryValue extends BaseValue {
   @Override
   public int getEncodedLength() {
     return MsgPackWriter.getEncodedBinaryValueLength(length);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+
+    if (!(o instanceof BinaryValue)) {
+      return false;
+    }
+
+    final BinaryValue that = (BinaryValue) o;
+    return length == that.length && Objects.equals(data, that.data);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(data, length);
   }
 }

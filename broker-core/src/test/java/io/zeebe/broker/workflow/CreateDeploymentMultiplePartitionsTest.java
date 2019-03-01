@@ -112,7 +112,7 @@ public class CreateDeploymentMultiplePartitionsTest {
                   .withPartitionId(partitionId)
                   .limit(r -> r.getKey() == deploymentKey2)
                   .withIntent(DeploymentIntent.DISTRIBUTE)
-                  .withKey(deploymentKey1)
+                  .withRecordKey(deploymentKey1)
                   .exists())
           .isEqualTo(partitionId == DEPLOYMENT_PARTITION);
     }
@@ -344,7 +344,7 @@ public class CreateDeploymentMultiplePartitionsTest {
             .partitionClient(expectedPartition)
             .receiveDeployments()
             .withIntent(DeploymentIntent.CREATED)
-            .withKey(expectedKey)
+            .withRecordKey(expectedKey)
             .getFirst();
 
     assertThat(deploymentCreatedEvent.getKey()).isEqualTo(expectedKey);

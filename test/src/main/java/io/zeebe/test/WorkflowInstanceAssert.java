@@ -61,7 +61,7 @@ public class WorkflowInstanceAssert
         exists(
             RecordingExporter.workflowInstanceRecords()
                 .withWorkflowInstanceKey(workflowInstanceKey)
-                .withKey(workflowInstanceKey)
+                .withRecordKey(workflowInstanceKey)
                 .filter(intent(INSTANCE_ENDED_INTENTS)));
 
     if (!isEnded) {
@@ -163,7 +163,7 @@ public class WorkflowInstanceAssert
     final Optional<Record<WorkflowInstanceRecordValue>> record =
         RecordingExporter.workflowInstanceRecords()
             .withWorkflowInstanceKey(workflowInstanceKey)
-            .withKey(workflowInstanceKey)
+            .withRecordKey(workflowInstanceKey)
             .filter(intent(INSTANCE_ENDED_INTENTS))
             .findFirst();
 
