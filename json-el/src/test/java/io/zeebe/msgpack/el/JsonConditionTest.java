@@ -36,10 +36,10 @@ public class JsonConditionTest {
     final CompiledJsonCondition condition = JsonConditionFactory.createCondition("$.foo == 'bar'");
     assertThat(condition.isValid()).isTrue();
 
-    boolean result = interpreter.eval(condition.getCondition(), asMsgPack("foo", "bar"));
+    boolean result = interpreter.eval(condition, asMsgPack("foo", "bar"));
     assertThat(result).isTrue();
 
-    result = interpreter.eval(condition.getCondition(), asMsgPack("foo", "baz"));
+    result = interpreter.eval(condition, asMsgPack("foo", "baz"));
     assertThat(result).isFalse();
   }
 
@@ -49,12 +49,10 @@ public class JsonConditionTest {
         JsonConditionFactory.createCondition("$.foo == $.bar || $.foo > 2 || $.bar <= 2");
     assertThat(condition.isValid()).isTrue();
 
-    boolean result =
-        interpreter.eval(condition.getCondition(), asMsgPack(c -> c.put("foo", 2).put("bar", 2)));
+    boolean result = interpreter.eval(condition, asMsgPack(c -> c.put("foo", 2).put("bar", 2)));
     assertThat(result).isTrue();
 
-    result =
-        interpreter.eval(condition.getCondition(), asMsgPack(c -> c.put("foo", 2).put("bar", 3)));
+    result = interpreter.eval(condition, asMsgPack(c -> c.put("foo", 2).put("bar", 3)));
     assertThat(result).isFalse();
   }
 
@@ -74,7 +72,7 @@ public class JsonConditionTest {
     thrown.expect(JsonConditionException.class);
     thrown.expectMessage("Cannot compare values of different types: STRING and INTEGER");
 
-    interpreter.eval(condition.getCondition(), asMsgPack("foo", "bar"));
+    interpreter.eval(condition, asMsgPack("foo", "bar"));
   }
 
   @Test
@@ -85,7 +83,7 @@ public class JsonConditionTest {
     thrown.expect(JsonConditionException.class);
     thrown.expectMessage("Cannot compare values of different types: NIL and INTEGER");
 
-    interpreter.eval(condition.getCondition(), asMsgPack("bar", 4));
+    interpreter.eval(condition, asMsgPack("bar", 4));
   }
 
   @Test
@@ -93,7 +91,7 @@ public class JsonConditionTest {
     final CompiledJsonCondition condition = JsonConditionFactory.createCondition("$.foo == null");
     assertThat(condition.isValid()).isTrue();
 
-    final boolean result = interpreter.eval(condition.getCondition(), asMsgPack("bar", 4));
+    final boolean result = interpreter.eval(condition, asMsgPack("bar", 4));
 
     assertThat(result).isTrue();
   }
@@ -104,7 +102,7 @@ public class JsonConditionTest {
         JsonConditionFactory.createCondition("$.foo.baz == null");
     assertThat(condition.isValid()).isTrue();
 
-    final boolean result = interpreter.eval(condition.getCondition(), asMsgPack("bar", 4));
+    final boolean result = interpreter.eval(condition, asMsgPack("bar", 4));
 
     assertThat(result).isTrue();
   }
@@ -117,7 +115,7 @@ public class JsonConditionTest {
     thrown.expect(JsonConditionException.class);
     thrown.expectMessage("Cannot compare values of different types: NIL and INTEGER");
 
-    interpreter.eval(condition.getCondition(), asMsgPack("foo", null));
+    interpreter.eval(condition, asMsgPack("foo", null));
   }
 
   @Test
@@ -132,7 +130,7 @@ public class JsonConditionTest {
     map.put("foo", new int[] {1, 2, 3});
     map.put("bar", new int[] {4, 5, 6});
 
-    interpreter.eval(condition.getCondition(), asMsgPack(map));
+    interpreter.eval(condition, asMsgPack(map));
   }
 
   @Test
@@ -147,7 +145,7 @@ public class JsonConditionTest {
     map.put("foo", Collections.singletonMap("a", 1));
     map.put("bar", Collections.singletonMap("b", 2));
 
-    interpreter.eval(condition.getCondition(), asMsgPack(map));
+    interpreter.eval(condition, asMsgPack(map));
   }
 
   @Test
@@ -158,6 +156,21 @@ public class JsonConditionTest {
     thrown.expect(JsonConditionException.class);
     thrown.expectMessage("Cannot compare values. Expected number but found: STRING");
 
-    interpreter.eval(condition.getCondition(), asMsgPack(c -> c.put("foo", "a").put("bar", "b")));
+    interpreter.eval(condition, asMsgPack(c -> c.put("foo", "a").put("bar", "b")));
+  }
+
+  @Test
+  public void shouldIncludeExpressionInExceptionMessage() {
+    // given
+    final String expression = "$.foo == null && $.bar > 23 || $.foo != true";
+    final CompiledJsonCondition condition = JsonConditionFactory.createCondition(expression);
+    assertThat(condition.isValid()).isTrue();
+
+    // then
+    thrown.expect(JsonConditionException.class);
+    thrown.expectMessage(expression);
+
+    // when
+    interpreter.eval(condition, asMsgPack(c -> c.put("foo", "a")));
   }
 }

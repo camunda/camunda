@@ -21,4 +21,12 @@ public class JsonConditionException extends RuntimeException {
   public JsonConditionException(String message) {
     super(message);
   }
+
+  public JsonConditionException(CompiledJsonCondition condition, Exception cause) {
+    super(
+        String.format(
+            "Expected to evaluate condition '%s' successfully, but failed because: %s",
+            condition.getExpression(), cause.getMessage()),
+        cause);
+  }
 }
