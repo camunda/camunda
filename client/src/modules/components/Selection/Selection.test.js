@@ -112,7 +112,7 @@ describe('Selection', () => {
       .simulate('click');
 
     node
-      .find('[data-test="UPDATE_JOB_RETRIES-dropdown-option"]')
+      .find('[data-test="RESOLVE_INCIDENT-dropdown-option"]')
       .simulate('click');
     expect(mockOnRetry).toHaveBeenCalled();
   });

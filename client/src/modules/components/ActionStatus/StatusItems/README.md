@@ -2,7 +2,7 @@ A single retry status item
 
 ```js
 <StatusItems>
-  <StatusItems.Item type={'UPDATE_JOB_RETRIES'} />
+  <StatusItems.Item type={'RESOLVE_INCIDENT'} />
 </StatusItems>
 ```
 
@@ -18,8 +18,8 @@ Multiple status items
 
 ```js
 <StatusItems>
-  <StatusItems.Item type="UPDATE_JOB_RETRIES" />
+  <StatusItems.Item type="RESOLVE_INCIDENT" />
   <StatusItems.Item type="CANCEL_WORKFLOW_INSTANCE" />
-  <StatusItems.Item type="UPDATE_JOB_RETRIES" />
+  <StatusItems.Item type="RESOLVE_INCIDENT" />
 </StatusItems>
 ```

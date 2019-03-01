@@ -53,7 +53,7 @@ describe('ActionStatus', () => {
       node = shallow(
         <ActionStatus
           operationState={OPERATION_STATE.FAILED}
-          operationType={OPERATION_TYPE.UPDATE_JOB_RETRIES}
+          operationType={OPERATION_TYPE.RESOLVE_INCIDENT}
           instance={{id: 'foo'}}
         />
       );
@@ -61,7 +61,7 @@ describe('ActionStatus', () => {
       expect(node.find(StatusItems)).toExist();
       expect(node.find(StatusItems.Item)).toExist();
       expect(node.find(StatusItems.Item).props().type).toBe(
-        OPERATION_TYPE.UPDATE_JOB_RETRIES
+        OPERATION_TYPE.RESOLVE_INCIDENT
       );
     });
 

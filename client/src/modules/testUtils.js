@@ -121,7 +121,7 @@ export const createOperation = (options = {}) => {
     errorMessage: 'string',
     startDate: '2018-10-10T09:20:38.661Z',
     state: 'SCHEDULED',
-    type: 'UPDATE_JOB_RETRIES',
+    type: 'RESOLVE_INCIDENT',
     ...options
   };
 };

@@ -145,14 +145,14 @@ describe('instances api', () => {
       const queries = [{id: 1, incidents: true}];
 
       // when
-      await applyOperation(OPERATION_TYPE.UPDATE_JOB_RETRIES, queries);
+      await applyOperation(OPERATION_TYPE.RESOLVE_INCIDENT, queries);
 
       // then
       expect(wrappers.post.mock.calls[0][0]).toBe(
         '/api/workflow-instances/operation'
       );
       expect(wrappers.post.mock.calls[0][1].operationType).toBe(
-        OPERATION_TYPE.UPDATE_JOB_RETRIES
+        OPERATION_TYPE.RESOLVE_INCIDENT
       );
       expect(wrappers.post.mock.calls[0][1].queries).toBe(queries);
     });

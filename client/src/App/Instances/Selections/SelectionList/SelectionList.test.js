@@ -145,7 +145,7 @@ describe('SelectionList', () => {
 
     // then
     expect(instancesApi.applyOperation).toHaveBeenCalledWith(
-      OPERATION_TYPE.UPDATE_JOB_RETRIES,
+      OPERATION_TYPE.RESOLVE_INCIDENT,
       selections[0].queries
     );
   });

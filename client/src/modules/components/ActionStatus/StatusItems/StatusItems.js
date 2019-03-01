@@ -5,7 +5,7 @@ import {OPERATION_TYPE} from 'modules/constants';
 import * as Styled from './styled';
 
 const iconsMap = {
-  [OPERATION_TYPE.UPDATE_JOB_RETRIES]: Styled.RetryIcon,
+  [OPERATION_TYPE.RESOLVE_INCIDENT]: Styled.RetryIcon,
   [OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE]: Styled.CancelIcon
 };
 

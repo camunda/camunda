@@ -3,7 +3,7 @@ A single retry action item
 ```js
 <ActionItems>
   <ActionItems.Item
-    type={'UPDATE_JOB_RETRIES'}
+    type={'RESOLVE_INCIDENT'}
     onClick={() => console.log('foo')}
     title="Retry instance 1"
   />
@@ -23,13 +23,13 @@ Multiple action items
 ```js
 <ActionItems>
   <ActionItems.Item
-    type="UPDATE_JOB_RETRIES"
+    type="RESOLVE_INCIDENT"
     onClick={() => console.log('foobar')}
     title="Retry instance 1"
   />
   <ActionItems.Item type="CANCEL_WORKFLOW_INSTANCE" onClick={() => console.log('foobar')} title="Cancel instance 1"/>
   <ActionItems.Item
-    type="UPDATE_JOB_RETRIES"
+    type="RESOLVE_INCIDENT"
     onClick={() => console.log('foobar')}
     title="Retry instance 1"
   />

@@ -44,7 +44,7 @@ export default class Selection extends React.Component {
       label: 'Cancel',
       icon: <Styled.CancelIcon />
     },
-    [OPERATION_TYPE.UPDATE_JOB_RETRIES]: {
+    [OPERATION_TYPE.RESOLVE_INCIDENT]: {
       action: this.props.onRetry,
       label: 'Retry',
       icon: <Styled.RetryIcon />

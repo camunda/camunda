@@ -34,7 +34,7 @@ exports[`Actions should match snapshots 1`] = `
             "errorMessage": "string",
             "startDate": "2018-10-10T09:20:38.661Z",
             "state": "SCHEDULED",
-            "type": "UPDATE_JOB_RETRIES",
+            "type": "RESOLVE_INCIDENT",
           },
         ],
         "sequenceFlows": Array [],
@@ -46,7 +46,7 @@ exports[`Actions should match snapshots 1`] = `
       }
     }
     operationState="SCHEDULED"
-    operationType="UPDATE_JOB_RETRIES"
+    operationType="RESOLVE_INCIDENT"
   />
   <ActionItems />
 </styled.div>
@@ -86,7 +86,7 @@ exports[`Actions should match snapshots 2`] = `
             "errorMessage": "string",
             "startDate": "2018-10-10T09:20:38.661Z",
             "state": "FAILED",
-            "type": "UPDATE_JOB_RETRIES",
+            "type": "RESOLVE_INCIDENT",
           },
         ],
         "sequenceFlows": Array [],
@@ -98,7 +98,7 @@ exports[`Actions should match snapshots 2`] = `
       }
     }
     operationState="FAILED"
-    operationType="UPDATE_JOB_RETRIES"
+    operationType="RESOLVE_INCIDENT"
   />
   <ActionItems />
 </styled.div>

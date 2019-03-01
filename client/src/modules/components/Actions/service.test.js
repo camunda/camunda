@@ -51,7 +51,7 @@ describe('Action services', () => {
 
       it('should return retry-query for instance with incidents', () => {
         expect(
-          wrapIdinQuery(OPERATION_TYPE.UPDATE_JOB_RETRIES, mockIncidentInstance)
+          wrapIdinQuery(OPERATION_TYPE.RESOLVE_INCIDENT, mockIncidentInstance)
         ).toEqual(mockIncidentQuery);
       });
     });

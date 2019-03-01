@@ -91,7 +91,7 @@ describe('Actions', () => {
 
       it('should render retry action item', async () => {
         const actionType = node.find(ActionItems.Item).props().type;
-        expect(actionType).toBe(OPERATION_TYPE.UPDATE_JOB_RETRIES);
+        expect(actionType).toBe(OPERATION_TYPE.RESOLVE_INCIDENT);
       });
 
       it('should call the retry api onClick ', () => {
@@ -103,11 +103,11 @@ describe('Actions', () => {
 
         // then
         expect(service.wrapIdinQuery).toBeCalledWith(
-          OPERATION_TYPE.UPDATE_JOB_RETRIES,
+          OPERATION_TYPE.RESOLVE_INCIDENT,
           mockInstance
         );
         expect(api.applyOperation).toBeCalledWith(
-          OPERATION_TYPE.UPDATE_JOB_RETRIES,
+          OPERATION_TYPE.RESOLVE_INCIDENT,
           service.wrapIdinQuery()
         );
       });

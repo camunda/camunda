@@ -71,7 +71,7 @@ class SelectionList extends React.Component {
   handleRetrySelection = openSelectionId => {
     this.executeBatchOperation(
       openSelectionId,
-      OPERATION_TYPE.UPDATE_JOB_RETRIES
+      OPERATION_TYPE.RESOLVE_INCIDENT
     );
   };
 

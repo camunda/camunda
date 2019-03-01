@@ -775,7 +775,7 @@ exports[`Selection should contain Instances 1`] = `
                                 "errorMessage": "string",
                                 "startDate": "2018-10-10T09:20:38.661Z",
                                 "state": "SCHEDULED",
-                                "type": "UPDATE_JOB_RETRIES",
+                                "type": "RESOLVE_INCIDENT",
                               },
                             ],
                             "sequenceFlows": Array [],
@@ -787,7 +787,7 @@ exports[`Selection should contain Instances 1`] = `
                           }
                         }
                         operationState="SCHEDULED"
-                        operationType="UPDATE_JOB_RETRIES"
+                        operationType="RESOLVE_INCIDENT"
                       >
                         <StyledComponent
                           forwardedClass={
@@ -846,7 +846,7 @@ exports[`Selection should contain Instances 1`] = `
                                   "errorMessage": "string",
                                   "startDate": "2018-10-10T09:20:38.661Z",
                                   "state": "SCHEDULED",
-                                  "type": "UPDATE_JOB_RETRIES",
+                                  "type": "RESOLVE_INCIDENT",
                                 },
                               ],
                               "sequenceFlows": Array [],
@@ -858,7 +858,7 @@ exports[`Selection should contain Instances 1`] = `
                             }
                           }
                           operationState="SCHEDULED"
-                          operationType="UPDATE_JOB_RETRIES"
+                          operationType="RESOLVE_INCIDENT"
                         >
                           <ActionStatus
                             className="sc-fBuWsC MxdAh"
@@ -893,7 +893,7 @@ exports[`Selection should contain Instances 1`] = `
                                     "errorMessage": "string",
                                     "startDate": "2018-10-10T09:20:38.661Z",
                                     "state": "SCHEDULED",
-                                    "type": "UPDATE_JOB_RETRIES",
+                                    "type": "RESOLVE_INCIDENT",
                                   },
                                 ],
                                 "sequenceFlows": Array [],
@@ -905,7 +905,7 @@ exports[`Selection should contain Instances 1`] = `
                               }
                             }
                             operationState="SCHEDULED"
-                            operationType="UPDATE_JOB_RETRIES"
+                            operationType="RESOLVE_INCIDENT"
                           >
                             <Themed(Styled(Spinner))
                               className="sc-fBuWsC MxdAh"

@@ -65,7 +65,7 @@ export default class Actions extends React.Component {
   renderItem = operationType => {
     const ariaLabelMap = {
       [OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE]: 'Cancel',
-      [OPERATION_TYPE.UPDATE_JOB_RETRIES]: 'Retry'
+      [OPERATION_TYPE.RESOLVE_INCIDENT]: 'Retry'
     };
 
     return (
@@ -82,7 +82,7 @@ export default class Actions extends React.Component {
   renderActionButtons = () => (
     <ActionItems>
       {isWithIncident(this.props.instance) &&
-        this.renderItem(OPERATION_TYPE.UPDATE_JOB_RETRIES)}
+        this.renderItem(OPERATION_TYPE.RESOLVE_INCIDENT)}
       {isRunning(this.props.instance) &&
         this.renderItem(OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE)}
     </ActionItems>
