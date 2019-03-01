@@ -12,8 +12,6 @@ import org.junit.rules.RuleChain;
 import javax.ws.rs.core.Response;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.reader.CollectionReader.EVERYTHING_ELSE_COLLECTION_ID;
-import static org.camunda.optimize.service.es.reader.CollectionReader.EVERYTHING_ELSE_COLLECTION_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -110,10 +108,8 @@ public class CollectionRestServiceIT {
     // when
     List<ResolvedReportCollectionDefinitionDto> collections = getAllResolvedCollections();
 
-    // then by default there is the everything else collection
-    assertThat(collections.size(), is(1));
-    assertThat(collections.get(0).getId(), is(EVERYTHING_ELSE_COLLECTION_ID));
-    assertThat(collections.get(0).getName(), is(EVERYTHING_ELSE_COLLECTION_NAME));
+    // then 
+    assertThat(collections.size(), is(0));
   }
 
   @Test
@@ -183,8 +179,7 @@ public class CollectionRestServiceIT {
 
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
-    // Only the everything else collection should be there
-    assertThat(getAllResolvedCollections().size(), is(1));
+    assertThat(getAllResolvedCollections().size(), is(0));
   }
 
   @Test

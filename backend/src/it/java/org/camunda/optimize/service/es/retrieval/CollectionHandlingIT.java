@@ -23,8 +23,6 @@ import java.util.List;
 import java.util.Map;
 
 import static junit.framework.TestCase.assertEquals;
-import static org.camunda.optimize.service.es.reader.CollectionReader.EVERYTHING_ELSE_COLLECTION_ID;
-import static org.camunda.optimize.service.es.reader.CollectionReader.EVERYTHING_ELSE_COLLECTION_NAME;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_TYPE;
 import static org.hamcrest.CoreMatchers.is;
@@ -65,15 +63,12 @@ public class CollectionHandlingIT {
 
     // then
     assertThat(collections, is(notNullValue()));
-    assertThat(collections.size(), is(2));
-    // the first collection is the one we created
+    assertThat(collections.size(), is(1));
     assertThat(collections.get(0).getId(), is(id));
-    // the second collection is the everything else collection
-    assertThat(collections.get(1).getId(), is(EVERYTHING_ELSE_COLLECTION_ID));
   }
 
   @Test
-  public void noCollectionAvailableReturnsJustTheEverythingElseCollection() {
+  public void returnEmptyListWhenNoCollectionIsDefined() {
     // given
     String reportId = createNewSingleReport();
 
@@ -82,14 +77,7 @@ public class CollectionHandlingIT {
 
     // then
     assertThat(collections, is(notNullValue()));
-    assertThat(collections.size(), is(1));
-    ResolvedReportCollectionDefinitionDto everythingElseCollection = collections.get(0);
-    assertThat(everythingElseCollection.getId(), is(EVERYTHING_ELSE_COLLECTION_ID));
-    assertThat(everythingElseCollection.getName(), is(EVERYTHING_ELSE_COLLECTION_NAME));
-    assertThat(everythingElseCollection.getLastModified(), notNullValue());
-    CollectionDataDto<ReportDefinitionDto> collectionData = collections.get(0).getData();
-    assertThat(collectionData.getEntities().size(), is(1));
-    assertThat(collectionData.getEntities().get(0).getId(), is(reportId));
+    assertThat(collections.size(), is(0));
   }
 
   @Test
@@ -118,7 +106,7 @@ public class CollectionHandlingIT {
     List<ResolvedReportCollectionDefinitionDto> collections = getAllResolvedCollections();
 
     // then
-    assertThat(collections.size(), is(2));
+    assertThat(collections.size(), is(1));
     ResolvedReportCollectionDefinitionDto storedCollection = collections.get(0);
     assertThat(storedCollection.getId(), is(id));
     assertThat(storedCollection.getCreated(), is(not(shouldBeIgnoredDate)));
@@ -163,7 +151,7 @@ public class CollectionHandlingIT {
     List<ResolvedReportCollectionDefinitionDto> collections = getAllResolvedCollections();
 
     // then
-    assertThat(collections.size(), is(2));
+    assertThat(collections.size(), is(1));
     ResolvedReportCollectionDefinitionDto storedCollection = collections.get(0);
     assertThat(storedCollection.getId(), is(id));
     assertThat(storedCollection.getCreated(), is(notNullValue()));
@@ -189,10 +177,9 @@ public class CollectionHandlingIT {
     List<ResolvedReportCollectionDefinitionDto> collections = getAllResolvedCollections();
 
     // then
-    assertThat(collections.size(), is(3));
+    assertThat(collections.size(), is(2));
     assertThat(collections.get(0).getId(), is(id2));
     assertThat(collections.get(1).getId(), is(id1));
-    assertThat(collections.get(2).getId(), is(EVERYTHING_ELSE_COLLECTION_ID));
   }
 
   @Test
@@ -215,7 +202,7 @@ public class CollectionHandlingIT {
 
     // then
     List<ResolvedReportCollectionDefinitionDto> allResolvedCollections = getAllResolvedCollections();
-    assertThat(allResolvedCollections.size(), is(2));
+    assertThat(allResolvedCollections.size(), is(1));
     assertThat(allResolvedCollections.get(0).getData().getEntities().size(), is(0));
   }
 

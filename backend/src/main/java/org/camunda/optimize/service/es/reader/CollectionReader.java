@@ -26,9 +26,6 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
 import java.io.IOException;
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -44,8 +41,6 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_
 
 @Component
 public class CollectionReader {
-  public static final String EVERYTHING_ELSE_COLLECTION_ID = "everythingElse";
-  public static final String EVERYTHING_ELSE_COLLECTION_NAME = "Everything Else";
   private static final Logger logger = LoggerFactory.getLogger(CollectionReader.class);
   private final RestHighLevelClient esClient;
   private final ConfigurationService configurationService;
@@ -104,43 +99,11 @@ public class CollectionReader {
       .stream()
       .collect(toMap(ReportDefinitionDto::getId, r -> r));
 
-    SimpleCollectionDefinitionDto everythingElseCollection = createEverythingElseCollection(
-      reportIds,
-      reportIdToReportMap
-    );
-    allCollections.add(everythingElseCollection);
-
     logger.debug("Mapping all available report collections to resolved report collections.");
     return allCollections.stream()
       .map(c -> mapToResolvedCollection(c, reportIdToReportMap))
       .collect(Collectors.toList());
   }
-
-  /**
-   * This function creates a new collection containing all reports that do not belong
-   * to any collection the user defined.
-   */
-  private SimpleCollectionDefinitionDto createEverythingElseCollection(Set<String> collectionReportIds,
-                                                                       Map<String, ReportDefinitionDto> reportIdToReportMap) {
-    SimpleCollectionDefinitionDto everythingElseCollection = new SimpleCollectionDefinitionDto();
-    everythingElseCollection.setId(EVERYTHING_ELSE_COLLECTION_ID);
-    everythingElseCollection.setName(EVERYTHING_ELSE_COLLECTION_NAME);
-
-    CollectionDataDto<String> emptyCollectionData = new CollectionDataDto<>();
-    emptyCollectionData.setConfiguration(new HashMap<>());
-    everythingElseCollection.setData(emptyCollectionData);
-
-    Set<String> allReportsIdsWithoutCollection = reportIdToReportMap.keySet()
-      .stream()
-      .filter(s -> !collectionReportIds.contains(s))
-      .collect(Collectors.toSet());
-
-    emptyCollectionData.setEntities(new ArrayList<>(allReportsIdsWithoutCollection));
-    everythingElseCollection.setLastModified(OffsetDateTime.now());
-
-    return everythingElseCollection;
-  }
-
 
   private Set<String> getAllReportIdsFromCollections(List<SimpleCollectionDefinitionDto> allCollections) {
     return allCollections.stream()

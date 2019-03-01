@@ -42,7 +42,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.reader.CollectionReader.EVERYTHING_ELSE_COLLECTION_ID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -245,7 +244,6 @@ public class ReportConflictIT {
 
   private void checkCollectionsStillContainReport(String[] expectedConflictedItemIds, String reportId) {
     List<ResolvedReportCollectionDefinitionDto> collections = getAllCollections();
-    collections.removeIf(r -> r.getId().equals(EVERYTHING_ELSE_COLLECTION_ID));
 
     assertThat(collections.size(), is(expectedConflictedItemIds.length));
     assertThat(
