@@ -224,24 +224,9 @@ public class EventZeebeRecordProcessor {
         entity.getWorkflowInstanceId());
 
       //write event
-      bulkRequestBuilder = bulkRequestBuilder.add(esClient.prepareIndex(eventTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+      bulkRequestBuilder.add(esClient.prepareIndex(eventTemplate.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
         .setSource(objectMapper.writeValueAsString(entity), XContentType.JSON));
 
-      //complete operation in workflow instance if needed
-      if (entity.getEventSourceType().equals(EventSourceType.JOB) && entity.getEventType().equals(org.camunda.operate.entities.EventType.RETRIES_UPDATED)) {
-        //TODO must be idempotent
-        //not possible to include UpdateByQueryRequestBuilder in bulk query -> executing at once
-        batchOperationWriter.completeOperation(entity.getWorkflowInstanceId(), OperationType.UPDATE_JOB_RETRIES);
-        //if we update smth, we need it to have affect at once
-        bulkRequestBuilder.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
-      } else if (entity.getEventSourceType().equals(EventSourceType.WORKFLOW_INSTANCE) && entity.getEventType()
-        .equals(org.camunda.operate.entities.EventType.ELEMENT_TERMINATED)) {
-        //TODO must be idempotent
-        //not possible to include UpdateByQueryRequestBuilder in bulk query -> executing at once
-        batchOperationWriter.completeOperation(entity.getWorkflowInstanceId(), OperationType.CANCEL_WORKFLOW_INSTANCE);
-        //if we update smth, we need it to have affect at once
-        bulkRequestBuilder.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
-      }
     } catch (JsonProcessingException e) {
       logger.error("Error preparing the query to insert event", e);
       throw new PersistenceException(String.format("Error preparing the query to insert event [%s]", entity.getId()), e);

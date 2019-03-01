@@ -18,6 +18,7 @@ import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest;
@@ -181,6 +182,29 @@ public abstract class ElasticsearchUtil {
       } catch (ElasticsearchException e)  {
         final String errorMessage = String.format("Update request failed for type [%s] and id [%s] with the message [%s].",
           updateRequest.request().type(), updateRequest.request().id(), e.getMessage());
+        logger.error(errorMessage, e);
+        throw new PersistenceException(errorMessage, e);
+      }
+  }
+
+  public static void executeIndex(TransportClient esClient, List<IndexRequestBuilder> indexRequests) throws PersistenceException {
+    if (indexRequests.size() == 1) {
+      executeIndex(indexRequests.get(0));
+    } else if (indexRequests.size() > 1) {
+      BulkRequestBuilder bulkRequest = esClient.prepareBulk();
+      for (IndexRequestBuilder indexRequest: indexRequests) {
+        bulkRequest.add(indexRequest);
+      }
+      processBulkRequest(bulkRequest);
+    }
+  }
+
+  public static void executeIndex(IndexRequestBuilder indexRequest) throws PersistenceException {
+      try {
+        indexRequest.get();
+      } catch (ElasticsearchException e)  {
+        final String errorMessage = String.format("Index request failed for type [%s] and id [%s] with the message [%s].",
+          indexRequest.request().type(), indexRequest.request().id(), e.getMessage());
         logger.error(errorMessage, e);
         throw new PersistenceException(errorMessage, e);
       }

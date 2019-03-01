@@ -77,7 +77,7 @@ public class WorkflowInstanceReader {
     final IdsQueryBuilder q = idsQuery().addIds(workflowInstanceId);
 
     final SearchResponse response = esClient.prepareSearch(listViewTemplate.getAlias())
-      .setQuery(q)
+      .setQuery(constantScoreQuery(q))
       .get();
 
     if (response.getHits().totalHits == 1) {

@@ -26,11 +26,13 @@ import org.camunda.operate.rest.dto.incidents.IncidentDto;
 import org.camunda.operate.rest.dto.incidents.IncidentErrorTypeDto;
 import org.camunda.operate.rest.dto.incidents.IncidentFlowNodeDto;
 import org.camunda.operate.rest.dto.incidents.IncidentResponseDto;
+import org.camunda.operate.rest.exception.NotFoundException;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
+import org.elasticsearch.index.query.IdsQueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
@@ -43,6 +45,7 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
+import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
@@ -80,7 +83,6 @@ public class DetailViewReader {
         .setQuery(query)
         .addSort(VariableTemplate.NAME, SortOrder.ASC);
     return scroll(requestBuilder, VariableEntity.class);
-
   }
 
   public List<IncidentEntity> getAllIncidents(String workflowInstanceId) {
@@ -93,6 +95,26 @@ public class DetailViewReader {
         .setQuery(query)
         .addSort(IncidentTemplate.CREATION_TIME, SortOrder.ASC);
     return scroll(requestBuilder, IncidentEntity.class);
+  }
+
+  public IncidentEntity getIncidentById(String incidentId) {
+    final IdsQueryBuilder idsQ = idsQuery().addIds(incidentId);
+
+    final ConstantScoreQueryBuilder query = constantScoreQuery(idsQ);
+
+    final SearchResponse response =
+      esClient.prepareSearch(incidentTemplate.getAlias())
+        .setQuery(query)
+        .addSort(IncidentTemplate.CREATION_TIME, SortOrder.ASC)
+        .get();
+    if (response.getHits().totalHits == 1) {
+      return ElasticsearchUtil
+        .fromSearchHit(response.getHits().getHits()[0].getSourceAsString(), objectMapper, IncidentEntity.class);
+    } else if (response.getHits().totalHits > 1) {
+      throw new NotFoundException(String.format("Could not find unique incident with id '%s'.", incidentId));
+    } else {
+      throw new NotFoundException(String.format("Could not find incident with id '%s'.", incidentId));
+    }
 
   }
 

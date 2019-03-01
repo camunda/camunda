@@ -13,12 +13,14 @@ import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.rest.dto.ActivityStatisticsDto;
-import org.camunda.operate.rest.dto.WorkflowInstanceBatchOperationDto;
+import org.camunda.operate.rest.dto.operation.BatchOperationRequestDto;
 import org.camunda.operate.rest.dto.incidents.IncidentResponseDto;
 import org.camunda.operate.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.rest.dto.listview.ListViewWorkflowInstanceDto;
+import org.camunda.operate.rest.dto.operation.OperationRequestDto;
+import org.camunda.operate.rest.dto.operation.OperationResponseDto;
 import org.camunda.operate.rest.exception.InvalidRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -70,11 +72,18 @@ public class WorkflowInstanceRestService {
     return listViewReader.queryWorkflowInstances(workflowInstanceRequest, firstResult, maxResults);
   }
 
+  @ApiOperation("Perform batch operation on an instance (async)")
+  @PostMapping("/{id}/operation")
+  public OperationResponseDto batchOperation(@PathVariable String id,
+      @RequestBody OperationRequestDto operationRequest) throws PersistenceException {
+    return batchOperationWriter.scheduleOperation(id, operationRequest);
+  }
+
   @ApiOperation("Perform batch operation on selection (async)")
   @PostMapping("/operation")
-  public void batchOperation(
-      @RequestBody WorkflowInstanceBatchOperationDto batchOperationRequest) throws PersistenceException {
-    batchOperationWriter.scheduleBatchOperation(batchOperationRequest);
+  public OperationResponseDto batchOperation(
+      @RequestBody BatchOperationRequestDto batchOperationRequest) throws PersistenceException {
+    return batchOperationWriter.scheduleBatchOperation(batchOperationRequest);
   }
 
   @ApiOperation("Get workflow instance by id")

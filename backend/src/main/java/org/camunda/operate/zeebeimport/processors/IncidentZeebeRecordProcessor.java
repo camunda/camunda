@@ -9,7 +9,9 @@ import java.io.IOException;
 import org.camunda.operate.entities.ErrorType;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
+import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.es.schema.templates.IncidentTemplate;
+import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
@@ -18,6 +20,7 @@ import org.camunda.operate.zeebeimport.record.value.IncidentRecordValueImpl;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.delete.DeleteRequestBuilder;
 import org.elasticsearch.action.index.IndexRequestBuilder;
+import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
@@ -43,6 +46,9 @@ public class IncidentZeebeRecordProcessor {
   @Autowired
   private IncidentTemplate incidentTemplate;
 
+  @Autowired
+  private BatchOperationWriter batchOperationWriter;
+
   public void processIncidentRecord(Record record, BulkRequestBuilder bulkRequestBuilder) throws PersistenceException {
     IncidentRecordValueImpl recordValue = (IncidentRecordValueImpl)record.getValue();
 
@@ -52,11 +58,20 @@ public class IncidentZeebeRecordProcessor {
 
   private void persistIncident(Record record, IncidentRecordValueImpl recordValue, BulkRequestBuilder bulkRequestBuilder) throws PersistenceException {
     final String intentStr = record.getMetadata().getIntent().name();
+    final String incidentId = IdUtil.getId(record.getKey(), record);
     if (intentStr.equals(RESOLVED.toString())) {
-      bulkRequestBuilder.add(getIncidentDeleteQuery(IdUtil.getId(record.getKey(), record)));
+
+      //resolve corresponding operation
+      //TODO must be idempotent
+      //not possible to include UpdateByQueryRequestBuilder in bulk query -> executing at once
+      batchOperationWriter.completeOperation(IdUtil.getId(recordValue.getWorkflowInstanceKey(), record), incidentId, OperationType.RESOLVE_INCIDENT);
+      //if we update smth, we need it to have affect at once
+      bulkRequestBuilder.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+
+      bulkRequestBuilder.add(getIncidentDeleteQuery(incidentId));
     } else if (intentStr.equals(CREATED.toString())) {
       IncidentEntity incident = new IncidentEntity();
-      incident.setId(IdUtil.getId(record.getKey(), record));
+      incident.setId(incidentId);
       incident.setKey(record.getKey());
       if (recordValue.getJobKey() > 0) {
         incident.setJobKey(recordValue.getJobKey());

@@ -138,7 +138,7 @@ public class OperationExecutorIT extends OperateIntegrationTest {
     operation.generateId();
     operation.setState(state);
     operation.setStartDate(OffsetDateTime.now());
-    operation.setType(OperationType.UPDATE_JOB_RETRIES);
+    operation.setType(OperationType.RESOLVE_INCIDENT);
     if (state.equals(OperationState.LOCKED)) {
       operation.setLockOwner("otherWorkerId");
       operation.setLockExpirationTime(OffsetDateTime.now().plus(operateProperties.getOperationExecutor().getLockTimeout(), ChronoUnit.MILLIS));

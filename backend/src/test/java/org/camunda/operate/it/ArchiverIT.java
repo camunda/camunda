@@ -27,7 +27,7 @@ import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.exceptions.ReindexException;
 import org.camunda.operate.property.OperateProperties;
-import org.camunda.operate.rest.dto.WorkflowInstanceBatchOperationDto;
+import org.camunda.operate.rest.dto.operation.BatchOperationRequestDto;
 import org.camunda.operate.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.util.ElasticsearchUtil;
@@ -173,8 +173,8 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   protected void createOperations(List<String> ids1) throws PersistenceException {
     final List<ListViewQueryDto> queries = TestUtil.createGetAllWorkflowInstancesQuery().getQueries();
     queries.get(0).setIds(ids1);
-    WorkflowInstanceBatchOperationDto batchOperationRequest = new WorkflowInstanceBatchOperationDto(queries);
-    batchOperationRequest.setOperationType(OperationType.UPDATE_JOB_RETRIES); //the type does not matter
+    BatchOperationRequestDto batchOperationRequest = new BatchOperationRequestDto(queries);
+    batchOperationRequest.setOperationType(OperationType.RESOLVE_INCIDENT); //the type does not matter
     batchOperationWriter.scheduleBatchOperation(batchOperationRequest);
   }
 

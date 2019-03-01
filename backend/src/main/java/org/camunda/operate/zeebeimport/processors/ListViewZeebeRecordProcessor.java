@@ -12,10 +12,12 @@ import java.util.Map;
 import java.util.Set;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
-import org.camunda.operate.entities.listview.WorkflowInstanceState;
+import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
+import org.camunda.operate.entities.listview.WorkflowInstanceState;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
+import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
@@ -24,6 +26,7 @@ import org.camunda.operate.zeebeimport.cache.WorkflowCache;
 import org.camunda.operate.zeebeimport.record.value.IncidentRecordValueImpl;
 import org.camunda.operate.zeebeimport.record.value.WorkflowInstanceRecordValueImpl;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -35,7 +38,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.IncidentIntent;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
@@ -65,6 +67,9 @@ public class ListViewZeebeRecordProcessor {
   @Autowired
   private WorkflowCache workflowCache;
 
+  @Autowired
+  private BatchOperationWriter batchOperationWriter;
+
   public void processIncidentRecord(Record record, BulkRequestBuilder bulkRequestBuilder) throws PersistenceException {
     final String intentStr = record.getMetadata().getIntent().name();
     IncidentRecordValueImpl recordValue = (IncidentRecordValueImpl)record.getValue();
@@ -80,6 +85,16 @@ public class ListViewZeebeRecordProcessor {
     WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
 
     if (isProcessEvent(recordValue)) {
+
+      //complete operation
+      if (intentStr.equals(ELEMENT_TERMINATED.name())) {
+        //TODO must be idempotent
+        //not possible to include UpdateByQueryRequestBuilder in bulk query -> executing at once
+        batchOperationWriter.completeOperation(IdUtil.getId(record.getKey(), record), null, OperationType.CANCEL_WORKFLOW_INSTANCE);
+        //if we update smth, we need it to have affect at once
+        bulkRequestBuilder.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+      }
+
       bulkRequestBuilder.add(persistWorkflowInstance(record, intentStr, recordValue));
     } else if (!intentStr.equals(SEQUENCE_FLOW_TAKEN.name())){
       bulkRequestBuilder.add(persistActivityInstance(record, intentStr, recordValue));

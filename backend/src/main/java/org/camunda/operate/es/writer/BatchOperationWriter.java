@@ -8,19 +8,24 @@ package org.camunda.operate.es.writer;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
+import org.camunda.operate.es.reader.DetailViewReader;
 import org.camunda.operate.es.reader.ListViewReader;
 import org.camunda.operate.es.reader.OperationReader;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
-import org.camunda.operate.rest.dto.WorkflowInstanceBatchOperationDto;
+import org.camunda.operate.rest.dto.operation.BatchOperationRequestDto;
 import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
+import org.camunda.operate.rest.dto.operation.OperationRequestDto;
+import org.camunda.operate.rest.dto.operation.OperationResponseDto;
 import org.camunda.operate.rest.exception.InvalidRequestException;
 import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
@@ -35,6 +40,7 @@ import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.UpdateByQueryAction;
 import org.elasticsearch.script.Script;
@@ -57,6 +63,9 @@ public class BatchOperationWriter {
 
   @Autowired
   private ListViewReader listViewReader;
+
+  @Autowired
+  private DetailViewReader detailViewReader;
 
   @Autowired
   private OperateProperties operateProperties;
@@ -129,7 +138,7 @@ public class BatchOperationWriter {
 
   }
 
-  public void completeOperation(String workflowInstanceId, OperationType operationType) throws PersistenceException {
+  public void completeOperation(String workflowInstanceId, String incidentId, OperationType operationType) throws PersistenceException {
     try {
       Map<String, Object> params = new HashMap<>();
       params.put("endDate", OffsetDateTime.now());
@@ -143,9 +152,15 @@ public class BatchOperationWriter {
             "ctx._source.lockExpirationTime = null;";
       Script updateScript = new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, jsonMap);
 
+      TermQueryBuilder incidentIdQ = null;
+      if (incidentId != null) {
+        incidentIdQ = termQuery(OperationTemplate.INCIDENT_ID, incidentId);
+      }
+
       QueryBuilder query =
         joinWithAnd(
           termQuery(OperationTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId),
+          incidentIdQ,
           termsQuery(OperationTemplate.STATE, OperationState.SENT.name(), OperationState.LOCKED.name()),
           termQuery(OperationTemplate.TYPE, operationType.name())
           );
@@ -177,11 +192,44 @@ public class BatchOperationWriter {
   }
 
   /**
-   * Creates Operation objects and persists them within corresponding workflow instances.
-   * @param batchOperationRequest
+   * Schedule operation for one workflow instance.
+   * @param workflowInstanceId
+   * @param operationRequest
+   * @return
    * @throws PersistenceException
    */
-  public void scheduleBatchOperation(WorkflowInstanceBatchOperationDto batchOperationRequest) throws PersistenceException {
+  public OperationResponseDto scheduleOperation(String workflowInstanceId, OperationRequestDto operationRequest) throws PersistenceException {
+    logger.debug("Creating operation: workflowInstanceId [{}], operation type [{}]", workflowInstanceId, operationRequest.getOperationType());
+
+    final List<IndexRequestBuilder> requests = new ArrayList<>();
+
+    final OperationType operationType = operationRequest.getOperationType();
+    if (operationType.equals(OperationType.RESOLVE_INCIDENT) && operationRequest.getIncidentId() == null) {
+      final List<IncidentEntity> allIncidents = detailViewReader.getAllIncidents(workflowInstanceId);
+      if (allIncidents.size() == 0) {
+        //nothing to schedule
+        return new OperationResponseDto(0, "No incidents found.");
+      } else {
+        for (IncidentEntity incident: allIncidents) {
+          requests.add(getIndexOperationRequest(workflowInstanceId, incident.getId(), operationType));
+        }
+      }
+    } else {
+      requests.add(getIndexOperationRequest(workflowInstanceId, operationRequest.getIncidentId(), operationType));
+    }
+
+    ElasticsearchUtil.executeIndex(esClient, requests);
+
+    return new OperationResponseDto(requests.size());
+  }
+
+  /**
+   * Schedule operations based of workflow instance queries.
+   * @param batchOperationRequest
+   * @return
+   * @throws PersistenceException
+   */
+  public OperationResponseDto scheduleBatchOperation(BatchOperationRequestDto batchOperationRequest) throws PersistenceException {
 
     final int batchSize = operateProperties.getElasticsearch().getBatchSize();
 
@@ -193,32 +241,49 @@ public class BatchOperationWriter {
     SearchHits hits = scrollResp.getHits();
     validateTotalHits(hits);
 
+    int operationsCount = 0;
+
     do {
-      persistOperations(hits, batchOperationRequest);
+      operationsCount += persistOperations(hits, batchOperationRequest);
 
       scrollResp = esClient.prepareSearchScroll(scrollResp.getScrollId()).setScroll(keepAlive).get();
       hits = scrollResp.getHits();
 
     } while (hits.getHits().length != 0);
 
-  }
-
-  private void persistOperations(SearchHits hits, WorkflowInstanceBatchOperationDto batchOperationRequest) throws PersistenceException {
-    //create bulk query to persist operations for workflow instances
-    logger.debug("Persisting [{}] operations to Elasticsearch", hits.getHits().length);
-    BulkRequestBuilder bulkRequest = esClient.prepareBulk();
-    for (SearchHit searchHit : hits.getHits()) {
-      bulkRequest.add(createRequestToAddOperation(searchHit.getId(), batchOperationRequest));
+    if (operationsCount == 0) {
+      return new OperationResponseDto(0, "No workflow instances found.");
+    } else {
+      return new OperationResponseDto(operationsCount);
     }
-    ElasticsearchUtil.processBulkRequest(bulkRequest);
+
   }
 
-  private IndexRequestBuilder createRequestToAddOperation(String workflowInstanceId, WorkflowInstanceBatchOperationDto batchOperationRequest)
-    throws PersistenceException {
+  private int persistOperations(SearchHits hits, OperationRequestDto operationRequest) throws PersistenceException {
+    final List<IndexRequestBuilder> requests = new ArrayList<>();
+    for (SearchHit searchHit : hits.getHits()) {
+      final OperationType operationType = operationRequest.getOperationType();
+      if (operationType.equals(OperationType.RESOLVE_INCIDENT) && operationRequest.getIncidentId() == null) {
+        final List<IncidentEntity> allIncidents = detailViewReader.getAllIncidents(searchHit.getId());
+        if (allIncidents.size() != 0) {
+          for (IncidentEntity incident: allIncidents) {
+            requests.add(getIndexOperationRequest(searchHit.getId(), incident.getId(), operationType));
+          }
+        }
+      } else {
+        requests.add(getIndexOperationRequest(searchHit.getId(), operationRequest.getIncidentId(), operationType));
+      }
+    }
+    ElasticsearchUtil.executeIndex(esClient, requests);
+    return requests.size();
+  }
+
+  private IndexRequestBuilder getIndexOperationRequest(String workflowInstanceId, String incidentId, OperationType operationType) throws PersistenceException {
     OperationEntity operationEntity = new OperationEntity();
     operationEntity.generateId();
+    operationEntity.setIncidentId(incidentId);
     operationEntity.setWorkflowInstanceId(workflowInstanceId);
-    operationEntity.setType(batchOperationRequest.getOperationType());
+    operationEntity.setType(operationType);
     operationEntity.setStartDate(OffsetDateTime.now());
     operationEntity.setState(OperationState.SCHEDULED);
 
@@ -229,9 +294,8 @@ public class BatchOperationWriter {
     } catch (IOException e) {
       logger.error("Error preparing the query to insert operation", e);
       throw new PersistenceException(String.format("Error preparing the query to insert operation [%s] for workflow instance id [%s]",
-        batchOperationRequest.getOperationType(), workflowInstanceId), e);
+        operationType, workflowInstanceId), e);
     }
-
   }
 
   private void validateTotalHits(SearchHits hits) {

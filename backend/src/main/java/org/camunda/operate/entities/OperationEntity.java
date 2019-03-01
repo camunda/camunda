@@ -13,7 +13,6 @@ public class OperationEntity extends OperateEntity {
   private String workflowInstanceId;
   private String incidentId;
   private String variableId;
-  private Long jobKey;
   private OperationType type;
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;
@@ -28,6 +27,22 @@ public class OperationEntity extends OperateEntity {
 
   public void setWorkflowInstanceId(String workflowInstanceId) {
     this.workflowInstanceId = workflowInstanceId;
+  }
+
+  public String getIncidentId() {
+    return incidentId;
+  }
+
+  public void setIncidentId(String incidentId) {
+    this.incidentId = incidentId;
+  }
+
+  public String getVariableId() {
+    return variableId;
+  }
+
+  public void setVariableId(String variableId) {
+    this.variableId = variableId;
   }
 
   public OperationType getType() {
@@ -103,6 +118,10 @@ public class OperationEntity extends OperateEntity {
 
     if (workflowInstanceId != null ? !workflowInstanceId.equals(that.workflowInstanceId) : that.workflowInstanceId != null)
       return false;
+    if (incidentId != null ? !incidentId.equals(that.incidentId) : that.incidentId != null)
+      return false;
+    if (variableId != null ? !variableId.equals(that.variableId) : that.variableId != null)
+      return false;
     if (type != that.type)
       return false;
     if (startDate != null ? !startDate.equals(that.startDate) : that.startDate != null)
@@ -122,6 +141,8 @@ public class OperationEntity extends OperateEntity {
   public int hashCode() {
     int result = super.hashCode();
     result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
+    result = 31 * result + (incidentId != null ? incidentId.hashCode() : 0);
+    result = 31 * result + (variableId != null ? variableId.hashCode() : 0);
     result = 31 * result + (type != null ? type.hashCode() : 0);
     result = 31 * result + (startDate != null ? startDate.hashCode() : 0);
     result = 31 * result + (endDate != null ? endDate.hashCode() : 0);
