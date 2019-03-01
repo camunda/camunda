@@ -28,13 +28,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class RecordingStreamProcessor implements StreamProcessor {
   private final List<LoggedEvent> events = new ArrayList<>();
   private final AtomicInteger processedEvents = new AtomicInteger(0);
+  private final AtomicInteger failedEvents = new AtomicInteger(0);
   private final ZeebeDb zeebeDb;
   private final EventProcessor eventProcessor =
       spy(
           new EventProcessor() {
             public void processEvent() {
               processedEvents.incrementAndGet();
-            };
+            }
+
+            @Override
+            public void processingFailed(Exception exception) {
+              failedEvents.incrementAndGet();
+            }
           });
 
   private StreamProcessorContext context = null;
@@ -90,5 +96,9 @@ public class RecordingStreamProcessor implements StreamProcessor {
 
   public StreamProcessorContext getContext() {
     return context;
+  }
+
+  public int getProcessingFailedCount() {
+    return failedEvents.get();
   }
 }
