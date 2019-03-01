@@ -21,9 +21,10 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.BooleanProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.protocol.WorkflowInstanceRelated;
 import org.agrona.DirectBuffer;
 
-public class MessageSubscriptionRecord extends UnpackedObject {
+public class MessageSubscriptionRecord extends UnpackedObject implements WorkflowInstanceRelated {
 
   private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey");
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");

@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
+import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -30,7 +31,7 @@ public class TypedEventStreamProcessorBuilder {
   protected RecordProcessorMap eventProcessors = new RecordProcessorMap();
   protected List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
 
-  private KeyGenerator keyGenerator;
+  private ZeebeState zeebeState;
 
   public TypedEventStreamProcessorBuilder(TypedStreamEnvironment environment) {
     this.environment = environment;
@@ -68,8 +69,8 @@ public class TypedEventStreamProcessorBuilder {
   }
 
   /** Only required if a stream processor writes events to its own stream. */
-  public TypedEventStreamProcessorBuilder keyGenerator(KeyGenerator keyGenerator) {
-    this.keyGenerator = keyGenerator;
+  public TypedEventStreamProcessorBuilder zeebeState(ZeebeState zeebeState) {
+    this.zeebeState = zeebeState;
     return this;
   }
 
@@ -80,7 +81,7 @@ public class TypedEventStreamProcessorBuilder {
         eventProcessors,
         lifecycleListeners,
         environment.getEventRegistry(),
-        keyGenerator,
+        zeebeState,
         environment);
   }
 }

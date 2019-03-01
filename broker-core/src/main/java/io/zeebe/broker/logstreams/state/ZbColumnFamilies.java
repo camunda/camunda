@@ -83,4 +83,6 @@ public enum ZbColumnFamilies {
   // event
   EVENT_SCOPE,
   EVENT_TRIGGER,
+
+  BLACKLIST
 }

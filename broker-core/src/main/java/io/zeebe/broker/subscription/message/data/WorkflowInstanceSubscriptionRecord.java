@@ -23,9 +23,11 @@ import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.protocol.WorkflowInstanceRelated;
 import org.agrona.DirectBuffer;
 
-public class WorkflowInstanceSubscriptionRecord extends UnpackedObject {
+public class WorkflowInstanceSubscriptionRecord extends UnpackedObject
+    implements WorkflowInstanceRelated {
 
   private final IntegerProperty subscriptionPartitionIdProp =
       new IntegerProperty("subscriptionPartitionId");
