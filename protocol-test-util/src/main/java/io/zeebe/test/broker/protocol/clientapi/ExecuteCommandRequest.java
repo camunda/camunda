@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class ExecuteCommandRequest implements BufferWriter {
   protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
@@ -78,6 +79,14 @@ public class ExecuteCommandRequest implements BufferWriter {
 
   public ExecuteCommandRequest command(final Map<String, Object> command) {
     this.encodedCmd = msgPackHelper.encodeAsMsgPack(command);
+    return this;
+  }
+
+  public ExecuteCommandRequest command(BufferWriter command) {
+    final int commandLength = command.getLength();
+    this.encodedCmd = new byte[commandLength];
+    command.write(new UnsafeBuffer(encodedCmd), 0);
+
     return this;
   }
 

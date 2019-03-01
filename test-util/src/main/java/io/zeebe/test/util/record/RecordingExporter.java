@@ -28,6 +28,7 @@ import io.zeebe.exporter.record.value.RaftRecordValue;
 import io.zeebe.exporter.record.value.TimerRecordValue;
 import io.zeebe.exporter.record.value.VariableDocumentRecordValue;
 import io.zeebe.exporter.record.value.VariableRecordValue;
+import io.zeebe.exporter.record.value.WorkflowInstanceCreationRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.exporter.spi.Exporter;
@@ -210,6 +211,11 @@ public class RecordingExporter implements Exporter {
   public static VariableDocumentRecordStream variableDocumentRecords(
       final VariableDocumentIntent intent) {
     return variableDocumentRecords().withIntent(intent);
+  }
+
+  public static WorkflowInstanceCreationRecordStream workflowInstanceCreationRecords() {
+    return new WorkflowInstanceCreationRecordStream(
+        records(ValueType.WORKFLOW_INSTANCE_CREATION, WorkflowInstanceCreationRecordValue.class));
   }
 
   public static class RecordIterator implements Iterator<Record<?>> {

@@ -145,8 +145,13 @@ public class MessageMappingTest {
     final long workflowKey = deployWorkflowWithMapping(e -> {});
 
     final long workflowInstanceKey =
-        apiRule.createWorkflowInstance(
-            workflowKey, asMsgPack(CORRELATION_VARIABLE, correlationKey));
+        apiRule
+            .partitionClient()
+            .createWorkflowInstance(
+                r ->
+                    r.setKey(workflowKey)
+                        .setVariables(asMsgPack(CORRELATION_VARIABLE, correlationKey)))
+            .getInstanceKey();
 
     // when
     apiRule.publishMessage(MESSAGE_NAME, correlationKey, asMsgPack("foo", "bar"));
@@ -169,8 +174,13 @@ public class MessageMappingTest {
     final long workflowKey = deployWorkflowWithMapping(e -> {});
 
     final long workflowInstanceKey =
-        apiRule.createWorkflowInstance(
-            workflowKey, asMsgPack(CORRELATION_VARIABLE, correlationKey));
+        apiRule
+            .partitionClient()
+            .createWorkflowInstance(
+                r ->
+                    r.setKey(workflowKey)
+                        .setVariables(asMsgPack(CORRELATION_VARIABLE, correlationKey)))
+            .getInstanceKey();
 
     // when
     apiRule.publishMessage(MESSAGE_NAME, correlationKey, asMsgPack("foo", "bar"));
@@ -192,10 +202,14 @@ public class MessageMappingTest {
     // given
     final long workflowKey =
         deployWorkflowWithMapping(e -> e.zeebeOutput("$.foo", "$." + MESSAGE_NAME));
-
     final long workflowInstanceKey =
-        apiRule.createWorkflowInstance(
-            workflowKey, asMsgPack(CORRELATION_VARIABLE, correlationKey));
+        apiRule
+            .partitionClient()
+            .createWorkflowInstance(
+                r ->
+                    r.setKey(workflowKey)
+                        .setVariables(asMsgPack(CORRELATION_VARIABLE, correlationKey)))
+            .getInstanceKey();
 
     // when
     apiRule.publishMessage(MESSAGE_NAME, correlationKey, asMsgPack("foo", "bar"));

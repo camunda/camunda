@@ -38,9 +38,9 @@ import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.intent.JobIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
 import io.zeebe.test.broker.protocol.brokerapi.ControlMessageRequest;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandResponseBuilder;
@@ -133,13 +133,14 @@ public class BrokerClientTest {
   public void shouldReturnErrorOnRequestFailure() {
     // given
     broker
-        .onExecuteCommandRequest(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
+        .onExecuteCommandRequest(
+            ValueType.WORKFLOW_INSTANCE_CREATION, WorkflowInstanceCreationIntent.CREATE)
         .respondWithError()
         .errorCode(ErrorCode.INTERNAL_ERROR)
         .errorData("test")
         .register();
 
-    final BrokerResponse<WorkflowInstanceRecord> response =
+    final BrokerResponse<WorkflowInstanceCreationRecord> response =
         client.sendRequest(new BrokerCreateWorkflowInstanceRequest()).join();
 
     assertThat(response.isError()).isTrue();
@@ -155,8 +156,8 @@ public class BrokerClientTest {
 
     receivedCommandRequests.forEach(
         request -> {
-          assertThat(request.valueType()).isEqualTo(ValueType.WORKFLOW_INSTANCE);
-          assertThat(request.intent()).isEqualTo(WorkflowInstanceIntent.CREATE);
+          assertThat(request.valueType()).isEqualTo(ValueType.WORKFLOW_INSTANCE_CREATION);
+          assertThat(request.intent()).isEqualTo(WorkflowInstanceCreationIntent.CREATE);
         });
   }
 
@@ -168,7 +169,7 @@ public class BrokerClientTest {
     final BrokerCreateWorkflowInstanceRequest request =
         new BrokerCreateWorkflowInstanceRequest() {
           @Override
-          protected WorkflowInstanceRecord toResponseDto(DirectBuffer buffer) {
+          protected WorkflowInstanceCreationRecord toResponseDto(DirectBuffer buffer) {
             throw new RuntimeException("Catch Me");
           }
         };
@@ -266,22 +267,23 @@ public class BrokerClientTest {
 
     stubJobResponse();
 
-    final List<ActorFuture<BrokerResponse<WorkflowInstanceRecord>>> futures = new ArrayList<>();
+    final List<ActorFuture<BrokerResponse<WorkflowInstanceCreationRecord>>> futures =
+        new ArrayList<>();
     for (int i = 0; i < clientMaxRequests; i++) {
-      final ActorFuture<BrokerResponse<WorkflowInstanceRecord>> future =
+      final ActorFuture<BrokerResponse<WorkflowInstanceCreationRecord>> future =
           client.sendRequest(new BrokerCreateWorkflowInstanceRequest());
 
       futures.add(future);
     }
 
     // when
-    for (final ActorFuture<BrokerResponse<WorkflowInstanceRecord>> future : futures) {
+    for (final ActorFuture<BrokerResponse<WorkflowInstanceCreationRecord>> future : futures) {
       future.join();
     }
 
     // then
     for (int i = 0; i < clientMaxRequests; i++) {
-      final ActorFuture<BrokerResponse<WorkflowInstanceRecord>> future =
+      final ActorFuture<BrokerResponse<WorkflowInstanceCreationRecord>> future =
           client.sendRequest(new BrokerCreateWorkflowInstanceRequest());
 
       futures.add(future);
@@ -294,15 +296,16 @@ public class BrokerClientTest {
     broker.onExecuteCommandRequest(ValueType.JOB, JobIntent.COMPLETE).doNotRespond();
 
     // given
-    final List<ActorFuture<BrokerResponse<WorkflowInstanceRecord>>> futures = new ArrayList<>();
+    final List<ActorFuture<BrokerResponse<WorkflowInstanceCreationRecord>>> futures =
+        new ArrayList<>();
     for (int i = 0; i < clientMaxRequests; i++) {
-      final ActorFuture<BrokerResponse<WorkflowInstanceRecord>> future =
+      final ActorFuture<BrokerResponse<WorkflowInstanceCreationRecord>> future =
           client.sendRequest(new BrokerCreateWorkflowInstanceRequest());
       futures.add(future);
     }
 
     // when
-    for (final ActorFuture<BrokerResponse<WorkflowInstanceRecord>> future : futures) {
+    for (final ActorFuture<BrokerResponse<WorkflowInstanceCreationRecord>> future : futures) {
       try {
         future.join();
         fail("exception expected");
@@ -313,7 +316,7 @@ public class BrokerClientTest {
 
     // then
     for (int i = 0; i < clientMaxRequests; i++) {
-      final ActorFuture<BrokerResponse<WorkflowInstanceRecord>> future =
+      final ActorFuture<BrokerResponse<WorkflowInstanceCreationRecord>> future =
           client.sendRequest(new BrokerCreateWorkflowInstanceRequest());
 
       futures.add(future);
@@ -507,13 +510,14 @@ public class BrokerClientTest {
   public void registerCreateWfCommand() {
     final ExecuteCommandResponseBuilder builder =
         broker
-            .onExecuteCommandRequest(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
+            .onExecuteCommandRequest(
+                ValueType.WORKFLOW_INSTANCE_CREATION, WorkflowInstanceCreationIntent.CREATE)
             .respondWith()
             .event()
-            .intent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
-            .key(r -> r.key())
+            .intent(WorkflowInstanceCreationIntent.CREATED)
+            .key(ExecuteCommandRequest::key)
             .value()
-            .allOf((r) -> r.getCommand())
+            .allOf(ExecuteCommandRequest::getCommand)
             .done();
 
     builder.register();

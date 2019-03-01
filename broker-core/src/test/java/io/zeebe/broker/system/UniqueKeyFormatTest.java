@@ -23,8 +23,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import org.junit.Rule;
@@ -38,6 +38,8 @@ public class UniqueKeyFormatTest {
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
+  // todo: this does not need to be an integration test if the only test is that the partitionId is
+  // encoded in the key
   @Test
   public void shouldStartWorkflowInstanceAtNoneStartEvent() {
     // given
@@ -47,11 +49,11 @@ public class UniqueKeyFormatTest {
 
     // when
     TestUtil.waitUntil(() -> RecordingExporter.deploymentRecords().withPartitionId(2).exists());
-    final ExecuteCommandResponse workflowInstanceWithResponse =
-        apiRule.partitionClient(2).createWorkflowInstanceWithResponse("process");
+    final WorkflowInstanceCreationRecord workflowInstanceWithResponse =
+        apiRule.partitionClient(2).createWorkflowInstance(r -> r.setBpmnProcessId("process"));
 
     // then partition id is encoded in the returned getKey
-    final long key = workflowInstanceWithResponse.getKey();
+    final long key = workflowInstanceWithResponse.getInstanceKey();
     final int partitionId = Protocol.decodePartitionId(key);
     assertThat(partitionId).isEqualTo(2);
   }

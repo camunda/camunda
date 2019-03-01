@@ -75,11 +75,20 @@ public class ExclusiveGatewayTest {
     testClient.deploy(workflowDefinition);
 
     final long workflowInstance1 =
-        testClient.createWorkflowInstance("workflow", asMsgPack("foo", 4));
+        testClient
+            .createWorkflowInstance(
+                r -> r.setBpmnProcessId("workflow").setVariables(asMsgPack("foo", 4)))
+            .getInstanceKey();
     final long workflowInstance2 =
-        testClient.createWorkflowInstance("workflow", asMsgPack("foo", 8));
+        testClient
+            .createWorkflowInstance(
+                r -> r.setBpmnProcessId("workflow").setVariables(asMsgPack("foo", 8)))
+            .getInstanceKey();
     final long workflowInstance3 =
-        testClient.createWorkflowInstance("workflow", asMsgPack("foo", 12));
+        testClient
+            .createWorkflowInstance(
+                r -> r.setBpmnProcessId("workflow").setVariables(asMsgPack("foo", 12)))
+            .getInstanceKey();
 
     assertThat(
             RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
@@ -112,9 +121,15 @@ public class ExclusiveGatewayTest {
     testClient.deploy(workflowDefinition);
 
     final long workflowInstance1 =
-        testClient.createWorkflowInstance("workflow", asMsgPack("foo", 4));
+        testClient
+            .createWorkflowInstance(
+                r -> r.setBpmnProcessId("workflow").setVariables(asMsgPack("foo", 4)))
+            .getInstanceKey();
     final long workflowInstance2 =
-        testClient.createWorkflowInstance("workflow", asMsgPack("foo", 8));
+        testClient
+            .createWorkflowInstance(
+                r -> r.setBpmnProcessId("workflow").setVariables(asMsgPack("foo", 8)))
+            .getInstanceKey();
 
     testClient.receiveElementInState(
         workflowInstance1, "workflow", WorkflowInstanceIntent.ELEMENT_COMPLETED);
@@ -163,7 +178,10 @@ public class ExclusiveGatewayTest {
 
     // when
     final long workflowInstance1 =
-        testClient.createWorkflowInstance("workflow", asMsgPack("foo", 4));
+        testClient
+            .createWorkflowInstance(
+                r -> r.setBpmnProcessId("workflow").setVariables(asMsgPack("foo", 4)))
+            .getInstanceKey();
 
     // then
     testClient.receiveElementInState(
@@ -192,7 +210,10 @@ public class ExclusiveGatewayTest {
 
     // when
     final long workflowInstance2 =
-        testClient.createWorkflowInstance("workflow", asMsgPack("foo", 8));
+        testClient
+            .createWorkflowInstance(
+                r -> r.setBpmnProcessId("workflow").setVariables(asMsgPack("foo", 8)))
+            .getInstanceKey();
 
     // then
     testClient.receiveElementInState(
@@ -241,7 +262,10 @@ public class ExclusiveGatewayTest {
     testClient.deploy(workflowDefinition);
 
     // when
-    testClient.createWorkflowInstance("workflow", asMsgPack("foo", 4));
+    testClient
+        .createWorkflowInstance(
+            r -> r.setBpmnProcessId("workflow").setVariables(asMsgPack("foo", 4)))
+        .getInstanceKey();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> workflowEvents =
@@ -284,7 +308,10 @@ public class ExclusiveGatewayTest {
     testClient.deploy(workflowDefinition);
 
     // when
-    testClient.createWorkflowInstance("workflow", MsgPackUtil.asMsgPack("foo", 10));
+    testClient
+        .createWorkflowInstance(
+            r1 -> r1.setBpmnProcessId("workflow").setVariables(MsgPackUtil.asMsgPack("foo", 10)))
+        .getInstanceKey();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> completedEvents =
@@ -305,7 +332,10 @@ public class ExclusiveGatewayTest {
     testClient.deploy(workflowDefinition);
 
     // when
-    testClient.createWorkflowInstance("workflow", MsgPackUtil.asMsgPack("foo", 10));
+    testClient
+        .createWorkflowInstance(
+            r1 -> r1.setBpmnProcessId("workflow").setVariables(MsgPackUtil.asMsgPack("foo", 10)))
+        .getInstanceKey();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> completedEvents =

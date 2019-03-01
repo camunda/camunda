@@ -16,19 +16,18 @@
 package io.zeebe.protocol.intent;
 
 public enum WorkflowInstanceIntent implements WorkflowInstanceRelatedIntent {
-  CREATE((short) 0, false),
-  CANCEL((short) 1, false),
+  CANCEL((short) 0, false),
 
-  SEQUENCE_FLOW_TAKEN((short) 2),
+  SEQUENCE_FLOW_TAKEN((short) 1),
 
-  ELEMENT_ACTIVATING((short) 3),
-  ELEMENT_ACTIVATED((short) 4),
-  ELEMENT_COMPLETING((short) 5),
-  ELEMENT_COMPLETED((short) 6),
-  ELEMENT_TERMINATING((short) 7),
-  ELEMENT_TERMINATED((short) 8),
+  ELEMENT_ACTIVATING((short) 2),
+  ELEMENT_ACTIVATED((short) 3),
+  ELEMENT_COMPLETING((short) 4),
+  ELEMENT_COMPLETED((short) 5),
+  ELEMENT_TERMINATING((short) 6),
+  ELEMENT_TERMINATED((short) 7),
 
-  EVENT_OCCURRED((short) 9);
+  EVENT_OCCURRED((short) 8);
 
   private final short value;
   private final boolean shouldBlacklist;
@@ -49,24 +48,22 @@ public enum WorkflowInstanceIntent implements WorkflowInstanceRelatedIntent {
   public static Intent from(short value) {
     switch (value) {
       case 0:
-        return CREATE;
-      case 1:
         return CANCEL;
-      case 2:
+      case 1:
         return SEQUENCE_FLOW_TAKEN;
-      case 3:
+      case 2:
         return ELEMENT_ACTIVATING;
-      case 4:
+      case 3:
         return ELEMENT_ACTIVATED;
-      case 5:
+      case 4:
         return ELEMENT_COMPLETING;
-      case 6:
+      case 5:
         return ELEMENT_COMPLETED;
-      case 7:
+      case 6:
         return ELEMENT_TERMINATING;
-      case 8:
+      case 7:
         return ELEMENT_TERMINATED;
-      case 9:
+      case 8:
         return EVENT_OCCURRED;
       default:
         return Intent.UNKNOWN;

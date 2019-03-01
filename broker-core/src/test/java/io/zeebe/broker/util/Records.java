@@ -136,7 +136,7 @@ public class Records {
     return isCommand(event) && isRecordOfType(event, valueType) && hasIntent(event, intent);
   }
 
-  protected static boolean isRecordOfType(final LoggedEvent event, final ValueType type) {
+  public static boolean isRecordOfType(final LoggedEvent event, final ValueType type) {
     if (event == null) {
       return false;
     }

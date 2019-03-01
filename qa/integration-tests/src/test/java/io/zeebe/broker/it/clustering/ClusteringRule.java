@@ -39,7 +39,7 @@ import io.zeebe.gateway.impl.broker.request.BrokerTopologyRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.transport.ClientResponse;
@@ -509,7 +509,7 @@ public class ClusteringRule extends ExternalResource {
 
     request.setPartitionId(partitionId);
 
-    final BrokerResponse<WorkflowInstanceRecord> response =
+    final BrokerResponse<WorkflowInstanceCreationRecord> response =
         gateway.getBrokerClient().sendRequest(request).join();
 
     if (response.isResponse()) {

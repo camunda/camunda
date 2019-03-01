@@ -48,6 +48,7 @@ import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -141,12 +142,12 @@ public class ResponseMapper {
   }
 
   public static CreateWorkflowInstanceResponse toCreateWorkflowInstanceResponse(
-      long key, WorkflowInstanceRecord brokerResponse) {
+      long key, WorkflowInstanceCreationRecord brokerResponse) {
     return CreateWorkflowInstanceResponse.newBuilder()
-        .setWorkflowKey(brokerResponse.getWorkflowKey())
+        .setWorkflowKey(brokerResponse.getKey())
         .setBpmnProcessId(bufferAsString(brokerResponse.getBpmnProcessId()))
         .setVersion(brokerResponse.getVersion())
-        .setWorkflowInstanceKey(brokerResponse.getWorkflowInstanceKey())
+        .setWorkflowInstanceKey(brokerResponse.getInstanceKey())
         .build();
   }
 

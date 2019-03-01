@@ -59,7 +59,7 @@ public class TimerStreamProcessorTest {
 
     streamProcessor.blockAfterTimerEvent(r -> r.getMetadata().getIntent() == TimerIntent.CREATED);
 
-    streamProcessorRule.createWorkflowInstance(PROCESS_ID);
+    streamProcessorRule.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     waitUntil(() -> streamProcessor.isBlocked());
   }

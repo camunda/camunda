@@ -28,6 +28,8 @@ import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
+import io.zeebe.test.util.MsgPackUtil;
+import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Arrays;
@@ -35,7 +37,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -345,10 +346,10 @@ public class BpmnElementTypeTest {
     private final String name;
     private final BpmnElementType elementType;
 
-    private final String processId = randomId();
-    private final String elementId = randomId();
-    private final String taskType = randomId();
-    private final String messageName = randomId();
+    private final String processId = Strings.newRandomValidBpmnId();
+    private final String elementId = Strings.newRandomValidBpmnId();
+    private final String taskType = Strings.newRandomValidBpmnId();
+    private final String messageName = Strings.newRandomValidBpmnId();
 
     BpmnElementTypeScenario(String name, BpmnElementType elementType) {
       this.name = name;
@@ -382,7 +383,7 @@ public class BpmnElementTypeTest {
     }
 
     void executeInstance() {
-      testClient.createWorkflowInstance(processId());
+      testClient.createWorkflowInstance(r -> r.setBpmnProcessId(processId()));
     }
 
     void executeInstance(Map<String, String> payload) {
@@ -392,17 +393,13 @@ public class BpmnElementTypeTest {
                   .map(e -> String.format("\"%s\":\"%s\"", e.getKey(), e.getValue()))
                   .collect(Collectors.joining(","))
               + " }";
-      testClient.createWorkflowInstance(processId(), json);
+      testClient.createWorkflowInstance(
+          r -> r.setBpmnProcessId(processId()).setVariables(MsgPackUtil.asMsgPack(json)));
     }
 
     @Override
     public String toString() {
       return name();
-    }
-
-    static String randomId() {
-      // NCName xml values cannot start with a digit
-      return "id-" + UUID.randomUUID().toString();
     }
   }
 }

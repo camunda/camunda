@@ -40,6 +40,7 @@ import io.zeebe.protocol.intent.RaftIntent;
 import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.VariableDocumentIntent;
 import io.zeebe.protocol.intent.VariableIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.transport.ServerOutput;
@@ -200,8 +201,13 @@ public class BlacklistInstanceTest {
       {ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.EVENT_OCCURRED, true},
 
       // USER COMMAND
-      {ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE, false},
       {ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CANCEL, false},
+
+      ////////////////////////////////////////
+      //////// WORKFLOW INSTANCE CRE /////////
+      ////////////////////////////////////////
+      {ValueType.WORKFLOW_INSTANCE_CREATION, WorkflowInstanceCreationIntent.CREATE, false},
+      {ValueType.WORKFLOW_INSTANCE_CREATION, WorkflowInstanceCreationIntent.CREATED, true},
 
       ////////////////////////////////////////
       //////// WORKFLOW INSTANCE SUB /////////

@@ -15,18 +15,20 @@
  */
 package io.zeebe.protocol.intent;
 
-public enum WorkflowInstanceCreationIntent implements Intent {
-  CREATE(0),
-  CREATED(1);
+public enum WorkflowInstanceCreationIntent implements Intent, WorkflowInstanceRelatedIntent {
+  CREATE(0, false),
+  CREATED(1, true);
 
-  private short value;
+  private final short value;
+  private final boolean shouldBlacklist;
 
-  WorkflowInstanceCreationIntent(int value) {
-    this((short) value);
+  WorkflowInstanceCreationIntent(int value, boolean shouldBlacklist) {
+    this((short) value, shouldBlacklist);
   }
 
-  WorkflowInstanceCreationIntent(short value) {
+  WorkflowInstanceCreationIntent(short value, boolean shouldBlacklist) {
     this.value = value;
+    this.shouldBlacklist = shouldBlacklist;
   }
 
   @Override
@@ -43,5 +45,10 @@ public enum WorkflowInstanceCreationIntent implements Intent {
       default:
         return Intent.UNKNOWN;
     }
+  }
+
+  @Override
+  public boolean shouldBlacklistInstanceOnError() {
+    return shouldBlacklist;
   }
 }

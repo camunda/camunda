@@ -266,8 +266,14 @@ public class EventSubscriptionIncidentTest {
   public void shouldCreateIncidentIfMessageCorrelationKeyNotFound() {
     // when
     final long workflowInstanceKey =
-        apiRule.createWorkflowInstance(
-            processId, MsgPackUtil.asMsgPack(CORRELATION_VARIABLE_1, correlationKey1));
+        apiRule
+            .partitionClient()
+            .createWorkflowInstance(
+                r ->
+                    r.setBpmnProcessId(processId)
+                        .setVariables(
+                            MsgPackUtil.asMsgPack(CORRELATION_VARIABLE_1, correlationKey1)))
+            .getInstanceKey();
 
     final Record<WorkflowInstanceRecordValue> failureEvent =
         RecordingExporter.workflowInstanceRecords(failureEventIntent)
@@ -302,7 +308,11 @@ public class EventSubscriptionIncidentTest {
     payload.put(CORRELATION_VARIABLE_2, Arrays.asList(1, 2, 3));
 
     final long workflowInstanceKey =
-        apiRule.createWorkflowInstance(processId, MsgPackUtil.asMsgPack(payload));
+        apiRule
+            .partitionClient()
+            .createWorkflowInstance(
+                r -> r.setBpmnProcessId(processId).setVariables(MsgPackUtil.asMsgPack(payload)))
+            .getInstanceKey();
 
     final Record<WorkflowInstanceRecordValue> failureEvent =
         RecordingExporter.workflowInstanceRecords(failureEventIntent)
@@ -335,8 +345,14 @@ public class EventSubscriptionIncidentTest {
     final String correlationKey1 = UUID.randomUUID().toString();
     final String correlationKey2 = UUID.randomUUID().toString();
     final long workflowInstanceKey =
-        apiRule.createWorkflowInstance(
-            processId, MsgPackUtil.asMsgPack(CORRELATION_VARIABLE_1, correlationKey1));
+        apiRule
+            .partitionClient()
+            .createWorkflowInstance(
+                r ->
+                    r.setBpmnProcessId(processId)
+                        .setVariables(
+                            MsgPackUtil.asMsgPack(CORRELATION_VARIABLE_1, correlationKey1)))
+            .getInstanceKey();
 
     final Record<IncidentRecordValue> incidentCreatedRecord =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
@@ -378,8 +394,14 @@ public class EventSubscriptionIncidentTest {
   public void shouldNotOpenSubscriptionsWhenIncidentIsCreated() {
     // given
     final long workflowInstanceKey =
-        apiRule.createWorkflowInstance(
-            processId, MsgPackUtil.asMsgPack(CORRELATION_VARIABLE_1, correlationKey1));
+        apiRule
+            .partitionClient()
+            .createWorkflowInstance(
+                r ->
+                    r.setBpmnProcessId(processId)
+                        .setVariables(
+                            MsgPackUtil.asMsgPack(CORRELATION_VARIABLE_1, correlationKey1)))
+            .getInstanceKey();
 
     final Record<IncidentRecordValue> incidentCreatedRecord =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)

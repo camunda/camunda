@@ -33,6 +33,7 @@ import io.zeebe.protocol.intent.VariableIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
+import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.collection.Maps;
 import io.zeebe.test.util.record.RecordStream;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -74,7 +75,11 @@ public class UpdateVariableDocumentTest {
 
     // when
     testClient.deploy(process);
-    final long workflowInstanceKey = testClient.createWorkflowInstance(processId, "{'x': 1}");
+    final long workflowInstanceKey =
+        testClient
+            .createWorkflowInstance(
+                r -> r.setBpmnProcessId(processId).setVariables(MsgPackUtil.asMsgPack("{'x': 1}")))
+            .getInstanceKey();
     final Record<WorkflowInstanceRecordValue> activatedEvent = waitForActivityActivatedEvent();
     testClient.updateVariables(
         activatedEvent.getKey(), VariableDocumentUpdateSemantic.PROPAGATE, document);

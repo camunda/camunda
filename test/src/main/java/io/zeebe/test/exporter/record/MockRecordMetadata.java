@@ -20,17 +20,17 @@ import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
 import java.util.Objects;
 
 public class MockRecordMetadata extends ExporterMappedObject implements RecordMetadata, Cloneable {
 
-  private Intent intent = WorkflowInstanceIntent.CREATE;
+  private Intent intent = WorkflowInstanceCreationIntent.CREATE;
   private int partitionId = 0;
   private RecordType recordType = RecordType.COMMAND;
   private RejectionType rejectionType = RejectionType.NULL_VAL;
   private String rejectionReason = "";
-  private ValueType valueType = ValueType.WORKFLOW_INSTANCE;
+  private ValueType valueType = ValueType.WORKFLOW_INSTANCE_CREATION;
 
   public MockRecordMetadata() {}
 

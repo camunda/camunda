@@ -31,7 +31,6 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.SubscriptionUtil;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.JobBatchIntent;
@@ -245,49 +244,6 @@ public class ClientApiRule extends ExternalResource {
     return RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
         .withRecordKey(commandResponse.getKey())
         .getFirst();
-  }
-
-  public long createWorkflowInstance(long workflowKey, String jsonPayload) {
-    return createWorkflowInstance(workflowKey, MsgPackUtil.asMsgPack(jsonPayload));
-  }
-
-  public long createWorkflowInstance(long workflowKey, DirectBuffer payload) {
-    final ExecuteCommandResponse response =
-        createCmdRequest()
-            .partitionId(nextPartitionId())
-            .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
-            .command()
-            .put(WorkflowInstanceRecord.PROP_WORKFLOW_KEY, workflowKey)
-            .put(WorkflowInstanceRecord.PROP_WORKFLOW_PAYLOAD, BufferUtil.bufferAsArray(payload))
-            .done()
-            .sendAndAwait();
-
-    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
-
-    return response.getKey();
-  }
-
-  public long createWorkflowInstance(String bpmnProcessId, String jsonPayload) {
-    return createWorkflowInstance(bpmnProcessId, MsgPackUtil.asMsgPack(jsonPayload));
-  }
-
-  public long createWorkflowInstance(String bpmnProcessId, DirectBuffer payload) {
-    final ExecuteCommandResponse response =
-        createCmdRequest()
-            .partitionId(nextPartitionId())
-            .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
-            .command()
-            .put(WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID, bpmnProcessId)
-            .put(WorkflowInstanceRecord.PROP_WORKFLOW_VERSION, -1)
-            .put(WorkflowInstanceRecord.PROP_WORKFLOW_PAYLOAD, BufferUtil.bufferAsArray(payload))
-            .done()
-            .sendAndAwait();
-
-    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
-
-    return response.getKey();
   }
 
   public void publishMessage(String messageName, String correlationKey) {

@@ -28,12 +28,14 @@ import io.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.zeebe.model.bpmn.builder.ZeebePayloadMappingBuilder;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
+import org.agrona.DirectBuffer;
 import org.assertj.core.groups.Tuple;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -127,7 +129,12 @@ public class ActivityOutputMappingTest {
             .getWorkflowKey();
 
     // when
-    final long workflowInstanceKey = apiRule.createWorkflowInstance(workflowKey, initialPayload);
+    final DirectBuffer variables = MsgPackUtil.asMsgPack(initialPayload);
+    final long workflowInstanceKey =
+        apiRule
+            .partitionClient()
+            .createWorkflowInstance(r -> r.setKey(workflowKey).setVariables(variables))
+            .getInstanceKey();
 
     apiRule.completeJob(jobType);
 

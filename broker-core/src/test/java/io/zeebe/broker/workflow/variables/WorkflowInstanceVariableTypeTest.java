@@ -27,8 +27,10 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.intent.VariableIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
+import org.agrona.DirectBuffer;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -81,7 +83,12 @@ public class WorkflowInstanceVariableTypeTest {
   @Test
   public void shouldWriteVariableCreatedEvent() {
     // when
-    final long workflowInstanceKey = apiRule.createWorkflowInstance(PROCESS_ID, payload);
+    final DirectBuffer variables = MsgPackUtil.asMsgPack(payload);
+    final long workflowInstanceKey =
+        apiRule
+            .partitionClient()
+            .createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID).setVariables(variables))
+            .getInstanceKey();
 
     // then
     final Record<VariableRecordValue> variableRecord =

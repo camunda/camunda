@@ -96,8 +96,13 @@ public class CreateWorkflowInstanceProcessor
         workflowInstanceKey,
         WorkflowInstanceIntent.ELEMENT_ACTIVATING,
         workflowInstance.getValue());
-    controller.accept(
-        WorkflowInstanceCreationIntent.CREATED, record.setInstanceKey(workflowInstanceKey));
+
+    record
+        .setInstanceKey(workflowInstanceKey)
+        .setBpmnProcessId(workflow.getBpmnProcessId())
+        .setVersion(workflow.getVersion())
+        .setKey(workflow.getKey());
+    controller.accept(WorkflowInstanceCreationIntent.CREATED, record);
   }
 
   private boolean isValidWorkflow(

@@ -95,7 +95,7 @@ public class BoundaryEventTest {
   public void shouldTakeAllOutgoingSequenceFlowsIfTriggered() {
     // given
     testClient.deploy(MULTIPLE_SEQUENCE_FLOWS);
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // when
     testClient.receiveTimerRecord("timer", TimerIntent.CREATED);
@@ -116,7 +116,7 @@ public class BoundaryEventTest {
   public void shouldActivateBoundaryEventWhenEventTriggered() {
     // given
     testClient.deploy(MULTIPLE_SEQUENCE_FLOWS);
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // when
     testClient.receiveTimerRecord("timer", TimerIntent.CREATED);
@@ -153,7 +153,10 @@ public class BoundaryEventTest {
             .endEvent()
             .done();
     testClient.deploy(workflow);
-    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "123"));
+    testClient
+        .createWorkflowInstance(
+            r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("key", "123")))
+        .getInstanceKey();
 
     // when
     assertThat(
@@ -187,7 +190,10 @@ public class BoundaryEventTest {
             .endEvent()
             .done();
     testClient.deploy(workflow);
-    testClient.createWorkflowInstance(PROCESS_ID, "{\"foo\": 1, \"oof\": 2}");
+    testClient.createWorkflowInstance(
+        r ->
+            r.setBpmnProcessId(PROCESS_ID)
+                .setVariables(MsgPackUtil.asMsgPack("{ \"foo\": 1, \"oof\": 2 }")));
 
     // when
     testClient.receiveTimerRecord("timer", TimerIntent.CREATED);
@@ -221,7 +227,7 @@ public class BoundaryEventTest {
             .endEvent()
             .done();
     testClient.deploy(workflow);
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // when
     testClient.receiveTimerRecord("timer", TimerIntent.CREATED);
@@ -254,7 +260,7 @@ public class BoundaryEventTest {
     // given
     testClient.deploy(NON_INTERRUPTING_WORKFLOW);
     brokerRule.getClock().pinCurrentTime();
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // when
     testClient.receiveTimerRecord("event", TimerIntent.CREATED);
@@ -290,8 +296,12 @@ public class BoundaryEventTest {
     testClient.deploy(workflow);
 
     // when
-    testClient.createWorkflowInstance(
-        processId, MsgPackUtil.asMsgPack(m -> m.put("foo", 1).put("bar", 2)));
+    testClient
+        .createWorkflowInstance(
+            r ->
+                r.setBpmnProcessId(processId)
+                    .setVariables(MsgPackUtil.asMsgPack(m -> m.put("foo", 1).put("bar", 2))))
+        .getInstanceKey();
     testClient.publishMessage("message", "1");
 
     // then
@@ -319,7 +329,12 @@ public class BoundaryEventTest {
 
     // when
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance(processId, MsgPackUtil.asMsgPack("orderId", true));
+        testClient
+            .createWorkflowInstance(
+                r ->
+                    r.setBpmnProcessId(processId)
+                        .setVariables(MsgPackUtil.asMsgPack("orderId", true)))
+            .getInstanceKey();
     final Record<WorkflowInstanceRecordValue> failureEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
             .withElementId("task")

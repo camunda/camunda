@@ -20,6 +20,7 @@ import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.util.collection.MapBuilder;
 import io.zeebe.transport.ClientOutput;
+import io.zeebe.util.buffer.BufferWriter;
 import java.util.Map;
 
 public class ExecuteCommandRequestBuilder {
@@ -64,6 +65,11 @@ public class ExecuteCommandRequestBuilder {
   }
 
   public ExecuteCommandRequestBuilder command(Map<String, Object> command) {
+    request.command(command);
+    return this;
+  }
+
+  public ExecuteCommandRequestBuilder command(BufferWriter command) {
     request.command(command);
     return this;
   }

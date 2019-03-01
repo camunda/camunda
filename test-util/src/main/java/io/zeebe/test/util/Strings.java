@@ -21,6 +21,6 @@ public class Strings {
 
   /** @return a prefixed random UUID which can be used as a valid ID for a BPMN element */
   public static String newRandomValidBpmnId() {
-    return "a" + UUID.randomUUID().toString();
+    return "id-" + UUID.randomUUID().toString();
   }
 }

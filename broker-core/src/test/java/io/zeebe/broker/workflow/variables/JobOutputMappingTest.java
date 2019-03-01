@@ -186,7 +186,11 @@ public class JobOutputMappingTest {
 
     // when
     final long workflowInstanceKey =
-        apiRule.createWorkflowInstance(workflowKey, MsgPackUtil.asMsgPack("i", 0));
+        apiRule
+            .partitionClient()
+            .createWorkflowInstance(
+                r -> r.setKey(workflowKey).setVariables(MsgPackUtil.asMsgPack("i", 0)))
+            .getInstanceKey();
     apiRule.completeJob(jobType, MsgPackUtil.asMsgPack(jobPayload));
 
     // then
