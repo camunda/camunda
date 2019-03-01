@@ -54,11 +54,8 @@ pipeline {
         stage('Install') {
             steps {
                 withMaven(jdk: jdkVersion, maven: mavenVersion, mavenSettingsConfig: mavenSettingsConfig) {
-                    sh setupGoPath()
                     sh 'mvn -B clean com.mycila:license-maven-plugin:check com.coveo:fmt-maven-plugin:check install -DskipTests -Dskip-zbctl=false -Pspotbugs'
                 }
-
-                stash name: "zeebe-dist", includes: "dist/target/zeebe-broker/**/*"
             }
         }
 
@@ -101,7 +98,6 @@ pipeline {
                     agent { node { label 'ubuntu' } }
 
                     steps {
-                        unstash name: "zeebe-dist"
                         sh setupGoPath()
                         sh goTests()
                     }
