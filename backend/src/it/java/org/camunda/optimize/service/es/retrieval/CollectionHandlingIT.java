@@ -126,6 +126,26 @@ public class CollectionHandlingIT {
   }
 
   @Test
+  public void entityCanBeAddedToMultipleCollections() {
+    // given
+    String collectionId1 = createNewCollection();
+    String collectionId2 = createNewCollection();
+    String reportId = createNewSingleReport();
+
+    // when
+    addReportToCollection(reportId, collectionId1);
+    addReportToCollection(reportId, collectionId2);
+    List<ResolvedReportCollectionDefinitionDto> collections = getAllResolvedCollections();
+
+    // then
+    assertThat(collections.size(), is(2));
+    ResolvedReportCollectionDefinitionDto collection1 = collections.get(0);
+    assertThat(collection1.getData().getEntities().get(0).getId(), is(reportId));
+    ResolvedReportCollectionDefinitionDto collection2 = collections.get(1);
+    assertThat(collection2.getData().getEntities().get(0).getId(), is(reportId));
+  }
+
+  @Test
   public void updateCollectionWithReportIdThatDoesNotExists() {
     // given
     String id = createNewCollection();
@@ -195,12 +215,7 @@ public class CollectionHandlingIT {
     String singleReportIdToDelete = createNewSingleReport();
     String combinedReportIdToDelete = createNewCombinedReport();
 
-    SimpleCollectionDefinitionDto collection = new SimpleCollectionDefinitionDto();
-    CollectionDataDto<String> collectionData = new CollectionDataDto<>();
-    collectionData.setConfiguration("");
-    collectionData.setEntities(Arrays.asList(singleReportIdToDelete, combinedReportIdToDelete));
-    collection.setData(collectionData);
-    updateCollection(collectionId, collection);
+    addReportsToCollection(Arrays.asList(singleReportIdToDelete, combinedReportIdToDelete), collectionId);
 
     // when
     deleteReport(singleReportIdToDelete, true);
@@ -210,6 +225,19 @@ public class CollectionHandlingIT {
     List<ResolvedReportCollectionDefinitionDto> allResolvedCollections = getAllResolvedCollections();
     assertThat(allResolvedCollections.size(), is(1));
     assertThat(allResolvedCollections.get(0).getData().getEntities().size(), is(0));
+  }
+
+  private void addReportToCollection(String reportId, String collectionId) {
+    addReportsToCollection(Collections.singletonList(reportId), collectionId);
+  }
+
+  private void addReportsToCollection(List<String> reportIds, String collectionId) {
+    SimpleCollectionDefinitionDto collection = new SimpleCollectionDefinitionDto();
+    CollectionDataDto<String> collectionData = new CollectionDataDto<>();
+    collectionData.setConfiguration("");
+    collectionData.setEntities(reportIds);
+    collection.setData(collectionData);
+    updateCollection(collectionId, collection);
   }
 
   private String createNewSingleReport() {
