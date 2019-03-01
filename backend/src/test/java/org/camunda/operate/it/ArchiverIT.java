@@ -174,7 +174,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     final List<ListViewQueryDto> queries = TestUtil.createGetAllWorkflowInstancesQuery().getQueries();
     queries.get(0).setIds(ids1);
     BatchOperationRequestDto batchOperationRequest = new BatchOperationRequestDto(queries);
-    batchOperationRequest.setOperationType(OperationType.RESOLVE_INCIDENT); //the type does not matter
+    batchOperationRequest.setOperationType(OperationType.CANCEL_WORKFLOW_INSTANCE); //the type does not matter
     batchOperationWriter.scheduleBatchOperation(batchOperationRequest);
   }
 
