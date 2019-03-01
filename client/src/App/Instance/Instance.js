@@ -283,7 +283,6 @@ export default class Instance extends Component {
   };
 
   render() {
-    console.log(this.state);
     const {
       loaded,
       diagramDefinitions,
