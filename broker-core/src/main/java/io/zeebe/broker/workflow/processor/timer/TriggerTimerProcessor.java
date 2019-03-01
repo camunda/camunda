@@ -197,7 +197,12 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
     final RepeatingInterval timer =
         new RepeatingInterval(repetitions, event.getTimer().getInterval());
     catchEventBehavior.subscribeToTimerEvent(
-        record.getElementInstanceKey(), record.getWorkflowKey(), event.getId(), timer, writer);
+        record.getElementInstanceKey(),
+        record.getWorkflowInstanceKey(),
+        record.getWorkflowKey(),
+        event.getId(),
+        timer,
+        writer);
   }
 
   private ExecutableCatchEventElement getCatchEventById(

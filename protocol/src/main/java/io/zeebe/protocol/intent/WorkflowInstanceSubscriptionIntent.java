@@ -15,7 +15,7 @@
  */
 package io.zeebe.protocol.intent;
 
-public enum WorkflowInstanceSubscriptionIntent implements Intent {
+public enum WorkflowInstanceSubscriptionIntent implements WorkflowInstanceRelatedIntent {
   OPEN((short) 0),
   OPENED((short) 1),
 
@@ -25,10 +25,16 @@ public enum WorkflowInstanceSubscriptionIntent implements Intent {
   CLOSE((short) 4),
   CLOSED((short) 5);
 
-  private short value;
+  private final short value;
+  private final boolean shouldBlacklist;
 
   WorkflowInstanceSubscriptionIntent(short value) {
+    this(value, true);
+  }
+
+  WorkflowInstanceSubscriptionIntent(short value, boolean shouldBlacklist) {
     this.value = value;
+    this.shouldBlacklist = shouldBlacklist;
   }
 
   @Override
@@ -53,5 +59,10 @@ public enum WorkflowInstanceSubscriptionIntent implements Intent {
       default:
         return Intent.UNKNOWN;
     }
+  }
+
+  @Override
+  public boolean shouldBlacklistInstanceOnError() {
+    return shouldBlacklist;
   }
 }

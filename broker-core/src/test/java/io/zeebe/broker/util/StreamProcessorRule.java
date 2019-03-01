@@ -125,7 +125,7 @@ public class StreamProcessorRule implements TestRule {
         (db) -> {
           zeebeState = new ZeebeState(db);
           final TypedEventStreamProcessorBuilder processorBuilder =
-              streamEnvironment.newStreamProcessor().keyGenerator(zeebeState.getKeyGenerator());
+              streamEnvironment.newStreamProcessor().zeebeState(zeebeState);
 
           return factory.apply(processorBuilder, db);
         });

@@ -91,6 +91,7 @@ public class CatchEventBehavior {
       if (event.isTimer()) {
         subscribeToTimerEvent(
             context.getRecord().getKey(),
+            context.getRecord().getValue().getWorkflowInstanceKey(),
             context.getRecord().getValue().getWorkflowKey(),
             event.getId(),
             event.getTimer(),
@@ -108,6 +109,7 @@ public class CatchEventBehavior {
 
   public void subscribeToTimerEvent(
       long elementInstanceKey,
+      long workflowInstanceKey,
       long workflowKey,
       DirectBuffer handlerNodeId,
       Timer timer,
@@ -117,6 +119,7 @@ public class CatchEventBehavior {
         .setRepetitions(timer.getRepetitions())
         .setDueDate(timer.getDueDate(ActorClock.currentTimeMillis()))
         .setElementInstanceKey(elementInstanceKey)
+        .setWorkflowInstanceKey(workflowInstanceKey)
         .setHandlerNodeId(handlerNodeId)
         .setWorkflowKey(workflowKey);
     writer.appendNewCommand(TimerIntent.CREATE, timerRecord);
@@ -133,6 +136,7 @@ public class CatchEventBehavior {
   public void unsubscribeFromTimerEvent(TimerInstance timer, TypedStreamWriter writer) {
     timerRecord
         .setElementInstanceKey(timer.getElementInstanceKey())
+        .setWorkflowInstanceKey(timer.getWorkflowInstanceKey())
         .setDueDate(timer.getDueDate())
         .setHandlerNodeId(timer.getHandlerNodeId())
         .setWorkflowKey(timer.getWorkflowKey());

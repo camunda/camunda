@@ -444,6 +444,13 @@ public class TestStreams {
         }
 
         @Override
+        public void processingFailed(Exception exception) {
+          if (actualProcessor != null) {
+            actualProcessor.processingFailed(exception);
+          }
+        }
+
+        @Override
         public boolean executeSideEffects() {
           return actualProcessor == null || actualProcessor.executeSideEffects();
         }
@@ -493,6 +500,16 @@ public class TestStreams {
 
     public FluentLogWriter intent(final Intent intent) {
       this.metadata.intent(intent);
+      return this;
+    }
+
+    public FluentLogWriter requestId(final long requestId) {
+      this.metadata.requestId(requestId);
+      return this;
+    }
+
+    public FluentLogWriter requestStreamId(final int requestStreamId) {
+      this.metadata.requestStreamId(requestStreamId);
       return this;
     }
 

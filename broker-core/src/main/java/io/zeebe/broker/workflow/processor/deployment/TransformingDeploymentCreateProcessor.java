@@ -110,6 +110,7 @@ public class TransformingDeploymentCreateProcessor
         if (startEvent.isTimer()) {
           catchEventBehavior.subscribeToTimerEvent(
               NO_ELEMENT_INSTANCE,
+              NO_ELEMENT_INSTANCE,
               workflow.getKey(),
               startEvent.getId(),
               startEvent.getTimer(),

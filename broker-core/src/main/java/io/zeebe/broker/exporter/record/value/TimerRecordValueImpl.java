@@ -25,18 +25,21 @@ import java.util.Objects;
 public class TimerRecordValueImpl extends RecordValueImpl implements TimerRecordValue {
 
   private final long elementInstanceKey;
+  private final long workflowInstanceKey;
   private final long dueDate;
   private final String handlerFlowNodeId;
 
   public TimerRecordValueImpl(
       ExporterObjectMapper objectMapper,
       long elementInstanceKey,
+      long workflowInstanceKey,
       long dueDate,
       String handlerFlowNodeId) {
     super(objectMapper);
     this.elementInstanceKey = elementInstanceKey;
     this.dueDate = dueDate;
     this.handlerFlowNodeId = handlerFlowNodeId;
+    this.workflowInstanceKey = workflowInstanceKey;
   }
 
   @Override
@@ -55,41 +58,42 @@ public class TimerRecordValueImpl extends RecordValueImpl implements TimerRecord
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(dueDate, elementInstanceKey, handlerFlowNodeId);
+  public long getWorkflowInstanceKey() {
+    return workflowInstanceKey;
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (this == obj) {
+  public int hashCode() {
+    return Objects.hash(elementInstanceKey, workflowInstanceKey, dueDate, handlerFlowNodeId);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
       return true;
     }
-    if (obj == null) {
+    if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    if (getClass() != obj.getClass()) {
-      return false;
-    }
-    final TimerRecordValueImpl other = (TimerRecordValueImpl) obj;
-    if (elementInstanceKey != other.elementInstanceKey) {
-      return false;
-    }
-
-    if (dueDate != other.dueDate) {
-      return false;
-    }
-
-    return handlerFlowNodeId.equals(other.handlerFlowNodeId);
+    final TimerRecordValueImpl that = (TimerRecordValueImpl) o;
+    return elementInstanceKey == that.elementInstanceKey
+        && workflowInstanceKey == that.workflowInstanceKey
+        && dueDate == that.dueDate
+        && Objects.equals(handlerFlowNodeId, that.handlerFlowNodeId);
   }
 
   @Override
   public String toString() {
-    return "TimerRecordValueImpl [elementInstanceKey="
+    return "TimerRecordValueImpl{"
+        + "elementInstanceKey="
         + elementInstanceKey
+        + ", workflowInstanceKey="
+        + workflowInstanceKey
         + ", dueDate="
         + dueDate
-        + ", handlerFlowNodeId"
+        + ", handlerFlowNodeId='"
         + handlerFlowNodeId
-        + "]";
+        + '\''
+        + '}';
   }
 }

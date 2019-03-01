@@ -19,9 +19,10 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.BinaryProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.protocol.WorkflowInstanceRelated;
 import org.agrona.DirectBuffer;
 
-public class VariableRecord extends UnpackedObject {
+public class VariableRecord extends UnpackedObject implements WorkflowInstanceRelated {
 
   private final StringProperty nameProp = new StringProperty("name");
   private final BinaryProperty valueProp = new BinaryProperty("value");

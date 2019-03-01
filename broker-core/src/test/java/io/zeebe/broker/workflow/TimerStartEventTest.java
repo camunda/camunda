@@ -112,6 +112,7 @@ public class TimerStartEventTest {
 
     Assertions.assertThat(timerRecord)
         .hasDueDate(brokerRule.getClock().getCurrentTimeInMillis() + 1000)
+        .hasWorkflowInstanceKey(NO_ELEMENT_INSTANCE)
         .hasHandlerFlowNodeId("start_1")
         .hasElementInstanceKey(NO_ELEMENT_INSTANCE);
   }

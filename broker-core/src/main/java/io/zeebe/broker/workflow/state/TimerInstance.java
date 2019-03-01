@@ -34,6 +34,7 @@ public class TimerInstance implements DbValue {
   private long workflowKey;
   private long key;
   private long elementInstanceKey;
+  private long workflowInstanceKey;
   private long dueDate;
   private int repetitions;
 
@@ -85,14 +86,25 @@ public class TimerInstance implements DbValue {
     this.workflowKey = workflowKey;
   }
 
+  public long getWorkflowInstanceKey() {
+    return workflowInstanceKey;
+  }
+
+  public void setWorkflowInstanceKey(long workflowInstanceKey) {
+    this.workflowInstanceKey = workflowInstanceKey;
+  }
+
   @Override
   public int getLength() {
-    return 4 * Long.BYTES + 2 * Integer.BYTES + handlerNodeId.capacity();
+    return 5 * Long.BYTES + 2 * Integer.BYTES + handlerNodeId.capacity();
   }
 
   @Override
   public void write(MutableDirectBuffer buffer, int offset) {
     buffer.putLong(offset, elementInstanceKey, ZB_DB_BYTE_ORDER);
+    offset += Long.BYTES;
+
+    buffer.putLong(offset, workflowInstanceKey, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
     buffer.putLong(offset, dueDate, ZB_DB_BYTE_ORDER);
@@ -114,6 +126,9 @@ public class TimerInstance implements DbValue {
   @Override
   public void wrap(DirectBuffer buffer, int offset, int length) {
     elementInstanceKey = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
+    offset += Long.BYTES;
+
+    workflowInstanceKey = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
     dueDate = buffer.getLong(offset, ZB_DB_BYTE_ORDER);

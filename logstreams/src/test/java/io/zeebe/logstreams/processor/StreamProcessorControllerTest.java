@@ -31,7 +31,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.zeebe.db.ColumnFamily;
-import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DbString;
 import io.zeebe.db.impl.DefaultColumnFamily;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
@@ -90,7 +89,6 @@ public class StreamProcessorControllerTest {
   private EventProcessor eventProcessor;
   private EventFilter eventFilter;
 
-  private ZeebeDb db;
   private DbString value;
   private DbString key;
   private ColumnFamily<DbString, DbString> columnFamily;
@@ -120,6 +118,33 @@ public class StreamProcessorControllerTest {
     inOrder.verify(streamProcessor, times(1)).onEvent(any());
 
     inOrder.verify(eventProcessor, times(1)).processEvent();
+    inOrder.verify(eventProcessor, times(1)).executeSideEffects();
+    inOrder.verify(eventProcessor, times(1)).writeEvent(any());
+
+    inOrder.verify(streamProcessor, times(1)).onClose();
+    inOrder.verify(snapshotController, times(1)).takeSnapshot(any());
+    inOrder.verify(snapshotController, times(1)).close();
+
+    inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  public void testStreamProcessorLifecycleOnError() throws Exception {
+    // given
+    final EventProcessor eventProcessorSpy = streamProcessor.getEventProcessorSpy();
+    doThrow(new RuntimeException("expected")).when(eventProcessorSpy).processEvent();
+
+    // when
+    writeEventAndWaitUntilProcessedOrFailed(EVENT_1);
+    streamProcessorController.closeAsync().join();
+
+    // then
+    final InOrder inOrder = inOrder(streamProcessor, eventProcessor, snapshotController);
+    inOrder.verify(streamProcessor, times(1)).onOpen(any());
+    inOrder.verify(streamProcessor, times(1)).onEvent(any());
+
+    inOrder.verify(eventProcessor, times(1)).processEvent();
+    inOrder.verify(eventProcessor, times(1)).processingFailed(any());
     inOrder.verify(eventProcessor, times(1)).executeSideEffects();
     inOrder.verify(eventProcessor, times(1)).writeEvent(any());
 
@@ -458,17 +483,75 @@ public class StreamProcessorControllerTest {
   }
 
   @Test
-  public void shouldFailOnProcessEvent() {
-    // when
+  public void shouldSkipEventOnEventError() {
+    // given
+    final AtomicLong count = new AtomicLong(0);
     changeMockInActorContext(
-        () -> doThrow(new RuntimeException("expected")).when(eventProcessor).processEvent());
-    writer.writeEvents(2, EVENT_1, true);
+        () ->
+            doAnswer(
+                    (invocationOnMock) -> {
+                      if (count.getAndIncrement() == 1) {
+                        throw new RuntimeException("expected");
+                      }
+                      return invocationOnMock.callRealMethod();
+                    })
+                .when(streamProcessor)
+                .onEvent(any()));
+
+    // when
+    writer.writeEvents(3, EVENT_1, true);
 
     // then
-    waitUntil(() -> streamProcessorController.isFailed());
+    waitUntil(() -> count.get() == 3);
+
+    final InOrder inOrderStreamProcessor = inOrder(streamProcessor);
+    inOrderStreamProcessor.verify(streamProcessor, times(3)).onEvent(any());
+    inOrderStreamProcessor.verifyNoMoreInteractions();
 
     final InOrder inOrder = inOrder(eventProcessor);
-    inOrder.verify(eventProcessor, times(1)).processEvent();
+    inOrder.verify(eventProcessor).processEvent();
+    inOrder.verify(eventProcessor).executeSideEffects();
+    inOrder.verify(eventProcessor).writeEvent(any());
+
+    inOrder.verify(eventProcessor).processEvent();
+    inOrder.verify(eventProcessor).executeSideEffects();
+    inOrder.verify(eventProcessor).writeEvent(any());
+    inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  public void shouldSkipEventOnProcessEventError() {
+    // given
+    final AtomicLong count = new AtomicLong(0);
+    changeMockInActorContext(
+        () ->
+            doAnswer(
+                    (invocationOnMock) -> {
+                      if (count.getAndIncrement() == 1) {
+                        throw new RuntimeException("expected");
+                      } else {
+                        invocationOnMock.callRealMethod();
+                      }
+                      return null;
+                    })
+                .when(eventProcessor)
+                .processEvent());
+
+    // when
+    writer.writeEvents(3, EVENT_1, true);
+
+    // then
+    waitUntil(() -> count.get() == 3);
+
+    final InOrder inOrder = inOrder(eventProcessor);
+    inOrder.verify(eventProcessor).processEvent();
+    inOrder.verify(eventProcessor).executeSideEffects();
+    inOrder.verify(eventProcessor).writeEvent(any());
+    // includes skip
+    inOrder.verify(eventProcessor, times(2)).processEvent();
+
+    inOrder.verify(eventProcessor).executeSideEffects();
+    inOrder.verify(eventProcessor).writeEvent(any());
     inOrder.verifyNoMoreInteractions();
   }
 
@@ -591,7 +674,6 @@ public class StreamProcessorControllerTest {
                 (db) -> {
                   streamProcessor = RecordingStreamProcessor.createSpy(db);
                   eventProcessor = streamProcessor.getEventProcessorSpy();
-                  this.db = db;
                   columnFamily = db.createColumnFamily(DefaultColumnFamily.DEFAULT, key, value);
                   return streamProcessor;
                 })
@@ -611,6 +693,19 @@ public class StreamProcessorControllerTest {
     final File snapshotsDirectory = temporaryFolder.newFolder("state-snapshots");
 
     return new StateStorage(runtimeDirectory, snapshotsDirectory);
+  }
+
+  private long writeEventAndWaitUntilProcessedOrFailed(DirectBuffer event) {
+    final int beforeProcessed = streamProcessor.getProcessedEventCount();
+    final int beforeFailed = streamProcessor.getProcessingFailedCount();
+
+    final long eventPosition = writer.writeEvent(event, true);
+
+    waitUntil(
+        () ->
+            streamProcessor.getProcessedEventCount() == beforeProcessed + 1
+                || streamProcessor.getProcessingFailedCount() == beforeFailed + 1);
+    return eventPosition;
   }
 
   private long writeEventAndWaitUntilProcessed(DirectBuffer event) {

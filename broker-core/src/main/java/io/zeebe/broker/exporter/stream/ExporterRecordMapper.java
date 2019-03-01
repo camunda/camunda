@@ -355,6 +355,7 @@ public class ExporterRecordMapper {
     return new TimerRecordValueImpl(
         objectMapper,
         record.getElementInstanceKey(),
+        record.getWorkflowInstanceKey(),
         record.getDueDate(),
         asString(record.getHandlerNodeId()));
   }

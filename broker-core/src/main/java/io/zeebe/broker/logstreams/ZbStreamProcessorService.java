@@ -133,7 +133,7 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
       TypedStreamEnvironment streamEnvironment,
       ZeebeState zeebeState) {
     final TypedEventStreamProcessorBuilder typedProcessorBuilder =
-        streamEnvironment.newStreamProcessor().keyGenerator(zeebeState.getKeyGenerator());
+        streamEnvironment.newStreamProcessor().zeebeState(zeebeState);
 
     addDistributeDeploymentProcessors(zeebeState, streamEnvironment, typedProcessorBuilder);
     final BpmnStepProcessor stepProcessor =

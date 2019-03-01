@@ -15,17 +15,23 @@
  */
 package io.zeebe.protocol.intent;
 
-public enum IncidentIntent implements Intent {
+public enum IncidentIntent implements WorkflowInstanceRelatedIntent {
   CREATE((short) 0),
   CREATED((short) 1),
 
-  RESOLVE((short) 2),
+  RESOLVE((short) 2, false),
   RESOLVED((short) 3);
 
   private final short value;
+  private final boolean shouldBlacklist;
 
   IncidentIntent(short value) {
+    this(value, true);
+  }
+
+  IncidentIntent(short value, boolean shouldBlacklist) {
     this.value = value;
+    this.shouldBlacklist = shouldBlacklist;
   }
 
   public short getIntent() {
@@ -50,5 +56,10 @@ public enum IncidentIntent implements Intent {
   @Override
   public short value() {
     return value;
+  }
+
+  @Override
+  public boolean shouldBlacklistInstanceOnError() {
+    return shouldBlacklist;
   }
 }
