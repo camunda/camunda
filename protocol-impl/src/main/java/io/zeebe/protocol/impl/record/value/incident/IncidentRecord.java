@@ -20,10 +20,11 @@ import io.zeebe.msgpack.property.EnumProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.ErrorType;
+import io.zeebe.protocol.WorkflowInstanceRelated;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import org.agrona.DirectBuffer;
 
-public class IncidentRecord extends UnpackedObject {
+public class IncidentRecord extends UnpackedObject implements WorkflowInstanceRelated {
   private final EnumProperty<ErrorType> errorTypeProp =
       new EnumProperty<>("errorType", ErrorType.class, ErrorType.UNKNOWN);
   private final StringProperty errorMessageProp = new StringProperty("errorMessage", "");

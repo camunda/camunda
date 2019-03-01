@@ -67,6 +67,7 @@
       <validValue name="NOT_FOUND">1</validValue>
       <validValue name="ALREADY_EXISTS">2</validValue>
       <validValue name="INVALID_STATE">3</validValue>
+      <validValue name="PROCESSING_ERROR">4</validValue>
     </enum>
   </types>
 

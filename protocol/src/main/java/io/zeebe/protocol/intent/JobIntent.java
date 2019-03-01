@@ -15,31 +15,37 @@
  */
 package io.zeebe.protocol.intent;
 
-public enum JobIntent implements Intent {
+public enum JobIntent implements WorkflowInstanceRelatedIntent {
   CREATE((short) 0),
   CREATED((short) 1),
 
   ACTIVATED((short) 2),
 
-  COMPLETE((short) 3),
+  COMPLETE((short) 3, false),
   COMPLETED((short) 4),
 
   TIME_OUT((short) 5),
   TIMED_OUT((short) 6),
 
-  FAIL((short) 7),
+  FAIL((short) 7, false),
   FAILED((short) 8),
 
-  UPDATE_RETRIES((short) 9),
+  UPDATE_RETRIES((short) 9, false),
   RETRIES_UPDATED((short) 10),
 
   CANCEL((short) 11),
   CANCELED((short) 12);
 
   private final short value;
+  private final boolean shouldBlacklist;
 
   JobIntent(short value) {
+    this(value, true);
+  }
+
+  JobIntent(short value, boolean shouldBlacklist) {
     this.value = value;
+    this.shouldBlacklist = shouldBlacklist;
   }
 
   public short getIntent() {
@@ -82,5 +88,10 @@ public enum JobIntent implements Intent {
   @Override
   public short value() {
     return value;
+  }
+
+  @Override
+  public boolean shouldBlacklistInstanceOnError() {
+    return shouldBlacklist;
   }
 }

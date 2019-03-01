@@ -19,11 +19,13 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.protocol.WorkflowInstanceRelated;
 import org.agrona.DirectBuffer;
 
-public class TimerRecord extends UnpackedObject {
+public class TimerRecord extends UnpackedObject implements WorkflowInstanceRelated {
 
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
+  private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey");
   private final LongProperty dueDateProp = new LongProperty("dueDate");
   private final StringProperty handlerNodeId = new StringProperty("handlerNodeId");
   private final IntegerProperty repetitionsProp = new IntegerProperty("repetitions");
@@ -31,6 +33,7 @@ public class TimerRecord extends UnpackedObject {
 
   public TimerRecord() {
     this.declareProperty(elementInstanceKeyProp)
+        .declareProperty(workflowInstanceKeyProp)
         .declareProperty(dueDateProp)
         .declareProperty(handlerNodeId)
         .declareProperty(repetitionsProp)
@@ -80,5 +83,14 @@ public class TimerRecord extends UnpackedObject {
   public TimerRecord setWorkflowKey(long workflowKey) {
     this.workflowKeyProp.setValue(workflowKey);
     return this;
+  }
+
+  public TimerRecord setWorkflowInstanceKey(long workflowInstanceKey) {
+    this.workflowInstanceKeyProp.setValue(workflowInstanceKey);
+    return this;
+  }
+
+  public long getWorkflowInstanceKey() {
+    return workflowInstanceKeyProp.getValue();
   }
 }
