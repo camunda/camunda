@@ -114,7 +114,7 @@ public class ExclusiveGatewayElementActivatingHandler<T extends ExecutableExclus
 
     for (final ExecutableSequenceFlow sequenceFlow : sequenceFlows) {
       final CompiledJsonCondition compiledCondition = sequenceFlow.getCondition();
-      final boolean isFulFilled = interpreter.eval(compiledCondition.getCondition(), payload);
+      final boolean isFulFilled = interpreter.eval(compiledCondition, payload);
 
       if (isFulFilled) {
         return sequenceFlow;

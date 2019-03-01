@@ -35,9 +35,13 @@ public class JsonConditionInterpreter {
 
   private final JsonPathCache cache = new JsonPathCache();
 
-  public boolean eval(final JsonCondition condition, final DirectBuffer json) {
+  public boolean eval(final CompiledJsonCondition condition, final DirectBuffer json) {
     cache.wrap(json);
-    return evalCondition(condition, json);
+    try {
+      return evalCondition(condition.getCondition(), json);
+    } catch (Exception e) {
+      throw new JsonConditionException(condition, e);
+    }
   }
 
   private boolean evalCondition(final JsonCondition condition, final DirectBuffer json) {

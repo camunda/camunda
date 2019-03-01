@@ -128,7 +128,7 @@ public class ExpressionIncidentTest {
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
     assertIncidentRecordValue(
         ErrorType.CONDITION_ERROR.name(),
-        "Cannot compare values of different types: STRING and INTEGER",
+        "Expected to evaluate condition '$.foo >= 5 && $.foo < 10' successfully, but failed because: Cannot compare values of different types: STRING and INTEGER",
         "xor",
         incidentEvent);
   }
@@ -293,7 +293,7 @@ public class ExpressionIncidentTest {
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
     assertIncidentRecordValue(
         ErrorType.CONDITION_ERROR.name(),
-        "Cannot compare values of different types: STRING and INTEGER",
+        "Expected to evaluate condition '$.foo >= 5 && $.foo < 10' successfully, but failed because: Cannot compare values of different types: STRING and INTEGER",
         "xor",
         incidentEvent);
   }

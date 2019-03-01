@@ -109,7 +109,7 @@ public class JsonConditionInterpreterTest {
         .withFailMessage("Invalid condition: %s", condition.getErrorMessage())
         .isTrue();
 
-    final boolean result = interpreter.eval(condition.getCondition(), json);
+    final boolean result = interpreter.eval(condition, json);
     assertThat(result).describedAs("is fulfilled").isEqualTo(isFulfilled);
   }
 }
