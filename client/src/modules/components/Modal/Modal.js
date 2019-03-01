@@ -123,6 +123,7 @@ Modal.Header.propTypes = {
 };
 
 Modal.Body = Styled.ModalBody;
+Modal.BodyText = Styled.ModalBodyText;
 
 Modal.Footer = function ModalFooter(props) {
   return (

@@ -242,16 +242,7 @@ export const Button = themed(styled.button`
 `);
 
 export const ModalBody = themed(styled(Modal.Body)`
-  color: ${themeStyle({
-    dark: '#ffffff',
-    light: Colors.uiLight06
-  })};
-
-  background-color: ${themeStyle({
-    dark: Colors.uiDark01,
-    light: Colors.uiLight04
-  })};
-
+  padding: 0;
   position: relative;
   counter-reset: line;
 

@@ -89,7 +89,27 @@ export const CrossIcon = themed(styled(CloseLarge)`
   }
 `);
 
-export const ModalBody = styled(Panel.Body)``;
+export const ModalBody = themed(styled(Panel.Body)`
+  padding: 14px 29px 14px 19px;
+
+  color: ${themeStyle({
+    dark: '#ffffff',
+    light: Colors.uiLight06
+  })};
+
+  background-color: ${themeStyle({
+    dark: Colors.uiDark01,
+    light: Colors.uiLight04
+  })};
+`);
+
+export const ModalBodyText = themed(styled.div`
+  font-size: 13px
+  opacity: ${themeStyle({
+    dark: '0.9',
+    light: '1'
+  })}
+`);
 
 export const ModalFooter = themed(styled(Panel.Footer)`
   height: 63px;

@@ -8,7 +8,7 @@ const Button = React.forwardRef(function Button(props, ref) {
 });
 
 Button.propTypes = {
-  size: PropTypes.oneOf(['medium', 'large']),
+  size: PropTypes.oneOf(['small', 'medium', 'large']),
   color: PropTypes.oneOf(['main', 'primary'])
 };
 

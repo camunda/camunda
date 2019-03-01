@@ -56,6 +56,7 @@ export default class DiagramPanel extends React.PureComponent {
           {hasActiveIncidents && (
             <IncidentsWrapper
               incidents={this.props.incidents}
+              incidentsCount={this.props.incidentsCount}
               instanceId={instance.id}
             />
           )}

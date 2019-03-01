@@ -3,6 +3,12 @@ import styled, {css} from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
 const sizeStyle = ({size}) => {
+  const smallSizeStyle = css`
+    height: 22px;
+
+    font-size: 12px;
+  `;
+
   const mediumSizeStyle = css`
     height: 35px;
     width: 117px;
@@ -17,7 +23,25 @@ const sizeStyle = ({size}) => {
     font-size: 18px;
   `;
 
-  return size === 'medium' ? mediumSizeStyle : largeSizeStyle;
+  const style = {
+    small: smallSizeStyle,
+    medium: mediumSizeStyle,
+    large: largeSizeStyle
+  };
+
+  return style[size];
+};
+
+const getBoxShadow = ({size}) => {
+  const shadow = css`
+    box-shadow: 0 2px 2px 0
+      ${themeStyle({
+        dark: 'rgba(0, 0, 0, 0.35)',
+        light: 'rgba(0, 0, 0, 0.08)'
+      })};
+  `;
+
+  return size === 'small' ? '' : shadow;
 };
 
 const colorStyle = ({color}) => {
@@ -42,12 +66,6 @@ const colorStyle = ({color}) => {
   `;
 
   const mainStyle = css`
-    box-shadow: 0 2px 2px 0
-      ${themeStyle({
-        dark: 'rgba(0, 0, 0, 0.35)',
-        light: 'rgba(0, 0, 0, 0.08)'
-      })};
-
     color: ${themeStyle({
       dark: Colors.uiLight02,
       light: 'rgba(69, 70, 78, 0.9)'
@@ -103,13 +121,8 @@ const colorStyle = ({color}) => {
 };
 
 export const Button = themed(styled.button`
-  border-radius: 3px;
-  box-shadow: 0 2px 2px 0
-    ${themeStyle({
-      dark: 'rgba(0, 0, 0, 0.35)',
-      light: 'rgba(0, 0, 0, 0.08)'
-    })};
-
+  border-radius: ${({size}) => (size === 'small' ? '11px' : '3px')};
+  ${props => getBoxShadow(props)};
   font-family: IBMPlexSans;
   font-weight: 600;
 

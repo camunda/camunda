@@ -3,17 +3,16 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import IncidentsBar from './../IncidentsBar';
 import IncidentsOverlay from './../IncidentsOverlay';
+import IncidentsTable from './../IncidentsTable';
 
 export default class IncidentsWrapper extends React.PureComponent {
   static defaultProps = {
-    incidents: PropTypes.shape({
-      count: PropTypes.number,
-      incidents: PropTypes.array
-    }),
+    incidents: PropTypes.array,
+    incidentsCount: PropTypes.number,
     instanceId: PropTypes.string
   };
   state = {
-    isOpen: false
+    isOpen: true
   };
 
   handleToggle = () => {
@@ -27,13 +26,13 @@ export default class IncidentsWrapper extends React.PureComponent {
       <>
         <IncidentsBar
           id={this.props.instanceId}
-          count={this.props.incidents.count}
+          count={this.props.incidentsCount}
           onClick={this.handleToggle}
           isArrowFlipped={this.state.isOpen}
         />
         {this.state.isOpen && (
           <IncidentsOverlay>
-            <div>Incidents table</div>
+            <IncidentsTable incidents={this.props.incidents} />
           </IncidentsOverlay>
         )}
       </>

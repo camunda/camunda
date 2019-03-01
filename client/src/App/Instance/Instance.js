@@ -272,7 +272,18 @@ export default class Instance extends Component {
     };
   };
 
+  formatIncidents = () => {
+    return this.state.incidents.incidents.map(item => {
+      const clone = Object.assign({}, item);
+      clone.flowNodeName =
+        this.state.activityIdToNameMap.get(item.flowNodeId) || UNNAMED_ACTIVITY;
+
+      return clone;
+    });
+  };
+
   render() {
+    console.log(this.state);
     const {
       loaded,
       diagramDefinitions,
@@ -309,7 +320,11 @@ export default class Instance extends Component {
             {`Camunda Operate Instance ${this.state.instance.id}`}
           </VisuallyHiddenH1>
           <SplitPane titles={{top: 'Workflow', bottom: 'Instance Details'}}>
-            <DiagramPanel instance={instance} incidents={this.state.incidents}>
+            <DiagramPanel
+              instance={instance}
+              incidents={this.formatIncidents(this.state.incidents.incidents)}
+              incidentsCount={this.state.incidents.count}
+            >
               {diagramDefinitions && (
                 <Diagram
                   onFlowNodeSelection={this.handleFlowNodeSelection}
