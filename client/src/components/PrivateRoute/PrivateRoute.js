@@ -67,7 +67,7 @@ export default class PrivateRoute extends React.Component {
 const debouncedNotification = debounce((...args) => addNotification(...args), 500, true);
 
 addHandler(response => {
-  if (response.status === 401) {
+  if (response.status === 401 && !response.url.includes('authentication')) {
     debouncedNotification({text: 'Your Session timed out.', type: 'warning'});
   }
 
