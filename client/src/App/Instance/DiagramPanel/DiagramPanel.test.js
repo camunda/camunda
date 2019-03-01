@@ -7,11 +7,12 @@ import StateIcon from 'modules/components/StateIcon';
 import {formatDate} from 'modules/utils/date';
 import {getWorkflowName} from 'modules/utils/instance';
 import {ThemeProvider} from 'modules/theme';
-import {createInstance} from 'modules/testUtils';
+import {createInstance, createIncidents} from 'modules/testUtils';
 import * as Styled from './styled';
 import DiagramPanel from './DiagramPanel';
 
 const mockInstance = createInstance();
+const mockIncidents = createIncidents();
 
 function Foo(props) {
   return <div data-test="foo" {...props} />;
@@ -30,7 +31,11 @@ describe('DiagramPanel', () => {
     const node = mount(
       <ThemeProvider>
         <SplitPane>
-          <DiagramPanel instance={mockInstance}>
+          <DiagramPanel
+            instance={mockInstance}
+            incidents={mockIncidents.incidents}
+            incidentsCount={mockIncidents.count}
+          >
             <Foo />
           </DiagramPanel>
           <BottomPane />

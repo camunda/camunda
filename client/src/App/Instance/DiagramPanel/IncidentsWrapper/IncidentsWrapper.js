@@ -12,7 +12,7 @@ export default class IncidentsWrapper extends React.PureComponent {
     instanceId: PropTypes.string
   };
   state = {
-    isOpen: true
+    isOpen: false
   };
 
   handleToggle = () => {

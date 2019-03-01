@@ -8,9 +8,11 @@ import IncidentsWrapper from './IncidentsWrapper';
 import IncidentsOverlay from '../IncidentsOverlay';
 import IncidentsBar from '../IncidentsBar';
 
+const incidentsMock = createIncidents();
 const mockProps = {
-  incidents: createIncidents(),
-  instanceId: '3'
+  instanceId: '3',
+  incidents: incidentsMock.incidents,
+  incidentsCount: incidentsMock.count
 };
 
 describe('IncidentsWrapper', () => {
