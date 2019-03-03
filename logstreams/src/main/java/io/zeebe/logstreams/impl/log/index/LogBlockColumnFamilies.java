@@ -13,19 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.logstreams.spi;
+package io.zeebe.logstreams.impl.log.index;
 
-/** Encapsulates snapshot metadata */
-public interface SnapshotMetadata {
-  /** @return the name of the snapshot */
-  String getName();
-
-  /** @return the log position when the snapshot was taken */
-  long getPosition();
-
-  /** @return the size (in bytes) of the snapshot */
-  long getSize();
-
-  /** @return the checksum of the snapshot */
-  byte[] getChecksum();
+public enum LogBlockColumnFamilies {
+  DEFAULT,
+  BLOCK_POSITION_ADDRESS,
 }

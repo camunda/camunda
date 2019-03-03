@@ -136,7 +136,7 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer {
           } else {
             final String errorMessage =
                 String.format(
-                    "Cannot install new service %s into the contianer, state is '%s'",
+                    "Cannot install new service %s into the container, state is '%s'",
                     serviceName, state);
             future.completeExceptionally(new IllegalStateException(errorMessage));
           }

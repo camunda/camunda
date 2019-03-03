@@ -66,12 +66,14 @@ import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorScheduler;
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import org.junit.rules.TemporaryFolder;
 
 public class TestStreams {
   protected static final Map<Class<?>, ValueType> VALUE_TYPES = new HashMap<>();
@@ -98,7 +100,7 @@ public class TestStreams {
     VALUE_TYPES.put(UnpackedObject.class, ValueType.NOOP);
   }
 
-  protected final File storageDirectory;
+  protected final TemporaryFolder storageDirectory;
   protected final AutoCloseableRule closeables;
   private final ServiceContainer serviceContainer;
 
@@ -109,7 +111,7 @@ public class TestStreams {
   protected StateStorageFactory stateStorageFactory;
 
   public TestStreams(
-      final File storageDirectory,
+      final TemporaryFolder storageDirectory,
       final AutoCloseableRule closeables,
       final ServiceContainer serviceContainer,
       final ActorScheduler actorScheduler) {
@@ -124,13 +126,25 @@ public class TestStreams {
   }
 
   public LogStream createLogStream(final String name, final int partitionId) {
-    final String rootPath = storageDirectory.getAbsolutePath();
+    File segments = null, index = null, snapshots = null;
+
+    try {
+      segments = storageDirectory.newFolder("segments");
+      index = storageDirectory.newFolder("index", "runtime");
+      snapshots = storageDirectory.newFolder("index", "snapshots");
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    final StateStorage stateStorage = new StateStorage(index, snapshots);
+
     final LogStream logStream =
         LogStreams.createFsLogStream(partitionId)
-            .logRootPath(rootPath)
+            .logRootPath(segments.getAbsolutePath())
             .serviceContainer(serviceContainer)
             .logName(name)
             .deleteOnClose(true)
+            .indexStateStorage(stateStorage)
             .build()
             .join();
 
@@ -204,7 +218,7 @@ public class TestStreams {
 
   protected StateStorageFactory getStateStorageFactory() {
     if (stateStorageFactory == null) {
-      final File rocksDBDirectory = new File(storageDirectory, "state");
+      final File rocksDBDirectory = new File(storageDirectory.getRoot(), "state");
       if (!rocksDBDirectory.exists()) {
         rocksDBDirectory.mkdir();
       }

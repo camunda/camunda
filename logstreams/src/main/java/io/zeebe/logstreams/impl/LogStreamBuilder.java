@@ -23,7 +23,6 @@ import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStreamSe
 import static io.zeebe.util.EnsureUtil.ensureFalse;
 import static io.zeebe.util.EnsureUtil.ensureGreaterThanOrEqual;
 
-import io.zeebe.logstreams.fs.FsSnapshotStorageBuilder;
 import io.zeebe.logstreams.impl.log.fs.FsLogStorage;
 import io.zeebe.logstreams.impl.log.fs.FsLogStorageConfiguration;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
@@ -33,7 +32,7 @@ import io.zeebe.logstreams.impl.service.LogBlockIndexWriterService;
 import io.zeebe.logstreams.impl.service.LogStreamService;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.logstreams.spi.SnapshotStorage;
+import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.servicecontainer.CompositeServiceBuilder;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
@@ -65,12 +64,12 @@ public class LogStreamBuilder {
   protected int readBlockSize = 1024;
 
   protected Duration snapshotPeriod = Duration.ofMinutes(1);
-  protected SnapshotStorage snapshotStorage;
 
   protected final AtomicLongPosition commitPosition = new AtomicLongPosition();
   protected final ActorConditions onCommitPositionUpdatedConditions = new ActorConditions();
 
   protected Function<FsLogStorage, FsLogStorage> logStorageStubber = Function.identity();
+  private StateStorage stateStorage;
 
   public LogStreamBuilder(final int partitionId) {
     this.partitionId = partitionId;
@@ -131,8 +130,8 @@ public class LogStreamBuilder {
     return this;
   }
 
-  public LogStreamBuilder snapshotStorage(final SnapshotStorage snapshotStorage) {
-    this.snapshotStorage = snapshotStorage;
+  public LogStreamBuilder indexStateStorage(StateStorage stateStorage) {
+    this.stateStorage = stateStorage;
     return this;
   }
 
@@ -183,8 +182,8 @@ public class LogStreamBuilder {
     return snapshotPeriod;
   }
 
-  public SnapshotStorage getSnapshotStorage() {
-    return snapshotStorage;
+  public StateStorage getStateStorage() {
+    return stateStorage;
   }
 
   public float getDeviation() {
@@ -240,7 +239,7 @@ public class LogStreamBuilder {
         new FsLogStorageService(storageConfig, partitionId, logStorageStubber);
     installOperation.createService(logStorageServiceName, logStorageService).install();
 
-    final LogBlockIndexService logBlockIndexService = new LogBlockIndexService();
+    final LogBlockIndexService logBlockIndexService = new LogBlockIndexService(stateStorage);
     installOperation.createService(logBlockIndexServiceName, logBlockIndexService).install();
 
     final LogBlockIndexWriterService logBlockIndexWriterService =
@@ -267,9 +266,6 @@ public class LogStreamBuilder {
     Objects.requireNonNull(logName, "logName");
     ensureGreaterThanOrEqual("partitionId", partitionId, 0);
     ensureFalse("deviation", deviation <= 0f || deviation > 1f);
-
-    if (snapshotStorage == null) {
-      snapshotStorage = new FsSnapshotStorageBuilder(getLogDirectory()).build();
-    }
+    Objects.requireNonNull(stateStorage, "indexStateStorage");
   }
 }

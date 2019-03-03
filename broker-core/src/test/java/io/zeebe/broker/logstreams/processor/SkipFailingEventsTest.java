@@ -90,7 +90,7 @@ public class SkipFailingEventsTest {
 
     streams =
         new TestStreams(
-            tempFolder.getRoot(), closeables, serviceContainerRule.get(), actorSchedulerRule.get());
+            tempFolder, closeables, serviceContainerRule.get(), actorSchedulerRule.get());
 
     stream = streams.createLogStream(STREAM_NAME);
     env = new TypedStreamEnvironment(streams.getLogStream(STREAM_NAME), output);

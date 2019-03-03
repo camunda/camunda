@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.logstreams.impl.LogStreamBuilder;
+import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
@@ -42,6 +43,9 @@ public class LogStreamTest {
   @Rule public ExpectedException thrown = ExpectedException.none();
 
   public TemporaryFolder tempFolder = new TemporaryFolder();
+  public TemporaryFolder snapshotFolder = new TemporaryFolder();
+  public TemporaryFolder indexFolder = new TemporaryFolder();
+
   public AutoCloseableRule closeables = new AutoCloseableRule();
   public ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
   public ServiceContainerRule serviceContainer = new ServiceContainerRule(actorScheduler);
@@ -49,17 +53,23 @@ public class LogStreamTest {
   @Rule
   public RuleChain chain =
       RuleChain.outerRule(tempFolder)
+          .around(snapshotFolder)
+          .around(indexFolder)
           .around(actorScheduler)
           .around(serviceContainer)
           .around(closeables);
 
   protected LogStream buildLogStream(final Consumer<LogStreamBuilder> streamConfig) {
+    final StateStorage stateStorage =
+        new StateStorage(indexFolder.getRoot(), snapshotFolder.getRoot());
+
     final LogStreamBuilder builder = new LogStreamBuilder(PARTITION_ID);
     builder
         .logName("test-log-name")
         .serviceContainer(serviceContainer.get())
         .logRootPath(tempFolder.getRoot().getAbsolutePath())
-        .snapshotPeriod(Duration.ofMinutes(5));
+        .snapshotPeriod(Duration.ofMinutes(5))
+        .indexStateStorage(stateStorage);
 
     streamConfig.accept(builder);
 
