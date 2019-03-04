@@ -19,6 +19,7 @@ import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.OperationDto;
+import org.camunda.operate.rest.dto.incidents.IncidentDto;
 import org.camunda.operate.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.rest.dto.listview.ListViewResponseDto;
@@ -248,39 +249,47 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     //when
     //we call RESOLVE_INCIDENT operation on instance
-    final ListViewQueryDto workflowInstanceQuery = createAllRunningQuery();
-    workflowInstanceQuery.setIds(Collections.singletonList(IdTestUtil.getId(workflowInstanceKey)));
-    postBatchOperationWithOKResponse(workflowInstanceQuery, OperationType.RESOLVE_INCIDENT);
+    final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
+    postOperationWithOKResponse(workflowInstanceId, new OperationRequestDto(OperationType.RESOLVE_INCIDENT));
 
     //and execute the operation
     operationExecutor.executeOneBatch();
 
     //then
     //before we process messages from Zeebe, the state of the operation must be SENT
-    ListViewResponseDto workflowInstances = getWorkflowInstances(workflowInstanceQuery);
+    ListViewWorkflowInstanceDto workflowInstance = workflowInstanceReader.getWorkflowInstanceWithOperationsById(workflowInstanceId);
 
-    assertThat(workflowInstances.getWorkflowInstances()).hasSize(1);
-    assertThat(workflowInstances.getWorkflowInstances().get(0).isHasActiveOperation()).isEqualTo(true);
-    assertThat(workflowInstances.getWorkflowInstances().get(0).getOperations()).hasSize(1);
-    OperationDto operation = workflowInstances.getWorkflowInstances().get(0).getOperations().get(0);
+    assertThat(workflowInstance.isHasActiveOperation()).isEqualTo(true);
+    assertThat(workflowInstance.getOperations()).hasSize(1);
+    OperationDto operation = workflowInstance.getOperations().get(0);
     assertThat(operation.getType()).isEqualTo(OperationType.RESOLVE_INCIDENT);
     assertThat(operation.getState()).isEqualTo(OperationState.SENT);
     assertThat(operation.getStartDate()).isNotNull();
     assertThat(operation.getEndDate()).isNull();
 
+    //check incidents
+    final List<IncidentDto> incidents = detailViewReader.getIncidents(workflowInstanceId).getIncidents();
+    assertThat(incidents).hasSize(1);
+    assertThat(incidents.get(0).isHasActiveOperation()).isEqualTo(true);
+    final OperationDto lastOperation = incidents.get(0).getLastOperation();
+    assertThat(lastOperation).isNotNull();
+    assertThat(lastOperation.getType()).isEqualTo(OperationType.RESOLVE_INCIDENT);
+    assertThat(lastOperation.getState()).isEqualTo(OperationState.SENT);
+    assertThat(lastOperation.getStartDate()).isNotNull();
+    assertThat(lastOperation.getEndDate()).isNull();
+
     //after we process messages from Zeebe, the state of the operation is changed to COMPLETED
     elasticsearchTestRule.processAllEvents(8);
-    workflowInstances = getWorkflowInstances(workflowInstanceQuery);
-    assertThat(workflowInstances.getWorkflowInstances()).hasSize(1);
-    assertThat(workflowInstances.getWorkflowInstances().get(0).isHasActiveOperation()).isEqualTo(false);
-    assertThat(workflowInstances.getWorkflowInstances().get(0).getOperations()).hasSize(1);
-    operation = workflowInstances.getWorkflowInstances().get(0).getOperations().get(0);
+    workflowInstance = workflowInstanceReader.getWorkflowInstanceWithOperationsById(workflowInstanceId);
+    assertThat(workflowInstance.isHasActiveOperation()).isEqualTo(false);
+    assertThat(workflowInstance.getOperations()).hasSize(1);
+    operation = workflowInstance.getOperations().get(0);
     assertThat(operation.getType()).isEqualTo(OperationType.RESOLVE_INCIDENT);
     assertThat(operation.getState()).isEqualTo(OperationState.COMPLETED);
     assertThat(operation.getStartDate()).isNotNull();
     assertThat(operation.getEndDate()).isNotNull();
     //assert that incident is resolved
-    assertThat(workflowInstances.getWorkflowInstances().get(0).getState()).isEqualTo(WorkflowInstanceStateDto.ACTIVE);
+    assertThat(workflowInstance.getState()).isEqualTo(WorkflowInstanceStateDto.ACTIVE);
   }
 
   @Test
@@ -330,28 +339,34 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   @Test
   public void testTwoOperationsOnOneInstance() throws Exception {
     // given
-    final long workflowInstanceId = startDemoWorkflowInstance();
-    failTaskWithNoRetriesLeft("taskA", workflowInstanceId, "Some error");
+    final long workflowInstanceKey = startDemoWorkflowInstance();
+    failTaskWithNoRetriesLeft("taskA", workflowInstanceKey, "Some error");
 
     //when we call RESOLVE_INCIDENT operation two times on one instance
-    postOperationWithOKResponse(IdTestUtil.getId(workflowInstanceId), new OperationRequestDto(OperationType.RESOLVE_INCIDENT));  //#1
-    postOperationWithOKResponse(IdTestUtil.getId(workflowInstanceId), new OperationRequestDto(OperationType.RESOLVE_INCIDENT));  //#2
+    final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
+    postOperationWithOKResponse(workflowInstanceId, new OperationRequestDto(OperationType.RESOLVE_INCIDENT));  //#1
+    postOperationWithOKResponse(workflowInstanceId, new OperationRequestDto(OperationType.RESOLVE_INCIDENT));  //#2
 
     //and execute the operation
     operationExecutor.executeOneBatch();
 
     //then
     //the state of one operation is COMPLETED and of the other - FAILED
-    elasticsearchTestRule.processAllEventsAndWait(incidentIsResolvedCheck, workflowInstanceId);
+    elasticsearchTestRule.processAllEventsAndWait(incidentIsResolvedCheck, workflowInstanceKey);
     Thread.sleep(1000L);  //sometimes the JOB RETRIES_UPDATED event is not there yet -> wait a little
     elasticsearchTestRule.processAllEvents(2);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
-    final ListViewWorkflowInstanceDto workflowInstance = workflowInstanceReader.getWorkflowInstanceWithOperationsById(IdTestUtil.getId(workflowInstanceId));
+    final ListViewWorkflowInstanceDto workflowInstance = workflowInstanceReader.getWorkflowInstanceWithOperationsById(workflowInstanceId);
     final List<OperationDto> operations = workflowInstance.getOperations();
     assertThat(operations).hasSize(2);
     assertThat(operations).filteredOn(op -> op.getState().equals(OperationState.COMPLETED)).hasSize(1);
     assertThat(operations).filteredOn(op -> op.getState().equals(OperationState.FAILED)).hasSize(1);
+
+    //check incidents
+    final List<IncidentDto> incidents = detailViewReader.getIncidents(workflowInstanceId).getIncidents();
+    assertThat(incidents).hasSize(0);
+
   }
 
   @Test
@@ -383,6 +398,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
         .anyMatch(op -> op.getType().equals(OperationType.CANCEL_WORKFLOW_INSTANCE));
     assertThat(operations).filteredOn(op -> op.getState().equals(OperationState.FAILED)).hasSize(1)
       .anyMatch(op -> op.getType().equals(OperationType.RESOLVE_INCIDENT));
+
   }
 
   @Test
@@ -411,6 +427,18 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(operation.getErrorMessage()).contains("no such incident was found");
     assertThat(operation.getEndDate()).isNotNull();
     assertThat(operation.getStartDate()).isNotNull();
+
+    //check incidents
+    final List<IncidentDto> incidents = detailViewReader.getIncidents(workflowInstanceId).getIncidents();
+    assertThat(incidents).hasSize(1);
+    assertThat(incidents.get(0).isHasActiveOperation()).isEqualTo(false);
+    final OperationDto lastOperation = incidents.get(0).getLastOperation();
+    assertThat(lastOperation).isNotNull();
+    assertThat(lastOperation.getType()).isEqualTo(OperationType.RESOLVE_INCIDENT);
+    assertThat(lastOperation.getState()).isEqualTo(OperationState.FAILED);
+    assertThat(lastOperation.getErrorMessage()).contains("no such incident was found");
+    assertThat(lastOperation.getStartDate()).isNotNull();
+    assertThat(lastOperation.getEndDate()).isNotNull();
   }
 
   @Test

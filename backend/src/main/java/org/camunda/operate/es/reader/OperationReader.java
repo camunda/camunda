@@ -7,7 +7,6 @@ package org.camunda.operate.es.reader;
 
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,7 +17,6 @@ import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.RangeQueryBuilder;
@@ -85,7 +83,7 @@ public class OperationReader {
     return ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper, OperationEntity.class);
   }
 
-  public Map<String, List<OperationEntity>> getOperations(List<String> workflowInstanceIds) {
+  public Map<String, List<OperationEntity>> getOperationsByWorkflowInstanceId(List<String> workflowInstanceIds) {
     Map<String, List<OperationEntity>> result = new HashMap<>();
 
     final ConstantScoreQueryBuilder query = constantScoreQuery(termsQuery(OperationTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceIds));
@@ -95,24 +93,34 @@ public class OperationReader {
       .addSort(OperationTemplate.WORKFLOW_INSTANCE_ID, SortOrder.ASC)
       .addSort(OperationTemplate.START_DATE, SortOrder.DESC)
       .addSort(OperationTemplate.ID, SortOrder.ASC);
-    TimeValue keepAlive = new TimeValue(2000);
-    SearchResponse response = searchRequestBuilder
-      .setScroll(keepAlive)
-      .get();
-    do {
-      String scrollId = response.getScrollId();
-
+    ElasticsearchUtil.scroll(searchRequestBuilder, OperationEntity.class, objectMapper, esClient, response -> {
       final List<OperationEntity> operationEntities = ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper, OperationEntity.class);
       for (OperationEntity operationEntity: operationEntities) {
         CollectionUtil.addToMap(result, operationEntity.getWorkflowInstanceId(), operationEntity);
       }
+    });
 
-      response = esClient
-        .prepareSearchScroll(scrollId)
-        .setScroll(keepAlive)
-        .get();
+    return result;
+  }
 
-    } while (response.getHits().getHits().length != 0);
+  public Map<String, List<OperationEntity>> getOperationsByIncidentId(String workflowInstanceId) {
+    Map<String, List<OperationEntity>> result = new HashMap<>();
+
+    final ConstantScoreQueryBuilder query = constantScoreQuery(termQuery(OperationTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId));
+
+    final SearchRequestBuilder searchRequestBuilder = esClient.prepareSearch(operationTemplate.getAlias())
+      .setQuery(query)
+      .addSort(OperationTemplate.INCIDENT_ID, SortOrder.ASC)
+      .addSort(OperationTemplate.START_DATE, SortOrder.DESC)
+      .addSort(OperationTemplate.ID, SortOrder.ASC);
+
+    ElasticsearchUtil.scroll(searchRequestBuilder, OperationEntity.class, objectMapper, esClient, response -> {
+      final List<OperationEntity> operationEntities = ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper, OperationEntity.class);
+      for (OperationEntity operationEntity: operationEntities) {
+        CollectionUtil.addToMap(result, operationEntity.getIncidentId(), operationEntity);
+      }
+    });
+
     return result;
   }
 

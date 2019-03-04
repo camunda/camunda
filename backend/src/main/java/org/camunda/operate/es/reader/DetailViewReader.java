@@ -12,6 +12,7 @@ import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ErrorType;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperateEntity;
+import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.VariableEntity;
 import org.camunda.operate.entities.detailview.ActivityInstanceForDetailViewEntity;
 import org.camunda.operate.es.schema.templates.ActivityInstanceTemplate;
@@ -71,6 +72,9 @@ public class DetailViewReader {
 
   @Autowired
   private OperateProperties operateProperties;
+
+  @Autowired
+  private OperationReader operationReader;
 
   public List<VariableEntity> getVariables(VariablesRequestDto variableRequest) {
     final TermQueryBuilder workflowInstanceIdQ = termQuery(VariableTemplate.WORKFLOW_INSTANCE_ID, variableRequest.getWorkflowInstanceId());
@@ -198,7 +202,9 @@ public class DetailViewReader {
         incidentResponse.getFlowNodes().add(new IncidentFlowNodeDto(b.getKeyAsString(), (int)b.getDocCount())));
     });
 
-    incidentResponse.setIncidents(IncidentDto.sortDefault(IncidentDto.createFrom(incidents)));
+    final Map<String, List<OperationEntity>> operations = operationReader.getOperationsByIncidentId(workflowInstanceId);
+
+    incidentResponse.setIncidents(IncidentDto.sortDefault(IncidentDto.createFrom(incidents, operations)));
     incidentResponse.setCount(incidents.size());
 
     return incidentResponse;

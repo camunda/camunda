@@ -10,7 +10,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import org.camunda.operate.entities.IncidentEntity;
+import org.camunda.operate.entities.OperationEntity;
+import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.rest.dto.OperationDto;
 
 public class IncidentDto {
@@ -111,7 +114,7 @@ public class IncidentDto {
     this.lastOperation = lastOperation;
   }
 
-  public static IncidentDto createFrom(IncidentEntity incidentEntity) {
+  public static IncidentDto createFrom(IncidentEntity incidentEntity, List<OperationEntity> operations) {
     if (incidentEntity == null) {
       return null;
     }
@@ -123,16 +126,27 @@ public class IncidentDto {
     incident.setErrorType(incidentEntity.getErrorType().getTitle());
     incident.setJobId(incidentEntity.getJobId());
     incident.setCreationTime(incidentEntity.getCreationTime());
-    //TODO operations
+
+    if (operations != null && operations.size() > 0) {
+      OperationEntity lastOperation = operations.get(0);    //operations are sorted by start date descendant
+      incident.setLastOperation(OperationDto.createFrom(lastOperation));
+
+      incident.setHasActiveOperation(operations.stream().anyMatch(
+        o ->
+          o.getState().equals(OperationState.SCHEDULED)
+            || o.getState().equals(OperationState.LOCKED)
+            || o.getState().equals(OperationState.SENT)));
+    }
+
     return incident;
   }
 
-  public static List<IncidentDto> createFrom(List<IncidentEntity> incidentEntities) {
+  public static List<IncidentDto> createFrom(List<IncidentEntity> incidentEntities, Map<String, List<OperationEntity>> operations) {
     List<IncidentDto> result = new ArrayList<>();
     if (incidentEntities != null) {
       for (IncidentEntity incidentEntity: incidentEntities) {
         if (incidentEntity != null) {
-          result.add(createFrom(incidentEntity));
+          result.add(createFrom(incidentEntity, operations.get(incidentEntity.getId())));
         }
       }
     }

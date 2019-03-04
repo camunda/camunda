@@ -117,7 +117,7 @@ public class ListViewReader {
 
     final Set<String> instancesWithIncidentsIds = findInstancesWithIncidents(ids);
 
-    final Map<String, List<OperationEntity>> operationsPerWorfklowInstance = operationReader.getOperations(ids);
+    final Map<String, List<OperationEntity>> operationsPerWorfklowInstance = operationReader.getOperationsByWorkflowInstanceId(ids);
 
     ListViewResponseDto responseDto = new ListViewResponseDto();
     responseDto.setWorkflowInstances(ListViewWorkflowInstanceDto.createFrom(workflowInstanceEntities, instancesWithIncidentsIds, operationsPerWorfklowInstance));
