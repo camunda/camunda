@@ -15,6 +15,7 @@
  */
 package io.zeebe.broker.it.startup;
 
+import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.GrpcClientRule;
@@ -42,6 +43,6 @@ public class BootstrapPartitionsTest {
 
     // then
     assertThat(partitions.size()).isEqualTo(2);
-    assertThat(partitions).containsExactlyInAnyOrder(0, 1);
+    assertThat(partitions).containsExactlyInAnyOrder(START_PARTITION_ID, START_PARTITION_ID + 1);
   }
 }

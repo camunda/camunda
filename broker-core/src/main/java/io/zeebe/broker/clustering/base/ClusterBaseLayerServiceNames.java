@@ -44,8 +44,8 @@ public class ClusterBaseLayerServiceNames {
   public static final ServiceName<Gateway> GATEWAY_SERVICE =
       ServiceName.newServiceName("gateway", Gateway.class);
 
-  public static final ServiceName<Void> RAFT_BOOTSTRAP_SERVICE =
-      ServiceName.newServiceName("cluster.base.raft.bootstrap", Void.class);
+  public static final ServiceName<Void> PARTITIONS_BOOTSTRAP_SERVICE =
+      ServiceName.newServiceName("cluster.base.partitions.bootstrap", Void.class);
   public static final ServiceName<RaftPersistentConfigurationManager> RAFT_CONFIGURATION_MANAGER =
       ServiceName.newServiceName(
           "cluster.base.raft.configurationManager", RaftPersistentConfigurationManager.class);

@@ -264,12 +264,6 @@
       </dependency>
 
       <dependency>
-        <groupId>io.atomix</groupId>
-        <artifactId>atomix-primitive</artifactId>
-        <version>${version.atomix}</version>
-      </dependency>
-
-      <dependency>
         <groupId>io.grpc</groupId>
         <artifactId>grpc-core</artifactId>
         <version>${version.grpc}</version>

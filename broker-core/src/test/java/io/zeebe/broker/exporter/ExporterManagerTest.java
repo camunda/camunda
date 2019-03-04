@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.exporter;
 
+import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.exporter.debug.DebugLogExporter;
@@ -58,7 +59,7 @@ public class ExporterManagerTest {
   @Test
   public void shouldRunExporterForEveryPartition() throws InterruptedException {
     // given
-    IntStream.range(0, PARTITIONS).forEach(this::createJob);
+    IntStream.range(START_PARTITION_ID, START_PARTITION_ID + PARTITIONS).forEach(this::createJob);
 
     // then
     assertThat(TestExporter.configureLatch.await(5, TimeUnit.SECONDS)).isTrue();

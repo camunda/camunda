@@ -15,6 +15,7 @@
  */
 package io.zeebe.test.broker.protocol.clientapi;
 
+import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -203,7 +204,8 @@ public class ClientApiRule extends ExternalResource {
         .findFirst()
         .map(
             brokerInfo ->
-                IntStream.range(0, brokerInfo.getPartitionsCount())
+                IntStream.range(
+                        START_PARTITION_ID, START_PARTITION_ID + brokerInfo.getPartitionsCount())
                     .boxed()
                     .collect(Collectors.toList()))
         .orElse(Collections.emptyList());
@@ -331,7 +333,7 @@ public class ClientApiRule extends ExternalResource {
   }
 
   protected int nextPartitionId() {
-    return nextPartitionId++ % partitionCount;
+    return (nextPartitionId++ % partitionCount) + START_PARTITION_ID;
   }
 
   protected int partitionForCorrelationKey(String correlationKey) {

@@ -24,6 +24,7 @@ import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.Protocol;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -58,7 +59,8 @@ public class CreateDeploymentTest {
     final Workflow deployedWorkflow = result.getWorkflows().get(0);
     assertThat(deployedWorkflow.getBpmnProcessId()).isEqualTo("process");
     assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
-    assertThat(deployedWorkflow.getWorkflowKey()).isEqualTo(1L);
+    assertThat(deployedWorkflow.getWorkflowKey())
+        .isEqualTo(Protocol.encodePartitionId(Protocol.DEPLOYMENT_PARTITION, 1L));
     assertThat(deployedWorkflow.getResourceName()).isEqualTo("workflow.bpmn");
   }
 

@@ -47,7 +47,7 @@ public class KeyGeneratorTest {
     final long firstKey = keyGenerator.nextKey();
 
     // then
-    assertThat(firstKey).isEqualTo(1);
+    assertThat(firstKey).isEqualTo(Protocol.encodePartitionId(Protocol.DEPLOYMENT_PARTITION, 1));
   }
 
   @Test
@@ -66,7 +66,8 @@ public class KeyGeneratorTest {
   public void shouldGetUniqueValuesOverPartitions() throws Exception {
     // given
     final ZeebeDb<ZbColumnFamilies> newDb = stateRule.createNewDb();
-    final ZeebeState otherZeebeState = new ZeebeState(1, newDb);
+    final int secondPartitionId = Protocol.DEPLOYMENT_PARTITION + 1;
+    final ZeebeState otherZeebeState = new ZeebeState(secondPartitionId, newDb);
     final KeyGenerator keyGenerator2 = otherZeebeState.getKeyGenerator();
 
     final long keyOfFirstPartition = keyGenerator.nextKey();
@@ -77,8 +78,9 @@ public class KeyGeneratorTest {
     // then
     assertThat(keyOfFirstPartition).isNotEqualTo(keyOfSecondPartition);
 
-    assertThat(Protocol.decodePartitionId(keyOfFirstPartition)).isEqualTo(0);
-    assertThat(Protocol.decodePartitionId(keyOfSecondPartition)).isEqualTo(1);
+    assertThat(Protocol.decodePartitionId(keyOfFirstPartition))
+        .isEqualTo(Protocol.DEPLOYMENT_PARTITION);
+    assertThat(Protocol.decodePartitionId(keyOfSecondPartition)).isEqualTo(secondPartitionId);
 
     newDb.close();
   }

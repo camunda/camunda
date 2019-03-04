@@ -109,11 +109,6 @@
     </dependency>
 
     <dependency>
-      <groupId>io.atomix</groupId>
-      <artifactId>atomix-primitive</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
     </dependency>

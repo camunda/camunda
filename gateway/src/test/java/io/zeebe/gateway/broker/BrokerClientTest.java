@@ -15,6 +15,7 @@
  */
 package io.zeebe.gateway.broker;
 
+import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -32,6 +33,7 @@ import io.zeebe.gateway.impl.broker.response.BrokerRejection;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.gateway.impl.data.MsgPackConverter;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -91,8 +93,8 @@ public class BrokerClientTest {
     ((BrokerClientImpl) client).getTransport().registerEndpoint(0, broker.getSocketAddress());
 
     final BrokerClusterStateImpl topology = new BrokerClusterStateImpl();
-    topology.addPartitionIfAbsent(0);
-    topology.setPartitionLeader(0, 0);
+    topology.addPartitionIfAbsent(START_PARTITION_ID);
+    topology.setPartitionLeader(START_PARTITION_ID, 0);
 
     ((BrokerTopologyManagerImpl) client.getTopologyManager()).setTopology(topology);
   }
@@ -350,7 +352,11 @@ public class BrokerClientTest {
 
     // when
     final BrokerResponse<JobRecord> response =
-        client.sendRequest(new BrokerCompleteJobRequest(79, EMPTY_PAYLOAD)).join();
+        client
+            .sendRequest(
+                new BrokerCompleteJobRequest(
+                    Protocol.encodePartitionId(Protocol.DEPLOYMENT_PARTITION, 79), EMPTY_PAYLOAD))
+            .join();
 
     // then
     assertThat(response.isRejection()).isTrue();

@@ -64,6 +64,9 @@ public class CreateDeploymentTest {
   private static final BpmnModelInstance WORKFLOW_2 =
       Bpmn.createExecutableProcess("process2").startEvent().endEvent().done();
 
+  private static final long FIRST_WORKFLOW_KEY =
+      Protocol.encodePartitionId(DEPLOYMENT_PARTITION, 1);
+
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
   public ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
@@ -130,7 +133,7 @@ public class CreateDeploymentTest {
         .containsExactly(
             entry("bpmnProcessId", "process"),
             entry("version", 1L),
-            entry("workflowKey", 1L),
+            entry("workflowKey", FIRST_WORKFLOW_KEY),
             entry("resourceName", "wf1.bpmn"));
 
     deployedWorkflows = (List<Map<String, Object>>) secondDeployment.getValue().get("workflows");
@@ -139,7 +142,7 @@ public class CreateDeploymentTest {
         .containsExactly(
             entry("bpmnProcessId", "process"),
             entry("version", 2L),
-            entry("workflowKey", 3L),
+            entry("workflowKey", FIRST_WORKFLOW_KEY + 2),
             entry("resourceName", "wf2.bpmn"));
   }
 

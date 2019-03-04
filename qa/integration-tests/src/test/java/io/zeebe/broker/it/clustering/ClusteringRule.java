@@ -22,6 +22,7 @@ import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.TEST_RECORDER;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setCluster;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setInitialContactPoints;
 import static io.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddresses;
+import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 
@@ -115,7 +116,10 @@ public class ClusteringRule extends ExternalResource {
     brokers = new HashMap<>();
     brokerCfgs = new HashMap<>();
     brokerBases = new HashMap<>();
-    this.partitionIds = IntStream.range(0, partitionCount).boxed().collect(Collectors.toList());
+    this.partitionIds =
+        IntStream.range(START_PARTITION_ID, START_PARTITION_ID + partitionCount)
+            .boxed()
+            .collect(Collectors.toList());
 
     clusterName = "zeebe-cluster-" + CLUSTER_COUNT.getAndIncrement();
   }

@@ -15,6 +15,7 @@
  */
 package io.zeebe.gateway.api.util;
 
+import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.grpc.ManagedChannel;
@@ -137,8 +138,8 @@ public class StubbedGateway extends Gateway {
       clusterState = new BrokerClusterStateImpl();
       clusterState.addBrokerIfAbsent(0);
       clusterState.setBrokerAddressIfPresent(0, "localhost:26501");
-      clusterState.setPartitionLeader(0, 0);
-      clusterState.addPartitionIfAbsent(0);
+      clusterState.setPartitionLeader(START_PARTITION_ID, 0);
+      clusterState.addPartitionIfAbsent(START_PARTITION_ID);
       clusterState.setPartitionsCount(1);
     }
 

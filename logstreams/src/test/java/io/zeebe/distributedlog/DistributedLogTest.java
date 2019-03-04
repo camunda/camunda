@@ -17,6 +17,7 @@ package io.zeebe.distributedlog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.protocol.Protocol;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
@@ -60,7 +61,7 @@ public class DistributedLogTest {
 
   public static final int DEFAULT_RETRIES = 500;
 
-  private static int partitionId = 0;
+  private static int partitionId = Protocol.START_PARTITION_ID;
   private static int numPartitions = 1;
   private static int replicationFactor = 3;
 

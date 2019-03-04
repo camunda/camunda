@@ -65,11 +65,14 @@ public class CreateDeploymentMultiplePartitionsTest {
   public static final int PARTITION_ID = DEPLOYMENT_PARTITION;
   public static final int PARTITION_COUNT = 3;
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(setPartitionCount(3));
+  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(setPartitionCount(PARTITION_COUNT));
 
   public ClientApiRule apiRule = new ClientApiRule(brokerRule::getAtomix);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+
+  public static final long FIRST_DEPLOYED_WORKFLOW_KEY =
+      Protocol.encodePartitionId(PARTITION_ID, 1);
 
   @Test
   public void shouldCreateDeploymentOnAllPartitions() {
@@ -93,9 +96,10 @@ public class CreateDeploymentMultiplePartitionsTest {
     assertThat(resp.getRecordType()).isEqualTo(RecordType.EVENT);
     assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATED);
 
-    assertCreatedDeploymentEventOnPartition(0, resp.getKey());
-    assertCreatedDeploymentEventOnPartition(1, resp.getKey());
-    assertCreatedDeploymentEventOnPartition(2, resp.getKey());
+    apiRule
+        .getPartitionIds()
+        .forEach(
+            partitionId -> assertCreatedDeploymentEventOnPartition(partitionId, resp.getKey()));
   }
 
   @Test
@@ -122,25 +126,28 @@ public class CreateDeploymentMultiplePartitionsTest {
     final Map<String, Object> resources = deploymentResource(yamlWorkflow, "simple-workflow.yaml");
     resources.put("resourceType", ResourceType.YAML_WORKFLOW.name());
 
-    for (int i = 0; i < PARTITION_COUNT; i++) {
-      assertCreatedDeploymentEventResources(
-          i,
-          resp.getKey(),
-          (deploymentCreatedEvent) -> {
-            final DeploymentRecordValue deployment = deploymentCreatedEvent.getValue();
-            final DeploymentResource resource = deployment.getResources().get(0);
-            Assertions.assertThat(resource).hasResourceType(ResourceType.YAML_WORKFLOW);
+    apiRule
+        .getPartitionIds()
+        .forEach(
+            partitionId ->
+                assertCreatedDeploymentEventResources(
+                    partitionId,
+                    resp.getKey(),
+                    (deploymentCreatedEvent) -> {
+                      final DeploymentRecordValue deployment = deploymentCreatedEvent.getValue();
+                      final DeploymentResource resource = deployment.getResources().get(0);
+                      Assertions.assertThat(resource).hasResourceType(ResourceType.YAML_WORKFLOW);
 
-            final List<DeployedWorkflow> deployedWorkflows = deployment.getDeployedWorkflows();
-            assertThat(deployedWorkflows).hasSize(1);
+                      final List<DeployedWorkflow> deployedWorkflows =
+                          deployment.getDeployedWorkflows();
+                      assertThat(deployedWorkflows).hasSize(1);
 
-            Assertions.assertThat(deployedWorkflows.get(0))
-                .hasBpmnProcessId("yaml-workflow")
-                .hasVersion(1)
-                .hasWorkflowKey(1)
-                .hasResourceName("simple-workflow.yaml");
-          });
-    }
+                      Assertions.assertThat(deployedWorkflows.get(0))
+                          .hasBpmnProcessId("yaml-workflow")
+                          .hasVersion(1)
+                          .hasWorkflowKey(FIRST_DEPLOYED_WORKFLOW_KEY)
+                          .hasResourceName("simple-workflow.yaml");
+                    }));
   }
 
   @Test
@@ -165,20 +172,22 @@ public class CreateDeploymentMultiplePartitionsTest {
     assertThat(resp.getRecordType()).isEqualTo(RecordType.EVENT);
     assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATED);
 
-    for (int i = 0; i < PARTITION_COUNT; i++) {
-      assertCreatedDeploymentEventResources(
-          i,
-          resp.getKey(),
-          (createdDeployment) -> {
-            final List<DeployedWorkflow> deployedWorkflows =
-                Arrays.asList(
-                    getDeployedWorkflow(createdDeployment, 0),
-                    getDeployedWorkflow(createdDeployment, 1));
-            assertThat(deployedWorkflows)
-                .extracting(s -> s.getBpmnProcessId())
-                .contains("process", "process2");
-          });
-    }
+    apiRule
+        .getPartitionIds()
+        .forEach(
+            partitionId ->
+                assertCreatedDeploymentEventResources(
+                    partitionId,
+                    resp.getKey(),
+                    (createdDeployment) -> {
+                      final List<DeployedWorkflow> deployedWorkflows =
+                          Arrays.asList(
+                              getDeployedWorkflow(createdDeployment, 0),
+                              getDeployedWorkflow(createdDeployment, 1));
+                      assertThat(deployedWorkflows)
+                          .extracting(s -> s.getBpmnProcessId())
+                          .contains("process", "process2");
+                    }));
   }
 
   @Test
@@ -194,26 +203,31 @@ public class CreateDeploymentMultiplePartitionsTest {
     final Map<String, Object> workflow1 = getDeployedWorkflow(d1, 0);
     assertThat(workflow1.get("version")).isEqualTo(1L);
 
-    for (int i = 0; i < PARTITION_COUNT; i++) {
-      assertCreatedDeploymentEventResources(
-          i,
-          d1.getKey(),
-          createdDeployment -> {
-            assertThat(getDeployedWorkflow(createdDeployment, 0).getVersion()).isEqualTo(1L);
-          });
-    }
+    apiRule
+        .getPartitionIds()
+        .forEach(
+            partitionId ->
+                assertCreatedDeploymentEventResources(
+                    partitionId,
+                    d1.getKey(),
+                    createdDeployment -> {
+                      assertThat(getDeployedWorkflow(createdDeployment, 0).getVersion())
+                          .isEqualTo(1L);
+                    }));
 
     final Map<String, Object> workflow2 = getDeployedWorkflow(d2, 0);
     assertThat(workflow2.get("version")).isEqualTo(2L);
 
-    for (int i = 0; i < PARTITION_COUNT; i++) {
-      assertCreatedDeploymentEventResources(
-          i,
-          d2.getKey(),
-          createdDeployment -> {
-            assertThat(getDeployedWorkflow(createdDeployment, 0).getVersion()).isEqualTo(2L);
-          });
-    }
+    apiRule
+        .getPartitionIds()
+        .forEach(
+            partitionId ->
+                assertCreatedDeploymentEventResources(
+                    partitionId,
+                    d2.getKey(),
+                    createdDeployment ->
+                        assertThat(getDeployedWorkflow(createdDeployment, 0).getVersion())
+                            .isEqualTo(2L)));
   }
 
   @Test
@@ -238,9 +252,9 @@ public class CreateDeploymentMultiplePartitionsTest {
     doRepeatedly(apiRule::getPartitionIds).until(p -> !p.isEmpty());
 
     // then
-    assertAnyCreatedDeploymentEventOnPartition(0);
-    assertAnyCreatedDeploymentEventOnPartition(1);
-    assertAnyCreatedDeploymentEventOnPartition(2);
+    apiRule
+        .getPartitionIds()
+        .forEach(partitionId -> assertAnyCreatedDeploymentEventOnPartition(partitionId));
   }
 
   private Map<String, Object> deploymentResource(final byte[] resource, final String name) {
@@ -312,7 +326,7 @@ public class CreateDeploymentMultiplePartitionsTest {
     Assertions.assertThat(deployedWorkflows.get(0))
         .hasBpmnProcessId("process")
         .hasVersion(1)
-        .hasWorkflowKey(1)
+        .hasWorkflowKey(FIRST_DEPLOYED_WORKFLOW_KEY)
         .hasResourceName("process.bpmn");
   }
 

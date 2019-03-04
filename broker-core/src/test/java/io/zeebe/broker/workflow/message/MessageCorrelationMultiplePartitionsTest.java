@@ -18,6 +18,7 @@
 package io.zeebe.broker.workflow.message;
 
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
+import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -68,9 +69,9 @@ public class MessageCorrelationMultiplePartitionsTest {
 
   @Before
   public void init() {
-    assertThat(getPartitionId(CORRELATION_KEY_PARTITION_0)).isEqualTo(0);
-    assertThat(getPartitionId(CORRELATION_KEY_PARTITION_1)).isEqualTo(1);
-    assertThat(getPartitionId(CORRELATION_KEY_PARTITION_2)).isEqualTo(2);
+    assertThat(getPartitionId(CORRELATION_KEY_PARTITION_0)).isEqualTo(START_PARTITION_ID);
+    assertThat(getPartitionId(CORRELATION_KEY_PARTITION_1)).isEqualTo(START_PARTITION_ID + 1);
+    assertThat(getPartitionId(CORRELATION_KEY_PARTITION_2)).isEqualTo(START_PARTITION_ID + 2);
 
     testClient = apiRule.partitionClient();
 
@@ -97,22 +98,22 @@ public class MessageCorrelationMultiplePartitionsTest {
                 .limit(30))
         .extracting(r -> tuple(r.getMetadata().getPartitionId(), r.getValue().getCorrelationKey()))
         .containsOnly(
-            tuple(0, CORRELATION_KEY_PARTITION_0),
-            tuple(1, CORRELATION_KEY_PARTITION_1),
-            tuple(2, CORRELATION_KEY_PARTITION_2));
+            tuple(START_PARTITION_ID, CORRELATION_KEY_PARTITION_0),
+            tuple(START_PARTITION_ID + 1, CORRELATION_KEY_PARTITION_1),
+            tuple(START_PARTITION_ID + 2, CORRELATION_KEY_PARTITION_2));
   }
 
   @Test
   public void shouldCorrelateMessageOnDifferentPartitions() {
     // given
     apiRule
-        .partitionClient(0)
+        .partitionClient(START_PARTITION_ID)
         .publishMessage("message", CORRELATION_KEY_PARTITION_0, asMsgPack("p", "p0"));
     apiRule
-        .partitionClient(1)
+        .partitionClient(START_PARTITION_ID + 1)
         .publishMessage("message", CORRELATION_KEY_PARTITION_1, asMsgPack("p", "p1"));
     apiRule
-        .partitionClient(2)
+        .partitionClient(START_PARTITION_ID + 2)
         .publishMessage("message", CORRELATION_KEY_PARTITION_2, asMsgPack("p", "p2"));
 
     // when

@@ -15,6 +15,8 @@
  */
 package io.zeebe.protocol.impl;
 
+import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
+
 import org.agrona.DirectBuffer;
 
 public class SubscriptionUtil {
@@ -44,6 +46,7 @@ public class SubscriptionUtil {
    */
   public static int getSubscriptionPartitionId(DirectBuffer correlationKey, int partitionCount) {
     final int hashCode = getSubscriptionHashCode(correlationKey);
-    return Math.abs(hashCode % partitionCount);
+    // partition ids range from START_PARTITION_ID .. START_PARTITION_ID + partitionCount
+    return Math.abs(hashCode % partitionCount) + START_PARTITION_ID;
   }
 }

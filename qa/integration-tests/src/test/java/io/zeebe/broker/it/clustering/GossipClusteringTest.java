@@ -72,7 +72,7 @@ public class GossipClusteringTest {
   @Test
   public void shouldRemoveLeaderFromCluster() {
     // given
-    final BrokerInfo leaderForPartition = clusteringRule.getLeaderForPartition(0);
+    final BrokerInfo leaderForPartition = clusteringRule.getLeaderForPartition(1);
     final SocketAddress[] otherBrokers =
         clusteringRule.getOtherBrokers(leaderForPartition.getAddress());
 

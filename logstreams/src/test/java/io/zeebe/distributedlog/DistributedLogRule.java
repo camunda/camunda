@@ -15,6 +15,8 @@
  */
 package io.zeebe.distributedlog;
 
+import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
+
 import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.core.Atomix;
@@ -110,7 +112,7 @@ public class DistributedLogRule extends ExternalResource {
   }
 
   private void createPartitions() throws IOException {
-    for (int i = 0; i < numPartitions; i++) {
+    for (int i = START_PARTITION_ID; i < START_PARTITION_ID + numPartitions; i++) {
       final DistributedLogPartitionRule partition =
           new DistributedLogPartitionRule(serviceContainer, nodeId, i);
       partitions.put(i, partition);

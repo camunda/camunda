@@ -15,6 +15,7 @@
  */
 package io.zeebe.distributedlog;
 
+import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
@@ -96,22 +97,22 @@ public class DistributedLogMultiplePartitionsTest {
 
     // when
 
-    writeEventAndWaitUntilReplicated(0, node1, "record1");
-    writeEventAndWaitUntilReplicated(1, node2, "record2");
-    writeEventAndWaitUntilReplicated(2, node3, "record3");
+    writeEventAndWaitUntilReplicated(START_PARTITION_ID, node1, "record1");
+    writeEventAndWaitUntilReplicated(START_PARTITION_ID + 1, node2, "record2");
+    writeEventAndWaitUntilReplicated(START_PARTITION_ID + 2, node3, "record3");
 
     // then
-    assertEventsCount(0, node1, 1);
-    assertEventsCount(1, node1, 1);
-    assertEventsCount(2, node1, 1);
+    assertEventsCount(START_PARTITION_ID, node1, 1);
+    assertEventsCount(START_PARTITION_ID + 1, node1, 1);
+    assertEventsCount(START_PARTITION_ID + 2, node1, 1);
 
-    assertEventsCount(0, node2, 1);
-    assertEventsCount(1, node2, 1);
-    assertEventsCount(2, node2, 1);
+    assertEventsCount(START_PARTITION_ID + 0, node2, 1);
+    assertEventsCount(START_PARTITION_ID + 1, node2, 1);
+    assertEventsCount(START_PARTITION_ID + 2, node2, 1);
 
-    assertEventsCount(0, node3, 1);
-    assertEventsCount(1, node3, 1);
-    assertEventsCount(2, node3, 1);
+    assertEventsCount(START_PARTITION_ID + 0, node3, 1);
+    assertEventsCount(START_PARTITION_ID + 1, node3, 1);
+    assertEventsCount(START_PARTITION_ID + 2, node3, 1);
   }
 
   private void writeEventAndWaitUntilReplicated(

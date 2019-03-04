@@ -33,6 +33,7 @@ import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PART
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PORT_OFFSET;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_REPLICATION_FACTOR;
 import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_HOST;
+import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.system.configuration.BrokerCfg;
@@ -355,7 +356,8 @@ public class ConfigurationTest {
     // when - then
     assertThat(cfgCluster.getPartitionsCount()).isEqualTo(3);
     final List<Integer> partitionIds = cfgCluster.getPartitionIds();
-    assertThat(partitionIds).contains(0, 1, 2);
+    final int startId = START_PARTITION_ID;
+    assertThat(partitionIds).contains(startId, startId + 1, startId + 2);
   }
 
   @Test

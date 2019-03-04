@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import io.zeebe.broker.clustering.base.raft.RaftConfigurationMetadata;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.protocol.Protocol;
 import java.io.File;
 import java.io.IOException;
 import org.junit.Rule;
@@ -34,7 +35,7 @@ public class RaftPersistentConfigurationTest {
 
   @Test
   public void shouldPersistConfigurationAsJSON() throws IOException {
-    final int partitionId = 0;
+    final int partitionId = Protocol.START_PARTITION_ID;
 
     final BrokerCfg brokerCfg = brokerRule.getBroker().getBrokerContext().getBrokerConfiguration();
     final ObjectReader jsonReader = new ObjectMapper().readerFor(RaftConfigurationMetadata.class);

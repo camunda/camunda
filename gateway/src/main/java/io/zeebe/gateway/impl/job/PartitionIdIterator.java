@@ -15,6 +15,8 @@
  */
 package io.zeebe.gateway.impl.job;
 
+import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
+
 import java.util.Iterator;
 import java.util.PrimitiveIterator.OfInt;
 import java.util.stream.IntStream;
@@ -27,7 +29,7 @@ public class PartitionIdIterator implements Iterator<Integer> {
   public PartitionIdIterator(int startPartitionId, int partitionsCount) {
     iterator =
         IntStream.range(0, partitionsCount)
-            .map(index -> (index + startPartitionId) % partitionsCount)
+            .map(index -> ((index + startPartitionId) % partitionsCount) + START_PARTITION_ID)
             .iterator();
   }
 

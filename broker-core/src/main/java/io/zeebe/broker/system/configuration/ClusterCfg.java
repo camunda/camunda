@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.system.configuration;
 
+import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
+
 import io.zeebe.util.Environment;
 import java.util.Collections;
 import java.util.List;
@@ -49,7 +51,7 @@ public class ClusterCfg implements ConfigurationEntry {
 
   private void initPartitionIds() {
     final IntArrayList list = new IntArrayList();
-    for (int i = 0; i < partitionsCount; i++) {
+    for (int i = START_PARTITION_ID; i < START_PARTITION_ID + partitionsCount; i++) {
       final int partitionId = i;
       list.add(partitionId);
     }

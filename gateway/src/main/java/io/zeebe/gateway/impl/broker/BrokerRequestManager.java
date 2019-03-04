@@ -30,6 +30,7 @@ import io.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerError;
 import io.zeebe.gateway.impl.broker.response.BrokerRejection;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.protocol.impl.SubscriptionUtil;
@@ -190,7 +191,7 @@ public class BrokerRequestManager extends Actor {
           // could happen if the topology is not set yet, let's just try with partition 0 but we
           // should find a better solution
           // https://github.com/zeebe-io/zeebe/issues/2013
-          partitionId = 0;
+          partitionId = Protocol.DEPLOYMENT_PARTITION;
         }
         request.setPartitionId(partitionId);
       }

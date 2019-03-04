@@ -16,6 +16,7 @@
 package io.zeebe.broker.it.job;
 
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
+import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -49,7 +50,9 @@ public class JobWorkerWithMultiplePartitionsTest {
   public void shouldReceiveJobsFromMultiplePartitions() {
     // given
     final Integer[] partitionIds =
-        IntStream.range(0, PARTITION_COUNT).boxed().toArray(Integer[]::new);
+        IntStream.range(START_PARTITION_ID, START_PARTITION_ID + PARTITION_COUNT)
+            .boxed()
+            .toArray(Integer[]::new);
 
     final String jobType = "foooo";
 

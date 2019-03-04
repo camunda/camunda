@@ -22,7 +22,7 @@ import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMI
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.CLUSTERING_BASE_LAYER;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.GATEWAY_SERVICE;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADERSHIP_SERVICE_GROUP;
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.RAFT_BOOTSTRAP_SERVICE;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.PARTITIONS_BOOTSTRAP_SERVICE;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.RAFT_CONFIGURATION_MANAGER;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.REMOTE_ADDRESS_MANAGER_SERVICE;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.TOPOLOGY_MANAGER_SERVICE;
@@ -134,14 +134,15 @@ public class ClusterComponent implements Component {
         .createService(RAFT_CONFIGURATION_MANAGER, raftConfigurationManagerService)
         .install();
 
-    final BootstrapPartitions raftBootstrapService =
+    final BootstrapPartitions partitionBootstrapService =
         new BootstrapPartitions(context.getBrokerConfiguration());
     context
         .getServiceContainer()
-        .createService(RAFT_BOOTSTRAP_SERVICE, raftBootstrapService)
+        .createService(PARTITIONS_BOOTSTRAP_SERVICE, partitionBootstrapService)
+        .dependency(ATOMIX_SERVICE, partitionBootstrapService.getAtomixInjector())
         .dependency(ATOMIX_JOIN_SERVICE)
         .dependency(
-            RAFT_CONFIGURATION_MANAGER, raftBootstrapService.getConfigurationManagerInjector())
+            RAFT_CONFIGURATION_MANAGER, partitionBootstrapService.getConfigurationManagerInjector())
         .install();
   }
 }

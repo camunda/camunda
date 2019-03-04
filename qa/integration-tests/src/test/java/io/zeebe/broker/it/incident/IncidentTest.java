@@ -35,6 +35,7 @@ import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.IncidentRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
@@ -66,12 +67,15 @@ public class IncidentTest {
   public void shouldRejectResolveOnNonExistingIncident() {
     // given
 
+    final long nonExistingKey = Protocol.encodePartitionId(Protocol.DEPLOYMENT_PARTITION, 1);
     // when
     Assertions.assertThatThrownBy(
-            () -> clientRule.getClient().newResolveIncidentCommand(1).send().join())
+            () -> clientRule.getClient().newResolveIncidentCommand(nonExistingKey).send().join())
         .isInstanceOf(ClientException.class)
         .hasMessageContaining(
-            "Expected to resolve incident with key '1', but no such incident was found");
+            "Expected to resolve incident with key '"
+                + nonExistingKey
+                + "', but no such incident was found");
   }
 
   @Test

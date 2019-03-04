@@ -19,6 +19,7 @@ package io.zeebe.broker.workflow.processor;
 
 import static io.zeebe.broker.subscription.message.processor.MessageObserver.SUBSCRIPTION_CHECK_INTERVAL;
 import static io.zeebe.broker.subscription.message.processor.MessageObserver.SUBSCRIPTION_TIMEOUT;
+import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
@@ -373,7 +374,7 @@ public class WorkflowInstanceStreamProcessorTest {
     // then
     verify(streamProcessorRule.getMockSubscriptionCommandSender(), timeout(5_000).times(2))
         .openMessageSubscription(
-            0,
+            START_PARTITION_ID,
             catchEvent.getValue().getWorkflowInstanceKey(),
             catchEvent.getKey(),
             wrapString("order canceled"),
@@ -667,7 +668,7 @@ public class WorkflowInstanceStreamProcessorTest {
   private WorkflowInstanceSubscriptionRecord subscriptionRecordForEvent(
       final TypedRecord<WorkflowInstanceRecord> catchEvent) {
     return new WorkflowInstanceSubscriptionRecord()
-        .setSubscriptionPartitionId(0)
+        .setSubscriptionPartitionId(START_PARTITION_ID)
         .setWorkflowInstanceKey(catchEvent.getValue().getWorkflowInstanceKey())
         .setElementInstanceKey(catchEvent.getKey())
         .setMessageName(wrapString("order canceled"));
