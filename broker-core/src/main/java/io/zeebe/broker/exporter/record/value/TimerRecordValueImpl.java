@@ -28,18 +28,30 @@ public class TimerRecordValueImpl extends RecordValueImpl implements TimerRecord
   private final long workflowInstanceKey;
   private final long dueDate;
   private final String handlerFlowNodeId;
+  private final int repetitions;
+  private final long workflowKey;
 
   public TimerRecordValueImpl(
       ExporterObjectMapper objectMapper,
       long elementInstanceKey,
       long workflowInstanceKey,
       long dueDate,
-      String handlerFlowNodeId) {
+      String handlerFlowNodeId,
+      int repetitions,
+      long workflowKey) {
     super(objectMapper);
     this.elementInstanceKey = elementInstanceKey;
     this.dueDate = dueDate;
     this.handlerFlowNodeId = handlerFlowNodeId;
     this.workflowInstanceKey = workflowInstanceKey;
+
+    this.repetitions = repetitions;
+    this.workflowKey = workflowKey;
+  }
+
+  @Override
+  public long getWorkflowKey() {
+    return workflowKey;
   }
 
   @Override
@@ -63,8 +75,20 @@ public class TimerRecordValueImpl extends RecordValueImpl implements TimerRecord
   }
 
   @Override
+  public int getRepetitions() {
+    return repetitions;
+  }
+
+  @Override
   public int hashCode() {
-    return Objects.hash(elementInstanceKey, workflowInstanceKey, dueDate, handlerFlowNodeId);
+
+    return Objects.hash(
+        elementInstanceKey,
+        workflowInstanceKey,
+        dueDate,
+        handlerFlowNodeId,
+        workflowKey,
+        repetitions);
   }
 
   @Override
@@ -75,11 +99,15 @@ public class TimerRecordValueImpl extends RecordValueImpl implements TimerRecord
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final TimerRecordValueImpl that = (TimerRecordValueImpl) o;
-    return elementInstanceKey == that.elementInstanceKey
-        && workflowInstanceKey == that.workflowInstanceKey
-        && dueDate == that.dueDate
-        && Objects.equals(handlerFlowNodeId, that.handlerFlowNodeId);
+
+    final TimerRecordValueImpl other = (TimerRecordValueImpl) o;
+
+    return elementInstanceKey == other.elementInstanceKey
+        && workflowInstanceKey == other.workflowInstanceKey
+        && dueDate == other.dueDate
+        && repetitions == other.repetitions
+        && workflowKey == other.workflowKey
+        && Objects.equals(handlerFlowNodeId, other.handlerFlowNodeId);
   }
 
   @Override
@@ -89,8 +117,12 @@ public class TimerRecordValueImpl extends RecordValueImpl implements TimerRecord
         + elementInstanceKey
         + ", workflowInstanceKey="
         + workflowInstanceKey
+        + ", workflowKey="
+        + workflowKey
         + ", dueDate="
         + dueDate
+        + ", repetitions="
+        + repetitions
         + ", handlerFlowNodeId='"
         + handlerFlowNodeId
         + '\''
