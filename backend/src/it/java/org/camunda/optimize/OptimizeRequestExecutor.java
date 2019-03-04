@@ -368,8 +368,19 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildDeleteDashboardRequest(String id) {
+    return buildDeleteDashboardRequest(id, false);
+  }
+
+  public OptimizeRequestExecutor buildDeleteDashboardRequest(String id, Boolean force) {
     this.path = "dashboard/" + id;
     this.requestType = DELETE;
+    Optional.ofNullable(force).ifPresent(value -> addSingleQueryParam("force", value));
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetDashboardDeleteConflictsRequest(String id) {
+    this.path = "dashboard/" + id + "/delete-conflicts";
+    this.requestType = GET;
     return this;
   }
 

@@ -1,10 +1,16 @@
 package org.camunda.optimize.service.dashboard;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionUpdateDto;
+import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
+import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
+import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
+import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.es.reader.DashboardReader;
 import org.camunda.optimize.service.es.writer.DashboardWriter;
+import org.camunda.optimize.service.exceptions.OptimizeConflictException;
 import org.camunda.optimize.service.security.SharingService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.slf4j.Logger;
@@ -12,7 +18,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 
 @Component
@@ -20,14 +29,19 @@ public class DashboardService {
 
   private static final Logger logger = LoggerFactory.getLogger(DashboardService.class);
 
-  @Autowired
   private DashboardWriter dashboardWriter;
-
-  @Autowired
   private DashboardReader dashboardReader;
+  private SharingService sharingService;
+  private CollectionService collectionService;
 
   @Autowired
-  private SharingService sharingService;
+  public DashboardService(DashboardWriter dashboardWriter, DashboardReader dashboardReader,
+                          SharingService sharingService, CollectionService collectionService) {
+    this.dashboardWriter = dashboardWriter;
+    this.dashboardReader = dashboardReader;
+    this.sharingService = sharingService;
+    this.collectionService = collectionService;
+  }
 
   public IdDto createNewDashboardAndReturnId(String userId) {
     return dashboardWriter.createNewDashboardAndReturnId(userId);
@@ -61,7 +75,35 @@ public class DashboardService {
     dashboardWriter.removeReportFromDashboards(reportId);
   }
 
-  public void deleteDashboard(String dashboardId) {
+  public void deleteDashboard(String dashboardId, boolean force) throws OptimizeConflictException {
+    if (!force) {
+      final Set<ConflictedItemDto> conflictedItems = getConflictedItemsForDeleteDashboard(dashboardId);
+
+      if (!conflictedItems.isEmpty()) {
+        throw new OptimizeConflictException(conflictedItems);
+      }
+    }
+
     dashboardWriter.deleteDashboard(dashboardId);
+    collectionService.removeEntityFromCollection(dashboardId);
+  }
+
+  public ConflictResponseDto getDashboardDeleteConflictingItems(String dashboardId) {
+    return new ConflictResponseDto(getConflictedItemsForDeleteDashboard(dashboardId));
+  }
+
+  private Set<ConflictedItemDto> getConflictedItemsForDeleteDashboard(String dashboardId) {
+    return new LinkedHashSet<>(
+      mapCollectionsToConflictingItems(
+        collectionService.findFirstCollectionsForEntity(dashboardId))
+    );
+  }
+
+  private Set<ConflictedItemDto> mapCollectionsToConflictingItems(List<SimpleCollectionDefinitionDto> collections) {
+    return collections.stream()
+      .map(collection -> new ConflictedItemDto(
+        collection.getId(), ConflictedItemType.COLLECTION, collection.getName()
+      ))
+      .collect(Collectors.toSet());
   }
 }

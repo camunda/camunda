@@ -1,7 +1,7 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.ResolvedReportCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.collection.CollectionService;
@@ -68,13 +68,13 @@ public class CollectionRestService {
 
 
   /**
-   * Get a list of all available report collections with their entities being resolved
+   * Get a list of all available entity collections with their entities being resolved
    * instead of just containing the ids of the report.
    */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public List<ResolvedReportCollectionDefinitionDto> getAllResolvedReportCollections() {
-    return collectionService.getAllResolvedReportCollections();
+  public List<ResolvedCollectionDefinitionDto> getAllResolvedCollections() {
+    return collectionService.getAllResolvedCollections();
   }
 
 

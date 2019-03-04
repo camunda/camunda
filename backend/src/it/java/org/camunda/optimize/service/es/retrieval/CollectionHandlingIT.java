@@ -1,9 +1,12 @@
 package org.camunda.optimize.service.es.retrieval;
 
+import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
-import org.camunda.optimize.dto.optimize.query.collection.ResolvedReportCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
+import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -60,12 +63,12 @@ public class CollectionHandlingIT {
     String id = createNewCollection();
 
     // when
-    List<ResolvedReportCollectionDefinitionDto> collections = getAllResolvedCollections();
+    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
 
     // then
     assertThat(collections, is(notNullValue()));
     assertThat(collections.size(), is(1));
-    ResolvedReportCollectionDefinitionDto collection = collections.get(0);
+    ResolvedCollectionDefinitionDto collection = collections.get(0);
     assertThat(collection.getId(), is(id));
     assertThat(collection.getName(), is(DEFAULT_COLLECTION_NAME));
     assertThat(collection.getData().getEntities(), notNullValue());
@@ -79,7 +82,7 @@ public class CollectionHandlingIT {
     String reportId = createNewSingleReport();
 
     // when
-    List<ResolvedReportCollectionDefinitionDto> collections = getAllResolvedCollections();
+    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
 
     // then
     assertThat(collections, is(notNullValue()));
@@ -109,20 +112,58 @@ public class CollectionHandlingIT {
 
     // when
     updateCollection(id, collection);
-    List<ResolvedReportCollectionDefinitionDto> collections = getAllResolvedCollections();
+    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
 
     // then
     assertThat(collections.size(), is(1));
-    ResolvedReportCollectionDefinitionDto storedCollection = collections.get(0);
+    ResolvedCollectionDefinitionDto storedCollection = collections.get(0);
     assertThat(storedCollection.getId(), is(id));
     assertThat(storedCollection.getCreated(), is(not(shouldBeIgnoredDate)));
     assertThat(storedCollection.getLastModified(), is(not(shouldBeIgnoredDate)));
     assertThat(storedCollection.getName(), is("MyCollection"));
     assertThat(storedCollection.getOwner(), is("NewOwner"));
-    CollectionDataDto<ReportDefinitionDto> resultCollectionData = storedCollection.getData();
+    CollectionDataDto<CollectionEntity> resultCollectionData = storedCollection.getData();
     assertEquals(resultCollectionData.getConfiguration(), configuration);
     assertThat(resultCollectionData.getEntities().size(), is(1));
-    assertThat(resultCollectionData.getEntities().get(0).getId(), is(reportId));
+    ReportDefinitionDto report = (ReportDefinitionDto) resultCollectionData.getEntities().get(0);
+    assertThat(report.getId(), is(reportId));
+  }
+
+  @Test
+  public void dashboardCanBeAddedToCollection() {
+    // given
+    String collectionId = createNewCollection();
+    String dashboardId = createNewDashboard();
+
+    // when
+    addEntityToCollection(dashboardId, collectionId);
+    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
+
+    // then
+    assertThat(collections.size(), is(1));
+    ResolvedCollectionDefinitionDto collection1 = collections.get(0);
+    DashboardDefinitionDto dashboard = (DashboardDefinitionDto) collection1.getData().getEntities().get(0);
+    assertThat(dashboard.getId(), is(dashboardId));
+  }
+
+  @Test
+  public void theOrderOfEntityItemsIsPreservedForDifferentEntityTypesInCollection() {
+    // given
+    String collectionId = createNewCollection();
+    String reportId1 = createNewSingleReport();
+    String reportId2 = createNewSingleReport();
+    String dashboardId = createNewDashboard();
+
+    // when
+    addEntitiesToCollection(ImmutableList.of(reportId1, dashboardId, reportId2), collectionId);
+    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
+
+    // then
+    assertThat(collections.size(), is(1));
+    ResolvedCollectionDefinitionDto collection = collections.get(0);
+    assertThat(collection.getData().getEntities().get(0).getId(), is(reportId1));
+    assertThat(collection.getData().getEntities().get(1).getId(), is(dashboardId));
+    assertThat(collection.getData().getEntities().get(2).getId(), is(reportId2));
   }
 
   @Test
@@ -133,20 +174,22 @@ public class CollectionHandlingIT {
     String reportId = createNewSingleReport();
 
     // when
-    addReportToCollection(reportId, collectionId1);
-    addReportToCollection(reportId, collectionId2);
-    List<ResolvedReportCollectionDefinitionDto> collections = getAllResolvedCollections();
+    addEntityToCollection(reportId, collectionId1);
+    addEntityToCollection(reportId, collectionId2);
+    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
 
     // then
     assertThat(collections.size(), is(2));
-    ResolvedReportCollectionDefinitionDto collection1 = collections.get(0);
-    assertThat(collection1.getData().getEntities().get(0).getId(), is(reportId));
-    ResolvedReportCollectionDefinitionDto collection2 = collections.get(1);
-    assertThat(collection2.getData().getEntities().get(0).getId(), is(reportId));
+    ResolvedCollectionDefinitionDto collection1 = collections.get(0);
+    ReportDefinitionDto report = (ReportDefinitionDto) collection1.getData().getEntities().get(0);
+    assertThat(report.getId(), is(reportId));
+    ResolvedCollectionDefinitionDto collection2 = collections.get(1);
+    report = (ReportDefinitionDto) collection2.getData().getEntities().get(0);
+    assertThat(report.getId(), is(reportId));
   }
 
   @Test
-  public void updateCollectionWithReportIdThatDoesNotExists() {
+  public void updateCollectionWithEntityIdThatDoesNotExists() {
     // given
     String id = createNewCollection();
 
@@ -174,11 +217,11 @@ public class CollectionHandlingIT {
 
     // when
     updateCollection(id, collection);
-    List<ResolvedReportCollectionDefinitionDto> collections = getAllResolvedCollections();
+    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
 
     // then
     assertThat(collections.size(), is(1));
-    ResolvedReportCollectionDefinitionDto storedCollection = collections.get(0);
+    ResolvedCollectionDefinitionDto storedCollection = collections.get(0);
     assertThat(storedCollection.getId(), is(id));
     assertThat(storedCollection.getCreated(), is(notNullValue()));
     assertThat(storedCollection.getLastModified(), is(notNullValue()));
@@ -200,7 +243,7 @@ public class CollectionHandlingIT {
     updateCollection(id2, collection);
 
     // when
-    List<ResolvedReportCollectionDefinitionDto> collections = getAllResolvedCollections();
+    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
 
     // then
     assertThat(collections.size(), is(2));
@@ -215,27 +258,44 @@ public class CollectionHandlingIT {
     String singleReportIdToDelete = createNewSingleReport();
     String combinedReportIdToDelete = createNewCombinedReport();
 
-    addReportsToCollection(Arrays.asList(singleReportIdToDelete, combinedReportIdToDelete), collectionId);
+    addEntitiesToCollection(Arrays.asList(singleReportIdToDelete, combinedReportIdToDelete), collectionId);
 
     // when
-    deleteReport(singleReportIdToDelete, true);
-    deleteReport(combinedReportIdToDelete, true);
+    deleteReport(singleReportIdToDelete);
+    deleteReport(combinedReportIdToDelete);
 
     // then
-    List<ResolvedReportCollectionDefinitionDto> allResolvedCollections = getAllResolvedCollections();
+    List<ResolvedCollectionDefinitionDto> allResolvedCollections = getAllResolvedCollections();
     assertThat(allResolvedCollections.size(), is(1));
     assertThat(allResolvedCollections.get(0).getData().getEntities().size(), is(0));
   }
 
-  private void addReportToCollection(String reportId, String collectionId) {
-    addReportsToCollection(Collections.singletonList(reportId), collectionId);
+  @Test
+  public void deletedDashboardsAreRemovedFromCollectionWhenForced() {
+    // given
+    String collectionId = createNewCollection();
+    String dashboardIdToDelete = createNewDashboard();
+
+    addEntityToCollection(dashboardIdToDelete, collectionId);
+
+    // when
+    deleteDashboard(dashboardIdToDelete);
+
+    // then
+    List<ResolvedCollectionDefinitionDto> allResolvedCollections = getAllResolvedCollections();
+    assertThat(allResolvedCollections.size(), is(1));
+    assertThat(allResolvedCollections.get(0).getData().getEntities().size(), is(0));
   }
 
-  private void addReportsToCollection(List<String> reportIds, String collectionId) {
+  private void addEntityToCollection(String entityId, String collectionId) {
+    addEntitiesToCollection(Collections.singletonList(entityId), collectionId);
+  }
+
+  private void addEntitiesToCollection(List<String> entityIds, String collectionId) {
     SimpleCollectionDefinitionDto collection = new SimpleCollectionDefinitionDto();
     CollectionDataDto<String> collectionData = new CollectionDataDto<>();
     collectionData.setConfiguration("");
-    collectionData.setEntities(reportIds);
+    collectionData.setEntities(entityIds);
     collection.setData(collectionData);
     updateCollection(collectionId, collection);
   }
@@ -244,6 +304,14 @@ public class CollectionHandlingIT {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest()
+      .execute(IdDto.class, 200)
+      .getId();
+  }
+
+  private String createNewDashboard() {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateDashboardRequest()
       .execute(IdDto.class, 200)
       .getId();
   }
@@ -262,10 +330,20 @@ public class CollectionHandlingIT {
       .execute();
   }
 
-  private void deleteReport(String reportId, Boolean force) {
+  private void deleteReport(String reportId) {
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildDeleteReportRequest(reportId, force)
+      .buildDeleteReportRequest(reportId, true)
+      .execute();
+
+    // then the status code is okay
+    assertThat(response.getStatus(), is(204));
+  }
+
+  private void deleteDashboard(String dashboardId) {
+    Response response = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildDeleteDashboardRequest(dashboardId, true)
       .execute();
 
     // then the status code is okay
@@ -300,11 +378,11 @@ public class CollectionHandlingIT {
       .execute();
   }
 
-  private List<ResolvedReportCollectionDefinitionDto> getAllResolvedCollections() {
+  private List<ResolvedCollectionDefinitionDto> getAllResolvedCollections() {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildGetAllCollectionsRequest()
-      .executeAndReturnList(ResolvedReportCollectionDefinitionDto.class, 200);
+      .executeAndReturnList(ResolvedCollectionDefinitionDto.class, 200);
   }
 
 }

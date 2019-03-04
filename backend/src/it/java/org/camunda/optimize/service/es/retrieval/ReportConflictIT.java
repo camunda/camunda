@@ -7,7 +7,7 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
-import org.camunda.optimize.dto.optimize.query.collection.ResolvedReportCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
@@ -239,22 +239,22 @@ public class ReportConflictIT {
     // then
     checkConflictedItems(conflictResponseDto, ConflictedItemType.COLLECTION, expectedConflictedItemIds);
     checkReportsStillExist(expectedReportIds);
-    checkCollectionsStillContainReport(expectedConflictedItemIds, reportId);
+    checkCollectionsStillContainEntity(expectedConflictedItemIds, reportId);
   }
 
-  private void checkCollectionsStillContainReport(String[] expectedConflictedItemIds, String reportId) {
-    List<ResolvedReportCollectionDefinitionDto> collections = getAllCollections();
+  private void checkCollectionsStillContainEntity(String[] expectedConflictedItemIds, String entityId) {
+    List<ResolvedCollectionDefinitionDto> collections = getAllCollections();
 
     assertThat(collections.size(), is(expectedConflictedItemIds.length));
     assertThat(
-      collections.stream().map(ResolvedReportCollectionDefinitionDto::getId).collect(Collectors.toSet()),
+      collections.stream().map(ResolvedCollectionDefinitionDto::getId).collect(Collectors.toSet()),
       containsInAnyOrder(expectedConflictedItemIds)
     );
     collections.forEach(collection -> {
       assertThat(collection.getData().getEntities().size(), is(1));
       assertThat(
         collection.getData().getEntities().stream().anyMatch(
-          reportLocationDto -> reportLocationDto.getId().equals(reportId)
+          collectionEntity -> collectionEntity.getId().equals(entityId)
         ),
         is(true)
       );
@@ -371,11 +371,11 @@ public class ReportConflictIT {
       .executeAndReturnList(DashboardDefinitionDto.class, 200);
   }
 
-  private List<ResolvedReportCollectionDefinitionDto> getAllCollections() {
+  private List<ResolvedCollectionDefinitionDto> getAllCollections() {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildGetAllCollectionsRequest()
-      .executeAndReturnList(ResolvedReportCollectionDefinitionDto.class, 200);
+      .executeAndReturnList(ResolvedCollectionDefinitionDto.class, 200);
   }
 
   private String createNewAlertForReport(String reportId) {

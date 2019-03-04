@@ -1,8 +1,10 @@
 package org.camunda.optimize.dto.optimize.query.report;
 
+import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
+
 import java.time.OffsetDateTime;
 
-public class ReportDefinitionDto {
+public class ReportDefinitionDto implements CollectionEntity {
 
   protected String id;
   protected String name;

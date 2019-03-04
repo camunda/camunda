@@ -24,8 +24,8 @@ public class CustomReportDefinitionDeserializer extends StdDeserializer<ReportDe
 
   private ObjectMapper objectMapper;
 
-  public CustomReportDefinitionDeserializer(Class<?> vc, ObjectMapper objectMapper) {
-    super(vc);
+  public CustomReportDefinitionDeserializer(ObjectMapper objectMapper) {
+    super(ReportDefinitionDto.class);
     this.objectMapper = objectMapper;
   }
 

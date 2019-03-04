@@ -3,9 +3,9 @@ package org.camunda.optimize.service.es.reader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
-import org.camunda.optimize.dto.optimize.query.collection.ResolvedReportCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
+import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.get.GetRequest;
@@ -37,7 +37,11 @@ import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.get
 import static org.camunda.optimize.service.es.schema.type.CollectionType.DATA;
 import static org.camunda.optimize.service.es.schema.type.CollectionType.NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE;
 
 @Component
 public class CollectionReader {
@@ -45,17 +49,14 @@ public class CollectionReader {
   private final RestHighLevelClient esClient;
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
-  private final ReportReader reportReader;
 
   @Autowired
   public CollectionReader(RestHighLevelClient esClient,
                           final ConfigurationService configurationService,
-                          final ObjectMapper objectMapper,
-                          final ReportReader reportReader) {
+                          final ObjectMapper objectMapper) {
     this.esClient = esClient;
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;
-    this.reportReader = reportReader;
   }
 
   public SimpleCollectionDefinitionDto getCollection(String collectionId) {
@@ -91,21 +92,53 @@ public class CollectionReader {
     }
   }
 
-  public List<ResolvedReportCollectionDefinitionDto> getAllResolvedReportCollections() {
+  public List<ResolvedCollectionDefinitionDto> getAllResolvedCollections() {
     List<SimpleCollectionDefinitionDto> allCollections = getAllCollections();
-    Set<String> reportIds = getAllReportIdsFromCollections(allCollections);
+    Set<String> entityIds = getAllEntityIdsFromCollections(allCollections);
 
-    final Map<String, ReportDefinitionDto> reportIdToReportMap = reportReader.getAllReports()
+    final Map<String, CollectionEntity> entityIdToEntityMap = getAllEntities()
       .stream()
-      .collect(toMap(ReportDefinitionDto::getId, r -> r));
+      .collect(toMap(CollectionEntity::getId, r -> r));
 
-    logger.debug("Mapping all available report collections to resolved report collections.");
+    logger.debug("Mapping all available entity collections to resolved entity collections.");
     return allCollections.stream()
-      .map(c -> mapToResolvedCollection(c, reportIdToReportMap))
+      .map(c -> mapToResolvedCollection(c, entityIdToEntityMap))
       .collect(Collectors.toList());
   }
 
-  private Set<String> getAllReportIdsFromCollections(List<SimpleCollectionDefinitionDto> allCollections) {
+  private List<CollectionEntity> getAllEntities() {
+    logger.debug("Fetching all available entities for collections");
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(QueryBuilders.matchAllQuery())
+      .size(LIST_FETCH_LIMIT);
+    SearchRequest searchRequest =
+      new SearchRequest(
+        getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE),
+        getOptimizeIndexAliasForType(SINGLE_DECISION_REPORT_TYPE),
+        getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE),
+        getOptimizeIndexAliasForType(DASHBOARD_TYPE)
+      )
+        .source(searchSourceBuilder)
+        .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+
+    SearchResponse scrollResp;
+    try {
+      scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      logger.error("Was not able to retrieve collection entities!", e);
+      throw new OptimizeRuntimeException("Was not able to retrieve entities!", e);
+    }
+
+    return ElasticsearchHelper.retrieveAllScrollResults(
+      scrollResp,
+      CollectionEntity.class,
+      objectMapper,
+      esClient,
+      configurationService.getElasticsearchScrollTimeout()
+    );
+  }
+
+  private Set<String> getAllEntityIdsFromCollections(List<SimpleCollectionDefinitionDto> allCollections) {
     return allCollections.stream()
       .map(SimpleCollectionDefinitionDto::getData)
       .filter(Objects::nonNull)
@@ -114,31 +147,31 @@ public class CollectionReader {
       .collect(Collectors.toSet());
   }
 
-  private ResolvedReportCollectionDefinitionDto mapToResolvedCollection(SimpleCollectionDefinitionDto c,
-                                                                        Map<String, ReportDefinitionDto> reportIdToReportMap) {
-    ResolvedReportCollectionDefinitionDto resolvedReportCollection =
-      new ResolvedReportCollectionDefinitionDto();
-    resolvedReportCollection.setId(c.getId());
-    resolvedReportCollection.setName(c.getName());
-    resolvedReportCollection.setLastModifier(c.getLastModifier());
-    resolvedReportCollection.setOwner(c.getOwner());
-    resolvedReportCollection.setCreated(c.getCreated());
-    resolvedReportCollection.setLastModified(c.getLastModified());
+  private ResolvedCollectionDefinitionDto mapToResolvedCollection(SimpleCollectionDefinitionDto c,
+                                                                  Map<String, CollectionEntity> entityIdToEntityMap) {
+    ResolvedCollectionDefinitionDto resolvedCollection =
+      new ResolvedCollectionDefinitionDto();
+    resolvedCollection.setId(c.getId());
+    resolvedCollection.setName(c.getName());
+    resolvedCollection.setLastModifier(c.getLastModifier());
+    resolvedCollection.setOwner(c.getOwner());
+    resolvedCollection.setCreated(c.getCreated());
+    resolvedCollection.setLastModified(c.getLastModified());
 
     if (c.getData() != null) {
       CollectionDataDto<String> collectionData = c.getData();
-      CollectionDataDto<ReportDefinitionDto> resolvedCollectionData = new CollectionDataDto<>();
+      CollectionDataDto<CollectionEntity> resolvedCollectionData = new CollectionDataDto<>();
       resolvedCollectionData.setConfiguration(c.getData().getConfiguration());
       resolvedCollectionData.setEntities(
         collectionData.getEntities()
           .stream()
-          .map(reportIdToReportMap::get)
+          .map(entityIdToEntityMap::get)
           .filter(Objects::nonNull)
           .collect(Collectors.toList())
       );
-      resolvedReportCollection.setData(resolvedCollectionData);
+      resolvedCollection.setData(resolvedCollectionData);
     }
-    return resolvedReportCollection;
+    return resolvedCollection;
   }
 
   private List<SimpleCollectionDefinitionDto> getAllCollections() {
@@ -171,17 +204,17 @@ public class CollectionReader {
     );
   }
 
-  public List<SimpleCollectionDefinitionDto> findFirstCollectionsForReport(String reportId) {
-    logger.debug("Fetching collections using report with id {}", reportId);
+  public List<SimpleCollectionDefinitionDto> findFirstCollectionsForEntity(String entityId) {
+    logger.debug("Fetching collections using entity with id {}", entityId);
 
-    final QueryBuilder getCollectionByReportIdQuery = QueryBuilders.boolQuery()
+    final QueryBuilder getCollectionByEntityIdQuery = QueryBuilders.boolQuery()
       .filter(QueryBuilders.nestedQuery(
         DATA,
-        QueryBuilders.termQuery("data.entities", reportId),
+        QueryBuilders.termQuery("data.entities", entityId),
         ScoreMode.None
       ));
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(getCollectionByReportIdQuery)
+      .query(getCollectionByEntityIdQuery)
       .size(LIST_FETCH_LIMIT);
     SearchRequest searchRequest =
       new SearchRequest(getOptimizeIndexAliasForType(COLLECTION_TYPE))
@@ -192,7 +225,7 @@ public class CollectionReader {
     try {
       searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
-      String reason = String.format("Was not able to fetch collections for report with id [%s]", reportId);
+      String reason = String.format("Was not able to fetch collections for entity with id [%s]", entityId);
       logger.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }

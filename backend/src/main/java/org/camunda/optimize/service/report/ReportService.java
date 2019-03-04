@@ -107,7 +107,7 @@ public class ReportService {
       reportWriter.deleteCombinedReport(reportId);
     }
     dashboardService.removeReportFromDashboards(reportId);
-    collectionService.removeReportFromCollection(reportId);
+    collectionService.removeEntityFromCollection(reportId);
   }
 
   private Set<ConflictedItemDto> getConflictedItemsForDeleteReport(ReportDefinitionDto reportDefinition) {
@@ -125,7 +125,7 @@ public class ReportService {
         mapDashboardsToConflictingItems(dashboardService.findFirstDashboardsForReport(reportId))
       );
       conflictedItems.addAll(
-        mapCollectionsToConflictingItems(collectionService.findFirstCollectionsForReport(reportId))
+        mapCollectionsToConflictingItems(collectionService.findFirstCollectionsForEntity(reportId))
       );
     } else {
       conflictedItems.addAll(mapDashboardsToConflictingItems(dashboardService.findFirstDashboardsForReport(reportId)));

@@ -1,7 +1,7 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.ResolvedReportCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -106,7 +106,7 @@ public class CollectionRestServiceIT {
   @Test
   public void getAllCollections() {
     // when
-    List<ResolvedReportCollectionDefinitionDto> collections = getAllResolvedCollections();
+    List<ResolvedCollectionDefinitionDto> collections = getAllResolvedCollections();
 
     // then 
     assertThat(collections.size(), is(0));
@@ -202,10 +202,10 @@ public class CollectionRestServiceIT {
       .getId();
   }
 
-  private List<ResolvedReportCollectionDefinitionDto> getAllResolvedCollections() {
+  private List<ResolvedCollectionDefinitionDto> getAllResolvedCollections() {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildGetAllCollectionsRequest()
-      .executeAndReturnList(ResolvedReportCollectionDefinitionDto.class, 200);
+      .executeAndReturnList(ResolvedCollectionDefinitionDto.class, 200);
   }
 }

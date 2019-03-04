@@ -42,6 +42,7 @@ import java.util.List;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_TYPE;
@@ -104,7 +105,7 @@ public class CollectionWriter {
   public void updateCollection(CollectionDefinitionUpdateDto collection, String id) {
     logger.debug("Updating collection with id [{}] in Elasticsearch", id);
 
-    ensureThatAllProvidedReportIdsExist(collection.getData());
+    ensureThatAllProvidedEntityIdsExist(collection.getData());
     try {
       UpdateRequest request =
         new UpdateRequest(getOptimizeIndexAliasForType(COLLECTION_TYPE), COLLECTION_TYPE, id)
@@ -141,23 +142,24 @@ public class CollectionWriter {
     }
   }
 
-  private void ensureThatAllProvidedReportIdsExist(CollectionDataDto<String> collectionData) {
-    boolean reportIdsAreProvided =
+  private void ensureThatAllProvidedEntityIdsExist(CollectionDataDto<String> collectionData) {
+    boolean entityIdsAreProvided =
       collectionData != null && collectionData.getEntities() != null && !collectionData.getEntities()
         .isEmpty();
-    if (reportIdsAreProvided) {
-      List<String> reportIds = collectionData.getEntities();
-      logger.debug("Checking that the given report ids [{}] for a collection exist", reportIds);
+    if (entityIdsAreProvided) {
+      List<String> entityIds = collectionData.getEntities();
+      logger.debug("Checking that the given entity ids [{}] for a collection exist", entityIds);
 
       SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-        .query(QueryBuilders.idsQuery().addIds(reportIds.toArray(new String[0])))
+        .query(QueryBuilders.idsQuery().addIds(entityIds.toArray(new String[0])))
         .size(0);
       SearchRequest searchRequest =
         new SearchRequest()
           .indices(
             getOptimizeIndexAliasForType(SINGLE_PROCESS_REPORT_TYPE),
             getOptimizeIndexAliasForType(SINGLE_DECISION_REPORT_TYPE),
-            getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE)
+            getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE),
+            getOptimizeIndexAliasForType(DASHBOARD_TYPE)
           )
           .source(searchSourceBuilder);
 
@@ -170,8 +172,8 @@ public class CollectionWriter {
         throw new OptimizeRuntimeException(reason, e);
       }
 
-      if (searchResponse.getHits().getTotalHits() != reportIds.size()) {
-        String errorMessage = "Could not update collection, since the update contains report ids that " +
+      if (searchResponse.getHits().getTotalHits() != entityIds.size()) {
+        String errorMessage = "Could not update collection, since the update contains entity ids that " +
           "do not exist in Optimize any longer.";
         logger.error(errorMessage);
         throw new OptimizeRuntimeException(errorMessage);
@@ -179,19 +181,19 @@ public class CollectionWriter {
     }
   }
 
-  public void removeReportFromCollections(String reportId) {
-    logger.debug("Removing report [{}] from all collections.", reportId);
-    Script removeReportFromCollectionScript = new Script(
+  public void removeEntityFromCollections(String entityId) {
+    logger.debug("Removing entity [{}] from all collections.", entityId);
+    Script removeEntityFromCollectionScript = new Script(
       ScriptType.INLINE,
       Script.DEFAULT_SCRIPT_LANG,
       "ctx._source.data.entities.removeIf(id -> id.equals(params.idToRemove))",
-      Collections.singletonMap("idToRemove", reportId)
+      Collections.singletonMap("idToRemove", entityId)
     );
 
     NestedQueryBuilder query =
       QueryBuilders.nestedQuery(
         CollectionType.DATA,
-        QueryBuilders.termQuery(CollectionType.DATA + "." + CollectionType.ENTITIES, reportId),
+        QueryBuilders.termQuery(CollectionType.DATA + "." + CollectionType.ENTITIES, entityId),
         ScoreMode.None
       );
 
@@ -199,14 +201,14 @@ public class CollectionWriter {
       .setAbortOnVersionConflict(false)
       .setMaxRetries(NUMBER_OF_RETRIES_ON_CONFLICT)
       .setQuery(query)
-      .setScript(removeReportFromCollectionScript)
+      .setScript(removeEntityFromCollectionScript)
       .setRefresh(true);
 
     BulkByScrollResponse bulkByScrollResponse;
     try {
       bulkByScrollResponse = esClient.updateByQuery(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
-      String reason = String.format("Could not remove report with id [%s] from collections.", reportId);
+      String reason = String.format("Could not remove entity with id [%s] from collections.", entityId);
       logger.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
@@ -214,8 +216,8 @@ public class CollectionWriter {
     if (!bulkByScrollResponse.getBulkFailures().isEmpty()) {
       String errorMessage =
         String.format(
-          "Could not remove report id [%s] from collection! Error response: %s",
-          reportId,
+          "Could not remove entity id [%s] from collection! Error response: %s",
+          entityId,
           bulkByScrollResponse.getBulkFailures()
         );
       logger.error(errorMessage);

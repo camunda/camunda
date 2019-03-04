@@ -2,9 +2,8 @@ package org.camunda.optimize.service.collection;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.ResolvedReportCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.service.es.reader.CollectionReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -44,23 +43,23 @@ public class CollectionService {
     collectionWriter.updateCollection(updateDto, updatedCollection.getId());
   }
 
-  public List<ResolvedReportCollectionDefinitionDto> getAllResolvedReportCollections() {
-    return collectionReader.getAllResolvedReportCollections();
+  public List<ResolvedCollectionDefinitionDto> getAllResolvedCollections() {
+    return collectionReader.getAllResolvedCollections();
   }
 
   public SimpleCollectionDefinitionDto getCollectionDefinition(String collectionId) {
     return collectionReader.getCollection(collectionId);
   }
 
-  public void removeReportFromCollection(String reportId) {
-    collectionWriter.removeReportFromCollections(reportId);
+  public void removeEntityFromCollection(String entityId) {
+    collectionWriter.removeEntityFromCollections(entityId);
   }
 
   public void deleteCollection(String collectionId) {
     collectionWriter.deleteCollection(collectionId);
   }
 
-  public List<SimpleCollectionDefinitionDto> findFirstCollectionsForReport(String reportId) {
-    return collectionReader.findFirstCollectionsForReport(reportId);
+  public List<SimpleCollectionDefinitionDto> findFirstCollectionsForEntity(String entityId) {
+    return collectionReader.findFirstCollectionsForEntity(entityId);
   }
 }

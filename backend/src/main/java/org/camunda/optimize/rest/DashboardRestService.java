@@ -2,10 +2,11 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
 import org.camunda.optimize.service.dashboard.DashboardService;
-import org.camunda.optimize.service.exceptions.OptimizeException;
+import org.camunda.optimize.service.exceptions.OptimizeConflictException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -17,12 +18,12 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriInfo;
-import java.io.IOException;
 import java.util.List;
 
 import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUserOrFailNotAuthorized;
@@ -72,11 +73,10 @@ public class DashboardRestService {
   /**
    * Get a list of all available dashboards.
    *
-   * @throws IOException If there was a problem retrieving the dashboards from Elasticsearch.
    */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public List<DashboardDefinitionDto> getStoredDashboards(@Context UriInfo uriInfo) throws IOException {
+  public List<DashboardDefinitionDto> getStoredDashboards(@Context UriInfo uriInfo) {
     List<DashboardDefinitionDto> dashboards = dashboardService.getDashboardDefinitions();
     MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
     dashboards = QueryParamAdjustmentUtil.adjustDashboardResultsToQueryParameters(dashboards, queryParameters);
@@ -91,7 +91,7 @@ public class DashboardRestService {
   @GET
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public DashboardDefinitionDto getDashboards(@PathParam("id") String dashboardId) throws IOException, OptimizeException {
+  public DashboardDefinitionDto getDashboards(@PathParam("id") String dashboardId) {
     return dashboardService.getDashboardDefinition(dashboardId);
   }
 
@@ -101,8 +101,19 @@ public class DashboardRestService {
   @DELETE
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public void deleteDashboard(@PathParam("id") String dashboardId) {
-    dashboardService.deleteDashboard(dashboardId);
+  public void deleteDashboard(@PathParam("id") String dashboardId,
+                              @QueryParam("force") boolean force) throws OptimizeConflictException {
+    dashboardService.deleteDashboard(dashboardId, force);
+  }
+
+  /**
+   * Retrieve the conflicting items that would occur on performing a delete.
+   */
+  @GET
+  @Path("/{id}/delete-conflicts")
+  @Produces(MediaType.APPLICATION_JSON)
+  public ConflictResponseDto getDeleteConflicts(@PathParam("id") String dashboardId) {
+    return dashboardService.getDashboardDeleteConflictingItems(dashboardId);
   }
 
 
