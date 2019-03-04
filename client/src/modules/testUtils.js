@@ -113,6 +113,9 @@ export const createIncident = (options = {}) => {
     id: randomIdIterator.next().value,
     jobId: randomJobIdIterator.next().value,
     state: 'ACTIVE',
+    flowNodeInstanceId: '',
+    creationTime: '2019-03-01T14:26:19',
+    hasActiveOperation: false,
     ...options
   };
 };
@@ -556,7 +559,7 @@ export const createDeepNestedTree = depth => {
 
 export const createIncidents = () => {
   return {
-    count: 1,
-    incidents: [createIncident()]
+    count: 2,
+    incidents: [createIncident(), createIncident()]
   };
 };

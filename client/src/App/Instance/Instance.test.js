@@ -57,9 +57,10 @@ const INSTANCE = createInstance({
 
 const INSTANCE_WITH_INCIDENTS = createInstance({
   id: '4294980768',
-  state: STATE.INCIDENT,
-  incidents: [INCIDENT]
+  state: STATE.INCIDENT
 });
+
+const INCIDENTS = createIncidents();
 
 const mockTree = createRawTree(2);
 
@@ -120,7 +121,7 @@ describe('Instance', () => {
   beforeEach(() => {
     instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(INSTANCE);
     instancesApi.fetchWorkflowInstanceIncidents = mockResolvedAsyncFn(
-      createIncidents()
+      INCIDENTS
     );
     diagramApi.fetchWorkflowXML = mockResolvedAsyncFn(xmlMock);
     activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
@@ -164,6 +165,30 @@ describe('Instance', () => {
     expect(node.find(FlowNodeInstancesTree)).toHaveLength(1);
   });
 
+  it('should pass the right incidents data to DiagramPanel', async () => {
+    // given
+    instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
+      INSTANCE_WITH_INCIDENTS
+    );
+
+    // when
+    const node = mountRenderComponent();
+    await flushPromises();
+    node.update();
+
+    const DiagramPanel = node.find('DiagramPanel');
+
+    // then
+    expect(DiagramPanel.props().incidents.length).toEqual(
+      INCIDENTS.incidents.length
+    );
+    DiagramPanel.props().incidents.forEach((item, index) => {
+      expect(item.id).toEqual(INCIDENTS.incidents[index].id);
+      expect(item.flowNodeName).not.toBe(undefined);
+    });
+    expect(DiagramPanel.props().incidentsCount).toEqual(INCIDENTS.count);
+  });
+
   it('should fetch data from APIs', async () => {
     // given
     const node = mountRenderComponent();
@@ -192,6 +217,18 @@ describe('Instance', () => {
     // fetch events
     expect(eventsApi.fetchEvents).toBeCalled();
     expect(eventsApi.fetchEvents.mock.calls[0][0]).toBe(INSTANCE.id);
+
+    expect(instancesApi.fetchWorkflowInstanceIncidents).not.toBeCalled();
+  });
+
+  it('should fetch the incidents for an instance with state===INCIDENT', async () => {
+    instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
+      INSTANCE_WITH_INCIDENTS
+    );
+
+    const node = mountRenderComponent();
+    await flushPromises();
+    node.update();
   });
 
   describe('check for updates poll', () => {
@@ -271,7 +308,7 @@ describe('Instance', () => {
       instancesApi.fetchWorkflowInstance.mockClear();
     });
 
-    it('should start a polling for changes if instancef is ACTIVE', async () => {
+    it('should start a polling for changes if instance.state is ACTIVE', async () => {
       // given
       const node = mountRenderComponent();
       await flushPromises();
@@ -302,7 +339,7 @@ describe('Instance', () => {
       expect(instancesApi.fetchWorkflowInstance).toHaveBeenCalledTimes(3);
     });
 
-    it('should start a polling for changes if instancef is INCIDENT', async () => {
+    it('should start a polling for changes if instance.state is INCIDENT', async () => {
       // given
       instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
         INSTANCE_WITH_INCIDENTS

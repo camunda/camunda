@@ -12,6 +12,7 @@ import {createIncidents} from 'modules/testUtils';
 
 import IncidentsWrapper from './IncidentsWrapper';
 import IncidentsOverlay from '../IncidentsOverlay';
+import IncidentsTable from '../IncidentsTable';
 import IncidentsBar from '../IncidentsBar';
 
 const incidentsMock = createIncidents();
@@ -47,5 +48,21 @@ describe('IncidentsWrapper', () => {
     node.find(IncidentsBar).simulate('click');
     node.update();
     expect(node.find(IncidentsOverlay).length).toEqual(0);
+  });
+
+  it('should render the IncidentsTable', () => {
+    const node = mount(
+      <ThemeProvider>
+        <IncidentsWrapper {...mockProps} />
+      </ThemeProvider>
+    );
+
+    // open overlay
+    node.find(IncidentsBar).simulate('click');
+    node.update();
+    expect(node.find(IncidentsTable)).toExist();
+    expect(node.find(IncidentsTable).prop('incidents')).toEqual(
+      mockProps.incidents
+    );
   });
 });
