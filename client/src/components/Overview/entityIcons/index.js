@@ -1,5 +1,6 @@
 import {ReactComponent as alert} from './alert.svg';
 import {ReactComponent as alerts} from './alerts.svg';
+import {ReactComponent as collection} from './collection.svg';
 import {ReactComponent as dashboard} from './dashboard.svg';
 import {ReactComponent as dashboards} from './dashboards.svg';
 import {ReactComponent as CombinedReportBar} from './report-combined-bar-chart.svg';
@@ -14,7 +15,7 @@ import {ReactComponent as CombinedReportTable} from './report-combined-table.svg
 import {ReactComponent as reportTable} from './report-table.svg';
 import {ReactComponent as reports} from './reports.svg';
 import {ReactComponent as reportEmpty} from './report-empty.svg';
-
+import {ReactComponent as entityOpenClose} from './entity-open-close.svg';
 const icons = {
   alert: {
     header: {Component: alerts},
@@ -41,7 +42,11 @@ const icons = {
   dashboard: {
     header: {Component: dashboards},
     generic: {Component: dashboard}
-  }
+  },
+  collection: {
+    header: {Component: collection}
+  },
+  entityOpenClose
 };
 
 export default icons;

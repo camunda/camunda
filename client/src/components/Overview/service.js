@@ -3,6 +3,32 @@ import {extractDefinitionName} from 'services';
 
 import entityIcons from './entityIcons';
 
+// COLLECTIONS
+
+export async function createCollection(collection) {
+  const response = await post('api/collection');
+  const json = await response.json();
+
+  if (collection) {
+    await updateCollection(json.id, collection);
+  }
+
+  return json.id;
+}
+
+export async function updateCollection(id, data) {
+  return await put(`api/collection/${id}`, data);
+}
+
+export async function loadCollections(numResults) {
+  const response = await get('api/collection', {orderBy: 'lastModified', numResults});
+  return await response.json();
+}
+
+export async function deleteCollection(id) {
+  return await del('api/collection/' + id);
+}
+
 // DASHBOARDS
 
 export async function createDashboard(initialValues) {
@@ -27,8 +53,11 @@ export async function deleteDashboard(id) {
 
 // REPORTS
 
-export async function createReport(combined, reportType, initialValues) {
-  const response = await post(`api/report/`, {combined: combined, reportType});
+export async function createReport(initialValues) {
+  const response = await post(`api/report/`, {
+    combined: initialValues.combined,
+    reportType: initialValues.reportType
+  });
   const json = await response.json();
 
   if (initialValues) {

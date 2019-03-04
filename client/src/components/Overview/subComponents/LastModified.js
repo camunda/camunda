@@ -3,11 +3,12 @@ import moment from 'moment';
 
 import './LastModified.scss';
 
-export default function LastModified({date, author}) {
+export default function LastModified({label, date, author}) {
   return (
     <span className="LastModified">
-      Last modified {moment(date).format('lll')}
-      <br />by <strong>{author}</strong>
+      {label} {moment(date).format('lll')}
+      <br />
+      by <strong>{author}</strong>
     </span>
   );
 }

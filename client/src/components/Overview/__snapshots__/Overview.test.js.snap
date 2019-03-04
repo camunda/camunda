@@ -1,0 +1,69 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should have a Dropdown with more creation options 1`] = `
+Array [
+  <Dropdown
+    label={
+      <React.Fragment>
+        Create New 
+        <Icon
+          type="down"
+        />
+      </React.Fragment>
+    }
+  >
+    <DropdownOption
+      onClick={[Function]}
+    >
+      Create Collection
+    </DropdownOption>
+    <DropdownOption
+      onClick={[Function]}
+    >
+      Create Dashboard
+    </DropdownOption>
+    <Submenu
+      label="New Report"
+    >
+      <DropdownOption
+        onClick={[Function]}
+      >
+        Create Process Report
+      </DropdownOption>
+      <DropdownOption
+        onClick={[Function]}
+      >
+        Create Combined Process Report
+      </DropdownOption>
+      <DropdownOption
+        onClick={[Function]}
+      >
+        Create Decision Report
+      </DropdownOption>
+    </Submenu>
+  </Dropdown>,
+  <Dropdown
+    label={
+      <Icon
+        type="down"
+      />
+    }
+  >
+    <DropdownOption
+      onClick={[Function]}
+    >
+      Create Process Report
+    </DropdownOption>
+    <DropdownOption
+      onClick={[Function]}
+    >
+      Create Combined Process Report
+    </DropdownOption>
+    <DropdownOption
+      onClick={[Function]}
+    >
+      Create Decision Report
+    </DropdownOption>
+  </Dropdown>,
+]
+`;

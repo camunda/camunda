@@ -1,6 +1,7 @@
 @import 'shared-styles/shared-styles.scss';
 
-.Dashboards {
+.Dashboards,
+.Collections {
   margin-bottom: 50px;
 }
 
@@ -11,31 +12,70 @@
   margin-bottom: 48px;
   position: relative;
 
-  .header {
-    border-bottom: 1px solid #d1d1d1;
+  .ToggleCollapse {
+    background: none;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    text-align: left;
 
-    .ToggleCollapse {
-      background: none;
-      border: none;
-      box-shadow: none;
-
-      .collapseIcon {
-        position: absolute;
-        left: -30px;
+    .collapseIcon {
+      position: absolute;
+      left: -35px;
+      margin-top: 10px;
+      &.right {
+        transform: rotate(-90deg);
       }
     }
+  }
+
+  .header {
+    border-bottom: 1px solid #d1d1d1;
+    min-height: 50px;
 
     h1 {
       display: inline-block;
     }
 
-    .createButton {
-      float: right;
-      margin: 6px 0 0 10px;
-    }
-
     .searchInput {
       width: 100%;
+    }
+  }
+
+  .createButton {
+    float: right;
+    margin: 6px 0 0 10px;
+
+    & > .Button {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+
+    .Dropdown {
+      border-left: 1px solid lightgreen;
+
+      .downIcon {
+        display: none;
+      }
+
+      .activateButton {
+        padding-right: 12px;
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+
+        color: white;
+        background-color: $cam-green;
+        border: 1px solid $cam-green;
+
+        &:hover {
+          background-color: darken($cam-green, 10%);
+          border: 1px solid darken($cam-green, 10%);
+        }
+
+        .Icon {
+          margin: 0;
+        }
+      }
     }
   }
 
@@ -45,7 +85,7 @@
     margin: 0 0 16px 0;
     width: 100%;
 
-    li {
+    .item {
       display: flex;
       border-bottom: 1px solid #ededed;
 
@@ -136,6 +176,7 @@
         > * {
           width: 32px;
           height: 32px;
+          border-radius: 100%;
           margin-right: 9px;
           display: flex;
           flex-direction: column;
@@ -145,6 +186,12 @@
           cursor: pointer;
           color: #6a727e;
           background: transparent;
+          &:hover {
+            background: #eceef1;
+          }
+          &:active {
+            background: #dadee3;
+          }
         }
 
         span {
