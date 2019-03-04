@@ -107,7 +107,7 @@ export default class IncidentsTable extends React.Component {
                     </Styled.FirstCell>
                   </TD>
                   <TD>{incident.flowNodeName}</TD>
-                  <TD>{incident.jobKey || '--'}</TD>
+                  <TD>{incident.jobId || '--'}</TD>
                   <TD>{formatDate(incident.creationTime)}</TD>
                   <TD>
                     <Styled.Flex>
