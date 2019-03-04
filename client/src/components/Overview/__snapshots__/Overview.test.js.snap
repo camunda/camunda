@@ -12,34 +12,34 @@ Array [
       </React.Fragment>
     }
   >
-    <DropdownOption
+    <ForwardRef(DropdownOption)
       onClick={[Function]}
     >
       Create Collection
-    </DropdownOption>
-    <DropdownOption
+    </ForwardRef(DropdownOption)>
+    <ForwardRef(DropdownOption)
       onClick={[Function]}
     >
       Create Dashboard
-    </DropdownOption>
+    </ForwardRef(DropdownOption)>
     <Submenu
       label="New Report"
     >
-      <DropdownOption
+      <ForwardRef(DropdownOption)
         onClick={[Function]}
       >
         Create Process Report
-      </DropdownOption>
-      <DropdownOption
+      </ForwardRef(DropdownOption)>
+      <ForwardRef(DropdownOption)
         onClick={[Function]}
       >
         Create Combined Process Report
-      </DropdownOption>
-      <DropdownOption
+      </ForwardRef(DropdownOption)>
+      <ForwardRef(DropdownOption)
         onClick={[Function]}
       >
         Create Decision Report
-      </DropdownOption>
+      </ForwardRef(DropdownOption)>
     </Submenu>
   </Dropdown>,
   <Dropdown
@@ -49,21 +49,21 @@ Array [
       />
     }
   >
-    <DropdownOption
+    <ForwardRef(DropdownOption)
       onClick={[Function]}
     >
       Create Process Report
-    </DropdownOption>
-    <DropdownOption
+    </ForwardRef(DropdownOption)>
+    <ForwardRef(DropdownOption)
       onClick={[Function]}
     >
       Create Combined Process Report
-    </DropdownOption>
-    <DropdownOption
+    </ForwardRef(DropdownOption)>
+    <ForwardRef(DropdownOption)
       onClick={[Function]}
     >
       Create Decision Report
-    </DropdownOption>
+    </ForwardRef(DropdownOption)>
   </Dropdown>,
 ]
 `;
