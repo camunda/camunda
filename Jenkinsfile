@@ -290,7 +290,7 @@ pipeline {
             }
           }
         }
-        stage('Data upgrade test') {
+        stage('Rolling data upgrade') {
           agent {
             kubernetes {
               cloud 'optimize-ci'
@@ -532,7 +532,7 @@ void migrationTestSteps() {
 void dataUpgradeTestSteps() {
   container('maven') {
     sh ("""apt-get update && apt-get install -y jq""")
-    runMaven("verify -Dskip.docker -Dskip.fe.build -pl qa/upgrade-optimize-data -am -Pupgrade-optimize-data")
+    runMaven("verify -Dskip.docker -Dskip.fe.build -f qa/upgrade-optimize-data -am -Pupgrade-optimize-data")
   }
 }
 

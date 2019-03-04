@@ -1,0 +1,402 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <properties>
+    <skipTests>true</skipTests>
+    <upgrade.versions>2.1.0,2.2.0,2.3.0,${project.version}</upgrade.versions>
+  </properties>
+
+  <parent>
+    <groupId>org.camunda.optimize</groupId>
+    <artifactId>upgrade-optimize-data</artifactId>
+    <version>2.5.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>post-migration-test</artifactId>
+  <packaging>pom</packaging>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.camunda.optimize</groupId>
+      <artifactId>optimize-backend</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.camunda.optimize</groupId>
+      <artifactId>optimize-backend</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+    </dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-all</artifactId>
+      <version>${hamcrest.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <profiles>
+    <profile>
+      <id>upgrade-optimize-data</id>
+      <build>
+        <plugins>
+          <!-- 1. Unpack previous & current Optimize versions, copy optimize data generators with dependencies -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>copy-generator-2-2</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>copy</goal>
+                </goals>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>org.camunda.optimize</groupId>
+                      <artifactId>generator-2-2</artifactId>
+                      <version>${project.version}</version>
+                      <type>jar</type>
+                      <classifier>jar-with-dependencies</classifier>
+                      <overWrite>true</overWrite>
+                      <outputDirectory>${project.build.directory}/generators</outputDirectory>
+                      <destFileName>generator2.2.0.jar</destFileName>
+                    </artifactItem>
+                  </artifactItems>
+                  <overWriteReleases>false</overWriteReleases>
+                  <overWriteSnapshots>true</overWriteSnapshots>
+                </configuration>
+              </execution>
+              <execution>
+                <id>copy-generator-2-1</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>copy</goal>
+                </goals>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>org.camunda.optimize</groupId>
+                      <artifactId>generator-2-1</artifactId>
+                      <version>${project.version}</version>
+                      <type>jar</type>
+                      <classifier>jar-with-dependencies</classifier>
+                      <overWrite>true</overWrite>
+                      <outputDirectory>${project.build.directory}/generators</outputDirectory>
+                      <destFileName>generator2.1.0.jar</destFileName>
+                    </artifactItem>
+                  </artifactItems>
+                  <overWriteReleases>false</overWriteReleases>
+                  <overWriteSnapshots>true</overWriteSnapshots>
+                </configuration>
+              </execution>
+              <execution>
+                <id>copy-generator-2-3</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>copy</goal>
+                </goals>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>org.camunda.optimize</groupId>
+                      <artifactId>generator-2-3</artifactId>
+                      <version>${project.version}</version>
+                      <type>jar</type>
+                      <classifier>jar-with-dependencies</classifier>
+                      <overWrite>true</overWrite>
+                      <outputDirectory>${project.build.directory}/generators</outputDirectory>
+                      <destFileName>generator2.3.0.jar</destFileName>
+                    </artifactItem>
+                  </artifactItems>
+                  <overWriteReleases>false</overWriteReleases>
+                  <overWriteSnapshots>true</overWriteSnapshots>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <!-- 2. Start CamBPM and ES through docker-compose -->
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>docker-start</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <configuration>
+                  <environmentVariables>
+                    <CAMBPM_VERSION>${camunda.engine.version}</CAMBPM_VERSION>
+                    <ES_VERSION>${elasticsearch.test.version}</ES_VERSION>
+                  </environmentVariables>
+                  <skip>${skip.docker}</skip>
+                  <executable>docker-compose</executable>
+                  <workingDirectory>../../../</workingDirectory>
+                  <arguments>
+                    <argument>-f</argument>
+                    <argument>${docker.compose.file}</argument>
+                    <argument>up</argument>
+                    <argument>-d</argument>
+                    <argument>--force-recreate</argument>
+                    <argument>--renew-anon-volumes</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+              <!-- Shutdown test environment after integration testing -->
+              <execution>
+                <id>docker-remove</id>
+                <phase>post-integration-test</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <configuration>
+                  <skip>${skip.docker}</skip>
+                  <executable>docker-compose</executable>
+                  <workingDirectory>../../../</workingDirectory>
+                  <arguments>
+                    <argument>-f</argument>
+                    <argument>${docker.compose.file}</argument>
+                    <argument>down</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <!-- 3. Make sure CamBPM and ES are up and running -->
+            <executions>
+              <execution>
+                <id>check-cambpm-is-up</id>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <phase>pre-integration-test</phase>
+                <configuration>
+                  <skip>${skip.docker}</skip>
+                  <target name="check-cambpm-is-running" description="Check whether CamBPM is running">
+                    <echo message="Check ES is running..."/>
+                    <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
+                      <socket server="localhost" port="9200"/>
+                    </waitfor>
+                    <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
+                      <http url="http://localhost:9200/_cluster/state"/>
+                    </waitfor>
+                    <echo message="ES is running."/>
+                    <echo message="Check CamBPM is running..."/>
+                    <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
+                      <socket server="localhost" port="8080"/>
+                    </waitfor>
+                    <echo message="CamBPM is running."/>
+                  </target>
+                </configuration>
+              </execution>
+              <!--4. Generate engine data-->
+              <execution>
+                <id>generate-engine-data</id>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <phase>pre-integration-test</phase>
+                <configuration>
+                  <target name="generate-engine-data" description="Generate process instances">
+                    <property environment="env"/>
+                    <condition property="maven-settings" value="--settings=../../settings.xml" else="">
+                      <isset property="env.JENKINS_URL"/>
+                    </condition>
+
+                    <echo message="Generating engine data..."/>
+                    <exec dir="${project.build.directory}/../../../../qa/data-generation" executable="/bin/bash"
+                          failonerror="true">
+                      <arg value="-c"/>
+                      <arg
+                          value="set -o pipefail; mvn clean compile exec:java -Dexec.args='--numberOfProcessInstances 10' -B ${maven-settings} | sed 's/^/[ENGINE DATA GENERATION]: /'"/>
+                    </exec>
+                  </target>
+                </configuration>
+              </execution>
+              <!--5. Generate optimize data and run migration-->
+              <execution>
+                <id>unpack</id>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <phase>pre-integration-test</phase>
+                <configuration>
+                  <target name="unpack optimize distributions">
+                    <!-- if executed in Jenkins, use settings.xml in Optimize root dir -->
+                    <property environment="env"/>
+                    <condition property="maven-settings" value="--settings=../settings.xml" else="">
+                      <isset property="env.JENKINS_URL"/>
+                    </condition>
+                    <ac:for xmlns:ac="antlib:net.sf.antcontrib" list="${upgrade.versions}" param="currentVersion">
+                      <sequential>
+                        <echo message="Downloading &amp; unpacking Optimize @{currentVersion}..."/>
+                        <ac:if>
+                          <matches string="@{currentVersion}" pattern="2\.[0-2]\.0"/>
+                          <ac:then>
+                            <ac:var name="optimize.classifier" value="standalone"/>
+                          </ac:then>
+                          <ac:else>
+                            <ac:var name="optimize.classifier" value="production"/>
+                          </ac:else>
+                        </ac:if>
+                        <exec dir="${project.build.directory}/../../../" executable="/bin/bash" failonerror="true">
+                          <arg value="-c"/>
+                          <arg
+                              value="mvn dependency:unpack ${maven-settings} -f upgrade-optimize-data -Dartifact=org.camunda.optimize:camunda-optimize:@{currentVersion}:tar.gz:${optimize.classifier} -DoutputDirectory=${project.build.directory}/@{currentVersion} -DoverWriteReleases=true -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn"/>
+                        </exec>
+                      </sequential>
+                    </ac:for>
+                  </target>
+                </configuration>
+              </execution>
+              <execution>
+                <id>run-migration</id>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <phase>integration-test</phase>
+                <configuration>
+                  <target>
+                    <!-- if executed in Jenkins, use settings.xml in Optimize root dir -->
+                    <property environment="env"/>
+                    <condition property="maven-settings" value="--settings=${project.basedir}/../../settings.xml"
+                               else="">
+                      <isset property="env.JENKINS_URL"/>
+                    </condition>
+                    <property environment="env"/>
+                    <condition property="maven-settings-tests"
+                               value="--settings=${project.basedir}/../../../settings.xml" else="">
+                      <isset property="env.JENKINS_URL"/>
+                    </condition>
+
+                    <!-- Start Optimize 2.1.0 and generate data-->
+                    <exec dir="${project.build.directory}/2.1.0/"
+                          executable="${project.build.directory}/2.1.0/optimize-startup.sh" spawn="true"/>
+
+                    <echo message="Wait for Optimize to start..."/>
+                    <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
+                      <socket server="localhost" port="8090"/>
+                    </waitfor>
+
+                    <echo message="Waiting for Optimize to populate ES..."/>
+                    <exec executable="/bin/bash">
+                      <arg value="-c"/>
+                      <arg
+                          value="until test $(curl -s 'http://localhost:9200/optimize-metadata/_count' | jq '.count // 0') -eq 1; do sleep 2; done"/>
+                    </exec>
+
+                    <echo message="Generating optimize data"/>
+                    <exec executable="/bin/bash" failonerror="true">
+                      <arg value="-c"/>
+                      <arg
+                          value="set -o pipefail; java -jar ${project.build.directory}/generators/generator2.1.0.jar ${maven-settings} | sed 's/^/[OPTIMIZE DATA GENERATION]: /'"/>
+                    </exec>
+
+                    <echo message="Killing Optimize 2.1.0..."/>
+                    <exec executable="/bin/bash">
+                      <arg value="-c"/>
+                      <arg value="pkill -f org.camunda.optimize.Main"/>
+                    </exec>
+
+                    <ac:for xmlns:ac="antlib:net.sf.antcontrib" list="${upgrade.versions}" param="currentVersion">
+                      <sequential>
+                        <!-- Migrate -->
+                        <ac:if>
+                          <!-- only if not the first version in the list -->
+                          <not>
+                            <matches string="${upgrade.versions}" pattern="^@{currentVersion},.*" />
+                          </not>
+                          <ac:then>
+                            <echo message="Running migration to @{currentVersion}..." />
+                            <ac:if>
+                              <matches string="@{currentVersion}" pattern="2\.[0-3]\.0" />
+                              <ac:then>
+                                <ac:var name="optimize.upgrade.command" value="java -cp environment:upgrade/* org.camunda.optimize.upgrade.main.UpgradeMain" />
+                              </ac:then>
+                              <ac:else>
+                                <ac:var name="optimize.upgrade.command" value="./upgrade/upgrade.sh " />
+                              </ac:else>
+                            </ac:if>
+                            <exec dir="${project.build.directory}/@{currentVersion}" executable="/bin/bash">
+                              <arg value="-c" />
+                              <arg value="set -o pipefail; ${optimize.upgrade.command} --skip-warning | sed 's/^/[OPTIMIZE MIGRATION SCRIPT @{currentVersion}]: /'" />
+                            </exec>
+                            <echo message="Starting Optimize @{currentVersion}..."/>
+                            <exec dir="${project.build.directory}/@{currentVersion}/"
+                                  executable="${project.build.directory}/@{currentVersion}/optimize-startup.sh" spawn="true"/>
+
+                            <echo message="Wait for Optimize to start..."/>
+                            <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
+                              <socket server="localhost" port="8090"/>
+                            </waitfor>
+
+                            <echo message="Running post migration tests..."/>
+                            <exec executable="/bin/bash" failonerror="true">
+                              <arg value="-c"/>
+                              <arg
+                                  value="set -o pipefail; mvn verify -DskipTests=false -B ${maven-settings-tests} | sed 's/^/[POST MIGRATION TESTS]: /'"/>
+                            </exec>
+                            <ac:if>
+                              <not>
+                                <matches string="${upgrade.versions}" pattern="@{currentVersion}$" />
+                              </not>
+                              <ac:then>
+                                <!-- Generate additional data-->
+                                <echo message="Generating optimize data"/>
+                                <exec executable="/bin/bash" failonerror="true">
+                                  <arg value="-c"/>
+                                  <arg
+                                      value="set -o pipefail; java -jar ${project.build.directory}/generators/generator@{currentVersion}.jar ${maven-settings} | sed 's/^/[OPTIMIZE DATA GENERATION]: /'"/>
+                                </exec>
+                              </ac:then>
+                            </ac:if>
+                            <echo message="Killing Optimize @{currentVersion}..."/>
+                            <exec executable="/bin/bash">
+                              <arg value="-c"/>
+                              <arg value="pkill -f org.camunda.optimize.Main"/>
+                            </exec>
+                          </ac:then>
+                        </ac:if>
+                      </sequential>
+                    </ac:for>
+                  </target>
+                </configuration>
+              </execution>
+            </executions>
+            <dependencies>
+              <dependency>
+                <groupId>ant-contrib</groupId>
+                <artifactId>ant-contrib</artifactId>
+                <version>1.0b3</version>
+                <exclusions>
+                  <exclusion>
+                    <groupId>ant</groupId>
+                    <artifactId>ant</artifactId>
+                  </exclusion>
+                </exclusions>
+              </dependency>
+            </dependencies>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
+</project>
