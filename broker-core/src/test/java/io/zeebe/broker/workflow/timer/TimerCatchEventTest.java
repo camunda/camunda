@@ -223,23 +223,6 @@ public class TimerCatchEventTest {
   }
 
   @Test
-  public void shouldTriggerTimerWithNegativeDuration() {
-    // given
-    final BpmnModelInstance workflow =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .intermediateCatchEvent("timer", c -> c.timerWithDuration("-PT1H"))
-            .endEvent()
-            .done();
-
-    testClient.deploy(workflow);
-    testClient.createWorkflowInstance(PROCESS_ID);
-
-    // then
-    assertThat(RecordingExporter.timerRecords(TimerIntent.TRIGGERED).exists()).isTrue();
-  }
-
-  @Test
   public void shouldTriggerMultipleTimers() {
     // given
     final BpmnModelInstance workflow =

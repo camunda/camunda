@@ -16,6 +16,7 @@
 package io.zeebe.model.bpmn.validation;
 
 import static io.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
+import static io.zeebe.model.bpmn.validation.zeebe.TimerEventDefinitionValidator.MAXIMUM_TIME_IN_YEARS;
 import static java.util.Collections.singletonList;
 
 import io.zeebe.model.bpmn.Bpmn;
@@ -111,7 +112,9 @@ public class ZeebeTimerValidationTest extends AbstractZeebeValidationTest {
         singletonList(
             expect(
                 TimerEventDefinition.class,
-                "Time date can't be more than 100 years into the future"))
+                String.format(
+                    "Specified time can't be more than %d years into the future",
+                    MAXIMUM_TIME_IN_YEARS)))
       },
       {
         Bpmn.createExecutableProcess("process")
@@ -122,7 +125,9 @@ public class ZeebeTimerValidationTest extends AbstractZeebeValidationTest {
         singletonList(
             expect(
                 TimerEventDefinition.class,
-                "Time date can't be more than 100 years into the future"))
+                String.format(
+                    "Specified time can't be more than %d years into the future",
+                    MAXIMUM_TIME_IN_YEARS)))
       },
       {
         Bpmn.createExecutableProcess("process")
@@ -130,7 +135,8 @@ public class ZeebeTimerValidationTest extends AbstractZeebeValidationTest {
             .timerWithDate("2018-03-01T13:00:00Z")
             .endEvent()
             .done(),
-        singletonList(expect(TimerEventDefinition.class, "Time date can't have passed already"))
+        singletonList(
+            expect(TimerEventDefinition.class, "Specified time can't have passed already"))
       },
       {
         Bpmn.createExecutableProcess("process")
@@ -138,7 +144,43 @@ public class ZeebeTimerValidationTest extends AbstractZeebeValidationTest {
             .timerWithDate("0000-03-01T13:00:00Z")
             .endEvent()
             .done(),
-        singletonList(expect(TimerEventDefinition.class, "Time date can't have passed already"))
+        singletonList(
+            expect(TimerEventDefinition.class, "Specified time can't have passed already"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .timerWithCycle("R5/P101Y")
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                TimerEventDefinition.class,
+                String.format(
+                    "Specified time can't be more than %d years into the future",
+                    MAXIMUM_TIME_IN_YEARS)))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .intermediateCatchEvent("catch", c -> c.timerWithDuration("P356000D"))
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                TimerEventDefinition.class,
+                String.format(
+                    "Specified time can't be more than %d years into the future",
+                    MAXIMUM_TIME_IN_YEARS)))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .intermediateCatchEvent("catch", c -> c.timerWithDuration("PT-1S"))
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(TimerEventDefinition.class, "Specified time can't have passed already"))
       },
     };
   }

@@ -22,14 +22,12 @@ import io.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.zeebe.model.bpmn.util.time.Interval;
 import io.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.zeebe.model.bpmn.util.time.TimeDateTimer;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
 public class TimerEventDefinitionValidator implements ModelElementValidator<TimerEventDefinition> {
-
-  public static final int MAXIMUM_YEARS = 100;
+  public static final long MAXIMUM_TIME_IN_YEARS = 100L;
 
   @Override
   public Class<TimerEventDefinition> getElementType() {
@@ -46,7 +44,7 @@ public class TimerEventDefinitionValidator implements ModelElementValidator<Time
 
     if (timeDate != null) {
 
-      validateTimeDate(element.getTimeDate(), validationResultCollector);
+      validateTimeDate(validationResultCollector, element.getTimeDate());
       definitionsCount++;
     }
 
@@ -67,20 +65,11 @@ public class TimerEventDefinitionValidator implements ModelElementValidator<Time
   }
 
   private void validateTimeDate(
-      TimeDate timeDate, ValidationResultCollector validationResultCollector) {
+      ValidationResultCollector validationResultCollector, TimeDate timeDate) {
     try {
-      TimeDateTimer.parse(timeDate.getTextContent());
-
-      final ZonedDateTime specifiedTimeDate = ZonedDateTime.parse(timeDate.getTextContent());
-      final ZonedDateTime currentTimeDate = ZonedDateTime.now();
-      final ZonedDateTime maximumTimeDate = currentTimeDate.plusYears(MAXIMUM_YEARS);
-
-      if (specifiedTimeDate.compareTo(maximumTimeDate) > 0) {
-        validationResultCollector.addError(
-            0, "Time date can't be more than 100 years into the future");
-      } else if (specifiedTimeDate.compareTo(currentTimeDate) < 0) {
-        validationResultCollector.addError(0, "Time date can't have passed already");
-      }
+      final TimeDateTimer timer = TimeDateTimer.parse(timeDate.getTextContent());
+      final long timeToTrigger = timer.getDueDate(0);
+      validateTimeLimits(timeToTrigger, validationResultCollector);
     } catch (DateTimeParseException e) {
       validationResultCollector.addError(0, "Time date is invalid");
     }
@@ -89,7 +78,10 @@ public class TimerEventDefinitionValidator implements ModelElementValidator<Time
   private void validateTimeCycle(
       ValidationResultCollector validationResultCollector, TimeCycle timeCycle) {
     try {
-      RepeatingInterval.parse(timeCycle.getTextContent());
+      final RepeatingInterval cycle = RepeatingInterval.parse(timeCycle.getTextContent());
+      final long timeToTrigger = cycle.getDueDate(System.currentTimeMillis());
+      validateTimeLimits(timeToTrigger, validationResultCollector);
+
     } catch (DateTimeParseException e) {
       validationResultCollector.addError(0, "Time cycle is invalid");
     }
@@ -98,9 +90,31 @@ public class TimerEventDefinitionValidator implements ModelElementValidator<Time
   private void validateTimeDuration(
       ValidationResultCollector validationResultCollector, TimeDuration timeDuration) {
     try {
-      Interval.parse(timeDuration.getTextContent());
+      final Interval duration = Interval.parse(timeDuration.getTextContent());
+      final long timeToTrigger = duration.toEpochMilli(System.currentTimeMillis());
+      validateTimeLimits(timeToTrigger, validationResultCollector);
+
     } catch (DateTimeParseException e) {
       validationResultCollector.addError(0, "Time duration is invalid");
     }
+  }
+
+  private void validateTimeLimits(
+      long triggerTime, ValidationResultCollector validationResultCollector) {
+    final long currentTime = System.currentTimeMillis();
+    final long maximumTime = currentTime + convertYearsToMillis(MAXIMUM_TIME_IN_YEARS);
+
+    if (triggerTime > maximumTime) {
+      validationResultCollector.addError(
+          0,
+          String.format(
+              "Specified time can't be more than %d years into the future", MAXIMUM_TIME_IN_YEARS));
+    } else if (triggerTime < currentTime) {
+      validationResultCollector.addError(0, "Specified time can't have passed already");
+    }
+  }
+
+  private static long convertYearsToMillis(long years) {
+    return Math.multiplyExact(years, 365 * 24 * 60 * 60 * 1000L);
   }
 }
