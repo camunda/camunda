@@ -19,7 +19,7 @@ public class IncidentEntity extends OperateZeebeEntity {
 
   private String flowNodeInstanceId;
 
-  private Long jobKey;
+  private String jobId;
 
   private String workflowInstanceId;
 
@@ -65,12 +65,12 @@ public class IncidentEntity extends OperateZeebeEntity {
     this.flowNodeInstanceId = flowNodeInstanceId;
   }
 
-  public Long getJobKey() {
-    return jobKey;
+  public String getJobId() {
+    return jobId;
   }
 
-  public void setJobKey(Long jobKey) {
-    this.jobKey = jobKey;
+  public void setJobId(String jobId) {
+    this.jobId = jobId;
   }
 
   public String getWorkflowInstanceId() {
@@ -110,7 +110,7 @@ public class IncidentEntity extends OperateZeebeEntity {
       return false;
     if (flowNodeInstanceId != null ? !flowNodeInstanceId.equals(that.flowNodeInstanceId) : that.flowNodeInstanceId != null)
       return false;
-    if (jobKey != null ? !jobKey.equals(that.jobKey) : that.jobKey != null)
+    if (jobId != null ? !jobId.equals(that.jobId) : that.jobId != null)
       return false;
     if (workflowInstanceId != null ? !workflowInstanceId.equals(that.workflowInstanceId) : that.workflowInstanceId != null)
       return false;
@@ -125,7 +125,7 @@ public class IncidentEntity extends OperateZeebeEntity {
     result = 31 * result + (state != null ? state.hashCode() : 0);
     result = 31 * result + (flowNodeId != null ? flowNodeId.hashCode() : 0);
     result = 31 * result + (flowNodeInstanceId != null ? flowNodeInstanceId.hashCode() : 0);
-    result = 31 * result + (jobKey != null ? jobKey.hashCode() : 0);
+    result = 31 * result + (jobId != null ? jobId.hashCode() : 0);
     result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
     result = 31 * result + (creationTime != null ? creationTime.hashCode() : 0);
     return result;

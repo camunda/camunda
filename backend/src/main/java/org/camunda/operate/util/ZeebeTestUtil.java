@@ -215,8 +215,8 @@ public abstract class ZeebeTestUtil {
     }
   }
 
-  public static void resolveIncident(ZeebeClient client, long jobKey, long incidentKey) {
-    client.newUpdateRetriesCommand(jobKey).retries(3).send().join();
+  public static void resolveIncident(ZeebeClient client, String jobId, long incidentKey) {
+    client.newUpdateRetriesCommand(IdUtil.getKey(jobId)).retries(3).send().join();
     client.newResolveIncidentCommand(incidentKey).send().join();
   }
 

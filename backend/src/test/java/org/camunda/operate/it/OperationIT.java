@@ -395,7 +395,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     postOperationWithOKResponse(workflowInstanceId, new OperationRequestDto(OperationType.RESOLVE_INCIDENT));
     //resolve the incident before the operation is executed
     final IncidentEntity incident = detailViewReader.getAllIncidents(workflowInstanceId).get(0);
-    ZeebeTestUtil.resolveIncident(zeebeClient, incident.getJobKey(), incident.getKey());
+    ZeebeTestUtil.resolveIncident(zeebeClient, incident.getJobId(), incident.getKey());
 
     //when
     //and execute the operation

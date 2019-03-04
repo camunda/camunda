@@ -145,9 +145,9 @@ public class DetailViewIT extends OperateZeebeIntegrationTest {
     assertThat(inc.getFlowNodeId()).as(activityId + ".flowNodeId").isEqualTo(activityId);
     assertThat(inc.getFlowNodeInstanceId()).as(activityId + ".flowNodeInstanceId").isNotNull();
     if (errorType.equals(ErrorType.JOB_NO_RETRIES)) {
-      assertThat(inc.getJobKey()).as(activityId + ".jobKey").isNotNull();
+      assertThat(inc.getJobId()).as(activityId + ".jobKey").isNotNull();
     } else {
-      assertThat(inc.getJobKey()).as(activityId + ".jobKey").isNull();
+      assertThat(inc.getJobId()).as(activityId + ".jobKey").isNull();
     }
   }
 

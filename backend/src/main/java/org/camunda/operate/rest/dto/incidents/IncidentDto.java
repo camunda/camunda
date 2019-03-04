@@ -31,7 +31,7 @@ public class IncidentDto {
 
   private String flowNodeInstanceId;
 
-  private Long jobKey;
+  private String jobId;
 
   private OffsetDateTime creationTime;
 
@@ -79,12 +79,12 @@ public class IncidentDto {
     this.flowNodeInstanceId = flowNodeInstanceId;
   }
 
-  public Long getJobKey() {
-    return jobKey;
+  public String getJobId() {
+    return jobId;
   }
 
-  public void setJobKey(Long jobKey) {
-    this.jobKey = jobKey;
+  public void setJobId(String jobId) {
+    this.jobId = jobId;
   }
 
   public OffsetDateTime getCreationTime() {
@@ -121,7 +121,7 @@ public class IncidentDto {
     incident.setFlowNodeInstanceId(incidentEntity.getFlowNodeInstanceId());
     incident.setErrorMessage(incidentEntity.getErrorMessage());
     incident.setErrorType(incidentEntity.getErrorType().getTitle());
-    incident.setJobKey(incidentEntity.getJobKey());
+    incident.setJobId(incidentEntity.getJobId());
     incident.setCreationTime(incidentEntity.getCreationTime());
     //TODO operations
     return incident;
@@ -165,7 +165,7 @@ public class IncidentDto {
       return false;
     if (flowNodeInstanceId != null ? !flowNodeInstanceId.equals(that.flowNodeInstanceId) : that.flowNodeInstanceId != null)
       return false;
-    if (jobKey != null ? !jobKey.equals(that.jobKey) : that.jobKey != null)
+    if (jobId != null ? !jobId.equals(that.jobId) : that.jobId != null)
       return false;
     if (creationTime != null ? !creationTime.equals(that.creationTime) : that.creationTime != null)
       return false;
@@ -179,7 +179,7 @@ public class IncidentDto {
     result = 31 * result + (errorMessage != null ? errorMessage.hashCode() : 0);
     result = 31 * result + (flowNodeId != null ? flowNodeId.hashCode() : 0);
     result = 31 * result + (flowNodeInstanceId != null ? flowNodeInstanceId.hashCode() : 0);
-    result = 31 * result + (jobKey != null ? jobKey.hashCode() : 0);
+    result = 31 * result + (jobId != null ? jobId.hashCode() : 0);
     result = 31 * result + (creationTime != null ? creationTime.hashCode() : 0);
     result = 31 * result + (hasActiveOperation ? 1 : 0);
     result = 31 * result + (lastOperation != null ? lastOperation.hashCode() : 0);

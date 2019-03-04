@@ -250,7 +250,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     final long incidentKey = getOnlyIncidentKey();
 
     //when update retries
-    ZeebeTestUtil.resolveIncident(zeebeClient, jobKey, incidentKey);
+    ZeebeTestUtil.resolveIncident(zeebeClient, IdTestUtil.getId(jobKey), incidentKey);
 
     setJobWorker(ZeebeTestUtil.completeTask(getClient(), activityId, getWorkerName(), "{}"));
 
@@ -304,7 +304,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     final long incidentKey = getOnlyIncidentKey();
 
     //when update retries
-    ZeebeTestUtil.resolveIncident(zeebeClient, jobKey, incidentKey);
+    ZeebeTestUtil.resolveIncident(zeebeClient, IdTestUtil.getId(jobKey), incidentKey);
 
     ZeebeTestUtil.cancelWorkflowInstance(getClient(), workflowInstanceKey);
 

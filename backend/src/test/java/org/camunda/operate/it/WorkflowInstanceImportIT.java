@@ -20,7 +20,6 @@ import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.rest.dto.detailview.ActivityInstanceTreeDto;
 import org.camunda.operate.rest.dto.detailview.ActivityInstanceTreeRequestDto;
 import org.camunda.operate.rest.dto.detailview.DetailViewActivityInstanceDto;
-import org.camunda.operate.rest.dto.incidents.IncidentResponseDto;
 import org.camunda.operate.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.rest.dto.listview.WorkflowInstanceStateDto;
@@ -277,7 +276,7 @@ public class WorkflowInstanceImportIT extends OperateZeebeIntegrationTest {
     final String workflowInstanceId = IdTestUtil.getId(workflowInstanceKey);
     List<IncidentEntity> allIncidents = detailViewReader.getAllIncidents(workflowInstanceId);
     assertThat(allIncidents).hasSize(1);
-    ZeebeTestUtil.resolveIncident(zeebeClient, allIncidents.get(0).getJobKey(), allIncidents.get(0).getKey());
+    ZeebeTestUtil.resolveIncident(zeebeClient, allIncidents.get(0).getJobId(), allIncidents.get(0).getKey());
     elasticsearchTestRule.processAllEventsAndWait(incidentIsResolvedCheck, workflowInstanceKey);
 
     //then
