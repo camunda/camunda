@@ -152,10 +152,6 @@ es:
     #Maximum time without connection to Elasticsearch, Optimize should
     #wait until a time out triggers.
     timeout: 10000
-    # How often to sample / ping the nodes listed and connected. Defaults to 5s
-    samplerInterval: 5000
-    # The name of the Elasticsearch cluster Optimize should connect with.
-    clusterName: elasticsearch
     # a list of Elasticsearch nodes Optimize can connect to. If you  have built
     # an Elasticsearch cluster with several nodes it is recommended to define
     # several connection points in case one node fails.

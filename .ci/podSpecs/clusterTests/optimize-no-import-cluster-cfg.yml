@@ -44,7 +44,6 @@ data:
 
     es:
       connection:
-        clusterName: elasticsearch
         nodes:
         - host: 'elasticsearch.cluster-optimize'
           httpPort: 9200

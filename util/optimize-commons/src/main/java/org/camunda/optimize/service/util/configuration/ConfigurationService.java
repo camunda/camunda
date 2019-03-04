@@ -32,13 +32,17 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.cutTrailingSlash;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
@@ -56,6 +60,7 @@ public class ConfigurationService {
   private static final String[] DEFAULT_CONFIG_LOCATIONS = {"service-config.yaml", "environment-config.yaml"};
   private static final String[] DEFAULT_DEPRECATED_CONFIG_LOCATIONS = {"deprecated-config.yaml"};
   private static final String ERROR_NO_ENGINE_WITH_ALIAS = "No Engine configured with alias ";
+  private static final Pattern VARIABLE_PLACEHOLDER_PATTERN = Pattern.compile("\\$\\{([a-zA-Z_]+[a-zA-Z0-9_]*)\\}");
 
   private ReadContext configJsonContext;
   private Map<String, String> deprecatedConfigKeys;
@@ -86,11 +91,9 @@ public class ConfigurationService {
   private List<String> elasticsearchSecuritySSLCertificateAuthorities;
 
   // elasticsearch cluster settings
-  private String elasticSearchClusterName;
   private Integer esNumberOfReplicas;
   private Integer esNumberOfShards;
   private String esRefreshInterval;
-  private Long samplerInterval;
 
   // job executor settings
   private Integer elasticsearchJobExecutorQueueSize;
@@ -206,7 +209,7 @@ public class ConfigurationService {
         "Deprecated setting used with key {}, please checkout the updated documentation {}",
         keyAndUrl.getKey(), keyAndUrl.getValue()
       ))
-      .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+      .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
 
     if (!usedDeprecationKeysWithNewDocumentationPath.isEmpty()) {
       throw new OptimizeConfigurationException(
@@ -267,12 +270,60 @@ public class ConfigurationService {
         merge(resultNode, yamlMapper.readTree(inputStream));
       }
 
+      // resolve environment placeholders
+      final Map configMap = resolveVariablePlaceholders(
+        yamlMapper.convertValue(resultNode, HashMap.class)
+      );
+
       //prepare to work with JSON Path
-      return Optional.of(JsonPath.parse(yamlMapper.convertValue(resultNode, HashMap.class)));
+      return Optional.of(JsonPath.parse(configMap));
     } catch (IOException e) {
       logger.error("error reading configuration", e);
       return Optional.empty();
     }
+  }
+
+  private Map<String, Object> resolveVariablePlaceholders(final Map<String, Object> configMap) {
+    return configMap.entrySet().stream()
+      .map(entry -> {
+        final Object newValue = resolveVariablePlaceholders(entry.getValue());
+        entry.setValue(newValue);
+        return entry;
+      })
+      .collect(LinkedHashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()), HashMap::putAll);
+  }
+
+  private Object resolveVariablePlaceholders(final Object value) {
+    Object newValue = value;
+    if (value instanceof Map) {
+      newValue = resolveVariablePlaceholders((Map<String, Object>) value);
+    } else if (value instanceof List) {
+      final List<Object> values = ((List<Object>) value);
+      if (values.size() > 0) {
+        newValue = values.stream().map(this::resolveVariablePlaceholders)
+          .collect(Collectors.toList());
+      }
+    } else if (value instanceof String) {
+      newValue = resolveVariablePlaceholders((String) value);
+    }
+    return newValue;
+  }
+
+  private String resolveVariablePlaceholders(final String value) {
+    String resolvedValue = value;
+    final Matcher matcher = VARIABLE_PLACEHOLDER_PATTERN.matcher(value);
+    while (matcher.find()) {
+      final String envVariableName = matcher.group(1);
+      final String envVariableValue = Optional.ofNullable(System.getProperty(envVariableName, null))
+        .orElseGet(() -> System.getenv(envVariableName));
+      if (envVariableValue == null) {
+        throw new OptimizeConfigurationException(
+          "Could not resolve system/environment variable used in configuration " + envVariableName
+        );
+      }
+      resolvedValue = value.replace(matcher.group(), envVariableValue);
+    }
+    return resolvedValue;
   }
 
   private YAMLMapper configureConfigMapper() {
@@ -332,7 +383,7 @@ public class ConfigurationService {
   @JsonIgnore
   public Integer getTokenLifeTimeMinutes() {
     if (tokenLifeTime == null) {
-      tokenLifeTime = configJsonContext.read(ConfigurationServiceConstants.TOKEN_LIFE_TIME);
+      tokenLifeTime = configJsonContext.read(ConfigurationServiceConstants.TOKEN_LIFE_TIME, Integer.class);
     }
     return tokenLifeTime;
   }
@@ -341,20 +392,13 @@ public class ConfigurationService {
     if (elasticsearchConnectionNodes == null) {
       // @formatter:off
       TypeRef<List<ElasticsearchConnectionNodeConfiguration>> typeRef =
-        new TypeRef<List<ElasticsearchConnectionNodeConfiguration>>() {
-        };
+        new TypeRef<List<ElasticsearchConnectionNodeConfiguration>>() {};
       // @formatter:on
-      elasticsearchConnectionNodes =
-        configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_CONNECTION_NODES, typeRef);
+      elasticsearchConnectionNodes = configJsonContext.read(
+        ConfigurationServiceConstants.ELASTIC_SEARCH_CONNECTION_NODES, typeRef
+      );
     }
     return elasticsearchConnectionNodes;
-  }
-
-  public String getElasticSearchClusterName() {
-    if (elasticSearchClusterName == null) {
-      elasticSearchClusterName = configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_CLUSTER_NAME);
-    }
-    return elasticSearchClusterName;
   }
 
   public List<String> getDecisionOutputImportPluginBasePackages() {
@@ -411,8 +455,9 @@ public class ConfigurationService {
 
   public int getImportIndexAutoStorageIntervalInSec() {
     if (importIndexAutoStorageIntervalInSec == null) {
-      importIndexAutoStorageIntervalInSec =
-        configJsonContext.read(ConfigurationServiceConstants.IMPORT_INDEX_AUTO_STORAGE_INTERVAL, Integer.class);
+      importIndexAutoStorageIntervalInSec = configJsonContext.read(
+        ConfigurationServiceConstants.IMPORT_INDEX_AUTO_STORAGE_INTERVAL, Integer.class
+      );
     }
     return importIndexAutoStorageIntervalInSec;
   }
@@ -434,8 +479,7 @@ public class ConfigurationService {
   public int getElasticsearchJobExecutorQueueSize() {
     if (elasticsearchJobExecutorQueueSize == null) {
       elasticsearchJobExecutorQueueSize = configJsonContext.read(
-        ConfigurationServiceConstants.ELASTICSEARCH_MAX_JOB_QUEUE_SIZE,
-        Integer.class
+        ConfigurationServiceConstants.ELASTICSEARCH_MAX_JOB_QUEUE_SIZE, Integer.class
       );
     }
     return elasticsearchJobExecutorQueueSize;
@@ -444,8 +488,7 @@ public class ConfigurationService {
   public int getElasticsearchJobExecutorThreadCount() {
     if (elasticsearchJobExecutorThreadCount == null) {
       elasticsearchJobExecutorThreadCount = configJsonContext.read(
-        ConfigurationServiceConstants.ELASTICSEARCH_IMPORT_EXECUTOR_THREAD_COUNT,
-        Integer.class
+        ConfigurationServiceConstants.ELASTICSEARCH_IMPORT_EXECUTOR_THREAD_COUNT, Integer.class
       );
     }
     return elasticsearchJobExecutorThreadCount;
@@ -454,8 +497,7 @@ public class ConfigurationService {
   public int getElasticsearchScrollTimeout() {
     if (elasticsearchScrollTimeout == null) {
       elasticsearchScrollTimeout = configJsonContext.read(
-        ConfigurationServiceConstants.ELASTIC_SEARCH_SCROLL_TIMEOUT,
-        Integer.class
+        ConfigurationServiceConstants.ELASTIC_SEARCH_SCROLL_TIMEOUT, Integer.class
       );
     }
     return elasticsearchScrollTimeout;
@@ -464,8 +506,7 @@ public class ConfigurationService {
   public int getElasticsearchConnectionTimeout() {
     if (elasticsearchConnectionTimeout == null) {
       elasticsearchConnectionTimeout = configJsonContext.read(
-        ConfigurationServiceConstants.ELASTIC_SEARCH_CONNECTION_TIMEOUT,
-        Integer.class
+        ConfigurationServiceConstants.ELASTIC_SEARCH_CONNECTION_TIMEOUT, Integer.class
       );
     }
     return elasticsearchConnectionTimeout;
@@ -474,8 +515,7 @@ public class ConfigurationService {
   public int getEngineConnectTimeout() {
     if (engineConnectTimeout == null) {
       engineConnectTimeout = configJsonContext.read(
-        ConfigurationServiceConstants.ENGINE_CONNECT_TIMEOUT,
-        Integer.class
+        ConfigurationServiceConstants.ENGINE_CONNECT_TIMEOUT, Integer.class
       );
     }
     return engineConnectTimeout;
@@ -491,8 +531,7 @@ public class ConfigurationService {
   public int getCurrentTimeBackoffMilliseconds() {
     if (currentTimeBackoffMilliseconds == null) {
       currentTimeBackoffMilliseconds = configJsonContext.read(
-        ConfigurationServiceConstants.IMPORT_CURRENT_TIME_BACKOFF_MILLISECONDS,
-        Integer.class
+        ConfigurationServiceConstants.IMPORT_CURRENT_TIME_BACKOFF_MILLISECONDS, Integer.class
       );
     }
     return currentTimeBackoffMilliseconds;
@@ -500,8 +539,9 @@ public class ConfigurationService {
 
   public int getEngineImportProcessInstanceMaxPageSize() {
     if (engineImportProcessInstanceMaxPageSize == null) {
-      engineImportProcessInstanceMaxPageSize =
-        configJsonContext.read(ConfigurationServiceConstants.ENGINE_IMPORT_PROCESS_INSTANCE_MAX_PAGE_SIZE);
+      engineImportProcessInstanceMaxPageSize = configJsonContext.read(
+        ConfigurationServiceConstants.ENGINE_IMPORT_PROCESS_INSTANCE_MAX_PAGE_SIZE, Integer.class
+      );
     }
     ensureGreaterThanZero(engineImportProcessInstanceMaxPageSize);
     return engineImportProcessInstanceMaxPageSize;
@@ -509,8 +549,9 @@ public class ConfigurationService {
 
   public int getEngineImportVariableInstanceMaxPageSize() {
     if (engineImportVariableInstanceMaxPageSize == null) {
-      engineImportVariableInstanceMaxPageSize =
-        configJsonContext.read(ConfigurationServiceConstants.ENGINE_IMPORT_VARIABLE_INSTANCE_MAX_PAGE_SIZE);
+      engineImportVariableInstanceMaxPageSize = configJsonContext.read(
+        ConfigurationServiceConstants.ENGINE_IMPORT_VARIABLE_INSTANCE_MAX_PAGE_SIZE, Integer.class
+      );
     }
     ensureGreaterThanZero(engineImportVariableInstanceMaxPageSize);
     return engineImportVariableInstanceMaxPageSize;
@@ -525,22 +566,23 @@ public class ConfigurationService {
 
   public int getEsNumberOfReplicas() {
     if (esNumberOfReplicas == null) {
-      esNumberOfReplicas = configJsonContext.read(ConfigurationServiceConstants.ES_NUMBER_OF_REPLICAS);
+      esNumberOfReplicas = configJsonContext.read(ConfigurationServiceConstants.ES_NUMBER_OF_REPLICAS, Integer.class);
     }
     return esNumberOfReplicas;
   }
 
   public int getEsNumberOfShards() {
     if (esNumberOfShards == null) {
-      esNumberOfShards = configJsonContext.read(ConfigurationServiceConstants.ES_NUMBER_OF_SHARDS);
+      esNumberOfShards = configJsonContext.read(ConfigurationServiceConstants.ES_NUMBER_OF_SHARDS, Integer.class);
     }
     return esNumberOfShards;
   }
 
   public int getEngineImportProcessDefinitionXmlMaxPageSize() {
     if (engineImportProcessDefinitionXmlMaxPageSize == null) {
-      engineImportProcessDefinitionXmlMaxPageSize =
-        configJsonContext.read(ConfigurationServiceConstants.ENGINE_IMPORT_PROCESS_DEFINITION_XML_MAX_PAGE_SIZE);
+      engineImportProcessDefinitionXmlMaxPageSize = configJsonContext.read(
+        ConfigurationServiceConstants.ENGINE_IMPORT_PROCESS_DEFINITION_XML_MAX_PAGE_SIZE, Integer.class
+      );
     }
     return engineImportProcessDefinitionXmlMaxPageSize;
   }
@@ -556,7 +598,7 @@ public class ConfigurationService {
 
   public Boolean getSharingEnabled() {
     if (sharingEnabled == null) {
-      sharingEnabled = configJsonContext.read(ConfigurationServiceConstants.SHARING_ENABLED);
+      sharingEnabled = configJsonContext.read(ConfigurationServiceConstants.SHARING_ENABLED, Boolean.class);
     }
     return sharingEnabled;
   }
@@ -572,16 +614,18 @@ public class ConfigurationService {
 
   public int getEngineImportDecisionDefinitionXmlMaxPageSize() {
     if (engineImportDecisionDefinitionXmlMaxPageSize == null) {
-      engineImportDecisionDefinitionXmlMaxPageSize =
-        configJsonContext.read(ConfigurationServiceConstants.ENGINE_IMPORT_DECISION_DEFINITION_XML_MAX_PAGE_SIZE);
+      engineImportDecisionDefinitionXmlMaxPageSize = configJsonContext.read(
+        ConfigurationServiceConstants.ENGINE_IMPORT_DECISION_DEFINITION_XML_MAX_PAGE_SIZE, Integer.class
+      );
     }
     return engineImportDecisionDefinitionXmlMaxPageSize;
   }
 
   public int getEngineImportDecisionInstanceMaxPageSize() {
     if (engineImportDecisionInstanceMaxPageSize == null) {
-      engineImportDecisionInstanceMaxPageSize =
-        configJsonContext.read(ConfigurationServiceConstants.ENGINE_IMPORT_DECISION_INSTANCE_MAX_PAGE_SIZE);
+      engineImportDecisionInstanceMaxPageSize = configJsonContext.read(
+        ConfigurationServiceConstants.ENGINE_IMPORT_DECISION_INSTANCE_MAX_PAGE_SIZE, Integer.class
+      );
     }
     ensureGreaterThanZero(engineImportDecisionInstanceMaxPageSize);
     return engineImportDecisionInstanceMaxPageSize;
@@ -590,8 +634,7 @@ public class ConfigurationService {
   public int getEngineImportActivityInstanceMaxPageSize() {
     if (engineImportActivityInstanceMaxPageSize == null) {
       engineImportActivityInstanceMaxPageSize = configJsonContext.read(
-        ConfigurationServiceConstants.ENGINE_IMPORT_ACTIVITY_INSTANCE_MAX_PAGE_SIZE,
-        Integer.class
+        ConfigurationServiceConstants.ENGINE_IMPORT_ACTIVITY_INSTANCE_MAX_PAGE_SIZE, Integer.class
       );
     }
     ensureGreaterThanZero(engineImportActivityInstanceMaxPageSize);
@@ -601,8 +644,7 @@ public class ConfigurationService {
   public int getEngineImportUserTaskInstanceMaxPageSize() {
     if (engineImportUserTaskInstanceMaxPageSize == null) {
       engineImportUserTaskInstanceMaxPageSize = configJsonContext.read(
-        ConfigurationServiceConstants.ENGINE_IMPORT_USER_TASK_INSTANCE_MAX_PAGE_SIZE,
-        Integer.class
+        ConfigurationServiceConstants.ENGINE_IMPORT_USER_TASK_INSTANCE_MAX_PAGE_SIZE, Integer.class
       );
     }
     ensureGreaterThanZero(engineImportUserTaskInstanceMaxPageSize);
@@ -612,27 +654,20 @@ public class ConfigurationService {
   public int getEngineImportUserOperationLogEntryMaxPageSize() {
     if (engineImportUserOperationLogEntryMaxPageSize == null) {
       engineImportUserOperationLogEntryMaxPageSize = configJsonContext.read(
-        ConfigurationServiceConstants.ENGINE_IMPORT_USER_OPERATION_LOG_ENTRY_MAX_PAGE_SIZE,
-        Integer.class
+        ConfigurationServiceConstants.ENGINE_IMPORT_USER_OPERATION_LOG_ENTRY_MAX_PAGE_SIZE, Integer.class
       );
     }
     ensureGreaterThanZero(engineImportUserOperationLogEntryMaxPageSize);
     return engineImportUserOperationLogEntryMaxPageSize;
   }
 
-  public long getSamplerInterval() {
-    if (samplerInterval == null) {
-      samplerInterval = configJsonContext.read(ConfigurationServiceConstants.SAMPLER_INTERVAL, Long.class);
-    }
-    return samplerInterval;
-  }
-
   public List<String> getVariableImportPluginBasePackages() {
     if (variableImportPluginBasePackages == null) {
       TypeRef<List<String>> typeRef = new TypeRef<List<String>>() {
       };
-      variableImportPluginBasePackages =
-        configJsonContext.read(ConfigurationServiceConstants.VARIABLE_IMPORT_PLUGIN_BASE_PACKAGES, typeRef);
+      variableImportPluginBasePackages = configJsonContext.read(
+        ConfigurationServiceConstants.VARIABLE_IMPORT_PLUGIN_BASE_PACKAGES, typeRef
+      );
     }
     return variableImportPluginBasePackages;
   }
@@ -641,8 +676,9 @@ public class ConfigurationService {
     if (engineRestFilterPluginBasePackages == null) {
       TypeRef<List<String>> typeRef = new TypeRef<List<String>>() {
       };
-      engineRestFilterPluginBasePackages =
-        configJsonContext.read(ConfigurationServiceConstants.ENGINE_REST_FILTER_PLUGIN_BASE_PACKAGES, typeRef);
+      engineRestFilterPluginBasePackages = configJsonContext.read(
+        ConfigurationServiceConstants.ENGINE_REST_FILTER_PLUGIN_BASE_PACKAGES, typeRef
+      );
     }
     return engineRestFilterPluginBasePackages;
   }
@@ -651,8 +687,9 @@ public class ConfigurationService {
     if (authenticationExtractorPluginBasePackages == null) {
       TypeRef<List<String>> typeRef = new TypeRef<List<String>>() {
       };
-      authenticationExtractorPluginBasePackages =
-        configJsonContext.read(ConfigurationServiceConstants.AUTHENTICATION_EXTRACTOR_BASE_PACKAGES, typeRef);
+      authenticationExtractorPluginBasePackages = configJsonContext.read(
+        ConfigurationServiceConstants.AUTHENTICATION_EXTRACTOR_BASE_PACKAGES, typeRef
+      );
     }
     return authenticationExtractorPluginBasePackages;
   }
@@ -693,7 +730,9 @@ public class ConfigurationService {
 
   public Integer getContainerHttpsPort() {
     if (containerHttpsPort == null) {
-      containerHttpsPort = configJsonContext.read(ConfigurationServiceConstants.CONTAINER_HTTPS_PORT);
+      containerHttpsPort = configJsonContext.read(
+        ConfigurationServiceConstants.CONTAINER_HTTPS_PORT, Integer.class
+      );
       if (containerHttpsPort == null) {
         throw new OptimizeConfigurationException("Optimize container https port is not allowed to be null!");
       }
@@ -707,8 +746,9 @@ public class ConfigurationService {
     // and need to be checked therefore.
     //noinspection OptionalAssignedToNull
     if (containerHttpPort == null) {
-      containerHttpPort =
-        Optional.ofNullable(configJsonContext.read(ConfigurationServiceConstants.CONTAINER_HTTP_PORT));
+      containerHttpPort = Optional.ofNullable(
+        configJsonContext.read(ConfigurationServiceConstants.CONTAINER_HTTP_PORT, Integer.class)
+      );
     }
     return containerHttpPort;
   }
@@ -720,14 +760,16 @@ public class ConfigurationService {
 
   public int getMaxStatusConnections() {
     if (maxStatusConnections == null) {
-      maxStatusConnections = configJsonContext.read(ConfigurationServiceConstants.CONTAINER_STATUS_MAX_CONNECTIONS);
+      maxStatusConnections = configJsonContext.read(
+        ConfigurationServiceConstants.CONTAINER_STATUS_MAX_CONNECTIONS, Integer.class
+      );
     }
     return maxStatusConnections;
   }
 
   public Boolean getCheckMetadata() {
     if (checkMetadata == null) {
-      checkMetadata = configJsonContext.read(ConfigurationServiceConstants.CHECK_METADATA);
+      checkMetadata = configJsonContext.read(ConfigurationServiceConstants.CHECK_METADATA, Boolean.class);
     }
     return checkMetadata;
   }
@@ -786,8 +828,7 @@ public class ConfigurationService {
     if (quartzProperties == null) {
       quartzProperties = new Properties();
       quartzProperties.put(
-        "org.quartz.jobStore.class",
-        configJsonContext.read(ConfigurationServiceConstants.QUARTZ_JOB_STORE_CLASS)
+        "org.quartz.jobStore.class", configJsonContext.read(ConfigurationServiceConstants.QUARTZ_JOB_STORE_CLASS)
       );
     }
     return quartzProperties;
@@ -809,14 +850,14 @@ public class ConfigurationService {
 
   public boolean getEmailEnabled() {
     if (emailEnabled == null) {
-      emailEnabled = configJsonContext.read(ConfigurationServiceConstants.EMAIL_ENABLED);
+      emailEnabled = configJsonContext.read(ConfigurationServiceConstants.EMAIL_ENABLED, Boolean.class);
     }
     return emailEnabled;
   }
 
   public Boolean getImportDmnDataEnabled() {
     if (importDmnDataEnabled == null) {
-      importDmnDataEnabled = configJsonContext.read(ConfigurationServiceConstants.IMPORT_DMN_DATA);
+      importDmnDataEnabled = configJsonContext.read(ConfigurationServiceConstants.IMPORT_DMN_DATA, Boolean.class);
     }
     return importDmnDataEnabled;
   }
@@ -837,7 +878,7 @@ public class ConfigurationService {
 
   public Integer getAlertEmailPort() {
     if (alertEmailPort == null) {
-      alertEmailPort = configJsonContext.read(ConfigurationServiceConstants.EMAIL_PORT);
+      alertEmailPort = configJsonContext.read(ConfigurationServiceConstants.EMAIL_PORT, Integer.class);
     }
     return alertEmailPort;
   }
@@ -851,14 +892,14 @@ public class ConfigurationService {
 
   public Integer getExportCsvLimit() {
     if (exportCsvLimit == null) {
-      exportCsvLimit = configJsonContext.read(ConfigurationServiceConstants.EXPORT_CSV_LIMIT);
+      exportCsvLimit = configJsonContext.read(ConfigurationServiceConstants.EXPORT_CSV_LIMIT, Integer.class);
     }
     return exportCsvLimit;
   }
 
   public Integer getExportCsvOffset() {
     if (exportCsvOffset == null) {
-      exportCsvOffset = configJsonContext.read(ConfigurationServiceConstants.EXPORT_CSV_OFFSET);
+      exportCsvOffset = configJsonContext.read(ConfigurationServiceConstants.EXPORT_CSV_OFFSET, Integer.class);
     }
     return exportCsvOffset;
   }
@@ -882,15 +923,16 @@ public class ConfigurationService {
   public Boolean getElasticsearchSecuritySSLEnabled() {
     if (elasticsearchSecuritySSLEnabled == null) {
       elasticsearchSecuritySSLEnabled =
-        configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_ENABLED);
+        configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_ENABLED, Boolean.class);
     }
     return elasticsearchSecuritySSLEnabled;
   }
 
   public String getElasticsearchSecuritySSLCertificate() {
     if (elasticsearchSecuritySSLCertificate == null && getElasticsearchSecuritySSLEnabled()) {
-      elasticsearchSecuritySSLCertificate = configJsonContext
-        .read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE);
+      elasticsearchSecuritySSLCertificate = configJsonContext.read(
+        ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE
+      );
       if (elasticsearchSecuritySSLCertificate != null) {
         elasticsearchSecuritySSLCertificate = resolvePathAsAbsoluteUrl(elasticsearchSecuritySSLCertificate).getPath();
       }
@@ -924,10 +966,6 @@ public class ConfigurationService {
     return cleanupServiceConfiguration;
   }
 
-  public void setMaxStatusConnections(Integer maxStatusConnections) {
-    this.maxStatusConnections = maxStatusConnections;
-  }
-
   public void setExportCsvLimit(Integer exportCsvLimit) {
     this.exportCsvLimit = exportCsvLimit;
   }
@@ -952,76 +990,8 @@ public class ConfigurationService {
     this.configuredEngines = configuredEngines;
   }
 
-  public static String getEnginesField() {
-    return ENGINES_FIELD;
-  }
-
-  public static String getEngineRestPath() {
-    return ENGINE_REST_PATH;
-  }
-
   public void setSharingEnabled(Boolean sharingEnabled) {
     this.sharingEnabled = sharingEnabled;
-  }
-
-  public void setConfigJsonContext(ReadContext configJsonContext) {
-    this.configJsonContext = configJsonContext;
-  }
-
-  public void setTokenLifeTime(Integer tokenLifeTime) {
-    this.tokenLifeTime = tokenLifeTime;
-  }
-
-  public void setElasticSearchClusterName(String elasticSearchClusterName) {
-    this.elasticSearchClusterName = elasticSearchClusterName;
-  }
-
-  public void setUserValidationEndpoint(String userValidationEndpoint) {
-    this.userValidationEndpoint = userValidationEndpoint;
-  }
-
-  public void setProcessDefinitionEndpoint(String processDefinitionEndpoint) {
-    this.processDefinitionEndpoint = processDefinitionEndpoint;
-  }
-
-  public void setImportIndexAutoStorageIntervalInSec(Integer importIndexAutoStorageIntervalInSec) {
-    this.importIndexAutoStorageIntervalInSec = importIndexAutoStorageIntervalInSec;
-  }
-
-  public void setEngineDateFormat(String engineDateFormat) {
-    this.engineDateFormat = engineDateFormat;
-  }
-
-  public void setInitialBackoff(Long initialBackoff) {
-    this.initialBackoff = initialBackoff;
-  }
-
-  public void setMaximumBackoff(Long maximumBackoff) {
-    this.maximumBackoff = maximumBackoff;
-  }
-
-  public void setElasticsearchJobExecutorQueueSize(Integer elasticsearchJobExecutorQueueSize) {
-    this.elasticsearchJobExecutorQueueSize = elasticsearchJobExecutorQueueSize;
-  }
-
-  public void setElasticsearchJobExecutorThreadCount(Integer elasticsearchJobExecutorThreadCount) {
-    this.elasticsearchJobExecutorThreadCount = elasticsearchJobExecutorThreadCount;
-  }
-
-  public void setElasticsearchScrollTimeout(Integer elasticsearchScrollTimeout) {
-    this.elasticsearchScrollTimeout = elasticsearchScrollTimeout;
-  }
-
-  public void setElasticsearchConnectionTimeout(Integer elasticsearchConnectionTimeout) {
-    this.elasticsearchConnectionTimeout = elasticsearchConnectionTimeout;
-  }
-
-  public void setEngineConnectTimeout(Integer engineConnectTimeout) {
-    this.engineConnectTimeout = engineConnectTimeout;
-  }
-
-  public void setEngineReadTimeout(Integer engineReadTimeout) {
-    this.engineReadTimeout = engineReadTimeout;
   }
 
   public void setCurrentTimeBackoffMilliseconds(Integer currentTimeBackoffMilliseconds) {
@@ -1048,48 +1018,12 @@ public class ConfigurationService {
     this.engineImportUserTaskInstanceMaxPageSize = engineImportUserTaskInstanceMaxPageSize;
   }
 
-  public void setEsRefreshInterval(String esRefreshInterval) {
-    this.esRefreshInterval = esRefreshInterval;
-  }
-
-  public void setEsNumberOfReplicas(Integer esNumberOfReplicas) {
-    this.esNumberOfReplicas = esNumberOfReplicas;
-  }
-
-  public void setEsNumberOfShards(Integer esNumberOfShards) {
-    this.esNumberOfShards = esNumberOfShards;
-  }
-
   public void setEngineImportProcessDefinitionXmlMaxPageSize(Integer engineImportProcessDefinitionXmlMaxPageSize) {
     this.engineImportProcessDefinitionXmlMaxPageSize = engineImportProcessDefinitionXmlMaxPageSize;
   }
 
   public void setEngineImportDecisionDefinitionXmlMaxPageSize(Integer engineImportDecisionDefinitionXmlMaxPageSize) {
     this.engineImportDecisionDefinitionXmlMaxPageSize = engineImportDecisionDefinitionXmlMaxPageSize;
-  }
-
-  public void setProcessDefinitionXmlEndpoint(String processDefinitionXmlEndpoint) {
-    this.processDefinitionXmlEndpoint = processDefinitionXmlEndpoint;
-  }
-
-  public void setSamplerInterval(Long samplerInterval) {
-    this.samplerInterval = samplerInterval;
-  }
-
-  public void setCleanupServiceConfiguration(OptimizeCleanupConfiguration cleanupServiceConfiguration) {
-    this.cleanupServiceConfiguration = cleanupServiceConfiguration;
-  }
-
-  public void setContainerHost(String containerHost) {
-    this.containerHost = containerHost;
-  }
-
-  public void setContainerKeystorePassword(String containerKeystorePassword) {
-    this.containerKeystorePassword = containerKeystorePassword;
-  }
-
-  public void setContainerKeystoreLocation(String containerKeystoreLocation) {
-    this.containerKeystoreLocation = containerKeystoreLocation;
   }
 
   public void setDecisionInputImportPluginBasePackages(List<String> decisionInputImportPluginBasePackages) {
@@ -1135,33 +1069,6 @@ public class ConfigurationService {
   public void setAlertEmailProtocol(String alertEmailProtocol) {
     this.alertEmailProtocol = alertEmailProtocol;
   }
-
-  public void setElasticsearchSecurityUsername(String elasticsearchSecurityUsername) {
-    this.elasticsearchSecurityUsername = elasticsearchSecurityUsername;
-  }
-
-  public void setElasticsearchSecurityPassword(String elasticsearchSecurityPassword) {
-    this.elasticsearchSecurityPassword = elasticsearchSecurityPassword;
-  }
-
-  public void setElasticsearchSecuritySSLEnabled(Boolean elasticsearchSecuritySSLEnabled) {
-    this.elasticsearchSecuritySSLEnabled = elasticsearchSecuritySSLEnabled;
-  }
-
-  public void setElasticsearchSecuritySSLCertificate(String elasticsearchSecuritySSLCertificate) {
-    this.elasticsearchSecuritySSLCertificate = elasticsearchSecuritySSLCertificate;
-  }
-
-  public void setElasticsearchSecuritySSLCertificateAuthorities(List<String>
-                                                                  elasticsearchSecuritySSLCertificateAuthorities) {
-    this.elasticsearchSecuritySSLCertificateAuthorities = elasticsearchSecuritySSLCertificateAuthorities;
-  }
-
-  public void setElasticsearchConnectionNodes(List<ElasticsearchConnectionNodeConfiguration>
-                                                elasticsearchConnectionNodes) {
-    this.elasticsearchConnectionNodes = elasticsearchConnectionNodes;
-  }
-
 
   public void setImportDmnDataEnabled(Boolean importDmnDataEnabled) {
     this.importDmnDataEnabled = importDmnDataEnabled;

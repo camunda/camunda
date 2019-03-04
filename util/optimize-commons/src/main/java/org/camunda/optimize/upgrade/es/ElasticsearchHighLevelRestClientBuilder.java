@@ -44,7 +44,7 @@ public class ElasticsearchHighLevelRestClientBuilder {
       buildElasticsearchConnectionNodes(configurationService, protocol))
       .setRequestConfigCallback(
         requestConfigBuilder -> requestConfigBuilder
-          .setConnectTimeout(5000)
+          .setConnectTimeout(configurationService.getElasticsearchConnectionTimeout())
           .setSocketTimeout(0)
       )
       .setMaxRetryTimeoutMillis(Integer.MAX_VALUE);

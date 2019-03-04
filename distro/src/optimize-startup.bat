@@ -30,7 +30,7 @@ IF NOT DEFINED OPTIMIZE_JAVA_OPTS (
 
 :: check if there are custom JVM options set.
 set DEBUG_JAVA_OPTS=
-IF "%1"=="debug" (
+IF "%~1"=="debug" (
 
   set DEBUG_PORT=9999
   set DEBUG_JAVA_OPTS=-Xdebug -agentlib:jdwp=transport=dt_socket,address=%DEBUG_PORT%,server=y,suspend=n
@@ -40,10 +40,20 @@ IF "%1"=="debug" (
 :: plugin directory and the optimize jar
 set OPTIMIZE_CLASSPATH="%BASEDIR%environment;%BASEDIR%plugin\*;%BASEDIR%optimize-backend-${project.version}.jar"
 
+:: forward any java system properties
+set JAVA_SYSTEM_PROPERTIES=
+SETLOCAL ENABLEDELAYEDEXPANSION
+for %%a in (%*) do (
+  SET var=%%~a
+  IF "!var:~0,2!"=="-D" (
+    set JAVA_SYSTEM_PROPERTIES=!JAVA_SYSTEM_PROPERTIES! !var!
+  )
+)
+
 echo.
 echo Starting Camunda Optimize ${project.version}
 echo.
 
 :: start optimize
-set OPTIMIZE_CMD=%JAVA% %OPTIMIZE_JAVA_OPTS% -cp %OPTIMIZE_CLASSPATH% %DEBUG_JAVA_OPTS% -Dfile.encoding=UTF-8 org.camunda.optimize.Main
+set OPTIMIZE_CMD=%JAVA% %OPTIMIZE_JAVA_OPTS% -cp %OPTIMIZE_CLASSPATH% %DEBUG_JAVA_OPTS% %JAVA_SYSTEM_PROPERTIES% -Dfile.encoding=UTF-8 org.camunda.optimize.Main
 call %OPTIMIZE_CMD%

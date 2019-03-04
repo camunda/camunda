@@ -2,22 +2,44 @@ package org.camunda.optimize.service.util.configuration;
 
 import com.jayway.jsonpath.spi.mapper.MappingException;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.contrib.java.lang.system.EnvironmentVariables;
+import org.junit.contrib.java.lang.system.RestoreSystemProperties;
 
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Optional;
 
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 
 public class ConfigurationServiceTest {
 
+  private static final int CUSTOM_AUTH_TOKEN_LIFEMIN = 6;
+  private static final Boolean CUSTOM_FIRST_ENGINE_IMPORT_ENABLED = true;
+  private static final Boolean CUSTOM_SECOND_ENGINE_IMPORT_ENABLED = false;
+  private static final String CUSTOM_FIRST_ES_HOST = "localhost";
+  private static final int CUSTOM_FIRST_ES_PORT = 9201;
+  private static final String CUSTOM_SECOND_ES_HOST = "otherHost";
+  private static final int CUSTOM_SECOND_ES_PORT = 9202;
+  private static final String CUSTOM_AUTH_AUTHORITY_2 = "auth2";
+  private static final String CUSTOM_AUTH_AUTHORITY_3 = "auth3";
+
+  @Rule
+  public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
+
+  @Rule
+  public final RestoreSystemProperties restoreSystemProperties = new RestoreSystemProperties();
+
   @Test
-  public void getSecret() {
+  public void getTokenLifeTimeMinutes() {
     ConfigurationService underTest = new ConfigurationService();
     assertThat(underTest.getTokenLifeTimeMinutes(), is(15));
   }
@@ -80,6 +102,90 @@ public class ConfigurationServiceTest {
     String[] locations = {"config-samples/port/invalid-https-port.yaml"};
     ConfigurationService underTest = new ConfigurationService(locations);
     underTest.getContainerHttpsPort();
+  }
+
+  @Test
+  public void resolvePropertiesFromEnvironmentVariables() {
+    //when
+    final String[] locations = {"service-config.yaml", "environment-variable-test-config.yaml"};
+    environmentVariables.set("AUTH_TOKEN_LIFEMIN", String.valueOf(CUSTOM_AUTH_TOKEN_LIFEMIN));
+    environmentVariables.set("IMPORT_ENABLED_1", String.valueOf(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED));
+    environmentVariables.set("IMPORT_ENABLED_2", String.valueOf(CUSTOM_SECOND_ENGINE_IMPORT_ENABLED));
+    environmentVariables.set("ES_HOST_1", CUSTOM_FIRST_ES_HOST);
+    environmentVariables.set("ES_PORT_1", String.valueOf(CUSTOM_FIRST_ES_PORT));
+    environmentVariables.set("ES_HOST_2", CUSTOM_SECOND_ES_HOST);
+    environmentVariables.set("ES_PORT_2", String.valueOf(CUSTOM_SECOND_ES_PORT));
+    environmentVariables.set("CERT_AUTHORITY_2", CUSTOM_AUTH_AUTHORITY_2);
+    environmentVariables.set("CERT_AUTHORITY_3", CUSTOM_AUTH_AUTHORITY_3);
+    final ConfigurationService underTest = new ConfigurationService(locations);
+
+    // then
+    assertThatVariablePlaceHoldersAreResolvedCorrectly(underTest);
+  }
+
+  @Test
+  public void resolvePropertiesFromSystemVariables() {
+    //when
+    final String[] locations = {"service-config.yaml", "environment-variable-test-config.yaml"};
+    System.setProperty("AUTH_TOKEN_LIFEMIN", String.valueOf(CUSTOM_AUTH_TOKEN_LIFEMIN));
+    System.setProperty("IMPORT_ENABLED_1", String.valueOf(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED));
+    System.setProperty("IMPORT_ENABLED_2", String.valueOf(CUSTOM_SECOND_ENGINE_IMPORT_ENABLED));
+    System.setProperty("ES_HOST_1", CUSTOM_FIRST_ES_HOST);
+    System.setProperty("ES_PORT_1", String.valueOf(CUSTOM_FIRST_ES_PORT));
+    System.setProperty("ES_HOST_2", CUSTOM_SECOND_ES_HOST);
+    System.setProperty("ES_PORT_2", String.valueOf(CUSTOM_SECOND_ES_PORT));
+    System.setProperty("CERT_AUTHORITY_2", CUSTOM_AUTH_AUTHORITY_2);
+    System.setProperty("CERT_AUTHORITY_3", CUSTOM_AUTH_AUTHORITY_3);
+    final ConfigurationService underTest = new ConfigurationService(locations);
+
+    // then
+    assertThatVariablePlaceHoldersAreResolvedCorrectly(underTest);
+  }
+
+  @Test
+  public void resolvePropertiesFromSystemVariablesWinOverEnvironmentVariables() {
+    //when
+    final String[] locations = {"service-config.yaml", "environment-variable-test-config.yaml"};
+    environmentVariables.set("AUTH_TOKEN_LIFEMIN", "wrong");
+    environmentVariables.set("IMPORT_ENABLED_1", "wrong");
+    environmentVariables.set("IMPORT_ENABLED_2", "wrong");
+    environmentVariables.set("ES_HOST_1", "wrong");
+    environmentVariables.set("ES_PORT_1", "wrong");
+    environmentVariables.set("ES_HOST_2", "wrong");
+    environmentVariables.set("ES_PORT_2", "wrong");
+    environmentVariables.set("CERT_AUTHORITY_2", "wrong");
+    environmentVariables.set("CERT_AUTHORITY_3", "wrong");
+    System.setProperty("AUTH_TOKEN_LIFEMIN", String.valueOf(CUSTOM_AUTH_TOKEN_LIFEMIN));
+    System.setProperty("IMPORT_ENABLED_1", String.valueOf(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED));
+    System.setProperty("IMPORT_ENABLED_2", String.valueOf(CUSTOM_SECOND_ENGINE_IMPORT_ENABLED));
+    System.setProperty("ES_HOST_1", CUSTOM_FIRST_ES_HOST);
+    System.setProperty("ES_PORT_1", String.valueOf(CUSTOM_FIRST_ES_PORT));
+    System.setProperty("ES_HOST_2", CUSTOM_SECOND_ES_HOST);
+    System.setProperty("ES_PORT_2", String.valueOf(CUSTOM_SECOND_ES_PORT));
+    System.setProperty("CERT_AUTHORITY_2", CUSTOM_AUTH_AUTHORITY_2);
+    System.setProperty("CERT_AUTHORITY_3", CUSTOM_AUTH_AUTHORITY_3);
+    final ConfigurationService underTest = new ConfigurationService(locations);
+
+    // then
+    assertThatVariablePlaceHoldersAreResolvedCorrectly(underTest);
+  }
+
+  @Test
+  public void failOnMissingSystemOrEnvironmentVariable() {
+    //when
+    final String[] locations = {"service-config.yaml", "environment-variable-test-config.yaml"};
+    OptimizeConfigurationException configurationException = null;
+    try {
+      final ConfigurationService underTest = new ConfigurationService(locations);
+    } catch (OptimizeConfigurationException e) {
+      configurationException = e;
+    }
+    // then
+    assertThat(configurationException, is(notNullValue()));
+    assertThat(
+      configurationException.getMessage(),
+      containsString("Could not resolve system/environment variable")
+    );
   }
 
   @Test
@@ -235,6 +341,28 @@ public class ConfigurationServiceTest {
 
     // then
     assertThat(deprecations.isPresent(), is(false));
+  }
+
+  private void assertThatVariablePlaceHoldersAreResolvedCorrectly(final ConfigurationService underTest) {
+    assertThat(underTest.getTokenLifeTimeMinutes(), is(CUSTOM_AUTH_TOKEN_LIFEMIN));
+    assertThat(
+      underTest.getConfiguredEngines().values().stream().map(EngineConfiguration::isImportEnabled).collect(toList()),
+      contains(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED, CUSTOM_SECOND_ENGINE_IMPORT_ENABLED)
+    );
+    assertThat(
+      underTest.getElasticsearchConnectionNodes()
+        .stream()
+        .map(ElasticsearchConnectionNodeConfiguration::getHost)
+        .collect(toList()),
+      contains(CUSTOM_FIRST_ES_HOST, CUSTOM_SECOND_ES_HOST)
+    );
+    assertThat(
+      underTest.getElasticsearchConnectionNodes()
+        .stream()
+        .map(ElasticsearchConnectionNodeConfiguration::getHttpPort)
+        .collect(toList()),
+      contains(CUSTOM_FIRST_ES_PORT, CUSTOM_SECOND_ES_PORT)
+    );
   }
 
   private Map<String, String> validateForAndReturnDeprecationsFailIfNone(ConfigurationService underTest) {

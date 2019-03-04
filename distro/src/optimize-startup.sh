@@ -43,4 +43,13 @@ fi
 # plugin directory and the optimize jar
 OPTIMIZE_CLASSPATH=$BASEDIR/environment:$BASEDIR/plugin/*:$BASEDIR/optimize-backend-${project.version}.jar
 
-exec $JAVA ${OPTIMIZE_JAVA_OPTS} -cp $OPTIMIZE_CLASSPATH ${DEBUG_JAVA_OPTS} -Dfile.encoding=UTF-8 org.camunda.optimize.Main
+# forward any set java properties
+for argument in "$@"
+do
+    if [[ "$argument" =~ ^-D.* ]]
+    then
+        JAVA_SYSTEM_PROPERTIES="$JAVA_SYSTEM_PROPERTIES $argument"
+    fi
+done
+
+exec $JAVA ${OPTIMIZE_JAVA_OPTS} -cp $OPTIMIZE_CLASSPATH ${DEBUG_JAVA_OPTS} ${JAVA_SYSTEM_PROPERTIES} -Dfile.encoding=UTF-8 org.camunda.optimize.Main

@@ -22,7 +22,6 @@ engines:
 
 es:
   connection:
-    clusterName: elasticsearch
     nodes:
       - host: 'elasticsearch'
         httpPort: 9200
