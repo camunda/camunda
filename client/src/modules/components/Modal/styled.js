@@ -88,6 +88,10 @@ export const CrossButton = themed(styled.button`
     })};
     opacity: 1;
   }
+
+  &:focus {
+    opacity: 1;
+  }
 `);
 
 export const CrossIcon = themed(styled(CloseLarge)`
