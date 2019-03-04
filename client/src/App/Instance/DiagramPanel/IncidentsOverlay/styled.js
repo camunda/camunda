@@ -8,8 +8,8 @@ import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 import {INCIDENTS_BAR_HEIGHT} from 'modules/constants';
 
-import Dark from './Dark.svg';
-import Light from './Light.svg';
+import BgDark from './bg-dark@2x.png';
+import BgLight from './bg-light@2x.png';
 
 export const Overlay = themed(styled.div`
   width: 100%;
@@ -24,8 +24,8 @@ export const Overlay = themed(styled.div`
   right: 0;
 
   background-image: ${themeStyle({
-    dark: `url(${Dark})`,
-    light: `url(${Light})`
+    dark: `url(${BgDark})`,
+    light: `url(${BgLight})`
   })};
   background-repeat: repeat-y;
   background-position: fixed;
@@ -33,4 +33,5 @@ export const Overlay = themed(styled.div`
     dark: Colors.uiDark02,
     light: Colors.uiLight04
   })};
+  background-size: 51px;
 `);
