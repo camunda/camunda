@@ -17,17 +17,6 @@ exports[`Actions should match snapshots 1`] = `
         "bpmnProcessId": "someKey",
         "endDate": null,
         "id": "id_1",
-        "incidents": Array [
-          Object {
-            "activityId": Object {},
-            "activityInstanceId": Object {},
-            "errorMessage": "",
-            "errorType": "",
-            "id": "id_2",
-            "jobId": "jobId_0",
-            "state": "ACTIVE",
-          },
-        ],
         "operations": Array [
           Object {
             "endDate": "2018-10-10T09:20:38.661Z",
@@ -61,25 +50,14 @@ exports[`Actions should match snapshots 2`] = `
           Object {
             "activityId": "activityId_1",
             "endDate": "2018-10-10T09:20:38.658Z",
-            "id": "id_3",
+            "id": "id_2",
             "startDate": "2018-10-10T09:20:38.658Z",
             "state": "ACTIVE",
           },
         ],
         "bpmnProcessId": "someKey",
         "endDate": null,
-        "id": "id_4",
-        "incidents": Array [
-          Object {
-            "activityId": Object {},
-            "activityInstanceId": Object {},
-            "errorMessage": "",
-            "errorType": "",
-            "id": "id_5",
-            "jobId": "jobId_1",
-            "state": "ACTIVE",
-          },
-        ],
+        "id": "id_3",
         "operations": Array [
           Object {
             "endDate": "2018-10-10T09:20:38.661Z",

@@ -9,8 +9,7 @@ import {wrapIdinQuery, isWithIncident, isRunning} from './service';
 
 const mockIncidentInstance = {
   id: '8590375632-2',
-  state: 'INCIDENT',
-  incidents: [{state: 'ACTIVE'}]
+  state: 'INCIDENT'
 };
 
 const mockActiveInstance = {

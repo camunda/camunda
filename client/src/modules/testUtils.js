@@ -157,7 +157,6 @@ export const createInstance = (options = {}) => {
     bpmnProcessId: 'someKey',
     endDate: null,
     id: randomIdIterator.next().value,
-    incidents: [createIncident()],
     operations: [createOperation()],
     sequenceFlows: [],
     startDate: '2018-06-21',
