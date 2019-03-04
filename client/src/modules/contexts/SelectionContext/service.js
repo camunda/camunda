@@ -1,3 +1,9 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+
 import {VISIBLE_INSTANCES_IN_SELECTION} from 'modules/constants';
 export function createMapOfInstances(workflowInstances) {
   const transformedInstances = workflowInstances.reduce((acc, instance) => {

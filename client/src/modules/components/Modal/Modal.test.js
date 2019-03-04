@@ -1,3 +1,9 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+
 import React from 'react';
 import {mount} from 'enzyme';
 
@@ -8,7 +14,6 @@ import Modal from './Modal';
 
 const HeaderContent = () => <div>Header Content</div>;
 const BodyContent = () => <div>Body Content</div>;
-const FooterContent = () => <div>Footer Content</div>;
 const onModalClose = jest.fn();
 const primaryButtonClickHandler = jest.fn();
 
