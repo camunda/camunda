@@ -47,7 +47,7 @@ export const FirstTH = themed(styled(TH)`
     content: '';
     position: absolute;
     top: -1px;
-    left: -52px;
+    left: -51px;
     width: 51px;
     height: 100%;
 
@@ -64,7 +64,7 @@ export const FirstTH = themed(styled(TH)`
 
     background-color: ${themeStyle({
       dark: Colors.uiDark03,
-      light: Colors.uiLight04
+      light: Colors.uiLight02
     })};
   }
 
