@@ -61,7 +61,7 @@
     "enzyme": "3.7.0",
     "enzyme-adapter-react-16": "1.6.0",
     "eslint-plugin-prettier": "^2.6.0",
-    "http-proxy-middleware": "^0.19.0",
+    "http-proxy-middleware": "^0.19.1",
     "husky": "^0.14.3",
     "jest-enzyme": "^4.0.1",
     "jest-junit": "^6.1.0",
