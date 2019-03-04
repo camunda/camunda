@@ -96,6 +96,7 @@ export default class IncidentsTable extends React.Component {
                 <TR key={incident.id}>
                   <TD>
                     <Styled.FirstCell index={index + 1}>
+                      <Styled.Index>{index}</Styled.Index>
                       {incident.errorType}
                     </Styled.FirstCell>
                   </TD>

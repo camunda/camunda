@@ -7,19 +7,22 @@ const {TH} = Table;
 export const FirstCell = styled.div`
   position: relative;
   padding-left: 23px;
+`;
 
-  &:after {
-    content: '-';
-    position: absolute;
-    top: 0;
-    left: -51px;
-    width: 35px;
+export const Index = styled.span`
+  position: absolute;
+  top: 0;
+  left: -54px;
+  width: 35px;
 
-    text-align: right;
+  text-align: right;
 
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.6);
-  }
+  font-size: 11px;
+  opacity: 0.6;
+  color: ${themeStyle({
+    dark: Colors.white,
+    light: Colors.uiLight06
+  })};
 `;
 
 export const ErrorMessageCell = styled.div`
