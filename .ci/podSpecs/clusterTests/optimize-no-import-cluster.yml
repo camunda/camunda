@@ -1,0 +1,65 @@
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: cluster-optimize-no-import-camunda-cloud
+  namespace: cluster-optimize
+spec:
+  selector:
+    matchLabels:
+      app: optimize-no-import
+  serviceName: optimize-no-import
+  podManagementPolicy: Parallel
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: optimize-no-import
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        cloud.google.com/gke-nodepool: slaves
+      volumes:
+        - name: configuration
+          configMap:
+            name: cluster-optimize-no-import-camunda-cloud
+            defaultMode: 0744
+      containers:
+        - name: optimize-no-import
+          image: gcr.io/ci-30-162810/camunda-optimize:latest
+          imagePullPolicy: Always
+          env:
+            - name: JAVA_OPTS
+              value: |
+                -Xmx512m
+                -XX:MaxMetaspaceSize=128m
+          ports:
+            - containerPort: 8090
+              name: optimize-http
+              protocol: TCP
+          tty: true
+          livenessProbe:
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            httpGet:
+              path: /api/meta/version
+              port: optimize-http
+          readinessProbe:
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            httpGet:
+              path: /api/meta/version
+              port: optimize-http
+          resources:
+            limits:
+              cpu: 2
+              memory: 1Gi
+            requests:
+              cpu: 1
+              memory: 1Gi
+          volumeMounts:
+            - name: configuration
+              mountPath: /optimize/environment/environment-config.yaml
+              subPath: environment-config.yaml
+            - name: configuration
+              mountPath: /optimize/environment/OptimizeLicense.txt
+              subPath: OptimizeLicense.txt

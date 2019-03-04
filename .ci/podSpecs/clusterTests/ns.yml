@@ -1,0 +1,6 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: cluster-optimize
+  labels:
+    name: cluster-optimize

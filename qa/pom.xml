@@ -23,6 +23,7 @@
         <module>connect-to-secured-es-tests</module>
         <module>cleanup-performance-tests</module>
         <module>upgrade-optimize-data</module>
+        <module>clustering-tests</module>
     </modules>
 
     <dependencies>
