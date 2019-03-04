@@ -109,7 +109,7 @@ public class LogStreamWriterRule extends ExternalResource {
 
   public void waitForPositionToBeAppended(final long position) {
     TestUtil.waitUntil(
-        () -> logStream.getCommitPosition() > position, // Now only committed events are appended.
+        () -> logStream.getCommitPosition() >= position, // Now only committed events are appended.
         "Failed to wait for position {} to be appended",
         position);
   }

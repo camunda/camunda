@@ -19,6 +19,7 @@ package io.zeebe.broker.clustering.base.raft;
 
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
+import io.zeebe.distributedlog.impl.LogstreamConfig;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
@@ -51,6 +52,11 @@ public class RaftPersistentConfigurationManagerService
         }
       }
     }
+
+    /* A hack so that DistributedLogstream primitive can create logs in this directory */
+    LogstreamConfig.putLogDirectory(
+        String.valueOf(configuration.getCluster().getNodeId()),
+        dataConfiguration.getDirectories().get(0));
 
     service = new RaftPersistentConfigurationManager(configuration.getData());
 

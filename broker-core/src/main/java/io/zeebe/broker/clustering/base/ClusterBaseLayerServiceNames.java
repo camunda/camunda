@@ -41,6 +41,9 @@ public class ClusterBaseLayerServiceNames {
   public static final ServiceName<LeaderElection> LEADERSHIP_SERVICE_GROUP =
       ServiceName.newServiceName("cluster.base.leadership.service", LeaderElection.class);
 
+  public static final ServiceName<Void> DISTRIBUTED_LOG_CREATE_SERVICE =
+      ServiceName.newServiceName("cluster.base.atomix.distributed.log", Void.class);
+
   public static final ServiceName<Gateway> GATEWAY_SERVICE =
       ServiceName.newServiceName("gateway", Gateway.class);
 

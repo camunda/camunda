@@ -15,76 +15,61 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.clustering.base.partitions;
+package io.zeebe.broker.clustering.base.gossip;
 
 import io.atomix.core.Atomix;
-import io.atomix.core.election.LeaderElection;
 import io.atomix.protocols.raft.MultiRaftProtocol;
-import io.zeebe.broker.Loggers;
+import io.zeebe.distributedlog.DistributedLogstream;
+import io.zeebe.distributedlog.DistributedLogstreamBuilder;
+import io.zeebe.distributedlog.DistributedLogstreamType;
+import io.zeebe.distributedlog.impl.DistributedLogstreamConfig;
 import io.zeebe.distributedlog.impl.DistributedLogstreamName;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.concurrent.CompletableFuture;
-import org.slf4j.Logger;
 
-public class PartitionLeaderElection implements Service<LeaderElection> {
-
-  private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
+public class DistributedLogService implements Service<Void> {
 
   private final Injector<Atomix> atomixInjector = new Injector<>();
   private Atomix atomix;
 
-  // TODO: Check if we should use memberId instead of string
-  private LeaderElection<String> election;
+  private final String primitiveName = "distributed-log";
 
   private static final MultiRaftProtocol PROTOCOL =
-      MultiRaftProtocol.builder().withPartitioner(DistributedLogstreamName.getInstance()).build();
-
-  private final int partitionId;
-  private String memberId;
-
-  public PartitionLeaderElection(int partitionId) {
-    this.partitionId = partitionId;
-  }
+      MultiRaftProtocol.builder()
+          // Maps partitionName to partitionId
+          .withPartitioner(DistributedLogstreamName.getInstance())
+          .build();
 
   @Override
   public void start(ServiceStartContext startContext) {
     atomix = atomixInjector.getValue();
-    memberId = atomix.getMembershipService().getLocalMember().id().id();
 
-    LOG.info("Creating leader election for partition {} in node {}", partitionId, memberId);
-
-    final CompletableFuture<LeaderElection<String>> leaderElectionCompletableFuture =
+    final CompletableFuture<DistributedLogstream> distributedLogstreamCompletableFuture =
         atomix
-            .<String>leaderElectionBuilder(DistributedLogstreamName.getPartitionKey(partitionId))
+            .<DistributedLogstreamBuilder, DistributedLogstreamConfig, DistributedLogstream>
+                primitiveBuilder(primitiveName, DistributedLogstreamType.instance())
             .withProtocol(PROTOCOL)
             .buildAsync();
 
-    final CompletableActorFuture startFuture = new CompletableActorFuture();
-    leaderElectionCompletableFuture.thenAccept(
-        e -> {
-          election = e;
-          election.run(memberId);
+    final CompletableActorFuture<Void> startFuture = new CompletableActorFuture<>();
+
+    distributedLogstreamCompletableFuture.thenAccept(
+        log -> {
           startFuture.complete(null);
         });
 
-    startContext.async(startFuture, true);
-  }
-
-  @Override
-  public void stop(ServiceStopContext stopContext) {
-    election.withdraw(memberId);
-  }
-
-  @Override
-  public LeaderElection<String> get() {
-    return election;
+    startContext.async(startFuture);
   }
 
   public Injector<Atomix> getAtomixInjector() {
     return atomixInjector;
+  }
+
+  @Override
+  public Void get() {
+    return null;
   }
 }

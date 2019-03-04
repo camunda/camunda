@@ -20,11 +20,12 @@ import io.atomix.protocols.raft.MultiRaftProtocol;
 import io.zeebe.distributedlog.DistributedLogstream;
 import io.zeebe.distributedlog.DistributedLogstreamBuilder;
 import io.zeebe.distributedlog.DistributedLogstreamType;
-import io.zeebe.distributedlog.LogEventListener;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
-import java.nio.ByteBuffer;
+import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,9 +34,12 @@ public class DistributedLogstreamPartition implements Service<DistributedLogstre
 
   private DistributedLogstream distributedLog;
 
+  private final int partitionId;
   private final String partitionName;
   private final String primitiveName;
   private Atomix atomix;
+  private String memberId;
+  private final long currentLeaderTerm;
   private final Injector<Atomix> atomixInjector = new Injector<>();
 
   private static final MultiRaftProtocol PROTOCOL =
@@ -44,33 +48,53 @@ public class DistributedLogstreamPartition implements Service<DistributedLogstre
           .withPartitioner(DistributedLogstreamName.getInstance())
           .build();
 
-  public DistributedLogstreamPartition(int partitionId) {
-    primitiveName = String.format("log-partition-%d", partitionId);
+  public DistributedLogstreamPartition(int partitionId, long leaderTerm) {
+    this.partitionId = partitionId;
+    this.currentLeaderTerm = leaderTerm;
+    primitiveName = "distributed-log"; // Use same primitive for all partitions.
     partitionName = DistributedLogstreamName.getPartitionKey(partitionId);
   }
 
-  public void append(ByteBuffer blockBuffer, long commitPosition) {
-    distributedLog.append(partitionName, commitPosition, blockBuffer);
+  public long append(byte[] blockBuffer, long commitPosition) {
+    return distributedLog.append(partitionName, memberId, commitPosition, blockBuffer);
   }
 
-  public void addListener(LogEventListener listener) {
-    distributedLog.addListener(partitionName, listener);
-  }
-
-  public void removeListener(LogEventListener listener) {
-    distributedLog.removeListener(partitionName, listener);
+  public CompletableFuture<Boolean> claimLeaderShip() {
+    return distributedLog.async().claimLeaderShip(partitionName, memberId, currentLeaderTerm);
   }
 
   @Override
   public void start(ServiceStartContext startContext) {
     this.atomix = atomixInjector.getValue();
+    this.memberId = atomix.getMembershipService().getLocalMember().id().id();
 
-    distributedLog =
+    final CompletableFuture<DistributedLogstream> distributedLogstreamCompletableFuture =
         atomix
             .<DistributedLogstreamBuilder, DistributedLogstreamConfig, DistributedLogstream>
                 primitiveBuilder(primitiveName, DistributedLogstreamType.instance())
             .withProtocol(PROTOCOL)
-            .build();
+            .buildAsync();
+
+    final CompletableActorFuture<Void> startFuture = new CompletableActorFuture<>();
+
+    distributedLogstreamCompletableFuture
+        .thenApply(
+            log -> {
+              distributedLog = log;
+              return this.claimLeaderShip();
+            })
+        .thenAccept(
+            r -> {
+              LOG.info("Claimed leadership Successfully");
+              startFuture.complete(null);
+            });
+    startContext.async(startFuture);
+  }
+
+  @Override
+  public void stop(ServiceStopContext stopContext) {
+    // Close resources used by the local node. This doesn't delete the state of the primitive.
+    distributedLog.close();
   }
 
   @Override

@@ -21,7 +21,6 @@ import io.zeebe.distributedlog.DistributedLogstreamType;
 
 /* Define any configration parameters needed for the distributed log primitive.*/
 public class DistributedLogstreamConfig extends PrimitiveConfig<DistributedLogstreamConfig> {
-
   @Override
   public PrimitiveType getType() {
     return DistributedLogstreamType.instance();

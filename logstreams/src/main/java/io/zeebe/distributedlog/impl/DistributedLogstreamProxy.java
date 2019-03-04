@@ -21,15 +21,10 @@ import io.atomix.primitive.proxy.ProxyClient;
 import io.atomix.primitive.proxy.ProxySession;
 import io.atomix.utils.concurrent.Futures;
 import io.zeebe.distributedlog.AsyncDistributedLogstream;
-import io.zeebe.distributedlog.CommitLogEvent;
 import io.zeebe.distributedlog.DistributedLogstream;
 import io.zeebe.distributedlog.DistributedLogstreamClient;
 import io.zeebe.distributedlog.DistributedLogstreamService;
-import io.zeebe.distributedlog.LogEventListener;
-import java.nio.ByteBuffer;
 import java.time.Duration;
-import java.util.LinkedHashSet;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,21 +36,23 @@ public class DistributedLogstreamProxy
   private static final Logger LOG = LoggerFactory.getLogger(DistributedLogstreamProxy.class);
   private static final Duration DEFAULT_TIMEOUT = Duration.ofMillis(1000);
 
-  private Set<LogEventListener> eventListeners;
-
   protected DistributedLogstreamProxy(
       ProxyClient<DistributedLogstreamService> client, PrimitiveRegistry registry) {
     super(client, registry);
-    eventListeners = new LinkedHashSet<>();
   }
 
   @Override
-  public CompletableFuture<Void> append(
-      String partition, long commitPosition, ByteBuffer blockBuffer) {
-    final byte[] buffer = new byte[blockBuffer.remaining()];
-    blockBuffer.get(buffer);
+  public CompletableFuture<Long> append(
+      String partition, String nodeId, long commitPosition, byte[] buffer) {
+    return getProxyClient()
+        .applyBy(partition, service -> service.append(nodeId, commitPosition, buffer));
+  }
 
-    return getProxyClient().acceptBy(partition, service -> service.append(commitPosition, buffer));
+  @Override
+  public CompletableFuture<Boolean> claimLeaderShip(
+      String partition, String nodeId, long leaderTerm) {
+    return getProxyClient()
+        .applyBy(partition, service -> service.claimLeaderShip(nodeId, leaderTerm));
   }
 
   @Override
@@ -66,34 +63,6 @@ public class DistributedLogstreamProxy
   @Override
   public DistributedLogstream sync(Duration duration) {
     return new BlockingDistributedLogstream(this, duration.toMillis());
-  }
-
-  @Override
-  public void change(CommitLogEvent event) {
-    eventListeners.forEach(listener -> listener.onCommit(event));
-  }
-
-  @Override
-  public synchronized CompletableFuture<Void> addListener(
-      String partition, LogEventListener listener) {
-    if (eventListeners.isEmpty()) {
-      eventListeners.add(listener);
-      return getProxyClient().acceptBy(partition, service -> service.listen()).thenApply(v -> null);
-    } else {
-      eventListeners.add(listener);
-      return CompletableFuture.completedFuture(null);
-    }
-  }
-
-  @Override
-  public synchronized CompletableFuture<Void> removeListener(
-      String partition, LogEventListener listener) {
-    if (eventListeners.remove(listener) && eventListeners.isEmpty()) {
-      return getProxyClient()
-          .acceptBy(partition, service -> service.unlisten())
-          .thenApply(v -> null);
-    }
-    return CompletableFuture.completedFuture(null);
   }
 
   @Override

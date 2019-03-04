@@ -26,7 +26,7 @@ import io.zeebe.servicecontainer.ServiceStartContext;
 
 /** Service representing a partition. */
 public class Partition implements Service<Partition> {
-  public static final String PARTITION_NAME_FORMAT = "partition-%d";
+  public static final String PARTITION_NAME_FORMAT = "raft-atomix-partition-%d";
 
   public static String getPartitionName(final int partitionId) {
     return String.format(PARTITION_NAME_FORMAT, partitionId);

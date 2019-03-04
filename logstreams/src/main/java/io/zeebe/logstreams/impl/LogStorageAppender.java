@@ -24,7 +24,8 @@ import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.agrona.MutableDirectBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
 /** Consume the write buffer and append the blocks to the distributedlog. */
@@ -34,6 +35,8 @@ public class LogStorageAppender extends Actor {
   private final AtomicBoolean isFailed = new AtomicBoolean(false);
 
   private final BlockPeek blockPeek = new BlockPeek();
+  private byte[] bytesToAppend;
+  private long commitPosition;
 
   private final String name;
   private final LogStorage logStorage;
@@ -81,21 +84,47 @@ public class LogStorageAppender extends Actor {
 
   private void appendBlock() {
     final ByteBuffer rawBuffer = blockPeek.getRawBuffer();
-    final MutableDirectBuffer buffer = blockPeek.getBuffer();
 
-    try {
-      // CurrentAppenderPosition gives the position of the first event in the buffer. commitPosition
-      // must be > position of the last event in the block.
-      final long commitPosition = blockPeek.getNextPosition() - 1;
-      distributedLog.append(
-          rawBuffer,
-          commitPosition); // TODO: handle errors https://github.com/zeebe-io/zeebe/issues/2064
+    bytesToAppend = new byte[rawBuffer.remaining()];
+    rawBuffer.get(bytesToAppend);
+
+    // Commit position is the position of the last event. DistributedLogstream uses this position
+    // to identify duplicate append requests during recovery.
+    commitPosition = getLastEventPosition(bytesToAppend);
+    tryWrite();
+  }
+
+  private void tryWrite() {
+
+    final long res = distributedLog.append(bytesToAppend, commitPosition);
+    if (res > 0) {
       blockPeek.markCompleted();
-    } catch (Exception e) {
-      // try again
-      LOG.info("Write failed");
-      e.printStackTrace();
+      this.peekedBlockHandler = this::appendBlock;
+      return;
     }
+
+    // retry
+    LOG.debug("Append failed, retrying");
+    this.peekedBlockHandler = this::tryWrite;
+  }
+
+  /* Iterate over the events in buffer and find the position of the last event */
+  private long getLastEventPosition(byte[] buffer) {
+    int bufferOffset = 0;
+    final DirectBuffer directBuffer = new UnsafeBuffer(0, 0);
+
+    directBuffer.wrap(buffer);
+    long lastEventPosition = -1;
+
+    final LoggedEventImpl nextEvent = new LoggedEventImpl();
+    int remaining = buffer.length - bufferOffset;
+    while (remaining > 0) {
+      nextEvent.wrap(directBuffer, bufferOffset);
+      bufferOffset += nextEvent.getFragmentLength();
+      lastEventPosition = nextEvent.getPosition();
+      remaining = buffer.length - bufferOffset;
+    }
+    return lastEventPosition;
   }
 
   private void discardBlock() {

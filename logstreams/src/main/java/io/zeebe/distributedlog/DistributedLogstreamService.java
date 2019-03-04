@@ -19,12 +19,11 @@ import io.atomix.primitive.operation.Command;
 
 public interface DistributedLogstreamService {
 
+  /* Returns a positive value if the append was successful */
   @Command
-  void append(long commitPosition, byte[] blockBuffer);
+  long append(String nodeId, long commitPosition, byte[] blockBuffer);
 
+  /* Return true if operation was successful */
   @Command
-  void listen();
-
-  @Command
-  void unlisten();
+  boolean claimLeaderShip(String nodeId, long term);
 }

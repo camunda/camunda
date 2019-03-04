@@ -22,8 +22,12 @@ import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.core.Atomix;
 import io.atomix.core.AtomixBuilder;
 import io.atomix.protocols.backup.partition.PrimaryBackupPartitionGroup;
+import io.atomix.protocols.raft.MultiRaftProtocol;
 import io.atomix.protocols.raft.partition.RaftPartitionGroup;
 import io.atomix.utils.net.Address;
+import io.zeebe.distributedlog.impl.DistributedLogstreamConfig;
+import io.zeebe.distributedlog.impl.DistributedLogstreamName;
+import io.zeebe.distributedlog.impl.LogstreamConfig;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
@@ -33,6 +37,7 @@ import io.zeebe.util.sched.ActorScheduler;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,12 +59,13 @@ public class DistributedLogRule extends ExternalResource {
   private int numPartitions;
   private int replicationFactor;
   private List<String> members;
-  private DistributedLogstream distributedLog;
 
   private CompletableFuture<Void> nodeStarted;
   public static final Logger LOG = LoggerFactory.getLogger("io.zeebe.distributedlog.test");
 
   private final Map<Integer, DistributedLogPartitionRule> partitions = new HashMap<>();
+
+  private Path rootDirectory;
 
   public static final ServiceName<Atomix> ATOMIX_SERVICE_NAME =
       ServiceName.newServiceName("cluster.base.atomix", Atomix.class);
@@ -79,6 +85,10 @@ public class DistributedLogRule extends ExternalResource {
     this.socketAddress = SocketUtil.getNextAddress();
     this.members = members;
     this.otherNodes = otherNodes;
+    try {
+      rootDirectory = Files.createTempDirectory("dl-test-" + nodeId + "-");
+    } catch (Exception e) {
+    }
   }
 
   public Node getNode() {
@@ -89,6 +99,10 @@ public class DistributedLogRule extends ExternalResource {
 
   @Override
   protected void before() throws IOException {
+    startNode();
+  }
+
+  public void startNode() throws IOException {
     nodeStarted =
         createAtomixNode()
             .whenComplete(
@@ -103,18 +117,42 @@ public class DistributedLogRule extends ExternalResource {
 
   @Override
   protected void after() {
+    stopNode();
+  }
+
+  public void stopNode() {
     partitions.forEach((i, p) -> p.close());
     stopAtomixNode();
+    nodeStarted = null;
   }
 
   private void stopAtomixNode() {
-    atomix.stop();
+    atomix.stop().join();
+    serviceContainer.removeService(ATOMIX_SERVICE_NAME);
   }
 
   private void createPartitions() throws IOException {
+    final String memberId = String.valueOf(nodeId);
+    LogstreamConfig.putLogDirectory(memberId, rootDirectory.toAbsolutePath().toString());
+    LogstreamConfig.putServiceContainer(memberId, serviceContainer);
+
+    // Create distributed log primitive so that logstreams are created
+    final MultiRaftProtocol protocol =
+        MultiRaftProtocol.builder()
+            // Maps partitionName to partitionId
+            .withPartitioner(DistributedLogstreamName.getInstance())
+            .build();
+
+    atomix
+        .<DistributedLogstreamBuilder, DistributedLogstreamConfig, DistributedLogstream>
+            primitiveBuilder("distributed-log", DistributedLogstreamType.instance())
+        .withProtocol(protocol)
+        .buildAsync()
+        .join();
+
     for (int i = START_PARTITION_ID; i < START_PARTITION_ID + numPartitions; i++) {
       final DistributedLogPartitionRule partition =
-          new DistributedLogPartitionRule(serviceContainer, nodeId, i);
+          new DistributedLogPartitionRule(serviceContainer, nodeId, i, rootDirectory);
       partitions.put(i, partition);
       partition.start();
     }
@@ -137,9 +175,10 @@ public class DistributedLogRule extends ExternalResource {
 
     final String raftPartitionGroupName = "raft-atomix";
 
-    final String rootDirectory = Files.createTempDirectory("dl-test-" + nodeId + "-").toString();
-    final File raftDirectory = new File(rootDirectory, raftPartitionGroupName);
-    Files.createDirectory(raftDirectory.toPath());
+    final File raftDirectory = new File(rootDirectory.toString(), raftPartitionGroupName);
+    if (!raftDirectory.exists()) {
+      Files.createDirectory(raftDirectory.toPath());
+    }
 
     final RaftPartitionGroup partitionGroup =
         RaftPartitionGroup.builder(raftPartitionGroupName)
@@ -154,7 +193,7 @@ public class DistributedLogRule extends ExternalResource {
 
     atomix = atomixBuilder.build();
 
-    serviceContainer.createService(ATOMIX_SERVICE_NAME, () -> atomix).install().join();
+    serviceContainer.createService(ATOMIX_SERVICE_NAME, () -> atomix).install();
 
     return atomix.start();
   }
@@ -163,13 +202,19 @@ public class DistributedLogRule extends ExternalResource {
     partitions.get(partitionId).becomeLeader();
   }
 
+  public void becomeFollower(int partitionId) {
+    partitions.get(partitionId).becomeFollower();
+  }
+
   public long writeEvent(int partitionId, final String message) {
     return partitions.get(partitionId).writeEvent(message);
   }
 
   protected void waitUntilNodesJoined()
       throws ExecutionException, InterruptedException, TimeoutException {
+    LOG.info("Waiting for node {} start", this.nodeId);
     nodeStarted.get(50, TimeUnit.SECONDS);
+    LOG.info("Node {} started", this.nodeId);
   }
 
   public boolean eventAppended(int partitionId, String message, long writePosition) {

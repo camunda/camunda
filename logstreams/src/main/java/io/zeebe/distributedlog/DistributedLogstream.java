@@ -16,15 +16,12 @@
 package io.zeebe.distributedlog;
 
 import io.atomix.primitive.SyncPrimitive;
-import java.nio.ByteBuffer;
 
 public interface DistributedLogstream extends SyncPrimitive {
 
-  void append(String partition, long commitPosition, ByteBuffer blockBuffer);
+  long append(String partition, String nodeId, long commitPosition, byte[] blockBuffer);
 
-  void addListener(String partition, LogEventListener listener);
-
-  void removeListener(String partition, LogEventListener listener);
+  void claimLeaderShip(String partition, String nodeId, long leaderTerm);
 
   @Override
   AsyncDistributedLogstream async();

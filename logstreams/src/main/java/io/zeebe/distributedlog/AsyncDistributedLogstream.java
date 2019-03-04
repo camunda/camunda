@@ -16,17 +16,15 @@
 package io.zeebe.distributedlog;
 
 import io.atomix.primitive.AsyncPrimitive;
-import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 
 public interface AsyncDistributedLogstream extends AsyncPrimitive {
 
-  CompletableFuture<Void> append(String partition, long commitPosition, ByteBuffer blockBuffer);
+  CompletableFuture<Long> append(
+      String partition, String nodeId, long commitPosition, byte[] blockBuffer);
+
+  CompletableFuture<Boolean> claimLeaderShip(String partition, String nodeId, long leaderTerm);
 
   @Override
   DistributedLogstream sync();
-
-  CompletableFuture<Void> addListener(String partition, LogEventListener listener);
-
-  CompletableFuture<Void> removeListener(String partition, LogEventListener listener);
 }

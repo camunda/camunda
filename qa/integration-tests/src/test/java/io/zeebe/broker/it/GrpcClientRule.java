@@ -151,4 +151,13 @@ public class GrpcClientRule extends ExternalResource {
         .join()
         .getWorkflowInstanceKey();
   }
+
+  public long createWorkflowInstance(long workflowKey) {
+    return getClient()
+        .newCreateInstanceCommand()
+        .workflowKey(workflowKey)
+        .send()
+        .join()
+        .getWorkflowInstanceKey();
+  }
 }

@@ -18,8 +18,6 @@ package io.zeebe.distributedlog.impl;
 import io.atomix.primitive.Synchronous;
 import io.zeebe.distributedlog.AsyncDistributedLogstream;
 import io.zeebe.distributedlog.DistributedLogstream;
-import io.zeebe.distributedlog.LogEventListener;
-import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -38,11 +36,10 @@ public class BlockingDistributedLogstream extends Synchronous<AsyncDistributedLo
   }
 
   @Override
-  public void append(String partition, long commitPosition, ByteBuffer blockBuffer) {
-    // TODO: handle errors
+  public long append(String partition, String nodeId, long commitPosition, byte[] blockBuffer) {
     try {
-      distributedLogstreamProxy
-          .append(partition, commitPosition, blockBuffer)
+      return distributedLogstreamProxy
+          .append(partition, nodeId, commitPosition, blockBuffer)
           .get(timeout, TimeUnit.MILLISECONDS);
     } catch (InterruptedException e) {
       e.printStackTrace();
@@ -51,13 +48,15 @@ public class BlockingDistributedLogstream extends Synchronous<AsyncDistributedLo
     } catch (TimeoutException e) {
       e.printStackTrace();
     }
+    // Append failed
+    return -1;
   }
 
   @Override
-  public void addListener(String partition, LogEventListener listener) {
+  public void claimLeaderShip(String partition, String nodeId, long leaderTerm) {
     try {
       distributedLogstreamProxy
-          .addListener(partition, listener)
+          .claimLeaderShip(partition, nodeId, leaderTerm)
           .get(timeout, TimeUnit.MILLISECONDS);
     } catch (InterruptedException e) {
       e.printStackTrace();
@@ -66,12 +65,6 @@ public class BlockingDistributedLogstream extends Synchronous<AsyncDistributedLo
     } catch (TimeoutException e) {
       e.printStackTrace();
     }
-  }
-
-  @Override
-  public void removeListener(String partition, LogEventListener listener) {
-    // TODO: should we wait for the result?
-    distributedLogstreamProxy.removeListener(partition, listener);
   }
 
   @Override

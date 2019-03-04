@@ -20,6 +20,7 @@ package io.zeebe.broker.clustering;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_JOIN_SERVICE;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_SERVICE;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.CLUSTERING_BASE_LAYER;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.DISTRIBUTED_LOG_CREATE_SERVICE;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.GATEWAY_SERVICE;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADERSHIP_SERVICE_GROUP;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.PARTITIONS_BOOTSTRAP_SERVICE;
@@ -33,6 +34,7 @@ import io.zeebe.broker.clustering.base.EmbeddedGatewayService;
 import io.zeebe.broker.clustering.base.connections.RemoteAddressManager;
 import io.zeebe.broker.clustering.base.gossip.AtomixJoinService;
 import io.zeebe.broker.clustering.base.gossip.AtomixService;
+import io.zeebe.broker.clustering.base.gossip.DistributedLogService;
 import io.zeebe.broker.clustering.base.partitions.BootstrapPartitions;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManagerService;
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
@@ -41,6 +43,7 @@ import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
+import io.zeebe.distributedlog.impl.LogstreamConfig;
 import io.zeebe.servicecontainer.CompositeServiceBuilder;
 import io.zeebe.servicecontainer.ServiceContainer;
 
@@ -68,6 +71,10 @@ public class ClusterComponent implements Component {
             networkCfg.getManagement().toSocketAddress(),
             networkCfg.getReplication().toSocketAddress(),
             networkCfg.getSubscription().toSocketAddress());
+
+    /* A hack so that DistributedLogstream primitive can create logstream services using this serviceContainer */
+    LogstreamConfig.putServiceContainer(
+        String.valueOf(localMember.getNodeId()), context.getServiceContainer());
 
     final TopologyManagerService topologyManagerService =
         new TopologyManagerService(localMember, brokerConfig.getCluster());
@@ -123,6 +130,16 @@ public class ClusterComponent implements Component {
         .createService(ATOMIX_JOIN_SERVICE, atomixJoinService)
         .dependency(TOPOLOGY_MANAGER_SERVICE)
         .dependency(ATOMIX_SERVICE, atomixJoinService.getAtomixInjector())
+        .install();
+
+    // Create distributed log primitive. No need to wait until the partitions are created.
+    // TODO: Move it somewhere else. Only one node has to create it.
+    final DistributedLogService distributedLogService = new DistributedLogService();
+    context
+        .getServiceContainer()
+        .createService(DISTRIBUTED_LOG_CREATE_SERVICE, distributedLogService)
+        .dependency(ATOMIX_SERVICE, distributedLogService.getAtomixInjector())
+        .dependency(ATOMIX_JOIN_SERVICE)
         .install();
   }
 

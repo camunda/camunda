@@ -118,9 +118,9 @@ public class DistributedLogMultiplePartitionsTest {
   private void writeEventAndWaitUntilReplicated(
       int partitionId, DistributedLogRule leaderNode, String message) {
     leaderNode.becomeLeader(partitionId);
-
     final Event event1 = writeEvent(partitionId, leaderNode, message);
     assertEventReplicated(partitionId, event1);
+    leaderNode.becomeFollower(partitionId);
   }
 
   private Event writeEvent(int partitionId, DistributedLogRule leaderNode, String message) {
