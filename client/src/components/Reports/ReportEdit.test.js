@@ -5,6 +5,7 @@ import ReportEdit from './ReportEdit';
 
 import {evaluateReport, saveReport} from './service';
 import {incompatibleFilters} from 'services';
+import {addNotification} from 'notifications';
 
 jest.mock('./service', () => {
   return {
@@ -20,6 +21,8 @@ jest.mock('services', () => {
     incompatibleFilters: jest.fn()
   };
 });
+
+jest.mock('notifications', () => ({addNotification: jest.fn()}));
 
 const report = {
   id: '1',
@@ -97,9 +100,14 @@ it('should reset the report data to its original state after canceling', async (
 it('should save a changed report', async () => {
   const node = shallow(<ReportEdit report={report} />).dive();
 
-  await node.instance().save();
+  await node.instance().save({}, 'new Name');
 
   expect(saveReport).toHaveBeenCalled();
+  expect(addNotification).toHaveBeenCalledWith({
+    duration: 2000,
+    text: 'Report "new Name" saved.',
+    type: 'success'
+  });
 });
 
 it('should reset name on cancel', async () => {

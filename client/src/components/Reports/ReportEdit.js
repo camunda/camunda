@@ -70,6 +70,11 @@ export default withErrorHandling(
       await this.props.mightFail(
         saveReport(id, {name, data, reportType, combined}, this.state.conflict !== null),
         () => {
+          addNotification({
+            text: `Report "${updatedName}" saved.`,
+            type: 'success',
+            duration: 2000
+          });
           this.setState({
             confirmModalVisible: false,
             report: update(this.state.report, {name: {$set: name}}),
@@ -91,7 +96,7 @@ export default withErrorHandling(
               }
             });
           } else {
-            addNotification({text: `Report ${updatedName} could not be saved.`, type: 'error'});
+            addNotification({text: `Report "${updatedName}" could not be saved.`, type: 'error'});
           }
         }
       );

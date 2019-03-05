@@ -134,6 +134,11 @@ export default themed(
             reports: this.state.reports
           }),
           async () => {
+            addNotification({
+              text: `Dashboard "${name}" saved.`,
+              type: 'success',
+              duration: 2000
+            });
             this.setState({
               originalName: this.state.name,
               originalReports: this.state.reports,
@@ -143,7 +148,7 @@ export default themed(
             });
           },
           () => {
-            addNotification({text: `Dashboard ${name} could not be saved.`, type: 'error'});
+            addNotification({text: `Dashboard "${name}" could not be saved.`, type: 'error'});
           }
         );
       };
