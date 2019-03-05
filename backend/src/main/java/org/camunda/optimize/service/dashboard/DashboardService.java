@@ -16,6 +16,7 @@ import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.util.LinkedHashSet;
@@ -35,6 +36,8 @@ public class DashboardService {
   private CollectionService collectionService;
 
   @Autowired
+  // to cover for circular dependencies
+  @Lazy
   public DashboardService(DashboardWriter dashboardWriter, DashboardReader dashboardReader,
                           SharingService sharingService, CollectionService collectionService) {
     this.dashboardWriter = dashboardWriter;
