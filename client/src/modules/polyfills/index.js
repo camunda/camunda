@@ -9,6 +9,7 @@ import './number_isNaN';
 import './number_epsilon';
 import './nodeList_forEach';
 import './array_from';
+import './object_entries';
 
 if (!Object.values) {
   objectValuesShim();
