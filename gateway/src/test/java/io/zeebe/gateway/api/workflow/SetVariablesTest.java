@@ -21,6 +21,7 @@ import io.zeebe.gateway.api.util.GatewayTest;
 import io.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.zeebe.protocol.intent.VariableDocumentIntent;
@@ -39,8 +40,13 @@ public class SetVariablesTest extends GatewayTest {
 
     final String variables = JsonUtil.toJson(Collections.singletonMap("key", "value"));
 
+    final int partitionId = 1;
+    final long elementInstanceKey = Protocol.encodePartitionId(partitionId, 1);
     final SetVariablesRequest request =
-        SetVariablesRequest.newBuilder().setElementInstanceKey(123).setVariables(variables).build();
+        SetVariablesRequest.newBuilder()
+            .setElementInstanceKey(elementInstanceKey)
+            .setVariables(variables)
+            .build();
 
     // when
     final SetVariablesResponse response = client.setVariables(request);
@@ -52,9 +58,10 @@ public class SetVariablesTest extends GatewayTest {
     assertThat(brokerRequest.getKey()).isEqualTo(-1);
     assertThat(brokerRequest.getIntent()).isEqualTo(VariableDocumentIntent.UPDATE);
     assertThat(brokerRequest.getValueType()).isEqualTo(ValueType.VARIABLE_DOCUMENT);
+    assertThat(brokerRequest.getPartitionId()).isEqualTo(partitionId);
 
     final VariableDocumentRecord brokerRequestValue = brokerRequest.getRequestWriter();
     MsgPackUtil.assertEqualityExcluding(brokerRequestValue.getDocument(), variables);
-    assertThat(brokerRequestValue.getScopeKey()).isEqualTo(123);
+    assertThat(brokerRequestValue.getScopeKey()).isEqualTo(elementInstanceKey);
   }
 }

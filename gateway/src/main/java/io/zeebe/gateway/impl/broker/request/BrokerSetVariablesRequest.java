@@ -15,6 +15,7 @@
  */
 package io.zeebe.gateway.impl.broker.request;
 
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.VariableDocumentUpdateSemantic;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
@@ -30,6 +31,7 @@ public class BrokerSetVariablesRequest extends BrokerExecuteCommand<VariableDocu
   }
 
   public BrokerSetVariablesRequest setElementInstanceKey(long elementInstanceKey) {
+    request.setPartitionId(Protocol.decodePartitionId(elementInstanceKey));
     requestDto.setScopeKey(elementInstanceKey);
     return this;
   }
