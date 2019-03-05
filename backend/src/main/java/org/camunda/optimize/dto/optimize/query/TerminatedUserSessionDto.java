@@ -1,19 +1,19 @@
 package org.camunda.optimize.dto.optimize.query;
 
-import java.time.Instant;
+import java.time.OffsetDateTime;
 
 public class TerminatedUserSessionDto {
   private String id;
-  private Instant terminationTimestamp;
+  private OffsetDateTime terminationTimestamp;
 
   protected TerminatedUserSessionDto() {
   }
 
   public TerminatedUserSessionDto(final String id) {
-    this(id, Instant.now());
+    this(id, OffsetDateTime.now());
   }
 
-  public TerminatedUserSessionDto(final String id, final Instant terminationTimestamp) {
+  public TerminatedUserSessionDto(final String id, final OffsetDateTime terminationTimestamp) {
     this.id = id;
     this.terminationTimestamp = terminationTimestamp;
   }
@@ -26,11 +26,11 @@ public class TerminatedUserSessionDto {
     this.id = id;
   }
 
-  public Instant getTerminationTimestamp() {
+  public OffsetDateTime getTerminationTimestamp() {
     return terminationTimestamp;
   }
 
-  public void setTerminationTimestamp(final Instant terminationTimestamp) {
+  public void setTerminationTimestamp(final OffsetDateTime terminationTimestamp) {
     this.terminationTimestamp = terminationTimestamp;
   }
 }
