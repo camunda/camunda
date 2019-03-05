@@ -37,7 +37,13 @@ exports[`Actions should match snapshots 1`] = `
     operationState="SCHEDULED"
     operationType="RESOLVE_INCIDENT"
   />
-  <ActionItems />
+  <ActionItems>
+    <Item
+      onClick={[Function]}
+      title="Cancel instance id_1"
+      type="CANCEL_WORKFLOW_INSTANCE"
+    />
+  </ActionItems>
 </styled.div>
 `;
 
@@ -78,6 +84,12 @@ exports[`Actions should match snapshots 2`] = `
     operationState="FAILED"
     operationType="RESOLVE_INCIDENT"
   />
-  <ActionItems />
+  <ActionItems>
+    <Item
+      onClick={[Function]}
+      title="Cancel instance id_3"
+      type="CANCEL_WORKFLOW_INSTANCE"
+    />
+  </ActionItems>
 </styled.div>
 `;

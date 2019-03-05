@@ -11,6 +11,7 @@ import {OPERATION_TYPE} from 'modules/constants';
 import {
   fetchWorkflowInstancesCount,
   applyOperation,
+  applyBatchOperation,
   fetchWorkflowInstance,
   fetchWorkflowInstances,
   fetchGroupedWorkflows,
@@ -145,13 +146,13 @@ describe('instances api', () => {
     });
   });
 
-  describe('applyOperation', () => {
+  describe('applyBatchOperation', () => {
     it('should call post with the right payload', async () => {
       // given
       const queries = [{id: 1, incidents: true}];
 
       // when
-      await applyOperation(OPERATION_TYPE.RESOLVE_INCIDENT, queries);
+      await applyBatchOperation(OPERATION_TYPE.RESOLVE_INCIDENT, queries);
 
       // then
       expect(wrappers.post.mock.calls[0][0]).toBe(
@@ -161,6 +162,31 @@ describe('instances api', () => {
         OPERATION_TYPE.RESOLVE_INCIDENT
       );
       expect(wrappers.post.mock.calls[0][1].queries).toBe(queries);
+    });
+  });
+
+  describe('applyOperation', () => {
+    it('should call post with the right payload', async () => {
+      // given
+      const queries = [
+        {operationType: 'RESOLVE_INCIDENT', incidentId: 'incident_1'}
+      ];
+
+      // when
+      await applyOperation(
+        'instance_1',
+        OPERATION_TYPE.RESOLVE_INCIDENT,
+        'incident_1'
+      );
+
+      // then
+      expect(wrappers.post.mock.calls[0][0]).toBe(
+        '/api/workflow-instances/instance_1/operation'
+      );
+      expect(wrappers.post.mock.calls[0][1].operationType).toBe(
+        OPERATION_TYPE.RESOLVE_INCIDENT
+      );
+      expect(wrappers.post.mock.calls[0][1].incidentId).toBe('incident_1');
     });
   });
 });

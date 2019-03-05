@@ -13,7 +13,7 @@ import {withSelection} from 'modules/contexts/SelectionContext';
 import {getInstancesIdsFromSelections} from 'modules/contexts/SelectionContext/service';
 import {withPoll} from 'modules/contexts/InstancesPollContext';
 import {getSelectionById} from 'modules/utils/selection';
-import {applyOperation} from 'modules/api/instances';
+import {applyBatchOperation} from 'modules/api/instances';
 import {NO_SELECTIONS_MESSAGE} from './constants';
 import {MESSAGES_TYPE, OPERATION_TYPE} from 'modules/constants';
 
@@ -60,7 +60,7 @@ class SelectionList extends React.Component {
     const {selections} = this.props;
     const selectionById = getSelectionById(selections, openSelectionId);
     try {
-      await applyOperation(operation, selectionById.queries);
+      await applyBatchOperation(operation, selectionById.queries);
       this.sendIdsForPolling(selectionById);
     } catch (e) {
       console.log(e);

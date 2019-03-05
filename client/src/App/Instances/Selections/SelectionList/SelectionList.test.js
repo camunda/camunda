@@ -29,7 +29,7 @@ import {MESSAGES} from 'modules/components/ContextualMessage/constants';
 import SelectionList from './SelectionList';
 import {NO_SELECTIONS_MESSAGE} from './constants';
 
-instancesApi.applyOperation = mockResolvedAsyncFn();
+instancesApi.applyBatchOperation = mockResolvedAsyncFn();
 
 describe('SelectionList', () => {
   let node;
@@ -150,7 +150,7 @@ describe('SelectionList', () => {
     await node.find('Selection').prop('onRetry')();
 
     // then
-    expect(instancesApi.applyOperation).toHaveBeenCalledWith(
+    expect(instancesApi.applyBatchOperation).toHaveBeenCalledWith(
       OPERATION_TYPE.RESOLVE_INCIDENT,
       selections[0].queries
     );
@@ -170,7 +170,7 @@ describe('SelectionList', () => {
     await node.find('Selection').prop('onCancel')();
 
     // then
-    expect(instancesApi.applyOperation).toHaveBeenCalledWith(
+    expect(instancesApi.applyBatchOperation).toHaveBeenCalledWith(
       OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE,
       selections[0].queries
     );

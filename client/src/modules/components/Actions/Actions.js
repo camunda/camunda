@@ -15,7 +15,7 @@ import {getLatestOperation} from 'modules/utils/instance';
 import ActionStatus from 'modules/components/ActionStatus';
 
 import ActionItems from './ActionItems';
-import {wrapIdinQuery, isWithIncident, isRunning} from './service';
+import {isWithIncident, isRunning} from './service';
 
 import * as Styled from './styled';
 
@@ -59,13 +59,16 @@ export default class Actions extends React.Component {
   };
 
   handleOnClick = async operationType => {
-    this.setState({operationState: OPERATION_STATE.SCHEDULED});
-    await applyOperation(
-      operationType,
-      wrapIdinQuery(operationType, this.props.instance)
+    const operation = await applyOperation(
+      this.props.instance.id,
+      operationType
     );
 
-    this.props.onButtonClick && this.props.onButtonClick(this.props.instance);
+    // at least one operation has been triggered
+    if (operation.count > 0) {
+      this.setState({operationState: OPERATION_STATE.SCHEDULED});
+      this.props.onButtonClick && this.props.onButtonClick(this.props.instance);
+    }
   };
 
   renderItem = operationType => {

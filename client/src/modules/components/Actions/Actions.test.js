@@ -20,29 +20,19 @@ import Actions from './Actions';
 import ActionStatus from 'modules/components/ActionStatus';
 import ActionItems from './ActionItems';
 
-import * as service from './service';
 import * as api from 'modules/api/instances/instances';
 
 // mocking api
-api.applyOperation = mockResolvedAsyncFn();
-
-// mocking services
-let isWithIncident;
-let isRunning;
-
-service.isWithIncident = jest.fn(() => isWithIncident);
-service.isRunning = jest.fn(() => isRunning);
-service.wrapIdinQuery = jest.fn();
+api.applyOperation = mockResolvedAsyncFn({count: 1, reason: null});
 
 describe('Actions', () => {
-  let node;
   let mockOperation, mockInstance, onButtonClick;
 
   it('should match snapshots', () => {
     // when
     mockOperation = createOperation({state: OPERATION_STATE.SCHEDULED});
     mockInstance = createInstance({operations: [mockOperation]});
-    node = shallow(<Actions instance={mockInstance} />);
+    let node = shallow(<Actions instance={mockInstance} />);
     //then
     expect(node).toMatchSnapshot();
 
@@ -55,14 +45,15 @@ describe('Actions', () => {
     expect(node).toMatchSnapshot();
   });
 
-  it('should pass props to the status component', () => {
+  it('should pass props ActionStatus', () => {
     // when
     mockOperation = createOperation({
       state: OPERATION_STATE.SCHEDULED,
       type: OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE
     });
     mockInstance = createInstance({operations: [mockOperation]});
-    node = shallow(<Actions instance={mockInstance} />);
+
+    const node = shallow(<Actions instance={mockInstance} />);
 
     //then
     expect(node.find(ActionStatus).props().operationState).toBe(
@@ -75,87 +66,147 @@ describe('Actions', () => {
   });
 
   describe('Action Buttons', () => {
-    it('should render action buttons ', () => {
+    it('should render action buttons for active instance', () => {
       // when
-      mockInstance = createInstance({operations: []});
+      mockInstance = createInstance({state: STATE.ACTIVE, operations: []});
+      const node = shallow(<Actions instance={mockInstance} />);
+      const ActionItemsNode = node.find(ActionItems);
+      const Button = ActionItemsNode.find(ActionItems.Item);
 
-      node = shallow(<Actions instance={mockInstance} />);
       // then
-      expect(node.find(ActionItems)).toExist();
+      expect(ActionItemsNode).toExist();
+      expect(Button.length).toEqual(1);
+      expect(Button.props().type).toEqual(
+        OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE
+      );
     });
 
-    describe('retry', () => {
+    it('should render action buttons for instance with incidents', () => {
+      // when
+      mockInstance = createInstance({state: STATE.INCIDENT, operations: []});
+      const node = shallow(<Actions instance={mockInstance} />);
+      const ActionItemsNode = node.find(ActionItems);
+
+      // then
+      expect(ActionItemsNode).toExist();
+      expect(ActionItemsNode.find(ActionItems.Item).length).toEqual(2);
+      expect(
+        ActionItemsNode.find(ActionItems.Item)
+          .at(0)
+          .props().type
+      ).toEqual(OPERATION_TYPE.RESOLVE_INCIDENT);
+      expect(
+        ActionItemsNode.find(ActionItems.Item)
+          .at(1)
+          .props().type
+      ).toEqual(OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE);
+    });
+
+    describe('Retry', () => {
       beforeEach(() => {
         mockInstance = createInstance({state: STATE.INCIDENT});
-        isWithIncident = true;
-        isRunning = false;
         onButtonClick = jest.fn();
-        node = shallow(
+      });
+      afterEach(() => {
+        jest.clearAllMocks();
+      });
+
+      it('should handle retry of instance incident ', async () => {
+        //given
+        const node = shallow(
           <Actions instance={mockInstance} onButtonClick={onButtonClick} />
         );
-      });
-
-      it('should render retry action item', async () => {
-        const actionType = node.find(ActionItems.Item).props().type;
-        expect(actionType).toBe(OPERATION_TYPE.RESOLVE_INCIDENT);
-      });
-
-      it('should call the retry api onClick ', () => {
-        //given
-        const actionItem = node.find(ActionItems.Item);
+        const actionItem = node.find(ActionItems.Item).at(0);
 
         // when
         actionItem.simulate('click');
 
-        // then
-        expect(service.wrapIdinQuery).toBeCalledWith(
-          OPERATION_TYPE.RESOLVE_INCIDENT,
-          mockInstance
-        );
-        expect(api.applyOperation).toBeCalledWith(
-          OPERATION_TYPE.RESOLVE_INCIDENT,
-          service.wrapIdinQuery()
-        );
-      });
-
-      it('should call onButtonClick callback', async () => {
-        //given
-        const actionItem = node.find(ActionItems.Item);
-
-        // when
-        actionItem.simulate('click');
-
-        // when
+        // await for operation response
         await flushPromises();
         node.update();
 
+        expect(api.applyOperation).toBeCalledWith(
+          mockInstance.id,
+          OPERATION_TYPE.RESOLVE_INCIDENT
+        );
+        // expect Spinner to appear
+        expect(node.find(ActionStatus).props().operationState).toEqual(
+          OPERATION_STATE.SCHEDULED
+        );
+
+        // expect callback to be called
         expect(onButtonClick).toHaveBeenCalled();
       });
     });
-    describe('cancel', () => {
+
+    describe('Cancel', () => {
       beforeEach(() => {
         mockInstance = createInstance({state: STATE.ACTIVE});
-        isWithIncident = false;
-        isRunning = true;
-        node = shallow(<Actions instance={mockInstance} />);
+        onButtonClick = jest.fn();
       });
-      it('should render cancel action item', async () => {
-        const actionType = node.find(ActionItems.Item).props().type;
-        expect(actionType).toBe(OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE);
+      afterEach(() => {
+        jest.clearAllMocks();
       });
-      it('should call the cancel api onClick ', () => {
+
+      it('should call handle the cancelation of an instance ', async () => {
         //given
+        const node = shallow(
+          <Actions instance={mockInstance} onButtonClick={onButtonClick} />
+        );
         const actionItem = node.find(ActionItems.Item);
+
         // when
         actionItem.simulate('click');
+        await flushPromises();
+        node.update();
+
         // then
-        expect(service.wrapIdinQuery).toBeCalledWith(
-          OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE,
-          mockInstance
-        );
         expect(api.applyOperation).toBeCalledWith(
-          OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE,
-          service.wrapIdinQuery()
+          mockInstance.id,
+          OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE
+        );
+
+        // expect Spinner to appear
+        expect(node.find(ActionStatus).props().operationState).toEqual(
+          OPERATION_STATE.SCHEDULED
+        );
+
+        // expect callback to be called
+        expect(onButtonClick).toHaveBeenCalled();
+      });
+    });
+
+    describe('failing operations', () => {
+      beforeEach(() => {
+        api.applyOperation = mockResolvedAsyncFn({
+          count: 0,
+          reason: 'Operation could not be started'
+        });
+        mockInstance = createInstance({state: STATE.INCIDENT, operations: []});
+      });
+      afterEach(() => {
+        jest.clearAllMocks();
+      });
+
+      it('should not call the callback if operation fails', async () => {
+        //given
+        const node = shallow(
+          <Actions instance={mockInstance} onButtonClick={onButtonClick} />
+        );
+
+        const actionItem = node.find(ActionItems.Item).at(0);
+
+        // when
+        actionItem.simulate('click');
+
+        await flushPromises();
+        node.update();
+
+        // expect
+        expect(onButtonClick).not.toHaveBeenCalled();
+        // expect Spinner to appear
+        expect(node.find(ActionStatus).props().operationState).not.toEqual(
+          OPERATION_STATE.SCHEDULED
         );
       });
     });
