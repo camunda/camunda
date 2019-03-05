@@ -385,7 +385,7 @@ public class DetailViewIT extends OperateZeebeIntegrationTest {
       .andExpect(status().isBadRequest())
       .andReturn();
 
-    assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo("WorkflowInstanceId and ScopeId must be provided in the request.");
+    assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo("Required String parameter 'scopeId' is not present");
   }
 
   private void assertVariable(List<VariableEntity> variables, String name, String value) {
