@@ -87,12 +87,7 @@ export default class IncidentsTable extends React.Component {
                 />
               </TH>
               <TH>
-                <ColumnHeader
-                  sortKey="1"
-                  label="Error Message"
-                  sorting={{sortBy: ''}}
-                  disabled
-                />
+                <ColumnHeader label="Error Message" />
               </TH>
             </TR>
           </THead>
