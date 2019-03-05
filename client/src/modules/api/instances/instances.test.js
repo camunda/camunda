@@ -167,11 +167,6 @@ describe('instances api', () => {
 
   describe('applyOperation', () => {
     it('should call post with the right payload', async () => {
-      // given
-      const queries = [
-        {operationType: 'RESOLVE_INCIDENT', incidentId: 'incident_1'}
-      ];
-
       // when
       await applyOperation(
         'instance_1',
