@@ -79,7 +79,7 @@ public abstract class ZeebeTestUtil {
     final CreateWorkflowInstanceCommandStep1.CreateWorkflowInstanceCommandStep3 createWorkflowInstanceCommandStep3 = client
       .newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
     if (payload != null) {
-      createWorkflowInstanceCommandStep3.payload(payload);
+      createWorkflowInstanceCommandStep3.variables(payload);
     }
     WorkflowInstanceEvent workflowInstanceEvent = null;
     try {
@@ -112,7 +112,7 @@ public abstract class ZeebeTestUtil {
       .jobType(jobType)
       .handler((jobClient, job) -> {
         if (payload == null) {
-          jobClient.newCompleteCommand(job.getKey()).payload(job.getPayload()).send().join();
+          jobClient.newCompleteCommand(job.getKey()).send().join();
         } else {
           jobClient.newCompleteCommand(job.getKey()).payload(payload).send().join();
         }
@@ -221,7 +221,7 @@ public abstract class ZeebeTestUtil {
   }
 
   public static void updatePayload(ZeebeClient client, String workflowInstanceId, String newPayload) {
-    client.newUpdatePayloadCommand(IdUtil.getKey(workflowInstanceId)).payload(newPayload).send().join();
+    client.newSetVariablesCommand(IdUtil.getKey(workflowInstanceId)).variables(newPayload).send().join();
   }
 
 }

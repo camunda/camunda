@@ -12,7 +12,6 @@ import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.EventMetadataEntity;
 import org.camunda.operate.entities.EventSourceType;
 import org.camunda.operate.entities.EventType;
-import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.es.schema.templates.EventTemplate;
 import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
@@ -23,7 +22,6 @@ import org.camunda.operate.zeebeimport.record.value.IncidentRecordValueImpl;
 import org.camunda.operate.zeebeimport.record.value.JobRecordValueImpl;
 import org.camunda.operate.zeebeimport.record.value.WorkflowInstanceRecordValueImpl;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
-import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
@@ -40,7 +38,6 @@ import io.zeebe.protocol.intent.JobIntent;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.PAYLOAD_UPDATED;
 
 @Component
 public class EventZeebeRecordProcessor {
@@ -67,7 +64,6 @@ public class EventZeebeRecordProcessor {
     WORKFLOW_INSTANCE_STATES.add(ELEMENT_ACTIVATED.name());
     WORKFLOW_INSTANCE_STATES.add(ELEMENT_COMPLETED.name());
     WORKFLOW_INSTANCE_STATES.add(ELEMENT_TERMINATED.name());
-    WORKFLOW_INSTANCE_STATES.add(PAYLOAD_UPDATED.name());
   }
 
   @Autowired
