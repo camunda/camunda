@@ -27,11 +27,11 @@ public class AuthenticationUtil {
       .map(AuthenticationUtil::extractTokenFromAuthorizationValueOrFailNotAuthorized);
   }
 
-  public static Optional<Date> getTokenIssuedAt(String token) {
+  private static Optional<Date> getTokenIssuedAt(String token) {
     return getTokenAttribute(token, DecodedJWT::getIssuedAt);
   }
 
-  public static Optional<String> getTokenSubject(String token) {
+  private static Optional<String> getTokenSubject(String token) {
     return getTokenAttribute(token, DecodedJWT::getSubject);
   }
 

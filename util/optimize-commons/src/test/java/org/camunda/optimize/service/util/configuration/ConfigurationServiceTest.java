@@ -11,6 +11,7 @@ import java.util.Optional;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 
 public class ConfigurationServiceTest {
@@ -54,6 +55,31 @@ public class ConfigurationServiceTest {
     String[] locations = {"config-samples/certificate-authorities/wrong-ca-auth-list-format-throws-error.yaml"};
     ConfigurationService underTest = new ConfigurationService(locations);
     underTest.getElasticsearchSecuritySSLCertificateAuthorities();
+  }
+
+  @Test
+  public void disableHttpPort() {
+    String[] possibilitiesToDisableHttpPortConnection = {
+      "config-samples/port/empty-http-port.yaml",
+      "config-samples/port/null-http-port.yaml"
+    };
+    for (String configLocation : possibilitiesToDisableHttpPortConnection) {
+      // given
+      ConfigurationService underTest = new ConfigurationService(new String[]{configLocation});
+
+      // when
+      Optional<Integer> containerHttpPort = underTest.getContainerHttpPort();
+
+      // then
+      assertTrue(!containerHttpPort.isPresent());
+    }
+  }
+
+  @Test(expected = OptimizeConfigurationException.class)
+  public void invalidHttpsPortThrowsError() {
+    String[] locations = {"config-samples/port/invalid-https-port.yaml"};
+    ConfigurationService underTest = new ConfigurationService(locations);
+    underTest.getContainerHttpsPort();
   }
 
   @Test

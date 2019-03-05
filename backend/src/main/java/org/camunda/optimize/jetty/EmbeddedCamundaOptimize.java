@@ -5,6 +5,7 @@ import org.camunda.optimize.jetty.util.LoggingConfigurationReader;
 import org.camunda.optimize.service.engine.importing.EngineImportScheduler;
 import org.camunda.optimize.service.engine.importing.EngineImportSchedulerFactory;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
+import org.camunda.optimize.service.util.ValidationHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.websocket.StatusWebSocket;
 import org.eclipse.jetty.server.ConnectionFactory;
@@ -27,7 +28,9 @@ import org.springframework.context.ApplicationContext;
 import javax.servlet.ServletException;
 import javax.websocket.DeploymentException;
 import javax.websocket.server.ServerContainer;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Jetty embedded server wrapping jersey servlet handler and loading properties from
@@ -108,17 +111,22 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     String keystoreLocation = configurationService.getContainerKeystoreLocation();
     Server server = new Server();
 
-    ServerConnector connector = initHttpConnector(configurationService, host, server);
+    List<Connector> connectors = new ArrayList<>();
+    Optional<ServerConnector> connector = initHttpConnector(configurationService, host, server);
+    connector.ifPresent(connectors::add);
 
-    ServerConnector sslConnector = initHttpsConnector(configurationService, host, keystorePass, keystoreLocation, server);
+    ServerConnector sslConnector =
+      initHttpsConnector(configurationService, host, keystorePass, keystoreLocation, server);
+    connectors.add(sslConnector);
 
-    server.setConnectors(new Connector[] { connector, sslConnector });
+    server.setConnectors(connectors.toArray(new Connector[]{}));
 
 
     return server;
   }
 
-  private ServerConnector initHttpsConnector(ConfigurationService configurationService, String host, String keystorePass, String keystoreLocation, Server server) {
+  private ServerConnector initHttpsConnector(ConfigurationService configurationService, String host,
+                                             String keystorePass, String keystoreLocation, Server server) {
     HttpConfiguration https = new HttpConfiguration();
     https.setSendServerVersion(false);
     https.addCustomizer(new SecureRequestCustomizer());
@@ -130,19 +138,28 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     // see https://github.com/eclipse/jetty.project/issues/3049
     sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
 
-    ServerConnector sslConnector = new ServerConnector(server,
-        new SslConnectionFactory(sslContextFactory, PROTOCOL),
-        new HttpConnectionFactory(https));
+    ServerConnector sslConnector = new ServerConnector(
+      server,
+      new SslConnectionFactory(sslContextFactory, PROTOCOL),
+      new HttpConnectionFactory(https)
+    );
     sslConnector.setPort(configurationService.getContainerHttpsPort());
     sslConnector.setHost(host);
     return sslConnector;
   }
 
-  private ServerConnector initHttpConnector(ConfigurationService configurationService, String host, Server server) {
-    ServerConnector connector = new ServerConnector(server);
-    connector.setPort(configurationService.getContainerHttpPort());
-    connector.setHost(host);
-    return connector;
+  private Optional<ServerConnector> initHttpConnector(ConfigurationService configurationService,
+                                                      String host,
+                                                      Server server) {
+    return configurationService.getContainerHttpPort()
+      .map(
+        httpPort -> {
+          ServerConnector connector = new ServerConnector(server);
+          connector.setPort(httpPort);
+          connector.setHost(host);
+          return connector;
+        }
+      );
   }
 
   public void startOptimize() throws Exception {

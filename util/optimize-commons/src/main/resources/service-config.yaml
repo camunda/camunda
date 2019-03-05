@@ -13,21 +13,21 @@ container:
   # which to listen.
   host: localhost
   ports:
-    #A port number that will be used by the embedded jetty server to process
-    #HTTP connections.
+    # A port number that will be used by Optimize to process HTTP connections.
+    # If set to null, ~ or left empty, http connections won't be accepted.
     http: 8090
-    # A port number that will be used by the embedded jetty server to process
+    # A port number that will be used by Optimize to process
     # secure HTTPS connections.
     https: 8091
-  #HTTPS requires an SSL Certificate. When you generate an SSL Certificate,
-  #you are creating a keystore file and a keystore password for use when the
-  #browser interface connects
+  # HTTPS requires an SSL Certificate. When you generate an SSL Certificate,
+  # you are creating a keystore file and a keystore password for use when the
+  # browser interface connects
   keystore:
     location: keystore.jks
     password: optimize
-  #configuration of status reporting web socket
+  # configuration of status reporting web socket
   status:
-    #max number of threads\sessions that will be kept to report status
+    # max number of threads\sessions that will be kept to report status
     connections:
       max: 10
   checkMetadata: true

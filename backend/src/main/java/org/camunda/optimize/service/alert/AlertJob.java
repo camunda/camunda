@@ -18,9 +18,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+
 @Component
 public class AlertJob implements Job {
   private static final String HTTP_PREFIX = "http://";
+  private static final String HTTPS_PREFIX = "https://";
   private Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired
@@ -104,8 +107,10 @@ public class AlertJob implements Job {
   }
 
   private String createViewLink(AlertDefinitionDto alert) {
-    return HTTP_PREFIX + configurationService.getContainerHost() + ":" +
-        configurationService.getContainerHttpPort() + "/#/report/" + alert.getReportId();
+    Optional<Integer> containerHttpPort = configurationService.getContainerHttpPort();
+    String httpPrefix = containerHttpPort.map(p -> HTTP_PREFIX).orElse(HTTPS_PREFIX);
+    Integer port = containerHttpPort.orElse(configurationService.getContainerHttpsPort());
+    return httpPrefix + configurationService.getContainerHost() + ":" + port + "/#/report/" + alert.getReportId();
   }
 
   private AlertJobResult notifyIfNeeded(

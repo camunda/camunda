@@ -687,18 +687,21 @@ public class ConfigurationService {
     return containerKeystoreLocation;
   }
 
-  public int getContainerHttpsPort() {
+  public Integer getContainerHttpsPort() {
     if (containerHttpsPort == null) {
       containerHttpsPort = configJsonContext.read(ConfigurationServiceConstants.CONTAINER_HTTPS_PORT);
+      if (containerHttpsPort == null) {
+        throw new OptimizeConfigurationException("Optimize container https port is not allowed to be null!");
+      }
     }
     return containerHttpsPort;
   }
 
-  public int getContainerHttpPort() {
+  public Optional<Integer> getContainerHttpPort() {
     if (containerHttpPort == null) {
       containerHttpPort = configJsonContext.read(ConfigurationServiceConstants.CONTAINER_HTTP_PORT);
     }
-    return containerHttpPort;
+    return Optional.ofNullable(containerHttpPort);
   }
 
   public int getMaxStatusConnections() {

@@ -14,10 +14,10 @@ container:
   # which to listen.
   host: 0.0.0.0
   ports:
-    # A port number that will be used by the embedded jetty server to process
-    # HTTP connections.
+    # A port number that will be used by Optimize to process HTTP connections.
+    # If set to null, ~ or left empty, http connections won't be accepted.
     http: 8090
-    # A port number that will be used by the embedded jetty server to process
+    # A port number that will be used by Optimize to process
     # secure HTTPS connections.
     https: 8091
 
