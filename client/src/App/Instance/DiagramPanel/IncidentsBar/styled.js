@@ -10,7 +10,7 @@ import {Colors} from 'modules/theme';
 import withStrippedProps from 'modules/utils/withStrippedProps';
 import {ReactComponent as Down} from 'modules/components/Icon/down.svg';
 
-export const IncidentsBar = styled.div`
+export const IncidentsBar = styled.button`
   display: flex;
   align-items: center;
   position: relative;
