@@ -22,7 +22,6 @@ import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.detailview.ActivityInstanceTreeDto;
 import org.camunda.operate.rest.dto.detailview.ActivityInstanceTreeRequestDto;
 import org.camunda.operate.rest.dto.detailview.DetailViewActivityInstanceDto;
-import org.camunda.operate.rest.dto.detailview.VariablesRequestDto;
 import org.camunda.operate.rest.dto.incidents.IncidentDto;
 import org.camunda.operate.rest.dto.incidents.IncidentErrorTypeDto;
 import org.camunda.operate.rest.dto.incidents.IncidentFlowNodeDto;
@@ -76,9 +75,9 @@ public class DetailViewReader {
   @Autowired
   private OperationReader operationReader;
 
-  public List<VariableEntity> getVariables(VariablesRequestDto variableRequest) {
-    final TermQueryBuilder workflowInstanceIdQ = termQuery(VariableTemplate.WORKFLOW_INSTANCE_ID, variableRequest.getWorkflowInstanceId());
-    final TermQueryBuilder scopeIdQ = termQuery(VariableTemplate.SCOPE_ID, variableRequest.getScopeId());
+  public List<VariableEntity> getVariables(String workflowInstanceId, String scopeId) {
+    final TermQueryBuilder workflowInstanceIdQ = termQuery(VariableTemplate.WORKFLOW_INSTANCE_ID, workflowInstanceId);
+    final TermQueryBuilder scopeIdQ = termQuery(VariableTemplate.SCOPE_ID, scopeId);
 
     final ConstantScoreQueryBuilder query = constantScoreQuery(joinWithAnd(workflowInstanceIdQ, scopeIdQ));
 

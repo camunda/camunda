@@ -17,7 +17,6 @@ import org.camunda.operate.es.reader.DetailViewReader;
 import org.camunda.operate.rest.dto.detailview.ActivityInstanceTreeDto;
 import org.camunda.operate.rest.dto.detailview.ActivityInstanceTreeRequestDto;
 import org.camunda.operate.rest.dto.detailview.DetailViewActivityInstanceDto;
-import org.camunda.operate.rest.dto.detailview.VariablesRequestDto;
 import org.camunda.operate.rest.dto.incidents.IncidentDto;
 import org.camunda.operate.rest.dto.incidents.IncidentResponseDto;
 import org.camunda.operate.util.IdTestUtil;
@@ -39,7 +38,6 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.rest.ActivityInstanceRestService.ACTIVITY_INSTANCE_URL;
-import static org.camunda.operate.rest.VariableRestService.VARIABLE_URL;
 import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -153,6 +151,14 @@ public class DetailViewIT extends OperateZeebeIntegrationTest {
 
   protected String getIncidentsURL(long workflowInstanceKey) {
     return String.format(WORKFLOW_INSTANCE_URL + "/%s/incidents", workflowInstanceKey);
+  }
+
+  protected String getVariablesURL(String workflowInstanceId) {
+    return String.format(WORKFLOW_INSTANCE_URL + "/%s/variables", workflowInstanceId);
+  }
+
+  protected String getVariablesURL(String workflowInstanceId, String scopeId) {
+    return String.format(WORKFLOW_INSTANCE_URL + "/%s/variables?scopeId=%s", workflowInstanceId, scopeId);
   }
 
   @Test
@@ -374,38 +380,8 @@ public class DetailViewIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  public void testVariablesRequestFailOnTwoNullParameters() throws Exception {
-    VariablesRequestDto variablesRequest = new VariablesRequestDto(null, null);
-    MockHttpServletRequestBuilder request = post(VARIABLE_URL)
-      .content(mockMvcTestRule.json(variablesRequest))
-      .contentType(mockMvcTestRule.getContentType());
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isBadRequest())
-      .andReturn();
-
-    assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo("WorkflowInstanceId and ScopeId must be provided in the request.");
-  }
-
-  @Test
-  public void testVariablesRequestFailOnEmptyWorkflowInstanceId() throws Exception {
-    VariablesRequestDto variablesRequest = new VariablesRequestDto(null, "id");
-    MockHttpServletRequestBuilder request = post(VARIABLE_URL)
-      .content(mockMvcTestRule.json(variablesRequest))
-      .contentType(mockMvcTestRule.getContentType());
-    MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isBadRequest())
-      .andReturn();
-
-    assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo("WorkflowInstanceId and ScopeId must be provided in the request.");
-  }
-
-  @Test
   public void testVariablesRequestFailOnEmptyScopeId() throws Exception {
-    VariablesRequestDto variablesRequest = new VariablesRequestDto("id", null);
-    MockHttpServletRequestBuilder request = post(VARIABLE_URL)
-      .content(mockMvcTestRule.json(variablesRequest))
-      .contentType(mockMvcTestRule.getContentType());
-    MvcResult mvcResult = mockMvc.perform(request)
+    MvcResult mvcResult = mockMvc.perform(get(getVariablesURL("id")))
       .andExpect(status().isBadRequest())
       .andReturn();
 
@@ -418,26 +394,19 @@ public class DetailViewIT extends OperateZeebeIntegrationTest {
   }
 
   protected List<VariableEntity> getVariables(String workflowInstanceId) throws Exception {
-    VariablesRequestDto variablesRequest = new VariablesRequestDto(workflowInstanceId, workflowInstanceId);
-    MockHttpServletRequestBuilder request = post(VARIABLE_URL)
-      .content(mockMvcTestRule.json(variablesRequest))
-      .contentType(mockMvcTestRule.getContentType());
     MvcResult mvcResult = mockMvc
-      .perform(request)
+      .perform(get(getVariablesURL(workflowInstanceId, workflowInstanceId)))
       .andExpect(status().isOk())
       .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
     return mockMvcTestRule.listFromResponse(mvcResult, VariableEntity.class);
   }
+
   protected List<VariableEntity> getVariables(String workflowInstanceId, String activityId) throws Exception {
     final List<ActivityInstanceForDetailViewEntity> allActivityInstances = detailViewReader.getAllActivityInstances(workflowInstanceId);
     final String task1Id = findActivityInstanceId(allActivityInstances, activityId);
-    VariablesRequestDto variablesRequest = new VariablesRequestDto(workflowInstanceId, task1Id);
-    MockHttpServletRequestBuilder request = post(VARIABLE_URL)
-      .content(mockMvcTestRule.json(variablesRequest))
-      .contentType(mockMvcTestRule.getContentType());
     MvcResult mvcResult = mockMvc
-      .perform(request)
+      .perform(get(getVariablesURL(workflowInstanceId, task1Id)))
       .andExpect(status().isOk())
       .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
