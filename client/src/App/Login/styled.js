@@ -13,8 +13,9 @@ import TextInput from 'modules/components/TextInput';
 export const Login = styled.div`
   display: flex;
   flex-direction: column;
+  align-items: center;
   margin: 128px auto 0 auto;
-  width: 340px;
+  width: 489px;
   font-family: IBMPlexSans;
 `;
 
@@ -77,4 +78,23 @@ export const UsernameInput = themed(styled(LoginInput)`
 
 export const PasswordInput = themed(styled(LoginInput)`
   margin-bottom: 32px;
+`);
+
+export const Anchor = themed(styled.a`
+  text-decoration: underline;
+  color: ${themeStyle({
+    dark: Colors.darkLinkBlue,
+    light: Colors.lightLinkBlue
+  })};
+`);
+
+export const Disclaimer = themed(styled.div`
+  color: ${themeStyle({
+    dark: 'rgba(255, 255, 255, 0.7)',
+    light: '#7e7e7f'
+  })};
+  opacity: 0.9;
+  font-size: 12px;
+  width: 100%;
+  margin-top: 35px;
 `);

@@ -92,6 +92,19 @@ class Login extends React.Component {
             Log in
           </Button>
         </Styled.LoginForm>
+        <Styled.Disclaimer>
+          This Camunda Operate distribution is available under an evaluation
+          license that is valid for development (non-production) use only. By
+          continuing using this software, you agree to the{' '}
+          <Styled.Anchor href="https://zeebe.io/legal/operate-evaluation-license">
+            Terms and Conditions
+          </Styled.Anchor>{' '}
+          of the Operate Trial Version and our{' '}
+          <Styled.Anchor href="https://zeebe.io/privacy/">
+            Privacy Statement
+          </Styled.Anchor>
+          .
+        </Styled.Disclaimer>
       </Styled.Login>
     );
   }
