@@ -83,12 +83,24 @@ public class MessageCorrelationMultiplePartitionsTest {
     IntStream.range(0, 10)
         .forEach(
             i -> {
-              testClient.createWorkflowInstance(
-                  PROCESS_ID, asMsgPack("key", CORRELATION_KEY_PARTITION_0));
-              testClient.createWorkflowInstance(
-                  PROCESS_ID, asMsgPack("key", CORRELATION_KEY_PARTITION_1));
-              testClient.createWorkflowInstance(
-                  PROCESS_ID, asMsgPack("key", CORRELATION_KEY_PARTITION_2));
+              testClient
+                  .createWorkflowInstance(
+                      r ->
+                          r.setBpmnProcessId(PROCESS_ID)
+                              .setVariables(asMsgPack("key", CORRELATION_KEY_PARTITION_0)))
+                  .getInstanceKey();
+              testClient
+                  .createWorkflowInstance(
+                      r ->
+                          r.setBpmnProcessId(PROCESS_ID)
+                              .setVariables(asMsgPack("key", CORRELATION_KEY_PARTITION_1)))
+                  .getInstanceKey();
+              testClient
+                  .createWorkflowInstance(
+                      r ->
+                          r.setBpmnProcessId(PROCESS_ID)
+                              .setVariables(asMsgPack("key", CORRELATION_KEY_PARTITION_2)))
+                  .getInstanceKey();
             });
 
     // then
@@ -116,9 +128,24 @@ public class MessageCorrelationMultiplePartitionsTest {
         .publishMessage("message", CORRELATION_KEY_PARTITION_2, asMsgPack("p", "p2"));
 
     // when
-    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", CORRELATION_KEY_PARTITION_0));
-    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", CORRELATION_KEY_PARTITION_1));
-    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", CORRELATION_KEY_PARTITION_2));
+    testClient
+        .createWorkflowInstance(
+            r3 ->
+                r3.setBpmnProcessId(PROCESS_ID)
+                    .setVariables(asMsgPack("key", CORRELATION_KEY_PARTITION_0)))
+        .getInstanceKey();
+    testClient
+        .createWorkflowInstance(
+            r2 ->
+                r2.setBpmnProcessId(PROCESS_ID)
+                    .setVariables(asMsgPack("key", CORRELATION_KEY_PARTITION_1)))
+        .getInstanceKey();
+    testClient
+        .createWorkflowInstance(
+            r1 ->
+                r1.setBpmnProcessId(PROCESS_ID)
+                    .setVariables(asMsgPack("key", CORRELATION_KEY_PARTITION_2)))
+        .getInstanceKey();
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> events =

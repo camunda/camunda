@@ -33,6 +33,7 @@ import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
+import io.zeebe.test.util.MsgPackUtil;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.Before;
@@ -85,7 +86,10 @@ public class ActivityTest {
   public void shouldApplyInputMappingOnReady() {
     // given
     testClient.deploy(WITHOUT_BOUNDARY_EVENTS);
-    testClient.createWorkflowInstance(PROCESS_ID, "{ \"foo\": 1, \"boo\": 2 }");
+    testClient.createWorkflowInstance(
+        r ->
+            r.setBpmnProcessId(PROCESS_ID)
+                .setVariables(MsgPackUtil.asMsgPack("{ \"foo\": 1, \"boo\": 2 }")));
 
     // when
     final Record<WorkflowInstanceRecordValue> record =
@@ -99,7 +103,10 @@ public class ActivityTest {
   public void shouldApplyOutputMappingOnCompleting() {
     // given
     testClient.deploy(WITHOUT_BOUNDARY_EVENTS);
-    testClient.createWorkflowInstance(PROCESS_ID, "{ \"foo\": 1, \"boo\": 2 }");
+    testClient.createWorkflowInstance(
+        r ->
+            r.setBpmnProcessId(PROCESS_ID)
+                .setVariables(MsgPackUtil.asMsgPack("{ \"foo\": 1, \"boo\": 2 }")));
 
     // when
     final Record<JobRecordValue> jobRecord = testClient.receiveFirstJobEvent(JobIntent.CREATED);
@@ -115,7 +122,7 @@ public class ActivityTest {
   public void shouldSubscribeToBoundaryEventTriggersOnReady() {
     // given
     testClient.deploy(WITH_BOUNDARY_EVENTS);
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // when
     final Record<WorkflowInstanceRecordValue> readyRecord =
@@ -140,7 +147,7 @@ public class ActivityTest {
   public void shouldUnsubscribeFromBoundaryEventTriggersOnCompleting() {
     // given
     testClient.deploy(WITH_BOUNDARY_EVENTS);
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // when
     final Record<JobRecordValue> job = testClient.receiveFirstJobEvent(JobIntent.CREATED);
@@ -156,7 +163,8 @@ public class ActivityTest {
   public void shouldUnsubscribeFromBoundaryEventTriggersOnTerminating() {
     // given
     testClient.deploy(WITH_BOUNDARY_EVENTS);
-    final long workflowKey = testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID)).getInstanceKey();
 
     // when
     testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
@@ -197,7 +205,7 @@ public class ActivityTest {
     // when
     final long deploymentKey = testClient.deploy(model);
     testClient.receiveFirstDeploymentEvent(DeploymentIntent.CREATED, deploymentKey);
-    testClient.createWorkflowInstance("process");
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId("process"));
 
     // then
     final JobRecordValue firstJob =

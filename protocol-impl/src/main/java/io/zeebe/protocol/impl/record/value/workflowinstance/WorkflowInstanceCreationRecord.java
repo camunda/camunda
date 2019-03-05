@@ -20,20 +20,17 @@ import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.protocol.WorkflowInstanceRelated;
 import org.agrona.DirectBuffer;
 
-public class WorkflowInstanceCreationRecord extends UnpackedObject {
-  private static final String PROP_BPMN_PROCESS_ID = "bpmnProcessId";
-  private static final String PROP_KEY = "key";
-  private static final String PROP_INSTANCE_KEY = "instanceKey";
-  private static final String PROP_VARIABLES = "variables";
-  private static final String PROP_VERSION = "version";
+public class WorkflowInstanceCreationRecord extends UnpackedObject
+    implements WorkflowInstanceRelated {
 
-  private final StringProperty bpmnProcessIdProperty = new StringProperty(PROP_BPMN_PROCESS_ID, "");
-  private final LongProperty keyProperty = new LongProperty(PROP_KEY, -1);
-  private final IntegerProperty versionProperty = new IntegerProperty(PROP_VERSION, -1);
-  private final DocumentProperty variablesProperty = new DocumentProperty(PROP_VARIABLES);
-  private final LongProperty instanceKeyProperty = new LongProperty(PROP_INSTANCE_KEY, -1);
+  private final StringProperty bpmnProcessIdProperty = new StringProperty("bpmnProcessId", "");
+  private final LongProperty keyProperty = new LongProperty("key", -1);
+  private final IntegerProperty versionProperty = new IntegerProperty("version", -1);
+  private final DocumentProperty variablesProperty = new DocumentProperty("variables");
+  private final LongProperty instanceKeyProperty = new LongProperty("instanceKey", -1);
 
   public WorkflowInstanceCreationRecord() {
     this.declareProperty(bpmnProcessIdProperty)
@@ -91,5 +88,10 @@ public class WorkflowInstanceCreationRecord extends UnpackedObject {
   public WorkflowInstanceCreationRecord setVariables(DirectBuffer variables) {
     variablesProperty.setValue(variables);
     return this;
+  }
+
+  @Override
+  public long getWorkflowInstanceKey() {
+    return getInstanceKey();
   }
 }

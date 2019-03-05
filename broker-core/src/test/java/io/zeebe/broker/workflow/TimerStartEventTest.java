@@ -274,7 +274,8 @@ public class TimerStartEventTest {
     assertThat(RecordingExporter.timerRecords(TimerIntent.CANCELED).exists()).isTrue();
     assertThat(RecordingExporter.timerRecords(TimerIntent.TRIGGERED).exists()).isTrue();
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance("process");
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId("process")).getInstanceKey();
 
     final WorkflowInstanceRecordValue lastRecord =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)

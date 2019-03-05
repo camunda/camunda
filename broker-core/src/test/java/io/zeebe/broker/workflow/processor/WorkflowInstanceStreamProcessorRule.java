@@ -35,6 +35,8 @@ import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
+import io.zeebe.broker.util.CopiedTypedEvent;
+import io.zeebe.broker.util.Records;
 import io.zeebe.broker.util.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.broker.util.TypedRecordStream;
@@ -43,18 +45,26 @@ import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.Process;
+import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.TimerIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
 import java.io.ByteArrayOutputStream;
+import java.util.Optional;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -62,6 +72,7 @@ import org.junit.Rule;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 
+@SuppressWarnings("unchecked")
 public class WorkflowInstanceStreamProcessorRule extends ExternalResource
     implements StreamProcessorLifecycleAware {
 
@@ -158,18 +169,30 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
     deploy(modelInstance, DEPLOYMENT_KEY, VERSION);
   }
 
-  public TypedRecord<WorkflowInstanceRecord> createWorkflowInstance(final String processId) {
-    return createWorkflowInstance(processId, wrapString(""));
+  public TypedRecord<WorkflowInstanceRecord> createAndReceiveWorkflowInstance(
+      Function<WorkflowInstanceCreationRecord, WorkflowInstanceCreationRecord> transformer) {
+    final TypedRecord<WorkflowInstanceCreationRecord> createdRecord =
+        createWorkflowInstance(transformer);
+
+    return awaitAndGetFirstWorkflowInstanceRecord(
+        r ->
+            r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATING
+                && r.getKey() == createdRecord.getValue().getInstanceKey());
   }
 
-  public TypedRecord<WorkflowInstanceRecord> createWorkflowInstance(
-      final String processId, final DirectBuffer payload) {
-    environmentRule.writeCommand(
-        WorkflowInstanceIntent.CREATE,
-        workflowInstanceRecord(BufferUtil.wrapString(processId), payload));
-    final TypedRecord<WorkflowInstanceRecord> createdEvent =
-        awaitAndGetFirstRecordInState(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
-    return createdEvent;
+  public TypedRecord<WorkflowInstanceCreationRecord> createWorkflowInstance(
+      Function<WorkflowInstanceCreationRecord, WorkflowInstanceCreationRecord> transformer) {
+    final long position =
+        environmentRule.writeCommand(
+            WorkflowInstanceCreationIntent.CREATE,
+            transformer.apply(new WorkflowInstanceCreationRecord()));
+
+    return awaitAndGetFirstRecord(
+        ValueType.WORKFLOW_INSTANCE_CREATION,
+        (e, r) ->
+            e.getSourceEventPosition() == position
+                && r.getMetadata().getIntent() == WorkflowInstanceCreationIntent.CREATED,
+        new WorkflowInstanceCreationRecord());
   }
 
   public void completeFirstJob() {
@@ -179,14 +202,39 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource
     environmentRule.writeEvent(jobKey, JobIntent.COMPLETED, createCommand.getValue());
   }
 
-  private static WorkflowInstanceRecord workflowInstanceRecord(
-      final DirectBuffer processId, final DirectBuffer payload) {
-    final WorkflowInstanceRecord record = new WorkflowInstanceRecord();
+  public TypedRecord<WorkflowInstanceRecord> awaitAndGetFirstWorkflowInstanceRecord(
+      Predicate<TypedRecord<WorkflowInstanceRecord>> matcher) {
+    return awaitAndGetFirstRecord(
+        ValueType.WORKFLOW_INSTANCE, matcher, WorkflowInstanceRecord.class);
+  }
 
-    record.setBpmnProcessId(processId);
-    record.setPayload(payload);
+  public <T extends UnpackedObject> TypedRecord<T> awaitAndGetFirstRecord(
+      ValueType valueType, Predicate<TypedRecord<T>> matcher, Class<T> valueClass) {
+    return doRepeatedly(
+            () ->
+                environmentRule
+                    .events()
+                    .filter(r -> Records.isRecordOfType(r, valueType))
+                    .map(e -> CopiedTypedEvent.toTypedEvent(e, valueClass))
+                    .filter(matcher)
+                    .findFirst())
+        .until(Optional::isPresent)
+        .orElse(null);
+  }
 
-    return record;
+  public <T extends UnpackedObject> TypedRecord<T> awaitAndGetFirstRecord(
+      ValueType valueType, BiFunction<CopiedTypedEvent, TypedRecord<T>, Boolean> matcher, T value) {
+    return (TypedRecord)
+        doRepeatedly(
+                () ->
+                    environmentRule
+                        .events()
+                        .filter(r -> Records.isRecordOfType(r, valueType))
+                        .map(e -> new CopiedTypedEvent(e, value))
+                        .filter(e -> matcher.apply(e, e))
+                        .findFirst())
+            .until(Optional::isPresent)
+            .orElse(null);
   }
 
   private TypedRecord<WorkflowInstanceRecord> awaitAndGetFirstRecordInState(

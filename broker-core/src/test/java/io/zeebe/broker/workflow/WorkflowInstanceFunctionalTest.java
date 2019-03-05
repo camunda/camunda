@@ -17,16 +17,16 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.workflow.JobAssert.assertJobHeaders;
-import static io.zeebe.broker.workflow.JobAssert.assertJobRecord;
-import static io.zeebe.broker.workflow.WorkflowAssert.assertWorkflowInstanceRecord;
-import static io.zeebe.broker.workflow.gateway.ParallelGatewayStreamProcessorTest.PROCESS_ID;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.exporter.record.Assertions;
 import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.RecordMetadata;
 import io.zeebe.exporter.record.value.JobRecordValue;
+import io.zeebe.exporter.record.value.VariableRecordValue;
+import io.zeebe.exporter.record.value.WorkflowInstanceCreationRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -34,13 +34,18 @@ import io.zeebe.protocol.BpmnElementType;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
+import io.zeebe.test.util.MsgPackUtil;
+import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.io.File;
 import java.net.URISyntaxException;
 import java.util.Collections;
@@ -48,163 +53,301 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
 import org.assertj.core.util.Files;
-import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class WorkflowInstanceFunctionalTest {
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
+  private static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  private static ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
+  private static PartitionTestClient testClient;
 
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+  @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
-  private PartitionTestClient testClient;
+  @Rule
+  public RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
-  @Before
-  public void init() {
+  @BeforeClass
+  public static void init() {
     testClient = apiRule.partitionClient();
+  }
+
+  @Test
+  public void shouldCreateWorkflowInstance() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    final long workflowKey =
+        testClient
+            .deployWorkflow(Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+            .getKey();
+    final DirectBuffer variables = MsgPackUtil.asMsgPack("foo", "bar");
+
+    // when
+    final WorkflowInstanceCreationRecord workflowInstance =
+        testClient.createWorkflowInstance(r -> r.setKey(workflowKey).setVariables(variables));
+    final long workflowInstanceKey = workflowInstance.getInstanceKey();
+
+    // then
+    final long workflowCompletedPosition =
+        RecordingExporter.workflowInstanceRecords()
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .limitToWorkflowInstanceCompleted()
+            .withElementId(processId)
+            .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .getFirst()
+            .getPosition();
+    final Record<WorkflowInstanceCreationRecordValue> workflowCreated =
+        RecordingExporter.workflowInstanceCreationRecords()
+            .withIntent(WorkflowInstanceCreationIntent.CREATED)
+            .withInstanceKey(workflowInstanceKey)
+            .getFirst();
+    final Record<WorkflowInstanceRecordValue> workflowActivating =
+        RecordingExporter.workflowInstanceRecords()
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .limitToWorkflowInstanceCompleted()
+            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementId(processId)
+            .getFirst();
+    final List<Record<VariableRecordValue>> variablesRecords =
+        RecordingExporter.records()
+            .between(workflowActivating.getSourceRecordPosition(), workflowCompletedPosition)
+            .variableRecords()
+            .collect(Collectors.toList());
+
+    assertThat(workflowActivating.getKey()).isGreaterThan(0).isEqualTo(workflowInstanceKey);
+    assertThat(workflowActivating.getSourceRecordPosition())
+        .isGreaterThan(0)
+        .isEqualTo(workflowCreated.getSourceRecordPosition());
+    Assertions.assertThat(workflowActivating.getValue())
+        .hasBpmnElementType(BpmnElementType.PROCESS)
+        .hasBpmnProcessId(processId)
+        .hasElementId(processId)
+        .hasWorkflowInstanceKey(workflowInstanceKey);
+    assertThat(variablesRecords).hasSize(1);
+    Assertions.assertThat(variablesRecords.get(0))
+        .hasSourceRecordPosition(workflowActivating.getSourceRecordPosition());
+    Assertions.assertThat(variablesRecords.get(0).getValue()).hasName("foo").hasValue("\"bar\"");
   }
 
   @Test
   public void shouldStartWorkflowInstanceAtNoneStartEvent() {
     // given
-    testClient.deploy(Bpmn.createExecutableProcess(PROCESS_ID).startEvent("foo").endEvent().done());
+    final String processId = Strings.newRandomValidBpmnId();
+    final String startId = Strings.newRandomValidBpmnId();
+    testClient.deploy(
+        Bpmn.createExecutableProcess(processId).startEvent(startId).endEvent().done());
 
     // when
-    final ExecuteCommandResponse response =
-        testClient.createWorkflowInstanceWithResponse(PROCESS_ID);
+    final WorkflowInstanceCreationRecord workflowInstance =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(processId));
+    final long workflowInstanceKey = workflowInstance.getInstanceKey();
 
     // then
-    final Record<WorkflowInstanceRecordValue> workflowCreateCmd =
-        testClient.receiveFirstWorkflowInstanceCommand(WorkflowInstanceIntent.CREATE);
+    final Record<WorkflowInstanceCreationRecordValue> workflowCreated =
+        RecordingExporter.workflowInstanceCreationRecords()
+            .withIntent(WorkflowInstanceCreationIntent.CREATED)
+            .withInstanceKey(workflowInstanceKey)
+            .getFirst();
     final Record<WorkflowInstanceRecordValue> startEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(
-            WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnElementType.START_EVENT);
-    final long workflowInstanceKey = response.getKey();
+        RecordingExporter.workflowInstanceRecords()
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .limitToWorkflowInstanceCompleted()
+            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementId(startId)
+            .getFirst();
 
     assertThat(startEvent.getKey()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
-    assertThat(startEvent.getPosition()).isGreaterThan(workflowCreateCmd.getPosition());
-    assertWorkflowInstanceRecord(workflowInstanceKey, "foo", startEvent);
+    assertThat(startEvent.getPosition()).isGreaterThan(workflowCreated.getPosition());
+    Assertions.assertThat(startEvent.getValue())
+        .hasBpmnElementType(BpmnElementType.START_EVENT)
+        .hasBpmnProcessId(processId)
+        .hasElementId(startId)
+        .hasWorkflowInstanceKey(workflowInstanceKey);
   }
 
   @Test
   public void shouldTakeSequenceFlowFromStartEvent() {
     // given
+    final String processId = Strings.newRandomValidBpmnId();
+    final String sequenceId = Strings.newRandomValidBpmnId();
     testClient.deploy(
-        Bpmn.createExecutableProcess(PROCESS_ID)
+        Bpmn.createExecutableProcess(processId)
             .startEvent()
-            .sequenceFlowId("foo")
+            .sequenceFlowId(sequenceId)
             .endEvent()
             .done());
 
     // when
-    final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(processId)).getInstanceKey();
 
     // then
     final Record<WorkflowInstanceRecordValue> sequenceFlow =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN);
+        RecordingExporter.workflowInstanceRecords()
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .limitToWorkflowInstanceCompleted()
+            .withIntent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN)
+            .withElementId(sequenceId)
+            .getFirst();
 
     assertThat(sequenceFlow.getKey()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
-    assertWorkflowInstanceRecord(workflowInstanceKey, "foo", sequenceFlow);
+    Assertions.assertThat(sequenceFlow.getValue())
+        .hasBpmnElementType(BpmnElementType.SEQUENCE_FLOW)
+        .hasBpmnProcessId(processId)
+        .hasElementId(sequenceId)
+        .hasWorkflowInstanceKey(workflowInstanceKey);
   }
 
   @Test
   public void shouldOccurEndEvent() {
     // given
-    testClient.deploy(Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent("foo").done());
+    final String processId = Strings.newRandomValidBpmnId();
+    final String endId = Strings.newRandomValidBpmnId();
+    testClient.deploy(Bpmn.createExecutableProcess(processId).startEvent().endEvent(endId).done());
 
     // when
-    final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(processId)).getInstanceKey();
 
     // then
-    assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .limitToWorkflowInstanceCompleted()
-                .withElementId("foo"))
-        .extracting(r -> r.getMetadata().getIntent())
-        .containsExactly(
-            WorkflowInstanceIntent.ELEMENT_ACTIVATING,
-            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-            WorkflowInstanceIntent.ELEMENT_COMPLETING,
-            WorkflowInstanceIntent.ELEMENT_COMPLETED);
+    final Record<WorkflowInstanceRecordValue> endEvent =
+        RecordingExporter.workflowInstanceRecords()
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .limitToWorkflowInstanceCompleted()
+            .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .withElementId(endId)
+            .getFirst();
 
-    assertWorkflowInstanceRecord(
-        workflowInstanceKey,
-        "foo",
-        testClient.receiveFirstWorkflowInstanceEvent(
-            WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnElementType.END_EVENT));
+    assertThat(endEvent).isNotNull();
+    Assertions.assertThat(endEvent.getValue())
+        .hasBpmnElementType(BpmnElementType.END_EVENT)
+        .hasBpmnProcessId(processId)
+        .hasElementId(endId)
+        .hasWorkflowInstanceKey(workflowInstanceKey);
   }
 
   @Test
   public void shouldActivateServiceTask() {
     // given
+    final String processId = Strings.newRandomValidBpmnId();
+    final String taskId = Strings.newRandomValidBpmnId();
     final BpmnModelInstance model =
-        Bpmn.createExecutableProcess(PROCESS_ID)
+        Bpmn.createExecutableProcess(processId)
             .startEvent()
-            .serviceTask("foo", t -> t.zeebeTaskType("bar"))
+            .serviceTask(taskId, t -> t.zeebeTaskType("bar"))
             .endEvent()
             .done();
 
     testClient.deploy(model);
 
     // when
-    final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(processId)).getInstanceKey();
 
     // then
     final Record<WorkflowInstanceRecordValue> activityReady =
-        testClient.receiveElementInState("foo", WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+        RecordingExporter.workflowInstanceRecords()
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .limitToWorkflowInstanceCompleted()
+            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementId(taskId)
+            .getFirst();
+
     final Record<WorkflowInstanceRecordValue> activatedEvent =
-        testClient.receiveElementInState("foo", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        RecordingExporter.workflowInstanceRecords()
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .limitToWorkflowInstanceCompleted()
+            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementId(taskId)
+            .getFirst();
 
     assertThat(activatedEvent.getKey()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
     assertThat(activatedEvent.getSourceRecordPosition()).isEqualTo(activityReady.getPosition());
-    assertWorkflowInstanceRecord(workflowInstanceKey, "foo", activatedEvent);
+    Assertions.assertThat(activatedEvent.getValue())
+        .hasBpmnElementType(BpmnElementType.SERVICE_TASK)
+        .hasBpmnProcessId(processId)
+        .hasElementId(taskId)
+        .hasWorkflowInstanceKey(workflowInstanceKey);
   }
 
   @Test
   public void shouldCreateTaskWhenServiceTaskIsActivated() {
     // given
+    final String processId = Strings.newRandomValidBpmnId();
+    final String taskId = Strings.newRandomValidBpmnId();
+    final String taskType = Strings.newRandomValidBpmnId();
     testClient.deploy(
-        Bpmn.createExecutableProcess(PROCESS_ID)
+        Bpmn.createExecutableProcess(processId)
             .startEvent()
-            .serviceTask("foo", t -> t.zeebeTaskType("bar").zeebeTaskRetries(5))
+            .serviceTask(taskId, t -> t.zeebeTaskType(taskType).zeebeTaskRetries(5))
             .endEvent()
             .done());
 
     // when
-    testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(processId)).getInstanceKey();
 
     // then
     final Record<WorkflowInstanceRecordValue> activityActivated =
-        testClient.receiveElementInState("foo", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    final Record<JobRecordValue> createJobCmd = testClient.receiveFirstJobCommand(JobIntent.CREATE);
+        RecordingExporter.workflowInstanceRecords()
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .limitToWorkflowInstanceCompleted()
+            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementId(taskId)
+            .getFirst();
+    final Record<JobRecordValue> createJobCmd =
+        RecordingExporter.jobRecords()
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withIntent(JobIntent.CREATE)
+            .withType(taskType)
+            .getFirst();
 
     assertThat(createJobCmd.getKey()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
     assertThat(createJobCmd.getSourceRecordPosition()).isEqualTo(activityActivated.getPosition());
-    assertJobRecord(createJobCmd);
+    Assertions.assertThat(createJobCmd.getValue()).hasRetries(5).hasType(taskType);
+    Assertions.assertThat(createJobCmd.getValue().getHeaders())
+        .hasBpmnProcessId(processId)
+        .hasElementId(taskId)
+        .hasWorkflowInstanceKey(workflowInstanceKey);
   }
 
   @Test
   public void shouldCreateJobWithWorkflowInstanceAndCustomHeaders() {
     // given
+    final String processId = Strings.newRandomValidBpmnId();
+    final String taskId = Strings.newRandomValidBpmnId();
+    final String taskType = Strings.newRandomValidBpmnId();
     testClient.deploy(
-        Bpmn.createExecutableProcess(PROCESS_ID)
+        Bpmn.createExecutableProcess(processId)
             .startEvent()
             .serviceTask(
-                "foo",
-                t -> t.zeebeTaskType("bar").zeebeTaskHeader("a", "b").zeebeTaskHeader("c", "d"))
+                taskId,
+                t -> t.zeebeTaskType(taskType).zeebeTaskHeader("a", "b").zeebeTaskHeader("c", "d"))
             .endEvent()
             .done());
 
     // when
-    final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(processId)).getInstanceKey();
 
     // then
-    final Record<JobRecordValue> event = testClient.receiveFirstJobCommand(JobIntent.CREATE);
-    assertJobHeaders(workflowInstanceKey, "foo", event);
+    final Record<JobRecordValue> event =
+        RecordingExporter.jobRecords()
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .withIntent(JobIntent.CREATE)
+            .withType(taskType)
+            .getFirst();
+
+    Assertions.assertThat(event.getValue().getHeaders())
+        .hasBpmnProcessId(processId)
+        .hasElementId(taskId)
+        .hasWorkflowInstanceKey(workflowInstanceKey);
 
     final Map<String, Object> customHeaders = event.getValue().getCustomHeaders();
     assertThat(customHeaders).containsEntry("a", "b").containsEntry("c", "d");
@@ -213,66 +356,97 @@ public class WorkflowInstanceFunctionalTest {
   @Test
   public void shouldCompleteServiceTaskWhenTaskIsCompleted() {
     // given
+    final String processId = Strings.newRandomValidBpmnId();
+    final String taskId = Strings.newRandomValidBpmnId();
+    final String taskType = Strings.newRandomValidBpmnId();
     final BpmnModelInstance definition =
-        Bpmn.createExecutableProcess(PROCESS_ID)
+        Bpmn.createExecutableProcess(processId)
             .startEvent()
-            .serviceTask("foo", t -> t.zeebeTaskType("bar"))
+            .serviceTask(taskId, t -> t.zeebeTaskType(taskType))
             .endEvent()
             .done();
 
     testClient.deploy(definition);
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(processId)).getInstanceKey();
 
     // when
-    testClient.completeJobOfType("bar");
+    testClient.activateAndCompleteFirstJob(
+        taskType, r -> r.getHeaders().getWorkflowInstanceKey() == workflowInstanceKey);
 
     // then
     final Record<WorkflowInstanceRecordValue> activityActivatedEvent =
-        testClient.receiveElementInState("foo", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        RecordingExporter.workflowInstanceRecords()
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .limitToWorkflowInstanceCompleted()
+            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementId(taskId)
+            .getFirst();
     final Record<JobRecordValue> jobCompleted =
         testClient.receiveFirstJobEvent(JobIntent.COMPLETED);
     final Record<WorkflowInstanceRecordValue> activityCompleting =
-        testClient.receiveElementInState("foo", WorkflowInstanceIntent.ELEMENT_COMPLETING);
+        RecordingExporter.workflowInstanceRecords()
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .limitToWorkflowInstanceCompleted()
+            .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETING)
+            .withElementId(taskId)
+            .getFirst();
     final Record<WorkflowInstanceRecordValue> activityCompletedEvent =
-        testClient.receiveElementInState("foo", WorkflowInstanceIntent.ELEMENT_COMPLETED);
+        RecordingExporter.workflowInstanceRecords()
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .limitToWorkflowInstanceCompleted()
+            .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .withElementId(taskId)
+            .getFirst();
 
     assertThat(activityCompleting.getSourceRecordPosition()).isEqualTo(jobCompleted.getPosition());
     assertThat(activityCompletedEvent.getKey()).isEqualTo(activityActivatedEvent.getKey());
     assertThat(activityCompletedEvent.getSourceRecordPosition())
         .isEqualTo(activityCompleting.getPosition());
-    assertWorkflowInstanceRecord(workflowInstanceKey, "foo", activityCompletedEvent);
+    Assertions.assertThat(activityCompletedEvent.getValue())
+        .hasBpmnElementType(BpmnElementType.SERVICE_TASK)
+        .hasBpmnProcessId(processId)
+        .hasElementId(taskId)
+        .hasWorkflowInstanceKey(workflowInstanceKey);
   }
 
+  // todo(npepinpe): is this a useful test?
   @Test
   public void testWorkflowInstanceStatesWithServiceTask() {
     // given
+    final String processId = Strings.newRandomValidBpmnId();
+    final String startId = Strings.newRandomValidBpmnId();
+    final String taskId = Strings.newRandomValidBpmnId();
+    final String endId = Strings.newRandomValidBpmnId();
+    final String taskType = Strings.newRandomValidBpmnId();
     final BpmnModelInstance definition =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent("a")
-            .serviceTask("b", t -> t.zeebeTaskType("foo"))
-            .endEvent("c")
+        Bpmn.createExecutableProcess(processId)
+            .startEvent(startId)
+            .serviceTask(taskId, t -> t.zeebeTaskType(taskType))
+            .endEvent(endId)
             .done();
 
     testClient.deploy(definition);
 
-    testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(processId)).getInstanceKey();
 
     // when
-    testClient.completeJobOfType("foo");
+    testClient.activateAndCompleteFirstJob(
+        taskType, r -> r.getHeaders().getWorkflowInstanceKey() == workflowInstanceKey);
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> workflowEvents =
-        testClient
-            .receiveWorkflowInstances()
+        RecordingExporter.workflowInstanceRecords()
+            .withWorkflowInstanceKey(workflowInstanceKey)
             .limitToWorkflowInstanceCompleted()
             .collect(Collectors.toList());
 
     assertThat(workflowEvents)
         .extracting(Record::getMetadata)
-        .extracting(e -> e.getIntent())
+        .extracting(RecordMetadata::getIntent)
         .containsExactly(
-            WorkflowInstanceIntent.CREATE,
             WorkflowInstanceIntent.ELEMENT_ACTIVATING,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
             WorkflowInstanceIntent.ELEMENT_ACTIVATING,
@@ -296,6 +470,7 @@ public class WorkflowInstanceFunctionalTest {
   @Test
   public void shouldCreateAndCompleteInstanceOfYamlWorkflow() throws URISyntaxException {
     // given
+    final String processId = "yaml-workflow";
     final File yamlFile =
         new File(getClass().getResource("/workflows/simple-workflow.yaml").toURI());
     final String yamlWorkflow = Files.contentOf(yamlFile, UTF_8);
@@ -316,49 +491,29 @@ public class WorkflowInstanceFunctionalTest {
 
     testClient.receiveFirstDeploymentEvent(DeploymentIntent.CREATED, deploymentResp.getKey());
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance("yaml-workflow");
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(processId)).getInstanceKey();
 
     // when
-    testClient.completeJobOfType("foo");
-    testClient.completeJobOfType("bar");
+    testClient.activateAndCompleteFirstJob(
+        "foo", r -> r.getHeaders().getWorkflowInstanceKey() == workflowInstanceKey);
+    testClient.activateAndCompleteFirstJob(
+        "bar", r -> r.getHeaders().getWorkflowInstanceKey() == workflowInstanceKey);
 
     // then
     final Record<WorkflowInstanceRecordValue> event =
-        testClient.receiveElementInState("yaml-workflow", WorkflowInstanceIntent.ELEMENT_COMPLETED);
+        RecordingExporter.workflowInstanceRecords()
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .limitToWorkflowInstanceCompleted()
+            .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .withElementId("yaml-workflow")
+            .getFirst();
 
     assertThat(event.getKey()).isEqualTo(workflowInstanceKey);
-    assertWorkflowInstanceRecord("yaml-workflow", 1, workflowInstanceKey, "yaml-workflow", event);
-  }
-
-  /**
-   * Scenario: When system partition stream processor is reprocessing after restart, it may not be
-   * able to return a workflow that it already returned successfully before restart.
-   */
-  @Test
-  public void shouldReprocessWorkflowInstanceRecordsWhenWorkflowIsTemporarilyUnavailable() {
-    // given
-    // make a couple of deployments to ensure that the deployment stream processor will need some
-    // time for reprocessing
-    final int numDeployments = 25;
-    for (int i = 0; i < numDeployments; i++) {
-      testClient.deploy(
-          Bpmn.createExecutableProcess(PROCESS_ID)
-              .startEvent()
-              .serviceTask("foo", t -> t.zeebeTaskType("bar"))
-              .endEvent()
-              .done());
-    }
-
-    testClient.createWorkflowInstance(PROCESS_ID);
-
-    brokerRule.stopBroker();
-    brokerRule.purgeSnapshots();
-
-    // when
-    brokerRule.startBroker();
-
-    // then I can still start workflow instance (i.e. stream processor did not crash
-    final long newWorkflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
-    assertThat(newWorkflowInstanceKey).isGreaterThan(0);
+    Assertions.assertThat(event.getValue())
+        .hasBpmnElementType(BpmnElementType.PROCESS)
+        .hasBpmnProcessId(processId)
+        .hasElementId("yaml-workflow")
+        .hasWorkflowInstanceKey(workflowInstanceKey);
   }
 }

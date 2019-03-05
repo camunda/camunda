@@ -107,7 +107,7 @@ public class TimerCatchEventTest {
             .done();
 
     testClient.deploy(workflow);
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // then
     assertThat(
@@ -142,7 +142,8 @@ public class TimerCatchEventTest {
             .done();
 
     testClient.deploy(workflow);
-    final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID)).getInstanceKey();
 
     // when
     final Record<WorkflowInstanceRecordValue> activatedEvent =
@@ -165,7 +166,7 @@ public class TimerCatchEventTest {
   public void shouldTriggerTimer() {
     // given
     testClient.deploy(SINGLE_TIMER_WORKFLOW);
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // when
     final Record<TimerRecordValue> createdEvent =
@@ -187,7 +188,7 @@ public class TimerCatchEventTest {
   public void shouldCompleteTimerEvent() {
     // given
     testClient.deploy(SINGLE_TIMER_WORKFLOW);
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // when
     final Record<WorkflowInstanceRecordValue> activatedEvent =
@@ -218,7 +219,7 @@ public class TimerCatchEventTest {
             .done();
 
     testClient.deploy(workflow);
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // then
     assertThat(RecordingExporter.timerRecords(TimerIntent.TRIGGERED).exists()).isTrue();
@@ -235,7 +236,7 @@ public class TimerCatchEventTest {
             .done();
 
     testClient.deploy(workflow);
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // then
     assertThat(RecordingExporter.timerRecords(TimerIntent.TRIGGERED).exists()).isTrue();
@@ -256,7 +257,7 @@ public class TimerCatchEventTest {
             .done();
 
     testClient.deploy(workflow);
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // when
     brokerRule.getClock().addTime(Duration.ofSeconds(1));
@@ -296,7 +297,8 @@ public class TimerCatchEventTest {
             .done();
 
     testClient.deploy(workflow);
-    final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID)).getInstanceKey();
 
     // when
     final Record<TimerRecordValue> createdEvent =
@@ -319,7 +321,7 @@ public class TimerCatchEventTest {
     testClient.deploy(BOUNDARY_EVENT_WORKFLOW);
     brokerRule.getClock().pinCurrentTime();
     final long nowMs = brokerRule.getClock().getCurrentTimeInMillis();
-    testClient.createWorkflowInstance("process");
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId("process"));
 
     // when
     final Record<TimerRecordValue> timerCreatedRecord =
@@ -340,7 +342,7 @@ public class TimerCatchEventTest {
   public void shouldTriggerHandlerNodeWhenAttachedToActivity() {
     // given
     testClient.deploy(BOUNDARY_EVENT_WORKFLOW);
-    testClient.createWorkflowInstance("process");
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId("process"));
 
     // when
     RecordingExporter.timerRecords(TimerIntent.CREATED).getFirst();
@@ -360,7 +362,7 @@ public class TimerCatchEventTest {
     testClient.deploy(TWO_REPS_CYCLE_WORKFLOW);
     brokerRule.getClock().pinCurrentTime();
     final long nowMs = brokerRule.getClock().getCurrentTimeInMillis();
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // when
     final Record<TimerRecordValue> timerCreatedRecord =
@@ -380,7 +382,7 @@ public class TimerCatchEventTest {
     // given
     testClient.deploy(TWO_REPS_CYCLE_WORKFLOW);
     brokerRule.getClock().pinCurrentTime();
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // when
     assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).getFirst()).isNotNull();
@@ -404,7 +406,7 @@ public class TimerCatchEventTest {
     final int expectedRepetitions = 5;
     testClient.deploy(INFINITE_CYCLE_WORKFLOW);
     brokerRule.getClock().pinCurrentTime();
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // when
     assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).getFirst()).isNotNull();

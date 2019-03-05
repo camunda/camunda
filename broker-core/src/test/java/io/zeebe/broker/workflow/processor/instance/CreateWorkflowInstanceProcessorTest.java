@@ -55,8 +55,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.junit.MockitoJUnitRunner;
 
 @SuppressWarnings("unchecked")
@@ -64,11 +62,9 @@ import org.mockito.junit.MockitoJUnitRunner;
 public class CreateWorkflowInstanceProcessorTest
     extends CommandProcessorTestCase<WorkflowInstanceCreationRecord> {
 
-  public static final BpmnModelInstance VALID_WORKFLOW =
+  private static final BpmnModelInstance VALID_WORKFLOW =
       Bpmn.createExecutableProcess().startEvent().endEvent().done();
   private static DeploymentTransformer transformer;
-
-  @Captor private ArgumentCaptor<WorkflowInstanceRecord> newWorkflowInstanceCaptor;
 
   private ZeebeState state;
   private KeyGenerator keyGenerator;
@@ -163,7 +159,7 @@ public class CreateWorkflowInstanceProcessorTest
             .message(m -> m.name("message").zeebeCorrelationKey("$.key"))
             .endEvent()
             .done();
-    final DeployedWorkflow workflow = newWorkflow(process);
+    final DeployedWorkflow workflow = deployNewWorkflow(process);
     final TypedRecord<WorkflowInstanceCreationRecord> command =
         newCommand(WorkflowInstanceCreationRecord.class);
     command.getValue().setBpmnProcessId(workflow.getBpmnProcessId());
@@ -179,7 +175,7 @@ public class CreateWorkflowInstanceProcessorTest
   @Test
   public void shouldRejectIfVariablesIsAnInvalidDocument() {
     // given
-    final DeployedWorkflow workflow = newWorkflow();
+    final DeployedWorkflow workflow = deployNewWorkflow();
     final TypedRecord<WorkflowInstanceCreationRecord> command =
         newCommand(WorkflowInstanceCreationRecord.class);
     final MutableDirectBuffer badDocument = new UnsafeBuffer(MsgPackUtil.asMsgPack("{ 'foo': 1 }"));
@@ -199,7 +195,7 @@ public class CreateWorkflowInstanceProcessorTest
     // given
     final DirectBuffer payload =
         MsgPackUtil.asMsgPack(Maps.of(entry("foo", "bar"), entry("baz", "boz")));
-    final DeployedWorkflow workflow = newWorkflow();
+    final DeployedWorkflow workflow = deployNewWorkflow();
     final TypedRecord<WorkflowInstanceCreationRecord> command =
         newCommand(WorkflowInstanceCreationRecord.class);
     command.getValue().setBpmnProcessId(workflow.getBpmnProcessId()).setVariables(payload);
@@ -223,7 +219,7 @@ public class CreateWorkflowInstanceProcessorTest
   public void shouldSetVariablesFromDocument() {
     // given
     final Map<String, Object> document = Maps.of(entry("foo", "bar"), entry("baz", "boz"));
-    final DeployedWorkflow workflow = newWorkflow();
+    final DeployedWorkflow workflow = deployNewWorkflow();
     final TypedRecord<WorkflowInstanceCreationRecord> command =
         newCommand(WorkflowInstanceCreationRecord.class);
     command
@@ -242,6 +238,57 @@ public class CreateWorkflowInstanceProcessorTest
         variablesState.getVariableLocal(scopeKey, BufferUtil.wrapString("foo")), "\"bar\"");
     MsgPackUtil.assertEquality(
         variablesState.getVariableLocal(scopeKey, BufferUtil.wrapString("baz")), "\"boz\"");
+  }
+
+  @Test
+  public void shouldAcceptAndUpdateKey() {
+    // given
+    final DeployedWorkflow workflow = deployNewWorkflow();
+    final TypedRecord<WorkflowInstanceCreationRecord> command =
+        newCommand(WorkflowInstanceCreationRecord.class);
+    command.getValue().setBpmnProcessId(workflow.getBpmnProcessId());
+
+    // when
+    processor.onCommand(command, controller, streamWriter);
+
+    // then
+    final WorkflowInstanceCreationRecord acceptedRecord =
+        getAcceptedRecord(WorkflowInstanceCreationIntent.CREATED);
+    assertThat(acceptedRecord.getKey()).isEqualTo(workflow.getKey());
+  }
+
+  @Test
+  public void shouldAcceptAndUpdateVersion() {
+    // given
+    final DeployedWorkflow workflow = deployNewWorkflow();
+    final TypedRecord<WorkflowInstanceCreationRecord> command =
+        newCommand(WorkflowInstanceCreationRecord.class);
+    command.getValue().setBpmnProcessId(workflow.getBpmnProcessId());
+
+    // when
+    processor.onCommand(command, controller, streamWriter);
+
+    // then
+    final WorkflowInstanceCreationRecord acceptedRecord =
+        getAcceptedRecord(WorkflowInstanceCreationIntent.CREATED);
+    assertThat(acceptedRecord.getVersion()).isEqualTo(workflow.getVersion());
+  }
+
+  @Test
+  public void shouldAcceptAndUpdateProcessId() {
+    // given
+    final DeployedWorkflow workflow = deployNewWorkflow();
+    final TypedRecord<WorkflowInstanceCreationRecord> command =
+        newCommand(WorkflowInstanceCreationRecord.class);
+    command.getValue().setKey(workflow.getKey());
+
+    // when
+    processor.onCommand(command, controller, streamWriter);
+
+    // then
+    final WorkflowInstanceCreationRecord acceptedRecord =
+        getAcceptedRecord(WorkflowInstanceCreationIntent.CREATED);
+    assertThat(acceptedRecord.getBpmnProcessId()).isEqualTo(workflow.getBpmnProcessId());
   }
 
   private WorkflowInstanceRecord newExpectedElementActivatingRecord(
@@ -265,11 +312,11 @@ public class CreateWorkflowInstanceProcessorTest
             eq(instance.getValue()));
   }
 
-  private DeployedWorkflow newWorkflow() {
-    return newWorkflow(VALID_WORKFLOW);
+  private DeployedWorkflow deployNewWorkflow() {
+    return deployNewWorkflow(VALID_WORKFLOW);
   }
 
-  private DeployedWorkflow newWorkflow(BpmnModelInstance model) {
+  private DeployedWorkflow deployNewWorkflow(BpmnModelInstance model) {
     final long key = keyGenerator.nextKey();
     final DeploymentRecord deployment = newDeployment(model);
     final Workflow workflow = deployment.workflows().iterator().next();

@@ -94,7 +94,10 @@ public class ExpressionIncidentTest {
     // given
 
     // when
-    testClient.createWorkflowInstance("workflow", asMsgPack("foo", 12));
+    testClient
+        .createWorkflowInstance(
+            r -> r.setBpmnProcessId("workflow").setVariables(asMsgPack("foo", 12)))
+        .getInstanceKey();
 
     // then incident is created
     final Record<WorkflowInstanceRecordValue> failingEvent =
@@ -119,7 +122,10 @@ public class ExpressionIncidentTest {
     // given
 
     // when
-    testClient.createWorkflowInstance("workflow", asMsgPack("foo", "bar"));
+    testClient
+        .createWorkflowInstance(
+            r -> r.setBpmnProcessId("workflow").setVariables(asMsgPack("foo", "bar")))
+        .getInstanceKey();
 
     // then incident is created
     final Record<IncidentRecordValue> incidentEvent =
@@ -138,7 +144,10 @@ public class ExpressionIncidentTest {
     // given
 
     // when
-    testClient.createWorkflowInstance("workflow", asMsgPack("foo", "bar"));
+    testClient
+        .createWorkflowInstance(
+            r -> r.setBpmnProcessId("workflow").setVariables(asMsgPack("foo", "bar")))
+        .getInstanceKey();
 
     // then incident is created
     final Record<IncidentRecordValue> incidentEvent =
@@ -190,7 +199,10 @@ public class ExpressionIncidentTest {
   @Test
   public void shouldResolveIncidentForFailedConditionAfterUploadingWrongPayload() {
     // given
-    testClient.createWorkflowInstance("workflow", asMsgPack("foo", "bar"));
+    testClient
+        .createWorkflowInstance(
+            r -> r.setBpmnProcessId("workflow").setVariables(asMsgPack("foo", "bar")))
+        .getInstanceKey();
 
     final long incidentKey = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED).getKey();
     final long failedEventKey =
@@ -256,7 +268,10 @@ public class ExpressionIncidentTest {
     // given
 
     // when
-    testClient.createWorkflowInstance("workflow", asMsgPack("foo", 12));
+    testClient
+        .createWorkflowInstance(
+            r -> r.setBpmnProcessId("workflow").setVariables(asMsgPack("foo", 12)))
+        .getInstanceKey();
 
     // then incident is created
     final Record<IncidentRecordValue> incidentEvent =
@@ -280,7 +295,10 @@ public class ExpressionIncidentTest {
     // given
 
     final long workflowInstance =
-        testClient.createWorkflowInstance("workflow", asMsgPack("foo", "bar"));
+        testClient
+            .createWorkflowInstance(
+                r -> r.setBpmnProcessId("workflow").setVariables(asMsgPack("foo", "bar")))
+            .getInstanceKey();
 
     // when
     testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);

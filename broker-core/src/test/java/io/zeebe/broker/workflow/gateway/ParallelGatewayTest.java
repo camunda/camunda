@@ -31,9 +31,9 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.MsgPackUtil;
-import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -84,7 +84,7 @@ public class ParallelGatewayTest {
     testClient.deploy(FORK_PROCESS);
 
     // when
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> taskEvents =
@@ -106,7 +106,7 @@ public class ParallelGatewayTest {
   public void shouldCompleteScopeWhenAllPathsCompleted() {
     // given
     testClient.deploy(FORK_PROCESS);
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
     testClient.completeJobOfType("type1");
 
     // when
@@ -142,7 +142,7 @@ public class ParallelGatewayTest {
     testClient.deploy(process);
 
     // when
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
@@ -163,10 +163,10 @@ public class ParallelGatewayTest {
   public void shouldPropagatePayloadOnSplit() {
     // given
     testClient.deploy(FORK_PROCESS);
-    final byte[] payload = BufferUtil.bufferAsArray(MsgPackUtil.asMsgPack("key", "val"));
+    final DirectBuffer variables = MsgPackUtil.asMsgPack("key", "val");
 
     // when
-    testClient.createWorkflowInstance(PROCESS_ID, payload);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID).setVariables(variables));
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> taskEvents =
@@ -179,7 +179,7 @@ public class ParallelGatewayTest {
 
     assertThat(taskEvents)
         .extracting(e -> MsgPackUtil.asMsgPackReturnArray(e.getValue().getPayload()))
-        .allSatisfy(p -> p.equals(payload));
+        .allSatisfy(p -> p.equals(variables));
   }
 
   @Test
@@ -197,7 +197,7 @@ public class ParallelGatewayTest {
     testClient.deploy(process);
 
     // when
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
@@ -234,7 +234,7 @@ public class ParallelGatewayTest {
     testClient.deploy(process);
 
     // when
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
@@ -256,7 +256,7 @@ public class ParallelGatewayTest {
     testClient.deploy(FORK_JOIN_PROCESS);
 
     // when
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> events =
@@ -297,7 +297,7 @@ public class ParallelGatewayTest {
 
     testClient.deploy(process);
 
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // waiting until we have signalled the first incoming sequence flow twice
     // => this should not trigger the gateway yet
@@ -349,7 +349,7 @@ public class ParallelGatewayTest {
     testClient.deploy(process);
 
     // when
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> elementInstances =
@@ -381,7 +381,7 @@ public class ParallelGatewayTest {
     testClient.deploy(process);
 
     // when
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
 
     // then
     final List<Record<WorkflowInstanceRecordValue>> taskEvents =

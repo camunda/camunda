@@ -19,11 +19,11 @@ import io.zeebe.gateway.api.util.StubbedGateway;
 import io.zeebe.gateway.api.util.StubbedGateway.RequestStub;
 import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 
 public class CreateWorkflowInstanceStub
     implements RequestStub<
-        BrokerCreateWorkflowInstanceRequest, BrokerResponse<WorkflowInstanceRecord>> {
+        BrokerCreateWorkflowInstanceRequest, BrokerResponse<WorkflowInstanceCreationRecord>> {
 
   public static final long WORKFLOW_INSTANCE_KEY = 123;
   public static final String PROCESS_ID = "process";
@@ -52,16 +52,14 @@ public class CreateWorkflowInstanceStub
   }
 
   @Override
-  public BrokerResponse<WorkflowInstanceRecord> handle(BrokerCreateWorkflowInstanceRequest request)
-      throws Exception {
-    final WorkflowInstanceRecord response = new WorkflowInstanceRecord();
-    response.setWorkflowInstanceKey(WORKFLOW_INSTANCE_KEY);
-    response.setElementId(PROCESS_ID);
+  public BrokerResponse<WorkflowInstanceCreationRecord> handle(
+      BrokerCreateWorkflowInstanceRequest request) throws Exception {
+    final WorkflowInstanceCreationRecord response = new WorkflowInstanceCreationRecord();
     response.setBpmnProcessId(PROCESS_ID);
-    response.setPayload(request.getRequestWriter().getPayload());
-    response.setFlowScopeKey(-1);
+    response.setVariables(request.getRequestWriter().getVariables());
     response.setVersion(PROCESS_VERSION);
-    response.setWorkflowKey(WORKFLOW_KEY);
+    response.setKey(WORKFLOW_KEY);
+    response.setInstanceKey(WORKFLOW_INSTANCE_KEY);
 
     return new BrokerResponse<>(response, 0, WORKFLOW_INSTANCE_KEY);
   }

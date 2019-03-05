@@ -41,12 +41,7 @@ public class ZeebeAssertHelper {
   }
 
   public static void assertWorkflowInstanceCreated(long workflowInstanceKey) {
-    assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
-                .withRecordKey(workflowInstanceKey)
-                .withWorkflowInstanceKey(workflowInstanceKey)
-                .exists())
-        .isTrue();
+    assertWorkflowInstanceCreated(workflowInstanceKey, w -> {});
   }
 
   public static void assertWorkflowInstanceCreated(Consumer<WorkflowInstanceRecordValue> consumer) {
@@ -168,6 +163,23 @@ public class ZeebeAssertHelper {
     assertThat(workflowInstanceRecordValueRecord).isNotNull();
 
     eventConsumer.accept(workflowInstanceRecordValueRecord.getValue());
+  }
+
+  public static void assertWorkflowInstanceState(
+      long workflowInstanceKey,
+      WorkflowInstanceIntent intent,
+      Consumer<WorkflowInstanceRecordValue> consumer) {
+    consumeFirstWorkflowInstanceRecord(
+        RecordingExporter.workflowInstanceRecords(intent)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .filter(r -> r.getKey() == r.getValue().getWorkflowInstanceKey()),
+        consumer);
+  }
+
+  public static void assertWorkflowInstanceCreated(
+      long workflowInstanceKey, Consumer<WorkflowInstanceRecordValue> consumer) {
+    assertWorkflowInstanceState(
+        workflowInstanceKey, WorkflowInstanceIntent.ELEMENT_ACTIVATING, consumer);
   }
 
   public static void assertWorkflowInstanceState(

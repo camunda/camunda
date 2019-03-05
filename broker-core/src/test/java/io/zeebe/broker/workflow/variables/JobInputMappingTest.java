@@ -25,9 +25,11 @@ import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.util.JsonUtil;
+import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.function.Consumer;
+import org.agrona.DirectBuffer;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -98,7 +100,12 @@ public class JobInputMappingTest {
             .getWorkflowKey();
 
     // when
-    final long workflowInstanceKey = apiRule.createWorkflowInstance(workflowKey, initialPayload);
+    final DirectBuffer variables = MsgPackUtil.asMsgPack(initialPayload);
+    final long workflowInstanceKey =
+        apiRule
+            .partitionClient()
+            .createWorkflowInstance(r -> r.setKey(workflowKey).setVariables(variables))
+            .getInstanceKey();
     RecordingExporter.jobRecords(JobIntent.CREATED).await();
     apiRule.activateJobs("test");
 

@@ -174,8 +174,11 @@ public class MessageOutputMappingTest {
 
     // when
     final long workflowInstanceKey =
-        apiRule.createWorkflowInstance(workflowKey, MsgPackUtil.asMsgPack(payload));
-
+        apiRule
+            .partitionClient()
+            .createWorkflowInstance(
+                r -> r.setKey(workflowKey).setVariables(MsgPackUtil.asMsgPack(payload)))
+            .getInstanceKey();
     apiRule.publishMessage(MESSAGE_NAME, correlationKey, MsgPackUtil.asMsgPack(messagePayload));
 
     // then

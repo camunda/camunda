@@ -102,9 +102,9 @@ public class RequestMapper {
 
     brokerRequest
         .setBpmnProcessId(grpcRequest.getBpmnProcessId())
-        .setWorkflowKey(grpcRequest.getWorkflowKey())
+        .setKey(grpcRequest.getWorkflowKey())
         .setVersion(grpcRequest.getVersion())
-        .setPayload(ensureJsonSet(grpcRequest.getPayload()));
+        .setVariables(ensureJsonSet(grpcRequest.getPayload()));
 
     return brokerRequest;
   }

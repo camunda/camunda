@@ -102,7 +102,8 @@ public class CancelWorkflowInstanceTest {
   public void shouldCancelWorkflowInstance() {
     // given
     testClient.deploy(WORKFLOW);
-    final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID)).getInstanceKey();
     testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
@@ -139,7 +140,7 @@ public class CancelWorkflowInstanceTest {
   public void shouldNotCancelElementInstance() {
     // given
     testClient.deploy(WORKFLOW);
-    testClient.createWorkflowInstance(PROCESS_ID);
+    testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID));
     final Record<WorkflowInstanceRecordValue> task =
         testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
@@ -160,7 +161,8 @@ public class CancelWorkflowInstanceTest {
   public void shouldCancelWorkflowInstanceWithEmbeddedSubProcess() {
     // given
     testClient.deploy(SUB_PROCESS_WORKFLOW);
-    final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID)).getInstanceKey();
     testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
@@ -192,7 +194,8 @@ public class CancelWorkflowInstanceTest {
     // given
     testClient.deploy(WORKFLOW);
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID)).getInstanceKey();
 
     final Record<WorkflowInstanceRecordValue> activityActivatedEvent =
         testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
@@ -213,7 +216,8 @@ public class CancelWorkflowInstanceTest {
   public void shouldCancelWorkflowInstanceWithParallelExecution() {
     // given
     testClient.deploy(FORK_PROCESS);
-    final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID)).getInstanceKey();
     testClient.receiveElementInState("task1", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
     testClient.receiveElementInState("task2", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
@@ -256,7 +260,10 @@ public class CancelWorkflowInstanceTest {
             .done());
 
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("id", "123"));
+        testClient
+            .createWorkflowInstance(
+                r -> r.setBpmnProcessId(PROCESS_ID).setVariables(asMsgPack("id", "123")))
+            .getInstanceKey();
 
     testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
@@ -276,7 +283,8 @@ public class CancelWorkflowInstanceTest {
     // given
     testClient.deploy(WORKFLOW);
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID)).getInstanceKey();
 
     final Record<JobRecordValue> jobCreatedEvent =
         testClient.receiveJobs().withIntent(JobIntent.CREATED).getFirst();
@@ -328,7 +336,8 @@ public class CancelWorkflowInstanceTest {
     // given
     testClient.deploy(Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done());
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID)).getInstanceKey();
 
     testClient.receiveElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
@@ -362,7 +371,8 @@ public class CancelWorkflowInstanceTest {
     // given
     testClient.deploy(WORKFLOW);
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID)).getInstanceKey();
     cancelWorkflowInstance(workflowInstanceKey);
 
     // when
@@ -382,7 +392,8 @@ public class CancelWorkflowInstanceTest {
   public void shouldWriteEntireEventOnCancel() {
     // given
     testClient.deploy(WORKFLOW);
-    final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID)).getInstanceKey();
     final io.zeebe.exporter.record.Record<WorkflowInstanceRecordValue> activatedEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
             .withElementId(PROCESS_ID)

@@ -24,46 +24,57 @@ import static org.assertj.core.api.Assertions.entry;
 import io.grpc.Status.Code;
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.client.api.commands.Workflow;
 import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.cmd.ClientStatusException;
 import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.test.util.Strings;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Collections;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 public class CreateWorkflowInstanceTest {
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
+  private static EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  private static GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
 
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
+  @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
+
+  @Rule
+  public RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   @Rule public ExpectedException exception = ExpectedException.none();
 
   private DeploymentEvent firstDeployment;
+  private DeploymentEvent secondDeployment;
+  private String processId;
 
   @Before
   public void deployProcess() {
+    processId = Strings.newRandomValidBpmnId();
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(processId).startEvent().endEvent().done();
+
     firstDeployment =
         clientRule
             .getClient()
             .newDeployCommand()
-            .addWorkflowModel(
-                Bpmn.createExecutableProcess("anId").startEvent().endEvent().done(),
-                "workflow.bpmn")
+            .addWorkflowModel(process, "workflow.bpmn")
             .send()
             .join();
 
-    final DeploymentEvent secondDeployment =
+    secondDeployment =
         clientRule
             .getClient()
             .newDeployCommand()
-            .addWorkflowModel(
-                Bpmn.createExecutableProcess("anId").startEvent().endEvent().done(),
-                "workflow.bpmn")
+            .addWorkflowModel(process, "workflow.bpmn")
             .send()
             .join();
 
@@ -77,69 +88,75 @@ public class CreateWorkflowInstanceTest {
         clientRule
             .getClient()
             .newCreateInstanceCommand()
-            .bpmnProcessId("anId")
+            .bpmnProcessId(processId)
             .latestVersion()
             .send()
             .join();
 
     // then instance of latest of workflow version is created
-    assertThat(workflowInstance.getBpmnProcessId()).isEqualTo("anId");
-    assertThat(workflowInstance.getVersion()).isEqualTo(2);
+    assertThat(workflowInstance.getBpmnProcessId()).isEqualTo(processId);
+    assertThat(workflowInstance.getVersion())
+        .isEqualTo(secondDeployment.getWorkflows().get(0).getVersion());
     assertThat(workflowInstance.getWorkflowInstanceKey()).isGreaterThan(0);
 
-    assertWorkflowInstanceCreated();
+    assertWorkflowInstanceCreated(workflowInstance.getWorkflowInstanceKey());
   }
 
   @Test
   public void shouldCreateBpmnProcessByIdAndVersion() {
     // when
+    final int version = firstDeployment.getWorkflows().get(0).getVersion();
     final WorkflowInstanceEvent workflowInstance =
         clientRule
             .getClient()
             .newCreateInstanceCommand()
-            .bpmnProcessId("anId")
-            .version(1)
+            .bpmnProcessId(processId)
+            .version(version)
             .send()
             .join();
 
     // then instance is created of first workflow version
-    assertThat(workflowInstance.getBpmnProcessId()).isEqualTo("anId");
-    assertThat(workflowInstance.getVersion()).isEqualTo(1);
+    assertThat(workflowInstance.getBpmnProcessId()).isEqualTo(processId);
+    assertThat(workflowInstance.getVersion()).isEqualTo(version);
     assertThat(workflowInstance.getWorkflowInstanceKey()).isGreaterThan(0);
 
-    assertWorkflowInstanceCreated();
+    assertWorkflowInstanceCreated(workflowInstance.getWorkflowInstanceKey());
   }
 
   @Test
   public void shouldCreateBpmnProcessByKey() {
-    final long workflowKey = firstDeployment.getWorkflows().get(0).getWorkflowKey();
+    final Workflow firstWorkflow = firstDeployment.getWorkflows().get(0);
+    final long workflowKey = firstWorkflow.getWorkflowKey();
+    final int version = firstWorkflow.getVersion();
 
     // when
     final WorkflowInstanceEvent workflowInstance =
         clientRule.getClient().newCreateInstanceCommand().workflowKey(workflowKey).send().join();
 
     // then
-    assertThat(workflowInstance.getBpmnProcessId()).isEqualTo("anId");
-    assertThat(workflowInstance.getVersion()).isEqualTo(1);
+    assertThat(workflowInstance.getBpmnProcessId()).isEqualTo(processId);
+    assertThat(workflowInstance.getVersion()).isEqualTo(version);
     assertThat(workflowInstance.getWorkflowKey()).isEqualTo(workflowKey);
 
-    assertWorkflowInstanceCreated();
+    assertWorkflowInstanceCreated(workflowInstance.getWorkflowInstanceKey());
   }
 
   @Test
   public void shouldCreateWithPayload() {
     // when
-    clientRule
-        .getClient()
-        .newCreateInstanceCommand()
-        .bpmnProcessId("anId")
-        .latestVersion()
-        .payload("{\"foo\":\"bar\"}")
-        .send()
-        .join();
+    final WorkflowInstanceEvent event =
+        clientRule
+            .getClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId(processId)
+            .latestVersion()
+            .payload("{\"foo\":\"bar\"}")
+            .send()
+            .join();
 
     // then
     assertWorkflowInstanceCreated(
+        event.getWorkflowInstanceKey(),
         workflowInstance -> {
           assertThat(workflowInstance.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
           assertThat(workflowInstance.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
@@ -149,16 +166,18 @@ public class CreateWorkflowInstanceTest {
   @Test
   public void shouldCreateWithoutPayload() {
     // when
-    clientRule
-        .getClient()
-        .newCreateInstanceCommand()
-        .bpmnProcessId("anId")
-        .latestVersion()
-        .send()
-        .join();
+    final WorkflowInstanceEvent event =
+        clientRule
+            .getClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId(processId)
+            .latestVersion()
+            .send()
+            .join();
 
     // then
     assertWorkflowInstanceCreated(
+        event.getWorkflowInstanceKey(),
         workflowInstance -> {
           assertThat(workflowInstance.getPayload()).isEqualTo("{}");
           assertThat(workflowInstance.getPayloadAsMap()).isEmpty();
@@ -168,17 +187,19 @@ public class CreateWorkflowInstanceTest {
   @Test
   public void shouldCreateWithNullPayload() {
     // when
-    clientRule
-        .getClient()
-        .newCreateInstanceCommand()
-        .bpmnProcessId("anId")
-        .latestVersion()
-        .payload("null")
-        .send()
-        .join();
+    final WorkflowInstanceEvent event =
+        clientRule
+            .getClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId(processId)
+            .latestVersion()
+            .payload("null")
+            .send()
+            .join();
 
     // then
     assertWorkflowInstanceCreated(
+        event.getWorkflowInstanceKey(),
         workflowInstance -> {
           assertThat(workflowInstance.getPayload()).isEqualTo("{}");
           assertThat(workflowInstance.getPayloadAsMap()).isEmpty();
@@ -192,13 +213,13 @@ public class CreateWorkflowInstanceTest {
     exception.expect(hasStatusCode(Code.INVALID_ARGUMENT));
     exception.expect(
         descriptionContains(
-            "Property 'payload' is invalid: Expected document to be a root level object, but was 'ARRAY'"));
+            "Property 'variables' is invalid: Expected document to be a root level object, but was 'ARRAY'"));
 
     // when
     clientRule
         .getClient()
         .newCreateInstanceCommand()
-        .bpmnProcessId("anId")
+        .bpmnProcessId(processId)
         .latestVersion()
         .payload("[]")
         .send()
@@ -208,17 +229,19 @@ public class CreateWorkflowInstanceTest {
   @Test
   public void shouldCreateWithPayloadAsMap() {
     // when
-    clientRule
-        .getClient()
-        .newCreateInstanceCommand()
-        .bpmnProcessId("anId")
-        .latestVersion()
-        .payload(Collections.singletonMap("foo", "bar"))
-        .send()
-        .join();
+    final WorkflowInstanceEvent event =
+        clientRule
+            .getClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId(processId)
+            .latestVersion()
+            .payload(Collections.singletonMap("foo", "bar"))
+            .send()
+            .join();
 
     // then
     assertWorkflowInstanceCreated(
+        event.getWorkflowInstanceKey(),
         workflowInstance -> {
           assertThat(workflowInstance.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
           assertThat(workflowInstance.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
@@ -231,17 +254,19 @@ public class CreateWorkflowInstanceTest {
     payload.foo = "bar";
 
     // when
-    clientRule
-        .getClient()
-        .newCreateInstanceCommand()
-        .bpmnProcessId("anId")
-        .latestVersion()
-        .payload(payload)
-        .send()
-        .join();
+    final WorkflowInstanceEvent event =
+        clientRule
+            .getClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId(processId)
+            .latestVersion()
+            .payload(payload)
+            .send()
+            .join();
 
     // then
     assertWorkflowInstanceCreated(
+        event.getWorkflowInstanceKey(),
         workflowInstance -> {
           assertThat(workflowInstance.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
           assertThat(workflowInstance.getPayloadAsMap()).containsOnly(entry("foo", "bar"));

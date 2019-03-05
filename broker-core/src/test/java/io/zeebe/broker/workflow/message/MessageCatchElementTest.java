@@ -186,7 +186,13 @@ public class MessageCatchElementTest {
   public void init() {
     correlationKey = UUID.randomUUID().toString();
     workflowInstanceKey =
-        apiRule.createWorkflowInstance(bpmnProcessId, asMsgPack("orderId", correlationKey));
+        apiRule
+            .partitionClient()
+            .createWorkflowInstance(
+                r ->
+                    r.setBpmnProcessId(bpmnProcessId)
+                        .setVariables(asMsgPack("orderId", correlationKey)))
+            .getInstanceKey();
   }
 
   @Test

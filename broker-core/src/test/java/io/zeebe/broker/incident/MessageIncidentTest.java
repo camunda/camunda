@@ -72,7 +72,8 @@ public class MessageIncidentTest {
   @Test
   public void shouldCreateIncidentIfCorrelationKeyNotFound() {
     // when
-    final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID)).getInstanceKey();
 
     final Record<WorkflowInstanceRecordValue> failureEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
@@ -98,7 +99,12 @@ public class MessageIncidentTest {
   public void shouldCreateIncidentIfCorrelationKeyOfInvalidType() {
     // when
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance(PROCESS_ID, MsgPackUtil.asMsgPack("orderId", true));
+        testClient
+            .createWorkflowInstance(
+                r ->
+                    r.setBpmnProcessId(PROCESS_ID)
+                        .setVariables(MsgPackUtil.asMsgPack("orderId", true)))
+            .getInstanceKey();
 
     final Record<WorkflowInstanceRecordValue> failureEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
@@ -124,7 +130,8 @@ public class MessageIncidentTest {
   @Test
   public void shouldResolveIncidentIfCorrelationKeyNotFound() {
     // given
-    final long workflowInstance = testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstance =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(PROCESS_ID)).getInstanceKey();
 
     final Record<IncidentRecordValue> incidentCreatedRecord =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();

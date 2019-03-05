@@ -16,17 +16,17 @@
 package io.zeebe.gateway.impl.broker.request;
 
 import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
+import io.zeebe.protocol.intent.WorkflowInstanceCreationIntent;
 import org.agrona.DirectBuffer;
 
 public class BrokerCreateWorkflowInstanceRequest
-    extends BrokerExecuteCommand<WorkflowInstanceRecord> {
+    extends BrokerExecuteCommand<WorkflowInstanceCreationRecord> {
 
-  private final WorkflowInstanceRecord requestDto = new WorkflowInstanceRecord();
+  private final WorkflowInstanceCreationRecord requestDto = new WorkflowInstanceCreationRecord();
 
   public BrokerCreateWorkflowInstanceRequest() {
-    super(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE);
+    super(ValueType.WORKFLOW_INSTANCE_CREATION, WorkflowInstanceCreationIntent.CREATE);
   }
 
   public BrokerCreateWorkflowInstanceRequest setBpmnProcessId(String bpmnProcessId) {
@@ -34,8 +34,8 @@ public class BrokerCreateWorkflowInstanceRequest
     return this;
   }
 
-  public BrokerCreateWorkflowInstanceRequest setWorkflowKey(long workflowKey) {
-    requestDto.setWorkflowKey(workflowKey);
+  public BrokerCreateWorkflowInstanceRequest setKey(long key) {
+    requestDto.setKey(key);
     return this;
   }
 
@@ -44,19 +44,19 @@ public class BrokerCreateWorkflowInstanceRequest
     return this;
   }
 
-  public BrokerCreateWorkflowInstanceRequest setPayload(DirectBuffer payload) {
-    requestDto.setPayload(payload);
+  public BrokerCreateWorkflowInstanceRequest setVariables(DirectBuffer variables) {
+    requestDto.setVariables(variables);
     return this;
   }
 
   @Override
-  public WorkflowInstanceRecord getRequestWriter() {
+  public WorkflowInstanceCreationRecord getRequestWriter() {
     return requestDto;
   }
 
   @Override
-  protected WorkflowInstanceRecord toResponseDto(DirectBuffer buffer) {
-    final WorkflowInstanceRecord responseDto = new WorkflowInstanceRecord();
+  protected WorkflowInstanceCreationRecord toResponseDto(DirectBuffer buffer) {
+    final WorkflowInstanceCreationRecord responseDto = new WorkflowInstanceCreationRecord();
     responseDto.wrap(buffer);
     return responseDto;
   }

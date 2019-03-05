@@ -29,6 +29,7 @@ import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
+import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.Strings;
 import io.zeebe.test.util.collection.Maps;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -66,7 +67,8 @@ public class WorkflowInstanceTokenTest {
     testClient.deploy(Bpmn.createExecutableProcess(processId).startEvent().endEvent("end").done());
 
     // when
-    final long workflowInstanceKey = testClient.createWorkflowInstance(processId);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(processId)).getInstanceKey();
 
     // then
     assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "end");
@@ -78,7 +80,8 @@ public class WorkflowInstanceTokenTest {
     testClient.deploy(Bpmn.createExecutableProcess(processId).startEvent("start").done());
 
     // when
-    final long workflowInstanceKey = testClient.createWorkflowInstance(processId);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(processId)).getInstanceKey();
 
     // then
     assertThatWorkflowInstanceCompletedAfter(workflowInstanceKey, "start");
@@ -93,7 +96,8 @@ public class WorkflowInstanceTokenTest {
             .serviceTask("task", t -> t.zeebeTaskType("task"))
             .done());
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance(processId);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(processId)).getInstanceKey();
 
     // when
     testClient.completeJobOfType(workflowInstanceKey, "task");
@@ -116,7 +120,8 @@ public class WorkflowInstanceTokenTest {
             .endEvent("end-2")
             .done());
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance(processId);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(processId)).getInstanceKey();
 
     // when
     testClient.completeJobOfType(workflowInstanceKey, "task-1");
@@ -141,7 +146,8 @@ public class WorkflowInstanceTokenTest {
             .connectTo("join")
             .done());
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance(processId);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(processId)).getInstanceKey();
 
     // when
     testClient.completeJobOfType(workflowInstanceKey, "task-1");
@@ -166,7 +172,13 @@ public class WorkflowInstanceTokenTest {
             .endEvent("end-2")
             .done());
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance(processId, "{'key':'123'}");
+    final long workflowInstanceKey =
+        testClient
+            .createWorkflowInstance(
+                r ->
+                    r.setBpmnProcessId(processId)
+                        .setVariables(MsgPackUtil.asMsgPack("{'key':'123'}")))
+            .getInstanceKey();
 
     // when
     testClient.completeJobOfType(workflowInstanceKey, "task");
@@ -192,7 +204,8 @@ public class WorkflowInstanceTokenTest {
             .endEvent("end-2")
             .done());
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance(processId);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(processId)).getInstanceKey();
 
     // when
     testClient.completeJobOfType(workflowInstanceKey, "task");
@@ -223,7 +236,8 @@ public class WorkflowInstanceTokenTest {
             .endEvent("end-2")
             .done());
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance(processId);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(processId)).getInstanceKey();
 
     // when
     testClient.completeJobOfType(workflowInstanceKey, "task-1");
@@ -253,7 +267,13 @@ public class WorkflowInstanceTokenTest {
             .endEvent("end-3")
             .done());
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance(processId, "{'key':'123'}");
+    final long workflowInstanceKey =
+        testClient
+            .createWorkflowInstance(
+                r ->
+                    r.setBpmnProcessId(processId)
+                        .setVariables(MsgPackUtil.asMsgPack("{'key':'123'}")))
+            .getInstanceKey();
 
     // when
     testClient.completeJobOfType(workflowInstanceKey, "task");
@@ -276,7 +296,8 @@ public class WorkflowInstanceTokenTest {
             .endEvent("end-2")
             .done());
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance(processId);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(processId)).getInstanceKey();
 
     // when
     testClient.receiveElementInState(
@@ -301,7 +322,8 @@ public class WorkflowInstanceTokenTest {
             .endEvent("end-2")
             .done());
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance(processId);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(processId)).getInstanceKey();
 
     // when
     testClient.receiveElementInState(
@@ -330,7 +352,8 @@ public class WorkflowInstanceTokenTest {
             .endEvent("end-2")
             .done());
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance(processId);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(processId)).getInstanceKey();
 
     // when
     final Record<IncidentRecordValue> incident =
@@ -364,7 +387,8 @@ public class WorkflowInstanceTokenTest {
             .endEvent("end-2")
             .done());
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance(processId);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(processId)).getInstanceKey();
 
     // when
     testClient.completeJobOfType(workflowInstanceKey, "task-2");
@@ -403,7 +427,8 @@ public class WorkflowInstanceTokenTest {
             .endEvent("end-3")
             .done());
 
-    final long workflowInstanceKey = testClient.createWorkflowInstance(processId);
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance(r -> r.setBpmnProcessId(processId)).getInstanceKey();
 
     // when
     final Record<IncidentRecordValue> incident =
