@@ -70,6 +70,10 @@ public class DecisionInstanceEngineImportMediator extends BackoffImportMediator<
       nextPageEntities.get(nextPageEntities.size() - 1).getEvaluationTime() :
       null;
 
+    if (timestampNeedsToBeSet) {
+      importIndexHandler.updatePendingTimestampOfLastEntity(timestamp);
+    }
+
     if (!entitiesOfLastTimestamp.isEmpty() || timestampNeedsToBeSet) {
       final List<HistoricDecisionInstanceDto> allEntities = ListUtils.union(entitiesOfLastTimestamp, nextPageEntities);
 

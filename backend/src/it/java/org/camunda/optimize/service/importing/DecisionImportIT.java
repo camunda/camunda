@@ -145,6 +145,25 @@ public class DecisionImportIT {
     assertThat(definitionImportIndex.getImportIndex(), is(3L));
   }
 
+  @Test
+  public void importMoreThanOnePage() throws Exception {
+    // given
+    int originalMaxPageSize = embeddedOptimizeRule.getConfigurationService()
+      .getEngineImportProcessInstanceMaxPageSize();
+    embeddedOptimizeRule.getConfigurationService().setEngineImportDecisionInstanceMaxPageSize(1);
+    engineRule.deployAndStartDecisionDefinition();
+    engineRule.deployAndStartDecisionDefinition();
+
+    // when
+    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    embeddedOptimizeRule.importAllEngineEntitiesFromLastIndex();
+    elasticSearchRule.refreshAllOptimizeIndices();
+
+    // then
+    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_TYPE, 2L);
+    embeddedOptimizeRule.getConfigurationService().setEngineImportDecisionInstanceMaxPageSize(originalMaxPageSize);
+  }
+
   private SearchResponse getDecisionDefinitionIndexById(final String decisionDefinitionIndexId) throws IOException {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(termsQuery("_id", decisionDefinitionIndexId))
