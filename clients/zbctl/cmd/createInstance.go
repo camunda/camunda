@@ -21,7 +21,7 @@ import (
 
 var (
 	createInstanceVersionFlag int32
-	createInstancePayloadFlag string
+	createInstanceVariablesFlag string
 )
 
 var createInstanceCmd = &cobra.Command{
@@ -34,7 +34,7 @@ var createInstanceCmd = &cobra.Command{
 			NewCreateInstanceCommand().
 			BPMNProcessId(args[0]).
 			Version(createInstanceVersionFlag).
-			PayloadFromString(createInstancePayloadFlag)
+			VariablesFromString(createInstanceVariablesFlag)
 		if err != nil {
 			return err
 		}
@@ -53,7 +53,7 @@ func init() {
 
 	createInstanceCmd.
 		Flags().
-		StringVar(&createInstancePayloadFlag, "payload", "{}", "Specify payload as JSON string")
+		StringVar(&createInstanceVariablesFlag, "variables", "{}", "Specify variables as JSON string")
 
 	createInstanceCmd.
 		Flags().

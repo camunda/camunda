@@ -128,7 +128,7 @@ public class YamlWorkflowTest {
         .newCreateInstanceCommand()
         .bpmnProcessId("workflow-mappings")
         .latestVersion()
-        .payload("{\"foo\":1}")
+        .variables("{\"foo\":1}")
         .send()
         .join();
 

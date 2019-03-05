@@ -75,52 +75,62 @@ public class CreateWorkflowInstanceTest extends ClientTest {
   }
 
   @Test
-  public void shouldCreateWorkflowInstanceWithStringPayload() {
-    // when
-    client.newCreateInstanceCommand().workflowKey(123).payload("{\"foo\": \"bar\"}").send().join();
-
-    // then
-    final CreateWorkflowInstanceRequest request = gatewayService.getLastRequest();
-    assertThat(fromJsonAsMap(request.getPayload())).containsOnly(entry("foo", "bar"));
-  }
-
-  @Test
-  public void shouldCreateWorkflowInstanceWithInputStreamPayload() {
-    // given
-    final String payload = "{\"foo\": \"bar\"}";
-    final InputStream inputStream = new ByteArrayInputStream(payload.getBytes(Charsets.UTF_8));
-
-    // when
-    client.newCreateInstanceCommand().workflowKey(123).payload(inputStream).send().join();
-
-    // then
-    final CreateWorkflowInstanceRequest request = gatewayService.getLastRequest();
-    assertThat(fromJsonAsMap(request.getPayload())).containsOnly(entry("foo", "bar"));
-  }
-
-  @Test
-  public void shouldCreateWorkflowInstanceWithMapPayload() {
+  public void shouldCreateWorkflowInstanceWithStringVariables() {
     // when
     client
         .newCreateInstanceCommand()
         .workflowKey(123)
-        .payload(Collections.singletonMap("foo", "bar"))
+        .variables("{\"foo\": \"bar\"}")
         .send()
         .join();
 
     // then
     final CreateWorkflowInstanceRequest request = gatewayService.getLastRequest();
-    assertThat(fromJsonAsMap(request.getPayload())).containsOnly(entry("foo", "bar"));
+    assertThat(fromJsonAsMap(request.getVariables())).containsOnly(entry("foo", "bar"));
   }
 
   @Test
-  public void shouldCreateWorkflowInstanceWithObjectPayload() {
+  public void shouldCreateWorkflowInstanceWithInputStreamVariables() {
+    // given
+    final String variables = "{\"foo\": \"bar\"}";
+    final InputStream inputStream = new ByteArrayInputStream(variables.getBytes(Charsets.UTF_8));
+
     // when
-    client.newCreateInstanceCommand().workflowKey(123).payload(new Payload()).send().join();
+    client.newCreateInstanceCommand().workflowKey(123).variables(inputStream).send().join();
 
     // then
     final CreateWorkflowInstanceRequest request = gatewayService.getLastRequest();
-    assertThat(fromJsonAsMap(request.getPayload())).containsOnly(entry("foo", "bar"));
+    assertThat(fromJsonAsMap(request.getVariables())).containsOnly(entry("foo", "bar"));
+  }
+
+  @Test
+  public void shouldCreateWorkflowInstanceWithMapVariables() {
+    // when
+    client
+        .newCreateInstanceCommand()
+        .workflowKey(123)
+        .variables(Collections.singletonMap("foo", "bar"))
+        .send()
+        .join();
+
+    // then
+    final CreateWorkflowInstanceRequest request = gatewayService.getLastRequest();
+    assertThat(fromJsonAsMap(request.getVariables())).containsOnly(entry("foo", "bar"));
+  }
+
+  @Test
+  public void shouldCreateWorkflowInstanceWithObjectVariables() {
+    // when
+    client
+        .newCreateInstanceCommand()
+        .workflowKey(123)
+        .variables(new VariableDocument())
+        .send()
+        .join();
+
+    // then
+    final CreateWorkflowInstanceRequest request = gatewayService.getLastRequest();
+    assertThat(fromJsonAsMap(request.getVariables())).containsOnly(entry("foo", "bar"));
   }
 
   @Test
@@ -135,11 +145,11 @@ public class CreateWorkflowInstanceTest extends ClientTest {
         .hasMessageContaining("Invalid request");
   }
 
-  public static class Payload {
+  public static class VariableDocument {
 
     private final String foo = "bar";
 
-    Payload() {}
+    VariableDocument() {}
 
     public String getFoo() {
       return foo;

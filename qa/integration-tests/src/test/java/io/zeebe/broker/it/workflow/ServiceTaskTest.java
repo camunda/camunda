@@ -197,7 +197,7 @@ public class ServiceTaskTest {
         .newCreateInstanceCommand()
         .bpmnProcessId("process")
         .latestVersion()
-        .payload("{\"foo\":1}")
+        .variables("{\"foo\":1}")
         .send()
         .join();
 
@@ -268,7 +268,7 @@ public class ServiceTaskTest {
         .newCreateInstanceCommand()
         .bpmnProcessId("process")
         .latestVersion()
-        .payload("{\"foo\":1}")
+        .variables("{\"foo\":1}")
         .send()
         .join();
 
@@ -306,7 +306,7 @@ public class ServiceTaskTest {
         .newCreateInstanceCommand()
         .bpmnProcessId("order-process")
         .latestVersion()
-        .payload("{\"foo\":1}")
+        .variables("{\"foo\":1}")
         .send()
         .join();
 
@@ -364,7 +364,7 @@ public class ServiceTaskTest {
               .newCreateInstanceCommand()
               .bpmnProcessId("process")
               .latestVersion()
-              .payload("{\"foo\":1}")
+              .variables("{\"foo\":1}")
               .send()
               .join();
       instanceKeys.add(instanceEvent.getWorkflowInstanceKey());

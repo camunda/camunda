@@ -36,7 +36,7 @@ public class HandlePayloadAsPojo {
           .newCreateInstanceCommand()
           .bpmnProcessId("demoProcess")
           .latestVersion()
-          .payload(order)
+          .variables(order)
           .send()
           .join();
 

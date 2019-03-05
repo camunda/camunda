@@ -180,7 +180,7 @@ public class IncidentTest {
         .newCreateInstanceCommand()
         .bpmnProcessId("process")
         .latestVersion()
-        .payload(PAYLOAD)
+        .variables(PAYLOAD)
         .send()
         .join();
 
@@ -226,7 +226,7 @@ public class IncidentTest {
         .newCreateInstanceCommand()
         .bpmnProcessId("process")
         .latestVersion()
-        .payload(PAYLOAD)
+        .variables(PAYLOAD)
         .send()
         .join();
 
@@ -260,7 +260,7 @@ public class IncidentTest {
         .newCreateInstanceCommand()
         .bpmnProcessId("process")
         .latestVersion()
-        .payload(PAYLOAD)
+        .variables(PAYLOAD)
         .send()
         .join();
 
