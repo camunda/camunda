@@ -79,7 +79,7 @@ public class MessageCorrelationTest {
         .newCreateInstanceCommand()
         .bpmnProcessId(PROCESS_ID)
         .latestVersion()
-        .payload(Collections.singletonMap("orderId", "order-123"))
+        .variables(Collections.singletonMap("orderId", "order-123"))
         .send()
         .join();
 
@@ -116,7 +116,7 @@ public class MessageCorrelationTest {
         .newCreateInstanceCommand()
         .bpmnProcessId(PROCESS_ID)
         .latestVersion()
-        .payload(Collections.singletonMap("orderId", "order-123"))
+        .variables(Collections.singletonMap("orderId", "order-123"))
         .send()
         .join();
 
@@ -174,7 +174,7 @@ public class MessageCorrelationTest {
         .newCreateInstanceCommand()
         .bpmnProcessId(PROCESS_ID)
         .latestVersion()
-        .payload(Collections.singletonMap("orderId", "order-123"))
+        .variables(Collections.singletonMap("orderId", "order-123"))
         .send()
         .join();
 

@@ -142,7 +142,7 @@ public class CreateWorkflowInstanceTest {
   }
 
   @Test
-  public void shouldCreateWithPayload() {
+  public void shouldCreateWithVariables() {
     // when
     final WorkflowInstanceEvent event =
         clientRule
@@ -150,7 +150,7 @@ public class CreateWorkflowInstanceTest {
             .newCreateInstanceCommand()
             .bpmnProcessId(processId)
             .latestVersion()
-            .payload("{\"foo\":\"bar\"}")
+            .variables("{\"foo\":\"bar\"}")
             .send()
             .join();
 
@@ -164,7 +164,7 @@ public class CreateWorkflowInstanceTest {
   }
 
   @Test
-  public void shouldCreateWithoutPayload() {
+  public void shouldCreateWithoutVariables() {
     // when
     final WorkflowInstanceEvent event =
         clientRule
@@ -185,7 +185,7 @@ public class CreateWorkflowInstanceTest {
   }
 
   @Test
-  public void shouldCreateWithNullPayload() {
+  public void shouldCreateWithNullVariables() {
     // when
     final WorkflowInstanceEvent event =
         clientRule
@@ -193,7 +193,7 @@ public class CreateWorkflowInstanceTest {
             .newCreateInstanceCommand()
             .bpmnProcessId(processId)
             .latestVersion()
-            .payload("null")
+            .variables("null")
             .send()
             .join();
 
@@ -207,7 +207,7 @@ public class CreateWorkflowInstanceTest {
   }
 
   @Test
-  public void shouldThrowExceptionOnCompleteJobWithInvalidPayload() {
+  public void shouldThrowExceptionOnCompleteJobWithInvalidVariables() {
     // expect
     exception.expect(ClientStatusException.class);
     exception.expect(hasStatusCode(Code.INVALID_ARGUMENT));
@@ -221,13 +221,13 @@ public class CreateWorkflowInstanceTest {
         .newCreateInstanceCommand()
         .bpmnProcessId(processId)
         .latestVersion()
-        .payload("[]")
+        .variables("[]")
         .send()
         .join();
   }
 
   @Test
-  public void shouldCreateWithPayloadAsMap() {
+  public void shouldCreateWithVariablesAsMap() {
     // when
     final WorkflowInstanceEvent event =
         clientRule
@@ -235,7 +235,7 @@ public class CreateWorkflowInstanceTest {
             .newCreateInstanceCommand()
             .bpmnProcessId(processId)
             .latestVersion()
-            .payload(Collections.singletonMap("foo", "bar"))
+            .variables(Collections.singletonMap("foo", "bar"))
             .send()
             .join();
 
@@ -249,9 +249,9 @@ public class CreateWorkflowInstanceTest {
   }
 
   @Test
-  public void shouldCreateWithPayloadAsObject() {
-    final PayloadObject payload = new PayloadObject();
-    payload.foo = "bar";
+  public void shouldCreateWithVariablesAsObject() {
+    final VariableDocument variables = new VariableDocument();
+    variables.foo = "bar";
 
     // when
     final WorkflowInstanceEvent event =
@@ -260,7 +260,7 @@ public class CreateWorkflowInstanceTest {
             .newCreateInstanceCommand()
             .bpmnProcessId(processId)
             .latestVersion()
-            .payload(payload)
+            .variables(variables)
             .send()
             .join();
 
@@ -299,7 +299,7 @@ public class CreateWorkflowInstanceTest {
     clientRule.getClient().newCreateInstanceCommand().workflowKey(99L).send().join();
   }
 
-  public static class PayloadObject {
+  public static class VariableDocument {
     public String foo;
   }
 }

@@ -64,39 +64,39 @@ public interface CreateWorkflowInstanceCommandStep1 {
 
   interface CreateWorkflowInstanceCommandStep3 extends FinalCommandStep<WorkflowInstanceEvent> {
     /**
-     * Set the initial payload of the workflow instance.
+     * Set the initial variables of the workflow instance.
      *
-     * @param payload the payload (JSON) as stream
+     * @param variables the variables JSON document as stream
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    CreateWorkflowInstanceCommandStep3 payload(InputStream payload);
+    CreateWorkflowInstanceCommandStep3 variables(InputStream variables);
 
     /**
-     * Set the initial payload of the workflow instance.
+     * Set the initial variables of the workflow instance.
      *
-     * @param payload the payload (JSON) as String
+     * @param variables the variables JSON document as String
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    CreateWorkflowInstanceCommandStep3 payload(String payload);
+    CreateWorkflowInstanceCommandStep3 variables(String variables);
 
     /**
-     * Set the initial payload of the workflow instance.
+     * Set the initial variables of the workflow instance.
      *
-     * @param payload the payload as map
+     * @param variables the variables document as map
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    CreateWorkflowInstanceCommandStep3 payload(Map<String, Object> payload);
+    CreateWorkflowInstanceCommandStep3 variables(Map<String, Object> variables);
 
     /**
-     * Set the initial payload of the workflow instance.
+     * Set the initial variables of the workflow instance.
      *
-     * @param payload the payload as object
+     * @param variables the variables document as object to be serialized to JSON
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    CreateWorkflowInstanceCommandStep3 payload(Object payload);
+    CreateWorkflowInstanceCommandStep3 variables(Object variables);
   }
 }

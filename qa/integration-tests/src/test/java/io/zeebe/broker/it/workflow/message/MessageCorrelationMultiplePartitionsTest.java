@@ -172,13 +172,13 @@ public class MessageCorrelationMultiplePartitionsTest {
             tuple(2, CORRELATION_KEY_PARTITION_2));
   }
 
-  private void createWorkflowInstance(Object payload) {
+  private void createWorkflowInstance(Object variables) {
     clientRule
         .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId(PROCESS_ID)
         .latestVersion()
-        .payload(payload)
+        .variables(variables)
         .send()
         .join();
   }

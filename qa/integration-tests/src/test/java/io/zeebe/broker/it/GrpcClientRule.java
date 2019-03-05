@@ -105,7 +105,8 @@ public class GrpcClientRule extends ExternalResource {
     return createSingleJob(type, consumer, "{}");
   }
 
-  public long createSingleJob(String type, Consumer<ServiceTaskBuilder> consumer, String payload) {
+  public long createSingleJob(
+      String type, Consumer<ServiceTaskBuilder> consumer, String variables) {
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess("process")
             .startEvent("start")
@@ -132,7 +133,7 @@ public class GrpcClientRule extends ExternalResource {
             .newCreateInstanceCommand()
             .bpmnProcessId("process")
             .latestVersion()
-            .payload(payload)
+            .variables(variables)
             .send()
             .join()
             .getWorkflowInstanceKey();

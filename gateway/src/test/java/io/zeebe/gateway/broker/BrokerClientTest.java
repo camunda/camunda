@@ -31,7 +31,7 @@ import io.zeebe.gateway.impl.broker.response.BrokerError;
 import io.zeebe.gateway.impl.broker.response.BrokerRejection;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.zeebe.gateway.impl.data.MsgPackConverter;
+import io.zeebe.msgpack.value.DocumentValue;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
@@ -57,7 +57,6 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -66,9 +65,6 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TestName;
 
 public class BrokerClientTest {
-
-  private static final DirectBuffer EMPTY_PAYLOAD =
-      new UnsafeBuffer(new MsgPackConverter().convertToMsgPack("{}"));
 
   @Rule public StubBrokerRule broker = new StubBrokerRule();
 
@@ -118,7 +114,8 @@ public class BrokerClientTest {
     broker.addPartition(2);
 
     final long key = (2L << Protocol.KEY_BITS) + 123;
-    final BrokerCompleteJobRequest request = new BrokerCompleteJobRequest(key, EMPTY_PAYLOAD);
+    final BrokerCompleteJobRequest request =
+        new BrokerCompleteJobRequest(key, DocumentValue.EMPTY_DOCUMENT);
 
     // when
     final BrokerResponse<JobRecord> response = client.sendRequest(request).join();
@@ -333,7 +330,7 @@ public class BrokerClientTest {
     exception.expectMessage("Request timed out after PT3S");
 
     // when
-    client.sendRequest(new BrokerCompleteJobRequest(1, EMPTY_PAYLOAD)).join();
+    client.sendRequest(new BrokerCompleteJobRequest(1, DocumentValue.EMPTY_DOCUMENT)).join();
   }
 
   @Test
@@ -386,7 +383,10 @@ public class BrokerClientTest {
     // when
     final long start = System.currentTimeMillis();
     assertThatThrownBy(
-        () -> client.sendRequest(new BrokerCompleteJobRequest(key, EMPTY_PAYLOAD)).join());
+        () ->
+            client
+                .sendRequest(new BrokerCompleteJobRequest(key, DocumentValue.EMPTY_DOCUMENT))
+                .join());
     final long requestDuration = System.currentTimeMillis() - start;
 
     // then
@@ -411,7 +411,7 @@ public class BrokerClientTest {
 
     // when
     final BrokerResponse<JobRecord> response =
-        client.sendRequest(new BrokerCompleteJobRequest(79, EMPTY_PAYLOAD)).join();
+        client.sendRequest(new BrokerCompleteJobRequest(79, DocumentValue.EMPTY_DOCUMENT)).join();
 
     // then
     assertThat(response.isRejection()).isTrue();
@@ -431,7 +431,7 @@ public class BrokerClientTest {
     exception.expectMessage("Request timed out after PT1S");
 
     // when
-    client.sendRequest(new BrokerCompleteJobRequest(0, EMPTY_PAYLOAD)).join();
+    client.sendRequest(new BrokerCompleteJobRequest(0, DocumentValue.EMPTY_DOCUMENT)).join();
   }
 
   @Test
@@ -455,7 +455,7 @@ public class BrokerClientTest {
 
     // when making a new request
     // then the topology has been refreshed and the request succeeded
-    client.sendRequest(new BrokerCompleteJobRequest(0, EMPTY_PAYLOAD)).join();
+    client.sendRequest(new BrokerCompleteJobRequest(0, DocumentValue.EMPTY_DOCUMENT)).join();
   }
 
   private void stubJobResponse() {

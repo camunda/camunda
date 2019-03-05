@@ -224,8 +224,8 @@ message CreateWorkflowInstanceRequest {
   // workflow instance; it must be a JSON object, as variables will be mapped in a
   // key-value fashion. e.g. { "a": 1, "b": 2 } will create two variables, named "a" and
   // "b" respectively, with their associated values. [{ "a": 1, "b": 2 }] would not be a
-  // valid payload, as the root of the JSON document is an array and not an object.
-  string payload = 4;
+  // valid argument, as the root of the JSON document is an array and not an object.
+  string variables = 4;
 }
 ```
 
@@ -267,8 +267,8 @@ Returned if:
 
 Returned if:
 
-  - the given payload is not a valid JSON document; all payloads are expected to be
-    valid JSON documents where the root node is an object.
+  - the given variables argument is not a valid JSON document; it is expected to be a valid
+    JSON document where the root node is an object.
 
 
 ### DeployWorkflow RPC
@@ -495,8 +495,8 @@ message PublishMessageRequest {
   // the unique ID of the message; can be omitted. only useful to ensure only one message
   // with the given ID will ever be published (during its lifetime)
   string messageId = 4;
-  // the message payload as a JSON document; see CreateWorkflowInstanceRequest for the
-  // rules about payloads
+  // the message payload as a JSON document; to be valid, the root of the document must be an
+  // object, e.g. { "a": "foo" }. [ "foo" ] would not be valid.
   string payload = 5;
 }
 ```
@@ -563,11 +563,11 @@ message SetVariablesRequest {
   // a JSON serialized document describing variables as key value pairs; the root of the document
   // must be an object
   string variables = 2;
-  // if true, the payload will be merged strictly into the local scope (as indicated by
-  // elementInstanceKey); this means the payload is not propagated to upper scopes.
-  // for example, let's say we have two scopes, '1' and '2', with each having effective payloads as:
+  // if true, the variables will be merged strictly into the local scope (as indicated by
+  // elementInstanceKey); this means the variables is not propagated to upper scopes.
+  // for example, let's say we have two scopes, '1' and '2', with each having effective variables as:
   // 1 => `{ "foo" : 2 }`, and 2 => `{ "bar" : 1 }`. if we send an update request with
-  // elementInstanceKey = 2, a new payload of `{ "foo" : 5 }`, and local is true, then scope 1 will
+  // elementInstanceKey = 2, variables `{ "foo" : 5 }`, and local is true, then scope 1 will
   // be unchanged, and scope 2 will now be `{ "bar" : 1, "foo" 5 }`. if local was false, however,
   // then scope 1 would be `{ "foo": 5 }`, and scope 2 would be `{ "bar" : 1 }`.
   bool local = 3;

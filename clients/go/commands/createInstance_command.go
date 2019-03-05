@@ -43,15 +43,15 @@ type CreateInstanceCommandStep3 interface {
 	DispatchCreateInstanceCommand
 
 	// Expected to be valid JSON string
-	PayloadFromString(string) (DispatchCreateInstanceCommand, error)
+	VariablesFromString(string) (DispatchCreateInstanceCommand, error)
 
 	// Expected to construct a valid JSON string
-	PayloadFromStringer(fmt.Stringer) (DispatchCreateInstanceCommand, error)
+	VariablesFromStringer(fmt.Stringer) (DispatchCreateInstanceCommand, error)
 
 	// Expected that object is JSON serializable
-	PayloadFromObject(interface{}) (DispatchCreateInstanceCommand, error)
-	PayloadFromObjectIgnoreOmitempty(interface{}) (DispatchCreateInstanceCommand, error)
-	PayloadFromMap(map[string]interface{}) (DispatchCreateInstanceCommand, error)
+	VariablesFromObject(interface{}) (DispatchCreateInstanceCommand, error)
+	VariablesFromObjectIgnoreOmitempty(interface{}) (DispatchCreateInstanceCommand, error)
+	VariablesFromMap(map[string]interface{}) (DispatchCreateInstanceCommand, error)
 }
 
 type CreateInstanceCommand struct {
@@ -62,42 +62,42 @@ type CreateInstanceCommand struct {
 	requestTimeout time.Duration
 }
 
-func (cmd *CreateInstanceCommand) PayloadFromString(payload string) (DispatchCreateInstanceCommand, error) {
-	err := cmd.Validate("payload", payload)
+func (cmd *CreateInstanceCommand) VariablesFromString(variables string) (DispatchCreateInstanceCommand, error) {
+	err := cmd.Validate("variables", variables)
 	if err != nil {
 		return nil, err
 	}
 
-	cmd.request.Payload = payload
+	cmd.request.Variables = variables
 	return cmd, nil
 }
 
-func (cmd *CreateInstanceCommand) PayloadFromStringer(payload fmt.Stringer) (DispatchCreateInstanceCommand, error) {
-	return cmd.PayloadFromString(payload.String())
+func (cmd *CreateInstanceCommand) VariablesFromStringer(variables fmt.Stringer) (DispatchCreateInstanceCommand, error) {
+	return cmd.VariablesFromString(variables.String())
 }
 
-func (cmd *CreateInstanceCommand) PayloadFromObject(payload interface{}) (DispatchCreateInstanceCommand, error) {
-	value, err := cmd.AsJson("payload", payload, false)
+func (cmd *CreateInstanceCommand) VariablesFromObject(variables interface{}) (DispatchCreateInstanceCommand, error) {
+	value, err := cmd.AsJson("variables", variables, false)
 	if err != nil {
 		return nil, err
 	}
 
-	cmd.request.Payload = value
+	cmd.request.Variables = value
 	return cmd, err
 }
 
-func (cmd *CreateInstanceCommand) PayloadFromObjectIgnoreOmitempty(payload interface{}) (DispatchCreateInstanceCommand, error) {
-	value, err := cmd.AsJson("payload", payload, true)
+func (cmd *CreateInstanceCommand) VariablesFromObjectIgnoreOmitempty(variables interface{}) (DispatchCreateInstanceCommand, error) {
+	value, err := cmd.AsJson("variables", variables, true)
 	if err != nil {
 		return nil, err
 	}
 
-	cmd.request.Payload = value
+	cmd.request.Variables = value
 	return cmd, err
 }
 
-func (cmd *CreateInstanceCommand) PayloadFromMap(payload map[string]interface{}) (DispatchCreateInstanceCommand, error) {
-	return cmd.PayloadFromObject(payload)
+func (cmd *CreateInstanceCommand) VariablesFromMap(variables map[string]interface{}) (DispatchCreateInstanceCommand, error) {
+	return cmd.VariablesFromObject(variables)
 }
 
 func (cmd *CreateInstanceCommand) Version(version int32) CreateInstanceCommandStep3 {

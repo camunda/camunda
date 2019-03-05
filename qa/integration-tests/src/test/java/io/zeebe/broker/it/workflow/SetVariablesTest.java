@@ -94,7 +94,7 @@ public class SetVariablesTest {
   }
 
   @Test
-  public void shouldSetVariablesWithNullPayload() {
+  public void shouldSetVariablesWithNullVariables() {
     // given
     final long workflowInstanceKey = createWorkflowInstanceAndAwaitTaskActivation();
 
@@ -114,7 +114,7 @@ public class SetVariablesTest {
   }
 
   @Test
-  public void shouldThrowExceptionOnSetVariablesWithInvalidPayload() {
+  public void shouldThrowExceptionOnSetVariablesWithInvalidVariables() {
     // given
     final long workflowInstanceKey = createWorkflowInstanceAndAwaitTaskActivation();
 
@@ -191,14 +191,14 @@ public class SetVariablesTest {
   public void shouldSetVariablesWithObject() {
     // given
     final long workflowInstanceKey = createWorkflowInstanceAndAwaitTaskActivation();
-    final PayloadObject newPayload = new PayloadObject();
-    newPayload.foo = "bar";
+    final VariableDocument newVariables = new VariableDocument();
+    newVariables.foo = "bar";
 
     // when
     clientRule
         .getClient()
         .newSetVariablesCommand(workflowInstanceKey)
-        .variables(newPayload)
+        .variables(newVariables)
         .send()
         .join();
 
@@ -251,7 +251,7 @@ public class SetVariablesTest {
     return workflowInstanceKey;
   }
 
-  public static class PayloadObject {
+  public static class VariableDocument {
     public String foo;
   }
 }

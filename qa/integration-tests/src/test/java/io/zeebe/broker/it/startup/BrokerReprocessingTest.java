@@ -693,13 +693,13 @@ public class BrokerReprocessingTest {
   }
 
   protected WorkflowInstanceEvent startWorkflowInstance(
-      final String bpmnProcessId, final Map<String, Object> payload) {
+      final String bpmnProcessId, final Map<String, Object> variables) {
     return clientRule
         .getClient()
         .newCreateInstanceCommand()
         .bpmnProcessId(bpmnProcessId)
         .latestVersion()
-        .payload(payload)
+        .variables(variables)
         .send()
         .join();
   }

@@ -103,7 +103,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *  .newCreateInstanceCommand()
    *  .bpmnProcessId("my-process")
    *  .latestVersion()
-   *  .payload(json)
+   *  .variables(json)
    *  .send();
    * </pre>
    *

@@ -329,7 +329,7 @@ public class ExporterIntegrationRule extends ExternalResource {
         .newCreateInstanceCommand()
         .bpmnProcessId(processId)
         .latestVersion()
-        .payload(payload)
+        .variables(payload)
         .send()
         .join()
         .getWorkflowInstanceKey();
